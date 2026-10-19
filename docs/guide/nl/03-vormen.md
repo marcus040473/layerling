@@ -171,11 +171,15 @@ Het resultaat is een mesh zoals een geïmporteerd model, en het houdt het lichaa
 
 ## Een vaas
 
-De {{ui:shape.vase}} is een eigen lichaam voor vazen, potten en lampenkappen. De instellingen staan onder {{ui:inspector.properties}} en zijn altijd te wijzigen, ook na het opslaan:
+De {{ui:shape.vase}} is een eigen lichaam voor vazen, potten en lampenkappen. De maten staan onder {{ui:inspector.properties}}, vorm en patroon op de kaart {{ui:inspector.vaseForm}}; alles is altijd te wijzigen, ook na het opslaan:
 
 - {{ui:prop.vaseProfile}}: fles, buikig, schaal met hals, ton, cilinder of trechter. Hoogte en grootste diameter zijn de maten van de vorm zelf: trek aan de handgrepen of typ {{ui:prop.vaseDiameter}} en {{ui:prop.height}}.
 - {{ui:prop.vaseSection}}: een cirkel, een veelhoek met afgeronde hoeken of een golf (zacht, spits, bogen of lamellen). {{ui:prop.vaseTwist}} draait hem over de hoogte, {{ui:prop.vaseSway}} laat hem heen en weer slingeren.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} is voor de vaasmodus van de slicer (ook „spiraliseren”): de slicer print één wand als spiraal en laat deksel en vulling weg, daarom is het lichaam massief getekend. {{ui:vase.bodyHollow}} geeft een echte wand en bodem voor een gewone print.
 - {{ui:prop.vaseEffect}}: groeven, strepen, Voronoi-cellen of facetten (low poly) aan de buitenkant, desgewenst alleen in een deel van de hoogte.
+
+{{ui:prop.vaseSection2}} laat de doorsnede over de hoogte zacht overgaan in een tweede, bijvoorbeeld van een cirkel onder naar een zeshoek boven.
+
+De kaart {{ui:inspector.vaseFloor}} bevat wat het lichaam naast zijn vorm nodig heeft. Bij een holle vaas: afvoergaten met afschot ernaartoe, een holle voet, een opengewerkte wand ({{ui:prop.vaseCutout}}: Voronoi, honingraat, ruiten of cirkels, voor windlichten en manden) en een {{ui:prop.vaseLamp}}, hangend, staand met fitting of boven een led-puck. Bij een massieve vaas snijdt {{ui:prop.vaseReinforce}} fijne spleten waardoor de slicer in de vaasmodus ribben binnen of een dubbele wand meeprint, in één keer. Uitsparingen voor rubberen voetjes kunnen bij allebei. {{ui:prop.vaseWatertight}} brengt wand en bodem van een holle vaas op minstens 1,6 mm.
 
 {{ui:prop.vaseQuality}} bepaalt hoe fijn de vaas in driehoeken wordt verdeeld: fijner ziet er gladder uit, maar maakt de editor bij grote vazen trager. Voor meer reliëf erbovenop werkt ook een {{ui:inspector.surfaceTexture}} op een vaas; die is dan een mesh tot je de structuur weer verwijdert.

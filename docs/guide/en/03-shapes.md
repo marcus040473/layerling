@@ -171,11 +171,15 @@ The result is a mesh like an imported model, and it keeps the body it was made o
 
 ## A vase
 
-The {{ui:shape.vase}} is a body of its own for vases, pots and lampshades. Its settings are under {{ui:inspector.properties}} and can be changed at any time, also after saving:
+The {{ui:shape.vase}} is a body of its own for vases, pots and lampshades. Its measures are under {{ui:inspector.properties}}, its form and pattern on the card {{ui:inspector.vaseForm}}; all of it can be changed at any time, also after saving:
 
 - {{ui:prop.vaseProfile}}: bottle, bellied, bowl with neck, barrel, cylinder or funnel. The height and the widest diameter are the shape's own measures: drag the handles, or type {{ui:prop.vaseDiameter}} and {{ui:prop.height}}.
 - {{ui:prop.vaseSection}}: a circle, a polygon with rounded corners or a wave (soft, pointed, arches or fins). {{ui:prop.vaseTwist}} turns it up the height, {{ui:prop.vaseSway}} lets it swing back and forth.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} is for the slicer's vase mode (also called spiralize): the slicer prints one wall in a spiral and leaves out the top and the infill, so the body is drawn solid. {{ui:vase.bodyHollow}} gives a real wall and bottom for a normal print.
 - {{ui:prop.vaseEffect}}: grooves, stripes, Voronoi cells or facets (low poly) on the outside, in a band of the height if you like.
+
+{{ui:prop.vaseSection2}} blends the cross-section into a second one up the height, say from a circle at the bottom to a hexagon at the top.
+
+The card {{ui:inspector.vaseFloor}} holds what the body needs besides its form. On a hollow vase: drain holes with a slope towards them, a hollow foot, an open wall ({{ui:prop.vaseCutout}}: Voronoi, honeycomb, diamonds or circles, for lanterns and baskets) and a {{ui:prop.vaseLamp}}, hanging, standing on a socket or over an LED puck. On a solid vase, {{ui:prop.vaseReinforce}} cuts fine slits through which the slicer prints ribs inside or a double wall in its vase mode, in one go. Recesses for rubber feet go with either. {{ui:prop.vaseWatertight}} raises the wall and bottom of a hollow vase to at least 1.6 mm.
 
 {{ui:prop.vaseQuality}} sets how finely the vase is divided into triangles: finer looks smoother, but makes the editor slower with large vases. For more relief on top, a {{ui:inspector.surfaceTexture}} works on a vase too; the vase is then a mesh until you remove the texture again.

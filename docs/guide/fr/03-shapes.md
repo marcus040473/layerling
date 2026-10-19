@@ -158,11 +158,15 @@ Le résultat est un maillage comme un modèle importé, et il garde le corps sur
 
 ## Un vase
 
-Le {{ui:shape.vase}} est un corps à part pour les vases, pots et abat-jour. Ses réglages se trouvent sous {{ui:inspector.properties}} et peuvent être modifiés à tout moment, même après l'enregistrement :
+Le {{ui:shape.vase}} est un corps à part pour les vases, pots et abat-jour. Ses mesures se trouvent sous {{ui:inspector.properties}}, sa forme et son motif sur la carte {{ui:inspector.vaseForm}} ; tout peut être modifié à tout moment, même après l'enregistrement :
 
 - {{ui:prop.vaseProfile}} : bouteille, ventru, coupe à col, tonneau, cylindre ou entonnoir. La hauteur et le plus grand diamètre sont les mesures de la forme elle-même : tirez les poignées ou saisissez {{ui:prop.vaseDiameter}} et {{ui:prop.height}}.
 - {{ui:prop.vaseSection}} : un cercle, un polygone aux coins arrondis ou une vague (douce, pointue, arcs ou lamelles). {{ui:prop.vaseTwist}} la fait tourner sur la hauteur, {{ui:prop.vaseSway}} la fait osciller d'un côté à l'autre.
 - {{ui:prop.vaseBody}} : {{ui:vase.bodySolid}} sert au mode vase du trancheur (aussi « spiraliser ») : le trancheur imprime une seule paroi en spirale, sans dessus ni remplissage, c'est pourquoi le corps est dessiné plein. {{ui:vase.bodyHollow}} donne une vraie paroi et un vrai fond pour une impression normale.
 - {{ui:prop.vaseEffect}} : rainures, bandes, cellules de Voronoi ou facettes (low poly) à l'extérieur, au besoin sur une partie de la hauteur seulement.
+
+{{ui:prop.vaseSection2}} fait passer la section peu à peu à une seconde sur la hauteur, par exemple d'un cercle en bas à un hexagone en haut.
+
+La carte {{ui:inspector.vaseFloor}} réunit ce dont le corps a besoin en plus de sa forme. Pour un vase creux : des trous d'écoulement avec une pente vers eux, un pied creux, une paroi ajourée ({{ui:prop.vaseCutout}} : Voronoi, nid d'abeille, losanges ou cercles, pour photophores et paniers) et un {{ui:prop.vaseLamp}}, suspendu, debout avec douille ou sur un palet LED. Pour un vase plein, {{ui:prop.vaseReinforce}} taille de fines fentes par lesquelles le trancheur imprime, en mode vase, des nervures intérieures ou une double paroi, d'un seul trait. Des logements pour patins en caoutchouc vont avec les deux. {{ui:prop.vaseWatertight}} porte la paroi et le fond d'un vase creux à au moins 1,6 mm.
 
 {{ui:prop.vaseQuality}} règle la finesse du découpage en triangles : plus fin paraît plus lisse, mais ralentit l'éditeur pour les grands vases. Pour plus de relief par-dessus, une {{ui:inspector.surfaceTexture}} fonctionne aussi sur un vase ; il devient alors un maillage jusqu'à ce que vous retiriez la texture.

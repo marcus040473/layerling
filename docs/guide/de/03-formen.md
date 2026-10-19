@@ -172,11 +172,15 @@ Das Ergebnis ist ein Netz wie ein importiertes Modell, und es behält den Körpe
 
 ## Eine Vase
 
-Die {{ui:shape.vase}} ist ein eigener Körper für Vasen, Töpfe und Lampenschirme. Ihre Einstellungen stehen unter {{ui:inspector.properties}} und lassen sich jederzeit ändern, auch nach dem Speichern:
+Die {{ui:shape.vase}} ist ein eigener Körper für Vasen, Töpfe und Lampenschirme. Ihre Maße stehen unter {{ui:inspector.properties}}, Form und Muster auf der Karte {{ui:inspector.vaseForm}}; alles lässt sich jederzeit ändern, auch nach dem Speichern:
 
 - {{ui:prop.vaseProfile}}: Flasche, bauchig, Schale mit Hals, Fass, Zylinder oder Trichter. Höhe und größter Durchmesser sind die Maße der Form selbst: Zieh an den Anfassern oder tippe {{ui:prop.vaseDiameter}} und {{ui:prop.height}} ein.
 - {{ui:prop.vaseSection}}: ein Kreis, ein Vieleck mit gerundeten Ecken oder eine Welle (weich, spitz, Bögen oder Lamellen). {{ui:prop.vaseTwist}} dreht ihn über die Höhe, {{ui:prop.vaseSway}} lässt ihn hin und her schwingen.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} ist für den Vasenmodus im Slicer (auch „Spiralisieren“): Der Slicer druckt eine Wand als Spirale und lässt Deckel und Füllung weg, deshalb ist der Körper voll gezeichnet. {{ui:vase.bodyHollow}} gibt eine echte Wand und einen echten Boden für einen normalen Druck.
 - {{ui:prop.vaseEffect}}: Rillen, Streifen, Voronoi-Zellen oder Facetten (Low Poly) außen, auf Wunsch nur in einem Höhenbereich.
+
+{{ui:prop.vaseSection2}} lässt den Querschnitt über die Höhe weich in einen zweiten übergehen, etwa von einem Kreis unten zu einem Sechseck oben.
+
+Die Karte {{ui:inspector.vaseFloor}} enthält, was der Körper neben seiner Form braucht. Bei einer hohlen Vase: Ablauflöcher mit Gefälle zu ihnen hin, einen hohlen Fuß, eine durchbrochene Wand ({{ui:prop.vaseCutout}}: Voronoi, Waben, Rauten oder Kreise, für Windlichter und Körbe) und einen {{ui:prop.vaseLamp}}, hängend, stehend mit Fassung oder über einem LED-Puck. Bei einer vollen Vase schneidet {{ui:prop.vaseReinforce}} feine Schlitze, durch die der Slicer im Vasenmodus Rippen innen oder eine Doppelwand mitdruckt, in einem Zug. Mulden für Gummifüße gehen bei beiden. {{ui:prop.vaseWatertight}} hebt Wand und Boden einer hohlen Vase auf mindestens 1,6 mm.
 
 {{ui:prop.vaseQuality}} legt fest, wie fein die Vase in Dreiecke geteilt wird: Feiner sieht glatter aus, macht den Editor bei großen Vasen aber langsamer. Für mehr Relief darüber geht auch eine {{ui:inspector.surfaceTexture}} auf eine Vase; sie ist dann ein Netz, bis du die Oberfläche wieder entfernst.

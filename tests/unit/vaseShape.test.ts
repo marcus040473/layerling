@@ -83,6 +83,32 @@ describe("the vase as a shape", () => {
     }
   });
 
+  it("stays closed with its bottom and wall features", () => {
+    const variants: Array<[string, Record<string, unknown>]> = [
+      ["drain holes and a hollow foot", { body: "hohl", drainHoles: 5, drainDiameter: 6, floorSlope: 1, footHeight: 12 }],
+      ["recesses for feet", { body: "voll", rubberFeet: 4 }],
+      ["an open Voronoi wall", { body: "hohl", effect: "keine", cutout: "voronoi", cutoutSize: 12 }],
+      ["a honeycomb wall with whole holes", { body: "hohl", effect: "keine", cutout: "waben", cutoutEdge: "ganz" }],
+      ["a hanging lampshade", { body: "hohl", effect: "keine", lamp: "haengend" }],
+      ["a standing lampshade", { body: "hohl", effect: "keine", lamp: "stehend", footHeight: 20 }],
+      ["ribs for vase mode", { body: "voll", effect: "keine", reinforce: "rippen", reinforceCount: 8 }],
+      ["a double wall for vase mode", { body: "voll", effect: "keine", reinforce: "doppelwand", reinforceCount: 8 }],
+      ["a cross-section that turns into a hexagon", { section2: "vieleck", section2Sides: 6, effect: "keine" }],
+      ["winding grooves", { effect: "rillen", waveAmplitude: 4, waveCount: 3 }],
+    ];
+    for (const [name, settings] of variants) {
+      const analysis = analyzeTriangleSoup(soupOf(vase(settings, { width: 70, depth: 70, size: 70, height: 110 })));
+      expect(analysis.boundaryEdges, name).toBe(0);
+      expect(analysis.nonManifoldEdges, name).toBe(0);
+    }
+  });
+
+  it("must hold water: wall and bottom at least 1.6 mm", () => {
+    const settings = normalizeVaseSettings({ body: "hohl", wall: 0.8, bottom: 1, watertight: "ja" });
+    expect(settings.wall).toBeGreaterThanOrEqual(1.6);
+    expect(settings.bottom).toBeGreaterThanOrEqual(1.6);
+  });
+
   it("is solid for the slicer's vase mode, or hollow with a wall", () => {
     const solid = volume(soupOf(vase({ effect: "keine", body: "voll" })));
     const hollow = volume(soupOf(vase({ effect: "keine", body: "hohl", wall: 2, bottom: 2 })));
