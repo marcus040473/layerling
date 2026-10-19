@@ -125,6 +125,7 @@ import {
   teardropHeightForTipAngle,
 } from "@/lib/teardropGeometry";
 import { DEFAULT_LOFT, loftFieldsFromMeasures, loftFrameSize, normalizeLoftMeasures } from "@/lib/loftGeometry";
+import { DEFAULT_VASE_SIZE, normalizeVaseSettings } from "@/lib/vaseSettings";
 import {
   DEFAULT_DOVETAIL_CLEARANCE,
   DEFAULT_DOVETAIL_DEPTH,
@@ -225,6 +226,7 @@ const SHAPE_LABEL_KEYS: Record<string, MessageKey> = {
   dovetail: "shape.dovetail",
   teardrop: "shape.teardrop",
   loft: "shape.loft",
+  vase: "shape.vase",
   counterbore: "shape.counterbore",
   countersink: "shape.countersink",
   doubleCountersink: "shape.doubleCountersink",
@@ -252,6 +254,7 @@ export const toolbarShapeAssets: ToolbarShapeAsset[] = [
   { id: "half-sphere", name: "Half Sphere", src: "assets/editor/shape-icons-gray/half-sphere.png", menuIcon: "assets/editor/shape-icons-gray/half-sphere.png", kind: "halfSphere", color: "#c9009a" },
   { id: "torus", name: "Torus", src: "assets/editor/shape-icons-gray/torus.png", menuIcon: "assets/editor/shape-icons-gray/torus.png", kind: "torus", color: "#0098c7" },
   { id: "loft", name: "Loft", src: "assets/editor/shape-icons-gray/loft.png", menuIcon: "assets/editor/shape-icons-gray/loft.png", kind: "loft", color: "#c0703a" },
+  { id: "vase", name: "Vase", src: "assets/editor/shape-icons-gray/vase.png", menuIcon: "assets/editor/shape-icons-gray/vase.png", kind: "vase", color: "#2e8b8b" },
   { id: "tube", name: "Tube", src: "assets/editor/shape-icons-gray/tube.png", menuIcon: "assets/editor/shape-icons-gray/tube.png", kind: "tube", color: "#ce7013" },
   { id: "bentTube", name: "Bent Tube", src: "assets/editor/shape-icons-gray/bentTube.png", menuIcon: "assets/editor/shape-icons-gray/bentTube.png", kind: "bentTube", color: "#b5651d" },
   { id: "counterbore", name: "Counterbore", src: "assets/editor/shape-icons-gray/counterbore.png", menuIcon: "assets/editor/shape-icons-gray/counterbore.png", kind: "counterbore", color: "#5f7a8a" },
@@ -406,6 +409,9 @@ export function shapeAssetDefaultDimensions(kind: ShapeKind) {
   }
   if (kind === "knurl") {
     return { width: DEFAULT_KNURL_DIAMETER, depth: DEFAULT_KNURL_DIAMETER, height: DEFAULT_KNURL_HEIGHT };
+  }
+  if (kind === "vase") {
+    return { ...DEFAULT_VASE_SIZE };
   }
   if (kind === "honeycomb") {
     return { width: DEFAULT_HONEYCOMB_WIDTH, depth: DEFAULT_HONEYCOMB_DEPTH, height: DEFAULT_HONEYCOMB_HEIGHT };
@@ -724,6 +730,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     cylinderWrap: shape.cylinderWrap,
     surfaceTexture: shape.surfaceTexture,
     surfaceTextureMask: shape.surfaceTextureMask,
+    vase: shape.vase,
     importedMesh: shape.importedMesh,
     imagePlate: shape.imagePlate,
     sketchProfile: shape.sketchProfile,
@@ -963,6 +970,7 @@ export function makeShapeFromAsset(
     knurlDepth: asset.kind === "knurl" ? normalizeKnurlDepth(customization.knurlDepth ?? DEFAULT_KNURL_DEPTH, width) : undefined,
     knurlAngle: asset.kind === "knurl" ? normalizeKnurlAngle(customization.knurlAngle ?? DEFAULT_KNURL_ANGLE) : undefined,
     knurlChamfer: asset.kind === "knurl" ? normalizeKnurlChamfer(customization.knurlChamfer ?? DEFAULT_KNURL_CHAMFER, width, height) : undefined,
+    vase: asset.kind === "vase" ? normalizeVaseSettings(undefined) : undefined,
     dovetailNeckWidth: asset.kind === "dovetail" ? normalizeDovetailNeckWidth(customization.dovetailNeckWidth, width) : undefined,
     dovetailClearance: asset.kind === "dovetail" ? normalizeDovetailClearance(customization.dovetailClearance ?? DEFAULT_DOVETAIL_CLEARANCE) : undefined,
     screwHoleShaft: asset.kind === "counterbore" || asset.kind === "countersink" || asset.kind === "doubleCountersink" ? normalizeScrewHoleShaft(customization.screwHoleShaft ?? DEFAULT_SCREW_HOLE_SHAFT, width) : undefined,

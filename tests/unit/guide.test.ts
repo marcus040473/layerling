@@ -286,7 +286,7 @@ describe("guide content", () => {
     expect(guideSectionForShape({ kind: "mesh", sketchProfile: {}, sketchOperation: "revolve" })).toBe("sketchToBody");
     expect(guideSectionForShape({ kind: "mesh", importedMesh: { sourceFormat: "stl" } })).toBe("importing");
     expect(guideHref("de", guideChapterForShape({ kind: "mesh", sketchProfile: {} }), guideSectionForShape({ kind: "mesh", sketchProfile: {} }))).toBe("/anleitung/skizzen.html#fuellung-und-silhouette");
-    for (const kind of ["thread", "gear", "spring", "bentTube", "gridfinity", "hinge", "knurl", "dovetail", "teardrop", "counterbore", "countersink", "doubleCountersink", "ruler"] as const) {
+    for (const kind of ["thread", "gear", "spring", "bentTube", "gridfinity", "hinge", "knurl", "vase", "dovetail", "teardrop", "counterbore", "countersink", "doubleCountersink", "ruler"] as const) {
       const section = guideSectionForShape({ kind });
       expect(section && GUIDE_SECTIONS[section].chapter, kind).toBe(guideChapterForShape({ kind }));
     }

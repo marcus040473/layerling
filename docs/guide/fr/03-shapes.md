@@ -155,3 +155,14 @@ Sous {{ui:inspector.more}}, vous choisissez où va le motif : parois extérieure
 Pour garder une partie du corps lisse, ou ne texturer qu'une partie, utilisez un corps d'aide : placez-y un cube, un cylindre ou une sphère, sélectionnez-le et choisissez sous {{ui:inspector.surfaceMask}} {{ui:surfaceTexture.maskExclude}} ou {{ui:surfaceTexture.maskOnly}}. Il devient transparent et compte quand l'autre corps reçoit sa texture, même masqué. Masquez-le ou supprimez-le avant l'impression.
 
 Le résultat est un maillage comme un modèle importé, et il garde le corps sur lequel il a été calculé. Sélectionnez-le plus tard, même après l'enregistrement : la carte montre les réglages avec lesquels il a été fait. Modifiez-les et cliquez sur {{ui:inspector.surfaceChange}} : la texture est recalculée sur ce corps, là où se trouve maintenant le corps texturé et à sa taille. {{ui:inspector.surfaceRemove}} rend le corps lisse. Les corps masques comptent de nouveau lors d'une modification : masquez-les plutôt que de les supprimer si vous voulez changer la texture plus tard. Annuler reprend aussi chacune de ces étapes.
+
+## Un vase
+
+Le {{ui:shape.vase}} est un corps à part pour les vases, pots et abat-jour. Ses réglages se trouvent sous {{ui:inspector.properties}} et peuvent être modifiés à tout moment, même après l'enregistrement :
+
+- {{ui:prop.vaseProfile}} : bouteille, ventru, coupe à col, tonneau, cylindre ou entonnoir. La hauteur et le plus grand diamètre sont les mesures de la forme elle-même : tirez les poignées ou saisissez {{ui:prop.vaseDiameter}} et {{ui:prop.height}}.
+- {{ui:prop.vaseSection}} : un cercle, un polygone aux coins arrondis ou une vague (douce, pointue, arcs ou lamelles). {{ui:prop.vaseTwist}} la fait tourner sur la hauteur, {{ui:prop.vaseSway}} la fait osciller d'un côté à l'autre.
+- {{ui:prop.vaseBody}} : {{ui:vase.bodySolid}} sert au mode vase du trancheur (aussi « spiraliser ») : le trancheur imprime une seule paroi en spirale, sans dessus ni remplissage, c'est pourquoi le corps est dessiné plein. {{ui:vase.bodyHollow}} donne une vraie paroi et un vrai fond pour une impression normale.
+- {{ui:prop.vaseEffect}} : rainures, bandes, cellules de Voronoi ou facettes (low poly) à l'extérieur, au besoin sur une partie de la hauteur seulement.
+
+{{ui:prop.vaseQuality}} règle la finesse du découpage en triangles : plus fin paraît plus lisse, mais ralentit l'éditeur pour les grands vases. Pour plus de relief par-dessus, une {{ui:inspector.surfaceTexture}} fonctionne aussi sur un vase ; il devient alors un maillage jusqu'à ce que vous retiriez la texture.

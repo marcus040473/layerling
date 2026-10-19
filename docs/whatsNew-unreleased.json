@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Neue Form: Vase",
+      "en": "New shape: vase"
+    },
+    "body": {
+      "de": "In der Formen-Bibliothek gibt es jetzt eine Vase: Körperform, Querschnitt (Kreis, Vieleck, Welle), Verdrehung, voll für den Vasenmodus im Slicer oder hohl mit Wand, dazu Rillen, Streifen, Voronoi oder Facetten. Alles bleibt unter „Eigenschaften“ änderbar, auch nach dem Speichern.",
+      "en": "The shape library now has a vase: body form, cross-section (circle, polygon, wave), twist, solid for the slicer's vase mode or hollow with a wall, and grooves, stripes, Voronoi or facets. Everything stays editable under \"Properties\", also after saving."
+    }
+  },
+  {
+    "title": {
       "de": "Oberfläche nachträglich ändern",
       "en": "Change a surface texture later"
     },

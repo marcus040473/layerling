@@ -9,6 +9,7 @@ import { MCP_SHAPE_SETTING_KEYS, mcpThreadSizeName } from "@/lib/mcpShapeSetting
 import { DEFAULT_SKETCH_STROKE, normalizeSketchStroke } from "@/lib/sketchStroke";
 import { surfaceTextureEntry } from "@/lib/surfaceTextureShape";
 import { type LayerlingMcpShapeSummary } from "@/lib/layerlingMcpProtocol";
+import { vaseSettingsChanges } from "@/lib/vaseSettings";
 import type { ShapeKind, SketchProfile, WorkplaneShape } from "@/types/layerling";
 
 export function debugShapeSummary(shape: WorkplaneShape): Record<string, unknown> {
@@ -91,6 +92,9 @@ function mcpShapeSettings(shape: WorkplaneShape): Record<string, string | number
       // Eine Liste passt nicht in die flache Auskunft; als Text geht sie
       // hinaus und wird so auch wieder angenommen.
       settings[key] = JSON.stringify(value);
+    } else if (key === "vase" && value && typeof value === "object") {
+      // The vase's many settings go out as text too, only those that differ from the defaults.
+      settings[key] = JSON.stringify(vaseSettingsChanges(value));
     }
   });
   // Steht keine Seitenzahl im Objekt, folgt sie der Groesse. Dann gehoert hier

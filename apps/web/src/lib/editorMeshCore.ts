@@ -16,6 +16,7 @@ import { createLoftGeometry } from "@/lib/loftGeometry";
 import { createHingeGeometry } from "@/lib/hingeGeometry";
 import { createGridfinityGeometry } from "@/lib/gridfinityGeometry";
 import { createKnurlGeometry } from "@/lib/knurlGeometry";
+import { createVaseGeometry } from "@/lib/vaseShape";
 import { createTeardropGeometry } from "@/lib/teardropGeometry";
 import { createScrewHoleGeometry } from "@/lib/screwHoleGeometry";
 import { createHoneycombGeometry } from "@/lib/honeycombGeometry";
@@ -465,6 +466,9 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
       break;
     case "knurl":
       geometry = createKnurlGeometry({ width, height, knurlPattern: shape.knurlPattern, knurlCount: shape.knurlCount, knurlDepth: shape.knurlDepth, knurlAngle: shape.knurlAngle, knurlChamfer: shape.knurlChamfer });
+      break;
+    case "vase":
+      geometry = createVaseGeometry({ width, depth, height, vase: shape.vase });
       break;
     case "hinge":
       geometry = createHingeGeometry({

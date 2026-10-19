@@ -14,6 +14,7 @@ import { createDovetailGeometry } from "@/lib/dovetailGeometry";
 import { createHingeGeometry } from "@/lib/hingeGeometry";
 import { createGridfinityGeometry } from "@/lib/gridfinityGeometry";
 import { createKnurlGeometry } from "@/lib/knurlGeometry";
+import { createVaseGeometry } from "@/lib/vaseShape";
 import { createTeardropGeometry, teardropHeightForTipAngle } from "@/lib/teardropGeometry";
 import { createLoftGeometry } from "@/lib/loftGeometry";
 import { createScrewHoleGeometry } from "@/lib/screwHoleGeometry";
@@ -514,6 +515,15 @@ describe("palette icons", () => {
       azimuth: 30,
       elevation: 24,
       build: () => createKnurlGeometry({ width: 24, height: 26, knurlPattern: "diamond", knurlCount: 18, knurlDepth: 1.2, knurlAngle: 30, knurlChamfer: 1.5 }),
+    });
+    render({
+      // The vase tool's bottle with its grooves, as the catalogue puts it down; a little from above.
+      name: "apps/web/public/assets/editor/shape-icons-gray/vase.png",
+      height: 180,
+      lay: false,
+      azimuth: 30,
+      elevation: 20,
+      build: () => createVaseGeometry({ width: 90, depth: 90, height: 180, vase: { ribCount: 24, ribDepth: 2.4, quality: "entwurf" } }),
     });
     render({
       name: "apps/web/public/assets/editor/shape-icons-gray/roundedBox.png",

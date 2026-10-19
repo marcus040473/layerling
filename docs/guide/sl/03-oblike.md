@@ -159,3 +159,14 @@ Pod {{ui:inspector.more}} izberete, kam pride vzorec: zunanje in notranje stene,
 Če naj del telesa ostane gladek ali naj vzorec dobi le del, uporabite pomožno telo: tja postavite kvader, valj ali kroglo, ga izberite in pod {{ui:inspector.surfaceMask}} izberite {{ui:surfaceTexture.maskExclude}} ali {{ui:surfaceTexture.maskOnly}}. Postane prosojno in se upošteva, ko drugo telo dobi teksturo, tudi če je skrito. Pred tiskanjem ga skrijte ali izbrišite.
 
 Rezultat je mreža kot uvožen model in ohrani telo, na katerem je nastal. Če ga pozneje izberete, tudi po shranjevanju, kartica pokaže nastavitve, s katerimi je nastal: spremenite jih in kliknite {{ui:inspector.surfaceChange}}, pa se tekstura znova izračuna na tem telesu, tam in v velikosti, kot zdaj stoji telo s teksturo. {{ui:inspector.surfaceRemove}} vrne gladko telo. Telesa mask se pri spremembi znova upoštevajo: če boste teksturo pozneje morda še spreminjali, jih raje skrijte kot izbrišite. Razveljavi prav tako vrne vsakega od teh korakov.
+
+## Vaza
+
+{{ui:shape.vase}} je samostojno telo za vaze, lonce in senčnike. Njene nastavitve so pod {{ui:inspector.properties}} in jih lahko kadar koli spremenite, tudi po shranjevanju:
+
+- {{ui:prop.vaseProfile}}: steklenica, trebušasta, skleda z vratom, sod, valj ali lijak. Višina in največji premer sta meri same oblike: povlecite ročaje ali vpišite {{ui:prop.vaseDiameter}} in {{ui:prop.height}}.
+- {{ui:prop.vaseSection}}: krog, mnogokotnik z zaobljenimi vogali ali val (mehak, koničast, loki ali lamele). {{ui:prop.vaseTwist}} ga po višini zasuka, {{ui:prop.vaseSway}} ga zaniha sem in tja.
+- {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} je za način vaze v rezalniku (tudi »spiralizacija«): rezalnik natisne eno steno v spirali, brez pokrova in polnila, zato je telo narisano polno. {{ui:vase.bodyHollow}} da pravo steno in dno za običajen tisk.
+- {{ui:prop.vaseEffect}}: utori, proge, Voronojeve celice ali ploskve (low poly) na zunanji strani, po želji le v delu višine.
+
+{{ui:prop.vaseQuality}} določa, kako fino se vaza razdeli na trikotnike: finejše je videti bolj gladko, a pri velikih vazah upočasni urejevalnik. Za več reliefa na vrhu deluje na vazi tudi {{ui:inspector.surfaceTexture}}; vaza je nato mreža, dokler teksture spet ne odstranite.

@@ -168,3 +168,14 @@ V části {{ui:inspector.more}} určíte, kam vzor přijde: vnější a vnitřn�
 Má-li část tělesa zůstat hladká nebo dostat vzor jen část, použijte pomocné těleso: umístěte tam kvádr, válec nebo kouli, vyberte je a v položce {{ui:inspector.surfaceMask}} zvolte {{ui:surfaceTexture.maskExclude}} nebo {{ui:surfaceTexture.maskOnly}}. Stane se průhledným a uplatní se, když druhé těleso dostane texturu, i když je skryté. Před tiskem je skryjte nebo smažte.
 
 Výsledek je síť jako importovaný model a ponechává si těleso, na kterém vznikl. Když ho později vyberete, i po uložení, karta ukáže nastavení, se kterým vznikl: změňte je a klikněte na {{ui:inspector.surfaceChange}}; textura se znovu spočítá na tomto tělese, tam a v takové velikosti, jak teď stojí těleso s texturou. {{ui:inspector.surfaceRemove}} vrátí hladké těleso. Maskovací tělesa se při změně uplatní znovu: pokud chcete texturu později ještě měnit, raději je skryjte, než abyste je smazali. Zpět vrátí každý z těchto kroků také.
+
+## Váza
+
+{{ui:shape.vase}} je samostatné těleso pro vázy, květináče a stínidla. Její nastavení najdete v {{ui:inspector.properties}} a lze je kdykoli změnit, i po uložení:
+
+- {{ui:prop.vaseProfile}}: láhev, baňatá, mísa s hrdlem, sud, válec nebo trychtýř. Výška a největší průměr jsou rozměry samotného tvaru: táhněte za úchyty nebo zadejte {{ui:prop.vaseDiameter}} a {{ui:prop.height}}.
+- {{ui:prop.vaseSection}}: kruh, mnohoúhelník se zaoblenými rohy nebo vlna (měkká, špičatá, oblouky nebo lamely). {{ui:prop.vaseTwist}} ho po výšce stáčí, {{ui:prop.vaseSway}} ho nechá kývat sem a tam.
+- {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} je pro režim vázy ve sliceru (také „spiralizace“): slicer tiskne jednu stěnu ve spirále a vynechá víko i výplň, proto je těleso kreslené plné. {{ui:vase.bodyHollow}} dává skutečnou stěnu a dno pro běžný tisk.
+- {{ui:prop.vaseEffect}}: drážky, pruhy, Voronoiovy buňky nebo fazety (low poly) zvenku, podle přání jen v části výšky.
+
+{{ui:prop.vaseQuality}} určuje, jak jemně se váza rozdělí na trojúhelníky: jemnější vypadá hladší, ale u velkých váz zpomaluje editor. Pro další reliéf navrch funguje na váze i {{ui:inspector.surfaceTexture}}; váza je pak síť, dokud texturu zase neodeberete.

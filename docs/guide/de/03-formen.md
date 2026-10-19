@@ -170,3 +170,13 @@ Soll ein Teil des Körpers glatt bleiben oder nur ein Teil ein Muster bekommen, 
 
 Das Ergebnis ist ein Netz wie ein importiertes Modell, und es behält den Körper, auf den es gerechnet wurde. Markierst du es später, auch nach dem Speichern, zeigt die Karte die Einstellungen, mit denen es entstand: Ändere sie und klicke auf {{ui:inspector.surfaceChange}}, dann wird die Oberfläche neu auf diesen Körper gerechnet, dort und so groß, wie der Körper mit Oberfläche jetzt steht. {{ui:inspector.surfaceRemove}} gibt den glatten Körper zurück. Masken-Körper wirken beim Ändern wieder mit: Blende sie lieber aus, statt sie zu löschen, wenn du die Oberfläche später noch ändern willst. Rückgängig nimmt jeden dieser Schritte ebenso zurück.
 
+## Eine Vase
+
+Die {{ui:shape.vase}} ist ein eigener Körper für Vasen, Töpfe und Lampenschirme. Ihre Einstellungen stehen unter {{ui:inspector.properties}} und lassen sich jederzeit ändern, auch nach dem Speichern:
+
+- {{ui:prop.vaseProfile}}: Flasche, bauchig, Schale mit Hals, Fass, Zylinder oder Trichter. Höhe und größter Durchmesser sind die Maße der Form selbst: Zieh an den Anfassern oder tippe {{ui:prop.vaseDiameter}} und {{ui:prop.height}} ein.
+- {{ui:prop.vaseSection}}: ein Kreis, ein Vieleck mit gerundeten Ecken oder eine Welle (weich, spitz, Bögen oder Lamellen). {{ui:prop.vaseTwist}} dreht ihn über die Höhe, {{ui:prop.vaseSway}} lässt ihn hin und her schwingen.
+- {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} ist für den Vasenmodus im Slicer (auch „Spiralisieren“): Der Slicer druckt eine Wand als Spirale und lässt Deckel und Füllung weg, deshalb ist der Körper voll gezeichnet. {{ui:vase.bodyHollow}} gibt eine echte Wand und einen echten Boden für einen normalen Druck.
+- {{ui:prop.vaseEffect}}: Rillen, Streifen, Voronoi-Zellen oder Facetten (Low Poly) außen, auf Wunsch nur in einem Höhenbereich.
+
+{{ui:prop.vaseQuality}} legt fest, wie fein die Vase in Dreiecke geteilt wird: Feiner sieht glatter aus, macht den Editor bei großen Vasen aber langsamer. Für mehr Relief darüber geht auch eine {{ui:inspector.surfaceTexture}} auf eine Vase; sie ist dann ein Netz, bis du die Oberfläche wieder entfernst.

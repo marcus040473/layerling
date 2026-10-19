@@ -19,7 +19,7 @@ export const editorTargetSchema = {
  */
 export const creatableShapeKinds = [
   "box", "roundedBox", "cube", "cylinder", "slot", "ellipse", "polygon", "sphere", "cone", "pyramid", "wedge",
-  "roundRoof", "halfSphere", "torus", "loft", "tube", "bentTube", "star", "heart", "crescent", "text", "thread", "spring", "gridfinity", "gear",
+  "roundRoof", "halfSphere", "torus", "loft", "vase", "tube", "bentTube", "star", "heart", "crescent", "text", "thread", "spring", "gridfinity", "gear",
   "hinge", "knurl", "dovetail", "counterbore", "countersink", "doubleCountersink", "teardrop", "ruler", "sketch",
 ];
 
@@ -198,6 +198,10 @@ export const shapeSettingSchema = {
       required: ["length", "bendAngle", "bendRadius", "roll"],
     },
     description: "Bent tube only: the chain of segments, each a straight run followed by an arc bend. The tube starts along +X; roll 0 bends within the workplane, roll 90 bends upward. layerling_read_scene reports this list as JSON text, which is accepted here as well.",
+  },
+  vase: {
+    type: ["object", "string"],
+    description: "Vase only: its settings, by the vase tool's own (German) names, for example { profile: \"bauchig\" (or flasche, schale, fass, zylinder, trichter), section: \"vieleck\" (or kreis, welle), polySides: 6, sectionWaves: 12, sectionWaveStyle: \"weich\" (or spitz, bogen, lamellen), twist: 90, swayAngle: 10, body: \"voll\" (one wall for the slicer's vase mode) or \"hohl\" with wall and bottom in mm, effect: \"rillen\" (or keine, streifen, voronoi, lowpoly), ribCount: 48, ribDepth: 1.6, stripeCount, voronoiCell, lowpolyAround, zoneFrom/zoneTo in % of the height, quality: \"entwurf\", \"standard\" or \"fein\" }. Settings not given stay as they were (when creating: the vase tool's defaults). The height is the object's height and the widest diameter its larger side; the other side follows the outline. layerling_read_scene reports the settings that differ from the defaults as JSON text, which is accepted here as well.",
   },
   text: { type: "string", description: "Text only: the lettering itself." },
   font: { type: "string", description: "Text only: a built-in font (Multilanguage, Sans, Serif, Script, Monospace, Rounded, Stencil), or a font of one's own by its id (custom:...) or its name, as layerling_list_fonts gives them." },

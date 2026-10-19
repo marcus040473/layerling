@@ -29,6 +29,7 @@ export type ShapeKind =
   | "doubleCountersink"
   | "teardrop"
   | "loft"
+  | "vase"
   | "thread"
   | "spring"
   | "gridfinity"
@@ -904,6 +905,8 @@ export type WorkplaneShape = {
    * texture, also while this one is hidden.
    */
   surfaceTextureMask?: import("@/lib/surfaceTexture").SurfaceTextureMaskMode;
+  /** Only for "vase": the vase tool's settings; the frame gives its height and widest diameter. */
+  vase?: import("@/lib/vase/vase-geometry.mjs").VaseSettings;
   importedMesh?: {
     positions: number[];
     normals?: number[];
