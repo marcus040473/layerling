@@ -1,0 +1,251 @@
+import { describe, expect, it } from "vitest";
+import {
+  applySurfaceTexture,
+  createSurfaceTextureSession,
+  insideToScreenPositions,
+  makeSurfaceTextureLayout,
+  normalizeSurfaceTexture,
+  screenToInsidePositions,
+  SURFACE_TEXTURE_DEFAULTS,
+  surfaceTexturePositions,
+  surfaceTextureValueAt,
+  type SurfaceTextureResult,
+} from "@/lib/surfaceTexture";
+import { prepareSurfaceBase, surfaceMeshReport } from "@/lib/surfaceTextureMesh";
+import { analyzeTriangleSoup } from "@/lib/svgImport";
+
+type Vec3 = [number, number, number];
+
+/**
+ * A closed tube standing on the plate in the editor's inside frame (y up), faces wound outward:
+ * outer radius `outer`, a hole of radius `inner` (0 for a solid cylinder with a point in the
+ * middle of top and bottom), `rings` rows of points up the wall.
+ */
+function tube(outer: number, inner: number, height: number, segments = 96, rings = 2): number[] {
+  const out: number[] = [];
+  const tri = (a: Vec3, b: Vec3, c: Vec3) => out.push(...a, ...b, ...c);
+  const at = (r: number, k: number, y: number): Vec3 => {
+    const a = (2 * Math.PI * k) / segments;
+    return [r * Math.cos(a), y, r * Math.sin(a)];
+  };
+  for (let k = 0; k < segments; k += 1) {
+    for (let j = 0; j < rings - 1; j += 1) {
+      const y0 = (height * j) / (rings - 1), y1 = (height * (j + 1)) / (rings - 1);
+      // Outer wall, normal outward.
+      tri(at(outer, k, y0), at(outer, k, y1), at(outer, k + 1, y1));
+      tri(at(outer, k, y0), at(outer, k + 1, y1), at(outer, k + 1, y0));
+      if (inner > 0) {
+        tri(at(inner, k, y0), at(inner, k + 1, y1), at(inner, k, y1));
+        tri(at(inner, k, y0), at(inner, k + 1, y0), at(inner, k + 1, y1));
+      }
+    }
+    if (inner > 0) {
+      tri(at(inner, k, height), at(inner, k + 1, height), at(outer, k + 1, height));
+      tri(at(inner, k, height), at(outer, k + 1, height), at(outer, k, height));
+      tri(at(inner, k, 0), at(outer, k + 1, 0), at(inner, k + 1, 0));
+      tri(at(inner, k, 0), at(outer, k, 0), at(outer, k + 1, 0));
+    } else {
+      tri([0, height, 0], at(outer, k + 1, height), at(outer, k, height));
+      tri([0, 0, 0], at(outer, k, 0), at(outer, k + 1, 0));
+    }
+  }
+  return out;
+}
+
+/** A closed box standing on the plate, inside frame, faces wound outward. */
+function box(w: number, h: number, d: number): number[] {
+  const [x0, x1, y0, y1, z0, z1] = [-w / 2, w / 2, 0, h, -d / 2, d / 2];
+  const p: Vec3[] = [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], [x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]];
+  const faces = [[0, 1, 2], [0, 2, 3], [4, 6, 5], [4, 7, 6], [0, 4, 5], [0, 5, 1], [3, 2, 6], [3, 6, 7], [0, 3, 7], [0, 7, 4], [1, 5, 6], [1, 6, 2]];
+  return faces.flatMap((face) => face.flatMap((i) => p[i]));
+}
+
+function signedVolume(positions: number[]) {
+  let volume = 0;
+  for (let i = 0; i < positions.length; i += 9) {
+    const [ax, ay, az, bx, by, bz, cx, cy, cz] = positions.slice(i, i + 9);
+    volume += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
+  }
+  return volume;
+}
+
+/** Radius about the vertical axis (inside frame: y up) and height of every point a triangle uses. */
+function usedPoints(result: SurfaceTextureResult) {
+  const used = new Set<number>(Array.from(result.indices));
+  return Array.from(used, (i) => {
+    const [x, y, z] = [result.vertices[i * 3], result.vertices[i * 3 + 1], result.vertices[i * 3 + 2]];
+    return { r: Math.hypot(x, z), y, angle: Math.atan2(z, x) };
+  });
+}
+
+function expectClosed(result: SurfaceTextureResult) {
+  const report = surfaceMeshReport(result.indices, result.vertices.length / 3);
+  expect(report).toEqual({ shells: 1, openEdges: 0, nonManifoldEdges: 0 });
+  // The editor's own check of a body (the one imports go through), without its limit on triangles.
+  const positions = surfaceTexturePositions(result);
+  const analysis = analyzeTriangleSoup(positions);
+  expect(analysis.degenerateTriangles).toBe(0);
+  expect(analysis.boundaryEdges).toBe(0);
+  expect(analysis.nonManifoldEdges).toBe(0);
+  expect(signedVolume(positions)).toBeGreaterThan(0);
+}
+
+const SMALL = { maxTriangles: 250_000 };
+
+describe("surface texture settings", () => {
+  it("fills in defaults and keeps values within their limits", () => {
+    expect(normalizeSurfaceTexture(undefined)).toEqual(SURFACE_TEXTURE_DEFAULTS);
+    const s = normalizeSurfaceTexture({ pattern: "grooves", spacing: 0.01, depth: 99, width: "0.5", angle: -400, profile: "wobbly", keepEdges: "false", zoneFrom: 80, zoneTo: 20 });
+    expect(s.pattern).toBe("grooves");
+    expect(s.spacing).toBe(0.5);
+    expect(s.depth).toBe(5);
+    expect(s.width).toBe(0.5);
+    expect(s.angle).toBe(-90);
+    expect(s.profile).toBe(SURFACE_TEXTURE_DEFAULTS.profile);
+    expect(s.keepEdges).toBe(false);
+    expect([s.zoneFrom, s.zoneTo]).toEqual([20, 80]);
+  });
+
+  it("ignores values that are no plain numbers, words or switches", () => {
+    const s = normalizeSurfaceTexture({ spacing: [4], depth: "", pattern: { toString: () => "grooves" }, outside: 1 });
+    expect(s.spacing).toBe(SURFACE_TEXTURE_DEFAULTS.spacing);
+    expect(s.depth).toBe(SURFACE_TEXTURE_DEFAULTS.depth);
+    expect(s.pattern).toBe(SURFACE_TEXTURE_DEFAULTS.pattern);
+    expect(s.outside).toBe(true);
+  });
+
+  it("turns the inside frame into the screen frame and back without changing a point", () => {
+    const inside = [1, 2, 3, -4, 5, -6];
+    const screen = insideToScreenPositions(inside);
+    expect(Array.from(screen)).toEqual([1, -3, 2, -4, 6, 5]);
+    expect(Array.from(screenToInsidePositions(screen))).toEqual(inside);
+  });
+});
+
+describe("laying out the pattern", () => {
+  it("finds the axis of a round body and rounds the spacing so the pattern closes at the seam", () => {
+    const shifted = tube(10, 0, 20).map((value, index) => (index % 3 === 0 ? value + 7 : index % 3 === 2 ? value - 3 : value));
+    const base = prepareSurfaceBase(insideToScreenPositions(shifted));
+    const s = normalizeSurfaceTexture({ pattern: "grooves", angle: 0, spacing: 3 });
+    const layout = makeSurfaceTextureLayout(base, s);
+    // Screen frame: x stays, the inside z is minus y.
+    expect(layout.center[0]).toBeCloseTo(7, 3);
+    expect(layout.center[1]).toBeCloseTo(3, 3);
+    expect(layout.radius).toBeGreaterThan(9.99);
+    expect(layout.radius).toBeLessThanOrEqual(10);
+    expect(layout.around).toBe(Math.round((2 * Math.PI * layout.radius) / 3));
+    expect(layout.period * layout.around!).toBeCloseTo(2 * Math.PI * layout.radius, 9);
+    // The same value just before and just after the seam.
+    const near = (angle: number) => {
+      const [x, y] = [7 + 10 * Math.cos(angle), 3 + 10 * Math.sin(angle)];
+      return surfaceTextureValueAt(x, y, 5, Math.cos(angle), Math.sin(angle), 0, s, layout);
+    };
+    for (const pattern of ["knurl", "honeycomb", "bumps"] as const) {
+      const sp = normalizeSurfaceTexture({ pattern, spacing: 3.3 });
+      const lp = makeSurfaceTextureLayout(base, sp);
+      const at = (angle: number) => surfaceTextureValueAt(7 + 10 * Math.cos(angle), 3 + 10 * Math.sin(angle), 5, 1, 0, 0, sp, lp);
+      expect(Math.abs(at(Math.PI - 1e-7) - at(-Math.PI + 1e-7))).toBeLessThan(1e-3);
+    }
+    expect(Math.abs(near(Math.PI - 1e-7) - near(-Math.PI + 1e-7))).toBeLessThan(1e-3);
+  });
+});
+
+describe("texturing a body", () => {
+  it("knurls a cylinder: closed, as deep as set, the bottom on the bed and the top smooth", () => {
+    const result = applySurfaceTexture(tube(10, 0, 20), { pattern: "knurl", spacing: 3, depth: 0.6 }, SMALL);
+    expectClosed(result);
+    const points = usedPoints(result);
+    const wall = points.filter((p) => p.y > 3 && p.y < 17);
+    const radii = wall.map((p) => p.r);
+    expect(Math.min(...radii)).toBeGreaterThan(10 - 0.6 - 0.01);
+    expect(Math.min(...radii)).toBeLessThan(10 - 0.6 + 0.02);
+    expect(Math.max(...radii)).toBeLessThanOrEqual(10 + 1e-6);
+    expect(Math.min(...points.map((p) => p.y))).toBeCloseTo(0, 6);
+    expect(Math.max(...points.map((p) => p.y))).toBeCloseTo(20, 6);
+    expect(result.stats.around).toBe(Math.round((2 * Math.PI * 10 * Math.cos(Math.PI / 6)) / 3));
+    expect(result.stats.nothing).toBe(false);
+    expect(result.stats.tooDeep).toBe(false);
+  });
+
+  it("cuts grooves into strips so every groove is equally deep all round", () => {
+    const result = applySurfaceTexture(tube(12, 0, 16), { pattern: "grooves", angle: 0, spacing: 4, depth: 0.8, width: 0.5, profile: "round" }, SMALL);
+    expectClosed(result);
+    const around = result.stats.around!;
+    expect(around).toBe(Math.round((2 * Math.PI * 12) / 4));
+    // Mid height: the deepest point of every groove reaches the full depth, the band between them stays on the wall.
+    const wall = usedPoints(result).filter((p) => p.y > 4 && p.y < 12);
+    const bottoms = new Array(around).fill(Infinity);
+    const period = (2 * Math.PI) / around;
+    // Seen from the layout, a groove's middle sits half a period after angle 0.
+    wall.forEach((p) => {
+      const k = Math.floor((p.angle + 2 * Math.PI) / period) % around;
+      bottoms[k] = Math.min(bottoms[k], p.r);
+    });
+    bottoms.forEach((r) => expect(Math.abs(r - (12 - 0.8))).toBeLessThan(0.02));
+    expect(Math.max(...wall.map((p) => p.r))).toBeGreaterThan(12 - 0.005);
+  });
+
+  it("raises bumps outward and leaves the inner wall of a cup alone", () => {
+    const result = applySurfaceTexture(tube(15, 12, 18), { pattern: "bumps", spacing: 4, depth: 0.7, direction: "outward" }, SMALL);
+    expectClosed(result);
+    const points = usedPoints(result);
+    const outer = points.filter((p) => p.r > 13.5 && p.y > 3 && p.y < 15);
+    expect(Math.max(...outer.map((p) => p.r))).toBeGreaterThan(15 + 0.7 - 0.05);
+    expect(Math.max(...outer.map((p) => p.r))).toBeLessThan(15 + 0.7 + 0.01);
+    // The inner wall (not its rims on top and bottom) keeps its radius.
+    points.filter((p) => p.r < 13.5 && p.y > 0.01 && p.y < 17.99).forEach((p) => expect(Math.abs(p.r - 12)).toBeLessThan(0.01));
+  });
+
+  it("cuts honeycomb along its joints: closed, and every joint reaches the full depth", () => {
+    const result = applySurfaceTexture(tube(12, 0, 20), { pattern: "honeycomb", spacing: 5, depth: 0.5, width: 0.3, profile: "flat" }, SMALL);
+    expectClosed(result);
+    const wall = usedPoints(result).filter((p) => p.y > 4 && p.y < 16);
+    const radii = wall.map((p) => p.r);
+    expect(Math.min(...radii)).toBeGreaterThan(12 - 0.5 - 0.01);
+    expect(Math.min(...radii)).toBeLessThan(12 - 0.5 + 0.01);
+    // A flat profile: most of each cell stays on the wall.
+    const onWall = radii.filter((r) => r > 12 - 0.01).length;
+    expect(onWall).toBeGreaterThan(radii.length * 0.2);
+  });
+
+  it("keeps a height band only", () => {
+    const result = applySurfaceTexture(tube(10, 0, 20), { pattern: "knurl", spacing: 3, depth: 0.5, zoneFrom: 50, fade: 0 }, SMALL);
+    expectClosed(result);
+    usedPoints(result).filter((p) => p.y > 0.01 && p.y < 9.99).forEach((p) => expect(p.r).toBeGreaterThan(10 * Math.cos(Math.PI / 96) - 1e-6));
+    expect(Math.min(...usedPoints(result).filter((p) => p.y > 12 && p.y < 18).map((p) => p.r))).toBeLessThan(9.6);
+  });
+
+  it("textures a box all round and keeps its edges sharp", () => {
+    const result = applySurfaceTexture(box(20, 20, 20), { pattern: "bumps", projection: "allRound", spacing: 4, depth: 0.5, bottomFree: 0, topFree: 0 }, SMALL);
+    expectClosed(result);
+    // The corners stay where they were.
+    const corners = new Set<string>();
+    for (let i = 0; i < result.vertices.length; i += 3) {
+      const [x, y, z] = [result.vertices[i], result.vertices[i + 1], result.vertices[i + 2]];
+      if (Math.abs(Math.abs(x) - 10) < 1e-9 && Math.abs(Math.abs(z) - 10) < 1e-9 && (Math.abs(y) < 1e-9 || Math.abs(y - 20) < 1e-9)) corners.add(`${x},${y},${z}`);
+    }
+    expect(corners.size).toBe(8);
+    // Inward from both sides, a 20 mm box is far from pierced.
+    expect(result.stats.tooDeep).toBe(false);
+  });
+
+  it("warns when the depth inward from both sides would pierce a thin plate", () => {
+    const result = applySurfaceTexture(box(30, 1, 30), { pattern: "bumps", projection: "flat", axis: "z", spacing: 5, depth: 0.6, bottomFree: 0, topFree: 0, keepEdges: false }, SMALL);
+    expect(result.stats.tooDeep).toBe(true);
+  });
+
+  it("says when nothing gets the pattern", () => {
+    const result = applySurfaceTexture(tube(10, 0, 20), { pattern: "knurl", outside: false }, SMALL);
+    expect(result.stats.nothing).toBe(true);
+  });
+
+  it("refines once and reuses it when only the depth changes", () => {
+    const session = createSurfaceTextureSession(tube(10, 0, 20));
+    const first = session.apply({ pattern: "honeycomb", spacing: 4, depth: 0.3 }, SMALL);
+    const second = session.apply({ pattern: "honeycomb", spacing: 4, depth: 0.9 }, SMALL);
+    expect(second.vertices.length).toBe(first.vertices.length);
+    const deepest = (r: SurfaceTextureResult) => Math.min(...usedPoints(r).filter((p) => p.y > 4 && p.y < 16).map((p) => p.r));
+    expect(deepest(first)).toBeCloseTo(10 - 0.3, 1);
+    expect(deepest(second)).toBeCloseTo(10 - 0.9, 1);
+  });
+});
