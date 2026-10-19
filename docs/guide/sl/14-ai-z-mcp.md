@@ -87,6 +87,7 @@ Umetna inteligenca dela z istimi funkcijami kot ti, teče po isti poti kot tvoje
 | `layerling_remove_reference_points` | izbriše referenčne točke po oznaki ali vse |
 | `layerling_inspect_errors` | pokaže zadnje sporočilo in zadnjo napako, poleg tega sporočila in napake seje |
 | `layerling_wrap_around_cylinder` | ovije ležeče telo, na primer SVG ali besedilo, okoli valja, navzven ali kot gravuro navznotraj |
+| `layerling_texture_surface` | nanese na telo površinsko teksturo: utore, narebričenje, satovje ali izbokline, za boljši oprijem ali za videz |
 | `layerling_simplify_mesh` | zmanjša število trikotnikov uvožene mreže, na delež v odstotkih ali na število trikotnikov |
 | `layerling_save_custom_shape` | shrani telesa kot lastno obliko, na strežniku ali v brskalniku, da jih vstavi v druge načrte |
 | `layerling_list_custom_shapes` | našteje lastne oblike na strežniku in v brskalniku |

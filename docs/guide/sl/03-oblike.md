@@ -145,3 +145,15 @@ Za gravuro vklopi {{ui:inspector.wrapInward}}: potem gre debelina v steno. Oblik
 Oblika, ki je že ovita, je mreža ovitega predmeta in je ni mogoče ovijati znova: razveljavi ovijanje ali pa ponovno ovij ravno izvirnik z drugim premerom.
 
 Rezultat je mreža kot uvožen model. Z Razveljavi je oblika spet ravna; za drug premer najprej nazaj in nato znova ovij. Daljše od enega kroga okoli valja ne gre, tedaj layerling navede najmanjši premer, ki ustreza.
+
+## Površinska tekstura
+
+Utori, narebričenje, satovje ali izbokline na telesu, za boljši oprijem ali za lepši videz: v nastavitvah oblike razprite {{ui:inspector.surfaceTexture}}.
+
+1. Izberite {{ui:inspector.surfacePattern}}, njegov {{ui:inspector.surfaceSpacing}} in {{ui:inspector.surfaceDepth}}. {{ui:inspector.surfaceDirection}} pove, ali gre vzorec v telo ali iz njega izstopa.
+2. Pri {{ui:inspector.surfaceProjection}} vzemite {{ui:surfaceTexture.cylinder}} za okrogla telesa, kot so lonček, gumb ali ročaj. Vzorec teče okoli izbrane {{ui:inspector.surfaceAxis}}, razmik pa se nekoliko zaokroži, da gre naokoli celo število utorov ali celic: vzorec se sklene brez šiva. {{ui:surfaceTexture.allRound}} je primeren za telesa, ki niso okrogla, {{ui:surfaceTexture.flatProjection}} za pokrov ali ploščo, gledano od zgoraj.
+3. Kliknite {{ui:inspector.surfaceApply}}. Veliko telo potrebuje nekaj sekund; medtem lahko delate naprej.
+
+Pod {{ui:inspector.more}} izberete, kam pride vzorec: zunanje in notranje stene, kako daleč ostaneta spodnja in zgornja stran gladki (gladka spodnja stran drži telo ravno na podlagi), del višine in ali ostri robovi ostanejo gladki. Ob vsem, kar ostane gladko, se vzorec pojavi mehko; {{ui:inspector.surfaceFade}} določa, na koliko milimetrih. {{ui:inspector.surfaceProfile}} določa prerez utora ali fuge: koničast in ploščat sta natančna, okrogel v toliko korakih, kot jih dovoli {{ui:inspector.surfaceDetail}}.
+
+Rezultat je mreža kot uvožen model. Razveljavi odstrani teksturo, kartica pa obdrži vaše nastavitve: spremenite jih in teksturo nanesite znova. Telo, ki že ima teksturo, druge ne sprejme.

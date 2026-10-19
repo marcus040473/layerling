@@ -154,3 +154,15 @@ Pro rytinu zapněte {{ui:inspector.wrapInward}}. Tloušťka se zanoří do stěn
 Již obtočený tvar je polygonová síť a nelze jej obtočit podruhé. Pro jiný průměr vraťte obtočení přes Zpět a znovu použijte rovinný originál.
 
 Výsledek je síť jako importovaný model. Zpět obnoví rovinnou podobu. Tvar nesmí přesáhnout celý obvod válce; v takovém případě program uvede nejmenší vhodný průměr.
+
+## Povrchová textura
+
+Drážky, vroubkování, plástev nebo výstupky na tělese, pro lepší úchop nebo pro vzhled: v nastavení tvaru rozbalte {{ui:inspector.surfaceTexture}}.
+
+1. Zvolte {{ui:inspector.surfacePattern}}, jeho {{ui:inspector.surfaceSpacing}} a {{ui:inspector.surfaceDepth}}. {{ui:inspector.surfaceDirection}} určuje, zda vzor jde do tělesa, nebo z něj vystupuje.
+2. V položce {{ui:inspector.surfaceProjection}} zvolte {{ui:surfaceTexture.cylinder}} pro kulatá tělesa, jako je hrnek, knoflík nebo rukojeť. Vzor obíhá kolem zvolené {{ui:inspector.surfaceAxis}} a rozteč se mírně zaokrouhlí, aby se po obvodu vešel celý počet drážek nebo buněk: vzor se uzavře bez švu. {{ui:surfaceTexture.allRound}} se hodí pro tělesa, která nejsou kulatá, {{ui:surfaceTexture.flatProjection}} pro víčko nebo desku při pohledu shora.
+3. Klikněte na {{ui:inspector.surfaceApply}}. Velké těleso potřebuje několik sekund; mezitím můžete pracovat dál.
+
+V části {{ui:inspector.more}} určíte, kam vzor přijde: vnější a vnitřní stěny, jak daleko zůstanou spodek a vršek hladké (hladký spodek drží těleso rovně na podložce), část výšky a zda ostré hrany zůstanou hladké. Vedle všeho, co zůstává hladké, vzor plynule nabíhá; {{ui:inspector.surfaceFade}} určuje, na kolika milimetrech. {{ui:inspector.surfaceProfile}} určuje průřez drážky nebo spáry: špičatý a plochý vycházejí přesně, oblý v tolika krocích, kolik dovolí {{ui:inspector.surfaceDetail}}.
+
+Výsledek je síť jako importovaný model. Zpět texturu odebere a karta si nastavení ponechá: změňte je a naneste texturu znovu. Těleso, které už texturu nese, druhou nepřijme.

@@ -1,5 +1,6 @@
 "use client";
 
+import type { SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { markEscapeHandled } from "@/lib/escapeHandled";
 import { ArrowDownToLine, Check, ChevronLeft, ChevronRight, Crosshair, Cuboid, Download, Eye, EyeOff, FlipHorizontal, GripVertical, Home, Layers, Minus, MousePointer2, PanelsTopLeft, Plus, Rotate3d, RotateCcw, Ruler, RulerDimensionLine, Slice, Spline, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type DragEvent, type MouseEvent as ReactMouseEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode, type SetStateAction, type WheelEvent as ReactWheelEvent } from "react";
@@ -404,6 +405,7 @@ type WorkplaneViewportProps = {
   onSelectionHide?: () => void;
   /** Wraps the selected body around a cylinder of this diameter (#106). */
   onWrapAroundCylinder?: (diameter: number, inward: boolean) => void;
+  onSurfaceTexture?: (settings: SurfaceTextureSettings) => Promise<void> | void;
   onLayerText?: (patch: TextLayerPatch) => void;
   onTextTags?: (names: string[], gap: number) => void;
   /** The selected name tag as its card shows it (#215). */
@@ -3333,6 +3335,7 @@ export function WorkplaneViewport({
   onSelectionLock,
   onSelectionHide,
   onWrapAroundCylinder,
+  onSurfaceTexture,
   onLayerText,
   onTextTags,
   textLayerStack,
@@ -9530,6 +9533,7 @@ export function WorkplaneViewport({
           canSeparateParts={canSeparateParts}
           onSeparateParts={onSeparateParts}
           onWrapAroundCylinder={onWrapAroundCylinder}
+          onSurfaceTexture={onSurfaceTexture}
           onLayerText={onLayerText}
           onTextTags={onTextTags}
           textLayerStack={textLayerStack}

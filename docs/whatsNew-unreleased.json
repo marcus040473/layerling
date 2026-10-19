@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "title": {
+      "de": "Oberfläche: Rillen, Rändel, Waben und Noppen",
+      "en": "Surface texture: grooves, knurling, honeycomb and bumps"
+    },
+    "body": {
+      "de": "In den Einstellungen einer Form gibt es jetzt „Oberfläche“: Rillen, Rändel, Waben oder Noppen werden auf jeden Körper aufgebracht, für besseren Halt oder fürs Auge. Um eine Achse geht das Muster an der Naht genau auf, Boden und Deckel bleiben auf Wunsch glatt. Der Körper wird ein Netz mit dem Relief; Rückgängig nimmt es zurück.",
+      "en": "The settings of a shape now have \"Surface texture\": grooves, knurling, honeycomb or bumps go onto any body, for grip or for looks. Around an axis the pattern closes exactly at the seam, and the bottom and top can stay smooth. The body becomes a mesh with the relief; undo takes it back."
+    }
+  }
+]

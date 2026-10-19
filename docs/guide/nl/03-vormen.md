@@ -154,3 +154,15 @@ Voor een gravure zet je {{ui:inspector.wrapInward}} aan: de dikte gaat dan de wa
 Een vorm die al gewikkeld is, is een net van het gewikkelde en laat zich niet nog eens wikkelen: maak het wikkelen ongedaan of wikkel het platte origineel nog eens met een andere diameter.
 
 Het resultaat is een mesh, net als een geïmporteerd model. Ongedaan maken legt de vorm weer plat; voor een andere diameter maak je eerst ongedaan en wikkel je opnieuw. Verder dan één keer rond de cilinder gaat het niet; dan noemt layerling de kleinste diameter die past.
+
+## Een oppervlaktestructuur aanbrengen
+
+Groeven, kartel, honingraat of noppen op een lichaam, voor meer grip of voor het oog: klap in de instellingen van de vorm {{ui:inspector.surfaceTexture}} open.
+
+1. Kies het {{ui:inspector.surfacePattern}}, de {{ui:inspector.surfaceSpacing}} en de {{ui:inspector.surfaceDepth}}. De {{ui:inspector.surfaceDirection}} zegt of het het lichaam in gaat of eruit steekt.
+2. Bij {{ui:inspector.surfaceProjection}} neem je {{ui:surfaceTexture.cylinder}} voor ronde lichamen zoals een beker, een knop of een handvat. Het patroon loopt rond de {{ui:inspector.surfaceAxis}}, en de afstand wordt een beetje afgerond zodat er een heel aantal groeven of cellen rondgaat: het patroon sluit zonder naad. {{ui:surfaceTexture.allRound}} past bij lichamen die niet rond zijn, {{ui:surfaceTexture.flatProjection}} bij een deksel of een plaat, van boven gezien.
+3. Klik op {{ui:inspector.surfaceApply}}. Een groot lichaam heeft een paar seconden nodig; je kunt intussen doorwerken.
+
+Onder {{ui:inspector.more}} kies je waar het patroon komt: buiten- en binnenwanden, hoe ver de onder- en bovenkant glad blijven (een gladde onderkant houdt het lichaam vlak op het bed), een deel van de hoogte en of scherpe randen glad blijven. Naast alles wat glad blijft, komt het patroon zacht op; {{ui:inspector.surfaceFade}} bepaalt over hoeveel millimeter. Het {{ui:inspector.surfaceProfile}} vormt de doorsnede van een groef of voeg: spits en vlak worden exact, rond in zoveel stappen als de {{ui:inspector.surfaceDetail}} toelaat.
+
+Het resultaat is een mesh zoals een geïmporteerd model. Ongedaan maken neemt de structuur terug, en de kaart houdt je instellingen vast: wijzig ze en breng de structuur opnieuw aan. Een lichaam dat al een structuur draagt, neemt geen tweede.

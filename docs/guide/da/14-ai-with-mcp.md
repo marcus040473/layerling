@@ -85,6 +85,7 @@ AI'en arbejder med de samme funktioner som dig, gennem den samme vej som din han
 | `layerling_remove_reference_points` | sletter referencepunkter efter id, eller alle sammen |
 | `layerling_inspect_errors` | viser den seneste besked og den seneste fejl, plus sessionens beskeder og fejl |
 | `layerling_wrap_around_cylinder` | vikler en form der ligger fladt, for eksempel en SVG eller tekst, rundt om en cylinder, udad eller indad som gravering |
+| `layerling_texture_surface` | lægger en overfladestruktur på en form: riller, riflinger, bikager eller knopper, for bedre greb eller for udseendet |
 | `layerling_simplify_mesh` | reducerer et importeret meshes trekantsantal, til en andel i procent eller til et antal trekanter |
 | `layerling_save_custom_shape` | beholder former som en egne form, på serveren eller i browseren, for at indsætte dem i andre designs |
 | `layerling_list_custom_shapes` | lister de egne former på serveren og i browseren |

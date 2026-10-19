@@ -87,6 +87,7 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_remove_reference_points` | supprime les points de référence par identifiant, ou tous |
 | `layerling_inspect_errors` | affiche le dernier message et la dernière erreur, ainsi que les messages et erreurs de la session |
 | `layerling_wrap_around_cylinder` | enroule un corps posé à plat, un SVG ou un texte par exemple, autour d'un cylindre, vers l'extérieur ou vers l'intérieur comme une gravure |
+| `layerling_texture_surface` | applique une texture de surface sur un corps : rainures, moletage, nid d'abeille ou picots, pour la prise en main ou pour l'aspect |
 | `layerling_simplify_mesh` | réduit le nombre de triangles d'un maillage importé, à une part en pourcentage ou à un nombre de triangles |
 | `layerling_save_custom_shape` | conserve les corps sous forme de forme personnalisée, sur le serveur ou dans le navigateur, pour les insérer dans d'autres conceptions |
 | `layerling_list_custom_shapes` | répertorie les formes personnalisées sur le serveur et dans le navigateur |

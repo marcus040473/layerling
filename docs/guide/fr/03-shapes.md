@@ -142,4 +142,14 @@ Pour une gravure, activez {{ui:inspector.wrapInward}} : l'épaisseur va alors da
 
 Le résultat est un maillage semblable à un modèle importé. Une forme déjà enveloppée est un maillage de la pièce enroulée et ne peut pas être enroulée une deuxième fois : annulez l'enroulement, ou enroulez à nouveau l'original plat avec un autre diamètre. Annuler remet la forme à plat ; pour un autre diamètre, défaire d'abord et enrouler à nouveau. Il ne peut pas faire plus d'un tour du cylindre ; puis layerling indique le plus petit diamètre qui convient.
 
+## Une texture de surface
 
+Des rainures, un moletage, un nid d'abeille ou des picots sur un corps, pour une meilleure prise ou pour le plaisir des yeux : ouvrez {{ui:inspector.surfaceTexture}} dans les réglages de la forme.
+
+1. Choisissez le {{ui:inspector.surfacePattern}}, son {{ui:inspector.surfaceSpacing}} et sa {{ui:inspector.surfaceDepth}}. Le {{ui:inspector.surfaceDirection}} indique s'il entre dans le corps ou en ressort.
+2. Sous {{ui:inspector.surfaceProjection}}, prenez {{ui:surfaceTexture.cylinder}} pour les corps ronds comme une tasse, un bouton ou une poignée. Le motif fait le tour de l'{{ui:inspector.surfaceAxis}}, et le pas est un peu arrondi pour qu'un nombre entier de rainures ou de cellules fasse le tour : le motif se referme sans jointure. {{ui:surfaceTexture.allRound}} convient aux corps qui ne sont pas ronds, {{ui:surfaceTexture.flatProjection}} à un couvercle ou une plaque vus de dessus.
+3. Cliquez sur {{ui:inspector.surfaceApply}}. Un grand corps demande quelques secondes ; vous pouvez continuer à travailler pendant ce temps.
+
+Sous {{ui:inspector.more}}, vous choisissez où va le motif : parois extérieures et intérieures, jusqu'où le dessous et le dessus restent lisses (un dessous lisse garde le corps à plat sur le plateau), une plage de la hauteur, et si les arêtes vives restent lisses. À côté de tout ce qui reste lisse, le motif apparaît en fondu ; {{ui:inspector.surfaceFade}} fixe sur combien de millimètres. Le {{ui:inspector.surfaceProfile}} donne la section d'une rainure ou d'un joint : pointu et plat sortent exactement, rond en autant de paliers que la {{ui:inspector.surfaceDetail}} le permet.
+
+Le résultat est un maillage comme un modèle importé. Annuler retire la texture, et la carte garde vos réglages : modifiez-les et appliquez à nouveau. Un corps qui porte déjà une texture n'en prend pas une deuxième.

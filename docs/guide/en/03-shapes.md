@@ -155,3 +155,15 @@ A shape that is wrapped already is a mesh of the wrapped thing and cannot be wra
 
 The result is a mesh like an imported model. Undo lays the shape flat again; for another diameter, undo first and wrap again. It cannot go further than once around the cylinder; then layerling names the smallest diameter that fits.
 
+## A surface texture
+
+Grooves, knurling, honeycomb or bumps on a body, for a better grip or for looks: open {{ui:inspector.surfaceTexture}} in the shape's settings.
+
+1. Choose the {{ui:inspector.surfacePattern}}, its {{ui:inspector.surfaceSpacing}} and its {{ui:inspector.surfaceDepth}}. {{ui:inspector.surfaceDirection}} says whether it goes into the body or stands out of it.
+2. Under {{ui:inspector.surfaceProjection}}, take {{ui:surfaceTexture.cylinder}} for round bodies such as a cup, a knob or a handle. The pattern runs round the {{ui:inspector.surfaceAxis}}, and the spacing is rounded a little so that a whole number of grooves or cells goes round: the pattern closes without a seam. {{ui:surfaceTexture.allRound}} suits bodies that are not round, {{ui:surfaceTexture.flatProjection}} a lid or a plate seen from above.
+3. Click {{ui:inspector.surfaceApply}}. A large body takes a few seconds; you can keep working meanwhile.
+
+Under {{ui:inspector.more}} you choose where the pattern goes: outer and inner walls, how far the bottom and the top stay smooth (a smooth bottom keeps the body flat on the bed), a band of the height, and whether sharp edges stay smooth. Next to everything that stays smooth, the pattern fades in gently; {{ui:inspector.surfaceFade}} sets over how many millimetres. {{ui:inspector.surfaceProfile}} shapes the cross-section of a groove or joint: pointed and flat come out exactly, round in as many steps as {{ui:inspector.surfaceDetail}} gives it.
+
+The result is a mesh like an imported model. Undo takes the texture back, and the card keeps your settings: change them and apply again. A body that carries a texture does not take a second one.
+

@@ -87,6 +87,7 @@ Az MI ugyanazokkal a funkciókkal dolgozik, mint te, ugyanazon az úton, mint a 
 | `layerling_remove_reference_points` | azonosító alapján vagy mindet törli a referenciapontokat |
 | `layerling_inspect_errors` | megmutatja az utolsó üzenetet és az utolsó hibát, valamint a munkamenet üzeneteit és hibáit |
 | `layerling_wrap_around_cylinder` | egy laposan fekvő testet, például egy SVG-t vagy szöveget egy henger köré teker, kifelé vagy befelé gravírozásként |
+| `layerling_texture_surface` | felületi mintázatot visz fel egy testre: hornyokat, recézést, méhsejtet vagy bütyköket, a jobb fogásért vagy a látványért |
 | `layerling_simplify_mesh` | csökkenti egy importált háló háromszögeinek számát, százalékos arányra vagy egy háromszögszámra |
 | `layerling_save_custom_shape` | testeket őriz meg saját alakzatként, a szerveren vagy a böngészőben, hogy más tervekbe beilleszthetők legyenek |
 | `layerling_list_custom_shapes` | felsorolja a szerveren és a böngészőben lévő saját alakzatokat |

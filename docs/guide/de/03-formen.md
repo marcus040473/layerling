@@ -156,3 +156,15 @@ Eine Form, die schon gewickelt ist, ist ein Netz des Gewickelten und lässt sich
 
 Das Ergebnis ist ein Netz wie ein importiertes Modell. Mit Rückgängig liegt die Form wieder flach da; für einen anderen Durchmesser erst zurück und dann neu wickeln. Länger als einmal um den Zylinder geht nicht, dann nennt layerling den kleinsten Durchmesser, der passt.
 
+## Eine Oberfläche aufbringen
+
+Rillen, Rändel, Waben oder Noppen auf einem Körper, für besseren Halt oder fürs Auge: Klappe in den Einstellungen der Form {{ui:inspector.surfaceTexture}} auf.
+
+1. Wähle das {{ui:inspector.surfacePattern}}, seinen {{ui:inspector.surfaceSpacing}} und seine {{ui:inspector.surfaceDepth}}. Die {{ui:inspector.surfaceDirection}} sagt, ob es in den Körper hineingeht oder aus ihm heraussteht.
+2. Unter {{ui:inspector.surfaceProjection}} nimmst du {{ui:surfaceTexture.cylinder}} für runde Körper wie einen Becher, einen Drehknopf oder einen Griff. Das Muster läuft um die {{ui:inspector.surfaceAxis}}, und der Abstand wird ein wenig gerundet, damit eine ganze Zahl Rillen oder Zellen herumgeht: Das Muster schließt ohne Naht. {{ui:surfaceTexture.allRound}} passt für Körper, die nicht rund sind, {{ui:surfaceTexture.flatProjection}} für einen Deckel oder eine Platte, von oben gesehen.
+3. Klicke auf {{ui:inspector.surfaceApply}}. Ein großer Körper braucht ein paar Sekunden; du kannst währenddessen weiterarbeiten.
+
+Unter {{ui:inspector.more}} legst du fest, wohin das Muster kommt: Außen- und Innenwände, wie weit Unter- und Oberseite glatt bleiben (eine glatte Unterseite hält den Körper flach auf dem Druckbett), ein Bereich der Höhe und ob scharfe Kanten glatt bleiben. Neben allem, was glatt bleibt, blendet das Muster weich ein; {{ui:inspector.surfaceFade}} legt fest, über wie viele Millimeter. Das {{ui:inspector.surfaceProfile}} formt den Querschnitt einer Rille oder Fuge: Spitz und Flach werden genau, Rund in so vielen Stufen, wie die {{ui:inspector.surfaceDetail}} vorgibt.
+
+Das Ergebnis ist ein Netz wie ein importiertes Modell. Rückgängig nimmt die Oberfläche zurück, und die Karte behält deine Einstellungen: Ändere sie und bring die Oberfläche neu auf. Ein Körper, der schon eine Oberfläche trägt, nimmt keine zweite.
+

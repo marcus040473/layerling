@@ -233,6 +233,8 @@ import { useRememberedFlag } from "@/lib/useRememberedFlag";
 import { BUG_REPORT_FILE, bugReportText, rememberBugReportEvent, type BugReportEvent } from "@/lib/bugReport";
 import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { canTextureSurface, offersSurfaceTexture, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
 import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierFaces, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierKind, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierQuality, CadModifierSpringPart, CadModifierThreadPart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
@@ -8190,6 +8192,48 @@ export function LayerlingEditor({
     );
   }, [commitShapes, cylinderWrapErrorText, selectedShape, selectedShapes.length, shapes]);
 
+  /**
+   * Lays a surface texture onto the selected body. The texture is computed on its worker; when the
+   * body changed meanwhile, the result is for something else and is dropped.
+   */
+  const textureSelectedSurface = useCallback(async (settings: SurfaceTextureSettings) => {
+    if (selectedShapes.length !== 1 || !selectedShape) {
+      setNotice(t("status.selectOneToTexture"));
+      return;
+    }
+    if (!canTextureSurface(selectedShape)) {
+      setNotice(t(selectedShape.locked ? "status.objectLocked" : selectedShape.surfaceTexture ? "status.alreadyTextured" : "status.selectOneToTexture"));
+      return;
+    }
+    const source = selectedShape;
+    setNotice(t("status.surfaceTexturing"));
+    let outcome: Awaited<ReturnType<typeof textureSurfaceOffThread>>;
+    try {
+      outcome = await textureSurfaceOffThread(surfaceTextureInput(source), settings);
+    } catch (error) {
+      setNotice(t("status.surfaceFailed", { error: error instanceof Error ? error.message : String(error) }));
+      return;
+    }
+    if (shapesRef.current.find((shape) => shape.id === source.id) !== source) {
+      setNotice(t("status.surfaceOutdated"));
+      return;
+    }
+    const textured = outcome.stats.nothing ? null : surfaceTexturedShape(source, outcome.positions, settings);
+    if (!textured) {
+      setNotice(t("status.surfaceNothing"));
+      return;
+    }
+    const { stats } = outcome;
+    const pattern = surfacePatternLabel(textured.surfaceTexture?.pattern ?? settings.pattern);
+    const triangles = formatTriangleCount(stats.triangles);
+    const message = [
+      stats.around ? t("status.surfaceTexturedAround", { pattern, count: stats.around, triangles }) : t("status.surfaceTextured", { pattern, triangles }),
+      stats.limited ? t("status.surfaceCoarser") : "",
+      stats.tooDeep ? t("status.surfaceTooDeep") : "",
+    ].filter(Boolean).join(" ");
+    commitShapes(shapesRef.current.map((shape) => (shape.id === source.id ? textured : shape)), [textured.id], message);
+  }, [commitShapes, selectedShape, selectedShapes.length]);
+
   /** The selected name tag as its panel shows it: words, font and layers read from its layers as they stand (#215). */
   const selectedNameTag = useMemo(
     () => (selectedShapes.length === 1 && selectedShape && selectedShape.kind !== "text" && offersTextLayers(selectedShape) ? textLayerStack(selectedShape) : null),
@@ -9496,6 +9540,37 @@ export function LayerlingEditor({
           t("status.mcpWrapped"),
         );
         return { object: mcpShapeSummary(wrapped) };
+      }
+
+      if (command.action === "texture_surface") {
+        const target = findShape(params.id) ?? (selectedIdsRef.current.length === 1 ? findShape(selectedIdsRef.current[0]) : null);
+        if (!target) throw new Error("Select one object to texture, or pass its id");
+        if (target.locked) throw new Error("Unlock the object before texturing it");
+        if (target.surfaceTexture) throw new Error("This object has a surface texture already: undo it first, then texture the plain body again");
+        if (!canTextureSurface(target)) throw new Error("This object cannot be textured; a bundle or a measuring tool has no body of its own");
+        // A choice the bridge does not know is refused rather than quietly replaced by the default.
+        const choices: Record<string, readonly string[]> = { pattern: SURFACE_TEXTURE_PATTERNS, profile: SURFACE_TEXTURE_PROFILES, direction: SURFACE_TEXTURE_DIRECTIONS, projection: SURFACE_TEXTURE_PROJECTIONS, axis: SURFACE_TEXTURE_AXES, detail: SURFACE_TEXTURE_DETAILS };
+        Object.entries(choices).forEach(([key, allowed]) => {
+          if (params[key] !== undefined && !allowed.includes(String(params[key]))) throw new Error(`${key} must be one of ${allowed.join(", ")}`);
+        });
+        Object.keys(SURFACE_TEXTURE_LIMITS).forEach((key) => {
+          if (params[key] !== undefined && !Number.isFinite(mcpNumber(params[key], Number.NaN))) throw new Error(`${key} must be a number`);
+        });
+        ["keepEdges", "outside", "inside"].forEach((key) => {
+          if (params[key] !== undefined && typeof params[key] !== "boolean") throw new Error(`${key} must be true or false`);
+        });
+        const settings = normalizeSurfaceTexture(params);
+        const outcome = await textureSurfaceOffThread(surfaceTextureInput(target), settings);
+        if (findShape(target.id) !== target) throw new Error("The object changed while the texture was computed; texture it again");
+        const textured = outcome.stats.nothing ? null : surfaceTexturedShape(target, outcome.positions, settings);
+        if (!textured) throw new Error("No part of this body gets the pattern: check outside and inside, bottomFree and topFree, and zoneFrom and zoneTo");
+        commitShapes(
+          currentShapes().map((shape) => (shape.id === target.id ? textured : shape)),
+          [textured.id],
+          t("status.surfaceTextured", { pattern: surfacePatternLabel(settings.pattern), triangles: formatTriangleCount(outcome.stats.triangles) }),
+        );
+        const { triangles, around, spacing, limited, tooDeep, bedClamped } = outcome.stats;
+        return { object: mcpShapeSummary(textured), settings, texture: { triangles, around, spacing, limited, tooDeep, bedClamped } };
       }
 
       if (command.action === "simplify_mesh") {
@@ -12222,6 +12297,7 @@ export function LayerlingEditor({
           onSelectionLock={toggleLocked}
           onSelectionHide={toggleHidden}
           onWrapAroundCylinder={selectedShapes.length === 1 && offersCylinderWrap(selectedShape) ? wrapSelectionAroundCylinder : undefined}
+          onSurfaceTexture={selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) ? textureSelectedSurface : undefined}
           onLayerText={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? layerSelectedText : undefined}
           onTextTags={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? makeTextTags : undefined}
           textLayerStack={selectedNameTag}

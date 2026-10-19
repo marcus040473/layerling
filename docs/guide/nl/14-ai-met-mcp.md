@@ -87,6 +87,7 @@ De AI werkt met dezelfde functies als jij, via dezelfde weg als jouw bediening i
 | `layerling_remove_reference_points` | verwijdert referentiepunten op id, of allemaal |
 | `layerling_inspect_errors` | toont de laatste melding en de laatste fout, plus de meldingen en fouten van de sessie |
 | `layerling_wrap_around_cylinder` | wikkelt een plat liggend lichaam, bijvoorbeeld een SVG of tekst, om een cilinder, naar buiten of naar binnen als gravure |
+| `layerling_texture_surface` | brengt een oppervlaktestructuur aan op een lichaam: groeven, kartel, honingraat of noppen, voor grip of voor het oog |
 | `layerling_simplify_mesh` | verlaagt het aantal driehoeken van een geïmporteerde mesh, tot een deel in procenten of tot een aantal driehoeken |
 | `layerling_save_custom_shape` | bewaart lichamen als eigen vorm, op de server of in de browser, om ze in andere ontwerpen in te voegen |
 | `layerling_list_custom_shapes` | somt de eigen vormen op de server en in de browser op |

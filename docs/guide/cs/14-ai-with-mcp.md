@@ -87,6 +87,7 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_remove_reference_points` | odstraní vybrané nebo všechny referenční body |
 | `layerling_inspect_errors` | přečte poslední hlášení a chybu i zprávy z celé relace |
 | `layerling_wrap_around_cylinder` | obtočí rovinné těleso, SVG nebo text kolem válce jako reliéf či rytinu |
+| `layerling_texture_surface` | nanese na těleso povrchovou texturu: drážky, vroubkování, plástev nebo výstupky |
 | `layerling_simplify_mesh` | sníží počet trojúhelníků sítě na zadané procento nebo počet |
 | `layerling_save_custom_shape` | uloží tělesa jako vlastní tvar na serveru nebo v prohlížeči pro další projekty |
 | `layerling_list_custom_shapes` | vypíše vlastní tvary na serveru i v prohlížeči |

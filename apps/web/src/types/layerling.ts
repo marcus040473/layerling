@@ -888,6 +888,11 @@ export type WorkplaneShape = {
    * that box rather than the arc the mesh actually covers.
    */
   cylinderWrap?: { diameter: number; inward?: boolean };
+  /**
+   * Set on a body made by a surface texture (grooves, knurling, honeycomb, bumps): the
+   * settings it was made with. The body is a mesh with the relief; undo takes it back.
+   */
+  surfaceTexture?: import("@/lib/surfaceTexture").SurfaceTextureSettings;
   importedMesh?: {
     positions: number[];
     normals?: number[];
