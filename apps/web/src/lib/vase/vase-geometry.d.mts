@@ -56,6 +56,8 @@ export const CUTOUT_EDGES: Readonly<Record<string, string>>;
 export const REINFORCE: Readonly<Record<string, string>>;
 export const LAMPS: Readonly<Record<string, string>>;
 export const LAMP_SOCKETS: Readonly<Record<string, string>>;
+/** The bottom in the slicer's vase mode, in mm. */
+export const VASE_MODE_BOTTOM: number;
 export const MATERIALS: Readonly<Record<string, { label: string; density: number }>>;
 export const WATERTIGHT_MIN: number;
 

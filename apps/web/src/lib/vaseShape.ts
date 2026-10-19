@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { toCreasedNormals } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { buildVase } from "@/lib/vase/vase-geometry.mjs";
+import { buildVase, printVolume, printWeight, vaseChecks, VASE_MODE_BOTTOM } from "@/lib/vase/vase-geometry.mjs";
 import { buildParts, layoutParts, meshBox, placePoint, type VasePart } from "@/lib/vase/vase-parts.mjs";
 import { t, type MessageKey } from "@/lib/i18n";
 import { createLocalId } from "@/lib/localIds";
@@ -196,6 +196,39 @@ export function vaseDrawingPatch(shape: { vase?: unknown }, drawing: VaseSetting
   // Built at the real diameter, the vase's box is the frame (spans scale with the diameter).
   const spans = vaseSpans(vaseSettingsInFrame(vase, drawing.diameter, drawing.diameter, height));
   return { vase, width: spans.x, depth: spans.y, size: Math.max(spans.x, spans.y), height };
+}
+
+/** What printing a vase takes, and what to look out for: the core's checks and the notes it was built with (in German). */
+export type VasePrintReport = { grams: number; meters: number; material: string; vaseMode: boolean; line: number; bottom: number; notes: string[] };
+
+const reportCache = new Map<string, VasePrintReport>();
+
+/**
+ * Weight and filament of the vase as it stands (walls solid, no infill; in the slicer's vase mode one
+ * line along the wall and a thin bottom), with the core's printing checks: overhangs, thin walls, what
+ * a lid, a lamp or legs need. The last few are kept; the checks walk the whole wall.
+ */
+export function vasePrintReport(shape: { width: number; depth: number; height: number; vase?: unknown }): VasePrintReport {
+  const size = Math.max(0.1, shape.width, shape.depth);
+  const settings = vaseSettingsInFrame(shape.vase, size, size, Math.max(0.1, shape.height));
+  const key = JSON.stringify([shape.width, shape.depth, shape.height, settings]);
+  const known = reportCache.get(key);
+  if (known) return known;
+  // The fitted body, turned back to the core's z up: the vase mode's sums tell the bottom by its height.
+  const fitted = fittedVaseMesh(shape).positions;
+  const positions = new Float32Array(fitted.length);
+  for (let i = 0; i < fitted.length; i += 3) {
+    positions[i] = fitted[i];
+    positions[i + 1] = -fitted[i + 2];
+    positions[i + 2] = fitted[i + 1];
+  }
+  const volume = printVolume(settings, positions);
+  const weight = printWeight(volume.mm3, settings.material);
+  const notes = [...vaseChecks(settings), ...buildVaseCached(settings).notes].filter((note, index, all) => all.indexOf(note) === index);
+  const report = { grams: weight.grams, meters: weight.meters, material: weight.material, vaseMode: volume.mode === "vasenmodus", line: settings.lineWidth, bottom: VASE_MODE_BOTTOM, notes };
+  reportCache.set(key, report);
+  while (reportCache.size > 4) reportCache.delete(reportCache.keys().next().value as string);
+  return report;
 }
 
 /** An accessory of a vase, laid out for printing beside it: triangles in the vase shape's frame. */

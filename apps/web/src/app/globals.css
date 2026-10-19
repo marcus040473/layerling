@@ -10547,6 +10547,29 @@ html[data-theme="dark"] .mesh-compare-actions .secondary {
   opacity: 0.55;
 }
 
+/* The vase's print card: weight and filament, then the core's notes on printing it. */
+.vase-print-report {
+  display: grid;
+  gap: 8px;
+}
+
+.vase-print-weight {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.vase-print-notes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  color: #8d6a3b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 /* Layered text (#215): the names list and the layer colour in the layers card. */
 .text-layers-body .text-layers-names {
   display: grid;
@@ -13727,6 +13750,10 @@ html[data-theme="dark"] .color-value {
 html[data-theme="dark"] .cylinder-wrap-hint,
 html[data-theme="dark"] .select-property-hint {
   color: #a08a72;
+}
+
+html[data-theme="dark"] .vase-print-notes {
+  color: #d1a96f;
 }
 
 html[data-theme="dark"] .vase-drawing {
