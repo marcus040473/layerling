@@ -10501,6 +10501,52 @@ html[data-theme="dark"] .mesh-compare-actions .secondary {
   line-height: 1.4;
 }
 
+/* The vase's drawing boards (card Draw): the vase tool's boards, in the editor's colours. */
+.vase-drawing {
+  --accent: var(--primary);
+  --surface: #fffdf9;
+  --grid: #e6d6b0;
+  --grid-major: #c9a45a;
+  --label: #8a7a66;
+  --field-edge: var(--border-strong);
+  --vz-height: 300px;
+}
+
+.vase-drawing-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+}
+
+.vase-drawing-tabs button {
+  min-height: 32px;
+  padding: 4px 6px;
+  color: var(--muted-strong);
+  background: transparent;
+  font: 700 12.5px/1.2 var(--font-ui);
+  cursor: pointer;
+}
+
+.vase-drawing-tabs button + button {
+  border-left: 1px solid var(--border-strong);
+}
+
+.vase-drawing-tabs button[aria-pressed="true"] {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.vase-drawing-host .vz-hint {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.vase-drawing-host[inert] {
+  opacity: 0.55;
+}
+
 /* Layered text (#215): the names list and the layer colour in the layers card. */
 .text-layers-body .text-layers-names {
   display: grid;
@@ -13681,6 +13727,13 @@ html[data-theme="dark"] .color-value {
 html[data-theme="dark"] .cylinder-wrap-hint,
 html[data-theme="dark"] .select-property-hint {
   color: #a08a72;
+}
+
+html[data-theme="dark"] .vase-drawing {
+  --surface: #2a2017;
+  --grid: #43362a;
+  --grid-major: #6e5638;
+  --label: #b39d84;
 }
 
 html[data-theme="dark"] .gear-type-options button {

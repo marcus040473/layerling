@@ -164,6 +164,7 @@ import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, 
 import { LIMITS as VASE_LIMITS, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, type VaseSettings } from "@/lib/vaseSettings";
 import { vaseShapePatch } from "@/lib/vaseShape";
+import { VaseDrawingCard } from "@/components/workplane/VaseDrawingCard";
 import { shapeDefaultsAsset, shapeDefaultsFromShape } from "@/lib/shapeDefaults";
 import { MAX_SCREW_HOLE_ANGLE, MIN_SCREW_HOLE_ANGLE, normalizeScrewHoleAngle, normalizeScrewHoleHeadDepth, normalizeScrewHoleShaft } from "@/lib/screwHoleGeometry";
 import { MAX_TEARDROP_TIP_ANGLE, MIN_TEARDROP_TIP_ANGLE, normalizeTeardropTipAngle, teardropHeightForTipAngle, teardropTipAngle } from "@/lib/teardropGeometry";
@@ -296,8 +297,8 @@ const GEAR_TYPE_OPTIONS: Array<{ value: GearType; label: MessageKey }> = [
 ];
 /** The vase's choices, by the core's names for them. */
 const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> = {
-  profile: { flasche: "vase.profileBottle", bauchig: "vase.profileBellied", schale: "vase.profileBowl", fass: "vase.profileBarrel", zylinder: "vase.profileCylinder", trichter: "vase.profileFunnel" },
-  section: { kreis: "vase.sectionCircle", vieleck: "vase.sectionPolygon", welle: "vase.sectionWave" },
+  profile: { flasche: "vase.profileBottle", bauchig: "vase.profileBellied", schale: "vase.profileBowl", fass: "vase.profileBarrel", zylinder: "vase.profileCylinder", trichter: "vase.profileFunnel", gezeichnet: "vase.profileDrawn" },
+  section: { kreis: "vase.sectionCircle", vieleck: "vase.sectionPolygon", welle: "vase.sectionWave", gezeichnet: "vase.sectionDrawn" },
   sectionWaveStyle: { weich: "vase.waveSoft", spitz: "vase.wavePointed", bogen: "vase.waveArches", lamellen: "vase.waveFins" },
   body: { voll: "vase.bodySolid", hohl: "vase.bodyHollow" },
   innerShape: { folgt: "vase.innerFollows", rund: "vase.innerRound" },
@@ -305,7 +306,9 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
   ribShape: { rund: "vase.grooveRound", v: "vase.groovePointed", flach: "vase.grooveFlat" },
   stripeStyle: { einfach: "vase.stripesOneWay", doppelt: "vase.stripesCrossed" },
   quality: { entwurf: "vase.qualityDraft", standard: "vase.qualityStandard", fein: "vase.qualityFine" },
-  section2: { keiner: "vase.section2None", kreis: "vase.sectionCircle", vieleck: "vase.sectionPolygon", welle: "vase.sectionWave" },
+  section2: { keiner: "vase.section2None", kreis: "vase.sectionCircle", vieleck: "vase.sectionPolygon", welle: "vase.sectionWave", gezeichnet: "vase.sectionDrawn" },
+  drawSymmetry: { halb: "vase.symHalf", viertel: "vase.symQuarter", windmuehle: "vase.symWindmill", frei: "vase.symFree" },
+  twistMode: { gleichmaessig: "vase.twistEven", kurve: "vase.twistCurve" },
   section2WaveStyle: { weich: "vase.waveSoft", spitz: "vase.wavePointed", bogen: "vase.waveArches", lamellen: "vase.waveFins" },
   twistAlong: { hoehe: "vase.twistAlongHeight", kontur: "vase.twistAlongContour" },
   cutout: { keine: "vase.cutoutNone", voronoi: "vase.effectVoronoi", waben: "vase.cutoutHoneycomb", rauten: "vase.cutoutDiamonds", kreise: "vase.cutoutCircles" },
@@ -976,9 +979,18 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     if (vase.section2 === "vieleck") properties.push(range("section2Sides", "prop.vaseSides2", 1), percent("section2Round", "prop.vaseCornerRound2"));
     if (vase.section2 === "welle") properties.push(range("section2Waves", "prop.vaseWaves2", 1), percent("section2WaveAmp", "prop.vaseWaveDepth2"), choice("section2WaveStyle", "prop.vaseWaveStyle2"));
     if (vase.section2 !== "keiner") properties.push(range("section2From", "prop.vaseSection2From", 1), range("section2To", "prop.vaseSection2To", 1));
-    properties.push(range("twist", "prop.vaseTwist", 1), range("swayAngle", "prop.vaseSway", 1, "vase.swayHint"));
-    if (vase.swayAngle > 0) properties.push(range("swayCount", "prop.vaseSwayCount", 1));
-    if (vase.twist !== 0 || vase.swayAngle > 0) properties.push(choice("twistAlong", "prop.vaseTwistAlong"));
+    // A drawn cross-section: the symmetry that makes the whole outline of the part drawn (card Draw).
+    if (vase.section === "gezeichnet" || vase.section2 === "gezeichnet") {
+      properties.push(choice("drawSymmetry", "prop.vaseDrawSymmetry", "vase.drawSymmetryHint"));
+      if (vase.drawSymmetry === "windmuehle") properties.push(range("drawRepeat", "prop.vaseDrawRepeat", 1));
+    }
+    // A twist as a curve is drawn (card Draw); evenly, it comes from these sliders.
+    properties.push(choice("twistMode", "prop.vaseTwistMode"));
+    if (vase.twistMode !== "kurve") {
+      properties.push(range("twist", "prop.vaseTwist", 1), range("swayAngle", "prop.vaseSway", 1, "vase.swayHint"));
+      if (vase.swayAngle > 0) properties.push(range("swayCount", "prop.vaseSwayCount", 1));
+    }
+    if (vase.twistMode === "kurve" || vase.twist !== 0 || vase.swayAngle > 0) properties.push(choice("twistAlong", "prop.vaseTwistAlong"));
     properties.push(choice("body", "prop.vaseBody", vase.body === "voll" ? "vase.bodySolidHint" : "vase.bodyHollowHint"));
     if (vase.body === "hohl") properties.push(range("wall", "prop.vaseWall", 0.1), range("bottom", "prop.vaseBottom", 0.1), choice("innerShape", "prop.vaseInner"));
     properties.push(choice("effect", "prop.vaseEffect"));
@@ -3255,6 +3267,7 @@ export function ShapeInspector({
               </div>
             ) : null}
           </div>
+          <VaseDrawingCard shape={shape} disabled={locked} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
           <div className={`property-card ${vaseFloorOpen ? "" : "collapsed"}`}>
             <button className="property-card-header" type="button" aria-expanded={vaseFloorOpen} aria-controls={`vase-floor-${shape.id}`} onClick={() => setVaseFloorOpen((open) => !open)}>
               <span>{t("inspector.vaseFloor")}</span>

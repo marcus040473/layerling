@@ -160,6 +160,44 @@ export function vaseShapePatch(shape: { width: number; depth: number; height: nu
   return { vase, width: frame.width, depth: frame.depth, size: Math.max(frame.width, frame.depth) };
 }
 
+/** How far the core's vase reaches across, in x and y, for these settings (its widest diameter is settings.diameter). */
+function vaseSpans(settings: VaseSettings) {
+  const vertices = buildVaseCached(settings).vertices;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < vertices.length; i += 3) {
+    minX = Math.min(minX, vertices[i]); maxX = Math.max(maxX, vertices[i]);
+    minY = Math.min(minY, vertices[i + 1]); maxY = Math.max(maxY, vertices[i + 1]);
+  }
+  return { x: Math.max(1e-6, maxX - minX), y: Math.max(1e-6, maxY - minY) };
+}
+
+/**
+ * The vase as the drawing boards see it: its settings with the height of the body and the widest
+ * diameter in real millimetres. The frame holds the vase by its outline's box, which for an outline
+ * that is not round is narrower than its widest diameter, so the diameter is worked back from it.
+ */
+export function vaseDrawingSettings(shape: { width: number; depth: number; height: number; vase?: unknown }): VaseSettings {
+  const size = Math.max(0.1, shape.width, shape.depth);
+  const settings = vaseSettingsInFrame(shape.vase, size, size, Math.max(0.1, shape.height));
+  const spans = vaseSpans(settings);
+  return { ...settings, diameter: (size * settings.diameter) / Math.max(spans.x, spans.y) };
+}
+
+/**
+ * A shape change from the drawing boards' settings (real height of the body, real widest diameter):
+ * the vase's own settings and the frame that holds it at those measures. The settings keep the
+ * height and diameter they had; the frame carries the measures.
+ */
+export function vaseDrawingPatch(shape: { vase?: unknown }, drawing: VaseSettings) {
+  const stored = normalizeVaseSettings(shape.vase);
+  const vase = normalizeVaseSettings({ ...drawing, height: stored.height, diameter: stored.diameter });
+  const body = Math.max(1, drawing.height);
+  const height = vase.legMode === "angeformt" ? body + vase.legHeight : body;
+  // Built at the real diameter, the vase's box is the frame (spans scale with the diameter).
+  const spans = vaseSpans(vaseSettingsInFrame(vase, drawing.diameter, drawing.diameter, height));
+  return { vase, width: spans.x, depth: spans.y, size: Math.max(spans.x, spans.y), height };
+}
+
 /** An accessory of a vase, laid out for printing beside it: triangles in the vase shape's frame. */
 export type VaseAccessory = { id: string; kind: VaseAccessoryKind; index: number; positions: number[] };
 

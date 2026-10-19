@@ -4357,6 +4357,34 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .mesh-compare-actions .
   color: #6c6c6c;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-drawing {
+  --accent: var(--primary);
+  --surface: #fcfcfc;
+  --grid: #cbcbcb;
+  --grid-major: #c9a45a;
+  --label: #6a6a6a;
+  --field-edge: var(--border-strong);
+  --vz-height: 300px;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-drawing-tabs {
+  border: 1px solid var(--border-strong);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-drawing-tabs button {
+  color: var(--muted-strong);
+  background: transparent;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-drawing-tabs button + button {
+  border-left: 1px solid var(--border-strong);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-drawing-tabs button[aria-pressed="true"] {
+  color: #ffffff;
+  background: var(--primary);
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .text-layers-body .text-layers-names {
   color: #595959;
 }
@@ -6211,6 +6239,13 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .color-value {
 html[data-theme="dark"]:where([data-palette="graphite"]) .cylinder-wrap-hint,
 html[data-theme="dark"]:where([data-palette="graphite"]) .select-property-hint {
   color: #797979;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-drawing {
+  --surface: #262626;
+  --grid: #3a3a3a;
+  --grid-major: #545454;
+  --label: #898989;
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .gear-type-options button {

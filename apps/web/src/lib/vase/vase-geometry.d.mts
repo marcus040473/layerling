@@ -25,8 +25,8 @@ export type VaseChoiceKey =
   | "lidMode" | "lidGrip" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "lamp" | "lampSocket" | "reinforce"
   | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle";
 
-/** A point of a drawn cross-section in the unit circle; `corner` 0 round, 1 corner, 2 with a handle (tx, ty). */
-export type VaseDrawPoint = { x: number; y: number; corner: number; tx?: number; ty?: number };
+/** A point of a drawn cross-section in the unit circle: a corner, or round with an optional handle (tx, ty; ix, iy before it). */
+export type VaseDrawPoint = { x: number; y: number; corner: boolean; tx?: number; ty?: number; ix?: number; iy?: number };
 
 export type VaseSettings = Record<VaseNumberKey, number> & Record<VaseChoiceKey, string> & {
   /** Drawn body (profile "gezeichnet"): [height 0..1, radius 0..1, kind?, slope?]. */
