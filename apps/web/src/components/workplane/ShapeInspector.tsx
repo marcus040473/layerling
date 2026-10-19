@@ -313,6 +313,11 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
   reinforce: { keine: "vase.reinforceNone", rippen: "vase.reinforceRibs", doppelwand: "vase.reinforceDouble" },
   lamp: { keine: "vase.lampNone", haengend: "vase.lampHanging", stehend: "vase.lampStanding", puck: "vase.lampPuck" },
   lampSocket: { e27: "vase.socketE27", e14: "vase.socketE14", eigen: "vase.socketCustom" },
+  legMode: { keine: "vase.legsNone", stecken: "vase.legsPlugIn", angeformt: "vase.legsMoulded", staender: "vase.legsStand" },
+  legShape: { kegel: "vase.legCone", zylinder: "vase.legCylinder", kantig: "vase.legSquare" },
+  saucerMode: { keine: "vase.saucerNone", schale: "vase.saucerBowl", versteckt: "vase.saucerHidden" },
+  insertMode: { keine: "vase.insertNone", pflanze: "vase.insertPlant", bewaesserung: "vase.insertWatering", stecker: "vase.insertFrog", roehrchen: "vase.insertTube" },
+  lidMode: { keiner: "vase.lidNone", stuelp: "vase.lidSlip", schnapp: "vase.lidSnap", schraube: "vase.lidScrew" },
 };
 
 const BENT_TUBE_PROFILE_OPTIONS: Array<{ value: BentTubeProfile; label: MessageKey }> = [
@@ -412,7 +417,7 @@ const RELATIVE_SIZE_PROPERTY_IDS = new Set(["width", "height", "length", "diamet
 const ROTATION_PROPERTY_IDS = new Set(["rotateX", "rotateY", "rotateZ"]);
 
 function propertyUsesLengthUnit(key: string) {
-  return ["textLineWidth", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "sketchLineWidth", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "screwHoleShaft", "screwHoleHeadDepth", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth"].includes(key);
+  return ["textLineWidth", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "sketchLineWidth", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "screwHoleShaft", "screwHoleHeadDepth", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
 }
 
 /**
@@ -1037,6 +1042,38 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         );
       }
     }
+    // Accessories, on a card of their own (ids "vaseParts."): the legs' sockets, a lid's groove or thread go into the body.
+    const part = (config: ShapePropertyConfig): ShapePropertyConfig => ({ ...config, id: config.id.replace(/^vase\./, "vaseParts.") });
+    const yesNo = (key: VaseChoiceKey, label: MessageKey): ShapePropertyConfig => part({
+      type: "toggle",
+      id: `vase.${key}`,
+      label: t(label),
+      value: vase[key] === "ja",
+      onChange: (value) => setVase({ [key]: value ? "ja" : "nein" }),
+    });
+    properties.push(part(choice("legMode", "prop.vaseLegs")));
+    if (vase.legMode !== "keine") {
+      properties.push(part(range("legCount", "prop.vaseLegCount", 1)), part(range("legHeight", "prop.vaseLegHeight", 1)), part(range("legDiameter", "prop.vaseLegDiameter", 0.5)), part(choice("legShape", "prop.vaseLegShape")), part(range("legSplay", "prop.vaseLegSplay", 1)));
+      if (vase.legMode !== "staender") properties.push(part(percent("legInset", "prop.vaseLegInset")));
+    }
+    properties.push(part(choice("saucerMode", "prop.vaseSaucer")));
+    if (vase.saucerMode === "schale") {
+      properties.push(part(range("saucerHeight", "prop.vaseSaucerHeight", 1)), part(range("saucerGap", "prop.vaseSaucerGap", 0.5)), part(range("saucerWall", "prop.vaseSaucerWall", 0.1)), yesNo("saucerRibs", "prop.vaseSaucerRibs"), yesNo("saucerSpout", "prop.vaseSaucerSpout"), yesNo("saucerGrip", "prop.vaseSaucerGrip"));
+    }
+    if (hollow) {
+      properties.push(part(choice("insertMode", "prop.vaseInsert")));
+      if (vase.insertMode === "pflanze" || vase.insertMode === "bewaesserung") properties.push(part(range("insertWall", "prop.vaseInsertWall", 0.1)), part(range("insertStandoff", "prop.vaseInsertStandoff", 0.5)));
+      if (vase.insertMode === "bewaesserung") properties.push(part(range("reservoirHeight", "prop.vaseReservoirHeight", 1)));
+      if (vase.insertMode === "stecker") properties.push(part(range("frogHole", "prop.vaseFrogHole", 0.5)));
+      if (vase.insertMode === "roehrchen") properties.push(part(range("tubeDiameter", "prop.vaseTubeDiameter", 0.5)));
+    }
+    properties.push(part(choice("lidMode", "prop.vaseLid", "vase.lidHint")));
+    if (vase.lidMode !== "keiner") {
+      properties.push(part(range("lidClearance", "prop.vaseLidClearance", 0.05)), part(range("lidThickness", "prop.vaseLidThickness", 0.1)), part(range("lidDepth", "prop.vaseLidDepth", 0.5)));
+      if (vase.lidMode === "schraube") properties.push(part(range("threadPitch", "prop.vaseThreadPitch", 0.1)));
+      properties.push(yesNo("lidGrip", "prop.vaseLidGrip"));
+    }
+    properties.push(part(range("fitClearance", "prop.vaseFitClearance", 0.05, "vase.fitHint")));
     return properties;
   }
 
@@ -2442,6 +2479,7 @@ export function ShapeInspector({
   onWrapAroundCylinder,
   onSurfaceTexture,
   onRemoveSurfaceTexture,
+  onVaseAccessories,
   onLayerText,
   onTextTags,
   textLayerStack: nameTagStack,
@@ -2473,6 +2511,8 @@ export function ShapeInspector({
   /** Lays a surface texture onto this body; resolves when it is on (or could not be made). */
   onSurfaceTexture?: (settings: SurfaceTextureSettings) => Promise<void> | void;
   onRemoveSurfaceTexture?: () => void;
+  /** Lays this vase's accessories out beside it, ready to print. */
+  onVaseAccessories?: () => void;
   /** Splits a text into layers, or builds a layered text again with new words, font or layers (#215). */
   onLayerText?: (patch: TextLayerPatch) => void;
   /** One tag like this text or stack per name, laid out in rows (#215). */
@@ -2535,6 +2575,7 @@ export function ShapeInspector({
   // A vase: its measures here, its form and pattern and its bottom and wall on cards of their own.
   const vaseFormProperties = shape.kind === "vase" ? properties.filter((property) => property.id.startsWith("vase.")) : [];
   const vaseFloorProperties = shape.kind === "vase" ? properties.filter((property) => property.id.startsWith("vaseFloor.")) : [];
+  const vasePartProperties = shape.kind === "vase" ? properties.filter((property) => property.id.startsWith("vaseParts.")) : [];
   const primaryProperties = shape.kind === "vase"
     ? properties.filter((property) => !property.id.startsWith("vase"))
     : shape.kind === "gear"
@@ -2688,6 +2729,7 @@ export function ShapeInspector({
   const [gearTeethOpen, setGearTeethOpen] = useState(true);
   const [vaseFormOpen, setVaseFormOpen] = useState(true);
   const [vaseFloorOpen, setVaseFloorOpen] = useState(false);
+  const [vasePartsOpen, setVasePartsOpen] = useState(false);
   const [threadOpen, setThreadOpen] = useState(true);
   const [gearHelixOpen, setGearHelixOpen] = useState(true);
   const [colorOpen, setColorOpen] = useState(false);
@@ -3221,6 +3263,26 @@ export function ShapeInspector({
             {vaseFloorOpen ? (
               <div className="property-list" id={`vase-floor-${shape.id}`}>
                 <ShapePropertyRows properties={vaseFloorProperties} workspace={workspace} disabled={locked} onInteractionActiveChange={onInteractionActiveChange} />
+              </div>
+            ) : null}
+          </div>
+          <div className={`property-card ${vasePartsOpen ? "" : "collapsed"}`}>
+            <button className="property-card-header" type="button" aria-expanded={vasePartsOpen} aria-controls={`vase-parts-${shape.id}`} onClick={() => setVasePartsOpen((open) => !open)}>
+              <span>{t("inspector.vaseParts")}</span>
+              <ChevronUp className={vasePartsOpen ? "" : "collapsed"} size={25} strokeWidth={2.8} />
+            </button>
+            {vasePartsOpen ? (
+              <div className="property-list" id={`vase-parts-${shape.id}`}>
+                <ShapePropertyRows properties={vasePartProperties} workspace={workspace} disabled={locked} onInteractionActiveChange={onInteractionActiveChange} />
+                {onVaseAccessories ? (
+                  <>
+                    <p className="cylinder-wrap-hint">{t("inspector.vasePartsHint")}</p>
+                    <button className="inspector-action-button" type="button" disabled={locked} onClick={onVaseAccessories}>
+                      <Plus size={17} strokeWidth={2.5} />
+                      <span>{t("inspector.vasePartsMake")}</span>
+                    </button>
+                  </>
+                ) : null}
               </div>
             ) : null}
           </div>

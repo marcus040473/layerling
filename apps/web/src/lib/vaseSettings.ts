@@ -14,9 +14,14 @@ export function normalizeVaseSettings(input: unknown): VaseSettings {
   return normalizeParams(input ?? {});
 }
 
-/** The settings a vase in this frame is built with: its height and widest diameter are the frame's. */
+/**
+ * The settings a vase in this frame is built with: its height and widest diameter are the frame's.
+ * Legs moulded on stand under the body, so the body is that much lower and the whole fills the frame.
+ */
 export function vaseSettingsInFrame(settings: unknown, width: number, depth: number, height: number): VaseSettings {
-  return normalizeParams({ ...normalizeVaseSettings(settings), height, diameter: Math.max(width, depth) });
+  const vase = normalizeVaseSettings(settings);
+  const body = vase.legMode === "angeformt" ? Math.max(20, height - vase.legHeight) : height;
+  return normalizeParams({ ...vase, height: body, diameter: Math.max(width, depth) });
 }
 
 /** The settings that differ from the defaults: what makes this vase this vase. */

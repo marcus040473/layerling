@@ -661,6 +661,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     JSON.stringify(a.surfaceTexture ?? null) === JSON.stringify(b.surfaceTexture ?? null) &&
     a.surfaceTextureMask === b.surfaceTextureMask &&
     vaseSettingsEqual(a.vase, b.vase) &&
+    a.vasePartOf === b.vasePartOf &&
     a.textRadius === b.textRadius &&
     a.textSize === b.textSize &&
     a.textInward === b.textInward &&

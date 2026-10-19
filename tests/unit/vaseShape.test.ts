@@ -6,7 +6,7 @@ import { exportLylProject, importLylProject } from "@/lib/lylProject";
 import { makeShapeFromAsset, sceneShape, toolbarShapeAssets } from "@/lib/shapeCatalog";
 import { analyzeTriangleSoup } from "@/lib/svgImport";
 import { normalizeVaseSettings, parseVaseSettingsInput, vaseSettingsChanges } from "@/lib/vaseSettings";
-import { fittedVaseMesh, vaseNaturalFrame, vaseShapePatch } from "@/lib/vaseShape";
+import { fittedVaseMesh, sceneWithVaseAccessories, vaseAccessories, vaseAccessoryShape, vaseNaturalFrame, vaseShapePatch, type VaseAccessoryKind } from "@/lib/vaseShape";
 import { DEFAULT_SNAP_GRID, DEFAULT_WORKPLANE_WORKSPACE } from "@/lib/workplaneSettings";
 import { canonicalizeShape, workplaneShapesEqual } from "@/lib/workplaneShapes";
 import type { WorkplaneShape } from "@/types/layerling";
@@ -173,5 +173,98 @@ describe("the vase as a shape", () => {
     expect(restored.kind).toBe("vase");
     expect(restored.vase).toEqual(shape.vase);
     expect(workplaneShapesEqual(restored, shape)).toBe(true);
+  });
+
+  it("stands on legs moulded on, the whole filling its frame", () => {
+    const shape = vase({ effect: "keine", legMode: "angeformt", legCount: 3, legHeight: 15 });
+    const soup = soupOf(shape);
+    const box = bounds(soup);
+    expect(box.maxY - box.minY).toBeCloseTo(180, 3);
+    expect(box.minY).toBeCloseTo(0, 6);
+    // Only the legs reach the bed: the bottom of the body is above it.
+    const onBed = [];
+    for (let i = 1; i < soup.length; i += 3) if (soup[i] < 1) onBed.push(soup[i - 1]);
+    expect(onBed.length).toBeGreaterThan(0);
+    // Each leg is closed on its own, and so is the body.
+    const analysis = analyzeTriangleSoup(soup);
+    expect(analysis.boundaryEdges).toBe(0);
+    expect(analysis.nonManifoldEdges).toBe(0);
+    expect(vaseAccessories(shape)).toEqual([]);
+  });
+
+  it("lays out every accessory as a closed part on the bed beside the vase", () => {
+    const sets: Array<Record<string, unknown>> = [
+      { body: "hohl", legMode: "stecken", legCount: 3, saucerMode: "schale", lidMode: "stuelp" },
+      { body: "hohl", profile: "zylinder", legMode: "staender", insertMode: "bewaesserung", lidMode: "schraube" },
+      { body: "hohl", profile: "zylinder", footHeight: 20, saucerMode: "versteckt", insertMode: "pflanze", lidMode: "schnapp" },
+      { body: "hohl", insertMode: "stecker" },
+      { body: "hohl", insertMode: "roehrchen" },
+    ];
+    const kinds = new Set<VaseAccessoryKind>();
+    for (const settings of sets) {
+      const shape = vase({ effect: "keine", ...settings }, { x: 0, z: 0 });
+      const vaseBox = bounds(soupOf(shape));
+      const accessories = vaseAccessories(shape);
+      expect(accessories.length, JSON.stringify(settings)).toBeGreaterThan(0);
+      for (const accessory of accessories) {
+        kinds.add(accessory.kind);
+        const name = `${accessory.kind} ${JSON.stringify(settings)}`;
+        const analysis = analyzeTriangleSoup(accessory.positions);
+        expect(analysis.boundaryEdges, name).toBe(0);
+        expect(analysis.nonManifoldEdges, name).toBe(0);
+        expect(volume(accessory.positions), name).toBeGreaterThan(0);
+        const box = bounds(accessory.positions);
+        expect(box.minY, name).toBeCloseTo(0, 3);
+        expect(box.minX, name).toBeGreaterThan(vaseBox.maxX);
+      }
+    }
+    expect([...kinds].sort()).toEqual(["frog", "hiddenSaucer", "leg", "lid", "plantInsert", "saucer", "stand", "tube", "wateringInsert"]);
+  });
+
+  it("makes each accessory an object of its own that remembers its vase", () => {
+    const shape = vase({ effect: "keine", body: "hohl", lidMode: "stuelp" }, { elevation: 5 });
+    const [lid] = vaseAccessories(shape);
+    expect(lid.kind).toBe("lid");
+    const part = vaseAccessoryShape(shape, lid, "Deckel");
+    expect(part.kind).toBe("mesh");
+    expect(part.vasePartOf).toBe(shape.id);
+    expect(part.color).toBe(shape.color);
+    const soup = soupOf(part);
+    const analysis = analyzeTriangleSoup(soup);
+    expect(analysis.boundaryEdges).toBe(0);
+    expect(analysis.nonManifoldEdges).toBe(0);
+    // Where it was laid out, beside the vase where it stands.
+    const laid = bounds(lid.positions);
+    const box = bounds(soup);
+    expect(box.minX).toBeCloseTo(laid.minX + 10, 2);
+    expect(box.maxZ).toBeCloseTo(laid.maxZ - 20, 2);
+    expect(box.minY).toBeCloseTo(5, 3);
+    expect(sceneShape(part).vasePartOf).toBe(shape.id);
+    expect(workplaneShapesEqual(part, { ...part, vasePartOf: undefined })).toBe(false);
+  });
+
+  it("lays its accessories out anew, the ones from before giving way", () => {
+    const shape = vase({ effect: "keine", body: "hohl", lidMode: "stuelp", saucerMode: "schale" });
+    const other = vase({}, { id: "other-vase", x: -200 });
+    const name = () => "part";
+    const first = sceneWithVaseAccessories([shape, other], shape.id, name);
+    expect(first.parts).toHaveLength(2);
+    expect(first.shapes).toHaveLength(4);
+    const changed = { ...shape, vase: normalizeVaseSettings({ ...shape.vase, saucerMode: "keine" }) };
+    const scene = first.shapes.map((entry) => entry.id === shape.id ? changed : entry);
+    const second = sceneWithVaseAccessories(scene, shape.id, name);
+    expect(second.parts).toHaveLength(1);
+    expect(second.shapes.map((entry) => entry.id)).toEqual([shape.id, "other-vase", second.parts[0].id]);
+    expect(first.missing).toEqual([]);
+    const none = [vase({ effect: "keine" })];
+    expect(sceneWithVaseAccessories(none, none[0].id, name)).toEqual({ shapes: none, parts: [], missing: [] });
+  });
+
+  it("says which accessories do not fit, instead of leaving them out silently", () => {
+    // The bottle's neck is too narrow for an insert with a water store; the lid is made.
+    const bottle = vase({ effect: "keine", body: "hohl", insertMode: "bewaesserung", lidMode: "stuelp" });
+    const result = sceneWithVaseAccessories([bottle], bottle.id, () => "part");
+    expect(result.parts.map((part) => part.vasePartOf)).toEqual([bottle.id]);
+    expect(result.missing).toEqual(["wateringInsert"]);
   });
 });

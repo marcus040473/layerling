@@ -235,7 +235,7 @@ import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
-import { vaseShapePatch } from "@/lib/vaseShape";
+import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
 import { canChangeSurfaceTexture, canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, shapeUnderSurfaceTexture, surfaceTextureEntry, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
@@ -8247,6 +8247,23 @@ export function LayerlingEditor({
     commitShapes(shapesRef.current.map((shape) => (shape.id === current.id ? textured : shape)), [textured.id], message);
   }, [commitShapes, selectedShape, selectedShapes.length]);
 
+  /**
+   * A vase's accessories (legs to plug in, a stand, a saucer, an insert, a lid), laid out beside it ready to
+   * print; the ones laid out for it before give way, so changed settings come out new. Returns the new parts
+   * and the kinds asked for that this vase does not allow.
+   */
+  const layOutVaseAccessories = useCallback((vaseId: string) => {
+    const { shapes, parts, missing } = sceneWithVaseAccessories(shapesRef.current, vaseId, (vase, accessory) => `${displayShapeName(vase)} – ${vaseAccessoryName(accessory)}`);
+    // Asked for but not possible with this vase (an insert through a narrow neck): said, not left out silently.
+    const missingText = missing.length ? t("status.vaseAccessoriesMissing", { parts: missing.map(vaseAccessoryKindName).join(", ") }) : "";
+    if (!parts.length) {
+      setNotice(missingText || t("status.vaseNoAccessories"));
+      return { parts, missing };
+    }
+    commitShapes(shapes, parts.map((part) => part.id), [t("status.vaseAccessoriesMade", { count: parts.length }), missingText].filter(Boolean).join(" "));
+    return { parts, missing };
+  }, [commitShapes]);
+
   /** Takes the texture off the selected body: the body under it comes back, where the textured one stands. */
   const removeSelectedSurfaceTexture = useCallback(() => {
     if (selectedShapes.length !== 1 || !selectedShape) return;
@@ -8784,6 +8801,10 @@ export function LayerlingEditor({
         if (ownFont && isCustomFontId(ownFont)) shape = canonicalizeShape({ ...shape, font: ownFont });
         const committedShape = canonicalizeShape(bakeShapeTransformIntoMesh(shape));
         commitShapes([...currentShapes(), committedShape], committedShape.id, t("status.shapeAddedMcp", { name: displayShapeName(committedShape) }));
+        if (committedShape.kind === "vase" && params.vaseParts === true) {
+          const { parts, missing } = layOutVaseAccessories(committedShape.id);
+          return { object: mcpShapeSummary(committedShape), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}) };
+        }
         return { object: mcpShapeSummary(committedShape) };
       }
 
@@ -9005,6 +9026,10 @@ export function LayerlingEditor({
         if (fillProfile) {
           updated = await rebuildSketchBodyFill(target.id, fillProfile);
           commitShapes(currentShapes().map((shape) => shape.id === target.id ? updated : shape), target.id, t("status.sketchUpdated"));
+        }
+        if (updated.kind === "vase" && params.vaseParts === true) {
+          const { parts, missing } = layOutVaseAccessories(updated.id);
+          return { object: mcpShapeSummary(updated), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}) };
         }
         return { object: mcpShapeSummary(updated) };
       }
@@ -10336,6 +10361,7 @@ export function LayerlingEditor({
     closeHistoryView,
     openHistoryView,
     runCustomShapeMcp,
+    layOutVaseAccessories,
   ]);
 
   useEffect(() => {
@@ -12369,6 +12395,7 @@ export function LayerlingEditor({
           onWrapAroundCylinder={selectedShapes.length === 1 && offersCylinderWrap(selectedShape) ? wrapSelectionAroundCylinder : undefined}
           onSurfaceTexture={selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) ? textureSelectedSurface : undefined}
           onRemoveSurfaceTexture={selectedShapes.length === 1 && surfaceTextureEntry(selectedShape) ? removeSelectedSurfaceTexture : undefined}
+          onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !selectedShape.locked ? () => layOutVaseAccessories(selectedShape.id) : undefined}
           onLayerText={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? layerSelectedText : undefined}
           onTextTags={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? makeTextTags : undefined}
           textLayerStack={selectedNameTag}

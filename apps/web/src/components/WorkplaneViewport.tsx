@@ -409,6 +409,8 @@ type WorkplaneViewportProps = {
   onSurfaceTexture?: (settings: SurfaceTextureSettings) => Promise<void> | void;
   /** Takes the selected body's texture off; only while the body keeps what was under it. */
   onRemoveSurfaceTexture?: () => void;
+  /** Lays the selected vase's accessories out beside it. */
+  onVaseAccessories?: () => void;
   onLayerText?: (patch: TextLayerPatch) => void;
   onTextTags?: (names: string[], gap: number) => void;
   /** The selected name tag as its card shows it (#215). */
@@ -3342,6 +3344,7 @@ export function WorkplaneViewport({
   onWrapAroundCylinder,
   onSurfaceTexture,
   onRemoveSurfaceTexture,
+  onVaseAccessories,
   onLayerText,
   onTextTags,
   textLayerStack,
@@ -9541,6 +9544,7 @@ export function WorkplaneViewport({
           onWrapAroundCylinder={onWrapAroundCylinder}
           onSurfaceTexture={onSurfaceTexture}
           onRemoveSurfaceTexture={onRemoveSurfaceTexture}
+          onVaseAccessories={onVaseAccessories}
           onLayerText={onLayerText}
           onTextTags={onTextTags}
           textLayerStack={textLayerStack}

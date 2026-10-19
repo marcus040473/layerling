@@ -907,6 +907,8 @@ export type WorkplaneShape = {
   surfaceTextureMask?: import("@/lib/surfaceTexture").SurfaceTextureMaskMode;
   /** Only for "vase": the vase tool's settings; the frame gives its height and widest diameter. */
   vase?: import("@/lib/vase/vase-geometry.mjs").VaseSettings;
+  /** An accessory laid out for a vase (its id): laying them out again replaces it. */
+  vasePartOf?: string;
   importedMesh?: {
     positions: number[];
     normals?: number[];
