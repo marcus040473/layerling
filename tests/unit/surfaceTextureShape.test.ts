@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { editorHistoryEntry } from "@/lib/editorHistory";
 import { meshForShape } from "@/lib/editorMeshCore";
+import { exportLylProject, importLylProject } from "@/lib/lylProject";
 import { analyzeTriangleSoup } from "@/lib/svgImport";
 import {
+  canChangeSurfaceTexture,
   canTextureSurface,
   offersSurfaceTexture,
   offersSurfaceTextureMask,
+  shapeUnderSurfaceTexture,
+  surfaceTextureEntry,
   surfaceTextureMaskOf,
   surfaceTextureMasksFor,
   surfacePatternLabel,
@@ -14,6 +19,7 @@ import {
   textureSurfacePositions,
 } from "@/lib/surfaceTextureShape";
 import { normalizeSurfaceTexture } from "@/lib/surfaceTexture";
+import { DEFAULT_SNAP_GRID, DEFAULT_WORKPLANE_WORKSPACE } from "@/lib/workplaneSettings";
 import { canonicalizeShape, workplaneShapesEqual } from "@/lib/workplaneShapes";
 import type { WorkplaneShape } from "@/types/layerling";
 
@@ -144,5 +150,96 @@ describe("texture masks", () => {
     // The texture keeps the masks it was made with.
     const textured = surfaceTexturedShape(cylinder, outcome.positions, settings);
     expect(textured?.surfaceTexture?.masks).toHaveLength(1);
+  });
+});
+
+describe("a texture changed later", () => {
+  const grooves = normalizeSurfaceTexture({ pattern: "grooves", spacing: 4, depth: 0.5, angle: 0 });
+  const texture = (target: WorkplaneShape, settings = grooves) => {
+    const textured = surfaceTexturedShape(target, textureSurfacePositions(surfaceTextureInput(target), settings, 150_000).positions, settings);
+    if (!textured) throw new Error("no shape");
+    return textured;
+  };
+
+  it("keeps the body under it, and gives it back where the textured body stands", () => {
+    const cylinder = shape({});
+    const textured = texture(cylinder);
+    const entry = surfaceTextureEntry(textured);
+    expect(entry?.feature.kind).toBe("surfaceTexture");
+    expect(entry?.feature.surfaceTexture).toEqual(grooves);
+    expect(canChangeSurfaceTexture(textured)).toBe(true);
+    expect(canChangeSurfaceTexture({ ...textured, locked: true })).toBe(false);
+    // Taken off where it was made, the body is the one before, to the hundredth of a millimetre.
+    const under = shapeUnderSurfaceTexture(textured);
+    expect(under?.kind).toBe("cylinder");
+    expect(under?.surfaceTexture).toBeUndefined();
+    expect(under?.edgeTreatmentHistory).toBeUndefined();
+    expect(under?.x).toBeCloseTo(12, 2);
+    expect(under?.z).toBeCloseTo(-7, 2);
+    expect(under?.elevation).toBeCloseTo(3, 6);
+    expect(under?.width).toBeCloseTo(30, 2);
+    // Moved up and along, and made taller: the body under it comes back there, and as tall.
+    const moved = canonicalizeShape({ ...textured, x: textured.x + 10, elevation: (textured.elevation ?? 0) + 2, height: textured.height * 1.5 });
+    const back = shapeUnderSurfaceTexture(moved);
+    expect(back?.x).toBeCloseTo(22, 2);
+    expect(back?.elevation).toBeCloseTo(5, 6);
+    expect(back?.height).toBeCloseTo(30, 2);
+    expect(back?.color).toBe(cylinder.color);
+  });
+
+  it("is made again from the body under it, and keeps the steps before it", () => {
+    const earlier = {
+      id: "edge-history-0",
+      createdAt: 1,
+      feature: { kind: "chamfer" as const, amount: 1, edgeCount: 1 },
+      before: shape({ height: 20 }),
+    };
+    const chamfered = shape({ edgeTreatmentHistory: [earlier] });
+    const textured = texture(chamfered);
+    expect(textured.edgeTreatmentHistory?.map((step) => step.feature.kind)).toEqual(["chamfer", "surfaceTexture"]);
+    const under = shapeUnderSurfaceTexture(textured);
+    if (!under) throw new Error("no body under the texture");
+    expect(under.edgeTreatmentHistory?.map((step) => step.id)).toEqual(["edge-history-0"]);
+    const knurled = texture(under, normalizeSurfaceTexture({ pattern: "knurl", spacing: 3, depth: 0.4 }));
+    expect(knurled.surfaceTexture?.pattern).toBe("knurl");
+    expect(knurled.edgeTreatmentHistory?.map((step) => step.feature.kind)).toEqual(["chamfer", "surfaceTexture"]);
+    expect(surfaceTextureEntry(knurled)?.before.kind).toBe("cylinder");
+  });
+
+  it("cannot be changed with a step after it, nor without the body under it", () => {
+    const textured = texture(shape({}));
+    const hollowed = {
+      ...textured,
+      edgeTreatmentHistory: [...(textured.edgeTreatmentHistory ?? []), { id: "edge-history-9", createdAt: 9, feature: { kind: "shell" as const, amount: 2, edgeCount: 0 }, before: textured }],
+    };
+    expect(surfaceTextureEntry(hollowed)).toBeNull();
+    expect(shapeUnderSurfaceTexture(hollowed)).toBeNull();
+    expect(surfaceTextureEntry({ ...textured, edgeTreatmentHistory: undefined })).toBeNull();
+    // A body with no texture has nothing to take off.
+    expect(surfaceTextureEntry(shape({}))).toBeNull();
+  });
+
+  it("keeps the body under it through saving and opening the project", async () => {
+    const textured = texture(shape({}));
+    const exported = await exportLylProject({
+      projectId: "project-texture",
+      projectName: "Texture",
+      createdAt: 1_700_000_000_000,
+      modifiedAt: 1_700_000_100_000,
+      shapes: [textured],
+      history: [editorHistoryEntry([textured], [])],
+      historyIndex: 0,
+      assets: [],
+      workspace: DEFAULT_WORKPLANE_WORKSPACE,
+      snapGrid: DEFAULT_SNAP_GRID,
+      placementElevation: 0,
+    });
+    const restored = (await importLylProject(exported)).shapes[0];
+    expect(restored.surfaceTexture).toEqual(grooves);
+    expect(surfaceTextureEntry(restored)?.feature.surfaceTexture).toEqual(grooves);
+    const under = shapeUnderSurfaceTexture(restored);
+    expect(under?.kind).toBe("cylinder");
+    expect(under?.x).toBeCloseTo(12, 2);
+    expect(under?.height).toBeCloseTo(20, 2);
   });
 });

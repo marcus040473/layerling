@@ -234,13 +234,13 @@ import { BUG_REPORT_FILE, bugReportText, rememberBugReportEvent, type BugReportE
 import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
-import { canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
+import { canChangeSurfaceTexture, canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, shapeUnderSurfaceTexture, surfaceTextureEntry, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
 import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierFaces, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierKind, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierQuality, CadModifierSpringPart, CadModifierThreadPart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
 import { getSectionBounds, sectionAxisLetter, sectionPlacementWorkplane, type SectionPlaneAxis, type SectionPlaneSettings } from "@/lib/sectionView";
 import { projectSectionPoint, SECTION_VIEW_FACE, sectionSvgDocument, sliceMeshContours } from "@/lib/sectionSvg";
-import type { AlignAxis, AlignHandleStatus, AlignTarget, GridSize, ParametricSource, ProjectAsset, ShapeAsset, ShapeCustomization, ShapeKind, SketchImage, SketchOperation, SketchPoint, SketchProfile, SketchRevolveSettings, SketchSegment, ShellEdges, ShellOpenings, ShellSide, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
+import type { AlignAxis, AlignHandleStatus, AlignTarget, EdgeTreatmentFeature, GridSize, ParametricSource, ProjectAsset, ShapeAsset, ShapeCustomization, ShapeKind, SketchImage, SketchOperation, SketchPoint, SketchProfile, SketchRevolveSettings, SketchSegment, ShellEdges, ShellOpenings, ShellSide, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
 import { type Vec3, type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, appendMeshData, formatTriangleCount, shapeAabb, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey } from "@/lib/editorMeshCore";
 import { cloneAsGroupChild, meshDataToManifoldMesh, shapeToManifoldSolid, splitShapesByPlane, unionOverlappingExportMeshes, exportBodiesWithLooseHoles, exportSolidVolume, type ExportSolidVolume, PRINT_MATERIAL_STORAGE_KEY, PRINT_INFILL_STORAGE_KEY, PRINT_WALLS_STORAGE_KEY, formatEstimateNumber, formatSectionOffset, SECTION_SEEN_FROM_KEYS, expandBundles, visibleExportShapes, multicolorExportSolids, exportFaceColors, colorSeparatedExportMeshes, disposeManifold, canIntersectShapes, buildIntersectionShapeFromSelection, groupedShape, quaternionForShape, rotationFromQuaternion, cleanShapePatch, restoreGroupedChildren, restoreGroupedChildrenForEdges, buildGroupedShapeFromSelection } from "@/lib/editorBooleans";
 import { handleViewArrowKey } from "@/lib/viewArrowKeys";
@@ -379,7 +379,7 @@ type EdgeFeatureRevertOption = {
   entryId: string;
   path: number[];
   label: string;
-  kind: CadModifierKind;
+  kind: EdgeTreatmentFeature["kind"];
   amount: number;
   edgeCount: number;
   /** Only for a deletion of faces. */
@@ -762,6 +762,7 @@ function edgeTreatmentLabel(feature: NonNullable<WorkplaneShape["edgeTreatments"
   const size = `${Number(feature.amount.toFixed(2))} mm`;
   if (feature.kind === "shell") return `hollow (${size} walls, open ${shellOpenSides(feature.openings).join(" + ") || "none"})`;
   if (feature.kind === "deleteFace") return `face deletion (${feature.faceCount ?? 0} face${feature.faceCount === 1 ? "" : "s"})`;
+  if (feature.kind === "surfaceTexture") return `surface texture (${feature.surfaceTexture?.pattern ?? "relief"}, ${size} deep)`;
   return `${feature.kind === "fillet" ? "fillet" : feature.kind === "chamfillet" ? "chamfillet" : "chamfer"} (${size}, ${feature.edgeCount} edge${feature.edgeCount === 1 ? "" : "s"})`;
 }
 
@@ -4271,8 +4272,8 @@ export function LayerlingEditor({
     const entry = option && selectedShape && option.path.length === 0
       ? (selectedShape.edgeTreatmentHistory ?? []).find((candidate) => candidate.id === option.entryId)
       : undefined;
-    // A deletion of faces has no "Edit" (it is not editable): it can only be taken back.
-    if (!selectedShape || !option || !entry || entry.feature.kind === "deleteFace") {
+    // A deletion of faces has no "Edit" (it is not editable): it can only be taken back. A texture is changed in its card.
+    if (!selectedShape || !option || !entry || entry.feature.kind === "deleteFace" || entry.feature.kind === "surfaceTexture") {
       setNotice(t("status.chooseEdgeFeature"), true);
       return;
     }
@@ -4300,7 +4301,7 @@ export function LayerlingEditor({
     const feature = entry.feature;
     if (feature.kind === "shell") {
       setShellTool({ thickness: feature.amount, openings: feature.openings ?? "top", edges: feature.shellEdges ?? "round", busy: false, error: null });
-    } else {
+    } else if (feature.kind !== "surfaceTexture") {
       edgeEditRequestRef.current = {
         shapeId: restored.shape.id,
         historyLength: restored.shape.edgeTreatmentHistory?.length ?? 0,
@@ -8201,11 +8202,14 @@ export function LayerlingEditor({
       setNotice(t("status.selectOneToTexture"));
       return;
     }
-    if (!canTextureSurface(selectedShape)) {
-      setNotice(t(selectedShape.locked ? "status.objectLocked" : selectedShape.surfaceTexture ? "status.alreadyTextured" : "status.selectOneToTexture"));
+    const current = selectedShape;
+    // A texture is changed by making it again on the body under it, where the textured body stands now.
+    const under = canChangeSurfaceTexture(current) ? shapeUnderSurfaceTexture(current) : null;
+    if (!under && !canTextureSurface(current)) {
+      setNotice(t(current.locked ? "status.objectLocked" : current.surfaceTexture ? "status.alreadyTextured" : "status.selectOneToTexture"));
       return;
     }
-    const source = selectedShape;
+    const source = under ?? current;
     setNotice(t("status.surfaceTexturing"));
     // The masks in the design that reach into the body go with the settings, and are kept with the texture.
     const masks = surfaceTextureMasksFor(source, shapesRef.current);
@@ -8217,7 +8221,7 @@ export function LayerlingEditor({
       setNotice(t("status.surfaceFailed", { error: error instanceof Error ? error.message : String(error) }));
       return;
     }
-    if (shapesRef.current.find((shape) => shape.id === source.id) !== source) {
+    if (shapesRef.current.find((shape) => shape.id === current.id) !== current) {
       setNotice(t("status.surfaceOutdated"));
       return;
     }
@@ -8229,13 +8233,32 @@ export function LayerlingEditor({
     const { stats } = outcome;
     const pattern = surfacePatternLabel(textured.surfaceTexture?.pattern ?? settings.pattern);
     const triangles = formatTriangleCount(stats.triangles);
+    // The masks are the mask bodies standing now, as for a new texture: one deleted since no longer counts.
+    const masksBefore = under ? current.surfaceTexture?.masks.length ?? 0 : 0;
     const message = [
       stats.around ? t("status.surfaceTexturedAround", { pattern, count: stats.around, triangles }) : t("status.surfaceTextured", { pattern, triangles }),
       masks.length ? t("status.surfaceMasksUsed", { count: masks.length }) : "",
+      masksBefore && !masks.length ? t("status.surfaceMasksGone", { count: masksBefore }) : "",
       stats.limited ? t("status.surfaceCoarser") : "",
       stats.tooDeep ? t("status.surfaceTooDeep") : "",
     ].filter(Boolean).join(" ");
-    commitShapes(shapesRef.current.map((shape) => (shape.id === source.id ? textured : shape)), [textured.id], message);
+    commitShapes(shapesRef.current.map((shape) => (shape.id === current.id ? textured : shape)), [textured.id], message);
+  }, [commitShapes, selectedShape, selectedShapes.length]);
+
+  /** Takes the texture off the selected body: the body under it comes back, where the textured one stands. */
+  const removeSelectedSurfaceTexture = useCallback(() => {
+    if (selectedShapes.length !== 1 || !selectedShape) return;
+    if (selectedShape.locked) {
+      setNotice(t("status.objectLocked"));
+      return;
+    }
+    const under = shapeUnderSurfaceTexture(selectedShape);
+    if (!under) {
+      setNotice(t("status.alreadyTextured"));
+      return;
+    }
+    const pattern = surfacePatternLabel(selectedShape.surfaceTexture?.pattern ?? "knurl");
+    commitShapes(shapesRef.current.map((shape) => (shape.id === selectedShape.id ? under : shape)), [under.id], t("status.surfaceRemoved", { pattern }));
   }, [commitShapes, selectedShape, selectedShapes.length]);
 
   /** The selected name tag as its panel shows it: words, font and layers read from its layers as they stand (#215). */
@@ -9550,8 +9573,21 @@ export function LayerlingEditor({
         const target = findShape(params.id) ?? (selectedIdsRef.current.length === 1 ? findShape(selectedIdsRef.current[0]) : null);
         if (!target) throw new Error("Select one object to texture, or pass its id");
         if (target.locked) throw new Error("Unlock the object before texturing it");
-        if (target.surfaceTexture) throw new Error("This object has a surface texture already: undo it first, then texture the plain body again");
-        if (!canTextureSurface(target)) throw new Error("This object cannot be textured; a bundle or a measuring tool has no body of its own");
+        // A textured body is textured again from the body under its texture, or that body comes back.
+        const under = target.surfaceTexture ? shapeUnderSurfaceTexture(target) : null;
+        if (target.surfaceTexture && !under) throw new Error("This object's texture keeps no body under it (other steps came after it, or it was made by an older version): undo it first, then texture the plain body again");
+        if (params.remove !== undefined && typeof params.remove !== "boolean") throw new Error("remove must be true or false");
+        if (params.remove === true) {
+          if (!under || !target.surfaceTexture) throw new Error("This object has no surface texture to remove");
+          commitShapes(
+            currentShapes().map((shape) => (shape.id === target.id ? under : shape)),
+            [under.id],
+            t("status.surfaceRemoved", { pattern: surfacePatternLabel(target.surfaceTexture.pattern) }),
+          );
+          return { object: mcpShapeSummary(under), removed: true };
+        }
+        if (!under && !canTextureSurface(target)) throw new Error("This object cannot be textured; a bundle or a measuring tool has no body of its own");
+        const source = under ?? target;
         // A choice the bridge does not know is refused rather than quietly replaced by the default.
         const choices: Record<string, readonly string[]> = { pattern: SURFACE_TEXTURE_PATTERNS, profile: SURFACE_TEXTURE_PROFILES, direction: SURFACE_TEXTURE_DIRECTIONS, projection: SURFACE_TEXTURE_PROJECTIONS, axis: SURFACE_TEXTURE_AXES, detail: SURFACE_TEXTURE_DETAILS };
         Object.entries(choices).forEach(([key, allowed]) => {
@@ -9577,11 +9613,12 @@ export function LayerlingEditor({
             if (!mask) throw new Error(`${body.name} has too many faces to be a mask`);
             return mask;
           });
-        } else masks = surfaceTextureMasksFor(target, currentShapes());
-        const settings = { ...normalizeSurfaceTexture(params), masks };
-        const outcome = await textureSurfaceOffThread(surfaceTextureInput(target), settings);
+        } else masks = surfaceTextureMasksFor(source, currentShapes());
+        // A change keeps the settings it does not name.
+        const settings = { ...normalizeSurfaceTexture({ ...(under ? target.surfaceTexture : {}), ...params }), masks };
+        const outcome = await textureSurfaceOffThread(surfaceTextureInput(source), settings);
         if (findShape(target.id) !== target) throw new Error("The object changed while the texture was computed; texture it again");
-        const textured = outcome.stats.nothing ? null : surfaceTexturedShape(target, outcome.positions, settings);
+        const textured = outcome.stats.nothing ? null : surfaceTexturedShape(source, outcome.positions, settings);
         if (!textured) throw new Error("No part of this body gets the pattern: check outside and inside, bottomFree and topFree, and zoneFrom and zoneTo");
         commitShapes(
           currentShapes().map((shape) => (shape.id === target.id ? textured : shape)),
@@ -9590,7 +9627,7 @@ export function LayerlingEditor({
         );
         const { triangles, around, spacing, limited, tooDeep, bedClamped } = outcome.stats;
         const { masks: _planes, ...shown } = settings;
-        return { object: mcpShapeSummary(textured), settings: shown, masks: masks.length, texture: { triangles, around, spacing, limited, tooDeep, bedClamped } };
+        return { object: mcpShapeSummary(textured), changed: Boolean(under), settings: shown, masks: masks.length, texture: { triangles, around, spacing, limited, tooDeep, bedClamped } };
       }
 
       if (command.action === "simplify_mesh") {
@@ -12318,6 +12355,7 @@ export function LayerlingEditor({
           onSelectionHide={toggleHidden}
           onWrapAroundCylinder={selectedShapes.length === 1 && offersCylinderWrap(selectedShape) ? wrapSelectionAroundCylinder : undefined}
           onSurfaceTexture={selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) ? textureSelectedSurface : undefined}
+          onRemoveSurfaceTexture={selectedShapes.length === 1 && surfaceTextureEntry(selectedShape) ? removeSelectedSurfaceTexture : undefined}
           onLayerText={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? layerSelectedText : undefined}
           onTextTags={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? makeTextTags : undefined}
           textLayerStack={selectedNameTag}

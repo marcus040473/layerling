@@ -3,7 +3,7 @@
 import { displayY, displayYTurn, insideZ, insideZTurn } from "@/lib/displayAxes";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
-import { ChevronDown, ChevronUp, Cylinder, Eye, EyeOff, FolderOpen, Grid3x3, Layers, Lock, Minus, Pencil, Plus, RefreshCw, RotateCcw, Split, Tags, Unlock, Waves } from "lucide-react";
+import { ChevronDown, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, Layers, Lock, Minus, Pencil, Plus, RefreshCw, RotateCcw, Split, Tags, Unlock, Waves } from "lucide-react";
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import {
   DEFAULT_GEAR_HELIX_ANGLE,
@@ -160,7 +160,7 @@ import { localizedError } from "@/lib/userErrors";
 import { displayShapeName, makeShapeFromAsset, renamedShapeName } from "@/lib/shapeCatalog";
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMaskMode, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
-import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel } from "@/lib/surfaceTextureShape";
+import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, surfaceTextureEntry } from "@/lib/surfaceTextureShape";
 import { shapeDefaultsAsset, shapeDefaultsFromShape } from "@/lib/shapeDefaults";
 import { MAX_SCREW_HOLE_ANGLE, MIN_SCREW_HOLE_ANGLE, normalizeScrewHoleAngle, normalizeScrewHoleHeadDepth, normalizeScrewHoleShaft } from "@/lib/screwHoleGeometry";
 import { MAX_TEARDROP_TIP_ANGLE, MIN_TEARDROP_TIP_ANGLE, normalizeTeardropTipAngle, teardropHeightForTipAngle, teardropTipAngle } from "@/lib/teardropGeometry";
@@ -2305,6 +2305,7 @@ export function ShapeInspector({
   onSeparateParts,
   onWrapAroundCylinder,
   onSurfaceTexture,
+  onRemoveSurfaceTexture,
   onLayerText,
   onTextTags,
   textLayerStack: nameTagStack,
@@ -2335,6 +2336,7 @@ export function ShapeInspector({
   onWrapAroundCylinder?: (diameter: number, inward: boolean) => void;
   /** Lays a surface texture onto this body; resolves when it is on (or could not be made). */
   onSurfaceTexture?: (settings: SurfaceTextureSettings) => Promise<void> | void;
+  onRemoveSurfaceTexture?: () => void;
   /** Splits a text into layers, or builds a layered text again with new words, font or layers (#215). */
   onLayerText?: (patch: TextLayerPatch) => void;
   /** One tag like this text or stack per name, laid out in rows (#215). */
@@ -2791,6 +2793,7 @@ export function ShapeInspector({
           workspace={workspace}
           disabled={locked}
           onApply={onSurfaceTexture}
+          onRemove={onRemoveSurfaceTexture}
           onInteractionActiveChange={onInteractionActiveChange}
         />
       ) : null}
@@ -3725,12 +3728,15 @@ function SurfaceTextureCard({
   workspace,
   disabled,
   onApply,
+  onRemove,
   onInteractionActiveChange,
 }: {
   shape: WorkplaneShape;
   workspace: WorkplaneWorkspaceSettings;
   disabled: boolean;
   onApply: (settings: SurfaceTextureSettings) => Promise<void> | void;
+  /** Takes the texture off; given while the body keeps what was under it. */
+  onRemove?: () => void;
   onInteractionActiveChange?: (active: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -3739,6 +3745,16 @@ function SurfaceTextureCard({
   const [settings, setSettings] = useState(() => normalizeSurfaceTexture(shape.surfaceTexture ?? {}));
   const set = (patch: Partial<SurfaceTextureSettings>) => setSettings((current) => normalizeSurfaceTexture({ ...current, ...patch }));
   const applied = shape.surfaceTexture;
+  // A texture made or changed elsewhere (by an assistant, by redo, in a project opened again) shows its own settings;
+  // one taken off leaves the card as it was, to apply again.
+  const appliedKey = applied ? JSON.stringify({ ...applied, masks: applied.masks.length }) : "";
+  const [shownKey, setShownKey] = useState(appliedKey);
+  if (appliedKey !== shownKey) {
+    setShownKey(appliedKey);
+    if (applied) setSettings(normalizeSurfaceTexture(applied));
+  }
+  // A texture that keeps the body under it shows its settings to change; one that does not only says what it is.
+  const changeable = Boolean(applied && onRemove && surfaceTextureEntry(shape));
   const options = <T extends string>(values: readonly T[], label: (value: T) => string) => values.map((value) => ({ value, label: label(value) }));
   const range = (id: string, label: string, value: number, [min, max]: [number, number], step: number, onChange: (value: number) => void) => (
     <RangeProperty
@@ -3777,7 +3793,7 @@ function SurfaceTextureCard({
       </button>
       {open ? (
         <div className="property-list cylinder-wrap-body" id={`surface-texture-${shape.id}`}>
-          {applied ? (
+          {applied && !changeable ? (
             <p className="cylinder-wrap-hint">
               {t("inspector.surfaceApplied", { pattern: surfacePatternLabel(applied.pattern) })}
               <GuideHelpLink section="surfaceTexture" className="inspector-help-link" />
@@ -3857,13 +3873,19 @@ function SurfaceTextureCard({
                 </>
               ) : null}
               <p className="cylinder-wrap-hint">
-                {t("inspector.surfaceHint")}
+                {applied ? t("inspector.surfaceChangeHint", { pattern: surfacePatternLabel(applied.pattern) }) : t("inspector.surfaceHint")}
                 <GuideHelpLink section="surfaceTexture" className="inspector-help-link" />
               </p>
               <button className="inspector-action-button" type="button" disabled={disabled || busy} onClick={apply}>
                 <Waves size={17} strokeWidth={2.5} />
-                <span>{t(busy ? "inspector.surfaceWorking" : "inspector.surfaceApply")}</span>
+                <span>{t(busy ? "inspector.surfaceWorking" : applied ? "inspector.surfaceChange" : "inspector.surfaceApply")}</span>
               </button>
+              {applied ? (
+                <button className="inspector-action-button" type="button" disabled={disabled || busy} onClick={onRemove}>
+                  <Eraser size={17} strokeWidth={2.5} />
+                  <span>{t("inspector.surfaceRemove")}</span>
+                </button>
+              ) : null}
             </>
           )}
         </div>

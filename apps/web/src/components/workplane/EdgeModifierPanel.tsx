@@ -9,7 +9,7 @@ import type { CadModifierKind, CadModifierQuality } from "@/lib/cadModifierTypes
 import { CAD_MODIFIER_MAX_SHARP_ANGLE, cadModifierUserErrorMessage, edgeModifierSelectionStatus } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
-import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
+import type { EdgeTreatmentFeature, WorkplaneWorkspaceSettings } from "@/types/layerling";
 import { selectWholeValue } from "@/lib/numberField";
 import { useWheelField } from "@/lib/useWheelField";
 import { wheelBaseStep, wheelNextValue } from "@/lib/wheelValueStep";
@@ -32,7 +32,7 @@ function formatSliderValue(value: number, accuracy: WorkplaneWorkspaceSettings["
 export type EdgeHistoryOption = {
   id: string;
   label: string;
-  kind: CadModifierKind;
+  kind: EdgeTreatmentFeature["kind"];
   amount: number;
   edgeCount: number;
   /** Only for a deletion of faces. */
@@ -47,6 +47,7 @@ export type EdgeHistoryOption = {
 function edgeHistoryLabel(option: EdgeHistoryOption) {
   const size = String(Number(option.amount.toFixed(2)));
   if (option.kind === "shell") return t("edge.revertShell", { size });
+  if (option.kind === "surfaceTexture") return t("edge.revertSurfaceTexture", { size });
   if (option.kind === "deleteFace") {
     return option.faceCount === 1 ? t("edge.revertDeleteFaceOne") : t("edge.revertDeleteFaceMany", { count: option.faceCount ?? 0 });
   }

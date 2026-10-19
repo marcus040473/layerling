@@ -167,5 +167,5 @@ Under {{ui:inspector.more}} you choose where the pattern goes: outer and inner w
 
 To keep part of the body smooth, or to texture only a part, use a helper body: put a box, a cylinder or a sphere where it should be, select it and choose under {{ui:inspector.surfaceMask}} either {{ui:surfaceTexture.maskExclude}} or {{ui:surfaceTexture.maskOnly}}. It turns transparent, and it counts when the other body gets its texture, also while it is hidden. Hide or delete it before printing.
 
-The result is a mesh like an imported model. Undo takes the texture back, and the card keeps your settings: change them and apply again. A body that carries a texture does not take a second one.
+The result is a mesh like an imported model, and it keeps the body it was made on. Select it later, also after saving, and the card shows the settings it was made with: change them and click {{ui:inspector.surfaceChange}}, and the texture is made again on that body, where and as large as the textured body stands now. {{ui:inspector.surfaceRemove}} gives the plain body back. Mask bodies count again when the texture is changed: hide them rather than delete them if you may change it later. Undo takes back each of these steps as well.
 

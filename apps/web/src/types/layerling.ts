@@ -516,8 +516,11 @@ export type ShellOpenings = "none" | "top" | "bottom" | "top-bottom" | ShellSide
 export type ShellEdges = "round" | "sharp";
 
 export type EdgeTreatmentFeature = {
-  /** "shell" hollows the body: `amount` is then the wall thickness. "deleteFace" deletes faces and closes the gap (#451). */
-  kind: "fillet" | "chamfer" | "chamfillet" | "shell" | "deleteFace";
+  /**
+   * "shell" hollows the body: `amount` is then the wall thickness. "deleteFace" deletes faces and closes the gap (#451).
+   * "surfaceTexture" lays a relief onto the body: `amount` is its depth, and the entry keeps the body under it.
+   */
+  kind: "fillet" | "chamfer" | "chamfillet" | "shell" | "deleteFace" | "surfaceTexture";
   amount: number;
   edgeCount: number;
   /** The edges picked, as the tool numbered them on the body before this treatment: "Edit" picks them again (#227). */
@@ -529,6 +532,8 @@ export type EdgeTreatmentFeature = {
   /** Only for "deleteFace": the faces deleted, as the tool numbered them on the body before. */
   faceIds?: number[];
   faceCount?: number;
+  /** Only for "surfaceTexture": the settings it was made with, masks included. */
+  surfaceTexture?: import("@/lib/surfaceTexture").SurfaceTextureSettings;
 };
 
 export type EdgeTreatmentHistoryEntry = {

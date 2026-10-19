@@ -1,16 +1,19 @@
 /**
  * A surface texture on a shape (see surfaceTexture.ts): the body's mesh goes
  * in, and a mesh body with the relief takes its place, remembering the
- * settings it was made with. Like wrapping around a cylinder, it is a step
- * one takes; undo takes it back.
+ * settings it was made with. The body under the relief goes with it in the
+ * history that fillets and hollowing keep, so the texture can be made again
+ * with other settings, or taken off, also after saving.
  *
  * The texture is computed on a worker of its own: a large body takes a few
  * seconds, and the editor stays usable meanwhile.
  */
 
 import { isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
+import { cloneWorkplaneShapeSnapshot, compactEdgeTreatmentHistory, edgeTreatmentAppliedFrame, restoreShapeBeforeEdgeTreatment } from "@/lib/edgeTreatmentHistory";
 import { MIN_SHAPE_DIMENSION, cleanModelDimension, meshAabb, meshForShape } from "@/lib/editorMeshCore";
 import { t, type MessageKey } from "@/lib/i18n";
+import { createLocalId } from "@/lib/localIds";
 import {
   applySurfaceTexture,
   normalizeSurfaceTexture,
@@ -27,7 +30,7 @@ import {
   type SurfaceTextureStats,
 } from "@/lib/surfaceTexture";
 import { canonicalizeShape, cleanNearZero, isNonSolidShapeKind } from "@/lib/workplaneShapes";
-import type { ShapeKind, WorkplaneShape } from "@/types/layerling";
+import type { EdgeTreatmentHistoryEntry, ShapeKind, WorkplaneShape } from "@/types/layerling";
 
 export type SurfaceTextureWorkerRequest = {
   requestId: number;
@@ -67,9 +70,29 @@ export function surfacePatternLabel(pattern: SurfaceTexturePattern) {
   return t(SURFACE_TEXTURE_LABELS.pattern[pattern] ?? "surfaceTexture.knurl");
 }
 
-/** Whether a texture can go on this shape: one solid body, not locked, and not textured already (undo takes a texture back). */
+/** Whether a texture can go on this shape: one solid body, not locked, and not textured already (a texture is changed instead). */
 export function canTextureSurface(shape: WorkplaneShape | null | undefined) {
   return Boolean(shape && !shape.locked && !shape.surfaceTexture && shape.groupOperation !== "bundle" && !isNonSolidShapeKind(shape.kind));
+}
+
+/**
+ * The history entry of the texture a body carries, with the body under it: only while the texture is the body's
+ * last step. A texture with steps after it, or one made before bodies kept what was under them, has none.
+ */
+export function surfaceTextureEntry(shape: WorkplaneShape | null | undefined): EdgeTreatmentHistoryEntry | null {
+  const last = shape?.surfaceTexture ? shape.edgeTreatmentHistory?.at(-1) : undefined;
+  return last?.feature.kind === "surfaceTexture" ? last : null;
+}
+
+/** Whether the texture on this body can be changed or taken off: it has the body under it, and it is not locked. */
+export function canChangeSurfaceTexture(shape: WorkplaneShape | null | undefined) {
+  return Boolean(shape && !shape.locked && surfaceTextureEntry(shape));
+}
+
+/** The body under a texture, where and how large the textured body stands now: what Remove gives back, and what Change textures again. */
+export function shapeUnderSurfaceTexture(shape: WorkplaneShape): WorkplaneShape | null {
+  const entry = surfaceTextureEntry(shape);
+  return entry ? restoreShapeBeforeEdgeTreatment(shape, entry) : null;
 }
 
 /** Whether the panel shows the texture card for this shape: for every solid body, textured ones say what they carry. */
@@ -167,7 +190,7 @@ export function textureSurfacePositions(positions: Float64Array, settings: Surfa
  * Turns and mirroring are in the mesh already; the new body starts upright. Null when the
  * texture left nothing.
  */
-export function surfaceTexturedShape(shape: WorkplaneShape, positions: ArrayLike<number>, settings: SurfaceTextureSettings): WorkplaneShape | null {
+export function surfaceTexturedShape(shape: WorkplaneShape, positions: ArrayLike<number>, settings: SurfaceTextureSettings, createdAt = Date.now()): WorkplaneShape | null {
   if (positions.length < 9) return null;
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (let i = 0; i < positions.length; i += 3) {
@@ -191,7 +214,8 @@ export function surfaceTexturedShape(shape: WorkplaneShape, positions: ArrayLike
   const rawHeight = Math.max(MIN_SHAPE_DIMENSION, maxY - minY);
   const width = cleanModelDimension(rawWidth);
   const depth = cleanModelDimension(rawDepth);
-  return canonicalizeShape({
+  const normalized = normalizeSurfaceTexture(settings);
+  const textured = canonicalizeShape({
     id: shape.id,
     name: shape.name,
     kind: "mesh",
@@ -215,9 +239,24 @@ export function surfaceTexturedShape(shape: WorkplaneShape, positions: ArrayLike
       triangleCount: Math.floor(local.length / 9),
       sourceFormat: "json",
     },
-    surfaceTexture: normalizeSurfaceTexture(settings),
+    surfaceTexture: normalized,
     locked: false,
     hidden: shape.hidden,
+  });
+  // The body under the relief is kept as a fillet keeps the body before it, with the frame the
+  // textured body stands in: moved, turned or scaled later, the body comes back the same way.
+  return canonicalizeShape({
+    ...textured,
+    edgeTreatmentHistory: [
+      ...compactEdgeTreatmentHistory(shape.edgeTreatmentHistory),
+      {
+        id: createLocalId("edge-history"),
+        createdAt,
+        feature: { kind: "surfaceTexture", amount: normalized.depth, edgeCount: 0, surfaceTexture: normalized },
+        before: cloneWorkplaneShapeSnapshot(shape),
+        appliedFrame: edgeTreatmentAppliedFrame(textured),
+      },
+    ],
   });
 }
 

@@ -167,4 +167,4 @@ V části {{ui:inspector.more}} určíte, kam vzor přijde: vnější a vnitřn�
 
 Má-li část tělesa zůstat hladká nebo dostat vzor jen část, použijte pomocné těleso: umístěte tam kvádr, válec nebo kouli, vyberte je a v položce {{ui:inspector.surfaceMask}} zvolte {{ui:surfaceTexture.maskExclude}} nebo {{ui:surfaceTexture.maskOnly}}. Stane se průhledným a uplatní se, když druhé těleso dostane texturu, i když je skryté. Před tiskem je skryjte nebo smažte.
 
-Výsledek je síť jako importovaný model. Zpět texturu odebere a karta si nastavení ponechá: změňte je a naneste texturu znovu. Těleso, které už texturu nese, druhou nepřijme.
+Výsledek je síť jako importovaný model a ponechává si těleso, na kterém vznikl. Když ho později vyberete, i po uložení, karta ukáže nastavení, se kterým vznikl: změňte je a klikněte na {{ui:inspector.surfaceChange}}; textura se znovu spočítá na tomto tělese, tam a v takové velikosti, jak teď stojí těleso s texturou. {{ui:inspector.surfaceRemove}} vrátí hladké těleso. Maskovací tělesa se při změně uplatní znovu: pokud chcete texturu později ještě měnit, raději je skryjte, než abyste je smazali. Zpět vrátí každý z těchto kroků také.

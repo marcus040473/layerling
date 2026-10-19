@@ -406,6 +406,8 @@ type WorkplaneViewportProps = {
   /** Wraps the selected body around a cylinder of this diameter (#106). */
   onWrapAroundCylinder?: (diameter: number, inward: boolean) => void;
   onSurfaceTexture?: (settings: SurfaceTextureSettings) => Promise<void> | void;
+  /** Takes the selected body's texture off; only while the body keeps what was under it. */
+  onRemoveSurfaceTexture?: () => void;
   onLayerText?: (patch: TextLayerPatch) => void;
   onTextTags?: (names: string[], gap: number) => void;
   /** The selected name tag as its card shows it (#215). */
@@ -3336,6 +3338,7 @@ export function WorkplaneViewport({
   onSelectionHide,
   onWrapAroundCylinder,
   onSurfaceTexture,
+  onRemoveSurfaceTexture,
   onLayerText,
   onTextTags,
   textLayerStack,
@@ -9534,6 +9537,7 @@ export function WorkplaneViewport({
           onSeparateParts={onSeparateParts}
           onWrapAroundCylinder={onWrapAroundCylinder}
           onSurfaceTexture={onSurfaceTexture}
+          onRemoveSurfaceTexture={onRemoveSurfaceTexture}
           onLayerText={onLayerText}
           onTextTags={onTextTags}
           textLayerStack={textLayerStack}

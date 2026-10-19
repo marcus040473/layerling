@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Oberfläche nachträglich ändern",
+      "en": "Change a surface texture later"
+    },
+    "body": {
+      "de": "Ein Körper mit Oberfläche behält jetzt den Körper darunter, auch im gespeicherten Projekt. Markiere ihn wieder: Die Karte „Oberfläche“ zeigt die Einstellungen, mit denen er entstand. „Oberfläche ändern“ rechnet das Muster mit neuen Werten neu, „Oberfläche entfernen“ gibt den glatten Körper zurück.",
+      "en": "A textured body now keeps the body under its relief, also in the saved project. Select it again: the \"Surface texture\" card shows the settings it was made with. \"Change texture\" makes the pattern again with new values, \"Remove texture\" gives the plain body back."
+    }
+  },
+  {
+    "title": {
       "de": "Oberfläche: Rillen, Rändel, Waben und Noppen",
       "en": "Surface texture: grooves, knurling, honeycomb and bumps"
     },
