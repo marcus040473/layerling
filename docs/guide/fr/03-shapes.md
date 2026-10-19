@@ -152,4 +152,6 @@ Des rainures, un moletage, un nid d'abeille ou des picots sur un corps, pour une
 
 Sous {{ui:inspector.more}}, vous choisissez où va le motif : parois extérieures et intérieures, jusqu'où le dessous et le dessus restent lisses (un dessous lisse garde le corps à plat sur le plateau), une plage de la hauteur, et si les arêtes vives restent lisses. À côté de tout ce qui reste lisse, le motif apparaît en fondu ; {{ui:inspector.surfaceFade}} fixe sur combien de millimètres. Le {{ui:inspector.surfaceProfile}} donne la section d'une rainure ou d'un joint : pointu et plat sortent exactement, rond en autant de paliers que la {{ui:inspector.surfaceDetail}} le permet.
 
+Pour garder une partie du corps lisse, ou ne texturer qu'une partie, utilisez un corps d'aide : placez-y un cube, un cylindre ou une sphère, sélectionnez-le et choisissez sous {{ui:inspector.surfaceMask}} {{ui:surfaceTexture.maskExclude}} ou {{ui:surfaceTexture.maskOnly}}. Il devient transparent et compte quand l'autre corps reçoit sa texture, même masqué. Masquez-le ou supprimez-le avant l'impression.
+
 Le résultat est un maillage comme un modèle importé. Annuler retire la texture, et la carte garde vos réglages : modifiez-les et appliquez à nouveau. Un corps qui porte déjà une texture n'en prend pas une deuxième.

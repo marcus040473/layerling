@@ -156,4 +156,6 @@ Utori, narebričenje, satovje ali izbokline na telesu, za boljši oprijem ali za
 
 Pod {{ui:inspector.more}} izberete, kam pride vzorec: zunanje in notranje stene, kako daleč ostaneta spodnja in zgornja stran gladki (gladka spodnja stran drži telo ravno na podlagi), del višine in ali ostri robovi ostanejo gladki. Ob vsem, kar ostane gladko, se vzorec pojavi mehko; {{ui:inspector.surfaceFade}} določa, na koliko milimetrih. {{ui:inspector.surfaceProfile}} določa prerez utora ali fuge: koničast in ploščat sta natančna, okrogel v toliko korakih, kot jih dovoli {{ui:inspector.surfaceDetail}}.
 
+Če naj del telesa ostane gladek ali naj vzorec dobi le del, uporabite pomožno telo: tja postavite kvader, valj ali kroglo, ga izberite in pod {{ui:inspector.surfaceMask}} izberite {{ui:surfaceTexture.maskExclude}} ali {{ui:surfaceTexture.maskOnly}}. Postane prosojno in se upošteva, ko drugo telo dobi teksturo, tudi če je skrito. Pred tiskanjem ga skrijte ali izbrišite.
+
 Rezultat je mreža kot uvožen model. Razveljavi odstrani teksturo, kartica pa obdrži vaše nastavitve: spremenite jih in teksturo nanesite znova. Telo, ki že ima teksturo, druge ne sprejme.

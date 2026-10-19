@@ -9,14 +9,17 @@
  */
 
 import { isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
-import { MIN_SHAPE_DIMENSION, cleanModelDimension, meshForShape } from "@/lib/editorMeshCore";
+import { MIN_SHAPE_DIMENSION, cleanModelDimension, meshAabb, meshForShape } from "@/lib/editorMeshCore";
 import { t, type MessageKey } from "@/lib/i18n";
 import {
   applySurfaceTexture,
   normalizeSurfaceTexture,
   surfaceTexturePositions,
+  SURFACE_TEXTURE_MAX_MASK_PLANES,
   type SurfaceTextureDetail,
   type SurfaceTextureDirection,
+  type SurfaceTextureMask,
+  type SurfaceTextureMaskMode,
   type SurfaceTexturePattern,
   type SurfaceTextureProfile,
   type SurfaceTextureProjection,
@@ -24,7 +27,7 @@ import {
   type SurfaceTextureStats,
 } from "@/lib/surfaceTexture";
 import { canonicalizeShape, cleanNearZero, isNonSolidShapeKind } from "@/lib/workplaneShapes";
-import type { WorkplaneShape } from "@/types/layerling";
+import type { ShapeKind, WorkplaneShape } from "@/types/layerling";
 
 export type SurfaceTextureWorkerRequest = {
   requestId: number;
@@ -48,6 +51,7 @@ export const SURFACE_TEXTURE_LABELS: {
   projection: Record<SurfaceTextureProjection, MessageKey>;
   projectionHint: Record<SurfaceTextureProjection, MessageKey>;
   detail: Record<SurfaceTextureDetail, MessageKey>;
+  mask: Record<SurfaceTextureMaskMode | "none", MessageKey>;
 } = {
   pattern: { grooves: "surfaceTexture.grooves", knurl: "surfaceTexture.knurl", honeycomb: "surfaceTexture.honeycomb", bumps: "surfaceTexture.bumps" },
   profile: { round: "surfaceTexture.round", pointed: "surfaceTexture.pointed", flat: "surfaceTexture.flat" },
@@ -55,6 +59,7 @@ export const SURFACE_TEXTURE_LABELS: {
   projection: { cylinder: "surfaceTexture.cylinder", allRound: "surfaceTexture.allRound", flat: "surfaceTexture.flatProjection" },
   projectionHint: { cylinder: "surfaceTexture.cylinderHint", allRound: "surfaceTexture.allRoundHint", flat: "surfaceTexture.flatHint" },
   detail: { coarse: "surfaceTexture.coarse", medium: "surfaceTexture.medium", fine: "surfaceTexture.fine" },
+  mask: { none: "surfaceTexture.maskNone", exclude: "surfaceTexture.maskExclude", only: "surfaceTexture.maskOnly" },
 };
 
 /** The pattern's name in the current language. */
@@ -70,6 +75,69 @@ export function canTextureSurface(shape: WorkplaneShape | null | undefined) {
 /** Whether the panel shows the texture card for this shape: for every solid body, textured ones say what they carry. */
 export function offersSurfaceTexture(shape: WorkplaneShape | null | undefined) {
   return Boolean(shape && shape.groupOperation !== "bundle" && !isNonSolidShapeKind(shape.kind));
+}
+
+/** Kinds of body that can be a texture mask: convex ones, which the planes of their faces describe exactly. */
+export const SURFACE_TEXTURE_MASK_KINDS: readonly ShapeKind[] = ["box", "roundedBox", "cylinder", "ellipse", "sphere", "halfSphere", "cone", "pyramid"];
+
+/** Whether this body can be a texture mask (it carries no texture itself). */
+export function offersSurfaceTextureMask(shape: WorkplaneShape | null | undefined) {
+  return Boolean(shape && SURFACE_TEXTURE_MASK_KINDS.includes(shape.kind) && !shape.groupedShapes?.length && !shape.surfaceTexture && !shape.importedMesh);
+}
+
+/**
+ * A convex body as a mask: the planes of its faces, pointing out, with its box, where it stands in
+ * the design (inside frame). Faces of one plane give it once. Null when the body has too many
+ * faces to test quickly.
+ */
+export function surfaceTextureMaskOf(shape: WorkplaneShape, mode: SurfaceTextureMaskMode): SurfaceTextureMask | null {
+  const mesh = meshForShape(shape);
+  if (!mesh.vertices.length) return null;
+  const centroid = [0, 0, 0];
+  const box = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+  mesh.vertices.forEach(([x, y, z]) => {
+    centroid[0] += x / mesh.vertices.length;
+    centroid[1] += y / mesh.vertices.length;
+    centroid[2] += z / mesh.vertices.length;
+    box[0] = Math.min(box[0], x); box[1] = Math.min(box[1], y); box[2] = Math.min(box[2], z);
+    box[3] = Math.max(box[3], x); box[4] = Math.max(box[4], y); box[5] = Math.max(box[5], z);
+  });
+  const planes: number[] = [];
+  const seen = new Set<string>();
+  for (const [ia, ib, ic] of mesh.faces) {
+    const [a, b, c] = [mesh.vertices[ia], mesh.vertices[ib], mesh.vertices[ic]];
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+    const wx = c[0] - a[0], wy = c[1] - a[1], wz = c[2] - a[2];
+    let nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+    const length = Math.hypot(nx, ny, nz);
+    if (length < 1e-9) continue;
+    nx /= length; ny /= length; nz /= length;
+    let d = nx * a[0] + ny * a[1] + nz * a[2];
+    // Pointing out, whichever way the faces are wound: the middle of the body lies behind every face.
+    if (nx * centroid[0] + ny * centroid[1] + nz * centroid[2] > d) {
+      nx = -nx; ny = -ny; nz = -nz; d = -d;
+    }
+    const key = `${Math.round(nx * 1e4)},${Math.round(ny * 1e4)},${Math.round(nz * 1e4)},${Math.round(d * 1e3)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    planes.push(nx, ny, nz, d);
+  }
+  if (!planes.length || planes.length > SURFACE_TEXTURE_MAX_MASK_PLANES * 4) return null;
+  return { mode, planes, box };
+}
+
+/** The masks a texture on `target` takes into account: bodies marked as masks that reach into its box. */
+export function surfaceTextureMasksFor(target: WorkplaneShape, shapes: readonly WorkplaneShape[]) {
+  const own = meshAabb(target);
+  const masks: SurfaceTextureMask[] = [];
+  for (const shape of shapes) {
+    if (shape.id === target.id || !shape.surfaceTextureMask || !offersSurfaceTextureMask(shape)) continue;
+    const box = meshAabb(shape);
+    if (box.maxX < own.minX || box.minX > own.maxX || box.maxY < own.minY || box.minY > own.maxY || box.maxZ < own.minZ || box.minZ > own.maxZ) continue;
+    const mask = surfaceTextureMaskOf(shape, shape.surfaceTextureMask);
+    if (mask) masks.push(mask);
+  }
+  return masks;
 }
 
 /** The body's triangles as the texture takes them: nine numbers each, where they stand in the design (inside frame). */

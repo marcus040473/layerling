@@ -667,7 +667,7 @@ export const tools = [
   },
   {
     name: "layerling_texture_surface",
-    description: "Lay a surface texture onto one body, as the editor's \"Surface texture\" does: grooves, knurling, honeycomb or bumps, for grip or for looks. The body becomes one mesh with the relief, standing where it stood; one undo step brings the plain body back, and a textured body takes no second texture (undo first). Around an axis (projection \"cylinder\", the default, for round bodies such as a cup, a knob or a handle) the spacing is rounded so that a whole number of grooves or cells goes round and the pattern closes without a seam; \"allRound\" suits bodies that are not round, \"flat\" a lid or a plate seen along the axis. Axes are named as the editor shows them, z up. Faces pointing down or up within 30 degrees stay smooth unless bottomFree or topFree say otherwise, so the body stays flat on the bed. A large body takes a few seconds. Returns the new object, the settings used (values out of range are clamped) and what was made: triangles, how many grooves or cells go round, the spacing as made, and warnings (limited: made coarser to stay within the triangle budget; tooDeep: inward from both sides deeper than half the thinnest size).",
+    description: "Lay a surface texture onto one body, as the editor's \"Surface texture\" does: grooves, knurling, honeycomb or bumps, for grip or for looks. The body becomes one mesh with the relief, standing where it stood; one undo step brings the plain body back, and a textured body takes no second texture (undo first). Around an axis (projection \"cylinder\", the default, for round bodies such as a cup, a knob or a handle) the spacing is rounded so that a whole number of grooves or cells goes round and the pattern closes without a seam; \"allRound\" suits bodies that are not round, \"flat\" a lid or a plate seen along the axis. Axes are named as the editor shows them, z up. Faces pointing down or up within 30 degrees stay smooth unless bottomFree or topFree say otherwise, so the body stays flat on the bed. A large body takes a few seconds. Returns the new object, the settings used (values out of range are clamped), how many masks took part and what was made: triangles, how many grooves or cells go round, the spacing as made, and warnings (limited: made coarser to stay within the triangle budget; tooDeep: inward from both sides deeper than half the thinnest size).",
     inputSchema: {
       ...editorTargetSchema,
       properties: {
@@ -693,6 +693,18 @@ export const tools = [
         outside: { type: "boolean", description: "Walls facing away from the axis get the pattern. Default true." },
         inside: { type: "boolean", description: "Walls facing the axis (the inner wall of a cup) get the pattern. Default false." },
         detail: { type: "string", enum: ["coarse", "medium", "fine"], description: "How finely a round profile is resolved. Default medium." },
+        masks: {
+          type: "array",
+          description: "Helper bodies that keep the texture away (mode exclude) or are the only place it goes (mode only): other boxes, cylinders, spheres, cones or pyramids that reach into the body, by id. Without this list, the bodies marked as texture masks in the design (surfaceTextureMask) that reach into it take part. A mask is a helper: hide or delete it before printing.",
+          items: {
+            type: "object",
+            required: ["id", "mode"],
+            properties: {
+              id: { type: "string" },
+              mode: { type: "string", enum: ["exclude", "only"] },
+            },
+          },
+        },
       },
     },
   },

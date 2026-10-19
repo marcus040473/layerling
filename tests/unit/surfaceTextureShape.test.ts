@@ -4,6 +4,9 @@ import { analyzeTriangleSoup } from "@/lib/svgImport";
 import {
   canTextureSurface,
   offersSurfaceTexture,
+  offersSurfaceTextureMask,
+  surfaceTextureMaskOf,
+  surfaceTextureMasksFor,
   surfacePatternLabel,
   surfaceTexturedShape,
   surfaceTextureInput,
@@ -95,5 +98,51 @@ describe("a textured shape", () => {
     const outcome = await textureSurfaceOffThread(surfaceTextureInput(shape({})), normalizeSurfaceTexture({ pattern: "honeycomb", spacing: 6 }), 150_000);
     expect(outcome.stats.triangles).toBeGreaterThan(1000);
     expect(outcome.positions.length).toBe(outcome.stats.triangles * 9);
+  });
+});
+
+describe("texture masks", () => {
+  const box = (overrides: Partial<WorkplaneShape>) => shape({ id: "m1", name: "Box", kind: "box", width: 40, depth: 40, height: 12, x: 12, z: -7, elevation: 14, ...overrides });
+
+  it("are convex helper bodies with no texture of their own", () => {
+    expect(offersSurfaceTextureMask(box({}))).toBe(true);
+    expect(offersSurfaceTextureMask(shape({ id: "s", kind: "sphere" }))).toBe(true);
+    expect(offersSurfaceTextureMask(shape({ id: "t", kind: "text" }))).toBe(false);
+    expect(offersSurfaceTextureMask(box({ surfaceTexture: normalizeSurfaceTexture({}) }))).toBe(false);
+  });
+
+  it("describe a box by its six faces, pointing out, with its box", () => {
+    const mask = surfaceTextureMaskOf(box({}), "exclude");
+    if (!mask) throw new Error("no mask");
+    expect(mask.planes.length).toBe(24);
+    // The middle of the box lies behind every face.
+    for (let k = 0; k < mask.planes.length; k += 4) {
+      expect(mask.planes[k] * 12 + mask.planes[k + 1] * 20 + mask.planes[k + 2] * -7).toBeLessThan(mask.planes[k + 3]);
+    }
+    expect(mask.box?.[1]).toBeCloseTo(14, 6);
+    expect(mask.box?.[4]).toBeCloseTo(26, 6);
+  });
+
+  it("take part where a marked body reaches into the textured one, and keep its texture away", () => {
+    const cylinder = shape({});
+    const far = box({ id: "far", x: 200, surfaceTextureMask: "only" });
+    const near = box({ surfaceTextureMask: "exclude" });
+    const unmarked = box({ id: "plain" });
+    const masks = surfaceTextureMasksFor(cylinder, [cylinder, far, near, unmarked]);
+    expect(masks.map((mask) => mask.mode)).toEqual(["exclude"]);
+    const settings = normalizeSurfaceTexture({ pattern: "knurl", spacing: 3, depth: 0.5, fade: 0.5, masks });
+    const outcome = textureSurfacePositions(surfaceTextureInput(cylinder), settings, 200_000);
+    // Above the mask's bottom (14 + half a millimetre of fade) the wall stays where it was; below it carries the knurl.
+    let deepest = Infinity;
+    for (let i = 0; i < outcome.positions.length; i += 3) {
+      const r = Math.hypot(outcome.positions[i] - 12, outcome.positions[i + 2] + 7);
+      const y = outcome.positions[i + 1];
+      if (y > 14.6 && y < 22.9 && r > 5) expect(r).toBeGreaterThan(15 * Math.cos(Math.PI / 96) - 1e-6);
+      if (y > 5 && y < 12) deepest = Math.min(deepest, r);
+    }
+    expect(deepest).toBeLessThan(14.6);
+    // The texture keeps the masks it was made with.
+    const textured = surfaceTexturedShape(cylinder, outcome.positions, settings);
+    expect(textured?.surfaceTexture?.masks).toHaveLength(1);
   });
 });

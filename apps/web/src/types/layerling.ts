@@ -893,6 +893,12 @@ export type WorkplaneShape = {
    * settings it was made with. The body is a mesh with the relief; undo takes it back.
    */
   surfaceTexture?: import("@/lib/surfaceTexture").SurfaceTextureSettings;
+  /**
+   * A helper for another body's surface texture: where this convex body reaches into it, the
+   * texture stays away ("exclude") or goes only there ("only"). It counts when that body gets its
+   * texture, also while this one is hidden.
+   */
+  surfaceTextureMask?: import("@/lib/surfaceTexture").SurfaceTextureMaskMode;
   importedMesh?: {
     positions: number[];
     normals?: number[];

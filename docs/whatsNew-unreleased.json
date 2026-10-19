@@ -8,5 +8,15 @@
       "de": "In den Einstellungen einer Form gibt es jetzt „Oberfläche“: Rillen, Rändel, Waben oder Noppen werden auf jeden Körper aufgebracht, für besseren Halt oder fürs Auge. Um eine Achse geht das Muster an der Naht genau auf, Boden und Deckel bleiben auf Wunsch glatt. Der Körper wird ein Netz mit dem Relief; Rückgängig nimmt es zurück.",
       "en": "The settings of a shape now have \"Surface texture\": grooves, knurling, honeycomb or bumps go onto any body, for grip or for looks. Around an axis the pattern closes exactly at the seam, and the bottom and top can stay smooth. The body becomes a mesh with the relief; undo takes it back."
     }
+  },
+  {
+    "title": {
+      "de": "Muster-Masken: Teile glatt lassen",
+      "en": "Texture masks: keep parts smooth"
+    },
+    "body": {
+      "de": "Ein Quader, Zylinder oder eine Kugel kann jetzt eine Muster-Maske sein: Wo er in einen anderen Körper hineinreicht, bleibt dessen Oberfläche glatt – oder bekommt nur dort ein Muster. So bleibt etwa die Fläche für ein Etikett auf einem gerändelten Griff frei.",
+      "en": "A box, cylinder or sphere can now be a texture mask: where it reaches into another body, that body's surface texture stays away, or goes only there. That keeps the place for a label on a knurled grip smooth, for example."
+    }
   }
 ]

@@ -166,5 +166,7 @@ Rillen, Rändel, Waben oder Noppen auf einem Körper, für besseren Halt oder f�
 
 Unter {{ui:inspector.more}} legst du fest, wohin das Muster kommt: Außen- und Innenwände, wie weit Unter- und Oberseite glatt bleiben (eine glatte Unterseite hält den Körper flach auf dem Druckbett), ein Bereich der Höhe und ob scharfe Kanten glatt bleiben. Neben allem, was glatt bleibt, blendet das Muster weich ein; {{ui:inspector.surfaceFade}} legt fest, über wie viele Millimeter. Das {{ui:inspector.surfaceProfile}} formt den Querschnitt einer Rille oder Fuge: Spitz und Flach werden genau, Rund in so vielen Stufen, wie die {{ui:inspector.surfaceDetail}} vorgibt.
 
+Soll ein Teil des Körpers glatt bleiben oder nur ein Teil ein Muster bekommen, nimm einen Hilfskörper: Setze einen Quader, einen Zylinder oder eine Kugel an die Stelle, markiere ihn und wähle unter {{ui:inspector.surfaceMask}} entweder {{ui:surfaceTexture.maskExclude}} oder {{ui:surfaceTexture.maskOnly}}. Er wird durchsichtig und wirkt, wenn der andere Körper seine Oberfläche bekommt, auch ausgeblendet. Blende ihn vor dem Drucken aus oder lösche ihn.
+
 Das Ergebnis ist ein Netz wie ein importiertes Modell. Rückgängig nimmt die Oberfläche zurück, und die Karte behält deine Einstellungen: Ändere sie und bring die Oberfläche neu auf. Ein Körper, der schon eine Oberfläche trägt, nimmt keine zweite.
 

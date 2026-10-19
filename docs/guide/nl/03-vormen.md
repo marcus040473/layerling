@@ -165,4 +165,6 @@ Groeven, kartel, honingraat of noppen op een lichaam, voor meer grip of voor het
 
 Onder {{ui:inspector.more}} kies je waar het patroon komt: buiten- en binnenwanden, hoe ver de onder- en bovenkant glad blijven (een gladde onderkant houdt het lichaam vlak op het bed), een deel van de hoogte en of scherpe randen glad blijven. Naast alles wat glad blijft, komt het patroon zacht op; {{ui:inspector.surfaceFade}} bepaalt over hoeveel millimeter. Het {{ui:inspector.surfaceProfile}} vormt de doorsnede van een groef of voeg: spits en vlak worden exact, rond in zoveel stappen als de {{ui:inspector.surfaceDetail}} toelaat.
 
+Moet een deel van het lichaam glad blijven, of alleen een deel een patroon krijgen, gebruik dan een hulplichaam: zet een kubus, een cilinder of een bol op die plek, selecteer hem en kies onder {{ui:inspector.surfaceMask}} {{ui:surfaceTexture.maskExclude}} of {{ui:surfaceTexture.maskOnly}}. Hij wordt doorzichtig en telt mee wanneer het andere lichaam zijn structuur krijgt, ook als hij verborgen is. Verberg of verwijder hem voor het printen.
+
 Het resultaat is een mesh zoals een geïmporteerd model. Ongedaan maken neemt de structuur terug, en de kaart houdt je instellingen vast: wijzig ze en breng de structuur opnieuw aan. Een lichaam dat al een structuur draagt, neemt geen tweede.

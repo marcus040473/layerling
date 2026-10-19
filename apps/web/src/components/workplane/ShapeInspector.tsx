@@ -159,8 +159,8 @@ import { t, type MessageKey } from "@/lib/i18n";
 import { localizedError } from "@/lib/userErrors";
 import { displayShapeName, makeShapeFromAsset, renamedShapeName } from "@/lib/shapeCatalog";
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
-import { SURFACE_TEXTURE_LABELS, surfacePatternLabel } from "@/lib/surfaceTextureShape";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMaskMode, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel } from "@/lib/surfaceTextureShape";
 import { shapeDefaultsAsset, shapeDefaultsFromShape } from "@/lib/shapeDefaults";
 import { MAX_SCREW_HOLE_ANGLE, MIN_SCREW_HOLE_ANGLE, normalizeScrewHoleAngle, normalizeScrewHoleHeadDepth, normalizeScrewHoleShaft } from "@/lib/screwHoleGeometry";
 import { MAX_TEARDROP_TIP_ANGLE, MIN_TEARDROP_TIP_ANGLE, normalizeTeardropTipAngle, teardropHeightForTipAngle, teardropTipAngle } from "@/lib/teardropGeometry";
@@ -2795,6 +2795,28 @@ export function ShapeInspector({
         />
       ) : null}
 
+      {offersSurfaceTextureMask(shape) ? (
+        <div className="property-card">
+          <div className="property-list cylinder-wrap-body">
+            <SelectProperty
+              type="select"
+              label={t("inspector.surfaceMask")}
+              value={shape.surfaceTextureMask ?? "none"}
+              options={(["none", ...SURFACE_TEXTURE_MASK_MODES] as const).map((value) => ({ value, label: t(SURFACE_TEXTURE_LABELS.mask[value]) }))}
+              disabled={locked}
+              // A mask is a helper one looks through: it turns transparent on the way.
+              onChange={(value) => onUpdate(value === "none" ? { surfaceTextureMask: undefined } : { surfaceTextureMask: value as SurfaceTextureMaskMode, transparent: true })}
+            />
+            {shape.surfaceTextureMask ? (
+              <p className="cylinder-wrap-hint">
+                {t("inspector.surfaceMaskHint")}
+                <GuideHelpLink section="surfaceTexture" className="inspector-help-link" />
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {onTextTags && shape.kind === "text" ? (
         <NameListCard key={`names-${shape.id}`} shapeId={shape.id} disabled={locked} onTextTags={onTextTags} onInteractionActiveChange={onInteractionActiveChange} />
       ) : null}
@@ -3831,6 +3853,7 @@ function SurfaceTextureCard({
                     disabled={disabled || busy}
                     onChange={(value) => set({ detail: value as SurfaceTextureSettings["detail"] })}
                   />
+                  <p className="cylinder-wrap-hint">{t("inspector.surfaceMaskTip")}</p>
                 </>
               ) : null}
               <p className="cylinder-wrap-hint">

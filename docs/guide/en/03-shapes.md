@@ -165,5 +165,7 @@ Grooves, knurling, honeycomb or bumps on a body, for a better grip or for looks:
 
 Under {{ui:inspector.more}} you choose where the pattern goes: outer and inner walls, how far the bottom and the top stay smooth (a smooth bottom keeps the body flat on the bed), a band of the height, and whether sharp edges stay smooth. Next to everything that stays smooth, the pattern fades in gently; {{ui:inspector.surfaceFade}} sets over how many millimetres. {{ui:inspector.surfaceProfile}} shapes the cross-section of a groove or joint: pointed and flat come out exactly, round in as many steps as {{ui:inspector.surfaceDetail}} gives it.
 
+To keep part of the body smooth, or to texture only a part, use a helper body: put a box, a cylinder or a sphere where it should be, select it and choose under {{ui:inspector.surfaceMask}} either {{ui:surfaceTexture.maskExclude}} or {{ui:surfaceTexture.maskOnly}}. It turns transparent, and it counts when the other body gets its texture, also while it is hidden. Hide or delete it before printing.
+
 The result is a mesh like an imported model. Undo takes the texture back, and the card keeps your settings: change them and apply again. A body that carries a texture does not take a second one.
 

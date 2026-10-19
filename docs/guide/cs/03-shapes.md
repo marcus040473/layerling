@@ -165,4 +165,6 @@ Drážky, vroubkování, plástev nebo výstupky na tělese, pro lepší úchop 
 
 V části {{ui:inspector.more}} určíte, kam vzor přijde: vnější a vnitřní stěny, jak daleko zůstanou spodek a vršek hladké (hladký spodek drží těleso rovně na podložce), část výšky a zda ostré hrany zůstanou hladké. Vedle všeho, co zůstává hladké, vzor plynule nabíhá; {{ui:inspector.surfaceFade}} určuje, na kolika milimetrech. {{ui:inspector.surfaceProfile}} určuje průřez drážky nebo spáry: špičatý a plochý vycházejí přesně, oblý v tolika krocích, kolik dovolí {{ui:inspector.surfaceDetail}}.
 
+Má-li část tělesa zůstat hladká nebo dostat vzor jen část, použijte pomocné těleso: umístěte tam kvádr, válec nebo kouli, vyberte je a v položce {{ui:inspector.surfaceMask}} zvolte {{ui:surfaceTexture.maskExclude}} nebo {{ui:surfaceTexture.maskOnly}}. Stane se průhledným a uplatní se, když druhé těleso dostane texturu, i když je skryté. Před tiskem je skryjte nebo smažte.
+
 Výsledek je síť jako importovaný model. Zpět texturu odebere a karta si nastavení ponechá: změňte je a naneste texturu znovu. Těleso, které už texturu nese, druhou nepřijme.

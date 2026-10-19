@@ -66,6 +66,19 @@ export type SurfaceTextureDetail = (typeof SURFACE_TEXTURE_DETAILS)[number];
 /** Axes as the editor shows them: X right, Y back, Z up. */
 export const SURFACE_TEXTURE_AXES = ["x", "y", "z"] as const;
 export type SurfaceTextureAxis = (typeof SURFACE_TEXTURE_AXES)[number];
+/** A mask keeps the texture away from what lies inside it, or is the only place the texture goes. */
+export const SURFACE_TEXTURE_MASK_MODES = ["exclude", "only"] as const;
+export type SurfaceTextureMaskMode = (typeof SURFACE_TEXTURE_MASK_MODES)[number];
+export const SURFACE_TEXTURE_MAX_MASKS = 20;
+export const SURFACE_TEXTURE_MAX_MASK_PLANES = 2048;
+
+/**
+ * A helper body for the texture: a convex body (a box, a cylinder, a sphere, a cone) given by the
+ * planes of its faces, four numbers each - the normal and the offset d, with the inside where
+ * normal · point <= d - in the editor's inside frame. `box` (min x, y, z, max x, y, z), when given,
+ * lets the test pass over the points far from the mask quickly.
+ */
+export type SurfaceTextureMask = { mode: SurfaceTextureMaskMode; planes: number[]; box?: number[] };
 
 export type SurfaceTextureSettings = {
   pattern: SurfaceTexturePattern;
@@ -99,6 +112,8 @@ export type SurfaceTextureSettings = {
   outside: boolean;
   inside: boolean;
   detail: SurfaceTextureDetail;
+  /** Helper bodies: the texture stays out of every "exclude" mask and, with any "only" mask, goes only into those. */
+  masks: SurfaceTextureMask[];
 };
 
 export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object.freeze({
@@ -124,6 +139,7 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   outside: true,
   inside: false,
   detail: "medium",
+  masks: [],
 });
 
 type NumberKey = { [K in keyof SurfaceTextureSettings]: SurfaceTextureSettings[K] extends number ? K : never }[keyof SurfaceTextureSettings];
@@ -196,6 +212,29 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
     out[key] = clamp(out[key], ...SURFACE_TEXTURE_LIMITS[key]);
   });
   if (out.zoneTo < out.zoneFrom) [out.zoneFrom, out.zoneTo] = [out.zoneTo, out.zoneFrom];
+  out.masks = normalizeSurfaceTextureMasks(source.masks);
+  return out;
+}
+
+/** Masks kept to what can be used: a known mode, whole planes of finite numbers with a normal, within the limits. */
+export function normalizeSurfaceTextureMasks(input: unknown): SurfaceTextureMask[] {
+  if (!Array.isArray(input)) return [];
+  const out: SurfaceTextureMask[] = [];
+  for (const entry of input.slice(0, SURFACE_TEXTURE_MAX_MASKS)) {
+    if (!entry || typeof entry !== "object") continue;
+    const { mode, planes, box } = entry as { mode?: unknown; planes?: unknown; box?: unknown };
+    if (!SURFACE_TEXTURE_MASK_MODES.includes(mode as SurfaceTextureMaskMode) || !Array.isArray(planes)) continue;
+    if (planes.length === 0 || planes.length % 4 !== 0 || planes.length > SURFACE_TEXTURE_MAX_MASK_PLANES * 4) continue;
+    if (!planes.every((value) => typeof value === "number" && Number.isFinite(value))) continue;
+    const clean: number[] = [];
+    for (let k = 0; k < planes.length; k += 4) {
+      const length = Math.hypot(planes[k], planes[k + 1], planes[k + 2]);
+      if (length < 1e-9) continue;
+      clean.push(planes[k] / length, planes[k + 1] / length, planes[k + 2] / length, planes[k + 3] / length);
+    }
+    const usableBox = Array.isArray(box) && box.length === 6 && box.every((value) => typeof value === "number" && Number.isFinite(value)) ? (box as number[]) : null;
+    if (clean.length) out.push({ mode: mode as SurfaceTextureMaskMode, planes: clean, ...(usableBox ? { box: [...usableBox] } : {}) });
+  }
   return out;
 }
 
@@ -971,6 +1010,44 @@ function refineFlanks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
   return cur;
 }
 
+/**
+ * Whether the masks keep a point smooth (screen frame), or null without masks. A point on a mask's
+ * face counts as inside it. Inside any "exclude" mask it stays smooth; with any "only" mask, it
+ * stays smooth unless it lies in one of those.
+ */
+function maskTest(masks: SurfaceTextureMask[]) {
+  if (!masks.length) return null;
+  // Into the screen frame: (x, y, z) -> (x, -z, y), for the normal as for a point; the offset stays.
+  const screen = masks.map(({ mode, planes, box }) => {
+    const out = new Float64Array(planes.length);
+    for (let k = 0; k < planes.length; k += 4) {
+      out[k] = planes[k];
+      out[k + 1] = -planes[k + 2];
+      out[k + 2] = planes[k + 1];
+      out[k + 3] = planes[k + 3];
+    }
+    // The box turns the same way: x stays, the inside z becomes minus y, the inside y becomes z.
+    const bounds = box ? [box[0], -box[5], box[1], box[3], -box[2], box[4]] : [-Infinity, -Infinity, -Infinity, Infinity, Infinity, Infinity];
+    return { mode, planes: out, bounds };
+  });
+  const hasOnly = screen.some((mask) => mask.mode === "only");
+  const inside = ({ planes, bounds }: (typeof screen)[number], x: number, y: number, z: number) => {
+    const tolerance = 1e-6;
+    if (x < bounds[0] - tolerance || y < bounds[1] - tolerance || z < bounds[2] - tolerance || x > bounds[3] + tolerance || y > bounds[4] + tolerance || z > bounds[5] + tolerance) return false;
+    for (let k = 0; k < planes.length; k += 4) if (planes[k] * x + planes[k + 1] * y + planes[k + 2] * z - planes[k + 3] > tolerance) return false;
+    return true;
+  };
+  return (x: number, y: number, z: number) => {
+    let inOnly = false;
+    for (const mask of screen) {
+      if (!inside(mask, x, y, z)) continue;
+      if (mask.mode === "exclude") return true;
+      inOnly = true;
+    }
+    return hasOnly && !inOnly;
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /* Applying                                                            */
 /* ------------------------------------------------------------------ */
@@ -1224,7 +1301,14 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const s = normalizeSurfaceTexture(input);
     const preview = Boolean(options.preview);
     const maxTriangles = Math.max(1000, Math.round(options.maxTriangles ?? (preview ? SURFACE_TEXTURE_PREVIEW_TRIANGLES : SURFACE_TEXTURE_MAX_TRIANGLES)));
-    const layout = makeSurfaceTextureLayout(base, s);
+    const maskFree = maskTest(s.masks);
+    // Points the masks keep smooth do not count for the axis: a masked handle does not pull it aside.
+    let baseSkip: Uint8Array | null = null;
+    if (maskFree) {
+      baseSkip = new Uint8Array(base.vertices.length / 3);
+      for (let i = 0; i < baseSkip.length; i += 1) baseSkip[i] = maskFree(base.vertices[i * 3], base.vertices[i * 3 + 1], base.vertices[i * 3 + 2]) ? 1 : 0;
+    }
+    const layout = makeSurfaceTextureLayout(base, s, baseSkip);
     const r = refined(s, layout, maxTriangles, preview ? 1.5 : 1);
 
     /** Weight per point: 0 = smooth, 1 = the full pattern, faded in over `fade` mm. */
@@ -1242,7 +1326,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       for (let i = 0; i < n; i += 1) {
         const z = v[i * 3 + 2];
         let free = false;
-        if (s.keepEdges && crease[i]) free = true;
+        if (maskFree && maskFree(v[i * 3], v[i * 3 + 1], z)) free = true;
+        else if (s.keepEdges && crease[i]) free = true;
         else if (s.bottomFree > 0 && down[i] >= cosBottom) free = true;
         else if (s.topFree > 0 && up[i] >= cosTop) free = true;
         else if ((s.zoneFrom > 0 && z < zFrom - 1e-9) || (s.zoneTo < 100 && z > zTo + 1e-9)) free = true;
@@ -1266,7 +1351,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // The groove grid: triangles along it are up to a few mm long. Where the pattern fades out (rim, smooth faces), the
     // fade over such a long triangle would smear and look restless. There - only there - it is refined finely.
     if (r.crossMax > 0) {
-      const weightKey = JSON.stringify([r.key, s.bottomFree, s.topFree, s.zoneFrom, s.zoneTo, s.keepEdges, s.edgeAngle, s.fade, s.margin, s.outside, s.inside, layout.center]);
+      const weightKey = JSON.stringify([r.key, s.bottomFree, s.topFree, s.zoneFrom, s.zoneTo, s.keepEdges, s.edgeAngle, s.fade, s.margin, s.outside, s.inside, layout.center, s.masks]);
       if (fadeCache?.key === weightKey) state = fadeCache.state;
       else {
         state = refineTransitions(r, s, layout, weights, Math.max(2 * r.crossMax, Math.min(0.5, Math.max(s.fade, 0.25) / 2)), maxTriangles);

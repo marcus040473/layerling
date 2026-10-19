@@ -239,6 +239,36 @@ describe("texturing a body", () => {
     expect(result.stats.nothing).toBe(true);
   });
 
+  it("keeps the texture out of a mask, or only in it", () => {
+    // A box over the upper half of the cylinder (inside frame: y up), as the planes of its faces.
+    const upperHalf = { planes: [1, 0, 0, 20, -1, 0, 0, 20, 0, 1, 0, 30, 0, -1, 0, -10, 0, 0, 1, 20, 0, 0, -1, 20] };
+    const settings = { pattern: "knurl", spacing: 3, depth: 0.5, fade: 0.5 };
+    const wall = (result: SurfaceTextureResult) => usedPoints(result).filter((p) => p.r > 5);
+    const plain = 10 * Math.cos(Math.PI / 96) - 1e-6;
+    const kept = applySurfaceTexture(tube(10, 0, 20), { ...settings, masks: [{ mode: "exclude", ...upperHalf }] }, SMALL);
+    expectClosed(kept);
+    wall(kept).filter((p) => p.y > 10.6).forEach((p) => expect(p.r).toBeGreaterThan(plain));
+    expect(Math.min(...wall(kept).filter((p) => p.y > 3 && p.y < 9).map((p) => p.r))).toBeLessThan(9.6);
+    const only = applySurfaceTexture(tube(10, 0, 20), { ...settings, masks: [{ mode: "only", ...upperHalf }] }, SMALL);
+    expectClosed(only);
+    wall(only).filter((p) => p.y < 9.4).forEach((p) => expect(p.r).toBeGreaterThan(plain));
+    expect(Math.min(...wall(only).filter((p) => p.y > 11 && p.y < 17).map((p) => p.r))).toBeLessThan(9.6);
+  });
+
+  it("keeps only masks it can use", () => {
+    const masks = normalizeSurfaceTexture({
+      masks: [
+        { mode: "exclude", planes: [0, 2, 0, 4] },
+        { mode: "sometimes", planes: [1, 0, 0, 1] },
+        { mode: "only", planes: [1, 0, 0] },
+        { mode: "only", planes: [0, 0, 0, 1] },
+        { mode: "only", planes: [1, 0, Number.NaN, 1] },
+        "box",
+      ],
+    }).masks;
+    expect(masks).toEqual([{ mode: "exclude", planes: [0, 1, 0, 2] }]);
+  });
+
   it("refines once and reuses it when only the depth changes", () => {
     const session = createSurfaceTextureSession(tube(10, 0, 20));
     const first = session.apply({ pattern: "honeycomb", spacing: 4, depth: 0.3 }, SMALL);

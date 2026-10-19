@@ -233,8 +233,8 @@ import { useRememberedFlag } from "@/lib/useRememberedFlag";
 import { BUG_REPORT_FILE, bugReportText, rememberBugReportEvent, type BugReportEvent } from "@/lib/bugReport";
 import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
-import { canTextureSurface, offersSurfaceTexture, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
 import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierFaces, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierKind, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierQuality, CadModifierSpringPart, CadModifierThreadPart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
@@ -8207,9 +8207,12 @@ export function LayerlingEditor({
     }
     const source = selectedShape;
     setNotice(t("status.surfaceTexturing"));
+    // The masks in the design that reach into the body go with the settings, and are kept with the texture.
+    const masks = surfaceTextureMasksFor(source, shapesRef.current);
+    const used = { ...settings, masks };
     let outcome: Awaited<ReturnType<typeof textureSurfaceOffThread>>;
     try {
-      outcome = await textureSurfaceOffThread(surfaceTextureInput(source), settings);
+      outcome = await textureSurfaceOffThread(surfaceTextureInput(source), used);
     } catch (error) {
       setNotice(t("status.surfaceFailed", { error: error instanceof Error ? error.message : String(error) }));
       return;
@@ -8218,7 +8221,7 @@ export function LayerlingEditor({
       setNotice(t("status.surfaceOutdated"));
       return;
     }
-    const textured = outcome.stats.nothing ? null : surfaceTexturedShape(source, outcome.positions, settings);
+    const textured = outcome.stats.nothing ? null : surfaceTexturedShape(source, outcome.positions, used);
     if (!textured) {
       setNotice(t("status.surfaceNothing"));
       return;
@@ -8228,6 +8231,7 @@ export function LayerlingEditor({
     const triangles = formatTriangleCount(stats.triangles);
     const message = [
       stats.around ? t("status.surfaceTexturedAround", { pattern, count: stats.around, triangles }) : t("status.surfaceTextured", { pattern, triangles }),
+      masks.length ? t("status.surfaceMasksUsed", { count: masks.length }) : "",
       stats.limited ? t("status.surfaceCoarser") : "",
       stats.tooDeep ? t("status.surfaceTooDeep") : "",
     ].filter(Boolean).join(" ");
@@ -9559,7 +9563,22 @@ export function LayerlingEditor({
         ["keepEdges", "outside", "inside"].forEach((key) => {
           if (params[key] !== undefined && typeof params[key] !== "boolean") throw new Error(`${key} must be true or false`);
         });
-        const settings = normalizeSurfaceTexture(params);
+        // Masks: the bodies named in `masks`, or else the bodies marked as masks that reach into this one.
+        let masks: SurfaceTextureMask[];
+        if (params.masks !== undefined) {
+          if (!Array.isArray(params.masks)) throw new Error("masks must be a list of { id, mode }");
+          masks = params.masks.map((entry: unknown) => {
+            const { id, mode } = (entry ?? {}) as { id?: unknown; mode?: unknown };
+            const body = typeof id === "string" ? findShape(id) : null;
+            if (!body) throw new Error(`No object ${String(id)} for a mask`);
+            if (mode !== "exclude" && mode !== "only") throw new Error("A mask's mode must be exclude or only");
+            if (body.id === target.id || !offersSurfaceTextureMask(body)) throw new Error(`${body.name} cannot be a mask: a mask is another box, cylinder, sphere, cone or pyramid`);
+            const mask = surfaceTextureMaskOf(body, mode);
+            if (!mask) throw new Error(`${body.name} has too many faces to be a mask`);
+            return mask;
+          });
+        } else masks = surfaceTextureMasksFor(target, currentShapes());
+        const settings = { ...normalizeSurfaceTexture(params), masks };
         const outcome = await textureSurfaceOffThread(surfaceTextureInput(target), settings);
         if (findShape(target.id) !== target) throw new Error("The object changed while the texture was computed; texture it again");
         const textured = outcome.stats.nothing ? null : surfaceTexturedShape(target, outcome.positions, settings);
@@ -9570,7 +9589,8 @@ export function LayerlingEditor({
           t("status.surfaceTextured", { pattern: surfacePatternLabel(settings.pattern), triangles: formatTriangleCount(outcome.stats.triangles) }),
         );
         const { triangles, around, spacing, limited, tooDeep, bedClamped } = outcome.stats;
-        return { object: mcpShapeSummary(textured), settings, texture: { triangles, around, spacing, limited, tooDeep, bedClamped } };
+        const { masks: _planes, ...shown } = settings;
+        return { object: mcpShapeSummary(textured), settings: shown, masks: masks.length, texture: { triangles, around, spacing, limited, tooDeep, bedClamped } };
       }
 
       if (command.action === "simplify_mesh") {
