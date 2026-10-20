@@ -21,6 +21,10 @@
  *   with kinks, branches and a tapering width; only the band round them is
  *   refined. Their notch can be filled by a body of its own (gold, a second
  *   filament), its top a little below the surface.
+ * - Text, stuck on (see vase/unfold.mjs): the surface round an anchor is rolled
+ *   out like a label pressed on, and the letters' outlines are laid onto it -
+ *   engraved or raised, along a vase's belly or over a box's edge. Only the
+ *   window round the text is refined.
  *
  * Around a cylinder the spacing is rounded so that a whole number of grooves
  * or cells goes round: the pattern closes at the seam. The axis of a round
@@ -51,8 +55,9 @@ import {
   type SurfaceMesh,
 } from "@/lib/surfaceTextureMesh";
 import { crackEdgeNear, crackFillBody, crackNetwork, crackValue, surfaceIndex, type CrackNetwork, type CrackSurfaceIndex } from "@/lib/vase/crack.mjs";
+import { nearestSurfacePoint, unfoldSurface } from "@/lib/vase/unfold.mjs";
 
-export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cracks"] as const;
+export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cracks", "text"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
 export const SURFACE_TEXTURE_PROFILES = ["round", "pointed", "flat"] as const;
@@ -143,6 +148,20 @@ export type SurfaceTextureSettings = {
   /** Fill the notch with a body of its own (gold, a second filament), its top `crackRecess` mm below the surface. */
   crackGold: boolean;
   crackRecess: number;
+  /** Text stuck on: the words, the font (as a text shape names it) and the height of the text's box, mm. */
+  textContent: string;
+  textFont: string;
+  textSize: number;
+  /** Where it sits: round the axis (degrees, 0 = the front, 90 = the right) and up it (% of the body's height). */
+  textAround: number;
+  textHeight: number;
+  /** Turned on the surface, degrees. */
+  textTurn: number;
+  /**
+   * The letters' outlines, made from the words and the font where fonts are at hand (see surfaceTextOutline.ts):
+   * rings [x0, y0, x1, y1, ...] in mm, y up, the text's box centred on 0, 0. Inside by the even-odd rule.
+   */
+  textOutline: number[][];
 };
 
 export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object.freeze({
@@ -180,6 +199,13 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   crackSeed: 1,
   crackGold: false,
   crackRecess: 0.3,
+  textContent: "Layerling",
+  textFont: "Multilanguage",
+  textSize: 10,
+  textAround: 0,
+  textHeight: 50,
+  textTurn: 0,
+  textOutline: [],
 });
 
 type NumberKey = { [K in keyof SurfaceTextureSettings]: SurfaceTextureSettings[K] extends number ? K : never }[keyof SurfaceTextureSettings];
@@ -204,6 +230,10 @@ export const SURFACE_TEXTURE_LIMITS: Record<NumberKey, [number, number]> = {
   crackRough: [0, 1],
   crackSeed: [0, 99999],
   crackRecess: [0, 3],
+  textSize: [2, 200],
+  textAround: [-180, 180],
+  textHeight: [0, 100],
+  textTurn: [-180, 180],
 };
 
 const CHOICES = {
@@ -223,6 +253,12 @@ const CRACK_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 1.5, medium:
 const CRACK_PROFILE: Record<SurfaceTextureProfile, string> = { round: "rund", pointed: "v", flat: "flach" };
 const CRACK_STYLE_NAMES: Record<SurfaceTextureCrackStyle, "riss" | "blitz"> = { crack: "riss", lightning: "blitz" };
 const CRACK_START_NAMES: Record<SurfaceTextureCrackStart, "oben" | "unten" | "aussen" | "frei"> = { top: "oben", bottom: "unten", rim: "aussen", anywhere: "frei" };
+/** Text: points per height of the text's box, by detail. */
+const TEXT_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 16, medium: 28, fine: 45 };
+/** Settings that are free words rather than a choice, and how long they may be. */
+const FREE_TEXT: Partial<Record<keyof SurfaceTextureSettings, number>> = { textContent: 200, textFont: 120 };
+/** At most this many points in a text's outlines. */
+export const SURFACE_TEXTURE_MAX_TEXT_POINTS = 60_000;
 
 /** Points per groove width or joint across (grooves, knurling, honeycomb). */
 const CROSS_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 6, medium: 10, fine: 16 };
@@ -258,6 +294,8 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
     if (typeof fallback === "number") {
       const n = typeof value === "string" && value.trim() === "" ? NaN : Number(value);
       if (Number.isFinite(n)) target[key] = n;
+    } else if (FREE_TEXT[key] !== undefined) {
+      if (typeof value === "string") target[key] = value.slice(0, FREE_TEXT[key]);
     } else if (typeof fallback === "boolean") {
       if (typeof value === "boolean") target[key] = value;
       else if (value === "true" || value === "false") target[key] = value === "true";
@@ -272,6 +310,21 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
   out.crackCount = Math.round(out.crackCount);
   out.crackSeed = Math.round(out.crackSeed);
   out.masks = normalizeSurfaceTextureMasks(source.masks);
+  out.textOutline = normalizeSurfaceTextOutline(source.textOutline);
+  return out;
+}
+
+/** A text's outlines kept to what can be used: rings of at least three finite points, within the limit on points. */
+export function normalizeSurfaceTextOutline(input: unknown): number[][] {
+  if (!Array.isArray(input)) return [];
+  const out: number[][] = [];
+  let budget = SURFACE_TEXTURE_MAX_TEXT_POINTS * 2;
+  for (const ring of input) {
+    if (!Array.isArray(ring) || ring.length < 6 || ring.length % 2 !== 0 || ring.length > budget) continue;
+    if (!ring.every((value) => typeof value === "number" && Number.isFinite(value) && Math.abs(value) < 1e5)) continue;
+    out.push(ring.slice());
+    budget -= ring.length;
+  }
   return out;
 }
 
@@ -393,6 +446,140 @@ export type SurfaceTextureLayout = {
   rMax: number;
   /** Cracks: their lines on the surface (set by the session, which knows the body). */
   crack?: CrackNetwork | null;
+  /** Text: where it is stuck on and the window round it (set by the session). */
+  text?: SurfaceTextPlacement | null;
+};
+
+/**
+ * A text stuck on: the anchor on the surface (the middle of the text's box), the box (mm), the window round it (half
+ * width and height with a margin) and how far the unrolling reaches.
+ */
+export type SurfaceTextPlacement = { point: number[]; face: number; width: number; height: number; halfW: number; halfH: number; reach: number };
+
+/** The box round a text's outlines. */
+function outlineBox(rings: number[][]) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const ring of rings) {
+    for (let k = 0; k < ring.length; k += 2) {
+      minX = Math.min(minX, ring[k]); maxX = Math.max(maxX, ring[k]);
+      minY = Math.min(minY, ring[k + 1]); maxY = Math.max(maxY, ring[k + 1]);
+    }
+  }
+  return Number.isFinite(minX) ? { minX, maxX, minY, maxY } : null;
+}
+
+/**
+ * How much of a text covers a point of its plane (0 to 1): inside the outlines (even-odd) 1, outside 0, with a
+ * soft edge `soft` mm wide across each outline, so a grid of that size shows the letters' edges cleanly. Edges are
+ * kept in rows (for the inside test) and in cells (for the distance).
+ */
+function textCoverage(rings: number[][], soft: number) {
+  const box = outlineBox(rings);
+  if (!box) return () => 0;
+  const edges: number[] = [];
+  for (const ring of rings) {
+    const n = ring.length / 2;
+    for (let k = 0; k < n; k += 1) {
+      const j = (k + 1) % n;
+      if (ring[k * 2] === ring[j * 2] && ring[k * 2 + 1] === ring[j * 2 + 1]) continue;
+      edges.push(ring[k * 2], ring[k * 2 + 1], ring[j * 2], ring[j * 2 + 1]);
+    }
+  }
+  const E = edges.length / 4;
+  const cell = Math.max(soft, (box.maxY - box.minY) / 48, 0.05);
+  const cols = Math.max(1, Math.ceil((box.maxX - box.minX + 2 * soft) / cell) + 1);
+  const rows = Math.max(1, Math.ceil((box.maxY - box.minY + 2 * soft) / cell) + 1);
+  const x0 = box.minX - soft, y0 = box.minY - soft;
+  const byRow: number[][] = Array.from({ length: rows }, () => []);
+  const byCell = new Map<number, number[]>();
+  for (let e = 0; e < E; e += 1) {
+    const ax = edges[e * 4], ay = edges[e * 4 + 1], bx = edges[e * 4 + 2], by = edges[e * 4 + 3];
+    const r0 = Math.max(0, Math.floor((Math.min(ay, by) - y0) / cell)), r1 = Math.min(rows - 1, Math.floor((Math.max(ay, by) - y0) / cell));
+    for (let r = r0; r <= r1; r += 1) byRow[r].push(e);
+    const c0 = Math.max(0, Math.floor((Math.min(ax, bx) - soft - x0) / cell)), c1 = Math.min(cols - 1, Math.floor((Math.max(ax, bx) + soft - x0) / cell));
+    const s0 = Math.max(0, Math.floor((Math.min(ay, by) - soft - y0) / cell)), s1 = Math.min(rows - 1, Math.floor((Math.max(ay, by) + soft - y0) / cell));
+    for (let r = s0; r <= s1; r += 1) for (let c = c0; c <= c1; c += 1) {
+      const key = r * cols + c;
+      const list = byCell.get(key);
+      if (list) list.push(e);
+      else byCell.set(key, [e]);
+    }
+  }
+  return (x: number, y: number) => {
+    if (x < x0 || y < y0 || x > box.maxX + soft || y > box.maxY + soft) return 0;
+    const r = Math.min(rows - 1, Math.floor((y - y0) / cell)), c = Math.min(cols - 1, Math.floor((x - x0) / cell));
+    let inside = false;
+    for (const e of byRow[r]) {
+      const ay = edges[e * 4 + 1], by = edges[e * 4 + 3];
+      if (ay > y === by > y) continue;
+      const ax = edges[e * 4], bx = edges[e * 4 + 2];
+      if (x < ax + ((y - ay) * (bx - ax)) / (by - ay)) inside = !inside;
+    }
+    let d = soft;
+    for (const e of byCell.get(r * cols + c) ?? []) {
+      const ax = edges[e * 4], ay = edges[e * 4 + 1], dx = edges[e * 4 + 2] - ax, dy = edges[e * 4 + 3] - ay;
+      const l2 = dx * dx + dy * dy;
+      const t = l2 > 0 ? clamp(((x - ax) * dx + (y - ay) * dy) / l2, 0, 1) : 0;
+      d = Math.min(d, Math.hypot(ax + t * dx - x, ay + t * dy - y));
+    }
+    const half = Math.min(1, d / soft) / 2;
+    return inside ? 0.5 + half : 0.5 - half;
+  };
+}
+
+/**
+ * A text's value per point from its place in the unrolled plane (NaN: not reached, 0): the letters, turned by `turn`
+ * degrees, cover it or not.
+ */
+function textValues(U: Float64Array, V: Float64Array, rings: number[][], turn: number, soft: number) {
+  const cover = textCoverage(rings, soft);
+  const a = (turn * Math.PI) / 180, c = Math.cos(a), sn = Math.sin(a);
+  const out = new Float32Array(U.length);
+  for (let i = 0; i < U.length; i += 1) if (Number.isFinite(U[i])) out[i] = cover(U[i] * c + V[i] * sn, -U[i] * sn + V[i] * c);
+  return out;
+}
+
+/** A hash of a text's outlines, for knowing when they changed. */
+function outlineKey(rings: number[][]) {
+  let h = 2166136261;
+  for (const ring of rings) {
+    h = Math.imul(h ^ ring.length, 16777619);
+    for (const value of ring) h = Math.imul(h ^ Math.round(value * 1000), 16777619);
+  }
+  return h >>> 0;
+}
+
+/** The first face a ray meets, from `from` along the unit direction `dir` (Möller–Trumbore); null when it meets none. */
+function firstHit(mesh: { vertices: Float64Array; indices: Uint32Array }, from: number[], dir: number[]) {
+  const v = mesh.vertices, I = mesh.indices;
+  let best = Infinity, face = -1;
+  for (let t = 0; t < I.length; t += 3) {
+    const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3;
+    const e1x = v[b] - v[a], e1y = v[b + 1] - v[a + 1], e1z = v[b + 2] - v[a + 2];
+    const e2x = v[c] - v[a], e2y = v[c + 1] - v[a + 1], e2z = v[c + 2] - v[a + 2];
+    const px = dir[1] * e2z - dir[2] * e2y, py = dir[2] * e2x - dir[0] * e2z, pz = dir[0] * e2y - dir[1] * e2x;
+    const det = e1x * px + e1y * py + e1z * pz;
+    if (Math.abs(det) < 1e-12) continue;
+    const sx = from[0] - v[a], sy = from[1] - v[a + 1], sz = from[2] - v[a + 2];
+    const u = (sx * px + sy * py + sz * pz) / det;
+    if (u < 0 || u > 1) continue;
+    const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x;
+    const w = (dir[0] * qx + dir[1] * qy + dir[2] * qz) / det;
+    if (w < 0 || u + w > 1) continue;
+    const distance = (e2x * qx + e2y * qy + e2z * qz) / det;
+    if (distance > 0 && distance < best) {
+      best = distance;
+      face = t / 3;
+    }
+  }
+  return face < 0 ? null : { face, point: [from[0] + dir[0] * best, from[1] + dir[1] * best, from[2] + dir[2] * best] };
+}
+
+/** Which way 0 degrees round the axis and 90 degrees look: the front and the right upright, the top lying (x or y). */
+const TEXT_FRONT: Record<SurfaceTextureAxis, [number[], number[]]> = {
+  z: [[0, -1, 0], [1, 0, 0]],
+  y: [[0, 0, 1], [1, 0, 0]],
+  x: [[0, 0, 1], [0, -1, 0]],
 };
 
 function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
@@ -1129,6 +1316,8 @@ type RefinedState = {
   crossMax: number;
   limited: boolean;
   slice: { smoothFace: Uint8Array } | null;
+  /** Text: each point's place in the unrolled plane (NaN: not reached), how soft the letters' edges are and the points torn. */
+  text?: { U: Float64Array; V: Float64Array; soft: number; torn: number } | null;
 };
 
 export type SurfaceTextureStats = {
@@ -1151,6 +1340,11 @@ export type SurfaceTextureStats = {
   removed: SurfaceBase["removed"];
   /** Cracks: how many lines (branches count) and how long they are together, mm; null for the other patterns. */
   cracks: { lines: number; length: number } | null;
+  /**
+   * Text: whether letters came onto the body, and how many points of them lie where two ways round a corner met and do
+   * not agree (the text tears there, as a label would); null for the other patterns.
+   */
+  text: { placed: boolean; torn: number } | null;
 };
 
 export type SurfaceTextureResult = {
@@ -1227,6 +1421,40 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
   }
 
   /**
+   * Where a text is stuck on: a ray from far out, `textAround` degrees round the axis (0 the front, 90 the right; lying
+   * along x or y, 0 the top) and `textHeight` % up it, towards the axis - the first face it meets is the middle of the
+   * text. The window round the text gets a margin: the unrolling and the finer grid reach a little beyond the letters.
+   */
+  function textPlacement(s: SurfaceTextureSettings, layout: SurfaceTextureLayout): SurfaceTextPlacement | null {
+    const box = outlineBox(s.textOutline);
+    if (!box) return null;
+    const ax = AXIS_INDEX[s.axis];
+    const [i1, i2] = acrossAxes(s.axis);
+    const [front, right] = TEXT_FRONT[s.axis];
+    const a = (s.textAround * Math.PI) / 180;
+    const dir = front.map((f, k) => Math.cos(a) * f + Math.sin(a) * right[k]);
+    const middle = [0, 0, 0];
+    middle[ax] = base.min[ax] + clamp(s.textHeight / 100, 0.001, 0.999) * base.size[ax];
+    middle[i1] = layout.center[0];
+    middle[i2] = layout.center[1];
+    const far = Math.hypot(...base.size) + 10;
+    const hit = firstHit(base, middle.map((m, k) => m + dir[k] * far), dir.map((d) => -d)) ?? nearestSurfacePoint(base, middle.map((m, k) => m + dir[k] * layout.rMax));
+    if (!hit) return null;
+    const width = box.maxX - box.minX, height = box.maxY - box.minY;
+    const margin = Math.max(0.05 * Math.max(width, height), 1) + 1;
+    const halfW = width / 2 + margin, halfH = height / 2 + margin;
+    return { point: hit.point, face: hit.face, width, height, halfW, halfH, reach: Math.hypot(halfW, halfH) + 0.5 };
+  }
+
+  /**
+   * Unroll the surface round a text's anchor, only in its window (see vase/unfold.mjs). The face under the anchor is
+   * looked for anew in a refined mesh: its triangles are numbered differently.
+   */
+  function unrolled(mesh: { vertices: Float64Array; indices: Uint32Array }, place: SurfaceTextPlacement, s: SurfaceTextureSettings, face = -1) {
+    return unfoldSurface(mesh, place.point, { axis: s.axis, face, reach: place.reach, window: { halfW: place.halfW, halfH: place.halfH, turn: s.textTurn } });
+  }
+
+  /**
    * Input points that surely stay smooth after the layout: inside or outside walls, top, bottom, as
    * set. They need no fine grid. Decided per face first, and a point is smooth only when all its
    * faces are - a point on the rim belongs to the wall too and needs the grid there. The decision
@@ -1287,9 +1515,13 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     let crossMax = 0;
     let raised = false;
     const cracks = s.pattern === "cracks";
+    const text = s.pattern === "text";
     if (cracks) {
       // Cracks: the body's own grid, refined only in the band round the lines (below).
       edge = Math.max(0.06, s.crackWidth / 2 / CRACK_STEPS[s.detail]) * scale;
+    } else if (text) {
+      // Text: the body's own grid, refined only in the window round the letters (below).
+      edge = Math.max(0.05, (layout.text?.height ?? s.textSize) / TEXT_STEPS[s.detail]) * scale;
     } else if (slice) {
       // Across: the places of the profile, while cutting. Along, the pattern does not change, and the body's roundness is in
       // its own rows already - at most 6 mm (a 6 mm chord on 80 mm radius strays 0.06 mm), so refining where the pattern
@@ -1307,12 +1539,77 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     for (let i = 0; i < smooth.points.length; i += 1) smoothKey = Math.imul(smoothKey ^ smooth.points[i] ^ (i & 0xff), 16777619);
     const layoutKey = cracks
       ? JSON.stringify([s.pattern, crackCache?.key ?? null])
-      : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center]);
+      : text
+        ? JSON.stringify([s.pattern, layout.text ? [layout.text.point, layout.text.face] : null, s.axis, s.textTurn, outlineKey(s.textOutline)])
+        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center]);
     const key = `${edge.toFixed(5)}|${smoothKey}|${maxTriangles}|${s.edgeAngle}|${s.detail}|${scale}|${layoutKey}`;
     if (cache?.key === key) return cache;
     let mesh: SurfaceMesh;
     const net = layout.crack;
-    if (cracks) {
+    const place = layout.text;
+    let unrolledText: RefinedState["text"] = null;
+    if (text) {
+      mesh = baseMesh(base);
+      if (place) {
+        // Only where the window reaches, not the inner wall of a thin vase behind it: an edge at a point of the body
+        // the window does not reach is not split (new points come from edges split already, so they belong to it).
+        // Not split at either end, as with smooth points: an edge never split while its neighbours are would pull
+        // them into slivers.
+        const first = unrolled(base, place, s, place.face);
+        const nBase = base.vertices.length / 3;
+        // Estimate first: the circle round the window over a triangle's area; too many - coarser.
+        const budget = Math.max(1, maxTriangles - mesh.indices.length / 3);
+        const estimate = (1.6 * Math.PI * place.reach ** 2) / (0.433 * edge * edge);
+        if (estimate > budget) {
+          edge *= Math.sqrt(estimate / budget);
+          raised = true;
+        }
+        const [px, py, pz] = place.point;
+        const reach2 = place.reach ** 2;
+        // Asked the same way from both triangles of an edge, or they would split it differently.
+        const near = (verts: ArrayLike<number>, p: number, q: number) => {
+          const a = Math.min(p, q), b = Math.max(p, q);
+          if ((a < nBase && !Number.isFinite(first.U[a])) || (b < nBase && !Number.isFinite(first.U[b]))) return false;
+          const ox = verts[a * 3] - px, oy = verts[a * 3 + 1] - py, oz = verts[a * 3 + 2] - pz;
+          const dx = verts[b * 3] - verts[a * 3], dy = verts[b * 3 + 1] - verts[a * 3 + 1], dz = verts[b * 3 + 2] - verts[a * 3 + 2];
+          const l2 = dx * dx + dy * dy + dz * dz;
+          const t = l2 > 0 ? clamp(-(ox * dx + oy * dy + oz * dz) / l2, 0, 1) : 0;
+          return (ox + t * dx) ** 2 + (oy + t * dy) ** 2 + (oz + t * dz) ** 2 <= reach2;
+        };
+        const split = subdivide(mesh, edge, maxTriangles, null, null, near);
+        mesh = { ...split, parents: Uint32Array.from(split.parents, (f) => mesh.parents[f]) };
+        // The letters' edges: finer where the value jumps (as at the flanks of bumps), unrolled anew each round.
+        const fineEdge = edge / 2.5;
+        const fine2 = (fineEdge * 1.01) ** 2;
+        let uv = unrolled(mesh, place, s);
+        let finer = false;
+        for (let round = 0; round < FLANK_ROUNDS && !mesh.limited; round += 1) {
+          const values = textValues(uv.U, uv.V, s.textOutline, s.textTurn, Math.max(0.05, 0.75 * edge));
+          const v = mesh.vertices, I = mesh.indices;
+          const flags = new Uint8Array(v.length / 3);
+          let any = false;
+          for (let t = 0; t < I.length; t += 3) {
+            for (const [a, b] of [[I[t], I[t + 1]], [I[t + 1], I[t + 2]], [I[t + 2], I[t]]]) {
+              if (Math.abs(values[a] - values[b]) <= FLANK_JUMP) continue;
+              const dx = v[a * 3] - v[b * 3], dy = v[a * 3 + 1] - v[b * 3 + 1], dz = v[a * 3 + 2] - v[b * 3 + 2];
+              if (dx * dx + dy * dy + dz * dz <= fine2) continue;
+              flags[a] = 1;
+              flags[b] = 1;
+              any = true;
+            }
+          }
+          if (!any) break;
+          const next = subdivide(mesh, fineEdge, maxTriangles, null, flags);
+          if (next.indices.length === mesh.indices.length) break;
+          const parents = Uint32Array.from(next.parents, (f) => mesh.parents[f]);
+          mesh = { vertices: next.vertices, indices: next.indices, parents, limited: Boolean(mesh.limited || next.limited) };
+          uv = unrolled(mesh, place, s);
+          finer = true;
+        }
+        // The soft edge the grid can show: the fine one where the edges were refined.
+        unrolledText = { U: uv.U, V: uv.V, soft: Math.max(0.03, 0.75 * (finer && !mesh.limited ? fineEdge : edge)), torn: uv.torn };
+      }
+    } else if (cracks) {
       mesh = baseMesh(base);
       if (net && net.count) {
         // Estimate first: the band (length × width and the margin) over a triangle's area; too many - coarser.
@@ -1397,8 +1694,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       mesh = { ...cut.mesh, limited: Boolean(mesh.limited || cut.mesh.indices.length / 3 > maxTriangles) };
       cellSliced = true;
     }
-    if (!slice && !cracks && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles);
-    cache = withNormals(key, mesh, edge, crossMax, raised || Boolean(mesh.limited), slice ? { smoothFace: smooth.faces } : null, s.edgeAngle);
+    if (!slice && !cracks && !text && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles);
+    cache = { ...withNormals(key, mesh, edge, crossMax, raised || Boolean(mesh.limited), slice ? { smoothFace: smooth.faces } : null, s.edgeAngle), text: unrolledText };
     return cache;
   }
 
@@ -1457,8 +1754,12 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     }
     const layout = makeSurfaceTextureLayout(base, s, baseSkip);
     if (s.pattern === "cracks") layout.crack = crackLines(s, layout, maskFree);
+    if (s.pattern === "text") layout.text = textPlacement(s, layout);
     const r = refined(s, layout, maxTriangles, preview ? 1.5 : 1);
 
+    // A text goes where it was put: what stays smooth for a pattern all over (bottom, top, a wall, the height band, sharp
+    // edges) does not hold it back - masks do.
+    const placed = s.pattern === "text";
     /** Weight per point: 0 = smooth, 1 = the full pattern, faded in over `fade` mm. */
     const weightsFor = ({ mesh, normals, crease, down, up, adj }: RefinedState) => {
       const v = mesh.vertices;
@@ -1475,6 +1776,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         const z = v[i * 3 + 2];
         let free = false;
         if (maskFree && maskFree(v[i * 3], v[i * 3 + 1], z)) free = true;
+        else if (placed) free = false;
         else if (s.keepEdges && crease[i]) free = true;
         else if (s.bottomFree > 0 && down[i] >= cosBottom) free = true;
         else if (s.topFree > 0 && up[i] >= cosTop) free = true;
@@ -1519,6 +1821,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // Cracks with gold: how deep the notch is at each point; the points moved along `directions`.
     const gold = s.pattern === "cracks" && s.crackGold && s.direction === "inward" && Boolean(layout.crack?.count);
     const notch = gold ? new Float64Array(n) : null;
+    // Text: the values come from the unrolled plane, not from a projection.
+    const textValue = s.pattern === "text" && state.text ? textValues(state.text.U, state.text.V, s.textOutline, s.textTurn, state.text.soft) : null;
+    let lettered = 0;
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
       const nx = directions[i * 3], ny = directions[i * 3 + 1], nz = directions[i * 3 + 2];
@@ -1526,7 +1831,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       const wi = weights[i];
       if (wi > 0) {
         textured += used[i];
-        const value = surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
+        const value = textValue ? textValue[i] : surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
+        if (textValue && value > 0.5) lettered += used[i];
         d = wi * (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
         if (notch) notch[i] = wi * s.depth * value;
       }
@@ -1535,8 +1841,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       out[i * 3 + 2] = z + nz * d;
     }
     // With the bottom kept smooth, nothing belongs below the bed (the slicer would cut it off, or the first layer stick
-    // badly). With a patterned bottom it sinks on purpose.
-    const bedClamped = s.bottomFree > 0 ? clampToBed(out, v, mesh.indices, base.min[2]) : 0;
+    // badly). With a patterned bottom it sinks on purpose, as does a text put on the bottom itself.
+    const onBottom = placed && Boolean(layout.text && layout.text.point[2] <= base.min[2] + 1e-6);
+    const bedClamped = (placed ? !onBottom : s.bottomFree > 0) ? clampToBed(out, v, mesh.indices, base.min[2]) : 0;
     // Tiny edges (left over from fitting to the profile) are pulled together: slicers merge such close points themselves
     // and throw away the triangles without area - which tore edges open.
     let indices = mesh.indices;
@@ -1574,6 +1881,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         bedClamped,
         removed: base.removed,
         cracks: layout.crack ? { lines: layout.crack.lines.length, length: layout.crack.length } : null,
+        text: s.pattern === "text" ? { placed: lettered > 0, torn: state.text?.torn ?? 0 } : null,
       },
       fill,
     };

@@ -64,7 +64,7 @@ export const SURFACE_TEXTURE_LABELS: {
   crackStyle: Record<SurfaceTextureCrackStyle, MessageKey>;
   crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
 } = {
-  pattern: { grooves: "surfaceTexture.grooves", knurl: "surfaceTexture.knurl", honeycomb: "surfaceTexture.honeycomb", bumps: "surfaceTexture.bumps", cracks: "surfaceTexture.cracks" },
+  pattern: { grooves: "surfaceTexture.grooves", knurl: "surfaceTexture.knurl", honeycomb: "surfaceTexture.honeycomb", bumps: "surfaceTexture.bumps", cracks: "surfaceTexture.cracks", text: "surfaceTexture.text" },
   profile: { round: "surfaceTexture.round", pointed: "surfaceTexture.pointed", flat: "surfaceTexture.flat" },
   direction: { inward: "surfaceTexture.inward", outward: "surfaceTexture.outward", both: "surfaceTexture.both" },
   projection: { cylinder: "surfaceTexture.cylinder", allRound: "surfaceTexture.allRound", flat: "surfaceTexture.flatProjection" },

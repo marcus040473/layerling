@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Schrift auf die Oberfläche heften",
+      "en": "Stick a text onto a surface"
+    },
+    "body": {
+      "de": "Die Oberfläche hat ein neues Muster: ein Text, angedrückt wie ein Etikett – eingraviert oder erhaben, auf dem Bauch einer Vase, an einer schrägen Wand oder über die Kante einer Kiste, und die Buchstaben behalten ihre Größe.",
+      "en": "The surface texture has a new pattern: a text, pressed on like a label - engraved or raised, on a vase's belly, a slanted wall or over the edge of a box, with the letters keeping their size."
+    }
+  },
+  {
+    "title": {
       "de": "Risse wie beim Kintsugi",
       "en": "Cracks as in kintsugi"
     },

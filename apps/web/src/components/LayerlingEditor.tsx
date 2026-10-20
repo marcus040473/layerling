@@ -236,6 +236,7 @@ import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWr
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
+import { SURFACE_TEXT_FONTS, surfaceTextOutline } from "@/lib/surfaceTextOutline";
 import { canChangeSurfaceTexture, canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, sceneWithSurfaceBody, shapeUnderSurfaceTexture, surfaceTextureEntry, surfaceTextureGoldShape, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
@@ -8215,9 +8216,16 @@ export function LayerlingEditor({
     setNotice(t("status.surfaceTexturing"));
     // The masks in the design that reach into the body go with the settings, and are kept with the texture.
     const masks = surfaceTextureMasksFor(source, shapesRef.current);
-    const used = { ...settings, masks };
     let outcome: Awaited<ReturnType<typeof textureSurfaceOffThread>>;
+    let used: SurfaceTextureSettings;
     try {
+      // A text's letters are drawn here, where the fonts are, and go to the worker as outlines.
+      const textOutline = settings.pattern === "text" ? await surfaceTextOutline({ content: settings.textContent, font: settings.textFont, size: settings.textSize }) : [];
+      if (settings.pattern === "text" && !textOutline.length) {
+        setNotice(t("status.surfaceNoText"));
+        return;
+      }
+      used = { ...settings, masks, textOutline };
       outcome = await textureSurfaceOffThread(surfaceTextureInput(source), used);
     } catch (error) {
       setNotice(t("status.surfaceFailed", { error: error instanceof Error ? error.message : String(error) }));
@@ -8238,6 +8246,11 @@ export function LayerlingEditor({
       setNotice(t("status.surfaceNoCracks"));
       return;
     }
+    // A text whose letters came onto no face that may get them (a mask over it) would leave the body as it was.
+    if (stats.text && !stats.text.placed) {
+      setNotice(t("status.surfaceTextMissed"));
+      return;
+    }
     const gold = outcome.fill ? surfaceTextureGoldShape(textured, outcome.fill, `${displayShapeName(textured)} – ${t("surfaceTexture.goldPart")}`) : null;
     const pattern = surfacePatternLabel(textured.surfaceTexture?.pattern ?? settings.pattern);
     const triangles = formatTriangleCount(stats.triangles);
@@ -8249,6 +8262,7 @@ export function LayerlingEditor({
       masksBefore && !masks.length ? t("status.surfaceMasksGone", { count: masksBefore }) : "",
       stats.cracks ? t("status.surfaceCracks", { count: stats.cracks.lines, length: Math.round(stats.cracks.length) }) : "",
       gold ? t("status.surfaceGold") : "",
+      stats.text?.torn ? t("status.surfaceTextTorn") : "",
       stats.limited ? t("status.surfaceCoarser") : "",
       stats.tooDeep ? t("status.surfaceTooDeep") : "",
     ].filter(Boolean);
@@ -9638,6 +9652,9 @@ export function LayerlingEditor({
         if (!under && !canTextureSurface(target)) throw new Error("This object cannot be textured; a bundle or a measuring tool has no body of its own");
         const source = under ?? target;
         // A choice the bridge does not know is refused rather than quietly replaced by the default.
+        ["textContent", "textFont"].forEach((key) => {
+          if (params[key] !== undefined && typeof params[key] !== "string") throw new Error(`${key} must be text`);
+        });
         const choices: Record<string, readonly string[]> = { pattern: SURFACE_TEXTURE_PATTERNS, profile: SURFACE_TEXTURE_PROFILES, direction: SURFACE_TEXTURE_DIRECTIONS, projection: SURFACE_TEXTURE_PROJECTIONS, axis: SURFACE_TEXTURE_AXES, detail: SURFACE_TEXTURE_DETAILS, crackStyle: SURFACE_TEXTURE_CRACK_STYLES, crackStart: SURFACE_TEXTURE_CRACK_STARTS };
         Object.entries(choices).forEach(([key, allowed]) => {
           if (params[key] !== undefined && !allowed.includes(String(params[key]))) throw new Error(`${key} must be one of ${allowed.join(", ")}`);
@@ -9665,26 +9682,36 @@ export function LayerlingEditor({
         } else masks = surfaceTextureMasksFor(source, currentShapes());
         // A change keeps the settings it does not name.
         const settings = { ...normalizeSurfaceTexture({ ...(under ? target.surfaceTexture : {}), ...params }), masks };
+        if (settings.pattern === "text") {
+          // A font of one's own may be named by its name as well as by its id; a name nobody knows is refused.
+          const font = mcpTextFont(settings.textFont) ?? settings.textFont;
+          if (!isCustomFontId(font) && !SURFACE_TEXT_FONTS.includes(font)) throw new Error(`textFont must be one of ${SURFACE_TEXT_FONTS.join(", ")}, or the name of a font of one's own`);
+          settings.textFont = font;
+          // The letters are drawn here, where the fonts are; outlines handed in are not taken.
+          settings.textOutline = await surfaceTextOutline({ content: settings.textContent, font: settings.textFont, size: settings.textSize });
+          if (!settings.textOutline.length) throw new Error("textContent has no letters to write");
+        }
         const outcome = await textureSurfaceOffThread(surfaceTextureInput(source), settings);
         if (findShape(target.id) !== target) throw new Error("The object changed while the texture was computed; texture it again");
         const textured = outcome.stats.nothing ? null : surfaceTexturedShape(source, outcome.positions, settings);
         if (!textured) throw new Error("No part of this body gets the pattern: check outside and inside, bottomFree and topFree, and zoneFrom and zoneTo");
         if (outcome.stats.cracks && outcome.stats.cracks.lines === 0) throw new Error("No crack found a way across this body: try another crackStart (anywhere goes on any body), more crackLength, or let the pattern reach more faces");
+        if (outcome.stats.text && !outcome.stats.text.placed) throw new Error("The text came onto no face that may get it (a mask lies over it): move it with textAround and textHeight, or change the masks");
         const gold = outcome.fill ? surfaceTextureGoldShape(textured, outcome.fill, `${displayShapeName(textured)} – ${t("surfaceTexture.goldPart")}`) : null;
         commitShapes(
           sceneWithSurfaceBody(currentShapes(), target.id, textured, gold),
           [textured.id],
           t("status.surfaceTextured", { pattern: surfacePatternLabel(settings.pattern), triangles: formatTriangleCount(outcome.stats.triangles) }),
         );
-        const { triangles, around, spacing, limited, tooDeep, bedClamped, cracks } = outcome.stats;
-        const { masks: _planes, ...shown } = settings;
+        const { triangles, around, spacing, limited, tooDeep, bedClamped, cracks, text } = outcome.stats;
+        const { masks: _planes, textOutline: _outline, ...shown } = settings;
         return {
           object: mcpShapeSummary(textured),
           ...(gold ? { gold: mcpShapeSummary(gold) } : {}),
           changed: Boolean(under),
           settings: shown,
           masks: masks.length,
-          texture: { triangles, around, spacing, limited, tooDeep, bedClamped, ...(cracks ? { cracks } : {}) },
+          texture: { triangles, around, spacing, limited, tooDeep, bedClamped, ...(cracks ? { cracks } : {}), ...(text ? { text } : {}) },
         };
       }
 
