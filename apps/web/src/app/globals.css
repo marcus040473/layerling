@@ -16061,6 +16061,120 @@ html[data-theme="dark"] .color-recent {
   overscroll-behavior: contain;
 }
 
+/* The window to draw a vase in: large, over the editor area, moved by its title bar and made larger or
+   smaller from its corner. It opens below the status messages, which appear in the top left corner. The
+   drawing board takes the whole height; its buttons and fields stand beside it - a vase is tall. */
+.edge-modifier-panel.vase-drawing-window {
+  top: calc(var(--editor-toolbar-height) + 62px);
+  left: 84px;
+  right: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(980px, calc(100vw - 84px - 360px));
+  min-width: min(520px, calc(100vw - 16px));
+  max-width: calc(100vw - 16px);
+  height: calc(100dvh - var(--editor-toolbar-height) - var(--editor-footer-height) - 76px);
+  min-height: 380px;
+  max-height: calc(100dvh - var(--editor-toolbar-height) - 16px);
+  overflow: hidden;
+  resize: both;
+  z-index: 47;
+}
+
+.vase-drawing-window:focus {
+  outline: none;
+}
+
+.vase-drawing-window-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.vase-drawing-window-body > .cylinder-wrap-hint {
+  margin: 0;
+}
+
+.vase-drawing-window .vase-drawing-tabs {
+  max-width: 520px;
+}
+
+.vase-drawing-window .vase-drawing-tabs button {
+  min-height: 36px;
+  font-size: 13.5px;
+}
+
+.vase-drawing-window .vase-drawing-host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.vase-drawing-window .vz {
+  flex: 1;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.vase-drawing-window .vz-board {
+  min-height: 0;
+}
+
+.vase-drawing-window .vz svg {
+  height: 100%;
+  min-height: 220px;
+}
+
+@media (min-width: 901px) {
+  .vase-drawing-window .vz {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 270px);
+    grid-template-rows: repeat(5, min-content) minmax(0, 1fr);
+    column-gap: 14px;
+  }
+
+  .vase-drawing-window .vz > .vz-board {
+    grid-row: 1 / -1;
+    grid-column: 1;
+  }
+
+  .vase-drawing-window .vz > :not(.vz-board) {
+    grid-column: 2;
+  }
+}
+
+/* Narrow screens: the toolbar alone takes half of a phone, so the window covers the whole screen, the board
+   at a fixed height, and it scrolls. */
+@media (max-width: 900px) {
+  .edge-modifier-panel.vase-drawing-window {
+    top: 8px;
+    left: 8px;
+    z-index: 60;
+    width: calc(100vw - 16px);
+    min-width: 0;
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+    overflow-y: auto;
+    resize: none;
+  }
+
+  .vase-drawing-window-body,
+  .vase-drawing-window .vase-drawing-host {
+    flex: none;
+  }
+
+  .vase-drawing-window .vz {
+    grid-template-rows: none;
+  }
+
+  .vase-drawing-window .vz svg {
+    height: min(62dvh, 520px);
+  }
+}
+
 .edge-modifier-panel > .edge-modifier-footer {
   position: sticky;
   bottom: -14px;

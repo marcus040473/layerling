@@ -1,10 +1,13 @@
 "use client";
 
-import { ChevronUp } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { numberLocale, t, type MessageKey } from "@/lib/i18n";
 import { importModelFiles } from "@/lib/modelImport";
 import { useLanguage } from "@/lib/useLanguage";
+import { useMovablePanel, type MovablePanelOptions } from "@/lib/useMovablePanel";
 import type { VaseSettings } from "@/lib/vase/vase-geometry.mjs";
 import { profileEditor, sectionEditor, twistEditor, type VaseDrawingBoard, type VaseDrawingOptions } from "@/lib/vase/vase-editors.mjs";
 import { vaseNote } from "@/lib/vaseNotes";
@@ -37,45 +40,92 @@ async function readMeshTriangles(name: string, bytes: Uint8Array) {
   return soup;
 }
 
+/** Where the window stands in the editor area, remembered in this browser. */
+const WINDOW: MovablePanelOptions = {
+  floatingStyle: { right: "auto", bottom: "auto" },
+  area: (panel) => panel.ownerDocument.querySelector<HTMLElement>(".workplane-stage"),
+};
+
 /**
- * The vase tool's drawing boards on a card of the vase: its body form from the side, its
- * cross-section from above and its twist up the height, in real millimetres. A drag is one step
- * of undo; while it lasts the vase is shown roughly (draft quality), at its end in full.
+ * The vase tool's drawing boards in a window of their own over the editor: the vase's body form from the side, its
+ * cross-section from above and its twist up the height, in real millimetres, as large as the window. It moves by its
+ * title bar and grows from its corner; the vase in the view follows every change. A drag is one step of undo; while
+ * it lasts the vase is shown roughly (draft quality), at its end in full. Keys pressed in the window stay in it - an
+ * arrow moves a point, Delete removes one, not the vase - except shortcuts with Ctrl or Cmd (undo).
  */
-export function VaseDrawingCard({
+export function VaseDrawingWindow({
   shape,
   disabled,
   onUpdate,
   onInteractionActiveChange,
+  onClose,
 }: {
   shape: WorkplaneShape;
   disabled: boolean;
   onUpdate: (patch: Partial<WorkplaneShape>) => void;
   onInteractionActiveChange?: (active: boolean) => void;
+  onClose: () => void;
 }) {
   useLanguage();
-  const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<DrawingMode>("profile");
-  return (
-    <div className={`property-card ${open ? "" : "collapsed"}`}>
-      <button className="property-card-header" type="button" aria-expanded={open} aria-controls={`vase-draw-${shape.id}`} onClick={() => setOpen((value) => !value)}>
-        <span>{t("inspector.vaseDraw")}</span>
-        <ChevronUp className={open ? "" : "collapsed"} size={25} strokeWidth={2.8} />
-      </button>
-      {open ? (
-        <div className="property-list vase-drawing" id={`vase-draw-${shape.id}`}>
-          <p className="cylinder-wrap-hint">{t("inspector.vaseDrawHint")}</p>
-          <div className="vase-drawing-tabs" role="group" aria-label={t("inspector.vaseDraw")}>
-            {MODES.map((entry) => (
-              <button key={entry.mode} type="button" aria-pressed={mode === entry.mode} onClick={() => setMode(entry.mode)}>
-                {t(entry.label)}
-              </button>
-            ))}
-          </div>
-          <VaseDrawingHost key={mode} mode={mode} shape={shape} disabled={disabled} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
+  const movable = useMovablePanel<HTMLElement>("layerling.editor.vaseDrawingPosition", WINDOW);
+  const { panelRef } = movable;
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    panel.focus({ preventScroll: true });
+    // Stopped on the window itself, before the editor's own shortcuts on the page hear them.
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey) return;
+      event.stopPropagation();
+      if (event.key === "Escape") closeRef.current();
+    };
+    panel.addEventListener("keydown", onKeyDown);
+    return () => {
+      panel.removeEventListener("keydown", onKeyDown);
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    };
+  }, [panelRef]);
+
+  const title = t("inspector.vaseDraw");
+  return createPortal(
+    <aside
+      ref={movable.panelRef}
+      className={`edge-modifier-panel vase-drawing-window ${movable.moved ? "floating" : ""} ${movable.dragging ? "moving" : ""}`}
+      style={movable.style}
+      role="dialog"
+      aria-label={title}
+      tabIndex={-1}
+    >
+      <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...movable.handleProps}>
+        <div>
+          <strong>{title}</strong>
+          <span>{shape.name}</span>
         </div>
-      ) : null}
-    </div>
+        <div className="panel-header-actions">
+          <GuideHelpLink section="vase" />
+          <button type="button" aria-label={t("inspector.vaseDrawClose")} title={t("inspector.vaseDrawClose")} onClick={onClose}>
+            <X size={20} />
+          </button>
+        </div>
+      </div>
+      <div className="vase-drawing vase-drawing-window-body">
+        <div className="vase-drawing-tabs" role="group" aria-label={title}>
+          {MODES.map((entry) => (
+            <button key={entry.mode} type="button" aria-pressed={mode === entry.mode} onClick={() => setMode(entry.mode)}>
+              {t(entry.label)}
+            </button>
+          ))}
+        </div>
+        <p className="cylinder-wrap-hint">{t("inspector.vaseDrawHint")}</p>
+        <VaseDrawingHost key={mode} mode={mode} shape={shape} disabled={disabled} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
+      </div>
+    </aside>,
+    document.body,
   );
 }
 

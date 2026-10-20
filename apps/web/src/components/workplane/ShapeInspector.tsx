@@ -166,7 +166,7 @@ import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, 
 import { LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, type VaseSettings } from "@/lib/vaseSettings";
 import { vaseShapePatch } from "@/lib/vaseShape";
-import { VaseDrawingCard } from "@/components/workplane/VaseDrawingCard";
+import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
 import { VasePrintReport } from "@/components/workplane/VasePrintReport";
 import { shapeDefaultsAsset, shapeDefaultsFromShape } from "@/lib/shapeDefaults";
 import { MAX_SCREW_HOLE_ANGLE, MIN_SCREW_HOLE_ANGLE, normalizeScrewHoleAngle, normalizeScrewHoleHeadDepth, normalizeScrewHoleShaft } from "@/lib/screwHoleGeometry";
@@ -2770,6 +2770,9 @@ export function ShapeInspector({
   const [vaseFloorOpen, setVaseFloorOpen] = useState(false);
   const [vasePartsOpen, setVasePartsOpen] = useState(false);
   const [vasePrintOpen, setVasePrintOpen] = useState(false);
+  // The window to draw the vase in; another body selected closes it.
+  const [vaseDrawOpen, setVaseDrawOpen] = useState(false);
+  useEffect(() => setVaseDrawOpen(false), [shape.id]);
   const [threadOpen, setThreadOpen] = useState(true);
   const [gearHelixOpen, setGearHelixOpen] = useState(true);
   const [colorOpen, setColorOpen] = useState(false);
@@ -2979,6 +2982,16 @@ export function ShapeInspector({
             onToggleKeep={toggleKeptColor}
           />
         </div>
+      ) : null}
+
+      {shape.kind === "vase" ? (
+        <button className="edit-sketch-button" type="button" disabled={locked} aria-pressed={vaseDrawOpen} onClick={() => setVaseDrawOpen((open) => !open)}>
+          <Pencil size={17} strokeWidth={2.5} />
+          <span>{t("inspector.vaseDraw")}</span>
+        </button>
+      ) : null}
+      {shape.kind === "vase" && vaseDrawOpen ? (
+        <VaseDrawingWindow shape={shape} disabled={locked} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} onClose={() => setVaseDrawOpen(false)} />
       ) : null}
 
       {shape.sketchProfile && onEditSketch ? (
@@ -3295,7 +3308,6 @@ export function ShapeInspector({
               </div>
             ) : null}
           </div>
-          <VaseDrawingCard shape={shape} disabled={locked} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
           <div className={`property-card ${vaseFloorOpen ? "" : "collapsed"}`}>
             <button className="property-card-header" type="button" aria-expanded={vaseFloorOpen} aria-controls={`vase-floor-${shape.id}`} onClick={() => setVaseFloorOpen((open) => !open)}>
               <span>{t("inspector.vaseFloor")}</span>

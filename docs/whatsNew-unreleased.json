@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Vase zeichnen im eigenen Fenster",
+      "en": "Draw the vase in a window of its own"
+    },
+    "body": {
+      "de": "„Vase zeichnen“ steht jetzt weit oben in den Einstellungen einer Vase und öffnet ein großes Fenster für Körperform, Querschnitt und Drehung – verschiebbar und an der Ecke größer zu ziehen.",
+      "en": "\"Draw the vase\" now sits high up in a vase's settings and opens a large window for the body form, the cross-section and the twist - you can move it and make it larger from its corner."
+    }
+  },
+  {
+    "title": {
       "de": "Schrift auf die Oberfläche heften",
       "en": "Stick a text onto a surface"
     },

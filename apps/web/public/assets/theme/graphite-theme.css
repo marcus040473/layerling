@@ -7596,6 +7596,10 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .color-recent {
   color: var(--muted-strong);
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-drawing-window:focus {
+  outline: none;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel > .edge-modifier-footer {
   background: inherit;
 }
