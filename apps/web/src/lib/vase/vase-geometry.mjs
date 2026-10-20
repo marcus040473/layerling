@@ -899,31 +899,207 @@ function hash2(i, j, seed) {
   return (h >>> 0) / 4294967295
 }
 
+/** Der Zellpunkt einer Voronoi-Zelle (Schluessel aus Spalte rundum und Zeile), in der Abwicklung nahe bei `uRef`. */
+function voronoiSeed(key, uRef, cellsAround, cellW, cellH, seed) {
+  const wrapped = Math.floor(key / 100003), j = (key % 100003) - 50
+  const i = wrapped + cellsAround * Math.round((Math.round(uRef / cellW) - wrapped) / cellsAround)
+  return [(i + 0.1 + 0.8 * hash2(wrapped, j, seed)) * cellW, (j + 0.1 + 0.8 * hash2(wrapped, j, seed + 7919)) * cellH]
+}
+
 /**
- * Voronoi-Zellen rundum nahtlos: ein Zufallspunkt je Rasterzelle, die Zellen
- * rundum ganzzahlig. Ergebnis: Abstand zur naechsten Zellgrenze in mm.
+ * Voronoi-Zellen rundum nahtlos: ein Zufallspunkt je Rasterzelle, die Zellen rundum ganzzahlig. Ergebnis: die
+ * Zelle, in der (u, v) liegt (ihr Schluessel), und der Abstand zu ihrer Grenze in mm - genau: der kleinste Abstand
+ * zu den Mittelsenkrechten zwischen ihrem Punkt und allen anderen. (Nur der zweitnaechste Punkt, wie frueher,
+ * liess den Wert springen, wo drei Zellen zusammenstossen, und die Fugen dort ungleich breit werden.) Gibt den
+ * Abstand zurueck; den Schluessel der Zelle legt sie in `voronoiCellKey` (kein Objekt je Aufruf - sie laeuft
+ * fuer jeden Punkt der Wand).
  */
-function voronoiEdge(u, v, cellsAround, cellW, cellH, seed) {
+let voronoiCellKey = 0
+
+const cellXs = new Float64Array(25)
+const cellYs = new Float64Array(25)
+const cellKeys = new Float64Array(25)
+
+function voronoiCell(u, v, cellsAround, cellW, cellH, seed) {
   const ci = Math.floor(u / cellW), cj = Math.floor(v / cellH)
-  let d1 = Infinity, d2 = Infinity, p1 = null, p2 = null
+  let n = 0, near = 0, best = Infinity
   for (let di = -2; di <= 2; di++) {
+    const i = ci + di
+    const wrapped = ((i % cellsAround) + cellsAround) % cellsAround
     for (let dj = -2; dj <= 2; dj++) {
-      const i = ci + di, j = cj + dj
-      const wrapped = ((i % cellsAround) + cellsAround) % cellsAround
+      const j = cj + dj
       const px = (i + 0.1 + 0.8 * hash2(wrapped, j, seed)) * cellW
       const py = (j + 0.1 + 0.8 * hash2(wrapped, j, seed + 7919)) * cellH
-      const d = (px - u) ** 2 + (py - v) ** 2
-      if (d < d1) {
-        d2 = d1; p2 = p1
-        d1 = d; p1 = [px, py]
-      } else if (d < d2) {
-        d2 = d; p2 = [px, py]
-      }
+      const d = (px - u) * (px - u) + (py - v) * (py - v)
+      if (d < best) { best = d; near = n }
+      cellXs[n] = px
+      cellYs[n] = py
+      cellKeys[n] = wrapped * 100003 + j + 50
+      n++
     }
   }
-  // Abstand zur Mittelsenkrechten zwischen den beiden naechsten Zellpunkten.
-  const len = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1
-  return (d2 - d1) / (2 * len)
+  const nx = cellXs[near], ny = cellYs[near]
+  let edge = Infinity
+  for (let k = 0; k < n; k++) {
+    if (k === near) continue
+    const dx = cellXs[k] - nx, dy = cellYs[k] - ny
+    // Nur Punkte, deren Mittelsenkrechte naeher sein kann als die bisher naechste: (d - best) / (2 len) < edge.
+    const d = (cellXs[k] - u) * (cellXs[k] - u) + (cellYs[k] - v) * (cellYs[k] - v) - best
+    if (d >= 2 * edge * Math.sqrt(dx * dx + dy * dy)) continue
+    edge = d / (2 * (Math.sqrt(dx * dx + dy * dy) || 1))
+  }
+  voronoiCellKey = cellKeys[near]
+  return edge
+}
+
+/**
+ * Schneidet die Aussenwand entlang der Hoehenlinien ihrer Voronoi-Fugen: Jede Linie `levels` (Abstaende zur
+ * Zellgrenze in mm, aufsteigend, mit Vorzeichen) wird eine Kante des Netzes. Die Fugen laufen schraeg zum Raster;
+ * ohne Schnitt kamen sie als Stufen heraus. Jede Kante des Rasters entscheidet fuer sich: Liegen ihre Enden in einer
+ * Zelle, zaehlt der Abstand zu deren Grenze; liegen sie in zwei Zellen, der Abstand mit Vorzeichen zur Grenze
+ * genau zwischen diesen beiden - eine Gerade, so sitzt auch der Grund der Fuge genau. Ein Dreieck mit zwei Zellen
+ * misst mit Vorzeichen (positiv in der mit dem kleineren Schluessel); eines, an dem drei Zellen oder eine weitere
+ * Grenze zusammenkommen, nimmt nur die Punkte seiner Nachbarn auf (ein Punkt in der Mitte, aufgefaechert), ebenso
+ * eines, das nicht geschnitten werden darf (`fixed`: an Zeilen, an die andere Teile stossen). Gemeinsame Kanten
+ * bekommen dieselben Punkte, das Netz bleibt geschlossen. Neue Punkte liegen auf der Flaeche selbst
+ * (`point(theta, z)` gibt ihre Nummer). Liegt ein Schnitt naeher als `eps` an einer Ecke, entfaellt er: Die Ecke
+ * gilt als auf der Linie.
+ *   wall: { count, v (3 Punkte), e (3 Kanten: a-b, b-c, c-a), p (je Ecke theta, z; abgewickelt), fixed } je Dreieck;
+ *   site: { key, edge, u, z } je Punktnummer (Zelle, Abstand zu ihrer Grenze, Lage in der Abwicklung);
+ *   seedAt(key, uRef): Zellpunkt nahe uRef; around: Umfang der Abwicklung; edgeCount: Zahl der Kanten.
+ */
+function sliceVoronoiJoints(wall, site, seedAt, around, edgeCount, levels, eps, point, tris) {
+  const lists = new Array(edgeCount)
+  const NONE = { lo: -1, signed: false, ids: [], fs: [] }
+  const near = (u, uRef) => (u - uRef > around / 2 ? u - around : uRef - u > around / 2 ? u + around : u)
+  /** Abstand mit Vorzeichen zur Grenze zwischen den Zellen lo und hi (positiv bei lo) an (u, z), gemessen nahe uRef. */
+  const across = (lo, hi, uRef, u, z) => {
+    const [ax, ay] = seedAt(lo, uRef), [bx, by] = seedAt(hi, uRef)
+    const len = Math.hypot(bx - ax, by - ay) || 1
+    return ((u - bx) ** 2 + (z - by) ** 2 - (u - ax) ** 2 - (z - ay) ** 2) / (2 * len)
+  }
+  const { key: K, edge: E, u: U, z: Z } = site
+  const outside = levels[levels.length - 1] + eps
+  /** Die Schnitte auf Kante `e` zwischen a und b (von lo nach hi gespeichert); `create`: noch nicht bekannte anlegen. */
+  const pointsOn = (e, a, b, ta, za, tb, zb, create) => {
+    let list = lists[e]
+    if (list || !create) return list ?? NONE
+    const lo = a < b ? a : b, hi = a < b ? b : a
+    let f0, f1
+    const signed = K[lo] !== K[hi]
+    if (!signed) {
+      f0 = E[lo]
+      f1 = E[hi]
+    } else {
+      const kLo = Math.min(K[lo], K[hi]), kHi = Math.max(K[lo], K[hi])
+      f0 = across(kLo, kHi, U[lo], U[lo], Z[lo])
+      f1 = across(kLo, kHi, U[lo], near(U[hi], U[lo]), Z[hi])
+    }
+    const [tlo, zlo, thi, zhi] = a < b ? [ta, za, tb, zb] : [tb, zb, ta, za]
+    const min = Math.min(f0, f1), max = Math.max(f0, f1)
+    list = NONE
+    for (let l = 0; l < levels.length; l++) {
+      // Nach dem Weg von lo nach hi geordnet: Die Linien steigen oder fallen mit ihm.
+      const L = f1 >= f0 ? levels[l] : levels[levels.length - 1 - l]
+      if (!signed && L <= 0) continue
+      if (L <= min + eps || L >= max - eps) continue
+      if (list === NONE) list = { lo, signed, ids: [], fs: [] }
+      const t = (L - f0) / (f1 - f0)
+      list.ids.push(point(tlo + t * (thi - tlo), zlo + t * (zhi - zlo)))
+      list.fs.push(L)
+    }
+    lists[e] = list
+    return list
+  }
+  const bounds = [-Infinity, ...levels, Infinity]
+  const ringId = [], ringF = [], poly = []
+  const deferred = []
+  const { v: W, e: WE, p: WP, fixed: WF } = wall
+  for (let t = 0; t < wall.count; t++) {
+    const a0 = W[t * 3], a1 = W[t * 3 + 1], a2 = W[t * 3 + 2]
+    if (WF[t]) {
+      deferred.push(t)
+      continue
+    }
+    // Ganz in einer Zelle und weiter als die Fuge von ihrer Grenze: kein Schnitt (die meisten Dreiecke).
+    const oneCell = K[a0] === K[a1] && K[a1] === K[a2]
+    if (oneCell && E[a0] >= outside && E[a1] >= outside && E[a2] >= outside) {
+      tris.push(a0, a1, a2)
+      continue
+    }
+    const lo = Math.min(K[a0], K[a1], K[a2]), hi = Math.max(K[a0], K[a1], K[a2])
+    // Drei Zellen nimmt nur Punkte auf; ebenso zwei, wenn der Abstand einer Ecke nicht der zu ihrer gemeinsamen
+    // Grenze ist (eine weitere Grenze ist naeher, das Dreieck misst nicht linear).
+    if (!oneCell) {
+      let skip = false
+      for (const c of [a0, a1, a2]) {
+        if ((K[c] !== lo && K[c] !== hi) || Math.abs(Math.abs(across(lo, hi, U[a0], near(U[c], U[a0]), Z[c])) - E[c]) > 1e-6) skip = true
+      }
+      if (skip) {
+        deferred.push(t)
+        continue
+      }
+    }
+    let n = 0
+    for (let k = 0; k < 3; k++) {
+      const a = W[t * 3 + k], b = W[t * 3 + ((k + 1) % 3)]
+      const sa = oneCell || K[a] === lo ? 1 : -1
+      ringId[n] = a
+      ringF[n++] = sa * E[a]
+      const k2 = (k + 1) % 3
+      const list = pointsOn(WE[t * 3 + k], a, b, WP[t * 6 + k * 2], WP[t * 6 + k * 2 + 1], WP[t * 6 + k2 * 2], WP[t * 6 + k2 * 2 + 1], true)
+      const m = list.ids.length
+      if (!m) continue
+      const sg = list.signed ? 1 : sa
+      const forward = list.lo === a
+      for (let i = 0; i < m; i++) {
+        const q = forward ? i : m - 1 - i
+        ringId[n] = list.ids[q]
+        ringF[n++] = sg * list.fs[q]
+      }
+    }
+    if (n === 3) {
+      tris.push(a0, a1, a2)
+      continue
+    }
+    // Je Streifen zwischen zwei Linien: die Punkte des Randes darin, in ihrer Reihenfolge - ein konvexes Vieleck.
+    let fMin = Infinity, fMax = -Infinity
+    for (let i = 0; i < n; i++) {
+      if (ringF[i] < fMin) fMin = ringF[i]
+      if (ringF[i] > fMax) fMax = ringF[i]
+    }
+    for (let sl = 0; sl + 1 < bounds.length; sl++) {
+      const min = bounds[sl] - eps, max = bounds[sl + 1] + eps
+      if (max < fMin || min > fMax) continue
+      let m = 0
+      for (let i = 0; i < n; i++) if (ringF[i] >= min && ringF[i] <= max) poly[m++] = ringId[i]
+      for (let k = 1; k + 1 < m; k++) tris.push(poly[0], poly[k], poly[k + 1])
+    }
+  }
+  for (const t of deferred) {
+    const v = [W[t * 3], W[t * 3 + 1], W[t * 3 + 2]]
+    const on = [0, 1, 2].map((k) => {
+      const list = lists[WE[t * 3 + k]] ?? NONE
+      return list.lo === v[k] ? list.ids : [...list.ids].reverse()
+    })
+    const used = on.filter((ids) => ids.length).length
+    if (!used) {
+      tris.push(v[0], v[1], v[2])
+      continue
+    }
+    const ring = []
+    for (let k = 0; k < 3; k++) ring.push(v[k], ...on[k])
+    if (used === 1) {
+      // Ein Faecher von der Ecke gegenueber der Kante mit Punkten: kein Dreieck liegt auf einer Linie.
+      const edge = on.findIndex((ids) => ids.length)
+      const apex = ring.indexOf(v[(edge + 2) % 3])
+      for (let k = 1; k + 1 < ring.length; k++) tris.push(ring[apex], ring[(apex + k) % ring.length], ring[(apex + k + 1) % ring.length])
+    } else {
+      // Mehrere Kanten mit Punkten: ein Punkt in der Mitte, ringsum aufgefaechert.
+      const mid = point((WP[t * 6] + WP[t * 6 + 2] + WP[t * 6 + 4]) / 3, (WP[t * 6 + 1] + WP[t * 6 + 3] + WP[t * 6 + 5]) / 3)
+      for (let k = 0; k < ring.length; k++) tris.push(mid, ring[k], ring[(k + 1) % ring.length])
+    }
+  }
 }
 
 /** Tiefe, die der Effekt hoechstens erreicht (fuer die Innenwand). */
@@ -1393,7 +1569,9 @@ export function buildVase(input) {
     }
     if (ribsActive) needs.push(p.ribCount * q.perRib)
     if (p.effect === 'streifen') needs.push(p.stripeCount * q.perRib)
-    if (p.effect === 'voronoi') needs.push(Math.ceil((2 * Math.PI * maxR) / (p.voronoiGap / (3 * scale))))
+    // Voronoi: die Fugen werden entlang ihrer Hoehenlinien geschnitten (sliceVoronoiJoints) - das Raster muss sie
+    // nicht mehr selbst nachbilden, anderthalb Punkte je Fugenbreite reichen.
+    if (p.effect === 'voronoi') needs.push(Math.ceil((2 * Math.PI * maxR) / (p.voronoiGap / (1.5 * scale))))
     if (layout.cutoutZone) needs.push(Math.ceil((2 * Math.PI * maxR) / cutoutStep(p)))
     segments = Math.min(MAX_SEGMENTS, Math.max(...needs))
     // Scharfe Stellen (Ecken, Kerben, Lamellenkanten) fallen so auf Spalten - beim Uebergang die beider
@@ -1416,7 +1594,7 @@ export function buildVase(input) {
   if (lowpoly) rows = p.lowpolyRows
   else {
     let mmPerRow = q.mmPerRow
-    if (p.effect === 'voronoi') mmPerRow = Math.min(mmPerRow, p.voronoiGap / (3 * scale))
+    if (p.effect === 'voronoi') mmPerRow = Math.min(mmPerRow, p.voronoiGap / (1.5 * scale))
     rows = Math.ceil(H / mmPerRow)
     // Pendeln: je Schwung mindestens 24 Zeilen, damit die Falten rund schwingen; Drehkurve: je Punkt 12.
     if (p.twistMode === 'kurve') rows = Math.max(rows, (p.twistPoints?.length ?? 2) * 12)
@@ -1456,7 +1634,7 @@ export function buildVase(input) {
       const depth = Math.min(p.voronoiDepth, base / 3) * zone(z)
       if (depth <= 0) return 0
       const u = ((((turn / (2 * Math.PI)) % 1) + 1) % 1) * 2 * Math.PI * maxR
-      const edge = voronoiEdge(u, z, cellsAround, cellW, p.voronoiCell, p.voronoiSeed)
+      const edge = voronoiCell(u, z, cellsAround, cellW, p.voronoiCell, p.voronoiSeed)
       const half = p.voronoiGap / 2
       return edge >= half ? 0 : depth * 0.5 * (1 + Math.cos((Math.PI * edge) / half))
     }
@@ -1506,13 +1684,65 @@ export function buildVase(input) {
     outer.push(row)
     outerAtZ.set(zsOuter[i], row)
   }
+  // Voronoi: die Aussenwand wird entlang der Hoehenlinien ihrer Fugen geschnitten (sliceVoronoiJoints).
+  // Kanten auf Zeilen, an die andere Teile stossen (Rand oben, Boden, Bereiche), bleiben ganz.
+  const voronoiCut = p.effect === 'voronoi' && !lowpoly && !slitted && p.voronoiDepth > 0
+  const fixedRow = new Set(voronoiCut ? [0, zsOuter.length - 1, ...zsOuter.flatMap((z, i) => (zones.some((zn) => zn.z0 === z || zn.z1 === z) ? [i] : []))] : [])
+  // Die Dreiecke der Wand mit ihren Kanten im Raster: waagrecht H(i, j) zwischen (i, j) und (i, j+1), senkrecht
+  // V(i, j) zwischen (i, j) und (i+1, j), schraeg D(i, j) zwischen (i, j) und (i+1, j+1).
+  const quads = zsOuter.length - 1
+  const edgeH = (i, j) => i * segments + j
+  const edgeV = (i, j) => (quads + 1) * segments + i * segments + j
+  const edgeD = (i, j) => (2 * quads + 1) * segments + i * segments + j
+  const wall = voronoiCut ? { count: 0, v: new Uint32Array(6 * quads * segments), e: new Uint32Array(6 * quads * segments), p: new Float64Array(12 * quads * segments), fixed: new Uint8Array(2 * quads * segments) } : null
+  const addWall = (v, e, p, fixed) => {
+    const t = wall.count++
+    wall.v.set(v, t * 3)
+    wall.e.set(e, t * 3)
+    wall.p.set(p, t * 6)
+    wall.fixed[t] = fixed ? 1 : 0
+  }
   for (let i = 0; i < zsOuter.length - 1; i++) {
     if (zones.some((zn) => zn.z0 === zsOuter[i] && zn.z1 === zsOuter[i + 1])) continue
     for (let j = 0; j < segments; j++) {
       const k = (j + 1) % segments
+      if (wall) {
+        const t0 = (2 * Math.PI * j) / segments, t1 = (2 * Math.PI * (j + 1)) / segments
+        const z0 = zsOuter[i], z1 = zsOuter[i + 1]
+        const flat = zone(z0) === 0 && zone(z1) === 0
+        addWall([outer[i][j], outer[i][k], outer[i + 1][k]], [edgeH(i, j), edgeV(i, k), edgeD(i, j)], [t0, z0, t1, z0, t1, z1], flat || fixedRow.has(i))
+        addWall([outer[i][j], outer[i + 1][k], outer[i + 1][j]], [edgeD(i, j), edgeH(i + 1, j), edgeV(i, j)], [t0, z0, t1, z1, t0, z1], flat || fixedRow.has(i + 1))
+        continue
+      }
       tris.push(outer[i][j], outer[i][k], outer[i + 1][k])
       tris.push(outer[i][j], outer[i + 1][k], outer[i + 1][j])
     }
+  }
+  if (wall) {
+    const around = 2 * Math.PI * maxR
+    const size = verts.length / 3
+    const site = { key: new Float64Array(size), edge: new Float64Array(size), u: new Float64Array(size), z: new Float64Array(size) }
+    for (let i = 0; i < zsOuter.length; i++) {
+      for (let j = 0; j < segments; j++) {
+        const z = zsOuter[i]
+        const turn = (2 * Math.PI * j) / segments - rotation(twistT(z))
+        const u = ((((turn / (2 * Math.PI)) % 1) + 1) % 1) * around
+        const id = outer[i][j]
+        site.edge[id] = voronoiCell(u, z, cellsAround, cellW, p.voronoiCell, p.voronoiSeed)
+        site.key[id] = voronoiCellKey
+        site.u[id] = u
+        site.z[id] = z
+      }
+    }
+    const seedAt = (key, uRef) => voronoiSeed(key, uRef, cellsAround, cellW, p.voronoiCell, p.voronoiSeed)
+    const half = p.voronoiGap / 2
+    // Rand, Flanke (zweimal) und Grund, auf beiden Seiten der Grenze.
+    const levels = [-1, -0.6, -0.25, 0, 0.25, 0.6, 1].map((share) => share * half)
+    const point = (theta, z) => {
+      const r = outerRadius(theta, z)
+      return addVertex(r * Math.cos(theta), r * Math.sin(theta), z)
+    }
+    sliceVoronoiJoints(wall, site, seedAt, around, (3 * quads + 1) * segments, levels, 0.02, point, tris)
   }
 
   const { foot, floor, slope, drains, blind } = layout
