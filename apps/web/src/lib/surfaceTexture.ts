@@ -17,6 +17,10 @@
  * - Honeycomb: cut along the cell borders, the corner lines and M levels of
  *   the joint profile, so the joints are straight instead of jagged.
  * - Bumps: refined evenly, then once more where the value jumps (the flanks).
+ * - Cracks (kintsugi, see vase/crack.mjs): lines that grow across the surface,
+ *   with kinks, branches and a tapering width; only the band round them is
+ *   refined. Their notch can be filled by a body of its own (gold, a second
+ *   filament), its top a little below the surface.
  *
  * Around a cylinder the spacing is rounded so that a whole number of grooves
  * or cells goes round: the pattern closes at the seam. The axis of a round
@@ -46,8 +50,9 @@ import {
   type SurfaceBase,
   type SurfaceMesh,
 } from "@/lib/surfaceTextureMesh";
+import { crackEdgeNear, crackFillBody, crackNetwork, crackValue, surfaceIndex, type CrackNetwork, type CrackSurfaceIndex } from "@/lib/vase/crack.mjs";
 
-export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps"] as const;
+export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cracks"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
 export const SURFACE_TEXTURE_PROFILES = ["round", "pointed", "flat"] as const;
@@ -64,6 +69,13 @@ export type SurfaceTextureDirection = (typeof SURFACE_TEXTURE_DIRECTIONS)[number
 export const SURFACE_TEXTURE_DETAILS = ["coarse", "medium", "fine"] as const;
 export type SurfaceTextureDetail = (typeof SURFACE_TEXTURE_DETAILS)[number];
 /** Axes as the editor shows them: X right, Y back, Z up. */
+/** Cracks: a crack wanders, a lightning bolt zigzags round its way. */
+export const SURFACE_TEXTURE_CRACK_STYLES = ["crack", "lightning"] as const;
+export type SurfaceTextureCrackStyle = (typeof SURFACE_TEXTURE_CRACK_STYLES)[number];
+/** Where cracks begin: at the top rim (a vase, a cup), at the bottom, at the rim towards the middle (a plate), anywhere. */
+export const SURFACE_TEXTURE_CRACK_STARTS = ["top", "bottom", "rim", "anywhere"] as const;
+export type SurfaceTextureCrackStart = (typeof SURFACE_TEXTURE_CRACK_STARTS)[number];
+
 export const SURFACE_TEXTURE_AXES = ["x", "y", "z"] as const;
 export type SurfaceTextureAxis = (typeof SURFACE_TEXTURE_AXES)[number];
 /** A mask keeps the texture away from what lies inside it, or is the only place the texture goes. */
@@ -114,6 +126,23 @@ export type SurfaceTextureSettings = {
   detail: SurfaceTextureDetail;
   /** Helper bodies: the texture stays out of every "exclude" mask and, with any "only" mask, goes only into those. */
   masks: SurfaceTextureMask[];
+  /** Cracks: style, where they begin and how many. */
+  crackStyle: SurfaceTextureCrackStyle;
+  crackStart: SurfaceTextureCrackStart;
+  crackCount: number;
+  /** In % of the body's height (from the rim to the middle: of its radius). */
+  crackLength: number;
+  /** Width at the start, mm; the crack tapers to its end. */
+  crackWidth: number;
+  /** Branching, zigzag and chipped edges, each 0 to 1. */
+  crackBranch: number;
+  crackJag: number;
+  crackRough: number;
+  /** The same number, the same cracks. */
+  crackSeed: number;
+  /** Fill the notch with a body of its own (gold, a second filament), its top `crackRecess` mm below the surface. */
+  crackGold: boolean;
+  crackRecess: number;
 };
 
 export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object.freeze({
@@ -140,6 +169,17 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   inside: false,
   detail: "medium",
   masks: [],
+  crackStyle: "crack",
+  crackStart: "top",
+  crackCount: 5,
+  crackLength: 60,
+  crackWidth: 1.5,
+  crackBranch: 0.4,
+  crackJag: 0.5,
+  crackRough: 0.3,
+  crackSeed: 1,
+  crackGold: false,
+  crackRecess: 0.3,
 });
 
 type NumberKey = { [K in keyof SurfaceTextureSettings]: SurfaceTextureSettings[K] extends number ? K : never }[keyof SurfaceTextureSettings];
@@ -156,6 +196,14 @@ export const SURFACE_TEXTURE_LIMITS: Record<NumberKey, [number, number]> = {
   edgeAngle: [5, 90],
   fade: [0, 10],
   margin: [0, 30],
+  crackCount: [0, 24],
+  crackLength: [5, 300],
+  crackWidth: [0.2, 8],
+  crackBranch: [0, 1],
+  crackJag: [0, 1],
+  crackRough: [0, 1],
+  crackSeed: [0, 99999],
+  crackRecess: [0, 3],
 };
 
 const CHOICES = {
@@ -165,7 +213,16 @@ const CHOICES = {
   projection: SURFACE_TEXTURE_PROJECTIONS,
   axis: SURFACE_TEXTURE_AXES,
   detail: SURFACE_TEXTURE_DETAILS,
+  crackStyle: SURFACE_TEXTURE_CRACK_STYLES,
+  crackStart: SURFACE_TEXTURE_CRACK_STARTS,
 } as const;
+
+/** Points per half crack width, by detail (as the vase tool). */
+const CRACK_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 1.5, medium: 2.5, fine: 4 };
+/** The crack module's names for profile, style and start. */
+const CRACK_PROFILE: Record<SurfaceTextureProfile, string> = { round: "rund", pointed: "v", flat: "flach" };
+const CRACK_STYLE_NAMES: Record<SurfaceTextureCrackStyle, "riss" | "blitz"> = { crack: "riss", lightning: "blitz" };
+const CRACK_START_NAMES: Record<SurfaceTextureCrackStart, "oben" | "unten" | "aussen" | "frei"> = { top: "oben", bottom: "unten", rim: "aussen", anywhere: "frei" };
 
 /** Points per groove width or joint across (grooves, knurling, honeycomb). */
 const CROSS_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 6, medium: 10, fine: 16 };
@@ -212,6 +269,8 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
     out[key] = clamp(out[key], ...SURFACE_TEXTURE_LIMITS[key]);
   });
   if (out.zoneTo < out.zoneFrom) [out.zoneFrom, out.zoneTo] = [out.zoneTo, out.zoneFrom];
+  out.crackCount = Math.round(out.crackCount);
+  out.crackSeed = Math.round(out.crackSeed);
   out.masks = normalizeSurfaceTextureMasks(source.masks);
   return out;
 }
@@ -332,6 +391,8 @@ export type SurfaceTextureLayout = {
   radius: number;
   rMin: number;
   rMax: number;
+  /** Cracks: their lines on the surface (set by the session, which knows the body). */
+  crack?: CrackNetwork | null;
 };
 
 function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
@@ -351,6 +412,8 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
 
 /** Pattern value 0 to 1 at a point with its normal. */
 export function surfaceTextureValueAt(x: number, y: number, z: number, nx: number, ny: number, nz: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  // Cracks lie on the surface itself, not in a projection.
+  if (s.pattern === "cracks") return layout.crack ? crackValue(layout.crack, x, y, z, nx, ny, nz, CRACK_PROFILE[s.profile]) : 0;
   const pos = [x, y, z];
   if (s.projection === "cylinder") {
     const ax = AXIS_INDEX[s.axis];
@@ -1086,6 +1149,8 @@ export type SurfaceTextureStats = {
   bedClamped: number;
   /** What was dropped or repaired while reading the body. */
   removed: SurfaceBase["removed"];
+  /** Cracks: how many lines (branches count) and how long they are together, mm; null for the other patterns. */
+  cracks: { lines: number; length: number } | null;
 };
 
 export type SurfaceTextureResult = {
@@ -1093,6 +1158,8 @@ export type SurfaceTextureResult = {
   vertices: Float64Array;
   indices: Uint32Array;
   stats: SurfaceTextureStats;
+  /** Cracks with gold: the closed body filling their notch, in the same frame; null otherwise. */
+  fill: { vertices: Float64Array; indices: Uint32Array } | null;
 };
 
 export type SurfaceTextureOptions = {
@@ -1110,6 +1177,54 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
   const base = prepareSurfaceBase(insideToScreenPositions(positions));
   let cache: RefinedState | null = null;
   let fadeCache: { key: string; state: RefinedState } | null = null;
+  let crackIndex: CrackSurfaceIndex | null = null;
+  let crackCache: { key: string; net: CrackNetwork } | null = null;
+
+  /**
+   * The cracks' lines on the body (see vase/crack.mjs). A crack grows only over faces that can get the pattern:
+   * not over the bottom or the top kept smooth, a wall switched off, outside the height band or in a mask.
+   */
+  function crackLines(s: SurfaceTextureSettings, layout: SurfaceTextureLayout, maskFree: ((x: number, y: number, z: number) => boolean) | null) {
+    const ax = AXIS_INDEX[s.axis];
+    const [i1, i2] = acrossAxes(s.axis);
+    const key = JSON.stringify([s.crackStyle, s.crackStart, s.crackCount, s.crackLength, s.crackWidth, s.crackBranch, s.crackJag, s.crackRough, s.crackSeed, s.axis,
+      s.bottomFree, s.topFree, s.inside, s.outside, s.zoneFrom, s.zoneTo, s.masks, layout.center]);
+    if (crackCache?.key === key) return crackCache.net;
+    crackIndex ??= surfaceIndex(base);
+    const N = crackIndex.normals;
+    const v = base.vertices;
+    const cosBottom = Math.cos((s.bottomFree * Math.PI) / 180), cosTop = Math.cos((s.topFree * Math.PI) / 180);
+    const zFrom = base.min[2] + (s.zoneFrom / 100) * (base.size[2] || 1), zTo = base.min[2] + (s.zoneTo / 100) * (base.size[2] || 1);
+    const allowed = (t: number, q: number[]) => {
+      const nz = N[t * 3 + 2];
+      if ((s.bottomFree > 0 && -nz >= cosBottom) || (s.topFree > 0 && nz >= cosTop)) return false;
+      if (q[2] < zFrom - 1e-9 || q[2] > zTo + 1e-9) return false;
+      if ((!s.outside || !s.inside) && Math.hypot(N[t * 3 + i1], N[t * 3 + i2]) >= 0.5) {
+        const r1 = q[i1] - layout.center[0], r2 = q[i2] - layout.center[1];
+        const rl = Math.hypot(r1, r2);
+        const isInside = rl > 1e-9 && (N[t * 3 + i1] * r1 + N[t * 3 + i2] * r2) / rl < -0.3;
+        if (isInside ? !s.inside : !s.outside) return false;
+      }
+      return !(maskFree && maskFree(q[0], q[1], q[2]));
+    };
+    let maxRadius = 0;
+    for (let i = 0; i < v.length; i += 3) maxRadius = Math.max(maxRadius, Math.hypot(v[i + i1] - layout.center[0], v[i + i2] - layout.center[1]));
+    const settings = {
+      crackStyle: CRACK_STYLE_NAMES[s.crackStyle],
+      crackStart: CRACK_START_NAMES[s.crackStart],
+      crackCount: s.crackCount,
+      crackLength: s.crackLength,
+      crackWidth: s.crackWidth,
+      crackBranch: s.crackBranch,
+      crackJag: s.crackJag,
+      crackRough: s.crackRough,
+      crackPaths: [],
+      seed: s.crackSeed,
+    };
+    const net = crackNetwork(base, settings, { index: crackIndex, axis: ax, center: layout.center, lo: base.min[ax], hi: base.max[ax], maxRadius: maxRadius || 1, allowed });
+    crackCache = { key, net };
+    return net;
+  }
 
   /**
    * Input points that surely stay smooth after the layout: inside or outside walls, top, bottom, as
@@ -1171,7 +1286,11 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // Grooves: the finest step across, for refining where the pattern fades in (see refineTransitions).
     let crossMax = 0;
     let raised = false;
-    if (slice) {
+    const cracks = s.pattern === "cracks";
+    if (cracks) {
+      // Cracks: the body's own grid, refined only in the band round the lines (below).
+      edge = Math.max(0.06, s.crackWidth / 2 / CRACK_STEPS[s.detail]) * scale;
+    } else if (slice) {
       // Across: the places of the profile, while cutting. Along, the pattern does not change, and the body's roundness is in
       // its own rows already - at most 6 mm (a 6 mm chord on 80 mm radius strays 0.06 mm), so refining where the pattern
       // fades in does not run over huge triangles either.
@@ -1186,11 +1305,39 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     }
     let smoothKey = 2166136261;
     for (let i = 0; i < smooth.points.length; i += 1) smoothKey = Math.imul(smoothKey ^ smooth.points[i] ^ (i & 0xff), 16777619);
-    const layoutKey = JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center]);
+    const layoutKey = cracks
+      ? JSON.stringify([s.pattern, crackCache?.key ?? null])
+      : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center]);
     const key = `${edge.toFixed(5)}|${smoothKey}|${maxTriangles}|${s.edgeAngle}|${s.detail}|${scale}|${layoutKey}`;
     if (cache?.key === key) return cache;
     let mesh: SurfaceMesh;
-    if (slice) {
+    const net = layout.crack;
+    if (cracks) {
+      mesh = baseMesh(base);
+      if (net && net.count) {
+        // Estimate first: the band (length × width and the margin) over a triangle's area; too many - coarser.
+        const band = net.length * 2 * (net.maxHw + edge);
+        const budget = Math.max(1, maxTriangles - mesh.indices.length / 3);
+        const estimate = (1.6 * band) / (0.433 * edge * edge);
+        if (estimate > budget) {
+          edge *= Math.sqrt(estimate / budget);
+          raised = true;
+        }
+        // Each edge is asked once: edges not split come back in every pass.
+        const memo = new Map<number, boolean>();
+        const near = (verts: ArrayLike<number>, a: number, b: number) => {
+          const k = a < b ? a * 67108864 + b : b * 67108864 + a;
+          let hit = memo.get(k);
+          if (hit === undefined) {
+            hit = crackEdgeNear(net, verts, a, b, edge);
+            memo.set(k, hit);
+          }
+          return hit;
+        };
+        const split = subdivide(mesh, edge, maxTriangles, null, null, near);
+        mesh = { ...split, parents: Uint32Array.from(split.parents, (f) => mesh.parents[f]) };
+      }
+    } else if (slice) {
       // Along first, coarse (only triangles reaching further than `edge`, smooth faces not), at contour lines rather than by
       // halving edges: the middles of diagonals would lie on chords inside the roundness. Then across.
       const F0 = stripeFields(base, s, layout);
@@ -1250,7 +1397,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       mesh = { ...cut.mesh, limited: Boolean(mesh.limited || cut.mesh.indices.length / 3 > maxTriangles) };
       cellSliced = true;
     }
-    if (!slice && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles);
+    if (!slice && !cracks && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles);
     cache = withNormals(key, mesh, edge, crossMax, raised || Boolean(mesh.limited), slice ? { smoothFace: smooth.faces } : null, s.edgeAngle);
     return cache;
   }
@@ -1309,6 +1456,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       for (let i = 0; i < baseSkip.length; i += 1) baseSkip[i] = maskFree(base.vertices[i * 3], base.vertices[i * 3 + 1], base.vertices[i * 3 + 2]) ? 1 : 0;
     }
     const layout = makeSurfaceTextureLayout(base, s, baseSkip);
+    if (s.pattern === "cracks") layout.crack = crackLines(s, layout, maskFree);
     const r = refined(s, layout, maxTriangles, preview ? 1.5 : 1);
 
     /** Weight per point: 0 = smooth, 1 = the full pattern, faded in over `fade` mm. */
@@ -1368,6 +1516,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const used = new Uint8Array(n);
     for (let t = 0; t < mesh.indices.length; t += 1) used[mesh.indices[t]] = 1;
     let textured = 0;
+    // Cracks with gold: how deep the notch is at each point; the points moved along `directions`.
+    const gold = s.pattern === "cracks" && s.crackGold && s.direction === "inward" && Boolean(layout.crack?.count);
+    const notch = gold ? new Float64Array(n) : null;
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
       const nx = directions[i * 3], ny = directions[i * 3 + 1], nz = directions[i * 3 + 2];
@@ -1377,6 +1528,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         textured += used[i];
         const value = surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
         d = wi * (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
+        if (notch) notch[i] = wi * s.depth * value;
       }
       out[i * 3] = x + nx * d;
       out[i * 3 + 1] = y + ny * d;
@@ -1401,6 +1553,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       capped = true;
     }
     if (capped) indices = dropFins(indices);
+    // The gold: a closed body on the bottom of the notch, its top `crackRecess` mm below the surface.
+    const fillBody = notch ? crackFillBody(out, indices, notch, directions, s.crackRecess) : null;
+    const fill = fillBody && fillBody.indices.length ? { vertices: screenToInsidePositions(fillBody.vertices), indices: fillBody.indices } : null;
     const inwardDepth = s.direction === "inward" ? s.depth : s.direction === "both" ? s.depth / 2 : 0;
     const smallest = Math.min(...base.size.filter((size) => size > 0));
     const spacing = s.projection === "cylinder" ? (CELL_PATTERNS.includes(s.pattern) ? layout.cell : layout.period) : s.spacing;
@@ -1418,7 +1573,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         tooDeep: 2 * inwardDepth > smallest,
         bedClamped,
         removed: base.removed,
+        cracks: layout.crack ? { lines: layout.crack.lines.length, length: layout.crack.length } : null,
       },
+      fill,
     };
   }
 

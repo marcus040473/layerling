@@ -233,10 +233,10 @@ import { useRememberedFlag } from "@/lib/useRememberedFlag";
 import { BUG_REPORT_FILE, bugReportText, rememberBugReportEvent, type BugReportEvent } from "@/lib/bugReport";
 import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
-import { canChangeSurfaceTexture, canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, shapeUnderSurfaceTexture, surfaceTextureEntry, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
+import { canChangeSurfaceTexture, canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, sceneWithSurfaceBody, shapeUnderSurfaceTexture, surfaceTextureEntry, surfaceTextureGoldShape, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
 import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierFaces, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierKind, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierQuality, CadModifierSpringPart, CadModifierThreadPart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
@@ -8233,18 +8233,29 @@ export function LayerlingEditor({
       return;
     }
     const { stats } = outcome;
+    // Cracks that found no way across the body would leave it as it was.
+    if (stats.cracks && stats.cracks.lines === 0) {
+      setNotice(t("status.surfaceNoCracks"));
+      return;
+    }
+    const gold = outcome.fill ? surfaceTextureGoldShape(textured, outcome.fill, `${displayShapeName(textured)} – ${t("surfaceTexture.goldPart")}`) : null;
     const pattern = surfacePatternLabel(textured.surfaceTexture?.pattern ?? settings.pattern);
     const triangles = formatTriangleCount(stats.triangles);
     // The masks are the mask bodies standing now, as for a new texture: one deleted since no longer counts.
     const masksBefore = under ? current.surfaceTexture?.masks.length ?? 0 : 0;
-    const message = [
-      stats.around ? t("status.surfaceTexturedAround", { pattern, count: stats.around, triangles }) : t("status.surfaceTextured", { pattern, triangles }),
+    const done = stats.around ? t("status.surfaceTexturedAround", { pattern, count: stats.around, triangles }) : t("status.surfaceTextured", { pattern, triangles });
+    const notes = [
       masks.length ? t("status.surfaceMasksUsed", { count: masks.length }) : "",
       masksBefore && !masks.length ? t("status.surfaceMasksGone", { count: masksBefore }) : "",
+      stats.cracks ? t("status.surfaceCracks", { count: stats.cracks.lines, length: Math.round(stats.cracks.length) }) : "",
+      gold ? t("status.surfaceGold") : "",
       stats.limited ? t("status.surfaceCoarser") : "",
       stats.tooDeep ? t("status.surfaceTooDeep") : "",
-    ].filter(Boolean).join(" ");
-    commitShapes(shapesRef.current.map((shape) => (shape.id === current.id ? textured : shape)), [textured.id], message);
+    ].filter(Boolean);
+    // The first sentence ends without a full stop when it stands alone.
+    const message = notes.length ? `${done}. ${notes.join(" ")}` : done;
+    // The gold of cracks made before gives way; new gold comes in as a part of its own.
+    commitShapes(sceneWithSurfaceBody(shapesRef.current, current.id, textured, gold), [textured.id], message);
   }, [commitShapes, selectedShape, selectedShapes.length]);
 
   /**
@@ -8277,7 +8288,7 @@ export function LayerlingEditor({
       return;
     }
     const pattern = surfacePatternLabel(selectedShape.surfaceTexture?.pattern ?? "knurl");
-    commitShapes(shapesRef.current.map((shape) => (shape.id === selectedShape.id ? under : shape)), [under.id], t("status.surfaceRemoved", { pattern }));
+    commitShapes(sceneWithSurfaceBody(shapesRef.current, selectedShape.id, under, null), [under.id], t("status.surfaceRemoved", { pattern }));
   }, [commitShapes, selectedShape, selectedShapes.length]);
 
   /** The selected name tag as its panel shows it: words, font and layers read from its layers as they stand (#215). */
@@ -9618,7 +9629,7 @@ export function LayerlingEditor({
         if (params.remove === true) {
           if (!under || !target.surfaceTexture) throw new Error("This object has no surface texture to remove");
           commitShapes(
-            currentShapes().map((shape) => (shape.id === target.id ? under : shape)),
+            sceneWithSurfaceBody(currentShapes(), target.id, under, null),
             [under.id],
             t("status.surfaceRemoved", { pattern: surfacePatternLabel(target.surfaceTexture.pattern) }),
           );
@@ -9627,14 +9638,14 @@ export function LayerlingEditor({
         if (!under && !canTextureSurface(target)) throw new Error("This object cannot be textured; a bundle or a measuring tool has no body of its own");
         const source = under ?? target;
         // A choice the bridge does not know is refused rather than quietly replaced by the default.
-        const choices: Record<string, readonly string[]> = { pattern: SURFACE_TEXTURE_PATTERNS, profile: SURFACE_TEXTURE_PROFILES, direction: SURFACE_TEXTURE_DIRECTIONS, projection: SURFACE_TEXTURE_PROJECTIONS, axis: SURFACE_TEXTURE_AXES, detail: SURFACE_TEXTURE_DETAILS };
+        const choices: Record<string, readonly string[]> = { pattern: SURFACE_TEXTURE_PATTERNS, profile: SURFACE_TEXTURE_PROFILES, direction: SURFACE_TEXTURE_DIRECTIONS, projection: SURFACE_TEXTURE_PROJECTIONS, axis: SURFACE_TEXTURE_AXES, detail: SURFACE_TEXTURE_DETAILS, crackStyle: SURFACE_TEXTURE_CRACK_STYLES, crackStart: SURFACE_TEXTURE_CRACK_STARTS };
         Object.entries(choices).forEach(([key, allowed]) => {
           if (params[key] !== undefined && !allowed.includes(String(params[key]))) throw new Error(`${key} must be one of ${allowed.join(", ")}`);
         });
         Object.keys(SURFACE_TEXTURE_LIMITS).forEach((key) => {
           if (params[key] !== undefined && !Number.isFinite(mcpNumber(params[key], Number.NaN))) throw new Error(`${key} must be a number`);
         });
-        ["keepEdges", "outside", "inside"].forEach((key) => {
+        ["keepEdges", "outside", "inside", "crackGold"].forEach((key) => {
           if (params[key] !== undefined && typeof params[key] !== "boolean") throw new Error(`${key} must be true or false`);
         });
         // Masks: the bodies named in `masks`, or else the bodies marked as masks that reach into this one.
@@ -9658,14 +9669,23 @@ export function LayerlingEditor({
         if (findShape(target.id) !== target) throw new Error("The object changed while the texture was computed; texture it again");
         const textured = outcome.stats.nothing ? null : surfaceTexturedShape(source, outcome.positions, settings);
         if (!textured) throw new Error("No part of this body gets the pattern: check outside and inside, bottomFree and topFree, and zoneFrom and zoneTo");
+        if (outcome.stats.cracks && outcome.stats.cracks.lines === 0) throw new Error("No crack found a way across this body: try another crackStart (anywhere goes on any body), more crackLength, or let the pattern reach more faces");
+        const gold = outcome.fill ? surfaceTextureGoldShape(textured, outcome.fill, `${displayShapeName(textured)} – ${t("surfaceTexture.goldPart")}`) : null;
         commitShapes(
-          currentShapes().map((shape) => (shape.id === target.id ? textured : shape)),
+          sceneWithSurfaceBody(currentShapes(), target.id, textured, gold),
           [textured.id],
           t("status.surfaceTextured", { pattern: surfacePatternLabel(settings.pattern), triangles: formatTriangleCount(outcome.stats.triangles) }),
         );
-        const { triangles, around, spacing, limited, tooDeep, bedClamped } = outcome.stats;
+        const { triangles, around, spacing, limited, tooDeep, bedClamped, cracks } = outcome.stats;
         const { masks: _planes, ...shown } = settings;
-        return { object: mcpShapeSummary(textured), changed: Boolean(under), settings: shown, masks: masks.length, texture: { triangles, around, spacing, limited, tooDeep, bedClamped } };
+        return {
+          object: mcpShapeSummary(textured),
+          ...(gold ? { gold: mcpShapeSummary(gold) } : {}),
+          changed: Boolean(under),
+          settings: shown,
+          masks: masks.length,
+          texture: { triangles, around, spacing, limited, tooDeep, bedClamped, ...(cracks ? { cracks } : {}) },
+        };
       }
 
       if (command.action === "simplify_mesh") {

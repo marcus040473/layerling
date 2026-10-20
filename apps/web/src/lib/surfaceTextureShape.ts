@@ -19,6 +19,8 @@ import {
   normalizeSurfaceTexture,
   surfaceTexturePositions,
   SURFACE_TEXTURE_MAX_MASK_PLANES,
+  type SurfaceTextureCrackStart,
+  type SurfaceTextureCrackStyle,
   type SurfaceTextureDetail,
   type SurfaceTextureDirection,
   type SurfaceTextureMask,
@@ -41,10 +43,14 @@ export type SurfaceTextureWorkerRequest = {
 };
 
 export type SurfaceTextureWorkerResponse =
-  | { requestId: number; positions: Float64Array; stats: SurfaceTextureStats }
+  | { requestId: number; positions: Float64Array; stats: SurfaceTextureStats; fill: Float64Array | null }
   | { requestId: number; error: string };
 
-export type SurfaceTextureOutcome = { positions: Float64Array; stats: SurfaceTextureStats };
+/** The textured body's triangles and, for cracks with gold, the triangles of the gold filling their notch. */
+export type SurfaceTextureOutcome = { positions: Float64Array; stats: SurfaceTextureStats; fill: Float64Array | null };
+
+/** The colour the gold of the cracks comes in. */
+export const SURFACE_TEXTURE_GOLD = "#d4a72c";
 
 /** The words for every choice, as the panel and the status line show them. */
 export const SURFACE_TEXTURE_LABELS: {
@@ -55,14 +61,18 @@ export const SURFACE_TEXTURE_LABELS: {
   projectionHint: Record<SurfaceTextureProjection, MessageKey>;
   detail: Record<SurfaceTextureDetail, MessageKey>;
   mask: Record<SurfaceTextureMaskMode | "none", MessageKey>;
+  crackStyle: Record<SurfaceTextureCrackStyle, MessageKey>;
+  crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
 } = {
-  pattern: { grooves: "surfaceTexture.grooves", knurl: "surfaceTexture.knurl", honeycomb: "surfaceTexture.honeycomb", bumps: "surfaceTexture.bumps" },
+  pattern: { grooves: "surfaceTexture.grooves", knurl: "surfaceTexture.knurl", honeycomb: "surfaceTexture.honeycomb", bumps: "surfaceTexture.bumps", cracks: "surfaceTexture.cracks" },
   profile: { round: "surfaceTexture.round", pointed: "surfaceTexture.pointed", flat: "surfaceTexture.flat" },
   direction: { inward: "surfaceTexture.inward", outward: "surfaceTexture.outward", both: "surfaceTexture.both" },
   projection: { cylinder: "surfaceTexture.cylinder", allRound: "surfaceTexture.allRound", flat: "surfaceTexture.flatProjection" },
   projectionHint: { cylinder: "surfaceTexture.cylinderHint", allRound: "surfaceTexture.allRoundHint", flat: "surfaceTexture.flatHint" },
   detail: { coarse: "surfaceTexture.coarse", medium: "surfaceTexture.medium", fine: "surfaceTexture.fine" },
   mask: { none: "surfaceTexture.maskNone", exclude: "surfaceTexture.maskExclude", only: "surfaceTexture.maskOnly" },
+  crackStyle: { crack: "surfaceTexture.crackStyleCrack", lightning: "surfaceTexture.crackStyleLightning" },
+  crackStart: { top: "surfaceTexture.crackStartTop", bottom: "surfaceTexture.crackStartBottom", rim: "surfaceTexture.crackStartRim", anywhere: "surfaceTexture.crackStartAnywhere" },
 };
 
 /** The pattern's name in the current language. */
@@ -181,17 +191,11 @@ export function surfaceTextureInput(shape: WorkplaneShape) {
 /** Texture a body's triangles here and now (tests, and where no worker can run). */
 export function textureSurfacePositions(positions: Float64Array, settings: SurfaceTextureSettings, maxTriangles?: number): SurfaceTextureOutcome {
   const result = applySurfaceTexture(positions, settings, maxTriangles ? { maxTriangles } : {});
-  return { positions: Float64Array.from(surfaceTexturePositions(result)), stats: result.stats };
+  return { positions: Float64Array.from(surfaceTexturePositions(result)), stats: result.stats, fill: result.fill ? Float64Array.from(surfaceTexturePositions(result.fill)) : null };
 }
 
-/**
- * The shape the texture makes: a mesh body in place of the old one, standing where it stood
- * (its box centred on the old box, its bottom on the old bottom), with the settings it got.
- * Turns and mirroring are in the mesh already; the new body starts upright. Null when the
- * texture left nothing.
- */
-export function surfaceTexturedShape(shape: WorkplaneShape, positions: ArrayLike<number>, settings: SurfaceTextureSettings, createdAt = Date.now()): WorkplaneShape | null {
-  if (positions.length < 9) return null;
+/** Triangles where they stand in the design, as a mesh body's box (centred on x and z, its bottom at the elevation) and points within it. */
+function placedMesh(positions: ArrayLike<number>) {
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (let i = 0; i < positions.length; i += 3) {
     minX = Math.min(minX, positions[i]);
@@ -214,13 +218,7 @@ export function surfaceTexturedShape(shape: WorkplaneShape, positions: ArrayLike
   const rawHeight = Math.max(MIN_SHAPE_DIMENSION, maxY - minY);
   const width = cleanModelDimension(rawWidth);
   const depth = cleanModelDimension(rawDepth);
-  const normalized = normalizeSurfaceTexture(settings);
-  const textured = canonicalizeShape({
-    id: shape.id,
-    name: shape.name,
-    kind: "mesh",
-    color: shape.color,
-    hole: shape.hole || undefined,
+  return {
     x: cleanNearZero(centerX, 0.0005),
     z: cleanNearZero(centerZ, 0.0005),
     elevation: cleanNearZero(minY, 0.0005),
@@ -228,17 +226,74 @@ export function surfaceTexturedShape(shape: WorkplaneShape, positions: ArrayLike
     width,
     depth,
     height: cleanModelDimension(rawHeight),
-    rotation: 0,
-    rotationX: 0,
-    rotationZ: 0,
     importedMesh: {
       positions: local,
       baseWidth: rawWidth,
       baseDepth: rawDepth,
       baseHeight: rawHeight,
       triangleCount: Math.floor(local.length / 9),
-      sourceFormat: "json",
+      sourceFormat: "json" as const,
     },
+  };
+}
+
+/**
+ * The gold of a body's cracks as a part of its own: it sits in the notch of the textured body, in gold,
+ * remembering whose it is - a texture made again or taken off takes it along.
+ */
+export function surfaceTextureGoldShape(body: WorkplaneShape, positions: ArrayLike<number>, name: string): WorkplaneShape | null {
+  if (positions.length < 9) return null;
+  return canonicalizeShape({
+    id: createLocalId("mesh"),
+    name,
+    kind: "mesh",
+    color: SURFACE_TEXTURE_GOLD,
+    rotation: 0,
+    rotationX: 0,
+    rotationZ: 0,
+    ...placedMesh(positions),
+    surfaceFillOf: body.id,
+    hidden: body.hidden,
+  });
+}
+
+/**
+ * The scene with a body in place of the one with this id (textured anew, or the texture taken off), and the gold of
+ * its cracks: the gold made before gives way, new gold (if any) comes in after the body.
+ */
+export function sceneWithSurfaceBody(shapes: readonly WorkplaneShape[], id: string, body: WorkplaneShape, gold: WorkplaneShape | null) {
+  const out: WorkplaneShape[] = [];
+  for (const shape of shapes) {
+    if (shape.surfaceFillOf === id) continue;
+    if (shape.id !== id) {
+      out.push(shape);
+      continue;
+    }
+    out.push(body);
+    if (gold) out.push(gold);
+  }
+  return out;
+}
+
+/**
+ * The shape the texture makes: a mesh body in place of the old one, standing where it stood
+ * (its box centred on the old box, its bottom on the old bottom), with the settings it got.
+ * Turns and mirroring are in the mesh already; the new body starts upright. Null when the
+ * texture left nothing.
+ */
+export function surfaceTexturedShape(shape: WorkplaneShape, positions: ArrayLike<number>, settings: SurfaceTextureSettings, createdAt = Date.now()): WorkplaneShape | null {
+  if (positions.length < 9) return null;
+  const normalized = normalizeSurfaceTexture(settings);
+  const textured = canonicalizeShape({
+    id: shape.id,
+    name: shape.name,
+    kind: "mesh",
+    color: shape.color,
+    hole: shape.hole || undefined,
+    rotation: 0,
+    rotationX: 0,
+    rotationZ: 0,
+    ...placedMesh(positions),
     surfaceTexture: normalized,
     locked: false,
     hidden: shape.hidden,
@@ -280,7 +335,7 @@ function ensureWorker() {
     window.clearTimeout(entry.timer);
     pending.delete(event.data.requestId);
     if ("error" in event.data) entry.reject(new Error(event.data.error));
-    else entry.resolve({ positions: event.data.positions, stats: event.data.stats });
+    else entry.resolve({ positions: event.data.positions, stats: event.data.stats, fill: event.data.fill });
   };
   next.onerror = () => {
     pending.forEach((entry) => {

@@ -909,6 +909,8 @@ export type WorkplaneShape = {
   vase?: import("@/lib/vase/vase-geometry.mjs").VaseSettings;
   /** An accessory laid out for a vase (its id): laying them out again replaces it. */
   vasePartOf?: string;
+  /** The gold filling the cracks of this textured body (see surfaceTextureShape.ts): it goes when the texture is made anew or taken off. */
+  surfaceFillOf?: string;
   importedMesh?: {
     positions: number[];
     normals?: number[];

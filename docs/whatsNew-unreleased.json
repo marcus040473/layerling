@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Risse wie beim Kintsugi",
+      "en": "Cracks as in kintsugi"
+    },
+    "body": {
+      "de": "Die Oberfläche hat ein neues Muster: Risse, die über den Körper wachsen, mit Ästen und auslaufender Breite – auf Wunsch mit einer Goldfüllung als eigenem Teil für ein zweites Filament.",
+      "en": "The surface texture has a new pattern: cracks that grow across the body, with branches and a tapering width - with a gold filling as a part of its own for a second filament, if you like."
+    }
+  },
+  {
+    "title": {
       "de": "Neue Form: Vase",
       "en": "New shape: vase"
     },

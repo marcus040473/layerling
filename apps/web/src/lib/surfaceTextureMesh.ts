@@ -334,9 +334,17 @@ export function baseMesh(base: SurfaceBase): SurfaceMesh {
  * budget would be passed. Both triangles of an edge share the middle point. Edges at a point in
  * `smooth` (it surely stays smooth) are not split. With `flags`, only edges at flagged points are
  * split (refining where a pattern fades in, or at its flanks); new points are not flagged, so the
- * refining closes in on the place rather than spreading.
+ * refining closes in on the place rather than spreading. With `edgeFilter`, only the edges it picks.
  */
-export function subdivide(mesh: { vertices: Float64Array; indices: Uint32Array }, maxEdge: number, maxTriangles: number, smoothPoints: Uint8Array | null = null, flags: Uint8Array | null = null) {
+export function subdivide(
+  mesh: { vertices: Float64Array; indices: Uint32Array },
+  maxEdge: number,
+  maxTriangles: number,
+  smoothPoints: Uint8Array | null = null,
+  flags: Uint8Array | null = null,
+  /** Only edges this says yes to are split (cracks: the band round the lines); it gets the points as they grow. */
+  edgeFilter: ((vertices: ArrayLike<number>, a: number, b: number) => boolean) | null = null,
+) {
   const verts = Array.from(mesh.vertices);
   const flagList = flags ? Array.from(flags) : null;
   const smooth = smoothPoints ? Array.from(smoothPoints) : null;
@@ -347,6 +355,7 @@ export function subdivide(mesh: { vertices: Float64Array; indices: Uint32Array }
   const long = (a: number, b: number) => {
     const dx = verts[a * 3] - verts[b * 3], dy = verts[a * 3 + 1] - verts[b * 3 + 1], dz = verts[a * 3 + 2] - verts[b * 3 + 2];
     const tooLong = dx * dx + dy * dy + dz * dz > L2;
+    if (edgeFilter !== null) return tooLong && edgeFilter(verts, a, b);
     if (flagList !== null) return tooLong && (flagList[a] === 1 || flagList[b] === 1);
     // One end surely smooth (inner wall, bottom): the edge only lies in smooth faces and needs no grid there.
     // (Both ends only was not enough: an edge that is never split pulled its neighbour towards it forever.)
