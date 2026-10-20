@@ -453,10 +453,12 @@ export function subdivide(
  * points in the mesh. Triangles not cut take in the points on the edges they share with cut ones
  * (fans), so the mesh stays closed. With `ydiff` (the field along the levels), two cut triangles
  * that meet over their longest edge and make a flat convex quad are cut as that quad: otherwise
- * its diagonal would cut every strip once more. Parents point into `mesh.parents`.
+ * its diagonal would cut every strip once more. Parents point into `mesh.parents`. With `withField`, the field comes
+ * back for every point too (a field that does not wrap round): a point on a level has that level.
  */
-export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: FieldDiff, P: number, offsets: number[], sliced: Uint8Array, ydiff: FieldDiff | null = null): SurfaceMesh {
+export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: FieldDiff, P: number, offsets: number[], sliced: Uint8Array, ydiff: FieldDiff | null = null, withField = false): SurfaceMesh & { field?: Float64Array } {
   const verts = Array.from(mesh.vertices);
+  const fieldAll = withField ? Array.from(field) : null;
   const I = mesh.indices;
   const parents = mesh.parents;
   const T = I.length / 3;
@@ -529,6 +531,7 @@ export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: Field
           const t = (g - x0) / d;
           const id = verts.length / 3;
           verts.push(verts[p * 3] + t * (verts[q * 3] - verts[p * 3]), verts[p * 3 + 1] + t * (verts[q * 3 + 1] - verts[p * 3 + 1]), verts[p * 3 + 2] + t * (verts[q * 3 + 2] - verts[p * 3 + 2]));
+          fieldAll?.push(g);
           list.push({ t, id });
         }
       }
@@ -648,6 +651,7 @@ export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: Field
         // Two or three edges with points: a point in the middle, fanned all round.
         const g = verts.length / 3;
         verts.push((verts[A * 3] + verts[B * 3] + verts[C * 3]) / 3, (verts[A * 3 + 1] + verts[B * 3 + 1] + verts[C * 3 + 1]) / 3, (verts[A * 3 + 2] + verts[B * 3 + 2] + verts[C * 3 + 2]) / 3);
+        fieldAll?.push((field[A] + field[B] + field[C]) / 3);
         for (let k = 0; k < ring.length; k += 1) {
           out.push(g, ring[k], ring[(k + 1) % ring.length]);
           outParents.push(parent);
@@ -658,7 +662,7 @@ export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: Field
     const [nx, ny, nz] = faceCross(verts, A, B, C);
     sweep([A, B, C], [0, diff(A, B), diff(A, C)], nx, ny, nz, parent);
   }
-  return { vertices: Float64Array.from(verts), indices: Uint32Array.from(out), parents: Uint32Array.from(outParents), limited: false };
+  return { vertices: Float64Array.from(verts), indices: Uint32Array.from(out), parents: Uint32Array.from(outParents), limited: false, ...(fieldAll ? { field: Float64Array.from(fieldAll) } : {}) };
 }
 
 /**

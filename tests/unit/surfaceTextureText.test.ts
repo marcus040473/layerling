@@ -108,8 +108,9 @@ describe("text stuck on", () => {
     let front = 0, right = 0;
     const v = result.vertices;
     for (let i = 0; i < v.length; i += 3) {
-      if (v[i + 2] < 19.5 && v[i + 2] > 19.4 && Math.abs(v[i]) < 19.4) front += 1;
-      if (v[i] < 19.5 && v[i] > 19.4 && Math.abs(v[i + 2]) < 19.4) right += 1;
+      // At the full depth, 0.6 mm in.
+      if (Math.abs(v[i + 2] - 19.4) < 0.01 && Math.abs(v[i]) < 19.3) front += 1;
+      if (Math.abs(v[i] - 19.4) < 0.01 && Math.abs(v[i + 2]) < 19.3) right += 1;
     }
     expect(front).toBeGreaterThan(10);
     expect(right).toBeGreaterThan(10);
@@ -128,6 +129,40 @@ describe("text stuck on", () => {
     // The "O" left of the middle, the "I" right of it.
     expect(raised.some((x) => x < -6)).toBe(true);
     expect(raised.some((x) => x > 4.5 && x < 5.5)).toBe(true);
+  });
+
+  it("cuts the letters' edges along their outlines, not in steps on the grid", () => {
+    // A slanted stroke, "/", raised on top of a plate.
+    const stroke = [-6, -5, -2, -5, 6, 5, 2, 5];
+    const result = applySurfaceTexture(box(60, 3, 40), { ...TEXT, axis: "y", textOutline: [stroke] });
+    expectClosed(result);
+    // Signed distance to the stroke in the text's plane (x to the right, y to the back: minus z here).
+    const distance = (x: number, y: number) => {
+      let inside = false, d = Infinity;
+      for (let k = 0; k < 4; k += 1) {
+        const [ax, ay, bx, by] = [stroke[k * 2], stroke[k * 2 + 1], stroke[((k + 1) % 4) * 2], stroke[((k + 1) % 4) * 2 + 1]];
+        if (ay > y !== by > y && x < ax + ((y - ay) * (bx - ax)) / (by - ay)) inside = !inside;
+        const dx = bx - ax, dy = by - ay, t = Math.min(1, Math.max(0, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
+        d = Math.min(d, Math.hypot(ax + t * dx - x, ay + t * dy - y));
+      }
+      return inside ? -d : d;
+    };
+    let wall = 0;
+    const v = result.vertices;
+    for (let i = 0; i < v.length; i += 3) {
+      const [x, y, z] = [v[i], v[i + 1], v[i + 2]];
+      if (y < 3 - 1e-6 || Math.abs(x) > 12 || Math.abs(z) > 12) continue;
+      const F = distance(x, -z);
+      const up = y - 3;
+      // On top only inside the stroke, on the plate only outside it, and the wall between no wider than 0.1 mm.
+      if (up > 0.6 - 1e-6) expect(F).toBeLessThan(0.051);
+      else if (up < 1e-6) expect(F).toBeGreaterThan(-0.051);
+      else {
+        expect(Math.abs(F)).toBeLessThan(0.051);
+        wall += 1;
+      }
+    }
+    expect(wall).toBeGreaterThan(10);
   });
 
   it("turns on the surface", () => {
