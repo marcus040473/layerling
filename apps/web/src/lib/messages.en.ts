@@ -2140,6 +2140,7 @@ export const MESSAGES_EN = {
   "vase.effectStripes": "Stripes",
   "vase.effectVoronoi": "Voronoi",
   "vase.effectFacets": "Facets (low poly)",
+  "vase.effectHint": "These patterns belong to the vase and stay editable with it. More – knurling, honeycomb, bumps, cracks, text – go onto the finished vase under \"Surface texture\"; its form can then be changed again once the texture is removed.",
   "vase.grooveRound": "Round",
   "vase.groovePointed": "Pointed (V)",
   "vase.grooveFlat": "Flat",

@@ -72,6 +72,13 @@ describe("the vase as a shape", () => {
     expect(box.maxY - box.minY).toBeCloseTo(120, 3);
   });
 
+  it("starts plain: a new vase has no pattern until one is chosen", () => {
+    const shape = makeShapeFromAsset(asset!, { x: 0, z: 0 });
+    expect(shape.vase?.effect).toBe("keine");
+    // A vase saved with grooves keeps them.
+    expect(normalizeVaseSettings({ ...shape.vase, effect: "rillen" }).effect).toBe("rillen");
+  });
+
   it("builds a closed body with every pattern, solid or hollow", () => {
     for (const effect of ["keine", "rillen", "streifen", "voronoi", "lowpoly"]) {
       for (const body of ["voll", "hohl"]) {

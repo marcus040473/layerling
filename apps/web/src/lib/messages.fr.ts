@@ -2125,6 +2125,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "vase.effectStripes": "Bandes",
   "vase.effectVoronoi": "Voronoi",
   "vase.effectFacets": "Facettes (low poly)",
+  "vase.effectHint": "Ces motifs font partie du vase et restent modifiables avec lui. D'autres – moletage, nid d'abeille, picots, fissures, texte – se posent sur le vase fini sous « Surface » ; sa forme ne se modifie alors qu'une fois la surface retirée.",
   "vase.grooveRound": "Ronde",
   "vase.groovePointed": "Pointue (V)",
   "vase.grooveFlat": "Plate",

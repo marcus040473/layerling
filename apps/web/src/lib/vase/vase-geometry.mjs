@@ -236,8 +236,8 @@ export const DEFAULTS = Object.freeze({
   drawPoints: null,
   /** Gezeichnete Koerperform (profile = 'gezeichnet'): [[Hoehe 0..1, Radius 0..1], ...]. */
   profilePoints: null,
-  // Oberflaeche
-  effect: 'rillen',
+  // Oberflaeche: eine neue Vase ist glatt; Muster waehlt man dazu.
+  effect: 'keine',
   stripeStyle: 'einfach',
   stripeTurn: 180,
   stripeCount: 60,

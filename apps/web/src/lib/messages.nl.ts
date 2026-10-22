@@ -2139,6 +2139,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "vase.effectStripes": "Strepen",
   "vase.effectVoronoi": "Voronoi",
   "vase.effectFacets": "Facetten (low poly)",
+  "vase.effectHint": "Deze patronen horen bij de vaas en blijven ermee aanpasbaar. Meer – kartels, honingraat, noppen, barsten, tekst – komt onder „Oppervlak” op de afgewerkte vaas; de vorm is dan pas weer te wijzigen als het oppervlak verwijderd is.",
   "vase.grooveRound": "Rond",
   "vase.groovePointed": "Spits (V)",
   "vase.grooveFlat": "Plat",

@@ -1602,6 +1602,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "vase.effectStripes": "Proge",
   "vase.effectVoronoi": "Voronoi",
   "vase.effectFacets": "Ploskve (low poly)",
+  "vase.effectHint": "Ti vzorci spadajo k vazi in ostanejo z njo nastavljivi. Več – narebrenost, satovje, bunkice, razpoke, besedilo – dodaš na končano vazo pod »Površina«; njeno obliko lahko nato spet spremeniš šele, ko površino odstraniš.",
   "vase.grooveRound": "Okrogel",
   "vase.groovePointed": "Koničast (V)",
   "vase.grooveFlat": "Raven",

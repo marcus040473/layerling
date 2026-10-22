@@ -2149,6 +2149,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "vase.effectStripes": "Pruhy",
   "vase.effectVoronoi": "Voronoi",
   "vase.effectFacets": "Fazety (low poly)",
+  "vase.effectHint": "Tyto vzory patří k váze a zůstávají s ní upravitelné. Další – vroubkování, plástev, výstupky, praskliny, text – se přidají na hotovou vázu v části „Povrch“; její tvar lze pak změnit až po odstranění povrchu.",
   "vase.grooveRound": "Oblá",
   "vase.groovePointed": "Špičatá (V)",
   "vase.grooveFlat": "Plochá",

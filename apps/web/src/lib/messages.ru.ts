@@ -2132,6 +2132,7 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "vase.effectStripes": "Полосы",
   "vase.effectVoronoi": "Вороной",
   "vase.effectFacets": "Грани (low poly)",
+  "vase.effectHint": "Эти узоры принадлежат вазе и остаются изменяемыми вместе с ней. Другие — накатка, соты, пупырышки, трещины, надпись — наносятся на готовую вазу в разделе «Поверхность»; её форму можно снова изменить только после удаления поверхности.",
   "vase.grooveRound": "Круглая",
   "vase.groovePointed": "Острая (V)",
   "vase.grooveFlat": "Плоская",

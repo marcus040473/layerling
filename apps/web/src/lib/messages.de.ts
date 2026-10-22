@@ -2139,6 +2139,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "vase.effectStripes": "Streifen",
   "vase.effectVoronoi": "Voronoi",
   "vase.effectFacets": "Facetten (Low Poly)",
+  "vase.effectHint": "Diese Muster gehören zur Vase und bleiben mit ihr änderbar. Weitere – Rändel, Waben, Noppen, Risse, Schrift – kommen unter „Oberfläche“ auf die fertige Vase; ihre Form lässt sich dann erst wieder ändern, wenn die Oberfläche entfernt ist.",
   "vase.grooveRound": "Rund",
   "vase.groovePointed": "Spitz (V)",
   "vase.grooveFlat": "Flach",
