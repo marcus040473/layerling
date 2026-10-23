@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import { reportedMeshExtent } from "@/lib/importedMeshBase";
 import { createLocalId } from "@/lib/localIds";
 import { zUpToLayerling } from "@/lib/meshCoordinates";
 import type { WorkplaneShape } from "@/types/layerling";
@@ -83,9 +84,9 @@ export function importedShapeFromTriangleSoup(
     }
   }
 
-  const width = Math.max(1, size.x * scale);
-  const height = Math.max(1, size.y * scale);
-  const depth = Math.max(1, size.z * scale);
+  const width = reportedMeshExtent(size.x * scale);
+  const height = reportedMeshExtent(size.y * scale);
+  const depth = reportedMeshExtent(size.z * scale);
   const triangleCount = Math.floor(position.count / 3);
 
   return {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bedOverhangs, printerPresetById, shapeBedFootprint } from "@/lib/printBed";
+import { bedOverhangs, keepDismissedOverhangs, printerPresetById, shapeBedFootprint } from "@/lib/printBed";
 import { PRINTER_PRESETS } from "@/lib/printerPresets.generated";
 import type { WorkplaneShape } from "@/types/layerling";
 
@@ -129,5 +129,26 @@ describe("bedOverhangs", () => {
       shape({ id: "hidden", x: 500, hidden: true }),
       shape({ id: "ruler", x: 500, kind: "ruler" }),
     ], 200, 200)).toEqual([]);
+  });
+});
+
+describe("keepDismissedOverhangs (#640)", () => {
+  it("keeps a dismissed body only while it is still outside", () => {
+    const overhangs = bedOverhangs([shape({ id: "out", x: 500 }), shape({ id: "back", x: 0 })], 200, 200);
+    const kept = keepDismissedOverhangs(new Set(["out", "back"]), overhangs);
+    expect([...kept]).toEqual(["out"]);
+  });
+
+  it("returns the same set when nothing changed", () => {
+    const overhangs = bedOverhangs([shape({ id: "out", x: 500 })], 200, 200);
+    const dismissed = new Set(["out"]);
+    expect(keepDismissedOverhangs(dismissed, overhangs)).toBe(dismissed);
+  });
+
+  it("forgets a body that came back, so moving it out again warns again", () => {
+    const inside = bedOverhangs([shape({ id: "a", x: 0 })], 200, 200);
+    const afterReturn = keepDismissedOverhangs(new Set(["a"]), inside);
+    const outAgain = bedOverhangs([shape({ id: "a", x: 500 })], 200, 200);
+    expect(outAgain.filter((overhang) => !afterReturn.has(overhang.shape.id))).toHaveLength(1);
   });
 });

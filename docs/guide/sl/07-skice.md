@@ -25,7 +25,8 @@ Orodna vrstica skicirnega načina je razdeljena v področja:
 - **Izbor:** {{ui:sketch.select}} premika točke in črte. Klik v sklenjen obris izbere celotni obris, tako da ga lahko takoj premakneš ali mu spremeniš velikost; v luknji se izbere luknja. Okvir okoli izbora ima osem ročic: tiste v vogalih spreminjajo širino in višino hkrati, s pridržano tipko [[Shift]] v enakem razmerju. Tiste ob straneh spreminjajo samo eno smer. Okrogel ročaj nad okvirjem zavrti ves izbor okoli njegove sredine: številka nad njim kaže kot, s pritisnjeno tipko [[Shift]] pa skače po 15°. [[R]] zavrti cel sklenjen obris za 45° ob vsakem pritisku. Mehurčke mer za širino in višino lahko klikneš; tam vpišeš novo mero, tudi kot račun (»60+12,5«) ali v odstotkih (»150%«). S [[Shift]] s klikom dodaš še druge točke in črte ali jih odvzameš, tako da jih lahko več naenkrat premakneš. Okvir čez prosto površino izbere vse v njem. Tudi črto lahko vlečeš (premakne se na obeh koncih ali pa celoten izbor, če sodi k njemu). Smerne tipke premaknejo izbor za en korak mreže, s [[Shift]] za večji, [[Shift]] med vlečenjem pa drži gibanje na eni osi. {{ui:sketch.refine}}: klik na odsek postavi točko, klik na točko jo odstrani. Zraven sta še {{ui:sketch.erase}} (klik na točko ali črto jo odstrani, okno, povlečeno čez več, odstrani vse v njem, ob izbiri pa gumb izbrisa izbor) in vstavljanje slike predloge ({{ui:sketch.addImage}}).
 - **Odložišče:** {{ui:editor.tool.copy}}, {{ui:editor.tool.paste}}, {{ui:editor.tool.duplicate}} in {{ui:editor.tool.delete}} delujejo na izbrane točke, črte in slike, kot v 3D-urejevalniku; [[Ctrl]]+[[X]] izreže. Prilepljeno in podvojeno pristane z 10 mm razmika ob originalu, na prostem mestu, kjer se ne dotika nobene obstoječe črte, tako da se nikoli ne poveže z obstoječim. Ostane izbrano, tako da ga lahko takoj povlečeš na mesto.
 - **Zgodovina:** {{ui:sketch.undo}} in {{ui:sketch.redo}}.
-- **Pogled:** Premikaš ga s srednjim gumbom miške ali s [[Shift]] oziroma [[Ctrl]] in desnim gumbom miške, kot v 3D-urejevalniku. [[Home]] spet postavi celotno skico v sliko, [[F]] se približa izboru (brez izbora celotni skici), [[+]] in [[−]] pa približata in oddaljita, kot v 3D-urejevalniku. {{ui:camera.tapeTools}} v stranski vrstici meri razdaljo med dvema točkama. Poleg tega skica pokaže mere, takoj ko kaj klikneš: pri črti njeno dolžino, pri točki dolžine črt, ki se tam srečajo. Gumb {{ui:sketch.showMeasurements}} v stranski vrstici te mere skrije in spet pokaže, če motijo, na primer pri oblikovanju krivulj; merilni trak še naprej deluje. Pri ravni črti lahko klikneš mehurček mere in vpišeš dolžino v milimetrih; [[Enter]] jo sprejme, [[Esc]] prekine. Črta obdrži svojo smer, njena začetna točka ostane in črte na drugem koncu gredo zraven. Če je označena končna točka, se premakne ta. Z [[Alt]]+[[Enter]] črta raste na obe strani in obdrži svojo sredino. Pri krivuljah mehurček kaže samo dolžino.
+- **Upravljanje:** {{ui:editor.tool.note}} (ali [[N]]) postavi opombo na skico, kot v 3D urejevalniku: naslednji klik jo postavi kamor koli, tudi na črto. Povleci buciko, da jo premakneš; klik na buciko zloži kartico. Opombe skice pripadajo njenemu telesu: v 3D pogledu sedijo na vrhu telesa, narejenega s funkcijo {{ui:sketch.extrude}} ali {{ui:sketch.sweep}}, in na narisanem profilu telesa, narejenega s funkcijo {{ui:sketch.revolve}}, in se premikajo z njim. Ko skico znova odpreš, pokaže vse opombe telesa, tudi tiste, postavljene v 3D. {{ui:sketch.undo}} prekliče opombo tako kot črto, {{ui:sketch.cancel}} pa zavrže spremembe opomb. Več v poglavju Merjenje in opombe.
+- **Pogled:** Premikaš ga s srednjim gumbom miške ali s [[Shift]] oziroma [[Ctrl]] in desnim gumbom miške, kot v 3D-urejevalniku. Ko ni nič izbrano, ga premikajo tudi [[Ctrl]] in puščice: za desetino slike na pritisk, s [[Shift]] povrhu za polovico; skica se premakne v smer puščice. [[Home]] spet postavi celotno skico v sliko, [[F]] se približa izboru (brez izbora celotni skici), [[+]] in [[−]] pa približata in oddaljita, kot v 3D-urejevalniku. {{ui:camera.tapeTools}} v stranski vrstici meri razdaljo med dvema točkama. Poleg tega skica pokaže mere, takoj ko kaj klikneš: pri črti njeno dolžino, pri točki dolžine črt, ki se tam srečajo. Gumb {{ui:sketch.showMeasurements}} v stranski vrstici te mere skrije in spet pokaže, če motijo, na primer pri oblikovanju krivulj; merilni trak še naprej deluje. Pri ravni črti lahko klikneš mehurček mere in vpišeš dolžino v milimetrih; [[Enter]] jo sprejme, [[Esc]] prekine. Črta obdrži svojo smer, njena začetna točka ostane in črte na drugem koncu gredo zraven. Če je označena končna točka, se premakne ta. Z [[Alt]]+[[Enter]] črta raste na obe strani in obdrži svojo sredino. Pri krivuljah mehurček kaže samo dolžino.
 
 Telo nastane samo iz **sklenjenega** obrisa.
 
@@ -83,6 +84,10 @@ Klikni {{ui:sketch.finishSketch}}. Obris stoji kot telo na delovni ravnini in no
 ![Iz obrisa je nastalo telo. Vogal je zaobljen.](shot:sketch-result)
 
 Z {{ui:inspector.editSketch}} se kadarkoli vrneš v skico, da jo spremeniš. Dvoklik na telo naredi isto, kot v Tinkercadu (zaklenjeno telo ostane zaprto); v nastavitvah to izklopiš z {{ui:workspace.doubleClickOpensSketch}}. Obdelave robov, ki si jih na telesu že naredil, se pri tem izgubijo, ker robovi nastanejo znova.
+
+Skica z več obrisi da eno telo, obrisi, ki se prekrivajo, pa se v njem zlijejo. Če želiš vsak obris posebej, izberi telo in klikni {{ui:inspector.separateParts}}: vsak zunanji obris postane samostojno telo z luknjami, ki ležijo v njem, in obdrži višino, barvo in mesto telesa. Vsak del ima svojo skico za urejanje, s pomožnimi črtami, tako da lahko dele dvigaš ali spuščaš enega za drugim in jih nato združiš ali odšteješ. Obdelave robov to preprečijo, prav tako telo, ki je bilo pozneje raztegnjeno: to se potem razstavi kot mreža.
+
+**Druga vrsta telesa iz iste skice:** oznaka na vrhu skice pove, kaj bo iz nje: {{ui:sketch.modeBadgeExtrude}}, {{ui:sketch.modeBadgeRevolve}} ali {{ui:sketch.modeBadgeSweep}}. Klikni nanjo in izberi drugo, tudi med urejanjem obstoječega telesa: uvoženi SVG, ki pride izvlečen, postane vaza ali gumb, ko ga preklopiš na {{ui:sketch.modeBadgeRevolve}}. Obris, ki sega čez os, se premakne levo, dokler njegov desni rob ne leži na osi; [[Ctrl]]+[[Z]] premik razveljavi. Ob zaključku novo telo stopi na mesto starega, z njegovim imenom in barvo ter vznožjem na isti višini. Obdelave robov se izgubijo, kot pri vsaki spremembi skice.
 
 ### Vrtenje
 
@@ -152,7 +157,7 @@ Vsa štiri delujejo samo na predlogo, nikoli na skico.
 
 | Tipka | Učinek |
 | --- | --- |
-| [[Esc]] | končaj črtni potek, prekliči izbor |
+| [[Esc]] | odloži orodje za opombe; sicer odloži orodje (nazaj na {{ui:sketch.select}}), nato prekliči izbor |
 | [[Del]] | izbriši izbrani element |
 | [[Ctrl]]+[[C]] | kopiraj izbor |
 | [[Ctrl]]+[[X]] | izreži izbor |
@@ -163,5 +168,6 @@ Vsa štiri delujejo samo na predlogo, nikoli na skico.
 | številka, [[<]], [[Tab]], [[Enter]] | pri risanju: vpiši dolžino in kot naslednje črte in jo postavi |
 | [[R]] | zavrti sklenjeno skico za 45° |
 | [[L]] | zakleni ali odkleni sliko predloge |
+| [[N]] | postavi opombo: naslednji klik jo postavi na skico |
 
 > **Namig:** Nariši čim manj točk. Obris z malo, čisto postavljenimi točkami da bolj gladko telo kot kopica mnogih.

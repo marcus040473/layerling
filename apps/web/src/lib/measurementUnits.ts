@@ -258,6 +258,11 @@ export function setLengthUnit(workspace: Pick<WorkplaneWorkspaceSettings, "units
   lengthUnit = { units: workspace.units, scale: workspace.scale, inchFormat: workspace.inchFormat };
 }
 
+/** The label of the unit the workplane labels are shown in right now ("mm", "in", ...). */
+export function currentLengthUnitLabel() {
+  return lengthDisplayUnit(lengthUnit).label;
+}
+
 /** Whether inches read as fractions: the default, unless the workspace asks for decimals. */
 export function showsInchFractions(workspace: { inchFormat?: WorkplaneWorkspaceSettings["inchFormat"] }) {
   return workspace.inchFormat !== "decimal";

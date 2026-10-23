@@ -1,6 +1,6 @@
 {
   "name": "layerling",
-  "version": "1.92.1",
+  "version": "1.104.0",
   "private": true,
   "description": "Easy 3D CAD for 3D printing. A local-first 3D editor that runs in your browser.",
   "author": {
@@ -8,13 +8,16 @@
   },
   "homepage": "https://github.com/henmedia/layerling",
   "license": "AGPL-3.0-only",
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "copy:occt": "node scripts/copy-occt-wasm.mjs",
     "fonts:japanese": "node scripts/build-japanese-typeface.mjs",
     "clean:cache": "node scripts/clean-next-cache.mjs",
-    "predev": "npm run copy:occt && npm run fonts:japanese && npm run guide",
+    "predev": "node scripts/check-node-version.mjs && npm run copy:occt && npm run fonts:japanese && npm run guide",
     "dev": "next dev apps/web",
-    "prebuild": "npm run copy:occt && npm run fonts:japanese && npm run guide",
+    "prebuild": "node scripts/check-node-version.mjs && npm run copy:occt && npm run fonts:japanese && npm run guide",
     "build": "next build apps/web",
     "export": "node scripts/build-static-export.mjs",
     "verify:static-worker-assets": "node scripts/verify-static-worker-assets.mjs",

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { quaternionForShape } from "@/lib/geometryRotation";
+import { starSettingsForSize } from "@/lib/starGeometry";
 import { cleanNearZero, resizedShapeSize, shapeDepth, shapeHasTaper, shapeTaperDimensions, shapeWidth } from "@/lib/workplaneShapes";
 import type { WorkplaneShape } from "@/types/layerling";
 
@@ -25,6 +26,9 @@ export function scaledHorizontalShapePatch(shape: WorkplaneShape, scaleX: number
   };
   if (shape.kind === "cone") {
     patch.baseRadius = width / 2;
+  }
+  if (shape.kind === "star") {
+    Object.assign(patch, starSettingsForSize({ ...shape, width: shapeWidth(shape), depth: shapeDepth(shape) }, width, depth));
   }
   if (shapeHasTaper(shape)) {
     const taper = shapeTaperDimensions(shape);

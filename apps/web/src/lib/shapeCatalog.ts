@@ -22,7 +22,6 @@ import {
   normalizeGearHelixAngle,
   normalizeGearHelixQuality,
   normalizeGearPressureAngle,
-  normalizeGearProfile,
   normalizeGearRim,
   normalizeGearTeeth,
   normalizeGearToothSize,
@@ -148,7 +147,7 @@ import {
   normalizeHingeLeafThickness,
   normalizeHingePinDiameter,
 } from "@/lib/hingeGeometry";
-import { DEFAULT_GRIDFINITY_LIP, DEFAULT_GRIDFINITY_MAGNETS, DEFAULT_GRIDFINITY_TYPE, DEFAULT_GRIDFINITY_UNITS, gridfinityFootprintPatch, gridfinitySize, normalizeGridfinityType } from "@/lib/gridfinityGeometry";
+import { DEFAULT_GRIDFINITY_LIP, DEFAULT_GRIDFINITY_MAGNETS, DEFAULT_GRIDFINITY_TYPE, DEFAULT_GRIDFINITY_UNITS, gridfinityFootprintPatch, gridfinityPadding, gridfinitySize, normalizeGridfinityType } from "@/lib/gridfinityGeometry";
 import {
   DEFAULT_KNURL_ANGLE,
   DEFAULT_KNURL_CHAMFER,
@@ -314,8 +313,21 @@ export const qrCodeAsset: ToolbarShapeAsset = {
   color: "#1f1f1f",
 };
 
-/** What the shape library lists: the catalogue, with the name tag, the icon tag and the QR code after the text. */
-export const libraryShapeAssets: ToolbarShapeAsset[] = toolbarShapeAssets.flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : [asset]));
+/**
+ * What the shape library lists: the catalogue, with the name tag, the icon tag and the QR code after the text.
+ * The double countersink is not listed on its own: it is the countersink with "Both sides" switched on (#621). The
+ * kind stays in the catalogue, so bodies that already are one, and the MCP, keep working.
+ */
+export const libraryShapeAssets: ToolbarShapeAsset[] = toolbarShapeAssets.flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "doubleCountersink" ? [] : [asset]));
+
+/**
+ * The colour a new shape of this asset starts with: the asset's own, unless the shape
+ * defaults saved for its kind name another. The library shows the same colour beside each
+ * entry, so the list tells what will land on the workplane.
+ */
+export function shapeAssetColor(asset: ShapeAsset, customization: ShapeCustomization = {}): string {
+  return customization.color ?? asset.color;
+}
 
 /**
  * Kinds a shape dragged from the library may have. Taken from the library
@@ -655,6 +667,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     hingeLeafThickness: shape.hingeLeafThickness,
     hingeClearance: shape.hingeClearance,
     hingePinless: shape.hingePinless,
+    hingeAngle: shape.hingeAngle,
     gridfinityType: shape.gridfinityType,
     gridfinityLip: shape.gridfinityLip,
     gridfinityMagnets: shape.gridfinityMagnets,
@@ -683,6 +696,20 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     gridfinityScoopRight: shape.gridfinityScoopRight,
     gridfinityScoopRadius: shape.gridfinityScoopRadius,
     gridfinityFloorHeight: shape.gridfinityFloorHeight,
+    gridfinityOpenBack: shape.gridfinityOpenBack,
+    gridfinityOpenFront: shape.gridfinityOpenFront,
+    gridfinityOpenLeft: shape.gridfinityOpenLeft,
+    gridfinityOpenRight: shape.gridfinityOpenRight,
+    gridfinityPaddingBack: shape.gridfinityPaddingBack,
+    gridfinityPaddingFront: shape.gridfinityPaddingFront,
+    gridfinityPaddingLeft: shape.gridfinityPaddingLeft,
+    gridfinityPaddingRight: shape.gridfinityPaddingRight,
+    gridfinityCompartmentsX: shape.gridfinityCompartmentsX,
+    gridfinityCompartmentsZ: shape.gridfinityCompartmentsZ,
+    gridfinityDividerThickness: shape.gridfinityDividerThickness,
+    gridfinityDividerPositionsX: shape.gridfinityDividerPositionsX,
+    gridfinityDividerPositionsZ: shape.gridfinityDividerPositionsZ,
+    gridfinityCompartmentLabels: shape.gridfinityCompartmentLabels,
     knurlPattern: shape.knurlPattern,
     knurlCount: shape.knurlCount,
     knurlDepth: shape.knurlDepth,
@@ -705,6 +732,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     loftWall: shape.loftWall,
     loftTwist: shape.loftTwist,
     loftSmooth: shape.loftSmooth,
+    loftSegments: shape.loftSegments,
     slotEndRatio: shape.slotEndRatio,
     loftTiltX: shape.loftTiltX,
     loftTiltZ: shape.loftTiltZ,
@@ -746,6 +774,21 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     locked: shape.locked ?? false,
     hidden: shape.hidden ?? false,
   });
+}
+
+/**
+ * A shape read back from a clipboard. `sceneShape` fills the defaults, but it names only the fields
+ * it knows, so on its own it dropped everything else a copy carries: see-through, edge treatments,
+ * mirroring, a text's stroke and spacing, the exact CAD body. Within one design the tab kept the
+ * copy and nothing showed; pasted into another design all of it was gone (#642). The fields of
+ * the copy now go on top of the defaults. Anything without a name, kind and colour is not a shape.
+ */
+export function clipboardShape(entry: unknown): WorkplaneShape | null {
+  if (!entry || typeof entry !== "object") return null;
+  const shape = entry as Partial<WorkplaneShape>;
+  const { name, kind, color } = shape;
+  if (typeof name !== "string" || typeof kind !== "string" || typeof color !== "string") return null;
+  return canonicalizeShape({ ...sceneShape({ ...shape, name, kind, color }), ...shape, name, kind, color });
 }
 
 export function makeShapeFromAsset(
@@ -807,18 +850,28 @@ export function makeShapeFromAsset(
     wall: customization.loftWall,
     twist: customization.loftTwist,
     smooth: customization.loftSmooth,
+    segments: customization.loftSegments,
     tiltX: customization.loftTiltX,
     tiltZ: customization.loftTiltZ,
   }) : null;
   const loftFootprint = loftMeasures ? loftFrameSize(loftMeasures) : null;
   // A Gridfinity bin or baseplate is whole grid units: an asked-for size is rounded to them.
-  const gridfinityFootprint = asset.kind === "gridfinity" ? gridfinityFootprintPatch({
-    width: customization.width ?? defaults.width,
-    depth: customization.depth ?? defaults.depth,
-    height: customization.height ?? defaults.height,
+  // A baseplate's padding without an asked-for size is added to the default one, so it keeps its units (#455).
+  const gridfinityPaddingFields = {
     gridfinityType: customization.gridfinityType,
+    gridfinityPaddingBack: customization.gridfinityPaddingBack,
+    gridfinityPaddingFront: customization.gridfinityPaddingFront,
+    gridfinityPaddingLeft: customization.gridfinityPaddingLeft,
+    gridfinityPaddingRight: customization.gridfinityPaddingRight,
+  };
+  const gridfinityPaddingSize = gridfinityPadding(gridfinityPaddingFields);
+  const gridfinityFootprint = asset.kind === "gridfinity" ? gridfinityFootprintPatch({
+    width: customization.width ?? defaults.width + gridfinityPaddingSize.left + gridfinityPaddingSize.right,
+    depth: customization.depth ?? defaults.depth + gridfinityPaddingSize.back + gridfinityPaddingSize.front,
+    height: customization.height ?? defaults.height,
     gridfinityLip: customization.gridfinityLip,
     gridfinityHalfGrid: customization.gridfinityHalfGrid,
+    ...gridfinityPaddingFields,
   }) : null;
   // New gears get involute teeth (#201); their size follows the module, so other teeth keep module 2.
   const gearType = asset.kind === "gear" ? normalizeGearType(customization.gearType ?? DEFAULT_GEAR_TYPE) : undefined;
@@ -851,7 +904,7 @@ export function makeShapeFromAsset(
     id: createLocalId(asset.id),
     name: asset.name,
     kind: asset.kind,
-    color: customization.color ?? asset.color,
+    color: shapeAssetColor(asset, customization),
     hole: asset.hole,
     x: point?.x ?? 0,
     z: point?.z ?? 0,
@@ -955,6 +1008,17 @@ export function makeShapeFromAsset(
     gridfinityScoopRight: asset.kind === "gridfinity" ? customization.gridfinityScoopRight : undefined,
     gridfinityScoopRadius: asset.kind === "gridfinity" ? customization.gridfinityScoopRadius : undefined,
     gridfinityFloorHeight: asset.kind === "gridfinity" ? customization.gridfinityFloorHeight : undefined,
+    gridfinityOpenBack: asset.kind === "gridfinity" ? customization.gridfinityOpenBack : undefined,
+    gridfinityOpenFront: asset.kind === "gridfinity" ? customization.gridfinityOpenFront : undefined,
+    gridfinityOpenLeft: asset.kind === "gridfinity" ? customization.gridfinityOpenLeft : undefined,
+    gridfinityOpenRight: asset.kind === "gridfinity" ? customization.gridfinityOpenRight : undefined,
+    gridfinityPaddingBack: asset.kind === "gridfinity" ? customization.gridfinityPaddingBack : undefined,
+    gridfinityPaddingFront: asset.kind === "gridfinity" ? customization.gridfinityPaddingFront : undefined,
+    gridfinityPaddingLeft: asset.kind === "gridfinity" ? customization.gridfinityPaddingLeft : undefined,
+    gridfinityPaddingRight: asset.kind === "gridfinity" ? customization.gridfinityPaddingRight : undefined,
+    gridfinityCompartmentsX: asset.kind === "gridfinity" ? customization.gridfinityCompartmentsX : undefined,
+    gridfinityCompartmentsZ: asset.kind === "gridfinity" ? customization.gridfinityCompartmentsZ : undefined,
+    gridfinityDividerThickness: asset.kind === "gridfinity" ? customization.gridfinityDividerThickness : undefined,
     hingeClearance: asset.kind === "hinge" ? normalizeHingeClearance(customization.hingeClearance ?? DEFAULT_HINGE_CLEARANCE) : undefined,
     hingePinless: asset.kind === "hinge" ? customization.hingePinless === true : undefined,
     hingeKnuckles: asset.kind === "hinge" ? normalizeHingeKnuckles(customization.hingeKnuckles ?? DEFAULT_HINGE_KNUCKLES, width, normalizeHingeClearance(customization.hingeClearance)) : undefined,

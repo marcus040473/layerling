@@ -57,7 +57,7 @@ summary: Фаска и скругление на выбранных кромка
 
 1. Выделите тело и нажмите {{ui:editor.tool.hollow}} — или щёлкните по телу правой кнопкой и выберите его из меню.
 2. Задайте {{ui:shell.wall}}.
-3. В разделе {{ui:shell.openings}} включите стороны, которые остаются открытыми: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} или {{ui:shell.side.right}} — сколько угодно: одна {{ui:shell.side.front}} даёт паз для ящика, {{ui:shell.side.left}} и {{ui:shell.side.right}} — тоннель. Если не включить ни одной, тело остаётся закрытым со всех сторон, с полостью внутри.
+3. В разделе {{ui:shell.openings}} включите стороны, которые остаются открытыми: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} или {{ui:shell.side.right}} — сколько угодно: одна {{ui:shell.side.front}} даёт паз для ящика, {{ui:shell.side.left}} и {{ui:shell.side.right}} — тоннель. Если не включить ни одной, тело остаётся закрытым со всех сторон, с полостью внутри. {{ui:shell.side.closed}} выключает все стороны одним щелчком. {{ui:shell.side.top}} уже включено при открытии панели; щелчок по нему снова закрывает верх. Тело, закрытое со всех сторон, снаружи выглядит без изменений: полость видна в режиме сечения.
 4. Решите, какими должны быть {{ui:shell.edges}} — {{ui:shell.edges.round}} или {{ui:shell.edges.sharp}}.
 5. Нажмите {{ui:shell.apply}}.
 

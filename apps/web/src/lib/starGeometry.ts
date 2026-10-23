@@ -86,6 +86,26 @@ export function normalizeStarInnerSize(value: number | undefined, outerSize: num
   return clamp(Number.isFinite(value) ? (value as number) : defaultInner, MIN_STAR_INNER_SIZE, maxInner);
 }
 
+/**
+ * What a star's own settings become when its size changes from the outside (a handle, a percentage, a group
+ * made larger): the inner size and the roundings stretch with the outer size, so it stays the same shape (#761).
+ * Typing a size into the properties is a different thing and leaves the inner size as typed.
+ */
+export function starSettingsForSize(
+  star: Pick<WorkplaneShape, "width" | "depth" | "starInnerSize" | "starOuterFillet" | "starInnerFillet">,
+  width: number,
+  depth: number,
+): Partial<Pick<WorkplaneShape, "starInnerSize" | "starOuterFillet" | "starInnerFillet">> {
+  const before = Math.max(0.01, Math.min(star.width, star.depth));
+  const factor = Math.max(0.01, Math.min(width, depth)) / before;
+  if (Math.abs(factor - 1) < 1e-9) return {};
+  return {
+    starInnerSize: normalizeStarInnerSize(star.starInnerSize, before) * factor,
+    ...(star.starOuterFillet ? { starOuterFillet: star.starOuterFillet * factor } : {}),
+    ...(star.starInnerFillet ? { starInnerFillet: star.starInnerFillet * factor } : {}),
+  };
+}
+
 export function normalizeStarOuterFillet(value: number | undefined) {
   return clamp(Number.isFinite(value) ? (value as number) : 0, MIN_STAR_FILLET, MAX_STAR_FILLET);
 }

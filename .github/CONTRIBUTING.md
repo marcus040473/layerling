@@ -17,7 +17,10 @@ The app runs at `http://127.0.0.1:3000/` by default.
 
 - Keep changes focused.
 - Avoid unrelated refactors.
-- Run `npm run typecheck`.
+- Run `npm run typecheck` and `npm test` (the unit tests). The CI runs both, then `npm run test:e2e`, the production
+  build and the static export, and fails when a build step changed a file that is committed.
+- Changed a text of the interface or the guide: run `npm run guide` and `npm run i18n:status`. Changed a colour in
+  `globals.css`: run `npm run theme:graphite` (a test fails while the Graphite theme is out of date).
 - Manually test the editor workflow you changed.
 - Include screenshots or short recordings for UI changes when possible.
 - Call out changes to storage, import, export, grouping, or undo/redo behavior.

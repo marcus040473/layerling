@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { exportMeshesToObj } from "@/lib/objExport";
-import { importedShapeFromObj } from "@/lib/objImport";
+import { importedShapeFromObj, importedShapesFromObj } from "@/lib/objImport";
 
 describe("importedShapeFromObj", () => {
   it("imports triangulated OBJ geometry as a Layerling mesh", () => {
@@ -117,6 +117,25 @@ describe("importedShapeFromObj", () => {
 
     expect(dot).toBeGreaterThan(0);
     expect(shape.importedMesh?.triangleCount).toBe(1);
+  });
+  it("turns an OBJ from Tinkercad upright: it writes Z up (#599)", () => {
+    // 4 wide, 2 deep, 1 high, lying flat as Tinkercad writes it.
+    const source = [
+      "# Object Export From Tinkercad Server 2015",
+      "v 0 0 0", "v 4 0 0", "v 4 2 0", "v 0 2 0",
+      "v 0 0 1", "v 4 0 1", "v 4 2 1", "v 0 2 1",
+      "f 1 3 2", "f 1 4 3", "f 5 6 7", "f 5 7 8",
+    ].join("\n");
+    const shape = importedShapesFromObj("flat.obj", source).shapes[0];
+
+    expect(shape.width).toBeCloseTo(4);
+    expect(shape.height).toBeCloseTo(1);
+    expect(shape.depth).toBeCloseTo(2);
+    // The mesh carries itself, so a project never rebuilds it from the file with the old axes.
+    expect(shape.importedMesh?.sourceFormat).toBe("json");
+    // The same file without the header stays as before (Y up).
+    const plain = importedShapeFromObj("flat.obj", source.replace(/^#.*\n/, ""));
+    expect(plain.height).toBeCloseTo(2);
   });
   it("rejects OBJ files without mesh faces", () => {
     expect(() => importedShapeFromObj("points.obj", "v 0 0 0\nv 1 1 1")).toThrow("OBJ has no readable mesh geometry");

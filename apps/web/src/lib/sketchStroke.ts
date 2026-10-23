@@ -169,7 +169,7 @@ function strokeOpenPath(runtime: ManifoldToplevel, keep: Keep, points: Vec[], st
  * edge, or ("grow", #215) the region itself widened by `width`, or ("shrink", #558) narrowed by it - a filled base layer under a
  * text or logo for a multicolour print. Text fills (textFill.ts) use this for their letters.
  */
-export function strokeRegion(runtime: ManifoldToplevel, keep: Keep, region: CrossSection, stroke: SketchStroke): CrossSection {
+export function strokeRegion(keep: Keep, region: CrossSection, stroke: SketchStroke): CrossSection {
   const joinType = stroke.join === "round" ? "Round" : stroke.join === "bevel" ? "Square" : "Miter";
   const grow = (delta: number) => (delta === 0 ? region : keep(region.offset(delta, joinType, MITER_LIMIT, 48)));
   if (stroke.align === "grow") return grow(stroke.width);
@@ -186,7 +186,7 @@ export function strokeRegion(runtime: ManifoldToplevel, keep: Keep, region: Cros
 function strokeClosedPaths(runtime: ManifoldToplevel, keep: Keep, loops: Vec[][], stroke: SketchStroke): CrossSection | null {
   if (!loops.length) return null;
   const region = keep(new runtime.CrossSection(loops.map(toPolygon), "EvenOdd"));
-  return strokeRegion(runtime, keep, region, stroke);
+  return strokeRegion(keep, region, stroke);
 }
 
 /**

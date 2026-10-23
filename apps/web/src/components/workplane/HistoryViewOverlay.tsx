@@ -4,6 +4,7 @@ import { ArchiveRestore, ChevronLeft, ChevronRight, CornerLeftUp, Download, File
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import type { HistoryStepDescription } from "@/lib/historyStepDescription";
+import { historyKeyTarget, historyWheelSteps } from "@/lib/historyStepping";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { useMovablePanel, type MovablePanelOptions } from "@/lib/useMovablePanel";
@@ -117,6 +118,36 @@ export function HistoryViewOverlay({
   const lastText = lastStep ? t(lastStep.key, lastStep.values) : t("historyView.lastStepNone");
   const nextText = nextStep ? t(nextStep.key, nextStep.values) : t("historyView.nextStepNone");
   const distance = index - liveIndex;
+
+  // The mouse wheel over the slider steps through the states, one per notch, up to an
+  // earlier one (#688). Not a React handler: that one is passive and the page would scroll.
+  const wheelAreaRef = useRef<HTMLDivElement>(null);
+  const wheelStateRef = useRef({ index, max, carry: 0, onIndexChange });
+  wheelStateRef.current.index = index;
+  wheelStateRef.current.max = max;
+  wheelStateRef.current.onIndexChange = onIndexChange;
+  useEffect(() => {
+    const area = wheelAreaRef.current;
+    if (!area) return;
+    const onWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
+      event.preventDefault();
+      const state = wheelStateRef.current;
+      const { steps, carry } = historyWheelSteps(state.carry, event.deltaY, event.deltaMode);
+      state.carry = carry;
+      if (steps === 0) return;
+      const target = Math.min(state.max, Math.max(0, state.index + steps));
+      // At either end the rest is dropped, so turning back answers at once.
+      if (target === state.index) {
+        state.carry = 0;
+        return;
+      }
+      state.index = target;
+      state.onIndexChange(target);
+    };
+    area.addEventListener("wheel", onWheel, { passive: false });
+    return () => area.removeEventListener("wheel", onWheel);
+  }, []);
   const relation = distance === 0
     ? t("historyView.atCurrent")
     : distance < 0
@@ -138,6 +169,12 @@ export function HistoryViewOverlay({
           event.preventDefault();
           event.stopPropagation();
           onClose();
+        } else if (!event.ctrlKey && !event.metaKey && !event.altKey && historyKeyTarget(event.key, index, max, liveIndex) !== null) {
+          // Page Up/Down jump ten states, Home and End to the oldest and the current one (#688).
+          event.preventDefault();
+          event.stopPropagation();
+          const target = historyKeyTarget(event.key, index, max, liveIndex);
+          if (target !== null && target !== index) onIndexChange(target);
         } else if (event.key.toLowerCase() === "e" && !event.ctrlKey && !event.metaKey && !event.altKey && canOpenGroup) {
           // E opens the selected group, as in the design.
           event.preventDefault();
@@ -157,7 +194,7 @@ export function HistoryViewOverlay({
         </div>
       </div>
 
-      <div className="history-view-slider">
+      <div className="history-view-slider" ref={wheelAreaRef}>
         <button type="button" aria-label={t("historyView.earlier")} title={t("historyView.earlier")} disabled={index <= 0} onClick={() => onIndexChange(index - 1)}>
           <ChevronLeft size={18} />
         </button>

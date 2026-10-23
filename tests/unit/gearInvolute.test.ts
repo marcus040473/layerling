@@ -10,6 +10,7 @@ import {
   involuteGearMeasures,
   involuteGearModule,
   involuteGearPair,
+  gearPairFitPatches,
   involuteOutlineStretch,
   involuteToothCentre,
   normalizeGearCenterHoleSize,
@@ -146,7 +147,32 @@ describe("two selected gears", () => {
 
   it("tells where two gears of one module mesh, and where they stand now", () => {
     const wheel = { ...pinion, teeth: 30, size: 64, width: 64, depth: 64, x: 40, z: 0 };
-    expect(involuteGearPair(pinion, wheel)).toEqual({ modules: [2, 2], current: 40, distance: 42, internal: false });
+    const pair = involuteGearPair(pinion, wheel)!;
+    expect(pair).toMatchObject({ modules: [2, 2], current: 40, distance: 42, internal: false });
+    // #645: the module at which they would mesh 40 mm apart - 40 x 2 / (12 + 30).
+    expect(pair.fitModule).toBeCloseTo(80 / 42, 12);
+  });
+
+  it("offers a module that fits where they stand, also when the modules differ (#645)", () => {
+    const other = { ...pinion, teeth: 20, size: 33, width: 33, depth: 33, x: 30, z: 0 };
+    expect(involuteGearPair(pinion, other)!.fitModule).toBeCloseTo(60 / 32, 12);
+    expect(involuteGearPair(pinion, { ...other, x: 0 })!.fitModule).toBeNull();
+  });
+
+  it("fits both gears to that module and keeps teeth, place, height and hole (#645)", () => {
+    const a = { ...pinion, id: "a", height: 8, centerHoleSize: 5 };
+    const b = { ...pinion, id: "b", teeth: 30, size: 64, width: 64, depth: 64, x: 40, height: 8 };
+    const module = involuteGearPair(a, b)!.fitModule!;
+    const changes = gearPairFitPatches(a, b, module);
+    expect(changes.map((change) => change.id)).toEqual(["a", "b"]);
+    for (const change of changes) expect(Object.keys(change.patch).sort()).toEqual(["centerHoleSize", "depth", "size", "width"]);
+    expect(changes[0].patch.width).toBeCloseTo(module * 14, 12);
+    expect(changes[1].patch.width).toBeCloseTo(module * 32, 12);
+    expect(changes[0].patch.centerHoleSize).toBe(5);
+    // No hole size of its own: the one it has now is written down, it does not grow with the gear.
+    expect(changes[1].patch.centerHoleSize).toBeCloseTo(normalizeGearCenterHoleSize(undefined, 64, 64, undefined, b), 12);
+    const fitted = involuteGearPair({ ...a, ...changes[0].patch }, { ...b, ...changes[1].patch })!;
+    expect(fitted.distance).toBeCloseTo(40, 9);
   });
 
   it("says when the modules differ, and leaves other shapes alone", () => {

@@ -2,27 +2,32 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { ShapeMenuPanel } from "@/components/workplane/ShapeMenuPanel";
-import { AlertTriangle, ArrowUpFromLine, Blend, Check, CircleHelp, Percent, Circle as CircleIcon, CloudUpload, Download, Eye, EyeOff, FilePlus2, FolderOpen, Hexagon as HexagonIcon, Info, ListTree, Pencil, Pentagon as PentagonIcon, Rotate3d, Route as RouteIcon, Search, Square as SquareIcon, Star as StarIcon, Triangle as TriangleIcon, X } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Check, CircleHelp, Percent, Circle as CircleIcon, CloudUpload, Download, Eye, EyeOff, FilePlus2, FolderOpen, Hexagon as HexagonIcon, ImagePlus, Info, ListTree, Pencil, Pentagon as PentagonIcon, Rotate3d, Route as RouteIcon, Search, Square as SquareIcon, Star as StarIcon, Triangle as TriangleIcon, X } from "lucide-react";
 import { ObjectListPanel } from "@/components/workplane/ObjectListPanel";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useWheelField } from "@/lib/useWheelField";
 import { wheelNextValue } from "@/lib/wheelValueStep";
+import { SAVED_VIEW_KEYS } from "@/lib/designView";
 import * as THREE from "three";
 import type { AppThemePreference, ResolvedAppTheme } from "@/lib/appTheme";
 import type { ComponentType, ReactNode, SVGProps } from "react";
 import { t, type MessageKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
+import { useSimpleMode } from "@/lib/useSimpleMode";
+import { simpleModeKeepsShape, simpleModeKeepsTool } from "@/lib/simpleMode";
 import { loftShapePatch, type LoftMeasures } from "@/lib/loftGeometry";
 import { hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
+import { gridfinityListPatch } from "@/lib/gridfinityGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { curvedTextPatch, MAX_TEXT_SPACING, MIN_TEXT_SPACING } from "@/lib/textGeometry";
 import { normalizeTextEdge } from "@/lib/textEdge";
-import { DEFAULT_TEXT_LAYERS, layerTextKeyringArgument, layerTextLayersError, nameTagOffsets, normalizeTextLayers, type NameTagKeyring } from "@/lib/textLayers";
+import { DEFAULT_TEXT_LAYERS, layerTextKeyringArgument, placedKeyring, layerTextLayersError, nameTagOffsets, normalizeTextLayers, type NameTagKeyring } from "@/lib/textLayers";
 import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
 import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, normalizeIconTagCount } from "@/lib/iconTag";
-import type { IconLayerPatch, IconTagControls, TextLayerPatch } from "@/components/workplane/ShapeInspector";
+import type { IconLayerPatch, IconTagControls, ReferenceImageControls, TextLayerPatch } from "@/components/workplane/ShapeInspector";
+import { calibratedReferenceImage, dataUrlByteLength, isReferenceImage, LARGE_REFERENCE_IMAGE_BYTES, mirrorHidesReferenceImage, referenceImageOpacity, referenceImagePixelDistance, referenceImageShape } from "@/lib/referenceImage";
 import { IconTagPanel } from "@/components/workplane/IconTagPanel";
 import { QrCodePanel } from "@/components/workplane/QrCodePanel";
 import { qrCodeOf, qrCodeShape, regeneratedQrCodeShape } from "@/lib/editorQrCode";
@@ -42,7 +47,11 @@ import {
   sketchPrimitiveGeometry,
 } from "@/lib/sketchPrimitives";
 import { cloneSketchProfile, orderedSketchPaths, withSegmentHandles, withSmoothSketchHandles } from "@/lib/sketchSmoothHandles";
+import { changesLockedOutline, setSketchPointsLocked, sketchLockState } from "@/lib/sketchLock";
 import { curveSketchSegment, isSegmentCurved, straightenSketchSegment } from "@/lib/sketchSegmentCurve";
+import { chordHandles, withBezierHandles, withBezierStartHandle } from "@/lib/sketchBezierHandles";
+import { sketchProfileWithoutPoint } from "@/lib/sketchPointRemoval";
+import { sketchProfileWithArc, type SketchArcEnd } from "@/lib/sketchArc";
 import { withSegmentsConstruction } from "@/lib/sketchConstruction";
 import { alignAxesForWorkplane, cuboidAlongAxes, shiftAlongAxis, type AlignAxes } from "@/lib/alignFrame";
 import {
@@ -63,7 +72,7 @@ import {
   ToolbarHideSelectedIcon,
   ToolbarHomeIcon,
   ToolbarImportIcon,
-  ToolbarIntersectionIcon,
+  ToolbarIntersectionIcon, ToolbarIntersectPreviewIcon,
   ToolbarKeyboardIcon,
   ToolbarFilletIcon,
   ToolbarHistoryIcon,
@@ -76,6 +85,7 @@ import {
   ToolbarHolePatternIcon,
   ToolbarFaceToolIcon,
   ToolbarConstructionLineIcon,
+  ToolbarMiddleLineIcon,
   ToolbarLayFlatIcon,
   ToolbarMateFacesIcon,
   ToolbarNoteIcon,
@@ -118,9 +128,9 @@ import { scaleShapesByPercent } from "@/lib/scaleByPercent";
 import { canToggleGroupColors, groupShowsPartColors } from "@/lib/groupColors";
 import { disposeBoundsTree } from "three-mesh-bvh";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
-import { circleStepDegrees, clampArrayCount, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing, type ArraySettings } from "@/lib/shapeArray";
-import { bedOverhangs, printerPresetById, shapeBedFootprint, type BedOverhang } from "@/lib/printBed";
-import { SplitPanel } from "./workplane/SplitPanel";
+import { arrayFollowingPivot, circleStepDegrees, clampArrayCount, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing, type ArraySettings } from "@/lib/shapeArray";
+import { bedOverhangs, keepDismissedOverhangs, printerPresetById, shapeBedFootprint, type BedOverhang } from "@/lib/printBed";
+import { SplitPanel, type SplitWorkplaneDirection } from "./workplane/SplitPanel";
 import { NO_SPLIT_ROTATION, modelSplitPlane, snapSplitPositionToVertices, splitOrientationForNormal, splitAxisFromLabel, splitAxisLabel, splitRotationAxes, type SplitRotation } from "@/lib/modelSplit";
 import { GuideModal } from "./workplane/GuideModal";
 import { HistoryViewOverlay, historyStateNameSuffix } from "./workplane/HistoryViewOverlay";
@@ -131,7 +141,7 @@ import { CommandPalette, type PaletteCommand } from "./workplane/CommandPalette"
 import { COMMAND_KEYWORDS, SHAPE_KEYWORDS } from "@/lib/commandKeywords";
 import { ShapeContextMenu, type ShapeContextMenuItem } from "./workplane/ShapeContextMenu";
 import { nextSelectionTransparency } from "@/lib/selectionTransparency";
-import { canonicalizeShape, cloneWorkplaneShapeTreeWithFreshIds, cleanNearZero, cleanRotationDegrees, isNonSolidShapeKind, meshYawDegrees, preservesEdgeTreatmentSize, serializeShapesForSync, shapeDepth, shapeExtrudeDeformPatch, shapeHasShapeDeform, shapeTaperPatch, shapeTransformShouldRemainEditable, shapeWidth, shapeWithParametricSource, patchTouchesBodyParameters, withHoleMode, workplaneShapesEqual, shellNeedingRebuild } from "@/lib/workplaneShapes";
+import { canonicalizeShape, cloneWorkplaneShapeTreeWithFreshIds, cleanNearZero, cleanRotationDegrees, isNonSolidShape, meshYawDegrees, preservesEdgeTreatmentSize, serializeShapesForSync, shapeDepth, shapeExtrudeDeformPatch, shapeHasShapeDeform, shapeTaperPatch, shapeTransformShouldRemainEditable, shapeWidth, shapeWithParametricSource, patchTouchesBodyParameters, withHoleMode, workplaneShapesEqual, shellNeedingRebuild, hollowStretchSincePicture } from "@/lib/workplaneShapes";
 import { workplaneCenteringOffset } from "@/lib/workplaneCentering";
 import { bakeCadMetadataForShapeTransform, cadBrepTransformForShape, cadModifierPrimitiveForAnalyticShape, cadModifierPrimitiveForBakedShape, importedStepPartForShape } from "@/lib/cadBakeMetadata";
 import { hasOneToOneCadComponentMapping } from "@/lib/cadModifierGroups";
@@ -152,7 +162,7 @@ import { createLocalId } from "@/lib/localIds";
 import { canEditGroupAtLevel, mcpOpenGroupSummary, openGroupLevelsStillOpen, trackOpenGroupLevels, type OpenGroupLevel } from "@/lib/openGroupParts";
 import { projectExportFileName, stlNameAsksForNewFile } from "@/lib/exportNames";
 import { exportMeshesToObj } from "@/lib/objExport";
-import { NOTICE_AFTER_HOVER_MS, noticeDurationMs } from "@/lib/noticeTiming";
+import { useEditorNotice } from "@/components/workplane/useEditorNotice";
 import { rotateSketchPoints, selectedClosedSketchPoints } from "@/lib/sketchRotation";
 import { PROJECT_THUMBNAIL_IDLE_MS, projectThumbnailSceneChanged, type ProjectThumbnailSceneKey } from "@/lib/projectThumbnail";
 import { importedShapeFromObj } from "@/lib/objImport";
@@ -160,9 +170,10 @@ import { readImportSvgWidth, readKeepSvgPage, setImportSvgWidth, storeKeepSvgPag
 import { importFailureSummary, importModelFiles } from "@/lib/modelImport";
 import { dedupeProjectAssets } from "@/lib/projectAssets";
 import { useCustomShapes } from "@/lib/useCustomShapes";
-import { packBackup, unpackBackup } from "@/lib/projectBackup";
+import { packBackup } from "@/lib/projectBackup";
 import { MyShapesSection } from "@/components/workplane/MyShapesSection";
 import { addLineIntersectionPoints, onlyMovesPoints, splitSketchSegment } from "@/lib/sketchPointRefinement";
+import { joinOpenEnds } from "@/lib/sketchPointJoin";
 import { mirrorSketchSelection, SKETCH_MIRROR_HORIZONTAL, SKETCH_MIRROR_VERTICAL, sketchMirrorAxisThroughSegment } from "@/lib/sketchMirror";
 import { copySketchSelection, freeSketchPasteOffset, pasteSketchClipboard, type SketchClipboard } from "@/lib/sketchClipboard";
 import { sketchSelectedPointIds, sketchSelectionCount, toggleSketchSelection } from "@/lib/sketchSelection";
@@ -191,17 +202,20 @@ import {
   type LylFileHandle,
 } from "@/lib/lylFileAccess";
 import { simplifyTrianglePositions } from "@/lib/meshSimplify";
-import { displayShapeName, iconTagAsset, qrCodeAsset, libraryShapeAssets, makeShapeFromAsset, nameTagAsset, sceneShape, shapeAssetLabel, shapeAssetMenuLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
+import { clipboardShape, displayShapeName, iconTagAsset, qrCodeAsset, libraryShapeAssets, makeShapeFromAsset, nameTagAsset, shapeAssetColor, shapeAssetLabel, shapeAssetMenuLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
 import { importedShapeFromStl } from "@/lib/stlImport";
 import { exportMeshesToStl } from "@/lib/stlExport";
 import { exportMeshesTo3mf, THREE_MF_MEDIA_TYPE } from "@/lib/threemfExport";
 import { importedShapeFromSvg, invalidSvgMeshReason } from "@/lib/svgImport";
-import { toSvgProjection, type SvgProjectionLayer } from "@/lib/svgExport";
+import { toSvgProjection, toSvgTopEdges, type SvgProjectionLayer } from "@/lib/svgExport";
+import { outlinesToDxf, type DxfResult } from "@/lib/dxfExport";
+import type { CrossSection } from "manifold-3d";
+import { DrawingTooComplexError } from "@/lib/drawingProjection";
 import { DEFAULT_TAPER_DIMENSION_MAX, keyboardNudgeCoarseFactor, keyboardNudgeStep, normalizeShapeCustomizations, normalizeSnapGrid, normalizeWorkspaceSettings, shapeDimensionLimit, workplaneSettingsFingerprint } from "@/lib/workplaneSettings";
-import { mcpThreadSizeParams } from "@/lib/mcpShapeSettings";
-import { createNoteId, normalizeNotes, NOTE_COUNT_LIMIT, patchNote, referencePoints } from "@/lib/workplaneNotes";
+import { MCP_GRIDFINITY_LIST_KEYS, mcpGridfinityListParams, mcpGridfinityPaddingPatch, mcpThreadSizeParams } from "@/lib/mcpShapeSettings";
+import { normalizeNotes, referencePoints } from "@/lib/workplaneNotes";
 import { notesAfterShapeChange, notesPinnedTo, notesPutBack } from "@/lib/noteAnchoring";
-import { newReferencePositions, referencePointsForBox, unionReferenceBoxes, type ReferencePointSpot, type ReferencePosition } from "@/lib/referencePoints";
+import { referencePointsForBox, unionReferenceBoxes, type ReferencePointSpot, type ReferencePosition } from "@/lib/referencePoints";
 import {
   normalizePlacementWorkplane,
   placementPatchForNewShape,
@@ -225,7 +239,12 @@ import { silhouetteSketchProfile } from "@/lib/sketchCadProfile";
 import { svgSketchMatchesMesh } from "@/lib/svgSketch";
 import { DEFAULT_SKETCH_STROKE, normalizeSketchStroke, strokedSketchProfile } from "@/lib/sketchStroke";
 import { bottomCadModifierEdgeIds, horizontalCadModifierEdgeIds, topCadModifierEdgeIds, verticalCadModifierEdgeIds } from "@/lib/topEdges";
-import { movedWithEditedOutline, placeSketchShape, sketchBodyAnchor, type SketchAnchor } from "@/lib/sketchPlacement";
+import { movedWithEditedOutline, placedLikeExisting, placeSketchShape, sketchBodyAnchor, type SketchAnchor } from "@/lib/sketchPlacement";
+import { notesWithSketchNotes, sketchNoteFrame, sketchNotesFromBody } from "@/lib/sketchNotes";
+import { useSketchNotes } from "@/lib/useSketchNotes";
+import { useEditorNotes } from "@/lib/useEditorNotes";
+import { NoteToolButton } from "@/components/workplane/NoteToolButton";
+import { separatesBySketch, sketchOutlineParts } from "@/lib/sketchOutlineParts";
 import { sketchOutlineBounds } from "@/lib/sketchKeyring";
 import { meshSlicePath, planeCutsMesh } from "@/lib/sketchSlice";
 import { projectedEdgesPath } from "@/lib/sketchEdges";
@@ -241,19 +260,21 @@ import { canChangeSurfaceTexture, canTextureSurface, offersSurfaceTexture, offer
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
 import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierFaces, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierKind, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierQuality, CadModifierSpringPart, CadModifierThreadPart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
-import { getSectionBounds, sectionAxisLetter, sectionPlacementWorkplane, type SectionPlaneAxis, type SectionPlaneSettings } from "@/lib/sectionView";
-import { projectSectionPoint, SECTION_VIEW_FACE, sectionSvgDocument, sliceMeshContours } from "@/lib/sectionSvg";
-import type { AlignAxis, AlignHandleStatus, AlignTarget, EdgeTreatmentFeature, GridSize, ParametricSource, ProjectAsset, ShapeAsset, ShapeCustomization, ShapeKind, SketchImage, SketchOperation, SketchPoint, SketchProfile, SketchRevolveSettings, SketchSegment, ShellEdges, ShellOpenings, ShellSide, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
-import { type Vec3, type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, appendMeshData, formatTriangleCount, shapeAabb, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey } from "@/lib/editorMeshCore";
+import { getSectionBounds, sectionAxisLetter, sectionMeshInFrame, sectionPlacementWorkplane, sectionPointFromFrame, sectionPointToFrame, type SectionFrame, type SectionOrientation, type SectionPlaneAxis, type SectionPlaneSettings } from "@/lib/sectionView";
+import { footprintCutOffset, projectSectionPoint, SECTION_VIEW_FACE, sectionSvgDocument, sliceMeshContours } from "@/lib/sectionSvg";
+import type { AlignAxis, AlignHandleStatus, AlignTarget, EdgeTreatmentFeature, GridSize, ParametricSource, ProjectAsset, ShapeAsset, ShapeCustomization, ShapeKind, SketchImage, SketchOperation, SketchPoint, SketchProfile, SketchRevolveSettings, SketchSegment, ShellEdges, ShellOpenings, ShellSide, SweepAnchor, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
+import { type Vec3, type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, meshReachAlong, appendMeshData, formatTriangleCount, shapeAabb, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey } from "@/lib/editorMeshCore";
 import { cloneAsGroupChild, meshDataToManifoldMesh, shapeToManifoldSolid, splitShapesByPlane, unionOverlappingExportMeshes, exportBodiesWithLooseHoles, exportSolidVolume, type ExportSolidVolume, PRINT_MATERIAL_STORAGE_KEY, PRINT_INFILL_STORAGE_KEY, PRINT_WALLS_STORAGE_KEY, formatEstimateNumber, formatSectionOffset, SECTION_SEEN_FROM_KEYS, expandBundles, visibleExportShapes, multicolorExportSolids, exportFaceColors, colorSeparatedExportMeshes, disposeManifold, canIntersectShapes, buildIntersectionShapeFromSelection, groupedShape, quaternionForShape, rotationFromQuaternion, cleanShapePatch, restoreGroupedChildren, restoreGroupedChildrenForEdges, buildGroupedShapeFromSelection } from "@/lib/editorBooleans";
 import { handleViewArrowKey } from "@/lib/viewArrowKeys";
 import { escapeWasHandled } from "@/lib/escapeHandled";
+import { sketchEscapeAction } from "@/lib/sketchEscape";
 import { booleanAutomationScene } from "@/lib/editorAutomation";
 import { debugShapeSummary, mcpPivotRequest, compactShapeSummary, mcpShapeSummary, mcpSketchFillProfile, mcpTextFont } from "@/lib/editorMcpSummary";
-import { sweepPathFromParams, sweepSectionFromParams, sweepSketchProfile } from "@/lib/sweepSketch";
-import { emptySketchProfile, cadShapeFromSketchProfile, cadShapeFromSketchSweep, revolveBuildProfile, shapeFromRevolvedSketchProfile, shapeFromCadMesh, sketchReferenceShapeOnWorkplane, defaultMcpSketchProfile } from "@/lib/editorSketchCad";
+import { sweepAnchorFromParams, sweepPathFromParams, sweepSectionFromParams, sweepSketchProfile } from "@/lib/sweepSketch";
+import { emptySketchProfile, cadShapeFromSketchProfile, cadShapeFromSketchSweep, revolveBuildProfile, shapeFromRevolvedSketchProfile, shapeFromCadMesh, sketchBodyAsOperation, sketchBodyOperation, sketchProfileLeftOfAxis, sketchReferenceShapeOnWorkplane, defaultMcpSketchProfile } from "@/lib/editorSketchCad";
 import { drawingLabelsInLanguage } from "@/lib/drawingLabels";
-import { offersTextLayers, textLayerStack, layeredTextShape, nameTagSource, nameTagsFor, offersIconLayers, iconLayerStack, iconTagArea, layeredIconShape, iconTagCopies, svgIconArea, iconTagFromSvg } from "@/lib/editorTextTags";
+import { offersTextLayers, textLayerStack, layeredTextShape, nameTagSource, nameTagsFor, offersIconLayers, iconLayerStack, iconTagArea, layeredIconShape, iconTagCopies, svgIconArea, iconTagFromSvg, keyringTabShape, keyringTabTag, keyringTabAt, keyringTabPlace, textFreeKeyring, textFreeKeyringPlace, iconFreeKeyring, iconFreeKeyringPlace } from "@/lib/editorTextTags";
+import { DEFAULT_KEYRING_DIAMETER } from "@/lib/textGeometry";
 
 export { importedShapeFromObj, importedShapeFromStl, importedShapeFromSvg };
 
@@ -274,6 +295,7 @@ const HISTORY_VIEW_MCP_ACTIONS = new Set([
   "measure_section",
   "set_section_view",
   "show_workplane",
+  "saved_view",
   "export_section_svg",
   "export_drawing",
   "export_mesh",
@@ -303,8 +325,11 @@ export type HistoryProjectRequest = {
   /** Das Bild der Arbeitsflaeche in diesem Stand, fuer die Karte in der Uebersicht. */
   thumbnailDataUrl: string | null;
 };
-type ExportFormat = "stl" | "3mf" | "obj" | "step" | "svg" | "png" | "lyl" | "drawing";
+type ExportFormat = "stl" | "3mf" | "obj" | "step" | "svg" | "dxf" | "png" | "lyl" | "drawing";
 type DirectExportFormat = Exclude<ExportFormat, "step" | "png" | "lyl" | "drawing">;
+type SvgExportView = "silhouette" | "footprint" | "edges";
+/** What a DXF for laser cutting shows (#774): the outline from above, or what stands on the workplane; never inner edges, which a laser would cut. */
+type DxfExportView = "silhouette" | "footprint";
 type ViewImageOptions = { plate: boolean; transparent: boolean };
 type LylHistoryLimit = EditorHistoryExportLimit;
 /** "file" writes into the file the design is tied to (asking for one the first time), "fileAs" always asks (#251). */
@@ -321,6 +346,8 @@ type EdgeModifierSession = {
   amount: number;
   sharpAngle: number;
   chamferAngle: number;
+  // A fillet whose radius changes along its one edge (#687): the radius at the edge's end; null for one radius.
+  endAmount?: number | null;
   quality: CadModifierQuality;
   tangentChain: boolean;
   // Off: every edge shows through the body. On: only the ones facing the camera.
@@ -384,6 +411,7 @@ type EdgeFeatureRevertOption = {
   label: string;
   kind: EdgeTreatmentFeature["kind"];
   amount: number;
+  endAmount?: number;
   edgeCount: number;
   /** Only for a deletion of faces. */
   faceCount?: number;
@@ -421,6 +449,8 @@ declare global {
     layerlingSectionView?: (patch: Partial<SectionPlaneSettings> & { center?: boolean }) => { settings: SectionPlaneSettings; bounds: { min: number; max: number; center: number } };
     /** "Hide workplane" in the camera bar for MCP: sets it when given, returns whether the plate is shown. */
     layerlingWorkplaneDisplay?: (visible?: boolean) => { visible: boolean };
+    /** The four saved views (keys 7, 8, 9, 0) for MCP: saves or shows one when asked, returns which keys hold a view. */
+    layerlingSavedViews?: (request?: { save?: number; show?: number }) => { keys: { key: string; saved: boolean }[]; shown?: boolean };
   }
 }
 
@@ -432,13 +462,6 @@ const LEAVE_SNAPSHOT_DEADLINE_MS = 600;
  */
 const PROJECT_SYNC_HELD_MAX_MS = 2000;
 
-/**
- * So lange darf eine Notiz getippt oder gezogen werden, ohne dass daraus ein
- * Schritt im Verlauf wird. Danach steht sie darin - wie ein Absatz in einem
- * Textfeld, nicht wie ein Buchstabe.
- */
-const NOTE_COMMIT_IDLE_MS = 700;
-
 const MAX_SKETCH_HISTORY_ENTRIES = 100;
 const NORMAL_SELECTION_CAD_EDGE_MIN_ANGLE = 60;
 const MIN_EDGE_MODIFIER_AMOUNT = 0.001;
@@ -449,13 +472,8 @@ function parseClipboardShapes(serialized: string): ClipboardPayload<WorkplaneSha
   const payload = decodeClipboardPayload(serialized);
   if (!payload) return null;
   const shapes = payload.shapes.flatMap((entry) => {
-    if (!entry || typeof entry !== "object") return [];
-    const shape = entry as Partial<WorkplaneShape>;
-    const { name, kind, color } = shape;
-    if (typeof name !== "string" || typeof kind !== "string" || typeof color !== "string") {
-      return [];
-    }
-    return [canonicalizeShape(sceneShape({ ...shape, name, kind, color }))];
+    const shape = clipboardShape(entry);
+    return shape ? [shape] : [];
   });
   return { copiedAt: payload.copiedAt, shapes };
 }
@@ -547,6 +565,12 @@ function writeSharedClipboard(shapes: WorkplaneShape[], copiedAt: number) {
 }
 
 /** A key ring hole (#215) is placed from the plate's real outline: the 2D kernel loads first. */
+/** The box of an icon's outline, from which a free key ring hole is placed (#598). */
+function iconBox(area: SketchProfile) {
+  const bounds = sketchOutlineBounds(area);
+  return bounds ? { width: bounds.maxX - bounds.minX, depth: bounds.maxZ - bounds.minZ } : { width: 0, depth: 0 };
+}
+
 async function keyringRuntimeReady(keyring: NameTagKeyring | null) {
   if (keyring && !loadedManifoldRuntime()) await getManifoldRuntime().catch(() => null);
 }
@@ -762,7 +786,9 @@ function bedOverhangMessage(overhangs: BedOverhang[], printer: string) {
 }
 
 function edgeTreatmentLabel(feature: NonNullable<WorkplaneShape["edgeTreatments"]>[number]) {
-  const size = `${Number(feature.amount.toFixed(2))} mm`;
+  const size = feature.endAmount !== undefined
+    ? `${Number(feature.amount.toFixed(2))}-${Number(feature.endAmount.toFixed(2))} mm`
+    : `${Number(feature.amount.toFixed(2))} mm`;
   if (feature.kind === "shell") return `hollow (${size} walls, open ${shellOpenSides(feature.openings).join(" + ") || "none"})`;
   if (feature.kind === "deleteFace") return `face deletion (${feature.faceCount ?? 0} face${feature.faceCount === 1 ? "" : "s"})`;
   if (feature.kind === "surfaceTexture") return `surface texture (${feature.surfaceTexture?.pattern ?? "relief"}, ${size} deep)`;
@@ -1019,6 +1045,7 @@ function edgeTreatmentHistoryOptions(shape: WorkplaneShape, path: number[] = [],
     label: edgeTreatmentLabel(entry.feature),
     kind: entry.feature.kind,
     amount: entry.feature.amount,
+    ...(entry.feature.endAmount !== undefined ? { endAmount: entry.feature.endAmount } : {}),
     edgeCount: entry.feature.edgeCount,
     faceCount: entry.feature.faceCount,
     targetName,
@@ -1190,6 +1217,17 @@ function rebuiltParametricShape(shape: WorkplaneShape, patch: Partial<WorkplaneS
   });
 }
 
+/** A change from the settings panel on one shape, as `updateShape` makes it - and the two gears of "Fit module" (#645). */
+function shapeWithInspectorPatch(shape: WorkplaneShape, cleanedPatch: Partial<WorkplaneShape>, bakeTransform = false) {
+  // Ein Bauwert an einem gedrehten Koerper heisst: neu bauen, nicht
+  // das Netz verbiegen. Ein Zug am Anfasser trifft dagegen nur den
+  // Rahmen und laesst das gebackene Netz in Ruhe.
+  const neugebaut = patchTouchesBodyParameters(cleanedPatch) ? rebuiltParametricShape(shape, cleanedPatch) : null;
+  const patched = neugebaut ?? { ...shape, ...textShrinkPatch(shape, curvedTextPatch(shape, heightPatchKeepingBase(shape, cleanedPatch))) };
+  const canonicalBase = canonicalizeShape("hole" in cleanedPatch ? withHoleMode(patched, Boolean(cleanedPatch.hole), cleanedPatch.color) : patched);
+  return bakeTransform ? canonicalizeShape(bakeShapeTransformIntoMesh(canonicalBase)) : canonicalBase;
+}
+
 function bakeShapeTransformIntoMesh(shape: WorkplaneShape): WorkplaneShape {
   // Text and groups must retain their editable source data across transforms.
   // Baking a group would discard groupedShapes and make Ungroup unavailable.
@@ -1262,6 +1300,10 @@ function bakeShapeTransformIntoMesh(shape: WorkplaneShape): WorkplaneShape {
     taperBottomDepth: undefined,
     taperTopScale: undefined,
     taperBottomScale: undefined,
+    // Twist and lean are in the mesh as well, so they go the way the taper does.
+    extrudeTwist: undefined,
+    extrudeTopOffsetX: undefined,
+    extrudeTopOffsetZ: undefined,
     importedMesh: {
       positions,
       baseWidth: rawWidth,
@@ -1371,6 +1413,45 @@ function imagePlateDimensions(pixelWidth: number, pixelHeight: number) {
   };
 }
 
+/**
+ * The SVG of only what stands on the workplane (#692): the outlines of the section a hair above the lowest
+ * point, drawn as lines in their colours. `shapes` are the visible ones to export, loose holes among them.
+ */
+async function footprintSvg(shapes: readonly WorkplaneShape[], title: string) {
+  const { solids, meshes: cut } = await exportBodiesWithLooseHoles(shapes);
+  const { meshes, quellen } = await colorSeparatedExportMeshes(solids, cut);
+  const offset = footprintCutOffset(meshes);
+  const bodies = offset === null ? [] : meshes.map((mesh, index) => {
+    const body = solids[quellen[index]];
+    return { name: body ? displayShapeName(body) : mesh.name, color: body?.color ?? "#000000", loops: sliceMeshContours(mesh, "y", offset) };
+  });
+  const result = offset === null ? null : sectionSvgDocument(bodies, "y", offset, title);
+  if (!result) throw new Error(t("status.sectionSvgNothing"));
+  return result;
+}
+
+/**
+ * The SVG of the edges seen from above (#591), each colour's as lines in that colour, every area it shows closed.
+ * The bodies are joined and separated by colour, as STL and 3MF get them, so a part reaching through another gets
+ * the line where it comes out. Null for a design with more edges or triangles than the drawing's projection takes:
+ * the export then writes the silhouette and says why.
+ */
+async function visibleEdgesSvg(shapes: readonly WorkplaneShape[], title: string) {
+  const { solids, meshes: cut } = await exportBodiesWithLooseHoles(shapes);
+  const { meshes, quellen } = await colorSeparatedExportMeshes(solids, cut);
+  if (meshes.length === 0) throw new Error(t("status.sectionSvgNothing"));
+  const bodies = meshes.map((mesh, index) => {
+    const body = solids[quellen[index]];
+    return { name: body ? displayShapeName(body) : mesh.name, color: body?.color ?? "#000000", mesh };
+  });
+  try {
+    return toSvgTopEdges(bodies, title);
+  } catch (error) {
+    if (error instanceof DrawingTooComplexError) return null;
+    throw error;
+  }
+}
+
 /** `cutMeshes` holds a body's mesh where loose holes have cut it (#203); the others are built from the shape. */
 async function toSvg(shapes: WorkplaneShape[], title: string, cutMeshes: ReadonlyArray<MeshData | null> = []) {
   const runtime = await getManifoldRuntime();
@@ -1414,6 +1495,102 @@ async function toSvg(shapes: WorkplaneShape[], title: string, cutMeshes: Readonl
   }
 
   return toSvgProjection(layers, title);
+}
+
+/**
+ * The DXF for a laser cutting shop (#774): every body's outline from above, as in the SVG, but joined into one area,
+ * so two bodies that touch or overlap give one contour and no line is cut twice. The round parts come back as arcs
+ * and circles (dxfExport.ts). `cutMeshes` as in toSvg.
+ */
+async function silhouetteDxf(shapes: WorkplaneShape[], cutMeshes: ReadonlyArray<MeshData | null> = []): Promise<DxfResult & { openCount: number }> {
+  const runtime = await getManifoldRuntime();
+  const created: unknown[] = [];
+  const sections: CrossSection[] = [];
+  try {
+    for (const [index, shape] of shapes.entries()) {
+      const cut = cutMeshes[index];
+      let solid: ManifoldSolid | null;
+      if (cut) {
+        const manifoldMesh = meshDataToManifoldMesh(runtime, cut);
+        try {
+          solid = runtime.Manifold.ofMesh(manifoldMesh);
+          created.push(solid);
+        } finally {
+          disposeManifold(manifoldMesh);
+        }
+      } else {
+        const own: ManifoldSolid[] = [];
+        solid = shapeToManifoldSolid(runtime, shape, own);
+        created.push(...own);
+      }
+      if (!solid || solid.status() !== "NoError" || solid.numTri() < 1) {
+        throw new Error(`Could not convert ${shape.name} into a watertight SVG outline`);
+      }
+      // Seen from above with the front at the bottom of the page, as toSvg turns it.
+      const topView = solid.rotate([-90, 0, 0]);
+      if (topView !== solid) created.push(topView);
+      const projection = topView.project();
+      created.push(projection);
+      sections.push(projection);
+    }
+    const joined = runtime.CrossSection.union(sections);
+    created.push(joined);
+    const simplified = joined.simplify(0.00001);
+    if (simplified !== joined) created.push(simplified);
+    const loops = simplified.toPolygons().map((polygon) => polygon.map(([x, y]) => [x, y] as const));
+    return { ...outlinesToDxf({ loops }), openCount: 0 };
+  } finally {
+    [...new Set(created)].reverse().forEach(disposeManifold);
+  }
+}
+
+/**
+ * The DXF of only what stands on the workplane (#774), cut as the footprint SVG is (#692), the bodies' outlines
+ * joined into one area. An outline that does not close (a mesh with a gap) cannot be cut and is left out; the
+ * answer counts it.
+ */
+async function footprintDxf(shapes: readonly WorkplaneShape[]): Promise<DxfResult & { openCount: number }> {
+  const { solids, meshes: cut } = await exportBodiesWithLooseHoles(shapes);
+  const { meshes } = await colorSeparatedExportMeshes(solids, cut);
+  const offset = footprintCutOffset(meshes);
+  if (offset === null) throw new Error(t("status.sectionSvgNothing"));
+  const runtime = await getManifoldRuntime();
+  const created: unknown[] = [];
+  let openCount = 0;
+  try {
+    const sections = meshes.flatMap((mesh) => {
+      const loops = sliceMeshContours(mesh, "y", offset);
+      openCount += loops.filter((loop) => !loop.closed).length;
+      const closed = loops.filter((loop) => loop.closed && loop.points.length >= 3).map((loop) => loop.points.map((point) => [point.u, point.v] as [number, number]));
+      if (closed.length === 0) return [];
+      const section = new runtime.CrossSection(closed, "EvenOdd");
+      created.push(section);
+      return [section];
+    });
+    if (sections.length === 0) throw new Error(t("status.sectionSvgNothing"));
+    const joined = runtime.CrossSection.union(sections);
+    created.push(joined);
+    const simplified = joined.simplify(0.00001);
+    if (simplified !== joined) created.push(simplified);
+    const loops = simplified.toPolygons().map((polygon) => polygon.map(([x, y]) => [x, y] as const));
+    if (loops.length === 0) throw new Error(t("status.sectionSvgNothing"));
+    return { ...outlinesToDxf({ loops }), openCount };
+  } finally {
+    [...new Set(created)].reverse().forEach(disposeManifold);
+  }
+}
+
+/** The DXF the export window and the AI bridge write (#774). */
+async function exportDxf(shapes: WorkplaneShape[], view: DxfExportView) {
+  if (view === "footprint") return footprintDxf(shapes);
+  const { solids, meshes, cut } = await exportBodiesWithLooseHoles(shapes);
+  return silhouetteDxf(solids, meshes.map((mesh, index) => (cut[index] ? mesh : null)));
+}
+
+/** What the message after a DXF export says about the file: how many circles, arcs and lines, and outlines left out. */
+function dxfExportNote(result: DxfResult & { openCount: number }) {
+  return t("status.dxfSummary", { circles: result.counts.circles, arcs: result.counts.arcs, lines: result.counts.lines })
+    + (result.openCount > 0 ? t("status.dxfOpenLeftOut", { count: result.openCount }) : "");
 }
 
 function triggerBrowserDownload(filename: string, content: string, type: string) {
@@ -1831,7 +2008,8 @@ function mirroredShapesForSelection(shapes: WorkplaneShape[], selectedIds: strin
   const pivot = axis === "x" ? (selectionBounds.minX + selectionBounds.maxX) / 2 : axis === "z" ? (selectionBounds.minZ + selectionBounds.maxZ) / 2 : (selectionBounds.minY + selectionBounds.maxY) / 2;
   let moved = 0;
   const nextShapes = shapes.map((shape) => {
-    if (!selected.has(shape.id) || shape.locked) {
+    // A reference image keeps its picture facing up (or out of its face): not mirrored across that axis.
+    if (!selected.has(shape.id) || shape.locked || mirrorHidesReferenceImage(shape, axis)) {
       return shape;
     }
     moved += 1;
@@ -1989,7 +2167,7 @@ function cylinderWrappedShape(shape: WorkplaneShape, diameter: number, inward: b
 
 function canWrapAroundCylinder(shape: WorkplaneShape | null | undefined) {
   // A shape that is wrapped already is a mesh of the wrapped thing: wrapping that again gave nonsense (#329).
-  return Boolean(shape && !shape.locked && !shape.cylinderWrap && shape.groupOperation !== "bundle" && !isNonSolidShapeKind(shape.kind));
+  return Boolean(shape && !shape.locked && !shape.cylinderWrap && shape.groupOperation !== "bundle" && !isNonSolidShape(shape));
 }
 
 
@@ -2107,31 +2285,27 @@ function cadModifierSourceParts(shape: WorkplaneShape) {
 
 /**
  * Counting the loose pieces of an imported mesh walks every triangle, and the
- * toolbar asks again each time the selected shape changes - also when it was
- * only moved. Where the shape stands does not change how many pieces it has,
- * so the count is kept per mesh and per everything-but-the-position.
+ * toolbar asks again each time the selected shape changes - with every step of
+ * a move, a turn or a resize. None of these changes which triangles hang
+ * together: they only move the points. So the count is kept per mesh; a changed
+ * mesh (a cut, an edge treatment, a simplification) is a new object and is
+ * counted anew. Keyed by the shape's settings as well, a turn of a large import
+ * counted it again at every step and stalled the drag.
  */
-const importedPartCounts = new WeakMap<object, { key: string; count: number }>();
+const importedPartCounts = new WeakMap<object, number>();
+
+/** Stand-ins for "no edges", the same arrays at every render, so the workplane does not draw the edge lines again for nothing. */
+const NO_MODIFIER_EDGES: CadModifierEdge[] = [];
+const NO_EDGE_IDS: number[] = [];
 
 function separablePartCount(shape: WorkplaneShape) {
   if (shape.locked || shape.hole) return 0;
   if (shape.groupedShapes?.length && !shape.importedMesh) return shape.groupedShapes.length;
   if (!shape.importedMesh) return meshFaceComponents(meshForShape(shape)).length;
-  const key = JSON.stringify({
-    ...shape,
-    x: 0,
-    z: 0,
-    elevation: 0,
-    importedMesh: undefined,
-    groupedShapes: undefined,
-    edgeTreatmentHistory: undefined,
-    cadBrep: undefined,
-    cadDisplayEdges: undefined,
-  });
   const cached = importedPartCounts.get(shape.importedMesh);
-  if (cached?.key === key) return cached.count;
+  if (cached !== undefined) return cached;
   const count = meshFaceComponents(meshForShape(shape)).length;
-  importedPartCounts.set(shape.importedMesh, { key, count });
+  importedPartCounts.set(shape.importedMesh, count);
   return count;
 }
 
@@ -2142,6 +2316,29 @@ function separateShapeParts(shape: WorkplaneShape) {
     return restored.length > 1 ? restored : [];
   }
   return separateMeshParts(shape);
+}
+
+/**
+ * An extruded sketch body taken apart by its outlines (#669): every outer outline is built again on
+ * its own, as when the sketch is edited down to it, so each part stays where it was, keeps the body's
+ * height, turn and colour, and has a sketch of its own to edit. The first part keeps the body's id.
+ */
+async function separateSketchBodyParts(shape: WorkplaneShape) {
+  const profiles = shape.sketchProfile ? sketchOutlineParts(shape.sketchProfile) : [];
+  if (profiles.length < 2) return [];
+  const quaternion = quaternionForShape(shape);
+  const xAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(quaternion);
+  const zAxis = new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion);
+  const axes = { x: [xAxis.x, xAxis.y, xAxis.z] as const, z: [zAxis.x, zAxis.y, zAxis.z] as const };
+  const anchor = sketchBodyAnchor(shape);
+  const parts: WorkplaneShape[] = [];
+  for (const [index, profile] of profiles.entries()) {
+    const extrusion = await cadShapeFromSketchProfile(profile, shape.height, shape);
+    const placed = placedLikeExisting(extrusion, shape);
+    const part = movedWithEditedOutline(placed, shape, anchor, { x: extrusion.x, z: extrusion.z }, axes);
+    parts.push(index === 0 ? part : canonicalizeShape({ ...part, id: createLocalId("sketch-extrusion") }));
+  }
+  return parts;
 }
 
 
@@ -2190,7 +2387,7 @@ function mcpLoftChange(params: Record<string, unknown>): Partial<LoftMeasures> {
     ["loftBottomWidth", "bottomWidth"], ["loftBottomDepth", "bottomDepth"], ["loftTopWidth", "topWidth"], ["loftTopDepth", "topDepth"],
     ["loftBottomCorner", "bottomCorner"], ["loftTopCorner", "topCorner"], ["loftBottomSides", "bottomSides"], ["loftTopSides", "topSides"],
     ["loftOffsetX", "offsetX"], ["loftOffsetZ", "offsetZ"], ["loftWall", "wall"],
-    ["loftTwist", "twist"], ["loftTiltX", "tiltX"], ["loftTiltZ", "tiltZ"], ["loftSmooth", "smooth"],
+    ["loftTwist", "twist"], ["loftTiltX", "tiltX"], ["loftTiltZ", "tiltZ"], ["loftSmooth", "smooth"], ["loftSegments", "segments"],
   ];
   numbers.forEach(([param, key]) => {
     const value = mcpOptionalNumber(params[param]);
@@ -2376,9 +2573,11 @@ export function LayerlingEditor({
   onHome,
   onOpenLylProjectFile,
   onSaveSharedProject,
+  onSaveExportFile,
   serverFileName = null,
   onProjectShapesChange,
   onProjectSnapshot,
+  isProjectThumbnailMissing,
   projectSaveFailure,
   onProjectWorkspaceChange,
   onProjectNameChange,
@@ -2405,6 +2604,8 @@ export function LayerlingEditor({
   onHome?: (leaving: { itemCount: number }) => void;
   onOpenLylProjectFile?: (file: File, shared?: undefined, fileHandle?: LylFileHandle) => Promise<{ ok: boolean; message: string } | void> | { ok: boolean; message: string } | void;
   onSaveSharedProject?: (request: { exportName: string; bytes: Uint8Array; thumbnailDataUrl: string; targetFileName?: string }) => Promise<string>;
+  /** An export file put into the server folder instead of the downloads (#779). Resolves to the notice; a file that is there already rejects with `exists`. */
+  onSaveExportFile?: (request: { fileName: string; blob: Blob; overwrite?: boolean }) => Promise<string>;
   /** Set while the open project came from the server; then it saves back there by itself. */
   serverFileName?: string | null;
   onProjectShapesChange?: (snapshot: {
@@ -2422,6 +2623,8 @@ export function LayerlingEditor({
     sketchPlacementWorkplane: PlacementWorkplane;
   }) => void;
   onProjectSnapshot?: (snapshot: { image: string; projectId: string; shapes: number }, signal?: AbortSignal) => Promise<void> | void;
+  /** Whether the design's card has no picture; the editor then takes one once the design is open. */
+  isProjectThumbnailMissing?: (projectId: string) => Promise<boolean>;
   /** The last failed autosave, so the editor can say so; `at` makes a repeat failure show again. */
   projectSaveFailure?: { message: string; at: number } | null;
   onProjectNameChange?: (name: string) => void;
@@ -2518,7 +2721,17 @@ export function LayerlingEditor({
     () => bedPrinter ? bedOverhangs(shapes, bedPrinter.width, bedPrinter.depth, bedPrinter.height) : [],
     [bedPrinter, shapes],
   );
-  const overhangWarning = bedPrinter && overhangs.length > 0 ? bedOverhangMessage(overhangs, `${bedPrinter.vendor} ${bedPrinter.model}`) : null;
+  // Bodies whose warning was clicked away (#640), for this session only. A body drops out of the
+  // list once it fits again, so moving it out a second time warns again; a new body always warns.
+  const [dismissedOverhangIds, setDismissedOverhangIds] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    setDismissedOverhangIds((current) => keepDismissedOverhangs(current, overhangs));
+  }, [overhangs]);
+  const shownOverhangs = useMemo(() => overhangs.filter((overhang) => !dismissedOverhangIds.has(overhang.shape.id)), [dismissedOverhangIds, overhangs]);
+  const overhangWarning = bedPrinter && shownOverhangs.length > 0 ? bedOverhangMessage(shownOverhangs, `${bedPrinter.vendor} ${bedPrinter.model}`) : null;
+  const dismissOverhangWarning = useCallback(() => {
+    setDismissedOverhangIds((current) => new Set([...current, ...shownOverhangs.map((overhang) => overhang.shape.id)]));
+  }, [shownOverhangs]);
   const [snapGrid, setSnapGrid] = useState<GridSize>(() => normalizeSnapGrid(initialSnap));
   const [workplaneMode, setWorkplaneMode] = useState(false);
   const [topPanel, setTopPanel] = useState<TopPanel>(null);
@@ -2647,26 +2860,12 @@ export function LayerlingEditor({
   const [scalePercentTool, setScalePercentTool] = useState<ScalePercentSettings | null>(null);
   const [scalePercentError, setScalePercentError] = useState<string | null>(null);
   const editorLanguage = useLanguage();
-  // Leer heisst Ruhe: Dann steht kein Fenster auf der Arbeitsflaeche. Ein
-  // „Bereit" braucht niemand zu lesen - dass nichts los ist, sieht man.
-  const [notice, setNoticeText] = useState("");
-  // A message may carry one button, for what the person can do about it right away (#489).
-  const [noticeAction, setNoticeAction] = useState<{ label: string; run: () => void } | null>(null);
+  const { notice, noticeAction, setNotice, holdNotice, releaseNotice, dismissNotice, reportNoticesRef } = useEditorNotice();
   const showHiddenRef = useRef<() => void>(() => undefined);
   // The design for which the hidden shapes were told once, when its shapes first arrived (#489).
   const hiddenNoticedProjectRef = useRef<string | null>(null);
   const hiddenNoticePendingRef = useRef(false);
-  const noticeTimerRef = useRef<number | null>(null);
-
-  /**
-   * Die Statuszeile in der Fusszeile. Eine Bestaetigung - „Gewinde
-   * hinzugefuegt" - hat nach ein paar Sekunden ihren Zweck erfuellt und macht
-   * wieder Platz. Alles, was etwas von einem will oder schiefgegangen ist,
-   * bleibt stehen, bis es abgeloest wird: Eine Aufforderung, die sich von
-   * selbst zurueckzieht, ist keine.
-   */
-  // Fuer den Fehlerbericht: die letzten Meldungen und Fehler dieser Sitzung.
-  const reportNoticesRef = useRef<BugReportEvent[]>([]);
+  // Fuer den Fehlerbericht: die letzten Fehler dieser Sitzung.
   const reportErrorsRef = useRef<BugReportEvent[]>([]);
   useEffect(() => {
     const remember = (text: string) => {
@@ -2680,40 +2879,6 @@ export function LayerlingEditor({
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onRejection);
     };
-  }, []);
-  const setNotice = useCallback((message: string, patient = false, action: { label: string; run: () => void } | null = null) => {
-    reportNoticesRef.current = rememberBugReportEvent(reportNoticesRef.current, message);
-    setNoticeText(message);
-    setNoticeAction(action);
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = window.setTimeout(() => {
-      noticeTimerRef.current = null;
-      setNoticeText("");
-      setNoticeAction(null);
-    }, noticeDurationMs(message, patient));
-  }, []);
-  // A message stays while the pointer rests on it, and goes a few seconds after it leaves (#422).
-  const holdNotice = useCallback(() => {
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = null;
-  }, []);
-  const releaseNotice = useCallback(() => {
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = window.setTimeout(() => {
-      noticeTimerRef.current = null;
-      setNoticeText("");
-      setNoticeAction(null);
-    }, NOTICE_AFTER_HOVER_MS);
-  }, []);
-  const dismissNotice = useCallback(() => {
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = null;
-    setNoticeText("");
-    setNoticeAction(null);
-  }, []);
-
-  useEffect(() => () => {
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
   }, []);
   // A failed autosave is said where the work happens, and stays a while.
   useEffect(() => {
@@ -2738,6 +2903,7 @@ export function LayerlingEditor({
   const projectFileInputRef = useRef<HTMLInputElement | null>(null);
   const insertProjectFileInputRef = useRef<HTMLInputElement | null>(null);
   const sketchImageInputRef = useRef<HTMLInputElement | null>(null);
+  const referenceImageInputRef = useRef<HTMLInputElement | null>(null);
   // The tape measure and the corner ruler of the 3D view, kept while the sketch has taken its place.
   const viewportToolMemoryRef = useRef<ViewportToolMemory>({});
   useEffect(() => {
@@ -2757,9 +2923,11 @@ export function LayerlingEditor({
   const lastProjectIdRef = useRef<string | null>(null);
   const projectSnapshotRunRef = useRef(0);
   const lastProjectSnapshotRef = useRef<ProjectThumbnailSceneKey | null>(null);
+  /** A design opened without a picture on its card waits here for its first one. */
+  const missingThumbnailProjectRef = useRef<string | null>(null);
+  const [thumbnailMissingCheck, setThumbnailMissingCheck] = useState(0);
   const shapesRef = useRef(shapes);
   const notesRef = useRef(notes);
-  const noteCommitTimerRef = useRef<number | null>(null);
   const projectAssetsRef = useRef(projectAssets);
   const selectedIdsRef = useRef(selectedIds);
   const workspaceSettingsRef = useRef(workspaceSettings);
@@ -2791,6 +2959,11 @@ export function LayerlingEditor({
   const [sketchConstruction, setSketchConstruction] = useState(false);
   useEffect(() => {
     if (!sketchActive) setSketchConstruction(false);
+  }, [sketchActive]);
+  // New lines run from their middle: the first point is the middle, the second the end, and the line goes on the same length to the other side (#624).
+  const [sketchFromMiddle, setSketchFromMiddle] = useState(false);
+  useEffect(() => {
+    if (!sketchActive) setSketchFromMiddle(false);
   }, [sketchActive]);
   const [sketchProfile, setSketchProfile] = useState<SketchProfile>(() => emptySketchProfile());
   const [sketchHistory, setSketchHistory] = useState<SketchProfile[]>([emptySketchProfile()]);
@@ -2834,8 +3007,8 @@ export function LayerlingEditor({
   useEffect(() => onManifoldReady(() => setCustomFontRound((round) => round + 1)), []);
   const edgeModifierRef = useRef<EdgeModifierSession | null>(null);
   // "Edit" on a stored fillet or chamfer (#227): the body is taken back first, then the tool opens with these.
-  const edgeEditRequestRef = useRef<{ shapeId: string; historyLength: number; preset: { kind: CadModifierKind; amount: number; chamferAngle: number; edgeIds: number[] } } | null>(null);
-  const edgeModifierPresetRef = useRef<{ kind: CadModifierKind; amount: number; chamferAngle: number; edgeIds: number[] } | null>(null);
+  const edgeEditRequestRef = useRef<{ shapeId: string; historyLength: number; preset: { kind: CadModifierKind; amount: number; chamferAngle: number; endAmount?: number | null; edgeIds: number[] } } | null>(null);
+  const edgeModifierPresetRef = useRef<{ kind: CadModifierKind; amount: number; chamferAngle: number; endAmount?: number | null; edgeIds: number[] } | null>(null);
   const [edgeEditRound, setEdgeEditRound] = useState(0);
   const cadModifierWorkerRef = useRef<Worker | null>(null);
   const cadModifierPendingRef = useRef(new Map<number, {
@@ -2970,7 +3143,7 @@ export function LayerlingEditor({
             edges: message.edges,
             sharpAngle: gesenkteSchwelle ?? current.sharpAngle,
             selectedEdgeIds: presetEdgeIds,
-            ...(preset && presetEdgeIds.length ? { amount: preset.amount, chamferAngle: preset.chamferAngle } : {}),
+            ...(preset && presetEdgeIds.length ? { amount: preset.amount, chamferAngle: preset.chamferAngle, endAmount: preset.endAmount ?? null } : {}),
             busy: presetEdgeIds.length > 0,
             prepared: true,
             preview: null,
@@ -3248,7 +3421,7 @@ export function LayerlingEditor({
     return true;
   }, [selectionLocked, setNotice]);
   const canSplitSelection = useMemo(
-    () => selectedShapes.length > 0 && selectedShapes.every((shape) => !shape.locked && !shape.hidden && !isNonSolidShapeKind(shape.kind)),
+    () => selectedShapes.length > 0 && selectedShapes.every((shape) => !shape.locked && !shape.hidden && !isNonSolidShape(shape)),
     [selectedShapes],
   );
   const splitTargetKey = splitSession?.targetIds.join("\0") ?? "";
@@ -3339,6 +3512,13 @@ export function LayerlingEditor({
     () => edgeModifier ? edgeModifier.edges.filter(cadModifierCandidateEdge).map((edge) => edge.id) : [],
     [edgeModifier?.edges],
   );
+  // The edges drawn on the body: a new array at every render of the editor made the workplane
+  // throw its edge lines away and build them all again, also while nothing about them changed.
+  const modifierDisplayEdges = useMemo(() => {
+    if (!edgeModifier) return NO_MODIFIER_EDGES;
+    const candidates = new Set(modifierCandidateEdgeIds);
+    return edgeModifier.edges.filter((edge) => candidates.has(edge.id));
+  }, [edgeModifier?.edges, modifierCandidateEdgeIds]);
   const edgeModifierMaxAmount = useMemo(() => {
     const source = cadModifierBaseShapeRef.current ?? selectedShape;
     if (!source) return 10;
@@ -3353,7 +3533,7 @@ export function LayerlingEditor({
   const selectedReversibleEdgeFeatureCount = useMemo(() => selectedShape ? reversibleEdgeTreatmentCount(selectedShape) : 0, [selectedShape]);
   const selectedEdgeHistoryOptions = useMemo(() => selectedShape ? edgeTreatmentHistoryOptions(selectedShape) : [], [selectedShape]);
   const canSeparateSelectedParts = useMemo(
-    () => selectedShapes.length === 1 && Boolean(selectedShape && selectedShape.groupOperation !== "bundle" && separablePartCount(selectedShape) > 1),
+    () => selectedShapes.length === 1 && Boolean(selectedShape && selectedShape.groupOperation !== "bundle" && (separatesBySketch(selectedShape) || separablePartCount(selectedShape) > 1)),
     [selectedShape, selectedShapes.length],
   );
   const toggleModifierEdge = useCallback((id: number, singleEdge = false) => {
@@ -3414,10 +3594,12 @@ export function LayerlingEditor({
   }, [historyViewState, projectName]);
   // The note "only the selection is exported" needs to know how much is left
   // out: the visible bodies the selection does not cover.
-  const exportVisibleCount = useMemo(() => shapes.filter((shape) => !shape.hidden).length, [shapes]);
-  const exportSelectedVisibleCount = useMemo(() => selectedShapes.filter((shape) => !shape.hidden).length, [selectedShapes]);
+  // A reference image (#680) is never exported, so it is not counted as left out either.
+  const exportVisibleCount = useMemo(() => shapes.filter((shape) => !shape.hidden && !shape.imagePlate).length, [shapes]);
+  const exportSelectedVisibleCount = useMemo(() => selectedShapes.filter((shape) => !shape.hidden && !shape.imagePlate).length, [selectedShapes]);
   const selectAllVisible = useCallback(() => {
-    setSelectedIds(shapes.filter((shape) => !shape.hidden).map((shape) => shape.id));
+    // Like the selection frame, Select all leaves reference images (#680) out: they are picked on their own.
+    setSelectedIds(shapes.filter((shape) => !shape.hidden && !shape.imagePlate).map((shape) => shape.id));
     setNotice(t("status.selectedAllVisible"));
   }, [shapes]);
   const effectiveAlignAnchorId = useMemo(
@@ -3484,7 +3666,7 @@ export function LayerlingEditor({
     // Only the sketch view shows them; outside it every body would be projected for nothing.
     if (!sketchActive) return shapes;
     if (revolveSketchFront) {
-      return shapes.map((shape) => shape.hidden || shape.id === editingSketchShapeId || isNonSolidShapeKind(shape.kind)
+      return shapes.map((shape) => shape.hidden || shape.id === editingSketchShapeId || isNonSolidShape(shape)
         ? shape
         : sketchReferenceShapeOnWorkplane(shape, REVOLVE_REFERENCE_WORKPLANE));
     }
@@ -3521,7 +3703,7 @@ export function LayerlingEditor({
   const sketchReferenceEdges = useMemo(() => {
     if (!sketchActive || !sketchShowPartEdges) return "";
     return shapes
-      .filter((shape) => !shape.hidden && !shape.hole && shape.id !== editingSketchShapeId && !isNonSolidShapeKind(shape.kind))
+      .filter((shape) => !shape.hidden && !shape.hole && shape.id !== editingSketchShapeId && !isNonSolidShape(shape))
       .map((shape) => {
         const mesh = meshForShape(shape);
         const vertices = mesh.vertices.map(([x, y, z]) => {
@@ -3554,6 +3736,12 @@ export function LayerlingEditor({
       return;
     }
     const sceneKey = { projectId, fingerprint: projectShapesFingerprint(shapes) };
+    // No picture on its card (never taken, or lost with a Docker container made again or a backup
+    // brought back): count the open design as changed, so its picture is taken now.
+    if (missingThumbnailProjectRef.current === projectId && !projectHydratingRef.current) {
+      missingThumbnailProjectRef.current = null;
+      lastProjectSnapshotRef.current = { projectId, fingerprint: "" };
+    }
     if (lastProjectSnapshotRef.current?.projectId !== projectId || projectHydratingRef.current) {
       lastProjectSnapshotRef.current = sceneKey;
       return;
@@ -3621,7 +3809,20 @@ export function LayerlingEditor({
       if (retryTimer !== null) window.clearTimeout(retryTimer);
       if (idleId !== null && "cancelIdleCallback" in window) window.cancelIdleCallback(idleId);
     };
-  }, [onProjectSnapshot, projectId, projectInteractionActive, shapes]);
+  }, [onProjectSnapshot, projectId, projectInteractionActive, shapes, thumbnailMissingCheck]);
+
+  useEffect(() => {
+    if (!projectId || !isProjectThumbnailMissing) return;
+    let cancelled = false;
+    void isProjectThumbnailMissing(projectId).then((missing) => {
+      if (!missing || cancelled) return;
+      missingThumbnailProjectRef.current = projectId;
+      setThumbnailMissingCheck((count) => count + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isProjectThumbnailMissing, projectId]);
 
   useEffect(() => {
     if (selectedShapes.length < 2) {
@@ -3711,6 +3912,15 @@ export function LayerlingEditor({
     });
     setNotice(t("status.arrayStart"));
   }, [refuseLockedSelection, activeRotationPivot, arrayTool, closeSplit, selectedShapes]);
+
+  // The circle's centre follows the pivot while the pattern is open: a pivot dragged to a new place moves the
+  // preview with it (#638). A centre typed in the panel stays until the pivot moves again.
+  const arrayPivotX = activeRotationPivot?.x;
+  const arrayPivotZ = activeRotationPivot?.z;
+  useEffect(() => {
+    if (arrayPivotX === undefined || arrayPivotZ === undefined) return;
+    setArrayTool((current) => (current ? arrayFollowingPivot(current, { x: arrayPivotX, z: arrayPivotZ }) : current));
+  }, [arrayPivotX, arrayPivotZ]);
 
 
   const pickRotationPivot = useCallback((point: PivotPoint | null) => {
@@ -4087,55 +4297,7 @@ export function LayerlingEditor({
     [appendHistoryEntry, setNotice, syncProjectShapes],
   );
 
-  const addNote = useCallback(
-    (note: { x: number; y: number; z: number; anchor?: WorkplaneNote["anchor"] }) => {
-      if (notesRef.current.length >= NOTE_COUNT_LIMIT) {
-        setNotice(t("status.noteLimitReached", { count: NOTE_COUNT_LIMIT }));
-        return null;
-      }
-      const created: WorkplaneNote = { id: createNoteId(), text: "", x: note.x, y: note.y, z: note.z };
-      if (note.anchor) created.anchor = note.anchor;
-      commitNotes([...notesRef.current, created], note.anchor ? t("status.notePinned") : t("status.noteAdded"));
-      return created.id;
-    },
-    [commitNotes, setNotice],
-  );
-
-  /**
-   * Reference points: bare marks in space that shapes snap to. They live among
-   * the notes (so they are saved, undone and shared like them) but are not notes.
-   */
-  const addReferencePoints = useCallback(
-    (positions: ReferencePosition[]) => {
-      const fresh = newReferencePositions(notesRef.current, positions);
-      if (fresh.length === 0) {
-        setNotice(t("status.pointsExist"));
-        return [] as string[];
-      }
-      const room = NOTE_COUNT_LIMIT - notesRef.current.length;
-      if (room <= 0) {
-        setNotice(t("status.noteLimitReached", { count: NOTE_COUNT_LIMIT }));
-        return [] as string[];
-      }
-      const created: WorkplaneNote[] = fresh.slice(0, room).map((position) => ({
-        id: createNoteId(),
-        text: "",
-        ...position,
-        kind: "point",
-        collapsed: true,
-      }));
-      setNotesVisible(true);
-      commitNotes([...notesRef.current, ...created], t("status.pointsAdded", { count: created.length }));
-      return created.map((point) => point.id);
-    },
-    [commitNotes, setNotice],
-  );
-
-  const removeAllReferencePoints = useCallback(() => {
-    const points = referencePoints(notesRef.current);
-    if (points.length === 0) return;
-    commitNotes(notesRef.current.filter((note) => note.kind !== "point"), t("status.pointsRemoved", { count: points.length }));
-  }, [commitNotes]);
+  const { addNote, addReferencePoints, removeAllReferencePoints, updateNote, removeNote } = useEditorNotes({ notesRef, setNotes, commitNotes, setNotice, setNotesVisible });
 
   const markSelectionPoints = useCallback(
     (spot: ReferencePointSpot) => {
@@ -4143,48 +4305,6 @@ export function LayerlingEditor({
       if (box) addReferencePoints(referencePointsForBox(box, spot));
     },
     [addReferencePoints, selectedShapes],
-  );
-
-  /**
-   * Beim Tippen und beim Ziehen faellt pro Anschlag eine Aenderung an. Jede
-   * davon in den Verlauf zu legen, machte Rueckgaengig unbrauchbar - also geht
-   * ein solcher Zwischenstand nur in den Zustand, und der Verlauf bekommt ihn,
-   * wenn die Hand stillhaelt oder das Feld den Fokus abgibt.
-   */
-  const updateNote = useCallback(
-    (id: string, patch: Partial<WorkplaneNote>, transient = false) => {
-      const next = patchNote(notesRef.current, id, patch);
-      if (!next) return;
-      if (noteCommitTimerRef.current !== null) {
-        window.clearTimeout(noteCommitTimerRef.current);
-        noteCommitTimerRef.current = null;
-      }
-      if (!transient) {
-        commitNotes(next);
-        return;
-      }
-      notesRef.current = next;
-      setNotes(next);
-      noteCommitTimerRef.current = window.setTimeout(() => {
-        noteCommitTimerRef.current = null;
-        commitNotes(notesRef.current);
-      }, NOTE_COMMIT_IDLE_MS);
-    },
-    [commitNotes],
-  );
-
-  const removeNote = useCallback(
-    (id: string) => {
-      if (noteCommitTimerRef.current !== null) {
-        window.clearTimeout(noteCommitTimerRef.current);
-        noteCommitTimerRef.current = null;
-      }
-      const current = notesRef.current;
-      const removed = current.find((note) => note.id === id);
-      if (!removed) return;
-      commitNotes(current.filter((note) => note.id !== id), t(removed.kind === "point" ? "status.pointRemoved" : "status.noteRemoved"));
-    },
-    [commitNotes],
   );
 
   /**
@@ -4251,7 +4371,7 @@ export function LayerlingEditor({
       return;
     }
     // The Fillet or Chamfer tool stays open, so that several features can be taken back one after the other (#514).
-    const openTool = edgeModifier ? { kind: edgeModifier.kind, amount: edgeModifier.amount, chamferAngle: edgeModifier.chamferAngle } : null;
+    const openTool = edgeModifier ? { kind: edgeModifier.kind, amount: edgeModifier.amount, chamferAngle: edgeModifier.chamferAngle, endAmount: edgeModifier.endAmount ?? null } : null;
     invalidateCadModifierSession();
     commitShapes(
       shapesRef.current.map((shape) => shape.id === selectedShape.id ? restored.shape : shape),
@@ -4308,7 +4428,7 @@ export function LayerlingEditor({
       edgeEditRequestRef.current = {
         shapeId: restored.shape.id,
         historyLength: restored.shape.edgeTreatmentHistory?.length ?? 0,
-        preset: { kind: feature.kind, amount: feature.amount, chamferAngle: feature.chamferAngle ?? 45, edgeIds: feature.edgeIds ?? [] },
+        preset: { kind: feature.kind, amount: feature.amount, chamferAngle: feature.chamferAngle ?? 45, endAmount: feature.endAmount ?? null, edgeIds: feature.edgeIds ?? [] },
       };
       setEdgeEditRound((round) => round + 1);
     }
@@ -4326,9 +4446,18 @@ export function LayerlingEditor({
       const latest = trimmed.at(-1);
       // Most edits build a new profile from points and lines only; the stroke (#154) carries over
       // unless the edit sets it - or clears it with `stroke: undefined`.
-      const carried = "stroke" in next || !latest?.stroke ? next : { ...next, stroke: latest.stroke };
+      const withStroke = "stroke" in next || !latest?.stroke ? next : { ...next, stroke: latest.stroke };
+      // The same for the side of a swept section that runs along the path (#732).
+      const anchored = "sweepAnchor" in withStroke || !latest?.sweepAnchor ? withStroke : { ...withStroke, sweepAnchor: latest.sweepAnchor };
+      // And for the sketch's notes.
+      const carried = "notes" in anchored || !latest?.notes ? anchored : { ...anchored, notes: latest.notes };
       // Moving shapes over each other makes no shared points where their lines cross (#239); drawing does.
       const snapshot = cloneSketchProfile(latest && onlyMovesPoints(latest, carried) ? carried : addLineIntersectionPoints(carried, createLocalId));
+      // A locked outline (#653) stays as it is, whatever tool tried to change it.
+      if (latest && changesLockedOutline(latest, snapshot)) {
+        setNotice(t("status.sketchOutlineLocked"));
+        return;
+      }
       setSketchProfile(snapshot);
       if (latest && JSON.stringify(latest) === JSON.stringify(snapshot)) {
         return;
@@ -4352,6 +4481,11 @@ export function LayerlingEditor({
 
   /** Where the edited body's middle is in the sketch, when the sketch of an existing body was opened (#291). */
   const sketchEditAnchorRef = useRef<SketchAnchor | null>(null);
+  /**
+   * The edited body's own kind and workplane, once its sketch was switched to another kind of body (#655):
+   * finishing then makes a new body of that kind in the old one's place, and switching back edits it as before.
+   */
+  const sketchOperationSwitchRef = useRef<{ operation: SketchOperation; workplane: PlacementWorkplane } | null>(null);
 
   const beginSketch = useCallback((
     operation: SketchOperation,
@@ -4360,13 +4494,18 @@ export function LayerlingEditor({
     revolveSettings?: Partial<SketchRevolveSettings>,
     workplaneOverride?: PlacementWorkplane,
   ) => {
-    const initial = cloneSketchProfile(profile ?? emptySketchProfile());
+    const body = editingId ? shapesRef.current.find((shape) => shape.id === editingId) : undefined;
+    const drawn = profile ?? emptySketchProfile();
+    // The body's notes come along, shown on the sketch, and go back to the body when it is finished.
+    const initial = cloneSketchProfile({ ...drawn, notes: body ? sketchNotesFromBody(notesRef.current, body, sketchNoteFrame(body, operation, drawn, revolveSettings)) : [] });
     setCruiseAsset(null);
+    setNoteMode(false);
     setWorkplaneMode(false);
     setActiveSketchWorkplane(normalizePlacementWorkplane(workplaneOverride ?? placementWorkplaneRef.current));
     setToolbarMode("sketch");
     setSketchActive(true);
     setSketchOperation(operation);
+    sketchOperationSwitchRef.current = null;
     setSketchRevolveSettings(normalizeSketchRevolveSettings(revolveSettings));
     setSketchRevolvePreview(null);
     setSketchTool(profile?.segments.length ? "select" : "line");
@@ -4394,7 +4533,7 @@ export function LayerlingEditor({
       setNotice(t("status.selectSketchShape"));
       return;
     }
-    const operation = selectedShape.sketchOperation ?? (selectedShape.sketchRevolve ? "revolve" : "extrude");
+    const operation = sketchBodyOperation(selectedShape);
     let editWorkplane: PlacementWorkplane | undefined;
     sketchEditAnchorRef.current = null;
     if (operation === "extrude" || operation === "sweep") {
@@ -4440,7 +4579,9 @@ export function LayerlingEditor({
 
   const cancelSketch = useCallback(() => {
     setSketchActive(false);
+    setNoteMode(false);
     sketchEditAnchorRef.current = null;
+    sketchOperationSwitchRef.current = null;
     setSketchActivePointId(null);
     setSketchSelection(null);
     setSketchMeasureStart(null);
@@ -4452,6 +4593,41 @@ export function LayerlingEditor({
     setToolbarMode("geometry");
     setNotice(t("status.sketchCancelled"));
   }, []);
+
+  const sketchNotes = useSketchNotes({ profile: sketchProfile, commit: commitSketchProfile, notes, editedId: editingSketchShapeId, onPlaced: () => setNoteMode(false), setNotice });
+
+  /**
+   * What the open sketch becomes - extruded, revolved or swept - changed while drawing (#655). The sketch
+   * of an existing body then makes a new body of that kind in its place, drawn on the plate: a revolve
+   * is drawn from the front. Switching back to the body's own kind edits it as before.
+   */
+  const switchSketchOperation = useCallback((next: SketchOperation) => {
+    if (next === sketchOperation) return;
+    if (editingSketchShapeId) {
+      const switched = sketchOperationSwitchRef.current ?? { operation: sketchOperation, workplane: activeSketchWorkplane };
+      if (next === switched.operation) {
+        setActiveSketchWorkplane(switched.workplane);
+        sketchOperationSwitchRef.current = null;
+      } else {
+        sketchOperationSwitchRef.current = switched;
+        setActiveSketchWorkplane(horizontalPlacementWorkplane());
+      }
+    }
+    setSketchOperation(next);
+    setSketchRevolvePreview(null);
+    // An outline reaching across the axis - an imported SVG is centred on itself - moves left onto it; Ctrl+Z takes it back.
+    if (next === "revolve") {
+      const leftOfAxis = sketchProfileLeftOfAxis(sketchProfile);
+      if (leftOfAxis !== sketchProfile) commitSketchProfile(leftOfAxis);
+    }
+    setNotice(t("status.sketchOperationChanged", { operation: t(next === "revolve" ? "sketch.modeBadgeRevolve" : next === "sweep" ? "sketch.modeBadgeSweep" : "sketch.modeBadgeExtrude") }));
+  }, [activeSketchWorkplane, commitSketchProfile, editingSketchShapeId, sketchOperation, sketchProfile]);
+
+  // Which edge of a swept section runs along the path; centre is what a sketch without the field has (#732).
+  const setSketchSweepAnchor = useCallback((anchor: SweepAnchor) => {
+    const { sweepAnchor: _previous, ...rest } = sketchProfile;
+    commitSketchProfile(anchor === "center" ? { ...rest, sweepAnchor: undefined } : { ...rest, sweepAnchor: anchor }, t("status.sketchSweepAnchorChanged", { anchor: t(anchor === "left" ? "sketch.sweepAnchorLeft" : anchor === "right" ? "sketch.sweepAnchorRight" : "sketch.sweepAnchorCenter") }));
+  }, [commitSketchProfile, sketchProfile]);
 
   const sketchUndo = useCallback(() => {
     const currentHistory = sketchHistoryRef.current;
@@ -4492,6 +4668,7 @@ export function LayerlingEditor({
     if (tool !== "measure") setSketchMeasureStart(null);
     const messages: Record<SketchTool, string> = {
       line: t("status.sketchTool.line"),
+      arc: t("status.sketchTool.arc"),
       bezier: t("status.sketchTool.bezier"),
       smooth: t("status.sketchTool.smooth"),
       rectangle: t("status.sketchTool.rectangle"),
@@ -4578,25 +4755,74 @@ export function LayerlingEditor({
       const curveKind = sketchTool as NonNullable<SketchSegment["kind"]>;
       const existing = sketchProfile.points.find((point) => Math.hypot(point.x - position.x, point.z - position.z) < 0.0001);
       if (existing) {
-        connectSketchPoint(existing.id);
+        // The Bezier tool bends a side only when both its ends have a handle: an existing point gets what it lacks, or what was dragged out of it (#635).
+        const prepared = sketchTool === "bezier" ? withBezierHandles(sketchProfile, existing.id, handles ?? null, sketchActivePointId) : null;
+        if (!prepared) {
+          connectSketchPoint(existing.id);
+        } else if (!sketchActivePointId) {
+          // Starting here: nothing is connected yet, so the handles are saved on their own.
+          commitSketchProfile(prepared, t("status.sketchPointAdded"));
+          connectSketchPoint(existing.id, prepared);
+        } else {
+          connectSketchPoint(existing.id, prepared);
+        }
         return;
       }
+      // A plain click with the Bezier tool pulled nothing out: the handles then run along the side that leads to the point, so they can be seen and taken (#636).
+      const clicked = handles && Math.hypot(handles.handleOut.x - position.x, handles.handleOut.z - position.z) < 1e-9;
+      const leadsFrom = sketchActivePointId ? sketchProfile.points.find((entry) => entry.id === sketchActivePointId) ?? null : null;
+      const newHandles = clicked ? chordHandles(leadsFrom, position) : handles;
       const point: SketchPoint = {
         id: createLocalId("sketch-point"),
         ...position,
-        ...(handles ?? {}),
-        mode: sketchTool === "line" ? "corner" : sketchTool === "smooth" ? "smooth" : handles ? "smooth" : "corner",
+        ...(newHandles ?? {}),
+        mode: sketchTool === "line" ? "corner" : sketchTool === "smooth" ? "smooth" : newHandles ? "smooth" : "corner",
       };
+      const middle = sketchFromMiddle && sketchTool === "line" && sketchActivePointId ? sketchProfile.points.find((entry) => entry.id === sketchActivePointId) : null;
+      if (middle) {
+        // From the middle (#624): the first point is the middle, this one the end, and the other end lies the same distance on the far side.
+        const far: SketchPoint = { id: createLocalId("sketch-point"), x: 2 * middle.x - position.x, z: 2 * middle.z - position.z, mode: "corner" };
+        const kind = { kind: "line" as const, ...(sketchConstruction ? { construction: true } : {}) };
+        const through: SketchProfile = {
+          ...sketchProfile,
+          points: [...sketchProfile.points, point, far],
+          segments: [
+            ...sketchProfile.segments,
+            { id: createLocalId("sketch-segment"), startId: middle.id, endId: point.id, ...kind },
+            { id: createLocalId("sketch-segment"), startId: far.id, endId: middle.id, ...kind },
+          ],
+        };
+        commitSketchProfile(through, t("status.sketchSegmentAdded"));
+        setSketchActivePointId(null);
+        setSketchSelection({ kind: "point", id: point.id });
+        return;
+      }
       const next: SketchProfile = { ...sketchProfile, points: [...sketchProfile.points, point] };
       if (sketchActivePointId) {
         next.segments = [...next.segments, { id: createLocalId("sketch-segment"), startId: sketchActivePointId, endId: point.id, kind: curveKind, ...(sketchConstruction ? { construction: true } : {}) }];
       }
-      const prepared = sketchTool === "smooth" ? withSmoothSketchHandles(next) : next;
+      const prepared = sketchTool === "smooth" ? withSmoothSketchHandles(next) : sketchTool === "bezier" ? withBezierStartHandle(next, sketchActivePointId, position) : next;
       commitSketchProfile(prepared, sketchActivePointId ? t("status.sketchPointSegmentAdded") : t("status.sketchPointAdded"));
       setSketchActivePointId(point.id);
       setSketchSelection({ kind: "point", id: point.id });
     },
-    [commitSketchProfile, connectSketchPoint, measureSketchPoint, sketchActivePointId, sketchConstruction, sketchProfile, sketchTool],
+    [commitSketchProfile, connectSketchPoint, measureSketchPoint, sketchActivePointId, sketchConstruction, sketchFromMiddle, sketchProfile, sketchTool],
+  );
+
+  /** The three-point arc (#643): from start to end, through the third point clicked. */
+  const addSketchArc = useCallback(
+    (start: SketchArcEnd, through: { x: number; z: number }, end: SketchArcEnd) => {
+      const result = sketchProfileWithArc(sketchProfile, start, through, end, { construction: sketchConstruction });
+      if (!result) {
+        setNotice(t("status.sketchArcStraight"));
+        return;
+      }
+      const radius = `${formatLengthMm(result.radius, workspaceSettings.accuracy)} ${lengthDisplayUnit(workspaceSettings).label}`;
+      commitSketchProfile(result.profile, t("status.sketchArcAdded", { radius }));
+      setSketchActivePointId(null);
+      setSketchSelection(null);
+    },
+    [commitSketchProfile, sketchConstruction, sketchProfile, workspaceSettings],
   );
 
   const addSketchPrimitive = useCallback(
@@ -4637,29 +4863,8 @@ export function LayerlingEditor({
 
   const deleteSketchPoint = useCallback(
     (id: string) => {
-      const connected = sketchProfile.segments.filter((segment) => segment.startId === id || segment.endId === id);
-      const neighboringIds = connected.map((segment) => segment.startId === id ? segment.endId : segment.startId);
-      const remainingSegments = sketchProfile.segments.filter((segment) => segment.startId !== id && segment.endId !== id);
-      if (neighboringIds.length === 2 && neighboringIds[0] !== neighboringIds[1]) {
-        const duplicate = remainingSegments.some((segment) =>
-          (segment.startId === neighboringIds[0] && segment.endId === neighboringIds[1]) ||
-          (segment.startId === neighboringIds[1] && segment.endId === neighboringIds[0]),
-        );
-        if (!duplicate) {
-          remainingSegments.push({
-            id: createLocalId("sketch-segment"),
-            startId: neighboringIds[0],
-            endId: neighboringIds[1],
-            kind: connected.every((segment) => segment.kind === "line") ? "line" : connected.some((segment) => segment.kind === "smooth") ? "smooth" : "bezier",
-            ...(connected.every((segment) => segment.construction) ? { construction: true } : {}),
-          });
-        }
-      }
-      const next = {
-        ...sketchProfile,
-        points: sketchProfile.points.filter((point) => point.id !== id),
-        segments: remainingSegments,
-      };
+      // A point between two sides is bridged; at a crossing the sides that run on are joined (#641).
+      const next = sketchProfileWithoutPoint(sketchProfile, id);
       commitSketchProfile(next.segments.some((segment) => segment.kind === "smooth") ? withSmoothSketchHandles(next) : next, t("status.sketchPointRemoved"));
       if (sketchActivePointId === id) setSketchActivePointId(null);
       setSketchSelection(null);
@@ -4753,6 +4958,17 @@ export function LayerlingEditor({
       image.locked ? "Sketch image unlocked" : "Sketch image locked",
     );
   }, [sketchProfile.images, sketchSelection, updateSketchImage]);
+
+  /** Locks the selected outline (#653), or unlocks it when all of it is locked. */
+  const toggleSketchOutlineLock = useCallback(() => {
+    const pointIds = sketchSelectedPointIds(sketchSelection);
+    if (!pointIds.length) {
+      setNotice(t("status.selectSketchOutlineLock"));
+      return;
+    }
+    const locked = sketchLockState(sketchProfile, pointIds) !== "all";
+    commitSketchProfile(setSketchPointsLocked(sketchProfile, pointIds, locked), t(locked ? "status.sketchOutlineLockedOn" : "status.sketchOutlineUnlocked"));
+  }, [commitSketchProfile, sketchProfile, sketchSelection]);
 
   const deleteSelectedSketchEntity = useCallback(() => {
     if (!sketchSelection) {
@@ -4884,7 +5100,8 @@ export function LayerlingEditor({
         handleOut: point.handleOut ? { x: point.handleOut.x + deltaX, z: point.handleOut.z + deltaZ } : undefined,
       } : point),
     };
-    commitSketchProfile(next, t("status.sketchPointMoved"));
+    // An open end dropped on another open end becomes one point with it, so a gap closes (#698).
+    commitSketchProfile(joinOpenEnds(next, id) ?? next, t("status.sketchPointMoved"));
   }, [commitSketchProfile, sketchProfile]);
 
   const transformSketchPoints = useCallback((points: SketchPoint[], message = "Sketch geometry transformed", keyRunKey?: string) => {
@@ -4923,10 +5140,11 @@ export function LayerlingEditor({
     commitSketchProfile(next, t("status.sketchHandleAdjusted"), keyRunKey);
   }, [commitSketchProfile, sketchProfile]);
 
-  const setSketchPointMode = useCallback((id: string, mode: "corner" | "smooth" | "split") => {
-    let next = cloneSketchProfile(sketchProfile);
+  /** One point turned corner, smooth or split; null when the point is gone. */
+  const sketchWithPointMode = (profile: SketchProfile, id: string, mode: "corner" | "smooth" | "split"): SketchProfile | null => {
+    let next = cloneSketchProfile(profile);
     const point = next.points.find((entry) => entry.id === id);
-    if (!point) return;
+    if (!point) return null;
     point.mode = mode;
     if (mode === "corner") {
       point.handleIn = undefined;
@@ -4941,7 +5159,20 @@ export function LayerlingEditor({
       const updated = next.points.find((entry) => entry.id === id);
       if (updated) updated.mode = mode;
     }
+    return next;
+  };
+
+  const setSketchPointMode = useCallback((id: string, mode: "corner" | "smooth" | "split") => {
+    const next = sketchWithPointMode(sketchProfile, id, mode);
+    if (!next) return;
     commitSketchProfile(next, mode === "corner" ? t("status.sketchMadeCorner") : mode === "smooth" ? t("status.sketchMadeSmooth") : t("status.sketchHandlesSplit"));
+  }, [commitSketchProfile, sketchProfile]);
+
+  /** The keys 1 and 3 on a selection (#347): every selected point at once, one undo step. */
+  const setSketchPointsMode = useCallback((ids: string[], mode: "corner" | "smooth") => {
+    let next: SketchProfile | null = null;
+    for (const id of ids) next = sketchWithPointMode(next ?? sketchProfile, id, mode) ?? next;
+    if (next) commitSketchProfile(next, mode === "corner" ? t("status.sketchMadeCorner") : t("status.sketchMadeSmooth"));
   }, [commitSketchProfile, sketchProfile]);
 
   const curveSketchSegmentAction = useCallback((id: string) => {
@@ -4987,6 +5218,14 @@ export function LayerlingEditor({
   const setSketchSegmentConstruction = useCallback((id: string, construction: boolean) => {
     commitSketchProfile(withSegmentsConstruction(sketchProfile, new Set([id]), construction), t(construction ? "status.sketchMadeConstruction" : "status.sketchMadeSolid"));
   }, [commitSketchProfile, sketchProfile]);
+
+  const toggleSketchFromMiddle = useCallback(() => {
+    const next = !sketchFromMiddle;
+    setSketchFromMiddle(next);
+    if (next && sketchTool !== "line") setActiveSketchTool("line");
+    else setSketchActivePointId(null);
+    setNotice(t(next ? "status.sketchFromMiddleOn" : "status.sketchFromMiddleOff"));
+  }, [setActiveSketchTool, sketchFromMiddle, sketchTool]);
 
   const toggleSketchConstruction = useCallback(() => {
     const next = !sketchConstruction;
@@ -5048,19 +5287,27 @@ export function LayerlingEditor({
   }, [sketchActive, sketchOperation, sketchProfile]);
 
   const finishSketch = useCallback(async () => {
-    const existing = editingSketchShapeId ? shapes.find((shape) => shape.id === editingSketchShapeId) ?? null : null;
+    // The notes are not part of the body's sketch: they become the body's own.
+    const { notes: sketchNotes, ...drawnProfile } = sketchProfile;
+    const edited = editingSketchShapeId ? shapes.find((shape) => shape.id === editingSketchShapeId) ?? null : null;
+    // Switched to another kind of body (#655): a new body of that kind takes the edited one's place.
+    const switchedBody = edited && sketchOperationSwitchRef.current ? edited : null;
+    const existing = switchedBody ? null : edited;
     const height = existing?.height ?? 10;
     let resolved: WorkplaneShape | null;
     try {
-      if (sketchOperation === "revolve") {
+      if (switchedBody) {
         setNotice(t("status.buildingSketch"), true);
-        const revolved = await shapeFromRevolvedSketchProfile(sketchProfile, sketchRevolveSettings, existing);
+        resolved = await sketchBodyAsOperation(switchedBody, drawnProfile, sketchOperation, sketchRevolveSettings);
+      } else if (sketchOperation === "revolve") {
+        setNotice(t("status.buildingSketch"), true);
+        const revolved = await shapeFromRevolvedSketchProfile(drawnProfile, sketchRevolveSettings, existing);
         resolved = placeSketchShape(revolved, activeSketchWorkplane, existing);
         if (!existing && resolved && placementWorkplaneIsBase(activeSketchWorkplane)) {
           // The body stands where the profile was drawn (#525): its foot at the height of the lowest point of the profile,
           // the line through the origin being the ground. A profile above it makes a body that stands on whatever is there.
           const runtime = await getManifoldRuntime();
-          const outline = sketchOutlineBounds(revolveBuildProfile(runtime, sketchProfile));
+          const outline = sketchOutlineBounds(revolveBuildProfile(runtime, drawnProfile));
           if (outline) resolved = canonicalizeShape({ ...resolved, elevation: (resolved.elevation ?? 0) - outline.maxZ });
         }
         if (existing?.sketchProfile && resolved) {
@@ -5070,7 +5317,7 @@ export function LayerlingEditor({
           const shift = revolveAxisShift(
             existing,
             { profile: revolveBuildProfile(runtime, existing.sketchProfile), settings: existing.sketchRevolve ?? {} },
-            { profile: revolveBuildProfile(runtime, sketchProfile), settings: sketchRevolveSettings },
+            { profile: revolveBuildProfile(runtime, drawnProfile), settings: sketchRevolveSettings },
             base ? existing.width / Math.max(0.001, base.baseWidth) : 1,
             base ? existing.depth / Math.max(0.001, base.baseDepth) : 1,
             1,
@@ -5082,8 +5329,8 @@ export function LayerlingEditor({
         setNotice(t("status.buildingSketch"), true);
         // A sweep is built like an extrusion, from the outlines along the construction line (#400).
         const extrusion = sketchOperation === "sweep"
-          ? await cadShapeFromSketchSweep(sketchProfile, existing)
-          : await cadShapeFromSketchProfile(sketchProfile, height, existing);
+          ? await cadShapeFromSketchSweep(drawnProfile, existing)
+          : await cadShapeFromSketchProfile(drawnProfile, height, existing);
         resolved = placeSketchShape(extrusion, activeSketchWorkplane, existing);
         if (existing && resolved) {
           // Put the body where its outline is: it is centred on the new outline, and the edit may have moved that middle.
@@ -5107,11 +5354,12 @@ export function LayerlingEditor({
       setNotice(t("status.closeProfile"), true);
       return;
     }
-    const nextShapes = existing ? shapes.map((shape) => (shape.id === existing.id ? resolved : shape)) : [...shapes, resolved];
+    if (sketchNotes) notesRef.current = notesWithSketchNotes(notesRef.current, edited?.id ?? null, resolved, sketchNotes, sketchNoteFrame(resolved, sketchOperation, drawnProfile, sketchRevolveSettings));
+    const nextShapes = edited ? shapes.map((shape) => (shape.id === edited.id ? resolved : shape)) : [...shapes, resolved];
     commitShapes(
       nextShapes,
       resolved.id,
-      existing
+      edited
         ? t(sketchOperation === "revolve" ? "status.revolveUpdated" : sketchOperation === "sweep" ? "status.sweepUpdated" : "status.sketchUpdated")
         : sketchOperation === "revolve"
           ? t("status.revolveCreated")
@@ -5120,10 +5368,12 @@ export function LayerlingEditor({
             : t("status.exactSketchCreated"),
     );
     setSketchActive(false);
+    setNoteMode(false);
     setSketchStrokePanelOpen(false);
     setSketchRevolvePreview(null);
     setEditingSketchShapeId(null);
     sketchEditAnchorRef.current = null;
+    sketchOperationSwitchRef.current = null;
     setToolbarMode("geometry");
   }, [activeSketchWorkplane, commitShapes, editingSketchShapeId, shapes, sketchOperation, sketchProfile, sketchRevolveSettings]);
 
@@ -5416,13 +5666,7 @@ export function LayerlingEditor({
             return shape;
           }
 
-          // Ein Bauwert an einem gedrehten Koerper heisst: neu bauen, nicht
-          // das Netz verbiegen. Ein Zug am Anfasser trifft dagegen nur den
-          // Rahmen und laesst das gebackene Netz in Ruhe.
-          const neugebaut = patchTouchesBodyParameters(cleanedPatch) ? rebuiltParametricShape(shape, cleanedPatch) : null;
-          const patched = neugebaut ?? { ...shape, ...textShrinkPatch(shape, curvedTextPatch(shape, heightPatchKeepingBase(shape, cleanedPatch))) };
-          const canonicalBase = canonicalizeShape("hole" in cleanedPatch ? withHoleMode(patched, Boolean(cleanedPatch.hole), cleanedPatch.color) : patched);
-          const canonical = bakeTransform ? canonicalizeShape(bakeShapeTransformIntoMesh(canonicalBase)) : canonicalBase;
+          const canonical = shapeWithInspectorPatch(shape, cleanedPatch, bakeTransform);
           if (workplaneShapesEqual(shape, canonical)) {
             return shape;
           }
@@ -5453,6 +5697,22 @@ export function LayerlingEditor({
     [commitShapes, scheduleRevolveShapeUpdate, scheduleSketchFillUpdate, selectedIds, setNotice, shapes],
   );
   writeOwnPivotRef.current = (shapeId, value) => updateShape(shapeId, { rotationPivot: value });
+
+  /** Changes to several shapes in one undo step, from the panel of a selection - "Fit module" for two gears (#645). */
+  const updateShapesTogether = useCallback(
+    (changes: readonly { id: string; patch: ShapeUpdatePatch }[], message?: string) => {
+      if (refuseLockedSelection()) return;
+      const byId = new Map(changes.map((change) => [change.id, cleanShapePatch(change.patch)]));
+      const next = shapes.map((shape) => {
+        const patch = byId.get(shape.id);
+        if (!patch) return shape;
+        const canonical = shapeWithInspectorPatch(shape, patch);
+        return workplaneShapesEqual(shape, canonical) ? shape : canonical;
+      });
+      if (next.some((shape, index) => shape !== shapes[index])) commitShapes(next, selectedIds, message);
+    },
+    [commitShapes, refuseLockedSelection, selectedIds, shapes],
+  );
 
   const deleteSelected = useCallback(() => {
     if (!hasSelection) {
@@ -5541,9 +5801,9 @@ export function LayerlingEditor({
     setScalePercentTool({ percent: 100, mode: "together" });
   }, [refuseLockedSelection, scalePercentTool, selectedShapes.length]);
 
-  const applyScalePercentTool = useCallback(() => {
+  const applyScalePercentTool = useCallback((percent?: number) => {
     if (!scalePercentTool) return;
-    const result = scaleSelectionByPercent(selectedIdsRef.current, scalePercentTool.percent, scalePercentTool.mode);
+    const result = scaleSelectionByPercent(selectedIdsRef.current, percent ?? scalePercentTool.percent, scalePercentTool.mode);
     if (!result.ok) {
       setScalePercentError(result.message);
       return;
@@ -5940,7 +6200,10 @@ export function LayerlingEditor({
       return;
     }
     const targetPoints = selectedShapes.flatMap((shape) => meshForShape(shape).vertices);
-    const plane = modelSplitPlane(targetPoints, "y");
+    // The plane starts parallel to the workplane (#644) - on the base plate that is level, as it always was.
+    const workplaneNormal = placementWorkplaneRef.current.normal;
+    const start = splitOrientationForNormal([workplaneNormal.x, workplaneNormal.y, workplaneNormal.z]) ?? { axis: "y" as AlignAxis, rotation: NO_SPLIT_ROTATION };
+    const plane = modelSplitPlane(targetPoints, start.axis, undefined, start.rotation);
     if (!plane) {
       setNotice(t("status.splitNoGeometry"));
       return;
@@ -5962,7 +6225,7 @@ export function LayerlingEditor({
     setSplitSession({
       targetIds: selectedShapes.map((shape) => shape.id),
       axis: plane.axis,
-      rotation: NO_SPLIT_ROTATION,
+      rotation: plane.rotation,
       position: plane.position,
       pivot: plane.origin,
       sourceFingerprint: projectShapesFingerprint(shapesRef.current),
@@ -6011,6 +6274,27 @@ export function LayerlingEditor({
       if (!centeredPlane) return current;
       const picked = centeredPlane.normal[0] * point[0] + centeredPlane.normal[1] * point[1] + centeredPlane.normal[2] * point[2];
       const position = snapSplitPositionToVertices(splitTargetPoints, centeredPlane.normal, picked);
+      const plane = modelSplitPlane(splitTargetPoints, orientation.axis, position, orientation.rotation);
+      return plane ? { ...current, axis: plane.axis, rotation: plane.rotation, position: plane.position, pivot: plane.origin, picking: false, error: null } : current;
+    });
+    setNotice(t("status.splitReady"));
+  }, [splitTargetPoints]);
+
+  // On the workplane, or square to it along its X or Y (#644). Through the workplane's origin where that crosses
+  // the parts - a workplane laid on a face cuts there - otherwise through their middle.
+  const alignSplitToWorkplane = useCallback((direction: SplitWorkplaneDirection) => {
+    const workplane = placementWorkplaneRef.current;
+    const along = direction === "parallel" ? workplane.normal : direction === "acrossX" ? workplane.xAxis : workplane.zAxis;
+    const orientation = splitOrientationForNormal([along.x, along.y, along.z]);
+    if (!orientation) return;
+    setSplitSession((current) => {
+      if (!current || current.busy) return current;
+      const centeredPlane = modelSplitPlane(splitTargetPoints, orientation.axis, undefined, orientation.rotation);
+      if (!centeredPlane) return current;
+      const { origin } = workplane;
+      const through = centeredPlane.normal[0] * origin.x + centeredPlane.normal[1] * origin.y + centeredPlane.normal[2] * origin.z;
+      const crosses = through > centeredPlane.min + 1e-6 && through < centeredPlane.max - 1e-6;
+      const position = crosses ? snapSplitPositionToVertices(splitTargetPoints, centeredPlane.normal, through) : centeredPlane.position;
       const plane = modelSplitPlane(splitTargetPoints, orientation.axis, position, orientation.rotation);
       return plane ? { ...current, axis: plane.axis, rotation: plane.rotation, position: plane.position, pivot: plane.origin, picking: false, error: null } : current;
     });
@@ -6178,7 +6462,7 @@ export function LayerlingEditor({
     setShellTool(null);
     if (refuseLockedSelection()) return;
     const kindLabel = t(kind === "fillet" ? "editor.tool.fillet" : kind === "chamfillet" ? "edge.chamfillet" : "editor.tool.chamfer");
-    if (selectedShapes.length !== 1 || !selectedShape || selectedShape.locked || selectedShape.hole || isNonSolidShapeKind(selectedShape.kind)) {
+    if (selectedShapes.length !== 1 || !selectedShape || selectedShape.locked || selectedShape.hole || isNonSolidShape(selectedShape)) {
       setNotice(t("status.selectOneSolid", { kind: kindLabel }));
       return;
     }
@@ -6435,6 +6719,8 @@ export function LayerlingEditor({
     const chamferAngle = Math.max(kind === "chamfillet" ? 15 : 5, Math.min(kind === "chamfillet" ? 75 : 85, mcpNumber(params.chamferAngle, 45)));
     const quality: CadModifierQuality = params.quality === "draft" || params.quality === "fine" ? params.quality : "standard";
     const preserveEdgeSize = typeof params.preserveEdgeSize === "boolean" ? params.preserveEdgeSize : shape.edgeResizeMode === "preserve";
+    // A fillet whose radius runs from `amount` at the edge's start to `endAmount` at its end (#687).
+    const endAmount = kind === "fillet" && params.endAmount !== undefined && params.endAmount !== null ? Math.max(MIN_EDGE_MODIFIER_AMOUNT, mcpNumber(params.endAmount, amount)) : undefined;
     const { response, sourceParts } = await prepareCadModifierForMcp(shape, sharpAngle);
     const selectableIds = response.edges.filter((edge) => selectableCadModifierEdge(edge, sharpAngle)).map((edge) => edge.id);
     const requestedIds = mcpNumberArray(params.edgeIds);
@@ -6457,6 +6743,9 @@ export function LayerlingEditor({
     if (missingIds.length > 0) {
       throw new Error(`These edge IDs are not selectable at the current threshold: ${missingIds.join(", ")}`);
     }
+    if (endAmount !== undefined && selectedEdgeIds.length !== 1) {
+      throw new Error("endAmount (a variable radius) works on exactly one edge id");
+    }
     const previewResponse = await postCadModifierRequestAsync({
       type: "preview",
       kind,
@@ -6464,6 +6753,7 @@ export function LayerlingEditor({
       amount,
       quality,
       chamferAngle,
+      ...(endAmount !== undefined ? { endAmount } : {}),
       minDeflection: shape.cadMeshDeflection,
     }, [], 30000);
     if (previewResponse.type !== "preview") {
@@ -6484,6 +6774,7 @@ export function LayerlingEditor({
       edgeCount: selectedEdgeIds.length,
       edgeIds: [...selectedEdgeIds],
       ...(kind === "chamfer" || kind === "chamfillet" ? { chamferAngle } : {}),
+      ...(endAmount !== undefined ? { endAmount } : {}),
     } satisfies NonNullable<WorkplaneShape["edgeTreatments"]>[number];
     const session: EdgeModifierSession = {
       kind,
@@ -6492,6 +6783,7 @@ export function LayerlingEditor({
       amount,
       sharpAngle,
       chamferAngle,
+      endAmount: endAmount ?? null,
       quality,
       tangentChain: false,
       preserveEdgeSize,
@@ -6543,7 +6835,7 @@ export function LayerlingEditor({
   // `watched` is the body in the scene the result replaces; it is the shape
   // itself, except when a resized hollow body is hollowed again from its state before.
   const shellShape = useCallback(async (shape: WorkplaneShape, thickness: number, openings: ShellOpenings, edges: ShellEdges = "round", watched: WorkplaneShape = shape) => {
-    if (shape.locked || shape.hole || isNonSolidShapeKind(shape.kind)) {
+    if (shape.locked || shape.hole || isNonSolidShape(shape)) {
       throw new Error("Select one unlocked solid object to hollow");
     }
     invalidateCadModifierSession();
@@ -6613,7 +6905,7 @@ export function LayerlingEditor({
    * here, and a face that is not the same any more stops the deletion.
    */
   const deleteFacesShape = useCallback(async (shape: WorkplaneShape, faceIds: number[], picked?: CadFaceInfo[]) => {
-    if (shape.locked || shape.hole || isNonSolidShapeKind(shape.kind)) {
+    if (shape.locked || shape.hole || isNonSolidShape(shape)) {
       throw new Error("Select one unlocked solid object to delete faces from");
     }
     invalidateCadModifierSession();
@@ -6698,7 +6990,7 @@ export function LayerlingEditor({
       return;
     }
     if (refuseLockedSelection()) return;
-    if (selectedShapes.length !== 1 || !selectedShape || selectedShape.locked || selectedShape.hole || isNonSolidShapeKind(selectedShape.kind)) {
+    if (selectedShapes.length !== 1 || !selectedShape || selectedShape.locked || selectedShape.hole || isNonSolidShape(selectedShape)) {
       setNotice(t("status.selectOneSolid", { kind: t("editor.tool.hollow") }));
       return;
     }
@@ -6726,7 +7018,8 @@ export function LayerlingEditor({
         commitShapes(
           shapesRef.current.map((candidate) => candidate.id === target.id ? modifiedShape : candidate),
           modifiedShape.id,
-          t("status.shelled", { size: Number(thickness.toFixed(2)) }),
+          // A sealed cavity looks like nothing happened (#658), so say where it went.
+          t(shellOpenSides(openings).length === 0 ? "status.shelledClosed" : "status.shelled", { size: Number(thickness.toFixed(2)) }),
         );
         setShellTool(null);
       })
@@ -6787,9 +7080,9 @@ export function LayerlingEditor({
       if (!entry) return;
       const fingerprint = projectShapesFingerprint([stale]);
       const { amount, openings, shellEdges } = entry.feature;
-      const applied = entry.appliedFrame!;
-      const width = entry.before.width * shapeWidth(stale) / Math.max(0.001, applied.width);
-      const depth = entry.before.depth * shapeDepth(stale) / Math.max(0.001, applied.depth);
+      const stretch = hollowStretchSincePicture(stale, entry);
+      const width = entry.before.width * stretch.x;
+      const depth = entry.before.depth * stretch.z;
       // A cylinder stays round; stretched unevenly it becomes the ellipse it now is.
       const source = entry.before.kind === "cylinder" && Math.abs(width - depth) > 0.005
         ? { ...entry, before: { ...entry.before, kind: "ellipse" as const } }
@@ -6876,6 +7169,7 @@ export function LayerlingEditor({
       edgeCount: edgeModifier.selectedEdgeIds.length,
       edgeIds: [...edgeModifier.selectedEdgeIds],
       ...(edgeModifier.kind === "chamfer" || edgeModifier.kind === "chamfillet" ? { chamferAngle: edgeModifier.chamferAngle } : {}),
+      ...(edgeModifier.kind === "fillet" && edgeModifier.endAmount != null ? { endAmount: edgeModifier.endAmount } : {}),
     } satisfies NonNullable<WorkplaneShape["edgeTreatments"]>[number];
     const createdAt = Date.now();
     const previewShape = canonicalizeShape({
@@ -6915,7 +7209,7 @@ export function LayerlingEditor({
     edgeEditRequestRef.current = {
       shapeId: base.id,
       historyLength: modifiedShape.edgeTreatmentHistory?.length ?? 0,
-      preset: { kind: edgeModifier.kind, amount: edgeModifier.amount, chamferAngle: edgeModifier.chamferAngle, edgeIds: [] },
+      preset: { kind: edgeModifier.kind, amount: edgeModifier.amount, chamferAngle: edgeModifier.chamferAngle, endAmount: edgeModifier.endAmount ?? null, edgeIds: [] },
     };
     setEdgeEditRound((round) => round + 1);
   }, [commitShapes, edgeModifier, invalidateCadModifierSession, shapes]);
@@ -6993,12 +7287,13 @@ export function LayerlingEditor({
         amount: edgeModifier.amount,
         quality: edgeModifier.quality,
         chamferAngle: edgeModifier.chamferAngle,
+        ...(edgeModifier.kind === "fillet" && edgeModifier.endAmount != null ? { endAmount: edgeModifier.endAmount } : {}),
         minDeflection: cadModifierBaseShapeRef.current?.cadMeshDeflection,
         ...(addedEdgeIds.length ? { addedEdgeIds } : {}),
       });
     }, 120);
     return () => window.clearTimeout(timer);
-  }, [discardPendingCadPreviews, edgeModifier?.amount, edgeModifier?.chamferAngle, edgeModifier?.kind, edgeModifier?.prepared, edgeModifier?.quality, edgeModifier?.selectedEdgeIds]);
+  }, [discardPendingCadPreviews, edgeModifier?.amount, edgeModifier?.chamferAngle, edgeModifier?.endAmount, edgeModifier?.kind, edgeModifier?.prepared, edgeModifier?.quality, edgeModifier?.selectedEdgeIds]);
 
   const snapSelected = useCallback(() => {
     if (!hasSelection) {
@@ -7124,7 +7419,7 @@ export function LayerlingEditor({
     }
     if (refuseLockedSelection()) return;
     const selected = new Set(selectedIds);
-    const eligible = (shape: WorkplaneShape) => selected.has(shape.id) && !isNonSolidShapeKind(shape.kind);
+    const eligible = (shape: WorkplaneShape) => selected.has(shape.id) && !isNonSolidShape(shape);
     const transparent = nextSelectionTransparency(shapes.filter(eligible));
     if (transparent === null) return;
     commitShapes(
@@ -7168,7 +7463,7 @@ export function LayerlingEditor({
       const selected = new Set(selectedIds);
       commitShapes(
         shapes.map((shape) => {
-          if (!selected.has(shape.id) || isNonSolidShapeKind(shape.kind)) return shape;
+          if (!selected.has(shape.id) || isNonSolidShape(shape)) return shape;
           const solid = withHoleMode(shape, false, color);
           return canonicalizeShape({ ...solid, color, ...(canToggleGroupColors(solid) ? { multicolor: false } : {}) });
         }),
@@ -7352,7 +7647,7 @@ export function LayerlingEditor({
       setNotice(t("status.holePatternSelectOne"));
       return;
     }
-    if (source.hole || isNonSolidShapeKind(source.kind)) {
+    if (source.hole || isNonSolidShape(source)) {
       setNotice(t("status.holePatternNeedsSolid"));
       return;
     }
@@ -7463,7 +7758,7 @@ export function LayerlingEditor({
       setNotice(t("status.faceToolSelectOne"));
       return;
     }
-    if (source.hole || isNonSolidShapeKind(source.kind)) {
+    if (source.hole || isNonSolidShape(source)) {
       setNotice(t("status.faceToolNeedsSolid"));
       return;
     }
@@ -7558,6 +7853,18 @@ export function LayerlingEditor({
       setNotice(t("faceTool.empty"));
       return;
     }
+    const createdMessage = t(tool.settings.direction === "in" ? "status.faceToolPocketCreated" : "status.faceToolCreated", { depth: Number(faceToolSettingsOn(tool.face, tool.settings).depth.toFixed(2)) });
+    if (tool.settings.separate) {
+      // As a part of its own (#750): beside the body, not grouped with it, ready to be resized, moved or used to cut.
+      if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
+        setFaceTool(null);
+        setNotice(t("status.groupChanged"));
+        return;
+      }
+      setFaceTool(null);
+      commitShapes([...shapesRef.current, body], body.id, createdMessage);
+      return;
+    }
     const result = await buildGroupedShapeFromSelection([source, body], workspaceSettingsRef.current.booleanTriangleLimit);
     if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
       setFaceTool(null);
@@ -7574,7 +7881,7 @@ export function LayerlingEditor({
     commitShapes(
       [...shapesRef.current.filter((shape) => shape.id !== source.id), editableGroup],
       editableGroup.id,
-      t(tool.settings.direction === "in" ? "status.faceToolPocketCreated" : "status.faceToolCreated", { depth: Number(faceToolSettingsOn(tool.face, tool.settings).depth.toFixed(2)) }),
+      createdMessage,
     );
   }, [commitShapes, faceTool]);
 
@@ -7617,7 +7924,7 @@ export function LayerlingEditor({
       return;
     }
     if (refuseLockedSelection()) return;
-    if (selectedShapes.length !== 1 || !selectedShape || selectedShape.locked || selectedShape.hole || isNonSolidShapeKind(selectedShape.kind)) {
+    if (selectedShapes.length !== 1 || !selectedShape || selectedShape.locked || selectedShape.hole || isNonSolidShape(selectedShape)) {
       setNotice(t("status.selectOneSolid", { kind: t("editor.tool.deleteFace") }));
       return;
     }
@@ -7827,7 +8134,7 @@ export function LayerlingEditor({
       return;
     }
 
-    if (selectedShapes.some((shape) => isNonSolidShapeKind(shape.kind))) {
+    if (selectedShapes.some((shape) => isNonSolidShape(shape))) {
       setNotice(t("status.rulerNotSolid"));
       return;
     }
@@ -7865,7 +8172,7 @@ export function LayerlingEditor({
       setNotice(t("status.selectTwoToBundle"));
       return;
     }
-    if (selectedShapes.some((shape) => isNonSolidShapeKind(shape.kind))) {
+    if (selectedShapes.some((shape) => isNonSolidShape(shape))) {
       setNotice(t("status.rulerNotSolid"));
       return;
     }
@@ -7878,6 +8185,51 @@ export function LayerlingEditor({
     const bundle = canonicalizeShape({ ...group, name: "Bundle", groupOperation: "bundle" });
     commitShapes([...shapesRef.current.filter((shape) => !selected.has(shape.id)), bundle], bundle.id, t("status.bundledMany", { count: selectedShapes.length }));
   }, [refuseLockedSelection, commitShapes, selectedIds, selectedShapes]);
+
+  /**
+   * A key ring tab of its own (#598) fixed to the nearest tag in one click, where it was put: the
+   * tag is built again with its hole there - the ear on the bottom layer, the hole through every
+   * layer - and the tab is gone. "Free" brings it out again.
+   */
+  const fixKeyringTab = useCallback(async () => {
+    if (selectedShapes.length !== 1 || !selectedShape?.keyringTab) return;
+    if (refuseLockedSelection()) return;
+    const tab = selectedShape;
+    const tag = keyringTabTag(tab, shapesRef.current);
+    if (!tag) {
+      setNotice(t("status.keyringTabNoTag"));
+      return;
+    }
+    const place = keyringTabPlace(tab);
+    if (!place) return;
+    const commit = (next: WorkplaneShape) => {
+      if (!shapesRef.current.some((shape) => shape.id === tag.id) || !shapesRef.current.some((shape) => shape.id === tab.id)) return;
+      commitShapes(
+        shapesRef.current.filter((shape) => shape.id !== tab.id).map((shape) => (shape.id === tag.id ? next : shape)),
+        [next.id],
+        t("status.keyringTabFixed"),
+      );
+    };
+    try {
+      if (tag.layeredText) {
+        const stack = textLayerStack(tag);
+        if (!stack) return;
+        const keyring = { side: stack.keyring?.side ?? "left", diameter: place.diameter, free: textFreeKeyring(stack.source, place) } as const;
+        await keyringRuntimeReady(keyring);
+        commit(layeredTextShape(nameTagSource(stack.source, {}), stack.layers, stack.ids, tag.id, tag, stack.source.text, keyring));
+        return;
+      }
+      const stack = iconLayerStack(tag);
+      if (!stack) return;
+      setNotice(t("status.buildingSketch"), true);
+      const area = await iconTagArea(stack.source, stack.width, stack.width);
+      const free = iconFreeKeyring(area, stack.place, place);
+      if (!free) return;
+      commit(await layeredIconShape(area, stack.layers, stack.place, stack.ids, tag.id, tag, { side: stack.keyring?.side ?? "left", diameter: place.diameter, free }));
+    } catch (error) {
+      setNotice(error instanceof Error ? localizedError(error.message) : t("status.sketchCannotExtrude"), true);
+    }
+  }, [refuseLockedSelection, commitShapes, selectedShape, selectedShapes.length]);
 
   /** Ends the preview of an intersection: the operands show as they are again. */
   const exitIntersectPreview = useCallback(() => {
@@ -7893,7 +8245,7 @@ export function LayerlingEditor({
       setNotice("");
       return;
     }
-    const operands = selectedShapes.filter((shape) => !isNonSolidShapeKind(shape.kind));
+    const operands = selectedShapes.filter((shape) => !isNonSolidShape(shape));
     if (!canIntersectShapes(operands)) {
       setNotice(t("status.selectSolidAndHole"));
       return;
@@ -7905,7 +8257,7 @@ export function LayerlingEditor({
   // The common part is calculated again a moment after every change of the shapes, so moving one stays smooth.
   useEffect(() => {
     if (!intersectPreviewIds) return;
-    const operands = shapes.filter((shape) => intersectPreviewIds.includes(shape.id) && !isNonSolidShapeKind(shape.kind));
+    const operands = shapes.filter((shape) => intersectPreviewIds.includes(shape.id) && !isNonSolidShape(shape));
     if (operands.length < 2 || !canIntersectShapes(operands)) {
       exitIntersectPreview();
       setNotice(t("status.intersectPreviewOff"));
@@ -7938,7 +8290,7 @@ export function LayerlingEditor({
     if (refuseLockedSelection()) return;
     // While the preview shows, its shapes are the ones that are intersected, whatever is selected.
     const previewIds = intersectPreviewIdsRef.current;
-    const groupable = (previewIds ? shapesRef.current.filter((shape) => previewIds.includes(shape.id)) : selectedShapes).filter((shape) => !isNonSolidShapeKind(shape.kind));
+    const groupable = (previewIds ? shapesRef.current.filter((shape) => previewIds.includes(shape.id)) : selectedShapes).filter((shape) => !isNonSolidShape(shape));
     if (!canIntersectShapes(groupable)) {
       setNotice(t("status.selectSolidAndHole"));
       return;
@@ -8321,9 +8673,21 @@ export function LayerlingEditor({
     const source = nameTagSource(stack.source, patch);
     const layers = patch.layers ?? (wasText ? [...NAME_TAG_LAYERS] : stack.layers);
     // The key ring hole (#215) follows the letters: it is laid out from them on every build.
-    const keyring = patch.keyring !== undefined ? patch.keyring : stack.keyring;
+    // "Free" (#598) takes it off the tag and puts a key ring tab of its own beside it.
+    const keyring = patch.keyringTab ? null : patch.keyring !== undefined ? patch.keyring : stack.keyring;
     await keyringRuntimeReady(keyring);
     const next = layeredTextShape(source, layers, wasText ? [] : stack.ids, selectedShape.id, selectedShape, stack.source.text, keyring);
+    if (patch.keyringTab) {
+      const bottom = layers[layers.length - 1];
+      const floor = { color: bottom.color, height: bottom.height, elevation: stack.source.elevation ?? 0 };
+      // A hole fixed freely before comes out as a tab again, where it was; otherwise one starts beside the tag.
+      const free = stack.keyring?.free;
+      const tab = free && stack.keyring
+        ? keyringTabAt(textFreeKeyringPlace(stack.source, { ...stack.keyring, free }), floor, t("nameTag.keyringTab"))
+        : keyringTabShape(next, floor, stack.keyring?.diameter ?? DEFAULT_KEYRING_DIAMETER, t("nameTag.keyringTab"));
+      commitShapes([...shapesRef.current.map((shape) => (shape.id === selectedShape.id ? next : shape)), tab], [tab.id], t("status.keyringTabMade"));
+      return;
+    }
     commitShapes(
       shapesRef.current.map((shape) => (shape.id === selectedShape.id ? next : shape)),
       [next.id],
@@ -8380,12 +8744,26 @@ export function LayerlingEditor({
       setNotice(t("status.buildingSketch"), true);
       void (async () => {
         const area = await iconTagArea(stack.source, stack.width, wanted.patch.width ?? stack.width);
-        // The key ring hole stays as it is unless the patch sets or takes it off (null).
-        const keyring = wanted.patch.keyring === undefined ? stack.keyring : wanted.patch.keyring;
-        return layeredIconShape(area, layers, stack.place, wasBody ? [] : stack.ids, current.id, wasBody ? { ...current, name: stack.name } : current, keyring);
+        // The key ring hole stays as it is unless the patch sets or takes it off (null); "Free" (#598) takes it off too.
+        const keyring = wanted.patch.keyringTab ? null : wanted.patch.keyring === undefined ? stack.keyring : wanted.patch.keyring;
+        const next = await layeredIconShape(area, layers, stack.place, wasBody ? [] : stack.ids, current.id, wasBody ? { ...current, name: stack.name } : current, keyring);
+        return { next, area };
       })()
-        .then((next) => {
+        .then(({ next, area }) => {
           if (iconLayerRequestRef.current !== request || !shapesRef.current.some((shape) => shape.id === next.id)) return;
+          if (wanted.patch.keyringTab) {
+            // A key ring tab of its own beside the tag, in the bottom layer's colour and height (#598);
+            // a hole fixed freely before comes out as a tab again, where it was.
+            const bottom = layers[layers.length - 1];
+            const floor = { color: bottom.color, height: bottom.height, elevation: stack.place.elevation };
+            const free = stack.keyring?.free;
+            const back = free && stack.keyring ? iconFreeKeyringPlace(area, stack.place, { ...stack.keyring, free }) : null;
+            const tab = back
+              ? keyringTabAt(back, floor, t("nameTag.keyringTab"))
+              : keyringTabShape(next, floor, stack.keyring?.diameter ?? DEFAULT_KEYRING_DIAMETER, t("nameTag.keyringTab"));
+            commitShapes([...shapesRef.current.map((shape) => (shape.id === next.id ? next : shape)), tab], [tab.id], t("status.keyringTabMade"));
+            return;
+          }
           commitShapes(
             shapesRef.current.map((shape) => (shape.id === next.id ? next : shape)),
             [next.id],
@@ -8467,6 +8845,89 @@ export function LayerlingEditor({
     return settings ? { settings, onRegenerate: regenerateSelectedQrCode } : null;
   }, [regenerateSelectedQrCode, selectedShape, selectedShapes.length]);
 
+  /**
+   * Reference images (#680): a picture laid on the plate or on the face the workplane stands on, to
+   * line parts up on. Added from the import panel, made see-through and calibrated in its card.
+   */
+  const addReferenceImageFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setNotice(t("status.chooseImageFile"));
+      return;
+    }
+    try {
+      const prepared = await prepareImportedImage(file);
+      const name = file.name.replace(/\.[^.]+$/, "") || t("referenceImage.title");
+      const image = placeSketchShape(referenceImageShape(prepared, name, createLocalId("reference-image")), placementWorkplaneRef.current, null);
+      const bytes = dataUrlByteLength(prepared.dataUrl);
+      commitShapes(
+        [...shapesRef.current, image],
+        image.id,
+        bytes > LARGE_REFERENCE_IMAGE_BYTES
+          ? t("status.referenceImageAddedLarge", { name: file.name, mb: Math.round((bytes / (1024 * 1024)) * 10) / 10 })
+          : t("status.referenceImageAdded", { name: file.name }),
+      );
+      setTopPanel(null);
+    } catch (error) {
+      setNotice(error instanceof Error ? localizedError(error.message) : t("status.imageNotAdded"));
+    }
+  }, [commitShapes]);
+
+  const [imageCalibration, setImageCalibration] = useState<{ id: string; points: { x: number; y: number; z: number }[] } | null>(null);
+  const selectedReferenceImage = selectedShapes.length === 1 && isReferenceImage(selectedShape) ? selectedShape : null;
+  // Calibrating belongs to one image; another selection ends it.
+  useEffect(() => {
+    if (imageCalibration && selectedReferenceImage?.id !== imageCalibration.id) setImageCalibration(null);
+  }, [imageCalibration, selectedReferenceImage]);
+
+  const addImageCalibrationPoint = useCallback((point: { x: number; y: number; z: number }) => {
+    setImageCalibration((current) => {
+      if (!current || current.points.length >= 2) return current;
+      const points = [...current.points, point];
+      setNotice(t(points.length === 1 ? "status.referenceImageSecondPoint" : "status.referenceImageDistance"));
+      return { ...current, points };
+    });
+  }, []);
+
+  const referenceImageControls = useMemo<ReferenceImageControls | null>(() => {
+    const image = selectedReferenceImage;
+    if (!image || historyViewState) return null;
+    const calibrating = imageCalibration?.id === image.id ? imageCalibration : null;
+    const [first, second] = calibrating?.points ?? [];
+    return {
+      seeThrough: Math.round((1 - referenceImageOpacity(image)) * 100),
+      onSeeThrough: (percent) => {
+        const opacity = Math.round((1 - percent / 100) * 100) / 100;
+        commitShapes(
+          shapesRef.current.map((shape) => (shape.id === image.id && shape.imagePlate ? canonicalizeShape({ ...shape, imagePlate: { ...shape.imagePlate, opacity } }) : shape)),
+          [image.id],
+        );
+      },
+      calibration: !calibrating ? null : second ? { step: "distance", measured: Math.hypot(second.x - first.x, second.y - first.y, second.z - first.z) } : { step: first ? "second" : "first" },
+      onCalibrate: () => {
+        setImageCalibration({ id: image.id, points: [] });
+        setNotice(t("status.referenceImageFirstPoint"));
+      },
+      onCalibrateDistance: (distance) => {
+        if (!first || !second) return;
+        const patch = calibratedReferenceImage(image, Math.hypot(second.x - first.x, second.y - first.y, second.z - first.z), distance);
+        setImageCalibration(null);
+        if (!patch) {
+          setNotice(t("status.referenceImageSamePoint"));
+          return;
+        }
+        commitShapes(
+          shapesRef.current.map((shape) => (shape.id === image.id ? canonicalizeShape({ ...shape, ...patch }) : shape)),
+          [image.id],
+          t("status.referenceImageCalibrated", { mm: distance }),
+        );
+      },
+      onCancelCalibration: () => {
+        setImageCalibration(null);
+        setNotice("");
+      },
+    };
+  }, [commitShapes, historyViewState, imageCalibration, selectedReferenceImage]);
+
   const simplifyToolShape = simplifyToolId && selectedShapes.length === 1 && selectedShape?.id === simplifyToolId && offersMeshSimplify(selectedShape)
     ? selectedShape
     : null;
@@ -8521,6 +8982,24 @@ export function LayerlingEditor({
     }
     if (selectedShape.locked) {
       setNotice(t("status.objectLocked"));
+      return;
+    }
+    if (separatesBySketch(selectedShape)) {
+      // One body per outline, each with its own sketch (#669); the build takes a moment.
+      const target = selectedShape;
+      setNotice(t("status.buildingSketch"), true);
+      void separateSketchBodyParts(target).then(
+        (parts) => {
+          const current = shapesRef.current;
+          if (parts.length <= 1 || !current.some((shape) => shape.id === target.id)) return;
+          commitShapes(
+            [...current.filter((shape) => shape.id !== target.id), ...parts],
+            parts.map((shape) => shape.id),
+            t("status.separatedOutlines", { count: parts.length }),
+          );
+        },
+        (error) => setNotice(error instanceof Error ? localizedError(error.message) : t("status.sketchCannotExtrude")),
+      );
       return;
     }
     const parts = separateShapeParts(selectedShape);
@@ -8578,7 +9057,7 @@ export function LayerlingEditor({
     return { solids, meshes, quellen, gescheitert, hiddenNote, hiddenCount };
   }, []);
   const sectionMeshCacheRef = useRef<{ shapes: WorkplaneShape[]; made: ReturnType<typeof makeSectionMeshes> } | null>(null);
-  const sectionBodiesAt = useCallback(async (axis: SectionPlaneAxis, offset: number) => {
+  const sectionBodiesAt = useCallback(async (axis: SectionPlaneAxis, offset: number, frame: SectionFrame | null = null) => {
     const shapesNow = shapesRef.current;
     let cache = sectionMeshCacheRef.current;
     if (!cache || cache.shapes !== shapesNow) {
@@ -8596,17 +9075,18 @@ export function LayerlingEditor({
         name: source ? displayShapeName(source) : mesh.name,
         color: source?.color ?? "#000000",
         seeThrough: Boolean(source?.transparent) && !source?.hole,
-        loops: sliceMeshContours(mesh, axis, offset),
+        // A turned plane (#644) slices the bodies moved into its frame; the outlines are then in the frame's terms.
+        loops: sliceMeshContours(sectionMeshInFrame(mesh, frame), axis, offset),
       };
     });
     return { bodies, hiddenNote, hiddenCount, unionFailed: gescheitert > 0 };
   }, [makeSectionMeshes]);
 
   /** The bodies of the cut with their colours, for the filled cut face of the section view (#516). */
-  const sectionBodies = useCallback(async (axis: SectionPlaneAxis, offset: number) => (await sectionBodiesAt(axis, offset)).bodies, [sectionBodiesAt]);
+  const sectionBodies = useCallback(async (axis: SectionPlaneAxis, offset: number, frame: SectionFrame | null = null) => (await sectionBodiesAt(axis, offset, frame)).bodies, [sectionBodiesAt]);
 
-  const buildSectionSvg = useCallback(async (axis: SectionPlaneAxis, offset: number) => {
-    const { bodies, hiddenNote, hiddenCount, unionFailed } = await sectionBodiesAt(axis, offset);
+  const buildSectionSvg = useCallback(async (axis: SectionPlaneAxis, offset: number, frame: SectionFrame | null = null) => {
+    const { bodies, hiddenNote, hiddenCount, unionFailed } = await sectionBodiesAt(axis, offset, frame);
     if (bodies.length === 0) throw new Error(t("status.sectionSvgNothing"));
     const result = sectionSvgDocument(bodies, axis, offset, `${projectName} - ${sectionAxisLetter(axis)} ${formatSectionOffset(offset)} mm`);
     if (!result) throw new Error(t("status.sectionSvgMissed"));
@@ -8614,18 +9094,18 @@ export function LayerlingEditor({
   }, [projectName, sectionBodiesAt]);
 
   /** Die Umrisse des Schnitts fuer das Messen - dieselben Koerper wie beim SVG. */
-  const sectionContours = useCallback(async (axis: SectionPlaneAxis, offset: number) => {
+  const sectionContours = useCallback(async (axis: SectionPlaneAxis, offset: number, frame: SectionFrame | null = null) => {
     const { visible } = visibleExportShapes(shapesRef.current);
     const { solids, meshes: cut } = await exportBodiesWithLooseHoles(visible);
     if (solids.length === 0) return [];
     const { meshes } = await colorSeparatedExportMeshes(solids, cut);
-    return meshes.flatMap((mesh) => sliceMeshContours(mesh, axis, offset));
+    return meshes.flatMap((mesh) => sliceMeshContours(sectionMeshInFrame(mesh, frame), axis, offset));
   }, []);
 
-  const exportSectionSvg = useCallback(async (axis: SectionPlaneAxis, offset: number) => {
+  const exportSectionSvg = useCallback(async (axis: SectionPlaneAxis, offset: number, frame: SectionFrame | null = null) => {
     setNotice(t("status.buildingSectionSvg"), true);
     try {
-      const { result, hiddenNote, unionFailed } = await buildSectionSvg(axis, offset);
+      const { result, hiddenNote, unionFailed } = await buildSectionSvg(axis, offset, frame);
       const name = `${projectName} ${t("camera.sectionFileSuffix")} ${sectionAxisLetter(axis)} ${formatSectionOffset(offset)} mm`;
       await downloadTextFile(projectExportFileName(name, "svg"), result.svg, "image/svg+xml;charset=utf-8");
       const parts = [t("status.sectionSvgExported", { count: result.loopCount, face: t(SECTION_SEEN_FROM_KEYS[SECTION_VIEW_FACE[axis]]) })];
@@ -8724,6 +9204,8 @@ export function LayerlingEditor({
         const ids = requestedIds.length ? new Set(requestedIds) : new Set(selectedIdsRef.current);
         const deleted = currentShapes().filter((shape) => ids.has(shape.id));
         if (deleted.length === 0) throw new Error("No matching objects to delete");
+        // A locked object stays, as the editor's Delete leaves it.
+        if (deleted.some((shape) => shape.locked)) throw new Error("Unlock the objects before deleting them");
         commitShapes(currentShapes().filter((shape) => !ids.has(shape.id)), [], deleted.length === 1 ? t("status.mcpDeletedOne") : t("status.mcpDeletedMany", { count: deleted.length }));
         selectedIdsRef.current = [];
         return { deletedIds: deleted.map((shape) => shape.id), deletedCount: deleted.length };
@@ -8749,6 +9231,10 @@ export function LayerlingEditor({
         const requestedWidth = mcpOptionalNumber(params.width ?? params.size);
         const requestedDepth = mcpOptionalNumber(params.depth ?? params.size) ?? (rawKind === "cube" ? requestedWidth : undefined);
         const requestedHeight = mcpOptionalNumber(params.height ?? params.size) ?? (rawKind === "cube" ? requestedWidth : undefined);
+        // A body of no size cannot be built, and a design holding one would not open again.
+        ([["width", requestedWidth], ["depth", requestedDepth], ["height", requestedHeight]] as const).forEach(([key, value]) => {
+          if (value !== undefined && value <= 0) throw new Error(`${key} must be greater than 0`);
+        });
         let shape: WorkplaneShape;
         if (kind === "sketch") {
           // A stroke builds the outline as a frame, as the editor's Stroke does (#154).
@@ -8806,6 +9292,9 @@ export function LayerlingEditor({
             const requested = parseVaseSettingsInput(params.vase);
             if (params.vase !== undefined && !requested) throw new Error("vase must be an object of vase settings, or its JSON text");
             shape = { ...shape, ...vaseShapePatch(shape, normalizeVaseSettings({ ...shape.vase, ...requested })) };
+          }
+          if (shape.kind === "gridfinity") {
+            shape = { ...shape, ...gridfinityListPatch(mcpGridfinityListParams(params)) };
           }
           if (shape.kind === "text" && shape.textCurved) {
             shape = { ...shape, ...curvedTextPatch({ ...shape, textCurved: false }, { textCurved: true, textRadius: shape.textRadius, textSize: shape.textSize }) };
@@ -8912,6 +9401,11 @@ export function LayerlingEditor({
             patch[key] = params[key];
           }
         });
+        // A body of no size cannot be built, and a design holding one would not open again.
+        (["width", "depth", "height", "size"] as const).forEach((key) => {
+          if (typeof patch[key] === "number" && patch[key] <= 0) throw new Error(`${key} must be greater than 0`);
+        });
+        if (typeof params.color === "string" && !params.color.trim()) throw new Error("color must not be empty");
         if (typeof params.color === "string") patch.color = params.color;
         if (typeof params.name === "string") patch.name = params.name;
         if (typeof params.hole === "boolean") patch.hole = params.hole;
@@ -8950,6 +9444,11 @@ export function LayerlingEditor({
           const withSettings = { ...target, ...patch };
           Object.assign(patch, vaseShapePatch({ width: shapeWidth(withSettings), depth: shapeDepth(withSettings), height: withSettings.height }, normalizeVaseSettings({ ...target.vase, ...requested })));
         }
+        if (target.kind === "gridfinity" && MCP_GRIDFINITY_LIST_KEYS.some((key) => params[key] !== undefined)) {
+          Object.assign(patch, gridfinityListPatch(mcpGridfinityListParams(params)));
+        }
+        // A padding given without a size keeps a baseplate's units (#455).
+        Object.assign(patch, mcpGridfinityPaddingPatch(target, patch, params));
         if (target.kind === "bentTube" && MCP_BENT_TUBE_KEYS.some((key) => params[key] !== undefined)) {
           const withSettings = { ...target, ...patch };
           const requested = {
@@ -9051,6 +9550,20 @@ export function LayerlingEditor({
         if (fillProfile) {
           updated = await rebuildSketchBodyFill(target.id, fillProfile);
           commitShapes(currentShapes().map((shape) => shape.id === target.id ? updated : shape), target.id, t("status.sketchUpdated"));
+        }
+        // Another kind of body from the same sketch (#655), as the sketch's badge makes it.
+        const operationRequest = params.sketchOperation;
+        if (operationRequest !== undefined) {
+          if (operationRequest !== "extrude" && operationRequest !== "revolve" && operationRequest !== "sweep") throw new Error("sketchOperation must be extrude, revolve or sweep");
+          if (!updated.sketchProfile) throw new Error(t("status.selectSketchShape"));
+          if (sketchBodyOperation(updated) !== operationRequest) {
+            const stretch = sketchBodyOperation(updated) === "extrude" ? sketchBodyStretch(updated) : null;
+            const profile = stretch ? stretchedSketchProfile(updated.sketchProfile, stretch.x, stretch.z) : updated.sketchProfile;
+            const rebuilt = await sketchBodyAsOperation(updated, profile, operationRequest);
+            if (!rebuilt) throw new Error(t("status.closeProfile"));
+            updated = rebuilt;
+            commitShapes(currentShapes().map((shape) => shape.id === target.id ? rebuilt : shape), target.id, t("status.sketchUpdated"));
+          }
         }
         if (updated.kind === "vase" && params.vaseParts === true) {
           const { parts, missing } = layOutVaseAccessories(updated.id);
@@ -9177,7 +9690,7 @@ export function LayerlingEditor({
           normal = faceNormal.clone().normalize();
           // The middle of the target, moved out along the normal onto the plane of that face.
           const center = new THREE.Vector3(target.x, (target.elevation ?? 0) + target.height / 2, target.z);
-          const reach = Math.max(...meshForShape(target).vertices.map(([vx, vy, vz]) => new THREE.Vector3(vx, vy, vz).dot(normal as THREE.Vector3)));
+          const reach = meshReachAlong(meshForShape(target), normal as THREE.Vector3);
           point = center.clone().addScaledVector(normal, reach - center.dot(normal));
         }
         const patches = carriedOntoFace(all, [...ids], { point, normal }, movable[0].id);
@@ -9203,7 +9716,7 @@ export function LayerlingEditor({
         const target = all.find((shape) => shape.id === targetId);
         if (!target) throw new Error("perforate_face needs targetId (or exactly one selected object)");
         if (target.locked) throw new Error("Unlock the object before perforating it");
-        if (target.hole || isNonSolidShapeKind(target.kind)) throw new Error("perforate_face needs a solid body, not a hole");
+        if (target.hole || isNonSolidShape(target)) throw new Error("perforate_face needs a solid body, not a hole");
         const vec3 = (value: unknown) => (Array.isArray(value) && value.length === 3 && value.every((entry) => typeof entry === "number" && Number.isFinite(entry))
           ? new THREE.Vector3(value[0] as number, value[1] as number, value[2] as number)
           : null);
@@ -9217,7 +9730,7 @@ export function LayerlingEditor({
           normal = faceNormal.clone().normalize();
           // The middle of the target, moved out along the normal onto the plane of that face.
           const center = new THREE.Vector3(target.x, (target.elevation ?? 0) + target.height / 2, target.z);
-          const reach = Math.max(...meshForShape(target).vertices.map(([vx, vy, vz]) => new THREE.Vector3(vx, vy, vz).dot(normal as THREE.Vector3)));
+          const reach = meshReachAlong(meshForShape(target), normal as THREE.Vector3);
           point = center.clone().addScaledVector(normal, reach - center.dot(normal));
         }
         const form = params.form === undefined ? DEFAULT_HOLE_PATTERN.form : params.form;
@@ -9269,7 +9782,7 @@ export function LayerlingEditor({
         const target = all.find((shape) => shape.id === targetId);
         if (!target) throw new Error("push_face needs targetId (or exactly one selected object)");
         if (target.locked) throw new Error("Unlock the object before pushing its face");
-        if (target.hole || isNonSolidShapeKind(target.kind)) throw new Error("push_face needs a solid body, not a hole");
+        if (target.hole || isNonSolidShape(target)) throw new Error("push_face needs a solid body, not a hole");
         const vec3 = (value: unknown) => (Array.isArray(value) && value.length === 3 && value.every((entry) => typeof entry === "number" && Number.isFinite(entry))
           ? new THREE.Vector3(value[0] as number, value[1] as number, value[2] as number)
           : null);
@@ -9283,7 +9796,7 @@ export function LayerlingEditor({
           normal = faceNormal.clone().normalize();
           // The middle of the target, moved out along the normal onto the plane of that face.
           const center = new THREE.Vector3(target.x, (target.elevation ?? 0) + target.height / 2, target.z);
-          const reach = Math.max(...meshForShape(target).vertices.map(([vx, vy, vz]) => new THREE.Vector3(vx, vy, vz).dot(normal as THREE.Vector3)));
+          const reach = meshReachAlong(meshForShape(target), normal as THREE.Vector3);
           point = center.clone().addScaledVector(normal, reach - center.dot(normal));
         }
         if (params.direction !== undefined && params.direction !== "out" && params.direction !== "in") throw new Error("push_face direction must be out or in");
@@ -9292,6 +9805,7 @@ export function LayerlingEditor({
           inset: mcpNumber(params.inset, 0),
           radius: mcpNumber(params.radius, 0),
           depth: mcpNumber(params.depth, DEFAULT_FACE_TOOL.depth),
+          separate: params.separate === true,
         });
         const read = readPerforableFace(worldTrianglePositions(target), point, normal);
         if (!read.ok) throw new Error(read.reason === "curved" ? "That face is curved; push_face needs a flat face" : "push_face found no flat face there");
@@ -9302,6 +9816,18 @@ export function LayerlingEditor({
           color: target.color,
         });
         if (!body) throw new Error("The inset leaves nothing of that face; make it smaller");
+        const pushedMessage = t(settings.direction === "in" ? "status.faceToolPocketCreated" : "status.faceToolCreated", { depth: Number(faceToolSettingsOn(read.face, settings).depth.toFixed(2)) });
+        if (settings.separate) {
+          if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(currentShapes()) !== sourceFingerprint) {
+            throw new Error("The scene changed while pushing the face; run the command again");
+          }
+          commitShapes([...currentShapes(), body], body.id, pushedMessage);
+          return {
+            object: mcpShapeSummary(body),
+            settings: faceToolSettingsOn(read.face, settings),
+            normal: [normal.x, normal.y, normal.z].map((value) => Number(value.toFixed(4))),
+          };
+        }
         const result = await buildGroupedShapeFromSelection([target, body], workspaceSettingsRef.current.booleanTriangleLimit);
         if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(currentShapes()) !== sourceFingerprint) {
           throw new Error("The scene changed while pushing the face; run the command again");
@@ -9311,7 +9837,7 @@ export function LayerlingEditor({
         commitShapes(
           [...currentShapes().filter((shape) => shape.id !== target.id), editableGroup],
           editableGroup.id,
-          t(settings.direction === "in" ? "status.faceToolPocketCreated" : "status.faceToolCreated", { depth: Number(faceToolSettingsOn(read.face, settings).depth.toFixed(2)) }),
+          pushedMessage,
         );
         return {
           object: mcpShapeSummary(editableGroup),
@@ -9359,7 +9885,7 @@ export function LayerlingEditor({
         const groupable = currentShapes().filter((shape) => ids.has(shape.id));
         if (groupable.length < 2) throw new Error("Select at least two objects to group");
         if (groupable.some((shape) => shape.locked)) throw new Error("Unlock every selected object before grouping");
-        if (groupable.some((shape) => isNonSolidShapeKind(shape.kind))) throw new Error("A ruler isn't a solid and can't be grouped");
+        if (groupable.some((shape) => isNonSolidShape(shape))) throw new Error("A ruler isn't a solid and can't be grouped");
         const sourceFingerprint = projectShapesFingerprint(currentShapes());
         const sourceProjectId = projectInfoRef.current.projectId;
         const result = await buildGroupedShapeFromSelection(groupable, workspaceSettingsRef.current.booleanTriangleLimit);
@@ -9385,7 +9911,7 @@ export function LayerlingEditor({
         const parts = currentShapes().filter((shape) => ids.has(shape.id));
         if (parts.length < 2) throw new Error("Pass at least two objects to bundle");
         if (parts.some((shape) => shape.locked)) throw new Error("Unlock every object before bundling");
-        if (parts.some((shape) => isNonSolidShapeKind(shape.kind))) throw new Error("A ruler isn't a solid and can't be bundled");
+        if (parts.some((shape) => isNonSolidShape(shape))) throw new Error("A ruler isn't a solid and can't be bundled");
         const group = groupedShape(parts);
         if (!group) throw new Error("Could not bundle these objects");
         const bundle = canonicalizeShape({ ...group, name: "Bundle", groupOperation: "bundle" });
@@ -9413,7 +9939,8 @@ export function LayerlingEditor({
         // The key ring hole (#215): left out it stays as the stack has it.
         const keyringArgument = layerTextKeyringArgument(params.keyring);
         if (keyringArgument && "error" in keyringArgument) throw new Error(keyringArgument.error);
-        const keyring = keyringArgument ? keyringArgument.keyring : stack.keyring;
+        // A free hole (#598) is placed from the middle of the letters.
+        const keyring = keyringArgument ? placedKeyring(keyringArgument.keyring, { width: shapeWidth(source), depth: shapeDepth(source) }) : stack.keyring;
         await keyringRuntimeReady(keyring);
         const names = Array.isArray(params.names) ? mcpStringArray(params.names).map((name) => name.trim()).filter(Boolean).slice(0, 100) : [];
         if (names.length) {
@@ -9443,7 +9970,7 @@ export function LayerlingEditor({
       if (command.action === "sweep_sketch") {
         // The same body the Sweep sketch builds: the outline of the section and the path as construction lines (#400).
         const profile = sweepSketchProfile(
-          { path: sweepPathFromParams(params.path), closed: params.closed === true, section: sweepSectionFromParams(params.section) },
+          { path: sweepPathFromParams(params.path), closed: params.closed === true, section: sweepSectionFromParams(params.section), anchor: sweepAnchorFromParams(params.anchor) },
           createLocalId,
         );
         const swept = await cadShapeFromSketchSweep(profile, null);
@@ -9455,6 +9982,67 @@ export function LayerlingEditor({
         const placed = placeSketchShape(named, placementWorkplaneRef.current, null);
         commitShapes([...currentShapes(), placed], placed.id, t("status.sweepCreated"));
         return { object: mcpShapeSummary(placed) };
+      }
+
+      if (command.action === "reference_image") {
+        // A reference image (#680): add one from a picture, or change one - move, turn, calibrate, fade, lock.
+        const id = typeof params.id === "string" ? params.id : null;
+        let image: WorkplaneShape;
+        let status: string;
+        const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
+        if (!id) {
+          if (typeof params.base64 !== "string" || !params.base64) throw new Error("reference_image needs base64 (a PNG, JPG, WebP, GIF or BMP picture) to add one, or the id of a reference image to change");
+          const fileName = mcpString(params.fileName, "reference.png").trim() || "reference.png";
+          const extension = fileName.split(".").pop()?.toLowerCase() ?? "png";
+          const mimeType = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", bmp: "image/bmp" }[extension];
+          if (!mimeType) throw new Error("fileName must end in .png, .jpg, .jpeg, .webp, .gif or .bmp");
+          if (params.width !== undefined && !(finite(params.width) && params.width >= 1 && params.width <= 2000)) throw new Error("width must be 1 to 2000 mm");
+          const bytes = Uint8Array.from(atob(params.base64), (char) => char.charCodeAt(0));
+          const prepared = await prepareImportedImage(new File([bytes], fileName, { type: mimeType }));
+          const name = typeof params.name === "string" && params.name.trim() ? params.name.trim().slice(0, 60) : fileName.replace(/\.[^.]+$/, "");
+          image = placeSketchShape(referenceImageShape(prepared, name, createLocalId("reference-image"), finite(params.width) ? params.width : undefined), placementWorkplaneRef.current, null);
+          const megabytes = dataUrlByteLength(prepared.dataUrl) / (1024 * 1024);
+          status = megabytes * 1024 * 1024 > LARGE_REFERENCE_IMAGE_BYTES
+            ? t("status.referenceImageAddedLarge", { name, mb: Math.round(megabytes * 10) / 10 })
+            : t("status.referenceImageAdded", { name });
+        } else {
+          const target = currentShapes().find((shape) => shape.id === id);
+          if (!target) throw new Error(`No object with id ${id}`);
+          if (!isReferenceImage(target)) throw new Error("That object is not a reference image");
+          if (target.locked && params.locked !== false && ["x", "z", "rotation", "calibrate", "opacity", "name"].some((key) => params[key] !== undefined)) {
+            throw new Error("The reference image is locked; pass locked: false to change it");
+          }
+          image = target;
+          status = t("status.mcpReferenceImageChanged");
+        }
+        if (params.x !== undefined || params.z !== undefined) {
+          if ((params.x !== undefined && !finite(params.x)) || (params.z !== undefined && !finite(params.z))) throw new Error("x and z must be numbers (mm)");
+          image = { ...image, ...(finite(params.x) ? { x: params.x } : {}), ...(finite(params.z) ? { z: params.z } : {}) };
+        }
+        if (params.rotation !== undefined) {
+          if (!finite(params.rotation)) throw new Error("rotation must be a number of degrees");
+          image = { ...image, rotation: params.rotation };
+        }
+        if (params.calibrate !== undefined) {
+          const calibrate = params.calibrate as { from?: { x?: unknown; y?: unknown }; to?: { x?: unknown; y?: unknown }; distance?: unknown } | null;
+          const point = (value: { x?: unknown; y?: unknown } | undefined) => (value && finite(value.x) && finite(value.y) ? { x: value.x, y: value.y } : null);
+          const from = point(calibrate?.from);
+          const to = point(calibrate?.to);
+          if (!from || !to || !finite(calibrate?.distance) || calibrate.distance <= 0) throw new Error("calibrate needs from { x, y } and to { x, y } in the picture's pixels and a distance in mm above 0");
+          const patch = calibratedReferenceImage(image, referenceImagePixelDistance(image as Parameters<typeof referenceImagePixelDistance>[0], from, to), calibrate.distance);
+          if (!patch) throw new Error("The two calibration points lie on top of each other");
+          image = { ...image, ...patch };
+        }
+        if (params.opacity !== undefined) {
+          if (!(finite(params.opacity) && params.opacity >= 0.1 && params.opacity <= 1)) throw new Error("opacity must be 0.1 to 1");
+          image = { ...image, imagePlate: { ...image.imagePlate!, opacity: params.opacity } };
+        }
+        if (typeof params.name === "string" && params.name.trim() && id) image = { ...image, name: params.name.trim().slice(0, 60) };
+        if (typeof params.locked === "boolean") image = { ...image, locked: params.locked };
+        image = canonicalizeShape(image);
+        const others = currentShapes().filter((shape) => shape.id !== image.id);
+        commitShapes(id ? currentShapes().map((shape) => (shape.id === image.id ? image : shape)) : [...others, image], image.id, status);
+        return { object: mcpShapeSummary(image) };
       }
 
       if (command.action === "create_qr_code") {
@@ -9521,7 +10109,7 @@ export function LayerlingEditor({
         if (svg) {
           const label = typeof params.name === "string" && params.name.trim() ? params.name.trim().slice(0, 60) : "Icon tag";
           const { area, name } = await svgIconArea(`${label}.svg`, svg, width ?? DEFAULT_ICON_TAG_WIDTH);
-          tag = await layeredIconShape(area, layers ?? ICON_TAG_LAYERS, { x: 0, z: 0, elevation: 0, rotation: 0, rotationX: 0, rotationZ: 0 }, [], createLocalId("icon-tag"), { locked: false, hidden: false, name }, keyringArgument ? keyringArgument.keyring : null);
+          tag = await layeredIconShape(area, layers ?? ICON_TAG_LAYERS, { x: 0, z: 0, elevation: 0, rotation: 0, rotationX: 0, rotationZ: 0 }, [], createLocalId("icon-tag"), { locked: false, hidden: false, name }, keyringArgument ? placedKeyring(keyringArgument.keyring, iconBox(area)) : null);
           status = t("status.iconTagAdded", { name });
         } else {
           const target = currentShapes().find((shape) => shape.id === id);
@@ -9533,7 +10121,7 @@ export function LayerlingEditor({
           const wasBody = !target.layeredIcon;
           const area = await iconTagArea(stack.source, stack.width, width ?? stack.width);
           const built = layers ?? (wasBody ? [...ICON_TAG_LAYERS] : stack.layers);
-          tag = await layeredIconShape(area, built, stack.place, wasBody ? [] : stack.ids, target.id, wasBody ? { ...target, name: stack.name } : target, keyringArgument ? keyringArgument.keyring : stack.keyring);
+          tag = await layeredIconShape(area, built, stack.place, wasBody ? [] : stack.ids, target.id, wasBody ? { ...target, name: stack.name } : target, keyringArgument ? placedKeyring(keyringArgument.keyring, iconBox(area)) : stack.keyring);
           status = t(wasBody ? "status.iconLayered" : "status.iconLayersUpdated", { count: built.length });
         }
         const tags = count > 1 ? iconTagCopies(tag, count, { width: plate.width, depth: plate.depth }) : [tag];
@@ -9546,7 +10134,7 @@ export function LayerlingEditor({
         const ids = new Set(mcpStringArray(params.ids));
         const groupable = currentShapes().filter((shape) => ids.has(shape.id));
         if (groupable.some((shape) => shape.locked)) throw new Error("Unlock every selected object before intersecting");
-        if (groupable.some((shape) => isNonSolidShapeKind(shape.kind))) throw new Error("A ruler isn't a solid and can't be intersected");
+        if (groupable.some((shape) => isNonSolidShape(shape))) throw new Error("A ruler isn't a solid and can't be intersected");
         if (!canIntersectShapes(groupable)) throw new Error("Pass two solids, or a solid and a hole, to intersect");
         const sourceFingerprint = projectShapesFingerprint(currentShapes());
         const sourceProjectId = projectInfoRef.current.projectId;
@@ -9570,6 +10158,7 @@ export function LayerlingEditor({
         const ids = requestedIds.length ? new Set(requestedIds) : new Set(selectedIdsRef.current);
         const groups = currentShapes().filter((shape) => ids.has(shape.id) && (shape.groupedShapes?.length || wasGroupBeforeEdgeTreatments(shape)));
         if (groups.length === 0) throw new Error("Select at least one group to ungroup");
+        if (groups.some((shape) => shape.locked)) throw new Error("Unlock the groups before ungrouping them");
         const groupIds = new Set(groups.map((shape) => shape.id));
         // A group with a fillet or chamfer is one mesh; its edge features are taken back first (#514).
         const restored = groups.flatMap((shape) => restoreGroupedChildren(shape.groupedShapes?.length ? shape : groupBeforeEdgeTreatments(shape)!));
@@ -9590,7 +10179,7 @@ export function LayerlingEditor({
         if (operands.some((shape) => shape.locked)) {
           throw new Error("Unlock every boolean operand before cutting");
         }
-        if (operands.some((shape) => isNonSolidShapeKind(shape.kind))) {
+        if (operands.some((shape) => isNonSolidShape(shape))) {
           throw new Error("A ruler isn't a solid and can't be a boolean operand");
         }
         const sourceFingerprint = projectShapesFingerprint(currentShapes());
@@ -9747,7 +10336,8 @@ export function LayerlingEditor({
         const target = findShape(params.id) ?? (selectedIdsRef.current.length === 1 ? findShape(selectedIdsRef.current[0]) : null);
         if (!target) throw new Error("Select one object to separate");
         if (target.locked) throw new Error("Unlock the object before separating parts");
-        const parts = separateShapeParts(target);
+        // A sketch body comes apart by its outlines, one exact body with its own sketch each (#669).
+        const parts = separatesBySketch(target) ? await separateSketchBodyParts(target) : separateShapeParts(target);
         if (parts.length <= 1) throw new Error("The selected object has only one connected part");
         commitShapes([...currentShapes().filter((shape) => shape.id !== target.id), ...parts], parts.map((shape) => shape.id), t("status.mcpSeparated", { count: parts.length }));
         return { objects: parts.map(mcpShapeSummary) };
@@ -9760,18 +10350,36 @@ export function LayerlingEditor({
         if (targets.length === 0) throw new Error("No objects to split - pass ids or select solids first");
         if (targets.some((shape) => shape.locked)) throw new Error("A locked object cannot be split - unlock it first");
         if (targets.some((shape) => shape.hidden)) throw new Error("A hidden object cannot be split - show it first");
-        if (targets.some((shape) => isNonSolidShapeKind(shape.kind))) throw new Error("A ruler isn't a solid and can't be split");
-        const axis = params.axis === undefined ? "y" : splitAxisFromLabel(mcpString(params.axis, ""));
+        if (targets.some((shape) => isNonSolidShape(shape))) throw new Error("A ruler isn't a solid and can't be split");
+        // Like the panel's "Align to workplane" (#644): the workplane sets the axis and the tilt.
+        const alongWorkplane = params.alongWorkplane === undefined ? undefined : mcpString(params.alongWorkplane, "");
+        if (alongWorkplane !== undefined && alongWorkplane !== "parallel" && alongWorkplane !== "acrossX" && alongWorkplane !== "acrossY") {
+          throw new Error("alongWorkplane must be parallel, acrossX or acrossY");
+        }
+        if (alongWorkplane && (params.axis !== undefined || params.rotationX !== undefined || params.rotationY !== undefined || params.rotationZ !== undefined)) {
+          throw new Error("alongWorkplane sets the axis and the tilt itself - leave out axis and rotationX/Y/Z");
+        }
+        const workplane = placementWorkplaneRef.current;
+        const workplaneDirection = alongWorkplane === "parallel" ? workplane.normal : alongWorkplane === "acrossX" ? workplane.xAxis : alongWorkplane === "acrossY" ? workplane.zAxis : null;
+        const workplaneOrientation = workplaneDirection ? splitOrientationForNormal([workplaneDirection.x, workplaneDirection.y, workplaneDirection.z]) : null;
+        const axis = workplaneOrientation?.axis ?? (params.axis === undefined ? "y" : splitAxisFromLabel(mcpString(params.axis, "")));
         if (!axis) throw new Error("axis must be x, y or z");
         // Angles come named in the panel's axes (Z up); the one the plane cuts across has nothing to turn.
         if (params[`rotation${splitAxisLabel(axis)}`] !== undefined) throw new Error(`rotation${splitAxisLabel(axis)} turns the plane in place - use the other two axes for an angled ${splitAxisLabel(axis).toLowerCase()} cut`);
         const rotationAxes = splitRotationAxes(axis);
         const rotationAbout = (rotationAxis: AlignAxis) => Math.max(-180, Math.min(180, mcpNumber(params[`rotation${splitAxisLabel(rotationAxis)}`], 0)));
-        const rotation: SplitRotation = [rotationAbout(rotationAxes[0]), rotationAbout(rotationAxes[1])];
+        const rotation: SplitRotation = workplaneOrientation?.rotation ?? [rotationAbout(rotationAxes[0]), rotationAbout(rotationAxes[1])];
         const points = targets.flatMap((shape) => meshForShape(shape).vertices);
         const range = modelSplitPlane(points, axis, undefined, rotation);
         if (!range) throw new Error("The objects have no printable geometry to split");
-        const requestedPosition = params.position === undefined ? undefined : mcpNumber(params.position, range.position);
+        // Along the workplane the plane goes through its origin where that crosses the objects, as in the panel.
+        const throughWorkplane = workplaneOrientation
+          ? range.normal[0] * workplane.origin.x + range.normal[1] * workplane.origin.y + range.normal[2] * workplane.origin.z
+          : undefined;
+        const workplanePosition = throughWorkplane !== undefined && throughWorkplane > range.min + 1e-6 && throughWorkplane < range.max - 1e-6
+          ? snapSplitPositionToVertices(points, range.normal, throughWorkplane)
+          : undefined;
+        const requestedPosition = params.position === undefined ? workplanePosition : mcpNumber(params.position, range.position);
         if (requestedPosition !== undefined && (requestedPosition <= range.min || requestedPosition >= range.max)) {
           throw new Error(`position must lie inside the objects, between ${Number(range.min.toFixed(3))} and ${Number(range.max.toFixed(3))}`);
         }
@@ -9903,7 +10511,8 @@ export function LayerlingEditor({
       if (command.action === "apply_edge_treatment") {
         const target = findShape(params.id);
         if (!target) throw new Error("Object not found");
-        if (isNonSolidShapeKind(target.kind)) throw new Error("A ruler isn't a solid and has no edges to treat");
+        if (isNonSolidShape(target)) throw new Error("A ruler isn't a solid and has no edges to treat");
+        if (target.locked) throw new Error("Unlock the object before treating its edges");
         return applyCadModifierForMcp(target, params);
       }
 
@@ -9919,27 +10528,39 @@ export function LayerlingEditor({
           : current?.enabled && current.axis === axis
             ? current.offset
             : getSectionBounds(currentShapes(), axis, workspaceSettings.width, workspaceSettings.depth).center;
+        // The section as it is set, turned to the workplane or the view (#644): only when no axis or offset is given.
+        const frame = axisParam === undefined && params.offset === undefined && current?.enabled ? current.frame ?? null : null;
         const readPoint = (value: unknown, name: string): [number, number, number] => {
           if (!value || typeof value !== "object") throw new Error(`${name} must be an object with x, z and elevation`);
           const point = value as Record<string, unknown>;
           const x = mcpNumber(point.x, axis === "x" ? offset : 0);
           const z = mcpNumber(point.z, axis === "z" ? offset : 0);
           const elevation = mcpNumber(point.elevation, axis === "y" ? offset : 0);
+          if (frame) return sectionPointToFrame([x, elevation, z], frame);
           return [axis === "x" ? offset : x, axis === "y" ? offset : elevation, axis === "z" ? offset : z];
         };
         const radius = Math.max(0, mcpNumber(params.snapRadius, 1));
-        const loops = await sectionContours(axis, offset);
+        const loops = await sectionContours(axis, offset, frame);
         if (loops.length === 0) throw new Error(t("status.sectionSvgMissed"));
         const from = snapSectionPoint(projectSectionPoint(readPoint(params.from, "from"), axis), loops, radius);
         const to = snapSectionPoint(projectSectionPoint(readPoint(params.to, "to"), axis), loops, radius, from.point);
         const measured = sectionMeasurement(from.point, to.point, axis, offset, loops);
+        const inWorld = (point: { u: number; v: number }) => sectionPointFromFrame(sectionPointToWorld(point, axis, offset), frame);
         const asEditor = (point: { u: number; v: number }) => {
-          const [x, y, z] = sectionPointToWorld(point, axis, offset);
+          const [x, y, z] = inWorld(point);
           return { x: Number(x.toFixed(4)), z: Number(z.toFixed(4)), elevation: Number(y.toFixed(4)) };
         };
+        if (frame) {
+          const [ax, ay, az] = inWorld(from.point);
+          const [bx, by, bz] = inWorld(to.point);
+          measured.deltaX = bx - ax;
+          measured.deltaHeight = by - ay;
+          measured.deltaDepth = bz - az;
+        }
         return {
           axis,
           offset,
+          ...(frame ? { orientation: current?.orientation ?? "world" } : {}),
           outlines: loops.length,
           from: { ...asEditor(from.point), snap: from.kind },
           to: { ...asEditor(to.point), snap: to.kind },
@@ -9963,7 +10584,7 @@ export function LayerlingEditor({
         }
         const angle = workspaceSettingsRef.current.overhangAngle;
         const requestedIds = mcpStringArray(params.ids ?? params.id);
-        const solids = currentShapes().filter((shape) => !shape.hidden && !shape.hole && !isNonSolidShapeKind(shape.kind)
+        const solids = currentShapes().filter((shape) => !shape.hidden && !shape.hole && !isNonSolidShape(shape)
           && (requestedIds.length === 0 || requestedIds.includes(shape.id)));
         const objects = solids.map((shape) => {
           const parts = expandBundles([shape]).filter((part) => !part.hole && !part.hidden);
@@ -10106,14 +10727,34 @@ export function LayerlingEditor({
         const axis = params.axis === undefined ? undefined : mcpString(params.axis, "x").toLowerCase();
         if (axis !== undefined && axis !== "x" && axis !== "y" && axis !== "z") throw new Error("axis must be x, y or z");
         const offset = params.offset === undefined ? undefined : mcpNumber(params.offset, 0);
+        const orientation = params.orientation === undefined ? undefined : mcpString(params.orientation, "world").toLowerCase();
+        if (orientation !== undefined && orientation !== "world" && orientation !== "workplane" && orientation !== "view") {
+          throw new Error("orientation must be world, workplane or view");
+        }
         const result = window.layerlingSectionView({
           ...(typeof params.enabled === "boolean" ? { enabled: params.enabled } : {}),
+          ...(orientation ? { orientation: orientation as SectionOrientation } : {}),
           ...(axis ? { axis: axis as SectionPlaneAxis } : {}),
           ...(offset !== undefined ? { offset } : {}),
           ...(typeof params.flipped === "boolean" ? { flipped: params.flipped } : {}),
           ...(typeof params.showPlane === "boolean" ? { showPlane: params.showPlane } : {}),
           ...(params.center === true ? { center: true } : {}),
         });
+        return result;
+      }
+
+      if (command.action === "saved_view") {
+        if (!window.layerlingSavedViews) throw new Error("Saved views are not available in this editor");
+        const slotOf = (value: unknown) => {
+          const key = String(value);
+          const slot = SAVED_VIEW_KEYS.indexOf(key as (typeof SAVED_VIEW_KEYS)[number]);
+          if (slot < 0) throw new Error("key must be 7, 8, 9 or 0");
+          return slot;
+        };
+        const save = params.save === undefined ? undefined : slotOf(params.save);
+        const show = params.show === undefined ? undefined : slotOf(params.show);
+        const result = window.layerlingSavedViews({ ...(save !== undefined ? { save } : {}), ...(show !== undefined ? { show } : {}) });
+        if (show !== undefined && !result.shown) throw new Error(`No view is saved under ${SAVED_VIEW_KEYS[show]}; save one first with save: "${SAVED_VIEW_KEYS[show]}"`);
         return result;
       }
 
@@ -10176,7 +10817,8 @@ export function LayerlingEditor({
           : current?.enabled && current.axis === axis
             ? current.offset
             : getSectionBounds(currentShapes(), axis, workspaceSettings.width, workspaceSettings.depth).center;
-        const built = await buildSectionSvg(axis, offset);
+        const frame = axisParam === undefined && params.offset === undefined && current?.enabled ? current.frame ?? null : null;
+        const built = await buildSectionSvg(axis, offset, frame);
         return {
           axis,
           offset,
@@ -10225,18 +10867,57 @@ export function LayerlingEditor({
       if (command.action === "export_mesh") {
         // The file the export window writes as STL, 3MF or OBJ, from the same bodies: visible solids only, loose
         // holes taken off, overlapping bodies merged (STL) or separated by colour (3MF, OBJ), and the tiny loose
-        // pieces left out. ids limit it to those objects (holes still cut).
+        // pieces left out. ids limit it to those objects (holes still cut). SVG is the top view the window writes:
+        // the silhouette from above, with view "footprint" only the outlines standing on the workplane (#692), or with
+        // view "edges" the edges seen from above (#591); a design with too many of them gets the silhouette, and
+        // the answer says `fellBack`.
         const format = params.format === undefined ? "stl" : mcpString(params.format, "stl").toLowerCase();
-        if (format !== "stl" && format !== "3mf" && format !== "obj") throw new Error("format must be stl, 3mf or obj");
+        if (format !== "stl" && format !== "3mf" && format !== "obj" && format !== "svg" && format !== "dxf") throw new Error("format must be stl, 3mf, obj, svg or dxf");
+        const svgView = params.view === undefined ? "silhouette" : mcpString(params.view, "silhouette").toLowerCase();
+        if (svgView !== "silhouette" && svgView !== "footprint" && svgView !== "edges") throw new Error("view must be silhouette, footprint or edges");
+        if (format === "dxf" && svgView === "edges") throw new Error("A DXF for laser cutting has no edges view: inner edges would be cut. Use silhouette or footprint");
         const ids = Array.isArray(params.ids) ? params.ids.filter((id): id is string => typeof id === "string") : [];
         const all = currentShapes();
         const chosen = ids.length ? all.filter((shape) => ids.includes(shape.id)) : all;
         if (ids.length && chosen.length === 0) throw new Error("None of the ids is an object in this design");
         const scoped = ids.length ? [...chosen, ...all.filter((shape) => shape.hole && !chosen.some((picked) => picked.id === shape.id))] : chosen;
         const { visible, hiddenNote } = visibleExportShapes(scoped);
-        if (!visible.some((shape) => !shape.hole && !isNonSolidShapeKind(shape.kind))) throw new Error(t(hiddenNote ? "status.exportOnlyHidden" : "status.addSolidBeforeExport"));
+        if (!visible.some((shape) => !shape.hole && !isNonSolidShape(shape))) throw new Error(t(hiddenNote ? "status.exportOnlyHidden" : "status.addSolidBeforeExport"));
         const invalidSvg = visible.map(invalidSvgMeshReason).find((reason): reason is string => Boolean(reason));
         if (invalidSvg) throw new Error(t("status.svgInvalid", { reason: invalidSvg }));
+        if (format === "dxf") {
+          // For a laser cutting shop (#774): layer 0, colour 7, millimetres, the round parts as arcs and circles.
+          const result = await exportDxf(visible, svgView === "footprint" ? "footprint" : "silhouette");
+          const dxfBytes = new TextEncoder().encode(result.dxf);
+          let dxfBinary = "";
+          for (let index = 0; index < dxfBytes.length; index += 8192) dxfBinary += String.fromCharCode(...dxfBytes.subarray(index, index + 8192));
+          return {
+            format, view: svgView, fileName: projectExportFileName(projectName, "dxf"), bytes: dxfBytes.length,
+            width: Number(result.width.toFixed(3)), depth: Number(result.height.toFixed(3)), ...result.counts,
+            ...(result.openCount > 0 ? { openLeftOut: result.openCount } : {}), base64: btoa(dxfBinary),
+          };
+        }
+        if (format === "svg") {
+          let svg: string;
+          let outlines: number | undefined;
+          let fellBack = false;
+          const edgesSvg = svgView === "edges" ? await visibleEdgesSvg(visible, projectName) : null;
+          if (edgesSvg !== null) {
+            svg = edgesSvg;
+          } else if (svgView === "footprint") {
+            const result = await footprintSvg(visible, projectName);
+            svg = result.svg;
+            outlines = result.loopCount;
+          } else {
+            fellBack = svgView === "edges";
+            const { solids, meshes: cutMeshes, cut } = await exportBodiesWithLooseHoles(visible);
+            svg = await toSvg(solids, projectName, cutMeshes.map((mesh, index) => (cut[index] ? mesh : null)));
+          }
+          const svgBytes = new TextEncoder().encode(svg);
+          let svgBinary = "";
+          for (let index = 0; index < svgBytes.length; index += 8192) svgBinary += String.fromCharCode(...svgBytes.subarray(index, index + 8192));
+          return { format, view: svgView, fileName: projectExportFileName(projectName, "svg"), bytes: svgBytes.length, ...(outlines === undefined ? {} : { outlines }), ...(fellBack ? { fellBack } : {}), base64: btoa(svgBinary) };
+        }
         const { solids: cutSolids, meshes, cut: wasCut, holeCutsFailed } = await exportBodiesWithLooseHoles(visible);
         const joined = await (format === "stl" ? unionOverlappingExportMeshes(cutSolids, meshes, wasCut) : colorSeparatedExportMeshes(cutSolids, meshes, wasCut));
         // A group showing its parts in their own colours keeps them in 3MF and OBJ (#153).
@@ -10698,8 +11379,34 @@ export function LayerlingEditor({
     void run();
   }, [commitShapes]);
 
+  /**
+   * Where a finished export goes: the downloads, or the server folder (#779). A file of that name on the
+   * server is replaced only by a second press on the same name, which the notice asks for, so nothing is
+   * overwritten by one click. Resolves to the server's notice, or null for a download.
+   */
+  const serverExportReplaceRef = useRef("");
+  const deliverExportFile = useCallback(async (fileName: string, content: Blob | string, type: string, toServer: boolean): Promise<string | null> => {
+    const blob = typeof content === "string" ? new Blob([content], { type }) : content;
+    if (!toServer) {
+      await downloadBlobFile(fileName, blob);
+      return null;
+    }
+    if (!onSaveExportFile) throw new Error(t("export.serverUnavailable"));
+    try {
+      const message = await onSaveExportFile({ fileName, blob, overwrite: serverExportReplaceRef.current === fileName });
+      serverExportReplaceRef.current = "";
+      return message;
+    } catch (error) {
+      if ((error as { exists?: boolean }).exists) {
+        serverExportReplaceRef.current = fileName;
+        throw new Error(t("export.serverExists", { name: fileName }));
+      }
+      throw error;
+    }
+  }, [onSaveExportFile]);
+
   /** The view as a picture, from the viewport's own clean capture. */
-  const exportViewImage = useCallback(async (exportName: string, options: ViewImageOptions) => {
+  const exportViewImage = useCallback(async (exportName: string, options: ViewImageOptions, toServer = false) => {
     const dataUrl = window.layerlingCaptureImage?.(options) ?? "";
     const comma = dataUrl.indexOf(",");
     if (!dataUrl.startsWith("data:image/png") || comma < 0) {
@@ -10709,10 +11416,14 @@ export function LayerlingEditor({
     const binary = atob(dataUrl.slice(comma + 1));
     const bytes = new Uint8Array(binary.length);
     for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-    await downloadBlobFile(projectExportFileName(exportName, "png"), new Blob([bytes], { type: "image/png" }));
+    const savedOn = await deliverExportFile(projectExportFileName(exportName, "png"), new Blob([bytes], { type: "image/png" }), "image/png", toServer).catch((error: unknown) => {
+      setNotice(error instanceof Error ? localizedError(error.message) : t("status.imageFailed"), true);
+      return undefined;
+    });
+    if (savedOn === undefined) return;
     setTopPanel(null);
-    setNotice(t("status.imageSaved"));
-  }, [setNotice]);
+    setNotice(savedOn ?? t("status.imageSaved"));
+  }, [deliverExportFile, setNotice]);
 
   /**
    * Was ein Export mitnimmt: im Verlaufsblick den gezeigten Stand, sonst die
@@ -10725,14 +11436,14 @@ export function LayerlingEditor({
     return { shapes: hasSelection ? selectedShapes : shapes, selection: hasSelection };
   }, [hasSelection, selectedShapes, shapes]);
 
-  /** `chooseFile` asks for a new STL even when the design already has one (Save as). */
-  const exportDesign = useCallback(async (format: DirectExportFormat, exportName: string, chooseFile = false) => {
+  /** `chooseFile` asks for a new STL even when the design already has one (Save as). `svgView` picks what an SVG shows (#692). */
+  const exportDesign = useCallback(async (format: DirectExportFormat, exportName: string, chooseFile = false, svgView: SvgExportView = "silhouette", toServer = false) => {
     const source = exportSource();
     const selectionScoped = source.selection;
     // Ausgeblendetes bleibt draussen, wie bei vergleichbaren Programmen: ein beiseitegelegtes
     // Teil soll nicht unbemerkt mitgedruckt werden (Discussion #80).
     const { visible: sourceShapes, hiddenNote } = visibleExportShapes(source.shapes);
-    const exportable = sourceShapes.filter((shape) => !shape.hole && !isNonSolidShapeKind(shape.kind));
+    const exportable = sourceShapes.filter((shape) => !shape.hole && !isNonSolidShape(shape));
     if (exportable.length === 0) {
       setNotice(hiddenNote ? t("status.exportOnlyHidden") : selectionScoped ? t("status.selectSolidBeforeExport") : t("status.addSolidBeforeExport"));
       return;
@@ -10745,20 +11456,59 @@ export function LayerlingEditor({
     const selectedNotice = exportable.length === 1
       ? t("status.exportedSelectedOne")
       : t("status.exportedSelectedMany", { count: exportable.length });
-    const finishNotice = (label: string) => {
+    // `note` adds what the user should know about the file, and keeps the message up a little longer.
+    let savedOn: string | null = null;
+    const finishNotice = (label: string, note = "") => {
       setTopPanel(null);
-      setNotice((selectionScoped
+      setNotice((savedOn ?? (selectionScoped
         ? t("status.exportedSelectedAs", { selected: selectedNotice, label })
-        : t("status.exportedAs", { label })) + hiddenNote);
+        : t("status.exportedAs", { label }))) + hiddenNote + note, note !== "");
+    };
+    const deliver = async (fileName: string, content: Blob | string, type: string) => {
+      savedOn = await deliverExportFile(fileName, content, type, toServer);
     };
     const failNotice = (label: string, error: unknown) => {
       setNotice(error instanceof Error ? localizedError(error.message) : t("status.exportFailed", { label }));
     };
+    if (format === "dxf") {
+      // For a laser cutting shop (#774): lines, arcs and circles on layer 0, in millimetres. The edges view would
+      // turn inner edges into cuts, so it draws the silhouette.
+      setNotice(t("status.buildingDxf"), true);
+      void exportDxf(sourceShapes, svgView === "footprint" ? "footprint" : "silhouette")
+        .then(async (result) => {
+          await deliver(projectExportFileName(exportName, "dxf"), result.dxf, "application/dxf");
+          finishNotice("DXF", dxfExportNote(result));
+        })
+        .catch((error: unknown) => failNotice("DXF", error));
+      return;
+    }
+    if (format === "svg" && svgView === "footprint") {
+      // Only what stands on the workplane: the section a hair above the lowest point (#692).
+      setNotice(t("status.buildingSvg"), true);
+      void footprintSvg(sourceShapes, exportName.trim() || projectName)
+        .then((result) => deliver(projectExportFileName(exportName, "svg"), result.svg, "image/svg+xml;charset=utf-8"))
+        .then(() => finishNotice("SVG"))
+        .catch((error: unknown) => failNotice("SVG", error));
+      return;
+    }
+    const silhouetteSvg = () => exportBodiesWithLooseHoles(sourceShapes)
+      .then(({ solids: cutSolids, meshes, cut }) => toSvg(cutSolids, exportName.trim() || projectName, meshes.map((mesh, index) => (cut[index] ? mesh : null))));
+    if (format === "svg" && svgView === "edges") {
+      // The edges seen from above (#591); a design too large for them gets the silhouette, and the notice says so.
+      setNotice(t("status.buildingSvg"), true);
+      void visibleEdgesSvg(sourceShapes, exportName.trim() || projectName)
+        .then(async (edges) => {
+          const content = edges ?? await silhouetteSvg();
+          await deliver(projectExportFileName(exportName, "svg"), content, "image/svg+xml;charset=utf-8");
+          finishNotice("SVG", edges === null ? t("status.svgEdgesTooComplex") : "");
+        })
+        .catch((error: unknown) => failNotice("SVG", error));
+      return;
+    }
     if (format === "svg") {
       setNotice(t("status.buildingSvg"), true);
-      void exportBodiesWithLooseHoles(sourceShapes)
-        .then(({ solids: cutSolids, meshes, cut }) => toSvg(cutSolids, exportName.trim() || projectName, meshes.map((mesh, index) => (cut[index] ? mesh : null))))
-        .then((content) => downloadTextFile(projectExportFileName(exportName, "svg"), content, "image/svg+xml;charset=utf-8"))
+      void silhouetteSvg()
+        .then((content) => deliver(projectExportFileName(exportName, "svg"), content, "image/svg+xml;charset=utf-8"))
         .then(() => finishNotice("SVG"))
         .catch((error: unknown) => failNotice("SVG", error));
       return;
@@ -10784,7 +11534,8 @@ export function LayerlingEditor({
     // where it cannot ask, the download stays.
     const designId = projectId ?? "";
     let target: LylFileHandle | "download" = "download";
-    if (format === "stl" && lylFileAccessSupported()) {
+    // With "Save STL as a download" the browser hands out the files, and numbers them (#731).
+    if (format === "stl" && !toServer && lylFileAccessSupported() && !workspaceSettingsRef.current.stlAsDownload) {
       try {
         const linkedBefore = linkedStlFile(designId);
         // A name typed in the window that is not the linked file's asks for a file of its own (reported by mail, 15.10.2026).
@@ -10812,7 +11563,7 @@ export function LayerlingEditor({
         if (format === "stl") {
           const bytes = new Uint8Array(exportMeshesToStl(fertig));
           if (target === "download") {
-            await downloadBlobFile(projectExportFileName(exportName, "stl"), new Blob([bytes], { type: "model/stl" }));
+            await deliver(projectExportFileName(exportName, "stl"), new Blob([bytes], { type: "model/stl" }), "model/stl");
           } else {
             await writeLylFile(target, bytes).catch(() => {
               // Gone, moved or locked: the next STL export asks for a file again.
@@ -10827,10 +11578,10 @@ export function LayerlingEditor({
             return { ...mesh, name: source?.name || mesh.name, color: source?.color, faceColors: partFaceColors(mesh, quellen[index]) };
           });
           const bytes = exportMeshesTo3mf(bodies, { title: exportName.trim() || projectName });
-          await downloadBlobFile(projectExportFileName(exportName, "3mf"), new Blob([bytes as BlobPart], { type: THREE_MF_MEDIA_TYPE }));
+          await deliver(projectExportFileName(exportName, "3mf"), new Blob([bytes as BlobPart], { type: THREE_MF_MEDIA_TYPE }), THREE_MF_MEDIA_TYPE);
         } else {
           const bodies = fertig.map((mesh, index) => ({ ...mesh, color: bodiesWritten[quellen[index]]?.color, faceColors: partFaceColors(mesh, quellen[index]) }));
-          await downloadTextFile(projectExportFileName(exportName, "obj"), exportMeshesToObj(bodies), "text/plain");
+          await deliver(projectExportFileName(exportName, "obj"), exportMeshesToObj(bodies), "text/plain");
         }
         // The file is written either way; the notice below only adds a caveat.
         setTopPanel(null);
@@ -10839,13 +11590,13 @@ export function LayerlingEditor({
         const splinterNote = splinters > 0 ? ` ${t("status.exportSplinters", { count: splinters })}` : "";
         if (gescheitert > 0) setNotice(t("status.exportUnionFailed"), true);
         else if (bedPrinter && exportOverhangs.length > 0) setNotice(bedOverhangMessage(exportOverhangs, `${bedPrinter.vendor} ${bedPrinter.model}`), true);
-        else if (verschmolzen > 0) setNotice(t("status.exportUnioned", { count: verschmolzen, label }) + hiddenNote + splinterNote);
+        else if (verschmolzen > 0) setNotice(t("status.exportUnioned", { count: verschmolzen, label }) + (savedOn ? ` ${savedOn}` : "") + hiddenNote + splinterNote);
         else if (savedFile) setNotice(t("status.stlSavedToFile", { name: savedFile.name }) + hiddenNote + splinterNote);
-        else if (splinters > 0) setNotice(t("status.exportSplinters", { count: splinters }));
+        else if (splinters > 0) setNotice((savedOn ? `${savedOn} ` : "") + t("status.exportSplinters", { count: splinters }));
         else finishNotice(label);
       })
       .catch((error: unknown) => failNotice(label, error));
-  }, [bedPrinter, exportSource, projectId, projectName]);
+  }, [bedPrinter, deliverExportFile, exportSource, projectId, projectName]);
 
   /**
    * The drawing of a set of bodies, from the same bodies as the export (visible solids, holes taken
@@ -10857,14 +11608,14 @@ export function LayerlingEditor({
       ? [...source.shapes, ...allShapes.filter((shape) => shape.hole && !source.shapes.some((selected) => selected.id === shape.id))]
       : source.shapes;
     const { visible, hiddenNote } = visibleExportShapes(scopedShapes);
-    if (!visible.some((shape) => !shape.hole && !isNonSolidShapeKind(shape.kind))) return { drawing: null, hiddenNote };
+    if (!visible.some((shape) => !shape.hole && !isNonSolidShape(shape))) return { drawing: null, hiddenNote };
     const { generateDrawing } = await import("@/lib/drawingExport");
     const { meshes, holeCutsFailed } = await exportBodiesWithLooseHoles(visible);
     if (holeCutsFailed) throw new Error(t("status.drawingHoleCutFailed"));
     return { drawing: generateDrawing(meshes, title, drawingLabelsInLanguage()), hiddenNote };
   }, []);
 
-  const exportDrawingDesign = useCallback(async (exportName: string, format: "svg" | "pdf") => {
+  const exportDrawingDesign = useCallback(async (exportName: string, format: "svg" | "pdf", toServer = false) => {
     if (drawingExporting) return;
     const source = exportSource();
     setDrawingExporting(true);
@@ -10878,18 +11629,19 @@ export function LayerlingEditor({
       }
       const { drawingToSvg, drawingToPdf } = await import("@/lib/drawingExport");
       const filename = projectExportFileName(`${title} drawing`, format);
-      if (format === "svg") await downloadTextFile(filename, drawingToSvg(drawing), "image/svg+xml;charset=utf-8");
-      else await downloadBlobFile(filename, new Blob([drawingToPdf(drawing) as BlobPart], { type: "application/pdf" }));
+      const savedOn = format === "svg"
+        ? await deliverExportFile(filename, drawingToSvg(drawing), "image/svg+xml;charset=utf-8", toServer)
+        : await deliverExportFile(filename, new Blob([drawingToPdf(drawing) as BlobPart], { type: "application/pdf" }), "application/pdf", toServer);
       setTopPanel(null);
-      setNotice(t("status.exportedDrawing", { format: format.toUpperCase() }) + hiddenNote);
+      setNotice((savedOn ?? t("status.exportedDrawing", { format: format.toUpperCase() })) + hiddenNote);
     } catch (error) {
       setNotice(error instanceof Error ? localizedError(error.message) : t("status.drawingFailed"), true);
     } finally {
       setDrawingExporting(false);
     }
-  }, [buildDrawing, drawingExporting, exportSource, projectName, shapes]);
+  }, [buildDrawing, deliverExportFile, drawingExporting, exportSource, projectName, shapes]);
 
-  const exportStepDesign = useCallback(async (exportName: string) => {
+  const exportStepDesign = useCallback(async (exportName: string, toServer = false) => {
     if (stepExporting) {
       return;
     }
@@ -10908,14 +11660,14 @@ export function LayerlingEditor({
       const { exportShapesToStep } = await import("@/lib/stepExport");
       const { blob, exportedCount, skipped } = await exportShapesToStep(sourceShapes);
       const text = await blob.text();
-      await downloadTextFile(projectExportFileName(exportName, "step"), text, "application/step");
+      const savedOn = await deliverExportFile(projectExportFileName(exportName, "step"), text, "application/step", toServer);
       setTopPanel(null);
       if (skipped.length > 0) console.info("layerling: STEP export skipped", skipped);
       // Name what was left out and why, so it is not missed (#184).
       const named = skipped.slice(0, 3).map((entry) => t("status.exportStepSkippedItem", { name: entry.name, reason: t(`status.exportStepSkip.${entry.code}`) }));
       const more = skipped.length > 3 ? t("status.exportStepSkippedMore", { count: skipped.length - 3 }) : "";
       const skipNote = skipped.length === 0 ? "" : t("status.exportStepSkippedList", { list: named.join(", ") + more });
-      setNotice((exportedCount === 1
+      setNotice((savedOn ? `${savedOn} ` : "") + (exportedCount === 1
         ? t("status.exportedStepOne", { skipNote })
         : t("status.exportedStepMany", { count: exportedCount, skipNote })) + hiddenNote);
     } catch (error: unknown) {
@@ -10929,7 +11681,7 @@ export function LayerlingEditor({
     } finally {
       setStepExporting(false);
     }
-  }, [exportSource, projectName, stepExporting]);
+  }, [deliverExportFile, exportSource, projectName, stepExporting]);
 
   const exportLylDesign = useCallback(async (exportName: string, historyLimit: LylHistoryLimit, target: LylExportTarget = "download") => {
     if (lylExporting) return;
@@ -11591,10 +12343,20 @@ export function LayerlingEditor({
 
       if (sketchActive && toolbarMode === "sketch") {
         if (event.key === "Escape") {
+          // A crop, a calibration or the mirror panel that closes with this key is all it does.
+          if (escapeWasHandled(event)) return;
           event.preventDefault();
-          setSketchActivePointId(null);
-          setSketchSelection(null);
-          setNotice(t("status.sketchChainCleared"));
+          // As in 3D: first the tool goes down, then the selection (#664).
+          if (noteMode) {
+            setNoteMode(false);
+            setNotice("");
+          } else if (sketchEscapeAction(sketchTool) === "selectTool") {
+            setActiveSketchTool("select");
+          } else {
+            setSketchActivePointId(null);
+            setSketchSelection(null);
+            setNotice(t("status.sketchSelectionCleared"));
+          }
         } else if (event.key === "Delete" || event.key === "Backspace") {
           event.preventDefault();
           if (sketchSelection) deleteSelectedSketchEntity();
@@ -11624,7 +12386,12 @@ export function LayerlingEditor({
           rotateSelectedClosedSketch45();
         } else if (!shortcut && !event.altKey && (event.code === "KeyL" || key === "l")) {
           event.preventDefault();
-          toggleSelectedSketchImageLock();
+          // L locks what is selected: the template image, or an outline (#653).
+          if (sketchSelection && sketchSelection.kind !== "image") toggleSketchOutlineLock();
+          else toggleSelectedSketchImageLock();
+        } else if (!shortcut && !event.altKey && (event.code === "KeyN" || key === "n")) {
+          event.preventDefault();
+          toggleNoteTool();
         }
         return;
       }
@@ -11773,7 +12540,7 @@ export function LayerlingEditor({
 
       if (shortcut && key === "a") {
         event.preventDefault();
-        setSelectedIds(shapes.filter((shape) => !shape.hidden).map((shape) => shape.id));
+        setSelectedIds(shapes.filter((shape) => !shape.hidden && !shape.imagePlate).map((shape) => shape.id));
         setNotice(t("status.selectedAllVisible"));
         return;
       }
@@ -11843,7 +12610,7 @@ export function LayerlingEditor({
       // Follows the Snap Grid so a keyboard nudge lands on the same lattice
       // a pointer drag snaps to. Falls back to the old millimetre when the
       // grid is off.
-      const step = keyboardNudgeStep(snapGridRef.current, event.shiftKey, keyboardNudgeCoarseFactor(workspaceSettingsRef.current));
+      const step = keyboardNudgeStep(snapGridRef.current, event.shiftKey, keyboardNudgeCoarseFactor(workspaceSettingsRef.current), event.altKey);
       if (shortcut && event.key === "ArrowUp") {
         event.preventDefault();
         raiseSelected(step);
@@ -11936,6 +12703,8 @@ export function LayerlingEditor({
     sketchRedo,
     sketchMeasurement,
     sketchSelection,
+    sketchTool,
+    setActiveSketchTool,
     sketchUndo,
     splitSession,
     setSelectionHoleMode,
@@ -11949,6 +12718,7 @@ export function LayerlingEditor({
     startEdgeModifier,
     toggleLocked,
     toggleSelectedSketchImageLock,
+    toggleSketchOutlineLock,
     toolbarMode,
     undo,
     ungroupSelected,
@@ -12011,6 +12781,17 @@ export function LayerlingEditor({
     setMultiSelect(true);
     setNotice(t("status.selectMultipleStart"), true);
   };
+  // The same as the key C, for a tablet without a keyboard: the selection follows the pointer, and a tap sets it down.
+  const startCarry = () => {
+    if (!hasSelection) return;
+    if (selectedShapes.some((shape) => shape.locked)) {
+      setNotice(t("status.objectLocked"));
+      return;
+    }
+    setCruiseAsset(null);
+    setCarryIds(selectedIds);
+    setNotice(t("status.carryPlace"));
+  };
   const endMultiSelect = useCallback(() => {
     setMultiSelect(false);
     setNotice(t("status.selectMultipleEnd"));
@@ -12033,6 +12814,7 @@ export function LayerlingEditor({
         { key: "selectMultiple", label: t("contextMenu.selectMultiple"), onSelect: startMultiSelect },
       ];
       if (shapes.some((shape) => shape.hidden)) items.push({ key: "showHidden", label: t("contextMenu.showHidden"), shortcut: "Ctrl+Shift+H", onSelect: showHidden });
+      if (referencePoints(notes).length > 0) items.push({ key: "removePoints", label: t("contextMenu.removeAllPoints", { count: referencePoints(notes).length }), danger: true, separated: true, onSelect: removeAllReferencePoints });
       return items;
     }
     const allHoles = selectedShapes.every((shape) => shape.hole);
@@ -12058,7 +12840,7 @@ export function LayerlingEditor({
         { key: "hollow", label: t("editor.tool.hollow"), onSelect: startShellTool },
         { key: "deleteFace", label: t("editor.tool.deleteFace"), onSelect: startDeleteFaceTool },
       );
-      if (!single.hole && !isNonSolidShapeKind(single.kind)) {
+      if (!single.hole && !isNonSolidShape(single)) {
         items.push({ key: "holePattern", label: t("holePattern.title"), onSelect: toggleHolePattern });
         items.push({ key: "faceTool", label: t("faceTool.title"), onSelect: toggleFaceTool });
       }
@@ -12081,6 +12863,7 @@ export function LayerlingEditor({
     items.push(
       { key: "hide", label: t("contextMenu.hide"), shortcut: "Ctrl+H", separated: true, onSelect: toggleHidden },
       { key: "lock", label: t(allLocked ? "contextMenu.unlock" : "contextMenu.lock"), shortcut: "Ctrl+L", onSelect: toggleLocked },
+      ...(selectionLocked ? [] : [{ key: "carry", label: t("contextMenu.carry"), shortcut: "C", onSelect: startCarry }]),
       ...(selectionLocked ? [] : [{ key: "drop", label: t("contextMenu.drop"), shortcut: "D", onSelect: dropSelectedToWorkplane }]),
       ...(selectionLocked ? [] : [{ key: "delete", label: t("common.delete"), shortcut: t("contextMenu.deleteKey"), danger: true, separated: true, onSelect: deleteSelected }]),
     );
@@ -12109,8 +12892,8 @@ export function LayerlingEditor({
         canHistoryView={historyViewIndex !== null || (!splitSession && !projectInteractionActive && !edgeModifier && !deleteFaceTool && !openGroup && history.length > 1)}
         historyViewActive={historyViewIndex !== null}
         onHistoryView={historyViewIndex === null ? openHistoryView : closeHistoryView}
-        canGroup={!selectionLocked && selectedShapes.length > 1 && selectedShapes.every((shape) => !isNonSolidShapeKind(shape.kind))}
-        canIntersect={!selectionLocked && canIntersectShapes(selectedShapes.filter((shape) => !isNonSolidShapeKind(shape.kind)))}
+        canGroup={!selectionLocked && selectedShapes.length > 1 && selectedShapes.every((shape) => !isNonSolidShape(shape))}
+        canIntersect={!selectionLocked && canIntersectShapes(selectedShapes.filter((shape) => !isNonSolidShape(shape)))}
         canUngroup={!selectionLocked && selectedShapes.some((shape) => Boolean(shape.groupedShapes?.length) || wasGroupBeforeEdgeTreatments(shape))}
         canModifySelection={hasSelection && !selectionLocked}
         hasClipboard={clipboard.length > 0 || systemClipboardSupported}
@@ -12120,7 +12903,7 @@ export function LayerlingEditor({
         alignMode={alignMode}
         // A locked shape in the selection is the anchor the others line up on, so Align stays.
         canAlign={selectedShapes.length > 1 && selectedShapes.some((shape) => !shape.locked)}
-        canEdgeModify={selectedShapes.length === 1 && Boolean(selectedShape && !selectedShape.locked && !selectedShape.hole && !isNonSolidShapeKind(selectedShape.kind))}
+        canEdgeModify={selectedShapes.length === 1 && Boolean(selectedShape && !selectedShape.locked && !selectedShape.hole && !isNonSolidShape(selectedShape))}
         edgeModifierKind={edgeModifier?.kind ?? null}
         mirrorMode={mirrorMode}
         canSplit={canSplitSelection}
@@ -12138,6 +12921,8 @@ export function LayerlingEditor({
         onSketchCornerDialog={setSketchCornerDialog}
         sketchConstruction={sketchConstruction}
         onSketchConstruction={toggleSketchConstruction}
+        sketchFromMiddle={sketchFromMiddle}
+        onSketchFromMiddle={toggleSketchFromMiddle}
         sketchStrokeActive={sketchStrokePanelOpen || Boolean(sketchProfile.stroke)}
         onSketchStroke={() => setSketchStrokePanelOpen((open) => !open)}
         onStartSketch={(operation) => beginSketch(operation)}
@@ -12175,10 +12960,10 @@ export function LayerlingEditor({
         mateFacesActive={Boolean(mateTool)}
         onHolePattern={toggleHolePattern}
         holePatternActive={Boolean(holePatternTool)}
-        canHolePattern={selectedShapes.length === 1 && Boolean(selectedShape && !selectedShape.locked && !selectedShape.hole && !isNonSolidShapeKind(selectedShape.kind))}
+        canHolePattern={selectedShapes.length === 1 && Boolean(selectedShape && !selectedShape.locked && !selectedShape.hole && !isNonSolidShape(selectedShape))}
         onFaceTool={toggleFaceTool}
         faceToolActive={Boolean(faceTool)}
-        canFaceTool={selectedShapes.length === 1 && Boolean(selectedShape && !selectedShape.locked && !selectedShape.hole && !isNonSolidShapeKind(selectedShape.kind))}
+        canFaceTool={selectedShapes.length === 1 && Boolean(selectedShape && !selectedShape.locked && !selectedShape.hole && !isNonSolidShape(selectedShape))}
         onGroup={groupSelected}
         onBundle={bundleSelected}
         onIntersect={intersectSelected}
@@ -12197,6 +12982,7 @@ export function LayerlingEditor({
         onArray={toggleArrayTool}
         arrayActive={Boolean(arrayTool)}
         onScalePercent={toggleScalePercentTool}
+        onCarryOntoFace={startCarry}
         scalePercentActive={Boolean(scalePercentTool)}
         rotationPivotActive={pivotPickMode || Boolean(activeRotationPivot)}
         onSplit={toggleSplitMode}
@@ -12278,6 +13064,7 @@ export function LayerlingEditor({
           }
           addShape(shape);
         }}
+        shapeCustomizations={workspaceSettings.shapeCustomizations}
       />
       <div className="editor-body">
         {outlinerOpen ? (
@@ -12298,6 +13085,8 @@ export function LayerlingEditor({
           <SketchWorkspace
             profile={sketchProfile}
             operation={sketchOperation}
+            onOperationChange={switchSketchOperation}
+            onSweepAnchorChange={setSketchSweepAnchor}
             revolvePreviewPositions={sketchRevolvePreview?.positions ?? null}
             referenceShapes={sketchReferenceShapes.filter((shape) => shape.id !== editingSketchShapeId)}
             referenceSlices={sketchReferenceSlices}
@@ -12313,7 +13102,15 @@ export function LayerlingEditor({
             onSnapChange={(snap) => updateProjectWorkspaceSettings({ workspace: workspaceSettingsRef.current, snap })}
             initialWorkspace={workspaceSettings}
             onPlanePoint={addSketchPlanePoint}
+            notes={notesVisible ? sketchNotes.notes : undefined}
+            noteNumbers={sketchNotes.numbers}
+            noteMode={noteMode}
+            onAddNote={sketchNotes.add}
+            onUpdateNote={sketchNotes.update}
+            onRemoveNote={sketchNotes.remove}
+            fromMiddle={sketchFromMiddle}
             onAddPrimitive={addSketchPrimitive}
+            onAddArc={addSketchArc}
             onPointPress={pressSketchPoint}
             onFinishLine={() => setSketchActivePointId(null)}
             onSelectSegment={(id) => {
@@ -12347,12 +13144,14 @@ export function LayerlingEditor({
             onDeletePoint={deleteSketchPoint}
             onDeleteSegment={deleteSketchSegment}
             onMovePoint={moveSketchPoint}
+            onToggleOutlineLock={toggleSketchOutlineLock}
             onTransformPoints={transformSketchPoints}
             onMoveHandle={moveSketchHandle}
             onSelectTool={chooseSketchTool}
             onEraseMany={eraseSketchMany}
             onInsertPoint={insertSketchPoint}
             onSetPointMode={setSketchPointMode}
+            onSetPointsMode={setSketchPointsMode}
             onCurveSegment={curveSketchSegmentAction}
             onCurveSegments={curveSketchSegmentsAction}
             onMirror={mirrorSketchSelectionAction}
@@ -12437,6 +13236,7 @@ export function LayerlingEditor({
           onSeparateParts={separateSelectedParts}
           onSelectionHole={setSelectionHoleMode}
           onSelectionColor={setSelectionColor}
+          onSelectionUpdateShapes={updateShapesTogether}
           onSelectionLock={toggleLocked}
           onSelectionHide={toggleHidden}
           onWrapAroundCylinder={selectedShapes.length === 1 && offersCylinderWrap(selectedShape) ? wrapSelectionAroundCylinder : undefined}
@@ -12445,9 +13245,11 @@ export function LayerlingEditor({
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !selectedShape.locked ? () => layOutVaseAccessories(selectedShape.id) : undefined}
           onLayerText={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? layerSelectedText : undefined}
           onTextTags={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? makeTextTags : undefined}
+          onFixKeyringTab={selectedShapes.length === 1 && selectedShape?.keyringTab && !historyViewState ? () => void fixKeyringTab() : undefined}
           textLayerStack={selectedNameTag}
           iconTag={historyViewState ? null : iconTagControls}
           qrCode={historyViewState ? null : qrCodeControls}
+          referenceImage={referenceImageControls}
           toolMemory={viewportToolMemoryRef}
           prepareNewShape={prepareNewShape}
           onUpdateShape={updateShape}
@@ -12460,6 +13262,8 @@ export function LayerlingEditor({
           rotationPivot={activeRotationPivot}
           pivotPickMode={pivotPickMode}
           onPivotPick={pickRotationPivot}
+          imageCalibrationId={imageCalibration && imageCalibration.points.length < 2 ? imageCalibration.id : null}
+          onImageCalibrationPoint={addImageCalibrationPoint}
           layFlatPickMode={layFlatPickMode}
           onLayFlatPick={layFlatOnFace}
           mateFacePick={mateTool && mateTool.step !== "ready"
@@ -12480,18 +13284,19 @@ export function LayerlingEditor({
           onNoteModeChange={setNoteMode}
           onWorkspaceSettingsChange={updateProjectWorkspaceSettings}
           onWorkplaneModeChange={closeViewportWorkplaneMode}
+          onNotice={setNotice}
           modifierActive={Boolean(edgeModifier)}
           modifierPreviewActive={Boolean(edgeModifier?.preview)}
-          modifierEdges={edgeModifier?.edges.filter((edge) => modifierCandidateEdgeIds.includes(edge.id)) ?? []}
+          modifierEdges={modifierDisplayEdges}
           modifierHighlightedEdgeIds={modifierAvailableEdgeIds}
-          selectedModifierEdgeIds={edgeModifier?.selectedEdgeIds ?? []}
-          failedModifierEdgeIds={edgeModifier?.error ? edgeModifier.failedEdgeIds ?? [] : []}
+          selectedModifierEdgeIds={edgeModifier?.selectedEdgeIds ?? NO_EDGE_IDS}
+          failedModifierEdgeIds={edgeModifier?.error ? edgeModifier.failedEdgeIds ?? NO_EDGE_IDS : NO_EDGE_IDS}
           modifierOnlyVisibleEdges={edgeModifier?.onlyVisibleEdges ?? false}
           onModifierEdgeToggle={toggleModifierEdge}
           themePreference={themePreference}
           resolvedTheme={resolvedTheme}
           onThemePreferenceChange={onThemePreferenceChange}
-          onExportSectionSvg={(axis, offset) => void exportSectionSvg(axis, offset)}
+          onExportSectionSvg={(axis, offset, frame) => void exportSectionSvg(axis, offset, frame)}
           onSectionContours={sectionContours}
           onSectionBodies={sectionBodies}
           />
@@ -12545,6 +13350,9 @@ export function LayerlingEditor({
         <div className="bed-overhang-warning" role="status">
           <AlertTriangle size={16} aria-hidden="true" />
           <span>{overhangWarning}</span>
+          <button type="button" className="bed-overhang-dismiss" aria-label={t("status.bedOverhangDismiss")} title={t("status.bedOverhangDismiss")} onClick={dismissOverhangWarning}>
+            <X size={14} aria-hidden="true" />
+          </button>
         </div>
       ) : null}
       {arrayTool && selectedShapes.length > 0 ? (
@@ -12717,6 +13525,7 @@ export function LayerlingEditor({
           picking={splitSession.picking}
           onPickToggle={toggleSplitPick}
           onAxisChange={changeSplitAxis}
+          onAlignToWorkplane={alignSplitToWorkplane}
           onRotationChange={changeSplitRotation}
           onPositionChange={changeSplitPosition}
           onApply={() => void applySplit()}
@@ -12752,6 +13561,17 @@ export function LayerlingEditor({
             if (!current?.prepared) return current;
             const amount = Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(edgeModifierMaxAmount, value));
             return amount === current.amount ? current : { ...current, amount, preview: null, busy: current.selectedEdgeIds.length > 0, error: null };
+          })}
+          endAmount={edgeModifier.endAmount ?? null}
+          // Switching it on starts the end at twice the start, so the change shows at once (#687).
+          onEndAmountChange={(value) => setEdgeModifier((current) => {
+            if (!current?.prepared) return current;
+            const endAmount = value === null ? null : Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(edgeModifierMaxAmount, Number.isNaN(value) ? current.amount * 2 : value));
+            return endAmount === (current.endAmount ?? null) ? current : { ...current, endAmount, preview: null, busy: current.selectedEdgeIds.length > 0, error: null };
+          })}
+          onSwapEnds={() => setEdgeModifier((current) => {
+            if (!current?.prepared || current.endAmount == null || current.endAmount === current.amount) return current;
+            return { ...current, amount: current.endAmount, endAmount: current.amount, preview: null, busy: current.selectedEdgeIds.length > 0, error: null };
           })}
           onChamferAngleChange={(value) => setEdgeModifier((current) => {
             if (!current?.prepared) return current;
@@ -12815,8 +13635,8 @@ export function LayerlingEditor({
           estimateShapes={exportTargetShapes}
           onEstimatePrint={exportSolidVolume}
           onClose={() => setTopPanel(null)}
-          onExport={(format, exportName, chooseFile) => void exportDesign(format, exportName, chooseFile)}
-          stlFileName={topPanel === "export" ? linkedStlFile(projectId ?? "")?.name ?? null : null}
+          onExport={(format, exportName, chooseFile, svgView, toServer) => void exportDesign(format, exportName, chooseFile, svgView, toServer)}
+          stlFileName={topPanel === "export" && !workspaceSettings.stlAsDownload ? linkedStlFile(projectId ?? "")?.name ?? null : null}
           onExportLyl={exportLylDesign}
           onExportStep={exportStepDesign}
           onExportDrawing={exportDrawingDesign}
@@ -12829,6 +13649,7 @@ export function LayerlingEditor({
           onPickFile={() => fileInputRef.current?.click()}
           onPickProjectFile={() => void pickProjectFile()}
           onPickInsertProjectFile={() => insertProjectFileInputRef.current?.click()}
+          onPickReferenceImage={() => referenceImageInputRef.current?.click()}
           workspaceHistoryLimit={workspaceSettings.historyLimit}
         />
       ) : null}
@@ -12864,6 +13685,17 @@ export function LayerlingEditor({
           const files = Array.from(event.currentTarget.files ?? []);
           event.currentTarget.value = "";
           if (files.length) void loadMyShapeFiles(files);
+        }}
+      />
+      <input
+        ref={referenceImageInputRef}
+        className="hidden-file-input"
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/bmp"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          if (file) void addReferenceImageFile(file);
+          event.currentTarget.value = "";
         }}
       />
       <input
@@ -12928,6 +13760,7 @@ export function LayerlingEditor({
 
 const sketchReferenceIcons = {
   line: "sketch-tool-line.png",
+  arc: "sketch-tool-arc.png",
   bezier: "sketch-tool-bezier-curve.png",
   smooth: "sketch-tool-smooth-curve.png",
   select: "sketch-tool-select.png",
@@ -13057,6 +13890,7 @@ function sketchPaletteIcon(name: SketchIconName) {
 
 const SKETCH_PALETTE_ICONS = {
   line: sketchPaletteIcon("line"),
+  arc: sketchPaletteIcon("arc"),
   bezier: sketchPaletteIcon("bezier"),
   smooth: sketchPaletteIcon("smooth"),
   select: sketchPaletteIcon("select"),
@@ -13105,6 +13939,8 @@ function SecondaryToolbar({
   onSketchCornerDialog,
   sketchConstruction,
   onSketchConstruction,
+  sketchFromMiddle,
+  onSketchFromMiddle,
   sketchStrokeActive,
   onSketchStroke,
   onStartSketch,
@@ -13159,6 +13995,7 @@ function SecondaryToolbar({
   onArray,
   arrayActive,
   onScalePercent,
+  onCarryOntoFace,
   scalePercentActive,
   onSplit,
   onPaste,
@@ -13183,6 +14020,7 @@ function SecondaryToolbar({
   overhangAngle,
   onToggleOverhangs,
   renderMyShapes,
+  shapeCustomizations,
   objects,
   onSelectObject,
 }: {
@@ -13226,6 +14064,8 @@ function SecondaryToolbar({
   onSketchCornerDialog?: (dialog: "fillet" | "chamfer" | null) => void;
   sketchConstruction?: boolean;
   onSketchConstruction?: () => void;
+  sketchFromMiddle?: boolean;
+  onSketchFromMiddle?: () => void;
   sketchStrokeActive?: boolean;
   onSketchStroke?: () => void;
   onStartSketch: (operation: SketchOperation) => void;
@@ -13280,6 +14120,7 @@ function SecondaryToolbar({
   onArray: () => void;
   arrayActive: boolean;
   onScalePercent: () => void;
+  onCarryOntoFace: () => void;
   scalePercentActive: boolean;
   onSplit: () => void;
   onPaste: () => void;
@@ -13305,6 +14146,8 @@ function SecondaryToolbar({
   onToggleOverhangs: () => void;
   /** Custom shapes above the library; gets the way to close the menu. */
   renderMyShapes?: (close: () => void) => ReactNode;
+  /** The shape defaults, so each library entry can show the colour it will be added in. */
+  shapeCustomizations: WorkplaneWorkspaceSettings["shapeCustomizations"];
   /** The bodies of the design, so the command search can find them by name. */
   objects: ReadonlyArray<{ id: string; name: string; kind: string; hidden: boolean }>;
   onSelectObject: (id: string) => void;
@@ -13420,8 +14263,11 @@ function SecondaryToolbar({
     setShapesOpen(false);
     setVisibilityOpen(false);
   }, [historyViewActive]);
+  const simpleMode = useSimpleMode();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const openPalette = () => {
+    // The command search lists everything, also what the simple mode keeps away (#695).
+    if (simpleMode) return;
     setShapesOpen(false);
     setVisibilityOpen(false);
     setPaletteOpen(true);
@@ -13509,6 +14355,9 @@ function SecondaryToolbar({
   // Die Leiste haengt an der Sprache: ohne dieses Abonnement bliebe sie stehen,
   // falls sie spaeter einmal memoisiert wird.
   useLanguage();
+  // The simple mode (#695) shows the tools of a workshop only; the others stay in the lists the command search and the keys read.
+  const inSimpleMode = <T extends { id: string }>(tools: T[]) => (simpleMode ? tools.filter((tool) => simpleModeKeepsTool(tool.id)) : tools);
+  const shownShapeAssets = simpleMode ? libraryShapeAssets.filter((shape) => simpleModeKeepsShape(shape.id)) : libraryShapeAssets;
   const leftTools = [
     { id: "copy", label: t("editor.tool.copy"), icon: ToolbarCopyIcon, action: onCopy, enabled: hasSelection },
     { id: "paste", label: t("editor.tool.paste"), icon: ToolbarPasteIcon, action: onPaste, enabled: hasClipboard },
@@ -13546,7 +14395,7 @@ function SecondaryToolbar({
     { id: "bundle", label: t("editor.tool.bundle"), icon: ToolbarBundleIcon, action: onBundle, enabled: canGroup },
     { id: "ungroup", label: t("editor.tool.ungroup"), icon: ToolbarUngroupIcon, action: onUngroup, enabled: canUngroup },
     { id: "intersect", label: t("editor.tool.intersect"), icon: ToolbarIntersectionIcon, action: onIntersect, enabled: canIntersect || intersectPreviewActive },
-    { id: "intersect-preview", label: t("editor.tool.intersectPreview"), icon: Blend, action: onIntersectPreview, enabled: canIntersect || intersectPreviewActive, active: intersectPreviewActive },
+    { id: "intersect-preview", label: t("editor.tool.intersectPreview"), icon: ToolbarIntersectPreviewIcon, action: onIntersectPreview, enabled: canIntersect || intersectPreviewActive, active: intersectPreviewActive },
   ];
   const modifyTools = [
     { id: "mirror", label: t("editor.tool.mirror"), icon: ToolbarMirrorIcon, action: onMirror, enabled: canModifySelection, active: mirrorMode },
@@ -13651,9 +14500,12 @@ function SecondaryToolbar({
       const finishGroup = t("sketch.group.finish");
       return [
         plain("sketch-line", t("sketch.line"), drawGroup, true, () => onSketchTool("line"), { icon: SKETCH_PALETTE_ICONS.line, active: sketchTool === "line" }),
+        plain("sketch-arc", t("sketch.arc"), drawGroup, true, () => onSketchTool("arc"), { icon: SKETCH_PALETTE_ICONS.arc, active: sketchTool === "arc" }),
         plain("sketch-bezier", t("sketch.bezier"), drawGroup, true, () => onSketchTool("bezier"), { icon: SKETCH_PALETTE_ICONS.bezier, active: sketchTool === "bezier" }),
         plain("sketch-smooth", t("sketch.smooth"), drawGroup, true, () => onSketchTool("smooth"), { icon: SKETCH_PALETTE_ICONS.smooth, active: sketchTool === "smooth" }),
+        plain("note", t("editor.tool.note"), t("editor.group.manage"), true, onNoteTool, { icon: ToolbarNoteIcon, active: noteMode }),
         plain("sketch-construction", t("sketch.construction"), drawGroup, true, () => onSketchConstruction?.(), { icon: ToolbarConstructionLineIcon, active: Boolean(sketchConstruction), keywords: ["construction", "guide", "helper", "hilfslinie", "hilfs", "konstruktion"] }),
+        plain("sketch-from-middle", t("sketch.fromMiddle"), drawGroup, true, () => onSketchFromMiddle?.(), { icon: ToolbarMiddleLineIcon, active: Boolean(sketchFromMiddle), keywords: ["middle", "center", "centre", "mitte", "mittellinie", "symmetric", "symmetrisch"] }),
         ...sketchShapeMenuItems.map(({ primitive, label, icon }) => plain(
           `sketch-shape-${primitive}`,
           t("palette.addShape", { shape: t(label) }),
@@ -13705,6 +14557,7 @@ function SecondaryToolbar({
       plain("overhangs", t("visibility.overhangs", { angle: overhangAngle }), visibilityGroup, true, onToggleOverhangs, { icon: AlertTriangle, active: overhangsVisible }),
       ...combineTools.map((tool) => fromTool(tool, t("editor.group.combine"))),
       ...modifyTools.map((tool) => fromTool(tool, t("editor.group.modify"))),
+      plain("carry", t("contextMenu.carry"), t("editor.group.arrange"), canModifySelection, onCarryOntoFace, { icon: ArrowDownToLine }),
       plain("scalePercent", t("scalePercent.title"), t("editor.group.modify"), canModifySelection, onScalePercent, { icon: Percent, active: scalePercentActive }),
       ...arrangeTools.map((tool) => fromTool(tool, t("editor.group.arrange"))),
       plain("note", t("editor.tool.note"), manageGroup, true, onNoteTool, { icon: ToolbarNoteIcon, active: noteMode }),
@@ -13749,7 +14602,7 @@ function SecondaryToolbar({
         </div>
         <div className="toolbar-section" data-group="history">
           <div className="toolbar-section-label">{t("editor.group.history")}</div>
-          <div className="toolbar-section-tools">{leftTools.slice(4).map(renderToolButton)}</div>
+          <div className="toolbar-section-tools">{inSimpleMode(leftTools.slice(4)).map(renderToolButton)}</div>
         </div>
         <div className="toolbar-section toolbar-shapes-section" data-group="shapes" ref={shapesMenuRef} inert={historyViewActive}>
           <div className="toolbar-section-label">{t("editor.group.shapes")}</div>
@@ -13775,20 +14628,21 @@ function SecondaryToolbar({
               resizable
             >
               <div className="shape-menu-body">
-              {renderMyShapes ? (
+              {renderMyShapes && !simpleMode ? (
                 <>
                   {renderMyShapes(closeShapesAfterPick)}
                   <div className="shape-menu-subtitle">{t("myShapes.basicShapes")}</div>
                 </>
               ) : null}
               <div className="shape-menu-list">
-                {libraryShapeAssets.map((shape) => (
+                {shownShapeAssets.map((shape) => (
                   <button
                     className="shape-menu-item"
                     key={shape.id}
                     type="button"
                     title={shapeAssetMenuLabel(shape).replace(/\s+/g, " ")}
                     aria-label={shapeAssetMenuLabel(shape).replace(/\s+/g, " ")}
+                    style={{ "--shape-default-color": shapeAssetColor(shape, shapeCustomizations[shape.kind]) } as CSSProperties}
                     draggable
                     onClick={() => {
                       if (suppressNextShapeClickRef.current) {
@@ -13844,7 +14698,12 @@ function SecondaryToolbar({
                     }}
                     onDragEnd={closeShapesAfterPick}
                   >
-                    <img src={shape.menuIcon} alt="" draggable={false} />
+                    <span
+                      className="shape-menu-thumb"
+                      style={{ "--shape-icon": `url(/${shape.menuIcon.replace(/^\/+/, "")})` } as CSSProperties}
+                    >
+                      <img src={shape.menuIcon} alt="" draggable={false} />
+                    </span>
                     <span className={shapeAssetMenuLabel(shape).split(/\s+/).some((word) => word.length > 13) ? "long-word" : undefined}>{shapeAssetMenuLabel(shape)}</span>
                   </button>
                 ))}
@@ -13856,6 +14715,7 @@ function SecondaryToolbar({
       </div>
       <div className="toolbar-spacer" />
       <div className="tool-group right" inert={historyViewActive}>
+        {simpleMode ? null : (
         <div className="toolbar-section compact toolbar-visibility-section" data-group="visibility" ref={visibilityMenuRef}>
           <div className="toolbar-section-label">{t("editor.group.visibility")}</div>
           <div className="toolbar-section-tools">
@@ -13956,35 +14816,27 @@ function SecondaryToolbar({
             </div>
           ) : null}
         </div>
+        )}
         <div className="toolbar-section" data-group="combine">
           <div className="toolbar-section-label">{t("editor.group.combine")}</div>
-          <div className="toolbar-section-tools">{combineTools.map(renderToolButton)}</div>
+          <div className="toolbar-section-tools">{inSimpleMode(combineTools).map(renderToolButton)}</div>
         </div>
         <div className="toolbar-section" data-group="modify">
           <div className="toolbar-section-label">{t("editor.group.modify")}</div>
-          <div className="toolbar-section-tools">{modifyTools.map(renderToolButton)}</div>
+          <div className="toolbar-section-tools">{inSimpleMode(modifyTools).map(renderToolButton)}</div>
         </div>
         <div className="toolbar-section" data-group="arrange">
           <div className="toolbar-section-label">{t("editor.group.arrange")}</div>
-          <div className="toolbar-section-tools">{arrangeTools.map(renderToolButton)}</div>
+          <div className="toolbar-section-tools">{inSimpleMode(arrangeTools).map(renderToolButton)}</div>
         </div>
       </div>
       <div className="toolbar-section toolbar-actions-section" data-group="manage">
         <div className="toolbar-section-label">{t("editor.group.manage")}</div>
         <div className="action-buttons">
-          <button
-            className={`action-icon-button ${noteMode ? "active" : ""}`}
-            aria-label={t("editor.tool.note")}
-            aria-pressed={noteMode}
-            title={`${t("editor.tool.note")} (${COMMAND_SHORTCUTS.note})`}
-            onClick={onNoteTool}
-            disabled={historyViewActive}
-          >
-            <ToolbarNoteIcon />
-          </button>
-          <button className="action-icon-button" aria-label={t("editor.import")} title={`${t("editor.import")} (${COMMAND_SHORTCUTS.import})`} onClick={() => onTopPanel("import")} disabled={historyViewActive}>
+          {simpleMode ? null : <NoteToolButton active={noteMode} shortcut={COMMAND_SHORTCUTS.note} onClick={onNoteTool} disabled={historyViewActive} />}
+          {simpleMode ? null : <button className="action-icon-button" aria-label={t("editor.import")} title={`${t("editor.import")} (${COMMAND_SHORTCUTS.import})`} onClick={() => onTopPanel("import")} disabled={historyViewActive}>
             <ToolbarImportIcon />
-          </button>
+          </button>}
           <button className="action-icon-button" aria-label={t("editor.export")} title={`${t("editor.export")} (${COMMAND_SHORTCUTS.export})`} onClick={() => onTopPanel("export")}>
             <ToolbarVectorExportIcon />
           </button>
@@ -13993,7 +14845,7 @@ function SecondaryToolbar({
           </button>
         </div>
       </div>
-      <div className="toolbar-section toolbar-actions-section" data-group="help">
+      {simpleMode ? null : <div className="toolbar-section toolbar-actions-section" data-group="help">
         <div className="toolbar-section-label">{t("editor.group.help")}</div>
         <div className="action-buttons">
           <button className="action-icon-button" aria-label={t("palette.open")} title={t("palette.open")} aria-haspopup="dialog" data-layerling-tool="command-search" onClick={openPalette}>
@@ -14009,7 +14861,7 @@ function SecondaryToolbar({
             <CircleHelp className="toolbar-search-icon" aria-hidden="true" />
           </button>
         </div>
-      </div>
+      </div>}
           </>
         ) : (
           <div className="sketch-toolbar-ribbon" aria-label={t("sketch.toolbar")}>
@@ -14021,6 +14873,9 @@ function SecondaryToolbar({
                     <button className={`toolbar-icon sketch-tool-icon ${sketchTool === "line" ? "active" : ""}`} type="button" aria-label={t("sketch.line")} title={t("sketch.line")} onClick={() => onSketchTool("line")}>
                       <SketchReferenceIcon name="line" />
                     </button>
+                    <button className={`toolbar-icon sketch-tool-icon ${sketchTool === "arc" ? "active" : ""}`} type="button" aria-label={t("sketch.arc")} title={t("status.sketchTool.arc")} onClick={() => onSketchTool("arc")}>
+                      <SketchReferenceIcon name="arc" />
+                    </button>
                     <button className={`toolbar-icon sketch-tool-icon ${sketchTool === "bezier" ? "active" : ""}`} type="button" aria-label={t("sketch.bezier")} title={t("sketch.bezier")} onClick={() => onSketchTool("bezier")}>
                       <SketchReferenceIcon name="bezier" />
                     </button>
@@ -14029,6 +14884,9 @@ function SecondaryToolbar({
                     </button>
                     <button className={`toolbar-icon sketch-tool-icon sketch-construction-toggle ${sketchConstruction ? "active" : ""}`} type="button" aria-pressed={Boolean(sketchConstruction)} aria-label={t("sketch.construction")} title={t("sketch.constructionHint")} onClick={onSketchConstruction}>
                       <ToolbarConstructionLineIcon />
+                    </button>
+                    <button className={`toolbar-icon sketch-tool-icon sketch-from-middle-toggle ${sketchFromMiddle ? "active" : ""}`} type="button" aria-pressed={Boolean(sketchFromMiddle)} aria-label={t("sketch.fromMiddle")} title={t("sketch.fromMiddleHint")} onClick={onSketchFromMiddle}>
+                      <ToolbarMiddleLineIcon />
                     </button>
                   </div>
                 </div>
@@ -14218,7 +15076,7 @@ function SecondaryToolbar({
                     <Rotate3d aria-hidden="true" />
                     <span>{t("sketch.revolve")}</span>
                   </button>
-                  <button
+                  {simpleMode ? null : <button
                     className="sketch-command-button primary"
                     type="button"
                     aria-label={t("sketch.sweep")}
@@ -14227,7 +15085,7 @@ function SecondaryToolbar({
                   >
                     <RouteIcon aria-hidden="true" />
                     <span>{t("sketch.sweep")}</span>
-                  </button>
+                  </button>}
                   <GuideHelpLink section="sketchToBody" />
                   <button className={`sketch-command-button ${canEditSketch ? "" : "disabled"}`} type="button" aria-label={t("sketch.editTo3d")} title={t("sketch.editTo3d")} onClick={onEditSketch} disabled={!canEditSketch}>
                     <SketchReferenceIcon name="editSketchTo3d" />
@@ -14236,8 +15094,13 @@ function SecondaryToolbar({
                 </div>
               </div>
             )}
+            {/* Notes go on a sketch as in 3D: they are the sketch body's. */}
+            {simpleMode || !sketchActive ? null : <div className="toolbar-section toolbar-actions-section" data-group="manage">
+              <div className="toolbar-section-label">{t("editor.group.manage")}</div>
+              <div className="action-buttons"><NoteToolButton active={noteMode} shortcut={COMMAND_SHORTCUTS.note} onClick={onNoteTool} /></div>
+            </div>}
             {/* Sketch mode has its own keys; the help opens from here too. */}
-            <div className="toolbar-section toolbar-actions-section" data-group="help">
+            {simpleMode ? null : <div className="toolbar-section toolbar-actions-section" data-group="help">
               <div className="toolbar-section-label">{t("editor.group.help")}</div>
               <div className="action-buttons">
                 <button className="action-icon-button" aria-label={t("palette.open")} title={t("palette.open")} aria-haspopup="dialog" data-layerling-tool="command-search" onClick={openPalette}>
@@ -14253,7 +15116,7 @@ function SecondaryToolbar({
                   <CircleHelp className="toolbar-search-icon" aria-hidden="true" />
                 </button>
               </div>
-            </div>
+            </div>}
           </div>
         )}
       </div>
@@ -14351,6 +15214,7 @@ function TopActionPanel({
   onPickFile,
   onPickProjectFile,
   onPickInsertProjectFile,
+  onPickReferenceImage,
   workspaceHistoryLimit,
 }: {
   panel: Exclude<TopPanel, null>;
@@ -14367,14 +15231,14 @@ function TopActionPanel({
   estimateShapes: readonly WorkplaneShape[];
   onEstimatePrint: (shapes: readonly WorkplaneShape[]) => Promise<ExportSolidVolume>;
   onClose: () => void;
-  onExport: (format: DirectExportFormat, exportName: string, chooseFile?: boolean) => void;
+  onExport: (format: DirectExportFormat, exportName: string, chooseFile?: boolean, svgView?: SvgExportView, toServer?: boolean) => void;
   /** The STL file this design exports into, once one was chosen (Chrome and Edge). */
   stlFileName?: string | null;
   onExportLyl: (exportName: string, historyLimit: LylHistoryLimit, target?: LylExportTarget) => void;
-  onExportStep: (exportName: string) => void;
-  onExportDrawing: (exportName: string, format: "svg" | "pdf") => void;
+  onExportStep: (exportName: string, toServer?: boolean) => void;
+  onExportDrawing: (exportName: string, format: "svg" | "pdf", toServer?: boolean) => void;
   drawingExporting: boolean;
-  onExportImage: (exportName: string, options: ViewImageOptions) => void;
+  onExportImage: (exportName: string, options: ViewImageOptions, toServer?: boolean) => void;
   sharedProjectsEnabled: boolean;
   lylExporting: boolean;
   stepExporting: boolean;
@@ -14382,6 +15246,8 @@ function TopActionPanel({
   onPickFile: () => void;
   onPickProjectFile: () => void;
   onPickInsertProjectFile: () => void;
+  /** A reference image to line parts up on (#680). */
+  onPickReferenceImage: () => void;
   workspaceHistoryLimit: LylHistoryLimit;
 }) {
   const [keepSvgPage, setKeepSvgPage] = useState(false);
@@ -14390,6 +15256,8 @@ function TopActionPanel({
   const [svgWidthText, setSvgWidthText] = useState(() => { const width = readImportSvgWidth(); return width ? String(width) : ""; });
   const [exportFormat, setExportFormat] = useState<ExportFormat>("stl");
   const [drawingFormat, setDrawingFormat] = useState<"svg" | "pdf">("pdf");
+  const [svgView, setSvgView] = useState<SvgExportView>("silhouette");
+  const [dxfView, setDxfView] = useState<DxfExportView>("silhouette");
   const [exportName, setExportName] = useState(projectName);
   const previousProjectNameRef = useRef(projectName);
   // Starts at the history setting from the workspace settings, so a project
@@ -14434,11 +15302,18 @@ function TopActionPanel({
     }
   });
   const [imageOptions, setImageOptions] = useState<ViewImageOptions>({ plate: true, transparent: false });
-  const showPrintEstimate = panel === "export" && exportFormat !== "drawing" && exportFormat !== "svg" && exportFormat !== "png" && exportFormat !== "lyl" && shapeCount > 0;
+  const showPrintEstimate = panel === "export" && exportFormat !== "drawing" && exportFormat !== "svg" && exportFormat !== "dxf" && exportFormat !== "png" && exportFormat !== "lyl" && shapeCount > 0;
   // A picture shows the view as it is, not the selection, so the notes about what goes along do not apply.
   const exportsBodies = exportFormat !== "lyl" && exportFormat !== "png";
+  // The estimate is worked out on a click, not on every opening and every change of format: for a finely traced
+  // multicolour model it takes as long as the export itself (#734). A change of the design or of the format asks again.
+  const [printAsked, setPrintAsked] = useState(false);
   useEffect(() => {
-    if (!showPrintEstimate) return;
+    setPrintAsked(false);
+    setPrintVolume(null);
+  }, [showPrintEstimate, estimateShapes]);
+  useEffect(() => {
+    if (!showPrintEstimate || !printAsked) return;
     let cancelled = false;
     setPrintVolume(null);
     // Kurz warten: beim Tippen oder Ziehen im Hintergrund nicht jedes Mal neu verschmelzen.
@@ -14451,7 +15326,7 @@ function TopActionPanel({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [showPrintEstimate, estimateShapes, onEstimatePrint]);
+  }, [showPrintEstimate, printAsked, estimateShapes, onEstimatePrint]);
   const choosePrintMaterial = (value: string) => {
     const material = normalizePrintMaterial(value);
     setPrintMaterial(material);
@@ -14516,7 +15391,12 @@ function TopActionPanel({
     svg: {
       label: "SVG",
       description: t("export.svg.description"),
-      note: t("export.svg.note"),
+      note: t(svgView === "footprint" ? "export.svg.noteFootprint" : svgView === "edges" ? "export.svg.noteEdges" : "export.svg.note"),
+    },
+    dxf: {
+      label: "DXF",
+      description: t("export.dxf.description"),
+      note: t(dxfView === "footprint" ? "export.dxf.noteFootprint" : "export.dxf.note"),
     },
     png: {
       label: "PNG",
@@ -14530,13 +15410,13 @@ function TopActionPanel({
     },
   };
   const selectedExport = exportDetails[exportFormat];
-  const runSelectedExport = () => {
+  const runSelectedExport = (toServer = false) => {
     if (drawingExporting || stepExporting || lylExporting) return;
-    if (exportFormat === "drawing") onExportDrawing(exportName, drawingFormat);
-    else if (exportFormat === "step") onExportStep(exportName);
-    else if (exportFormat === "png") onExportImage(exportName, imageOptions);
+    if (exportFormat === "drawing") onExportDrawing(exportName, drawingFormat, toServer);
+    else if (exportFormat === "step") onExportStep(exportName, toServer);
+    else if (exportFormat === "png") onExportImage(exportName, imageOptions, toServer);
     else if (exportFormat === "lyl") onExportLyl(exportName, lylHistoryLimit, lylFileAccessSupported() ? "fileAs" : "download");
-    else onExport(exportFormat, exportName);
+    else onExport(exportFormat, exportName, false, exportFormat === "dxf" ? dxfView : svgView, toServer);
   };
 
   return (
@@ -14570,6 +15450,13 @@ function TopActionPanel({
             <span>
               <strong>{t("import.insertProject")}</strong>
               <small>{t("import.insertProjectHint")}</small>
+            </span>
+          </button>
+          <button className="open-lyl-project-button" type="button" onClick={onPickReferenceImage} data-testid="import-reference-image">
+            <span className="open-lyl-project-icon"><ImagePlus size={18} /></span>
+            <span>
+              <strong>{t("import.referenceImage")}</strong>
+              <small>{t("import.referenceImageHint")}</small>
             </span>
           </button>
           <div className="import-kind-divider"><span>{t("import.divider")}</span></div>
@@ -14652,7 +15539,7 @@ function TopActionPanel({
                   : t(scopeLabel === "selected" ? "export.scopeSelected" : "export.scopeTotal", { count: shapeCount })}</span>
             </div>
             <div className="export-format-slider" data-format={exportFormat} role="radiogroup" aria-label={t("export.formatLabel")}>
-              {(["stl", "3mf", "obj", "step", "svg", "png", "lyl", "drawing"] as const).map((format) => (
+              {(["stl", "3mf", "obj", "step", "svg", "dxf", "png", "lyl", "drawing"] as const).map((format) => (
                 <button
                   key={format}
                   type="button"
@@ -14675,6 +15562,31 @@ function TopActionPanel({
                 <select aria-label={t("export.drawing.fileFormat")} value={drawingFormat} onChange={(event) => setDrawingFormat(event.target.value as "svg" | "pdf")}>
                   <option value="pdf">PDF</option>
                   <option value="svg">SVG</option>
+                </select>
+              </label>
+            </section>
+          ) : null}
+
+          {exportFormat === "svg" ? (
+            <section className="export-setting-section">
+              <label>
+                <strong>{t("export.svg.view")}</strong>{" "}
+                <select aria-label={t("export.svg.view")} value={svgView} onChange={(event) => setSvgView(event.target.value as SvgExportView)}>
+                  <option value="silhouette">{t("export.svg.viewSilhouette")}</option>
+                  <option value="footprint">{t("export.svg.viewFootprint")}</option>
+                  <option value="edges">{t("export.svg.viewEdges")}</option>
+                </select>
+              </label>
+            </section>
+          ) : null}
+
+          {exportFormat === "dxf" ? (
+            <section className="export-setting-section">
+              <label>
+                <strong>{t("export.svg.view")}</strong>{" "}
+                <select aria-label={t("export.svg.view")} value={dxfView} onChange={(event) => setDxfView(event.target.value as DxfExportView)}>
+                  <option value="silhouette">{t("export.svg.viewSilhouette")}</option>
+                  <option value="footprint">{t("export.svg.viewFootprint")}</option>
                 </select>
               </label>
             </section>
@@ -14762,8 +15674,10 @@ function TopActionPanel({
                     <dd>{formatEstimateNumber(estimate.printed.filamentMeters, estimate.printed.filamentMeters < 10 ? 2 : 1)} m</dd>
                   </div>
                 </dl>
-              ) : (
+              ) : printAsked ? (
                 <span className="print-estimate-busy">{t("export.estimateBusy")}</span>
+              ) : (
+                <button type="button" className="print-estimate-material print-estimate-calculate" onClick={() => setPrintAsked(true)}>{t("export.estimateCalculate")}</button>
               )}
               {estimate ? (
                 <span className="print-estimate-note print-estimate-infill">
@@ -14857,7 +15771,19 @@ function TopActionPanel({
                   <span>{t("export.saveToShared")}</span>
                 </button>
               ) : null}
-              <button className="export-primary-button" onClick={runSelectedExport} disabled={(shapeCount === 0 && exportsBodies) || stepExporting || lylExporting || drawingExporting}>
+              {exportFormat !== "lyl" && sharedProjectsEnabled ? (
+                <button
+                  className="export-shared-button"
+                  type="button"
+                  title={t("export.saveFileToServerHint")}
+                  onClick={() => runSelectedExport(true)}
+                  disabled={(shapeCount === 0 && exportsBodies) || stepExporting || lylExporting || drawingExporting}
+                >
+                  <CloudUpload />
+                  <span>{t("export.saveToShared")}</span>
+                </button>
+              ) : null}
+              <button className="export-primary-button" onClick={() => runSelectedExport()} disabled={(shapeCount === 0 && exportsBodies) || stepExporting || lylExporting || drawingExporting}>
                 <Download />
                 {exportFormat === "lyl" ? (lylExporting ? t("export.savingProject") : t("export.saveProject")) : null}
                 <span hidden={exportFormat === "lyl"}>

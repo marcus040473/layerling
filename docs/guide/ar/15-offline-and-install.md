@@ -33,7 +33,7 @@ summary: شغّل layerling كبرنامج عادي، حتى دون شبكة، �
 layerling برنامج حر (AGPL-3.0) ويمكن تشغيله على كمبيوترك أو خادمك الخاص، في ورشة أو نادٍ أو مدرسة مثلًا. وهناك عدة طرق، مشروحة في [README على GitHub](https://github.com/henmedia/layerling/blob/main/README.md#getting-started):
 
 - **البدء السريع على Windows:** سطر واحد في PowerShell يثبّت كل شيء ويضع اختصارًا على سطح المكتب. وإذا كان layerling يعمل من قبل، فإن نقرة مزدوجة أخرى لا تشغّل خادمًا ثانيًا، بل تفتح الصفحة فقط.
-- **Docker:** لأجهزة NAS والخوادم المنزلية، دون الحاجة إلى تثبيت Node.js. يأتي كل إصدار كصورة جاهزة `henmedia/layerling` على Docker Hub (وأيضًا `ghcr.io/henmedia/layerling`) لمعماريتي amd64 وarm64؛ والأمر `docker run -d -p 3000:3000 henmedia/layerling:latest` يشغّلها، وعلى NAS تبحث عنها في مستودع (registry) مدير الحاويات.
+- **Docker:** لأجهزة NAS والخوادم المنزلية، دون الحاجة إلى تثبيت Node.js. يأتي كل إصدار كصورة جاهزة `henmedia/layerling` على Docker Hub (وأيضًا `ghcr.io/henmedia/layerling`) لمعماريتي amd64 وarm64؛ والأمر `docker run -d -p 3000:3000 -v layerling-thumbnails:/app/.codex/project-thumbnails henmedia/layerling:latest` يشغّلها، وعلى NAS تبحث عنها في مستودع (registry) مدير الحاويات.
 - **التصدير الثابت:** النتيجة ملفات عادية يستطيع أي خادم ويب تقديمها. ومكانها جذر العنوان (`https://layerling.example.com/` أو `http://192.168.0.5:8080/`)، لا في مجلد فرعي، ولا تُفتح من القرص مباشرة؛ والخطوات في ملف README. ومع مجلد `store` قابل للكتابة بجانب `index.html` ووجود PHP على الخادم، تصبح أيضًا مساحة التخزين المشتركة للتصاميم.
 
 جسر MCP لمساعدي الذكاء الاصطناعي موجود في خادم التطوير فقط، انظر [البناء باستخدام الذكاء الاصطناعي](chapter:ai-with-mcp).

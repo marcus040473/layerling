@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import * as THREE from "three";
+import { hingeWorldParts } from "@/lib/hingeParts";
 import { hingeLocalParts, hingePlan, hingeTriangles, normalizeHingeKnuckles, normalizeHingeLeafThickness, normalizeHingePinDiameter } from "@/lib/hingeGeometry";
 
 type V = [number, number, number];
@@ -121,5 +123,63 @@ describe("hinge geometry", () => {
     expect(new Set(parts.map((part) => part.kind))).toEqual(new Set(["box", "cylinder", "tube"]));
     expect(parts.filter((part) => part.kind === "tube")).toHaveLength(2);
     expect(parts.filter((part) => part.kind === "cylinder")).toHaveLength(4);
+  });
+
+  it.each([30, 90, 180])("folds part B up by %i degrees about the pin without changing the bodies (#699)", (hingeAngle) => {
+    const flat = hingeTriangles(shape);
+    const folded = hingeTriangles({ ...shape, hingeAngle });
+    expect(edgeProblems(folded)).toBe(0);
+    expect(components(folded)).toBe(2);
+    expect(signedVolume(folded)).toBeCloseTo(signedVolume(flat), 6);
+    const plan = hingePlan(shape);
+    const top = Math.max(...folded.flat().map(([, y]) => y));
+    expect(top).toBeGreaterThanOrEqual(plan.height - 1e-6);
+    if (hingeAngle === 90) expect(top).toBeCloseTo(plan.radius + plan.depth / 2, 6);
+  });
+
+  it("places B's exact boxes where the folded display mesh has its leaf (#699)", () => {
+    for (const hingeAngle of [0, 45, 90, 135, 180]) {
+      const fields = { ...shape, hingeAngle };
+      const mesh = hingeTriangles(fields).flat();
+      const corners: V[] = [];
+      hingeLocalParts(fields).filter((part) => part.kind === "box").forEach((part) => {
+        const turn = ((part.rotationX ?? 0) * Math.PI) / 180;
+        const cy = (part.elevation ?? 0) + part.height / 2;
+        for (const dx of [-0.5, 0.5]) for (const dy of [-0.5, 0.5]) for (const dz of [-0.5, 0.5]) {
+          const y = dy * part.height;
+          const z = dz * (part.depth ?? 0);
+          // Three's rotation about x by `turn`: y' = y cos - z sin, z' = y sin + z cos.
+          corners.push([(part.x) + dx * part.width, cy + y * Math.cos(turn) - z * Math.sin(turn), (part.z ?? 0) + y * Math.sin(turn) + z * Math.cos(turn)]);
+        }
+      });
+      // The knuckles' square, which the round tubes and the pin stay inside.
+      for (const y of [0, shape.height]) for (const z of [-shape.height / 2, shape.height / 2]) corners.push([0, y, z]);
+      for (const axis of [1, 2]) {
+        expect(Math.max(...corners.map((c) => c[axis]))).toBeCloseTo(Math.max(...mesh.map((v) => v[axis])), 3);
+        expect(Math.min(...corners.map((c) => c[axis]))).toBeCloseTo(Math.min(...mesh.map((v) => v[axis])), 3);
+      }
+    }
+  });
+
+  it("keeps the folded boxes in the world where the turned hinge's display mesh is (#699)", () => {
+    const hinge = { id: "h", name: "H", kind: "hinge", color: "#fff", x: 12, z: -7, elevation: 3, size: 40, ...shape, rotation: 30, rotationX: 20, rotationZ: 15, hingeAngle: 70 } as never as Parameters<typeof hingeWorldParts>[0];
+    const centerY = shape.height / 2;
+    const turn = new THREE.Euler(THREE.MathUtils.degToRad(20), THREE.MathUtils.degToRad(30), THREE.MathUtils.degToRad(15), "XYZ");
+    const matrix = new THREE.Matrix4().makeTranslation(12, 3 + centerY, -7).multiply(new THREE.Matrix4().makeRotationFromEuler(turn)).multiply(new THREE.Matrix4().makeTranslation(0, -centerY, 0));
+    const mesh = hingeTriangles({ ...shape, hingeAngle: 70 }).flat().map(([x, y, z]) => new THREE.Vector3(x, y, z).applyMatrix4(matrix));
+    const corners: THREE.Vector3[] = [];
+    hingeWorldParts(hinge).filter((part) => part.kind === "box").forEach((part) => {
+      const box = new THREE.Matrix4()
+        .makeTranslation(part.x, (part.elevation ?? 0) + part.height / 2, part.z)
+        .multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(part.rotationX ?? 0), THREE.MathUtils.degToRad(part.rotation), THREE.MathUtils.degToRad(part.rotationZ ?? 0), "XYZ")));
+      for (const dx of [-0.5, 0.5]) for (const dy of [-0.5, 0.5]) for (const dz of [-0.5, 0.5]) corners.push(new THREE.Vector3(dx * part.width, dy * part.height, dz * (part.depth ?? 0)).applyMatrix4(box));
+    });
+    // The round knuckles, which the boxes do not cover.
+    for (let k = 0; k < 720; k += 1) for (const x of [-shape.width / 2, shape.width / 2]) corners.push(new THREE.Vector3(x, centerY + centerY * Math.sin((k * Math.PI) / 360), centerY * Math.cos((k * Math.PI) / 360)).applyMatrix4(matrix));
+    const range = (points: THREE.Vector3[], axis: "x" | "y" | "z") => [Math.min(...points.map((p) => p[axis])), Math.max(...points.map((p) => p[axis]))];
+    for (const axis of ["y", "z"] as const) {
+      expect(range(corners, axis)[0]).toBeCloseTo(range(mesh, axis)[0], 1);
+      expect(range(corners, axis)[1]).toBeCloseTo(range(mesh, axis)[1], 1);
+    }
   });
 });

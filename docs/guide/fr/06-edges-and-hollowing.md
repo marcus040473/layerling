@@ -57,7 +57,7 @@ Boîtes, tasses, étuis et couvercles ont un point commun : ils sont vides à l'
 
 1. Sélectionnez le corps et cliquez sur {{ui:editor.tool.hollow}}, ou cliquez avec le bouton droit sur le corps et sélectionnez-le dans le menu.
 2. Définissez {{ui:shell.wall}}.
-3. Sous {{ui:shell.openings}}, activez les côtés qui restent ouverts : {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} ou {{ui:shell.side.right}}, autant que vous le souhaitez - {{ui:shell.side.front}} fait à lui seul un emplacement pour un tiroir, {{ui:shell.side.left}} et {{ui:shell.side.right}} un tunnel. Sans aucun côté allumé, le corps reste fermé sur tout son pourtour, avec une cavité au milieu.
+3. Sous {{ui:shell.openings}}, activez les côtés qui restent ouverts : {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} ou {{ui:shell.side.right}}, autant que vous le souhaitez - {{ui:shell.side.front}} fait à lui seul un emplacement pour un tiroir, {{ui:shell.side.left}} et {{ui:shell.side.right}} un tunnel. Sans aucun côté allumé, le corps reste fermé sur tout son pourtour, avec une cavité au milieu. {{ui:shell.side.closed}} désactive tous les côtés en un clic. {{ui:shell.side.top}} est déjà activé à l'ouverture du panneau ; un clic dessus referme le dessus. Un corps fermé de tous côtés semble inchangé de l'extérieur : la vue en coupe montre la cavité.
 4. Décidez si {{ui:shell.edges}} doit être {{ui:shell.edges.round}} ou {{ui:shell.edges.sharp}}.
 5. Cliquez sur {{ui:shell.apply}}.
 

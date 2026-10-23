@@ -5,7 +5,7 @@ summary: Wybór własnej drukarki, ostrzeżenie, gdy coś się nie mieści, i w�
 
 ## Wybór drukarki
 
-Otwórz ustawienia (koło zębate na wstążce, {{ui:editor.workspaceSettings}}) i przejdź do sekcji {{ui:workspace.workplane}}. W {{ui:workspace.printer}} wybierasz swoją drukarkę z listy ponad pięćdziesięciu popularnych modeli, między innymi Bambu Lab, Prusa, Creality, Anycubic, Elegoo i wielu innych.
+Otwórz ustawienia (koło zębate na wstążce, {{ui:editor.workspaceSettings}}) i przejdź do sekcji {{ui:workspace.workplane}}. W {{ui:workspace.printer}} wybierasz swoją drukarkę z listy ponad 220 popularnych modeli, między innymi Bambu Lab, Prusa, Creality, Anycubic, Elegoo i wielu innych.
 
 ![Ustawienia płaszczyzny roboczej z wybraną drukarką. Stół i maksymalna wysokość wydruku pochodzą z profilu slicera.](shot:settings-workplane)
 
@@ -24,6 +24,8 @@ Bryła, która wystaje poza krawędź stołu, zostaje oznaczona. Komunikat mówi
 ![Prostopadłościan jest szerszy niż stół Bambu Lab A1 mini. Komunikat na dole mówi, o ile.](shot:printer-overhang)
 
 Ostrzeżenie nie przeszkadza w dalszej pracy. To podpowiedź, żebyś nie dowiedział się dopiero w slicerze, że część jest za duża. Za dużą część często da się podzielić: przetnij ją na dwie przez {{ui:editor.tool.split}} i wydrukuj obie połowy osobno.
+
+Jeśli celowo odkładasz części obok płyty, kliknij mały krzyżyk w komunikacie. Ostrzeżenie zniknie wtedy dla dokładnie tych brył. Gdy któraś z nich znów się zmieści, a potem ją wysuniesz, albo gdy wystanie inna bryła, komunikat wróci. Ukryte bryły nigdy się nie liczą, więc ukrycie odłożonych części też działa.
 
 ## Właściwe ułożenie części
 

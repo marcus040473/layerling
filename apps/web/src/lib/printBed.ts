@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { quaternionForShape } from "@/lib/geometryRotation";
 import { PRINTER_PRESETS, type PrinterPreset } from "@/lib/printerPresets.generated";
-import { isNonSolidShapeKind, shapeDepth, shapeWidth } from "@/lib/workplaneShapes";
+import { isNonSolidShape, shapeDepth, shapeWidth } from "@/lib/workplaneShapes";
 import type { WorkplaneShape } from "@/types/layerling";
 
 export function printerPresetById(id: string | undefined | null): PrinterPreset | null {
@@ -88,7 +88,7 @@ const BED_EDGE_TOLERANCE = 0.01;
 export function bedOverhangs(shapes: readonly WorkplaneShape[], width: number, depth: number, height?: number): BedOverhang[] {
   const halfWidth = width / 2;
   const halfDepth = depth / 2;
-  const printed = shapes.filter((shape) => !shape.hole && !shape.hidden && !isNonSolidShapeKind(shape.kind));
+  const printed = shapes.filter((shape) => !shape.hole && !shape.hidden && !isNonSolidShape(shape));
   const vertical = new Map(printed.map((shape) => [shape, shapeVerticalExtent(shape)]));
   const base = Math.min(...[...vertical.values()].map((extent) => extent.minY));
   const overhangs: BedOverhang[] = [];
@@ -104,4 +104,16 @@ export function bedOverhangs(shapes: readonly WorkplaneShape[], width: number, d
     }
   }
   return overhangs;
+}
+
+/**
+ * The warning clicked away body by body (#640): the ids still dismissed are only those that
+ * are still outside, so a body that fits again and is moved out later warns again. Returns
+ * `dismissed` itself when nothing changed, so a React state keeps its identity.
+ */
+export function keepDismissedOverhangs(dismissed: ReadonlySet<string>, overhangs: readonly BedOverhang[]): ReadonlySet<string> {
+  if (dismissed.size === 0) return dismissed;
+  const outside = new Set(overhangs.map((overhang) => overhang.shape.id));
+  const kept = [...dismissed].filter((id) => outside.has(id));
+  return kept.length === dismissed.size ? dismissed : new Set(kept);
 }

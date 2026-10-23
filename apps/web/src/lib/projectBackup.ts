@@ -8,8 +8,19 @@ import { unzipSync, zipSync } from "fflate";
  */
 
 export type BackupEntry = { name: string; bytes: Uint8Array };
-/** A design of a backup, with the folders it was in (#496); empty at the top level. */
-export type BackupDesign = BackupEntry & { folder: string[] };
+/**
+ * A design of a backup, with the folders it was in (#496); empty at the top level. The picture of its
+ * card comes along when the backup holds one; a backup made before 1.95.0 has none.
+ */
+export type BackupDesign = BackupEntry & { folder: string[]; thumbnail?: Uint8Array };
+
+/**
+ * The picture of a design's card lies next to its .lyl, under the same name as a .png, so a restore
+ * puts it back on the card at once instead of waiting until the design is opened.
+ */
+export function backupThumbnailPath(designPath: string) {
+  return designPath.replace(/\.(lyl|skf)$/i, "") + ".png";
+}
 
 /**
  * The designs that sit in a folder go into the ZIP under this folder, in their folders. A folder of
@@ -114,12 +125,13 @@ export function packBackup(entries: BackupEntry[], modified = new Date()): Uint8
  * `Folders/` - every backup made before there were folders - comes back at the top level.
  */
 export function unpackBackup(bytes: Uint8Array): BackupDesign[] {
-  const files = unzipSync(bytes, { filter: (file) => /\.(lyl|skf)$/i.test(file.name) && !inCustomShapesFolder(file.name) });
-  return Object.entries(files).map(([path, data]) => {
+  const files = unzipSync(bytes, { filter: (file) => /\.(lyl|skf|png)$/i.test(file.name) && !inCustomShapesFolder(file.name) });
+  return Object.entries(files).filter(([path]) => /\.(lyl|skf)$/i.test(path)).map(([path, data]) => {
     const parts = path.split("/").filter(Boolean);
     const name = parts.pop() ?? path;
     const folder = parts[0] === DESIGN_FOLDERS_BACKUP_ROOT ? parts.slice(1) : [];
-    return { name, bytes: data, folder };
+    const thumbnail = files[backupThumbnailPath(path)];
+    return thumbnail?.length ? { name, bytes: data, folder, thumbnail } : { name, bytes: data, folder };
   });
 }
 

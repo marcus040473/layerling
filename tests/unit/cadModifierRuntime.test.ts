@@ -23,6 +23,7 @@ import {
   CAD_MODIFIER_KERNEL_RESTART_MESSAGE,
   SKETCH_CAD_DEFLECTION,
   cadModifierUserErrorMessage,
+  VARIABLE_FILLET_ONE_EDGE_MESSAGE,
 } from "@/lib/cadModifierRuntime";
 import { setLanguage } from "@/lib/i18n";
 
@@ -199,6 +200,13 @@ describe("Kernel am Ende oder nur die Aufgabe?", () => {
 });
 
 describe("cadModifierUserErrorMessage", () => {
+  it("says a variable radius takes one edge, in German too (#687)", () => {
+    setLanguage("de", false);
+    expect(cadModifierUserErrorMessage(`Error: ${VARIABLE_FILLET_ONE_EDGE_MESSAGE}`)).toContain("eine Kante");
+    setLanguage("en", false);
+    expect(cadModifierUserErrorMessage(VARIABLE_FILLET_ONE_EDGE_MESSAGE)).toContain("one edge at a time");
+  });
+
   it("translates overlapping geometry error into helpful German message", () => {
     setLanguage("de", false);
     const raw = "The chosen size creates invalid or overlapping edge geometry";

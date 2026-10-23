@@ -14,12 +14,12 @@ export const MAX_ROUNDED_BOX_QUALITY = 32;
 
 export function normalizeCornerFillet(val: unknown, maxFillet = 50): number {
   const n = typeof val === "number" && Number.isFinite(val) ? val : DEFAULT_ROUNDED_BOX_CORNER_FILLET;
-  return Math.max(0, Math.min(maxFillet, Math.round(n * 10) / 10));
+  return Math.max(0, Math.min(maxFillet, Math.round(n * 100) / 100));
 }
 
 export function normalizeTopBottomFillet(val: unknown, maxFillet = 50): number {
   const n = typeof val === "number" && Number.isFinite(val) ? val : DEFAULT_ROUNDED_BOX_TOP_BOTTOM_FILLET;
-  return Math.max(0, Math.min(maxFillet, Math.round(n * 10) / 10));
+  return Math.max(0, Math.min(maxFillet, Math.round(n * 100) / 100));
 }
 
 export function normalizeRoundedBoxQuality(val: unknown): number {

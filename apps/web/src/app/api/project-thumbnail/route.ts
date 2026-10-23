@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
+import { originMatchesRequest } from "@/lib/sameOrigin";
 
 export const revalidate = false;
 
@@ -50,20 +51,7 @@ async function pruneThumbnails(keep: string) {
 }
 
 function isSameOriginRequest(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      const requestUrl = new URL(request.url);
-      const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-      const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-      const host = forwardedHost || request.headers.get("host") || requestUrl.host;
-      const protocol = (forwardedProtocol || requestUrl.protocol.replace(/:$/, "")).toLowerCase();
-      if (protocol !== "http" && protocol !== "https") return false;
-      if (new URL(origin).origin !== new URL(`${protocol}://${host}`).origin) return false;
-    } catch {
-      return false;
-    }
-  }
+  if (!originMatchesRequest(request)) return false;
 
   const fetchSite = request.headers.get("sec-fetch-site");
   return !fetchSite || fetchSite === "same-origin" || fetchSite === "none";

@@ -57,6 +57,9 @@ const GAPS = [
   "welcome.gap8",
 ] as const satisfies ReadonlyArray<MessageKey>;
 
+/** A bookmark by a member of the community that turns a Tinkercad design into a .lyl file; not part of layerling. */
+const TINKERCAD_IMPORTER_URL = "https://taylormadearmy.github.io/tinkercad-layerling-importer/";
+
 /** The body of the welcome panel on the start page. */
 export function WelcomeGuideBody({ tr, offline = true }: { tr: Translate; offline?: boolean }) {
   // Where no service worker can run (the Docker image, a plain-http address) the page must not promise "works offline" (#571).
@@ -65,7 +68,10 @@ export function WelcomeGuideBody({ tr, offline = true }: { tr: Translate; offlin
     <>
       <p>{tr("welcome.lead")}</p>
       <p className="dashboard-welcome-switch">
-        <strong>{tr("welcome.switchTitle")}</strong> {tr("welcome.switchBody")}
+        <strong>{tr("welcome.switchTitle")}</strong> {tr("welcome.switchBody")} {tr("welcome.switchImport")}{" "}
+        <a href={TINKERCAD_IMPORTER_URL} target="_blank" rel="noopener noreferrer">
+          {tr("welcome.switchImportLink")}
+        </a>
       </p>
       <div className="dashboard-welcome-more">
         <h3>{tr("welcome.gapTitle")}</h3>

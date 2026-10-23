@@ -11,29 +11,47 @@ export type ObjExportMesh = {
 };
 
 const OBJ_WELD_TOLERANCE = 0.00001;
+// Points are looked up in cells much wider than the tolerance, so a point has a neighbour in the next
+// cell only when it lies within the tolerance of that cell's edge: usually one lookup, not 27 (#734).
+const OBJ_WELD_CELL = OBJ_WELD_TOLERANCE * 16;
 
-function bucketKey(x: number, y: number, z: number) {
-  return `${x}:${y}:${z}`;
+/** A number for a cell. Two cells may share one; the candidates are checked against the tolerance anyway. */
+function cellHash(x: number, y: number, z: number) {
+  return (Math.imul(x, 73856093) ^ Math.imul(y, 19349663) ^ Math.imul(z, 83492791)) | 0;
+}
+
+/** The cells to look in along one axis: its own, and the next one on a side the point is close to. */
+function cellOffsets(value: number, cell: number) {
+  const inside = value - cell * OBJ_WELD_CELL;
+  const offsets: number[] = [];
+  if (inside <= OBJ_WELD_TOLERANCE * 2) offsets.push(-1);
+  offsets.push(0);
+  if (OBJ_WELD_CELL - inside <= OBJ_WELD_TOLERANCE * 2) offsets.push(1);
+  return offsets;
 }
 
 export function weldMeshVertices(mesh: ObjExportMesh) {
   const vertices: Array<[number, number, number]> = [];
-  const buckets = new Map<string, number[]>();
+  const buckets = new Map<number, number[]>();
   const remappedIndices: number[] = [];
 
   mesh.vertices.forEach((sourceVertex) => {
     // The points are welded in layerling's own coordinates; exportMeshesToObj turns them to Z up
     // when it writes them.
-    const vertex: [number, number, number] = [...sourceVertex];
-    const bucketX = Math.floor(vertex[0] / OBJ_WELD_TOLERANCE);
-    const bucketY = Math.floor(vertex[1] / OBJ_WELD_TOLERANCE);
-    const bucketZ = Math.floor(vertex[2] / OBJ_WELD_TOLERANCE);
+    const vertex: [number, number, number] = [sourceVertex[0], sourceVertex[1], sourceVertex[2]];
+    const cellX = Math.floor(vertex[0] / OBJ_WELD_CELL);
+    const cellY = Math.floor(vertex[1] / OBJ_WELD_CELL);
+    const cellZ = Math.floor(vertex[2] / OBJ_WELD_CELL);
+    const offsetsX = cellOffsets(vertex[0], cellX);
+    const offsetsY = cellOffsets(vertex[1], cellY);
+    const offsetsZ = cellOffsets(vertex[2], cellZ);
     let weldedIndex: number | undefined;
 
-    for (let xOffset = -1; xOffset <= 1 && weldedIndex === undefined; xOffset += 1) {
-      for (let yOffset = -1; yOffset <= 1 && weldedIndex === undefined; yOffset += 1) {
-        for (let zOffset = -1; zOffset <= 1 && weldedIndex === undefined; zOffset += 1) {
-          const candidates = buckets.get(bucketKey(bucketX + xOffset, bucketY + yOffset, bucketZ + zOffset)) ?? [];
+    for (let x = 0; x < offsetsX.length && weldedIndex === undefined; x += 1) {
+      for (let y = 0; y < offsetsY.length && weldedIndex === undefined; y += 1) {
+        for (let z = 0; z < offsetsZ.length && weldedIndex === undefined; z += 1) {
+          const candidates = buckets.get(cellHash(cellX + offsetsX[x], cellY + offsetsY[y], cellZ + offsetsZ[z]));
+          if (!candidates) continue;
           weldedIndex = candidates.find((candidateIndex) => {
             const candidate = vertices[candidateIndex];
             return (
@@ -49,8 +67,10 @@ export function weldMeshVertices(mesh: ObjExportMesh) {
     if (weldedIndex === undefined) {
       weldedIndex = vertices.length;
       vertices.push(vertex);
-      const key = bucketKey(bucketX, bucketY, bucketZ);
-      buckets.set(key, [...(buckets.get(key) ?? []), weldedIndex]);
+      const key = cellHash(cellX, cellY, cellZ);
+      const own = buckets.get(key);
+      if (own) own.push(weldedIndex);
+      else buckets.set(key, [weldedIndex]);
     }
     remappedIndices.push(weldedIndex);
   });

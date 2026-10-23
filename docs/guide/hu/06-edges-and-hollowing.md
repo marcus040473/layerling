@@ -22,6 +22,7 @@ A panelen ezeket találod:
 
 - A {{ui:edge.allSharpEdges}} egyszerre minden élt kijelöl, a {{ui:edge.clear}} kiüríti a kijelölést.
 - **{{ui:edge.radius}}** a lekerekítéshez. Az élletöréshez a {{ui:edge.distance}} vagy a {{ui:edge.angle}} értéket állítod be.
+- A {{ui:edge.variableRadius}} (csak lekerekítésnél) egy él mentén változtatja a sugarat: az egyik végén kicsi, a másikon nagyobb, közte egyenletes, például ahol egy függőleges fal egy ferdével találkozik. Kattints egyetlen élre, majd állítsd be a {{ui:edge.radiusStart}} és a {{ui:edge.radiusEnd}} értékét. Hogy melyik vég az eleje, az él keletkezéséből adódik; ha a nagyobb sugár a rossz végre kerül, a {{ui:edge.swapEnds}} megfordítja. Egyszerre egy élen működik, több élt egymás után kerekíts le. A {{ui:edge.editAction}} mindkét értéket visszahozza.
 - Az {{ui:edge.sharpThreshold}} dönti el, mely élek számítanak egyáltalán élesnek. 25°-os értéknél csak a határozott töréseket veszi élnek, a lapos átmeneteket békén hagyja.
 - A {{ui:edge.topEdges}} csak a test legtetején futó éleket választja ki. Ez a gyors út egy sütikiszúróhoz: építsd meg a körvonalat egy vázlatban vonalként, majd törd le a felső éleket. A {{ui:edge.angle}} adja meg, milyen meredek a letörés; nem érhet tovább, mint amilyen vastag a fal.
 - Az {{ui:edge.bottomEdges}} csak a test legalján futó éleket választja ki, a {{ui:edge.topEdges}} párja. Így gyorsan lekerekítheted vagy letörheted csak egy alkatrész talpát.
@@ -57,7 +58,7 @@ A dobozokban, poharakban, házakban és fedelekben közös, hogy belül üresek,
 
 1. Jelöld ki a testet, és kattints a {{ui:editor.tool.hollow}} gombra, vagy kattints jobb gombbal a testre, és válaszd ki a menüből.
 2. Állítsd be a {{ui:shell.wall}} értékét.
-3. A {{ui:shell.openings}} alatt kapcsold be azokat az oldalakat, amelyek nyitva maradnak: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} vagy {{ui:shell.side.right}}, ahányat csak akarsz – egyedül az {{ui:shell.side.front}} fióknak való nyílást ad, a {{ui:shell.side.left}} és a {{ui:shell.side.right}} alagutat. Ha egyik oldal sincs bekapcsolva, a test minden oldalon zárt marad, középen egy üreggel.
+3. A {{ui:shell.openings}} alatt kapcsold be azokat az oldalakat, amelyek nyitva maradnak: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} vagy {{ui:shell.side.right}}, ahányat csak akarsz – egyedül az {{ui:shell.side.front}} fióknak való nyílást ad, a {{ui:shell.side.left}} és a {{ui:shell.side.right}} alagutat. Ha egyik oldal sincs bekapcsolva, a test minden oldalon zárt marad, középen egy üreggel. A {{ui:shell.side.closed}} egy kattintással minden oldalt kikapcsol. A {{ui:shell.side.top}} a panel megnyitásakor már be van kapcsolva; egy kattintás rá újra lezárja a tetejét. A minden oldalon zárt test kívülről változatlannak látszik: az üreget a metszetnézet mutatja.
 4. Döntsd el, hogy a {{ui:shell.edges}} {{ui:shell.edges.round}} vagy {{ui:shell.edges.sharp}} legyenek.
 5. Kattints a {{ui:shell.apply}} gombra.
 

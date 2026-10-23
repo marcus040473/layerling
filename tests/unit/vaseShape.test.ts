@@ -88,7 +88,8 @@ describe("the vase as a shape", () => {
         expect(analysis.nonManifoldEdges, `${effect} ${body}`).toBe(0);
       }
     }
-  });
+    // Ten whole vases, the Voronoi ones cut along their joints: more than the default 5 s when the suite runs in parallel.
+  }, 30_000);
 
   it("stays closed with its bottom and wall features", () => {
     const variants: Array<[string, Record<string, unknown>]> = [

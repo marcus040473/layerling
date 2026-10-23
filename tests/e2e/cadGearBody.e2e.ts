@@ -67,6 +67,8 @@ describe("the helical and bevel gears' exact bodies", () => {
   it.each<[string, Partial<WorkplaneShape>]>([
     ["involute spur gear", { gearType: "spur" }],
     ["involute spur gear of 40 teeth, root outside the base circle", { gearType: "spur", teeth: 50, width: 52, depth: 52, size: 52 }],
+    ["involute spur gear of 150 teeth, module 0.5 (#679)", { gearType: "spur", teeth: 150, width: 76, depth: 76, size: 76 }],
+    ["involute spur gear of 500 teeth, module 0.5 (#679)", { gearType: "spur", teeth: 500, width: 251, depth: 251, size: 251 }],
     ["involute helical gear", { gearType: "helical", helixAngle: 20 }],
     ["involute helical gear turned the other way, mirrored", { gearType: "helical", helixAngle: -25, mirrorX: true }],
     ["involute bevel gear", { gearType: "bevel" }],

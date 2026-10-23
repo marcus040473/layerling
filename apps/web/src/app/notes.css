@@ -1,0 +1,215 @@
+/* The notes and reference points over the 3D view and over a sketch (ViewportOverlays' NoteOverlay). */
+
+/* --- Notizen ---------------------------------------------------------------
+   Eine Notiz ist HTML ueber der Leinwand, keine Textur darin: So bleibt die
+   Schrift bei jeder Zoomstufe scharf, laesst sich markieren und kopieren. Die
+   Ebene selbst faengt keine Zeiger ab - nur die Nadeln und die Karten tun das,
+   sonst liesse sich durch sie hindurch nichts mehr anfassen. */
+.note-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+
+/* Verschoben wird um die halbe Nadel, nicht um die halbe Zeile: Die Nadel soll
+   auf dem Punkt sitzen, an dem die Notiz haengt - die Karte daneben zaehlt
+   nicht mit. Kippt die Zeile nach links, steht die Nadel an ihrem Ende. */
+.note-pin-anchor {
+  position: absolute;
+  transform: translate(-13px, -13px);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.note-pin-anchor.flipped {
+  transform: translate(calc(-100% + 13px), -13px);
+  flex-direction: row-reverse;
+}
+
+.note-pin-anchor.flipped .note-pin {
+  border-radius: 999px 999px 4px 999px;
+}
+
+.note-pin {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px 999px 999px 4px;
+  border: 2px solid var(--panel);
+  background: var(--primary);
+  color: #fff;
+  font: 700 13px/1 var(--font-ui);
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.note-pin:active {
+  cursor: grabbing;
+}
+
+/* Eine angeheftete Notiz traegt einen Ring: Man soll ihr ansehen, dass sie mit
+   ihrem Koerper wandert, ohne sie anzufassen. */
+.note-pin.attached {
+  box-shadow: var(--shadow), 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+/* A reference point is a small round mark, not a numbered pin. */
+.note-pin.point-pin {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ff9a2e;
+  color: #1b1b1b;
+  border-width: 2px;
+}
+
+.note-pin-anchor.flipped .note-pin.point-pin {
+  border-radius: 999px;
+}
+
+.note-card.point-card {
+  width: 190px;
+}
+
+/* The title bar of the card: drag it away from the pin, double-click to bring it back. */
+.point-card-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  padding: 2px 0 4px;
+  font: 700 13px/1.2 var(--font-ui);
+}
+
+.point-card-handle:active {
+  cursor: grabbing;
+}
+
+.point-field {
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  font: 600 12px/1.2 var(--font-ui);
+  color: var(--foreground);
+}
+
+.point-field input {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--tile);
+  color: var(--foreground);
+  font: 500 13px/1.2 var(--font-ui);
+  padding: 5px 7px;
+  text-align: right;
+}
+
+.point-field input:focus-visible {
+  outline: 2px solid var(--primary);
+}
+
+.point-field small {
+  color: var(--muted);
+}
+
+.note-card {
+  width: 210px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  display: grid;
+  gap: 6px;
+}
+
+/* Eine Zeile ist das Mindestmass - was darueber hinausgeht, waechst mit dem
+   Text mit. Der Anfasser bleibt, wer mehr Platz zum Schreiben will, zieht sich
+   das Feld groesser. */
+.note-text {
+  width: 100%;
+  min-height: 32px;
+  resize: vertical;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--tile);
+  color: var(--foreground);
+  font: 400 13px/1.35 var(--font-ui);
+  padding: 6px 7px;
+}
+
+.note-text:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.note-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.point-card .point-delete-all {
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.note-card-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.note-help-link,
+.sketch-corner-help {
+  width: 24px;
+  height: 24px;
+}
+
+.note-action {
+  border: 0;
+  background: none;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--muted-strong);
+  font: 600 11px/1 var(--font-ui);
+  cursor: pointer;
+}
+
+.note-action:hover {
+  background: var(--tile-hover);
+  color: var(--foreground);
+}
+
+.note-action.danger:hover {
+  color: var(--filament-coral);
+}
+
+.note-hint {
+  color: var(--muted-strong);
+  font: 500 11px/1 var(--font-ui);
+}
+
+/* Solange das Werkzeug an ist, sagt der Zeiger, dass der naechste Klick eine
+   Notiz setzt. */
+.workplane-wrap.note-mode .three-workplane-host,
+.sketch-plate.note-mode {
+  cursor: copy;
+}
+
+@media (max-width: 720px) {
+  .note-card {
+    width: 168px;
+  }
+}

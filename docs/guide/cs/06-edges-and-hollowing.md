@@ -57,7 +57,7 @@ Krabičky, nádoby a kryty mají uvnitř prázdný prostor a rovnoměrně silné
 
 1. Vyberte těleso a zvolte {{ui:editor.tool.hollow}} v pásu nástrojů nebo nabídce pravého tlačítka.
 2. Nastavte {{ui:shell.wall}}.
-3. V části {{ui:shell.openings}} zapněte otevřené strany: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} a {{ui:shell.side.right}}. Lze kombinovat libovolný počet. Samotná {{ui:shell.side.front}} vytvoří otvor pro zásuvku, {{ui:shell.side.left}} a {{ui:shell.side.right}} průchozí tunel. Bez otevřené strany vznikne uzavřené těleso s vnitřní dutinou.
+3. V části {{ui:shell.openings}} zapněte otevřené strany: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} a {{ui:shell.side.right}}. Lze kombinovat libovolný počet. Samotná {{ui:shell.side.front}} vytvoří otvor pro zásuvku, {{ui:shell.side.left}} a {{ui:shell.side.right}} průchozí tunel. Bez otevřené strany vznikne uzavřené těleso s vnitřní dutinou. {{ui:shell.side.closed}} vypne všechny strany jedním kliknutím. {{ui:shell.side.top}} je při otevření panelu už zapnuté; kliknutím na něj se horní strana zase zavře. Těleso uzavřené ze všech stran vypadá zvenku beze změny: dutinu ukáže řez.
 4. Zvolte, zda mají být {{ui:shell.edges}} nastavené na {{ui:shell.edges.round}} nebo {{ui:shell.edges.sharp}}.
 5. Potvrďte {{ui:shell.apply}}.
 

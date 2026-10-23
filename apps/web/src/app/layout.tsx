@@ -1,13 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./historyView.css";
+import "./notes.css";
 import "./myShapes.css";
 import "./viewCube.css";
+import "./secondView.css";
+import "./shortcuts.css";
 import { DiagnoseStrip } from "@/components/DiagnoseStrip";
 import { NewVersionNotice } from "@/components/NewVersionNotice";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { DOM_MUTATION_GUARD_SCRIPT } from "@/lib/domMutationGuard";
+import { LANGUAGE_BOOT_SCRIPT } from "@/lib/i18n";
 import { LANGUAGES } from "@/lib/languages";
+import { SHAPE_COLORS_BOOT_SCRIPT } from "@/lib/shapeColors";
+import { SIMPLE_MODE_BOOT_SCRIPT } from "@/lib/simpleMode";
 import { TOOLBAR_SIZE_BOOT_SCRIPT } from "@/lib/toolbarSize";
 import { VIEW_CUBE_POSITION_BOOT_SCRIPT } from "@/lib/viewCubePosition";
 
@@ -46,9 +52,6 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   applicationName: NAME,
-  // layerling speaks its languages itself. A browser's translator reads the page as English before the chosen
-  // language is in, and makes "Hell" into "Hölle" or an English menu into German (forum).
-  other: { google: "notranslate" },
   manifest: "/manifest.webmanifest",
   icons: {
     // Das SVG ist das eigentliche Symbol; die .ico steht daneben fuer alles,
@@ -94,11 +97,16 @@ export default function RootLayout({
 }>) {
   return (
     // Translate tools add classes such as translated-ltr to <html>; that must not end in a hydration error (#191).
-    <html lang="en" translate="no" style={{ colorScheme: "light" }} suppressHydrationWarning>
+    // The browser may translate into a language layerling does not speak (#681); the page's language is set first
+    // thing, so it does not translate a language into itself, and names people gave stay out of it (translate="no").
+    <html lang="en" style={{ colorScheme: "light" }} suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: LANGUAGE_BOOT_SCRIPT }} />
         {/* Before any of React's scripts: a page rearranged by Translate must not crash it (#186). */}
         <script dangerouslySetInnerHTML={{ __html: DOM_MUTATION_GUARD_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: TOOLBAR_SIZE_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: SIMPLE_MODE_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: SHAPE_COLORS_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: VIEW_CUBE_POSITION_BOOT_SCRIPT }} />
       </head>
       <body suppressHydrationWarning>

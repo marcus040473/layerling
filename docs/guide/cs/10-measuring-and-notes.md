@@ -61,10 +61,11 @@ Poznámka zachytí informace, které geometrie nevyjadřuje: „Šroub je o 0,3 
 - {{ui:note.detach}} odpojí poznámku od tělesa.
 - {{ui:editor.tool.group}} vezme připojenou poznámku do skupiny; {{ui:editor.tool.ungroup}} ji předá viditelné části pod ní, i vnořené skupině. Dokud je skupina otevřená přes {{ui:group.edit}}, její poznámky se pohybují s částí pod nimi a tlačítkem {{ui:group.done}} se vrátí ke skupině; zrušení je vrátí do původního stavu.
 - Když je její těleso smazáno nebo pod ní už není žádné viditelné těleso, poznámka zůstane, kde byla, na pracovní rovině.
-- Tažením ji přesunete, kliknutím otevřete k úpravě.
+- Tažením za špendlík poznámku přesunete. Kliknutím na špendlík kartu sbalíte, zůstane jen malé číslo; dalším kliknutím ji zase otevřete. Kliknutím do textu ho upravíte.
 - [[Enter]] potvrdí text, [[Esc]] vrátí podobu před zahájením úpravy. [[Shift]]+[[Enter]] vloží nový řádek.
+- **V náčrtu** vložíte poznámku také pomocí {{ui:editor.tool.note}} (v sekci {{ui:editor.group.manage}}) nebo klávesy [[N]], kamkoli do náčrtu. Všechny poznámky náčrtu patří k jeho tělesu: ve 3D zobrazení na něm sedí, nahoře na tělese vytvořeném přes {{ui:sketch.extrude}} nebo {{ui:sketch.sweep}} a na nakresleném profilu tělesa vytvořeného přes {{ui:sketch.revolve}}, a pohybují se s ním. Když náčrt znovu otevřete, ukáže poznámky tělesa, i ty vložené ve 3D. V náčrtu vezme {{ui:sketch.undo}} poznámku zpět stejně jako čáru a {{ui:sketch.cancel}} zahodí, co jste na poznámkách změnili.
 
-Poznámky se ukládají v projektu, do exportu se nezahrnují a jejich viditelnost přepíná {{ui:visibility.notes}}.
+Poznámky se ukládají v projektu, do exportu se nezahrnují a jejich viditelnost přepíná {{ui:visibility.notes}} (v {{ui:editor.visibilityOptions}}, šipce vedle ikony oka).
 
 ## Referenční body
 
@@ -75,3 +76,15 @@ Referenční bod je samostatná značka v prostoru, podobná rysce při práci v
 - Při tažení se na body přichytávají hrany i středy tvarů, stejně jako na jiná tělesa při {{ui:workspace.objectSnap}}. Přichytává se i úhelník.
 - Body se ukládají do projektu, neexportují se a zobrazují či skrývají se společně s poznámkami přes {{ui:visibility.notes}}.
 - AI je může vytvářet, vypisovat a odstraňovat pomocí `layerling_add_reference_points`, `layerling_list_reference_points` a `layerling_remove_reference_points`.
+
+## Referenční obrázky
+
+Referenční obrázek je obrázek, podle kterého zarovnáte díly: položte fotku desky plošných spojů na dno její krabičky a usaďte distanční sloupky, otvory a výřezy pro konektory přesně na ni. Je to pomůcka, ne těleso: nikdy se netiskne, nikdy neexportuje (STL, 3MF, OBJ, STEP, SVG), nikdy není součástí skupiny, svazku ani řezu a odhad tisku ho vynechává.
+
+- Otevřete {{ui:editor.import}} a zvolte {{ui:import.referenceImage}}, pak obrázek PNG, JPG, WebP, GIF nebo BMP. Položí se na pracovní rovinu - na podložku, nebo na plochu, na kterou jste pracovní rovinu položili -, delší stranou 100 mm a napůl průhledný.
+- Posouvejte, otáčejte a měňte ho úchyty jako každý tvar. Těleso před ním se vybere jako první, takže při práci na něm obrázek omylem nechytnete.
+- {{ui:referenceImage.seeThrough}} v jeho nastavení ho zeslabí od plně viditelného po sotva patrný.
+- {{ui:referenceImage.calibrate}} mu dá skutečnou velikost jako ve skice: klikněte na dva body obrázku, jejichž skutečnou vzdálenost znáte - třeba dva montážní otvory desky - a zadejte tuto vzdálenost do pole {{ui:referenceImage.distance}}. Obrázek si zachová proporce i střed.
+- Zamkněte ho zámkem v záhlaví jeho nastavení a zůstane na místě: kliknutí pak jím procházejí na podložku. K odemčení ho vyberte v seznamu objektů.
+- Obrázek je v souboru návrhu uložen jednou, ať se kopíruje nebo vrací kolikrát chce. Velký obrázek zvětší soubor o tolik; hlášení při přidání uvede jeho velikost.
+- AI ho přidá, posune, kalibruje, zeslabí a zamkne pomocí `layerling_reference_image`.

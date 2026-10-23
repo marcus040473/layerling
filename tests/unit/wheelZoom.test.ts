@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { wheelZoomDelta, WHEEL_ALONE_GAP_MS, WHEEL_NOTCH_DELTA, pinchWheelDelta } from "@/lib/wheelZoom";
+import { wheelZoomDelta, WHEEL_ALONE_GAP_MS, WHEEL_NOTCH_DELTA, PINCH_WHEEL_FACTOR, pinchWheelDelta } from "@/lib/wheelZoom";
 
 const pixels = (deltaY: number, ctrlKey = false) => ({ deltaY, deltaMode: 0, ctrlKey });
 
@@ -20,10 +20,19 @@ describe("wheelZoomDelta (#331)", () => {
     expect(wheelZoomDelta(pixels(-240), 500)).toBe(-240);
   });
 
-  it("leaves a pinch on a trackpad (Ctrl held) and a wheel counted in lines or pages alone", () => {
-    expect(wheelZoomDelta(pixels(-4, true), 500)).toBe(-4);
-    expect(wheelZoomDelta({ deltaY: -3, deltaMode: 1, ctrlKey: false }, 500)).toBe(-3);
-    expect(wheelZoomDelta({ deltaY: -1, deltaMode: 2, ctrlKey: false }, 500)).toBe(-1);
+  it("counts a pinch on a trackpad (Ctrl, small steps) ten times over, as OrbitControls would (Chrome, mail 21.10.2026)", () => {
+    expect(wheelZoomDelta(pixels(-4, true), 500)).toBe(-4 * PINCH_WHEEL_FACTOR);
+    expect(wheelZoomDelta(pixels(2.5, true), 16)).toBe(2.5 * PINCH_WHEEL_FACTOR);
+  });
+
+  it("leaves a mouse notch with Ctrl held alone", () => {
+    expect(wheelZoomDelta(pixels(-100, true), 500)).toBe(-100);
+  });
+
+  it("counts a wheel in lines or pages in pixels: three lines or one page are a notch (Edge, one screen at a time, 22.10.2026)", () => {
+    expect(wheelZoomDelta({ deltaY: -3, deltaMode: 1, ctrlKey: false }, 500)).toBeCloseTo(-WHEEL_NOTCH_DELTA);
+    expect(wheelZoomDelta({ deltaY: -1, deltaMode: 2, ctrlKey: false }, 500)).toBe(-WHEEL_NOTCH_DELTA);
+    expect(wheelZoomDelta({ deltaY: 1, deltaMode: 2, ctrlKey: true }, 500)).toBe(WHEEL_NOTCH_DELTA);
   });
 
   it("does not turn a step of zero into a notch, and takes the first step ever as one that stands alone", () => {
@@ -33,8 +42,9 @@ describe("wheelZoomDelta (#331)", () => {
 });
 
 describe("a pinch on a trackpad in Safari zooms as far as the wheel step it stands for (forum)", () => {
-  // OrbitControls scales the distance by 0.95 ^ (zoom speed * step / 100).
-  const distanceScale = (step: number, zoomSpeed: number) => Math.pow(0.95, zoomSpeed * Math.abs(step) * 0.01);
+  // OrbitControls scales the distance by 0.95 ^ (zoom speed * step / 100), the step as wheelZoomDelta passes it on.
+  const distanceScale = (step: number, zoomSpeed: number) =>
+    Math.pow(0.95, zoomSpeed * Math.abs(wheelZoomDelta(pixels(step, true), 16)) * 0.01);
 
   it("a spread comes closer by the inverse of the scale it grew by", () => {
     const step = pinchWheelDelta(1.2, 1)!;

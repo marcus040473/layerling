@@ -83,9 +83,17 @@ apps/web/public/vejledning/
 apps/web/public/it/
 # Built Arabic user guide.
 apps/web/public/dalil/
+# Built Simplified Chinese user guide.
+apps/web/public/zh-cn/
+# Built Traditional Chinese user guide.
+apps/web/public/zh-tw/
 
 # Built Turkish user guide.
 apps/web/public/kilavuz/
+# Built Brazilian Portuguese user guide.
+apps/web/public/guia/
+# Built Spanish user guide.
+apps/web/public/guia-es/
 
 # The Japanese typeface, cut from Zen Maru Gothic by scripts/build-japanese-typeface.mjs
 apps/web/public/fonts/japanese/

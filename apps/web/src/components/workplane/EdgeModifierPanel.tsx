@@ -34,6 +34,8 @@ export type EdgeHistoryOption = {
   label: string;
   kind: EdgeTreatmentFeature["kind"];
   amount: number;
+  /** Only for a variable fillet (#687): the radius at the edge's end. */
+  endAmount?: number;
   edgeCount: number;
   /** Only for a deletion of faces. */
   faceCount?: number;
@@ -45,7 +47,9 @@ export type EdgeHistoryOption = {
 
 /** Der gespeicherte Text ist englisch - fuer die Tafel wird er neu gesetzt. */
 function edgeHistoryLabel(option: EdgeHistoryOption) {
-  const size = String(Number(option.amount.toFixed(2)));
+  const size = option.endAmount !== undefined
+    ? `${Number(option.amount.toFixed(2))}–${Number(option.endAmount.toFixed(2))}`
+    : String(Number(option.amount.toFixed(2)));
   if (option.kind === "shell") return t("edge.revertShell", { size });
   if (option.kind === "surfaceTexture") return t("edge.revertSurfaceTexture", { size });
   if (option.kind === "deleteFace") {
@@ -143,6 +147,8 @@ export function EdgeModifierSlider({
   length = false,
   disabled = false,
   coarse,
+  autoFocus = false,
+  onEnter,
   onChange,
 }: {
   label: string;
@@ -159,6 +165,10 @@ export function EdgeModifierSlider({
    * still takes the exact value and anything up to the full range: a slider of 3,000 steps gives crooked values (forum, DrJones).
    */
   coarse?: { step: number; max: number };
+  /** The field takes the focus when it appears, so a tool opened from the keyboard can be typed into at once (#760). */
+  autoFocus?: boolean;
+  /** Enter takes the typed value and then calls this with it, for a window that applies on Enter (#760). */
+  onEnter?: (value: number) => void;
   onChange: (value: number) => void;
 }) {
   const safeMin = Number.isFinite(min) ? min : 0;
@@ -189,6 +199,9 @@ export function EdgeModifierSlider({
   // The mouse wheel in the clicked field (#536). What the wheel wrote stays as it is when the field is left, so
   // the rounded reading does not replace the exact value.
   const numberInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (autoFocus) numberInputRef.current?.focus();
+  }, [autoFocus]);
   const wheelShownRef = useRef<string | null>(null);
   useWheelField(numberInputRef, editing && !disabled, ({ direction, keys }) => {
     const parsed = parseMeasurementInput(draft);
@@ -248,7 +261,13 @@ export function EdgeModifierSlider({
               if (event.key === "Enter") {
                 event.preventDefault();
                 event.stopPropagation();
+                // What the field holds now, as commitDraft will take it (a wheel step is already in the value).
+                const typed = parseMeasurementInput(draft);
+                const entered = wheelShownRef.current !== null && draft === wheelShownRef.current || !Number.isFinite(typed)
+                  ? actualValue
+                  : clamp(toModelValue(typed), safeMin, safeMax);
                 event.currentTarget.blur();
+                onEnter?.(entered);
               } else if (event.key === "Escape") {
                 event.preventDefault();
                 event.stopPropagation();
@@ -298,6 +317,9 @@ export function EdgeModifierPanel({
   prepared,
   error,
   onAmountChange,
+  endAmount = null,
+  onEndAmountChange,
+  onSwapEnds,
   onChamferAngleChange,
   onKindChange,
   onQualityChange,
@@ -341,6 +363,11 @@ export function EdgeModifierPanel({
   prepared: boolean;
   error: string | null;
   onAmountChange: (value: number) => void;
+  /** A fillet whose radius changes along its one edge (#687): the radius at the edge's end, null for one radius. */
+  endAmount?: number | null;
+  /** null switches the variable radius off; NaN switches it on at a starting value. */
+  onEndAmountChange?: (value: number | null) => void;
+  onSwapEnds?: () => void;
   onChamferAngleChange: (value: number) => void;
   onKindChange?: (kind: "chamfer" | "chamfillet") => void;
   onQualityChange: (value: CadModifierQuality) => void;
@@ -368,6 +395,7 @@ export function EdgeModifierPanel({
   const title = kind === "fillet" ? t("edge.filletTitle") : kind === "chamfillet" ? t("edge.chamfilletTitle") : t("edge.chamferTitle");
   const amountMin = Math.min(MIN_EDGE_MODIFIER_AMOUNT, Math.max(Number.EPSILON, maxAmount));
   const amountMax = Math.max(amountMin, maxAmount);
+  const variable = kind === "fillet" && endAmount !== null;
   // On a short screen the panel scrolls, and the error sits at its foot under
   // the buttons: bring the whole bottom into view whenever a message appears.
   const errorRef = useRef<HTMLDivElement>(null);
@@ -451,8 +479,15 @@ export function EdgeModifierPanel({
         </div>
       ) : null}
 
+      {kind === "fillet" && onEndAmountChange ? (
+        <label className="edge-modifier-check" title={t("edge.variableRadiusHint")}>
+          <input type="checkbox" checked={variable} disabled={!prepared} onChange={(event) => onEndAmountChange(event.currentTarget.checked ? Number.NaN : null)} />
+          <span>{t("edge.variableRadius")}</span>
+        </label>
+      ) : null}
+
       <EdgeModifierSlider
-        label={kind === "fillet" ? t("edge.radius") : t("edge.distance")}
+        label={kind === "fillet" ? t(variable ? "edge.radiusStart" : "edge.radius") : t("edge.distance")}
         value={amount}
         min={amountMin}
         max={amountMax}
@@ -463,6 +498,27 @@ export function EdgeModifierPanel({
         disabled={!prepared}
         onChange={onAmountChange}
       />
+
+      {variable && onEndAmountChange ? (
+        <>
+          <EdgeModifierSlider
+            label={t("edge.radiusEnd")}
+            value={endAmount ?? amount}
+            min={amountMin}
+            max={amountMax}
+            step={EDGE_MODIFIER_AMOUNT_STEP}
+            coarse={{ step: lengthDisplayUnit(workspace).label === "in" ? 25.4 / 64 : EDGE_MODIFIER_SLIDER_STEP, max: EDGE_MODIFIER_SLIDER_MAX }}
+            workspace={workspace}
+            length
+            disabled={!prepared}
+            onChange={onEndAmountChange}
+          />
+          <div className="edge-modifier-quick-actions">
+            <button type="button" disabled={!prepared || !onSwapEnds} title={t("edge.swapEndsHint")} onClick={onSwapEnds}>{t("edge.swapEnds")}</button>
+          </div>
+          {selectedCount > 1 ? <p className="edge-modifier-note" role="note">{t("edge.variableOneEdge")}</p> : null}
+        </>
+      ) : null}
 
       {kind === "chamfer" || kind === "chamfillet" ? <EdgeModifierSlider label={t("edge.angle")} value={chamferAngle} min={kind === "chamfillet" ? 15 : 5} max={kind === "chamfillet" ? 75 : 85} step={1} unit="°" workspace={workspace} disabled={!prepared} onChange={onChamferAngleChange} /> : null}
 

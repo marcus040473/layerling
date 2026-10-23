@@ -10,8 +10,16 @@ export const DEFAULT_THEME_ENV = "LAYERLING_DEFAULT_THEME";
 /** `true` makes new designs start on the server for people who have not chosen; `always` makes it so for everyone (#316). */
 export const NEW_DESIGNS_ON_SERVER_ENV = "LAYERLING_NEW_DESIGNS_ON_SERVER";
 
+/** `true` starts everybody who has not chosen in the simple mode (#695); `always` fixes it, so nobody can switch it off in the program. */
+export const SIMPLE_MODE_ENV = "LAYERLING_SIMPLE_MODE";
+
+export type SimpleModeSetting = "on" | "always";
 export type NewDesignsOnServerSetting = "on" | "always";
-export type ServerDefaults = { theme: AppThemePreference | null; newDesignsOnServer: NewDesignsOnServerSetting | null };
+export type ServerDefaults = {
+  theme: AppThemePreference | null;
+  newDesignsOnServer: NewDesignsOnServerSetting | null;
+  simpleMode: SimpleModeSetting | null;
+};
 
 /** What an operator wrote for the new designs: "always", a yes in one of its usual spellings, or nothing. */
 export function parseNewDesignsOnServer(value: unknown): NewDesignsOnServerSetting | null {
@@ -19,6 +27,11 @@ export function parseNewDesignsOnServer(value: unknown): NewDesignsOnServerSetti
   const wanted = value.trim().toLowerCase();
   if (wanted === "always") return "always";
   return ["true", "1", "yes", "on"].includes(wanted) ? "on" : null;
+}
+
+/** What an operator wrote for the simple mode: "always", a yes in one of its usual spellings, or nothing. */
+export function parseSimpleMode(value: unknown): SimpleModeSetting | null {
+  return parseNewDesignsOnServer(value);
 }
 
 /** The theme an operator wrote in the setting, or null when it is empty or not one of ours. */
@@ -33,6 +46,7 @@ export function serverDefaultsFromEnvironment(environment: Record<string, string
   return {
     theme: parseDefaultTheme(environment[DEFAULT_THEME_ENV]),
     newDesignsOnServer: parseNewDesignsOnServer(environment[NEW_DESIGNS_ON_SERVER_ENV]),
+    simpleMode: parseSimpleMode(environment[SIMPLE_MODE_ENV]),
   };
 }
 
@@ -44,15 +58,16 @@ export async function fetchServerDefaults(
   fetchImpl: typeof fetch = fetch,
   endpoint: string = SERVER_DEFAULTS_ENDPOINT,
 ): Promise<ServerDefaults> {
-  const none: ServerDefaults = { theme: null, newDesignsOnServer: null };
+  const none: ServerDefaults = { theme: null, newDesignsOnServer: null, simpleMode: null };
   try {
     // A POST, because that is what makes the Node build answer it on every call (see the route).
     const response = await fetchImpl(endpoint, { method: "POST", cache: "no-store" });
     if (!response.ok) return none;
-    const body = (await response.json()) as { theme?: unknown; newDesignsOnServer?: unknown } | null;
+    const body = (await response.json()) as { theme?: unknown; newDesignsOnServer?: unknown; simpleMode?: unknown } | null;
     return {
       theme: parseDefaultTheme(body?.theme),
       newDesignsOnServer: body?.newDesignsOnServer === "on" || body?.newDesignsOnServer === "always" ? body.newDesignsOnServer : null,
+      simpleMode: body?.simpleMode === "on" || body?.simpleMode === "always" ? body.simpleMode : null,
     };
   } catch {
     return none;

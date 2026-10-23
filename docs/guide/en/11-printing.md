@@ -5,7 +5,7 @@ summary: Choosing your own printer, being warned when something does not fit, an
 
 ## Choosing your printer
 
-Open the settings (the cogwheel in the ribbon, {{ui:editor.workspaceSettings}}) and switch to the area {{ui:workspace.workplane}}. Under {{ui:workspace.printer}} you pick your printer from a list of over fifty common models, including Bambu Lab, Prusa, Creality, Anycubic, Elegoo and many more.
+Open the settings (the cogwheel in the ribbon, {{ui:editor.workspaceSettings}}) and switch to the area {{ui:workspace.workplane}}. Under {{ui:workspace.printer}} you pick your printer from a list of over 220 common models, including Bambu Lab, Prusa, Creality, Anycubic, Elegoo and many more.
 
 ![The workplane settings with a printer chosen. Print bed and maximum print height come from the slicer profile.](shot:settings-workplane)
 
@@ -24,6 +24,8 @@ A body that sticks out over the edge of the print plate is marked. A message tel
 ![The box is wider than the print bed of the Bambu Lab A1 mini. The message at the bottom says by how much.](shot:printer-overhang)
 
 The warning does not stop you from working on. It is a hint so you do not find out only in the slicer that the part is too big. A part that is too big can often be split: cut it in two with {{ui:editor.tool.split}} and print both halves separately.
+
+If you park parts beside the plate on purpose, click the small cross in the message. The warning is then gone for exactly these bodies. Once one of them fits again and you move it out later, or another body sticks out, the message comes back. Hidden bodies never count, so hiding the parked parts works as well.
 
 ## Laying the part right
 

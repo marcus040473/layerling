@@ -130,6 +130,18 @@ export function ShellPanel({
             );
           })}
         </div>
+        {/* No side open, in one click: the cavity sealed inside (#658). */}
+        <div className="shell-opening-options shell-closed-option">
+          <button
+            type="button"
+            aria-pressed={openSides.length === 0}
+            className={openSides.length === 0 ? "active" : ""}
+            disabled={busy}
+            onClick={() => onOpeningsChange(shellOpeningsFor([]))}
+          >
+            {t("shell.side.closed")}
+          </button>
+        </div>
         <span className="shell-openings-summary">{openSides.length === 0 ? t("shell.sidesNone") : t("shell.sidesHint")}</span>
       </div>
 

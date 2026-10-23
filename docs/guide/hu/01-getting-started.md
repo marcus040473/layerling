@@ -111,4 +111,4 @@ A layerling saját gépen vagy szerveren futó példányán a „Frissítés ér
 
 Ha kész az alkatrészed, kattints az {{ui:editor.export}} gombra, válaszd az STL vagy a 3MF formátumot, és töltsd le a fájlt. Nyisd meg a szeletelődben, például a Bambu Studióban, a PrusaSlicerben, az OrcaSlicerben vagy a Curában. Ha a beállításokban kiválasztod a nyomtatódat, már építés közben látod, hogy az alkatrész elfér-e a tárgyasztalon. Bővebben a [Nyomtatás](chapter:printing) fejezetben.
 
-> **Tipp:** Ha a Tinkercadből jössz, gyorsan eligazodsz: a tárgyasztal, az alakzatok, a tömör test és a lyuk, a csoportosítás, az igazítás és a tükrözés szinte ugyanúgy működik. Ami új, az főleg az élletörés és a lekerekítés, a kiüregelés, a menetek és a vázlatok.
+> **Tipp:** Ha a Tinkercadből jössz, gyorsan eligazodsz: a tárgyasztal, az alakzatok, a tömör test és a lyuk, a csoportosítás, az igazítás és a tükrözés szinte ugyanúgy működik. Ami új, az főleg az élletörés és a lekerekítés, a kiüregelés, a menetek és a vázlatok. A saját Tinkercad-terveidet is áthozhatod, lásd [Fájlok, mentés és megosztás](chapter:files-and-saving).

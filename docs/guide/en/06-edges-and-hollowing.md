@@ -22,6 +22,7 @@ In the panel you find:
 
 - {{ui:edge.allSharpEdges}} selects every edge at once, {{ui:edge.clear}} empties the selection.
 - **{{ui:edge.radius}}** for the fillet. For the chamfer you set {{ui:edge.distance}} or {{ui:edge.angle}}.
+- {{ui:edge.variableRadius}} (fillet only) lets the radius change along one edge: small at one end, larger at the other, evenly in between, as where a straight wall meets a slanted one. Click a single edge, then set {{ui:edge.radiusStart}} and {{ui:edge.radiusEnd}}. Which end counts as the start follows from how the edge was built; if the larger radius comes out at the wrong end, {{ui:edge.swapEnds}} turns it round. It works on one edge at a time, so round several edges one after the other. {{ui:edge.editAction}} brings both values back.
 - {{ui:edge.sharpThreshold}} decides which edges count as sharp at all. A value of 25° treats only clear kinks as edges and leaves flat transitions alone.
 - {{ui:edge.verticalEdges}} picks the edges that stand straight up, such as the corners of a box: one fillet then rounds all the vertical corners at once.
 - {{ui:edge.topEdges}} picks only the edges along the very top of the body. It is the quick way for a cookie cutter: build the outline in a sketch as a stroke, then chamfer the top edges. {{ui:edge.angle}} sets how steep the chamfer is; it cannot reach further than the wall is thick.
@@ -58,7 +59,7 @@ Boxes, cups, cases and covers have one thing in common: they are empty inside, w
 
 1. Select the body and click {{ui:editor.tool.hollow}}, or right-click the body and pick it from the menu.
 2. Set the {{ui:shell.wall}}.
-3. Under {{ui:shell.openings}}, switch on the sides that stay open: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} or {{ui:shell.side.right}}, as many as you like - {{ui:shell.side.front}} alone makes a slot for a drawer, {{ui:shell.side.left}} and {{ui:shell.side.right}} a tunnel. With no side switched on the body stays closed all round, with a cavity in the middle.
+3. Under {{ui:shell.openings}}, switch on the sides that stay open: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} or {{ui:shell.side.right}}, as many as you like - {{ui:shell.side.front}} alone makes a slot for a drawer, {{ui:shell.side.left}} and {{ui:shell.side.right}} a tunnel. With no side switched on the body stays closed all round, with a cavity in the middle. {{ui:shell.side.closed}} switches every side off in one click. {{ui:shell.side.top}} is already on when the panel opens; a click on it closes the top again. A body closed all round looks unchanged from outside: the section view shows the cavity.
 4. Decide whether the {{ui:shell.edges}} should be {{ui:shell.edges.round}} or {{ui:shell.edges.sharp}}.
 5. Click {{ui:shell.apply}}.
 

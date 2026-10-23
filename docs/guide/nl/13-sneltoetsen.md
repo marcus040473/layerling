@@ -7,6 +7,8 @@ De sneltoetsen werken zolang het werkvlak de focus heeft. Terwijl je in een veld
 
 In de editor opent {{ui:editor.keyboardShortcuts}} in het gebied {{ui:editor.group.help}} dezelfde lijst als venster. De printerknop in het venster ({{ui:shortcuts.print}}) drukt de lijst apart af, zwart op wit en in grote letters; het afdrukvenster van de browser biedt ook aan om hem als pdf op te slaan.
 
+Het veld bovenin het venster doorzoekt de lijst: het houdt alleen de sneltoetsen over waarvan de zin, de groep of de toetsen elk getypt woord bevatten, dus "ctrl+z" laat alleen die regels staan. Hoofdletters en accenten tellen niet, en één letter of cijfer vindt die toets en de woorden die ermee beginnen. De X aan het eind van het veld maakt het leeg; met een leeg veld is de hele lijst terug. De printerknop drukt af wat het venster toont, dus na een zoekopdracht alleen de gevonden sneltoetsen.
+
 ![Het venster met de sneltoetsen in de editor.](shot:shortcuts)
 
 ## Opdrachten zoeken

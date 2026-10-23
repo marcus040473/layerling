@@ -421,6 +421,20 @@ describe("bent tube editing", () => {
     expect(patch).toMatchObject({ width: natural.width, depth: natural.depth, height: natural.height, size: Math.max(natural.width, natural.depth) });
   });
 
+  it("keeps the stretch the handles gave the tube when a parameter changes (#737)", () => {
+    const shape = bentTube();
+    const natural = bentTubeNaturalDimensions(shape as BentTubeShapeFields);
+    const stretched = { ...shape, width: natural.width * 1.5, depth: natural.depth * 0.5, height: natural.height * 2 };
+    const patch = bentTubeParameterPatch(stretched, { bentTubeInnerProfile: "none" });
+    const next = bentTubeNaturalDimensions(patch as BentTubeShapeFields);
+    expect(patch.width).toBeCloseTo(next.width * 1.5, 6);
+    expect(patch.depth).toBeCloseTo(next.depth * 0.5, 6);
+    expect(patch.height).toBeCloseTo(next.height * 2, 6);
+    // An unstretched tube still takes the natural size.
+    const plain = bentTubeParameterPatch(shape, { bentTubeInnerProfile: "none" });
+    expect(plain.width).toBeCloseTo(next.width, 6);
+  });
+
   it("is seen as a change by the editor, including a change inside one segment", () => {
     const shape = bentTube();
     const segments = shape.bentTubeSegments!.map((segment, index): BentTubeSegment => (index === 1 ? { ...segment, roll: 15 } : segment));

@@ -16,7 +16,7 @@ Sur la page de démarrage, un indice {{ui:installHint.install}} apparaît si vot
 
 Vous pouvez fermer l'indice sur la page de démarrage avec {{ui:installHint.dismiss}}. Le fait de démarrer une deuxième fois l'application installée dans Chrome ou Edge amène la fenêtre ouverte au premier plan au lieu d'en ouvrir une autre.
 
-## Mises à jour
+## Mises à jour
 
 Lorsqu'une version plus récente existe, layerling l'affiche sur la page de démarrage. Grâce à {{ui:dashboard.updateBannerLink}}, vous lisez ce qui a changé. Le numéro de version est en bas à droite. Après avoir rechargé la page, vous disposez de la nouvelle version.
 
@@ -33,7 +33,7 @@ Vous choisissez la langue en haut à droite, dans la liste des langues. La palet
 layerling est un logiciel libre (AGPL-3.0) et peut être exécuté sur votre propre ordinateur ou serveur, par exemple dans un atelier, un club ou une école. Il existe plusieurs manières, décrites dans le [README sur GitHub](https://github.com/henmedia/layerling/blob/main/README.md#getting-started) :
 
 - **Le démarrage rapide sous Windows :** Une seule ligne dans PowerShell installe tout et met un raccourci sur le bureau. Lorsque layerling est déjà en cours d'exécution, un autre double-clic ne démarre aucun deuxième serveur et ouvre uniquement la page.
-- **Docker :** Pour les appareils NAS et les serveurs domestiques, sans qu'il soit nécessaire d'installer Node.js. Chaque version se présente sous la forme d'une image prête à l'emploi `henmedia/layerling` sur Docker Hub (également `ghcr.io/henmedia/layerling`) pour amd64 et arm64 ; `docker run -d -p 3000:3000 henmedia/layerling:latest` le démarre et sur un NAS, vous le recherchez dans le registre du gestionnaire de conteneurs.
+- **Docker :** Pour les appareils NAS et les serveurs domestiques, sans qu'il soit nécessaire d'installer Node.js. Chaque version se présente sous la forme d'une image prête à l'emploi `henmedia/layerling` sur Docker Hub (également `ghcr.io/henmedia/layerling`) pour amd64 et arm64 ; `docker run -d -p 3000:3000 -v layerling-thumbnails:/app/.codex/project-thumbnails henmedia/layerling:latest` le démarre et sur un NAS, vous le recherchez dans le registre du gestionnaire de conteneurs.
 - **Exportation statique :** Le résultat est des fichiers simples que n'importe quel serveur Web peut servir. Ils appartiennent à la racine d'une adresse (`https://layerling.example.com/` ou `http://192.168.0.5:8080/`), pas dans un sous-dossier et non ouverts depuis le disque ; le README contient les étapes. Avec un dossier inscriptible `store` à côté de `index.html` et PHP sur le serveur, il devient également le stockage partagé pour les conceptions.
 
 Le pont MCP pour les assistants IA existe uniquement dans le serveur de développement, voir [Construire avec une IA](chapter:ai-with-mcp).

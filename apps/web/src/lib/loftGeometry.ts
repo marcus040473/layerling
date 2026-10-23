@@ -18,7 +18,6 @@ import type { WorkplaneShape } from "@/types/layerling";
  */
 
 export type LoftOutline = "round" | "rectangle" | "polygon";
-export const LOFT_OUTLINES: readonly LoftOutline[] = ["round", "rectangle", "polygon"];
 
 export const DEFAULT_LOFT = {
   bottomOutline: "rectangle" as LoftOutline,
@@ -38,6 +37,7 @@ export const DEFAULT_LOFT = {
   tiltX: 0,
   tiltZ: 0,
   smooth: 0,
+  segments: 96,
   height: 30,
 };
 
@@ -49,6 +49,9 @@ export const MAX_LOFT_TILT = 45;
 export const MIN_LOFT_SIZE = 1;
 export const MIN_LOFT_SIDES = 3;
 export const MAX_LOFT_SIDES = 24;
+/** How many straight pieces a full circle of a round end or a rounded corner is drawn with (#755). */
+export const MIN_LOFT_SEGMENTS = 16;
+export const MAX_LOFT_SEGMENTS = 360;
 /** What a wall leaves at least of the opening, so the inner outline stays a real outline. */
 const MIN_LOFT_OPENING = 0.4;
 
@@ -87,13 +90,15 @@ export type LoftMeasures = {
   tiltZ: number;
   /** 0 to 1: how much of an S-curve the sides take between the two ends instead of a straight line (#271). */
   smooth: number;
+  /** Straight pieces of a full circle in the mesh of the view and of the exports (#755). */
+  segments: number;
 };
 
 export type LoftShapeFields = Pick<WorkplaneShape,
   "width" | "depth" | "size" | "height"
   | "loftBottomOutline" | "loftTopOutline" | "loftBottomWidth" | "loftBottomDepth" | "loftTopWidth" | "loftTopDepth"
   | "loftBottomCorner" | "loftTopCorner" | "loftBottomSides" | "loftTopSides" | "loftOffsetX" | "loftOffsetZ" | "loftWall"
-  | "loftTwist" | "loftTiltX" | "loftTiltZ" | "loftSmooth">;
+  | "loftTwist" | "loftTiltX" | "loftTiltZ" | "loftSmooth" | "loftSegments">;
 
 export function normalizeLoftOutline(value: unknown, fallback: LoftOutline = "round"): LoftOutline {
   return value === "round" || value === "rectangle" || value === "polygon" ? value : fallback;
@@ -137,6 +142,7 @@ export function normalizeLoftMeasures(raw: Partial<LoftMeasures>): LoftMeasures 
     tiltX: Math.min(MAX_LOFT_TILT, Math.max(-MAX_LOFT_TILT, finite(raw.tiltX, 0))),
     tiltZ: Math.min(MAX_LOFT_TILT, Math.max(-MAX_LOFT_TILT, finite(raw.tiltZ, 0))),
     smooth: Math.min(1, Math.max(0, finite(raw.smooth, 0))),
+    segments: Math.min(MAX_LOFT_SEGMENTS, Math.max(MIN_LOFT_SEGMENTS, Math.round(finite(raw.segments, DEFAULT_LOFT.segments)))),
   };
 }
 
@@ -165,6 +171,7 @@ export function loftStoredMeasures(shape: LoftShapeFields): LoftMeasures {
     tiltX: shape.loftTiltX,
     tiltZ: shape.loftTiltZ,
     smooth: shape.loftSmooth,
+    segments: shape.loftSegments,
   });
 }
 
@@ -264,6 +271,7 @@ export function loftFieldsFromMeasures(measures: LoftMeasures): Partial<Workplan
     loftTiltX: measures.tiltX,
     loftTiltZ: measures.tiltZ,
     loftSmooth: measures.smooth,
+    loftSegments: measures.segments,
   };
 }
 
@@ -720,8 +728,8 @@ export function loftProfileLoops(shape: LoftShapeFields): LoftProfileLoops {
  * loft winds even a straight side, so there every piece gets at least `least` steps - one long
  * twisted quad per row would fold, and its fold showed as a dark streak.
  */
-function pieceSteps(a: Piece, b: Piece, least = 1) {
-  const steps = (piece: Piece) => (piece.kind === "line" ? 1 : Math.max(2, Math.ceil(Math.abs(piece.t1 - piece.t0) / (TWO_PI / 96))));
+function pieceSteps(a: Piece, b: Piece, least = 1, segments = DEFAULT_LOFT.segments) {
+  const steps = (piece: Piece) => (piece.kind === "line" ? 1 : Math.max(2, Math.ceil(Math.abs(piece.t1 - piece.t0) / (TWO_PI / segments))));
   return Math.max(least, steps(a), steps(b));
 }
 
@@ -731,12 +739,12 @@ function turnedSideSteps(measures: Pick<LoftMeasures, "twist" | "tiltX" | "tiltZ
 }
 
 /** Both outlines sampled at the same fractions of each piece: ring i of the bottom faces ring i of the top. */
-function sampledRings(pair: LoftPieces, least = 1) {
+function sampledRings(pair: LoftPieces, least = 1, segments = DEFAULT_LOFT.segments) {
   const bottom: Point[] = [];
   const top: Point[] = [];
   pair.bottom.forEach((piece, index) => {
     const partner = pair.top[index];
-    const steps = pieceSteps(piece, partner, least);
+    const steps = pieceSteps(piece, partner, least, segments);
     for (let step = 0; step < steps; step += 1) {
       bottom.push(pieceAt(piece, step / steps));
       top.push(pieceAt(partner, step / steps));
@@ -805,8 +813,8 @@ export function createLoftGeometry(shape: LoftShapeFields): THREE.BufferGeometry
     }
     return { bottom: starts[0], top: starts[rows] };
   };
-  const outerRings = sampledRings(outer, turnedSideSteps(turn.measures));
-  const innerRings = inner ? sampledRings(inner, turnedSideSteps(turn.measures)) : null;
+  const outerRings = sampledRings(outer, turnedSideSteps(turn.measures), turn.measures.segments);
+  const innerRings = inner ? sampledRings(inner, turnedSideSteps(turn.measures), turn.measures.segments) : null;
   const outerStart = addWall(outerRings, true);
   const innerStart = innerRings ? addWall(innerRings, false) : null;
   // The two ends on the walls' own rim points, the opening as a hole: facing down at the bottom,

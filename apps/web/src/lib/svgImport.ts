@@ -76,6 +76,16 @@ export function normalizeSvgDocumentType(source: string) {
   return source.replace(SVG_DOCUMENT_TYPE_PATTERN, "");
 }
 
+/**
+ * The text of an SVG file. Most are UTF-8, but CorelDRAW and some Windows tools save UTF-16 with a
+ * byte order mark, which read as UTF-8 comes out as text with null characters between the letters (#317).
+ */
+export function decodeSvgBytes(bytes: Uint8Array) {
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder("utf-16le").decode(bytes.subarray(2));
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder("utf-16be").decode(bytes.subarray(2));
+  return new TextDecoder().decode(bytes);
+}
+
 export function validateSvgSourcePreflight(source: string) {
   if (!source.trim()) throw new Error("SVG file is empty");
   if (sourceByteLength(source) > MAX_SVG_BYTES) {
@@ -638,6 +648,8 @@ export async function prepareSvgImport(timeoutMs = 10_000) {
  * leave a body that no cut can use (#420). Null when the kernel cannot make it; the plain build then goes on.
  */
 const SVG_TOUCH_CLOSING = 0.05;
+const SVG_TOUCH_SIMPLIFY = 0.002;
+const SVG_TOUCH_CLOSING_LARGER = [0.1, 0.2, 0.35];
 
 function extrudeShapesWithKernel(runtime: ManifoldToplevel, shapes: readonly THREE.Shape[]): { positions: number[]; skippedShapes: number } | null {
   const made: Array<{ delete(): void }> = [];
@@ -668,22 +680,47 @@ function extrudeShapesWithKernel(runtime: ManifoldToplevel, shapes: readonly THR
     made.push(joined);
     // Areas that meet in a single corner still pinch there and make an edge of four triangles. Shrinking them a hair and
     // growing them back with rounded corners parts the corner for good.
-    const grown = joined.offset(-SVG_TOUCH_CLOSING, "Miter", 2, 0);
-    made.push(grown);
-    const area = grown.offset(SVG_TOUCH_CLOSING, "Round", 2, 8);
-    made.push(area);
-    const merged = runtime.Manifold.extrude(area, SVG_EXTRUSION_DEPTH);
-    made.push(merged);
-    if (merged.status() !== "NoError" || merged.numTri() < 1) return null;
-    const mesh = merged.getMesh();
-    const stride = mesh.numProp;
-    const positions: number[] = [];
+    const closeBy = (closing: number) => {
+      const grown = joined.offset(-closing, "Miter", 2, 0);
+      made.push(grown);
+      const rounded = grown.offset(closing, "Round", 2, 8);
+      made.push(rounded);
+      // The rounding leaves points a hair apart; the checks below merge those and see edges of four triangles.
+      const closed = rounded.simplify(SVG_TOUCH_SIMPLIFY);
+      made.push(closed);
+      return closed;
+    };
     // The same turn as the plain build (extrude along z, then rotate about x by -90 degrees): (x, y, z) -> (x, z, -y).
-    for (let index = 0; index < mesh.triVerts.length; index += 1) {
-      const base = mesh.triVerts[index] * stride;
-      positions.push(mesh.vertProperties[base], mesh.vertProperties[base + 2], -mesh.vertProperties[base + 1]);
+    const extrudeArea = (face: InstanceType<typeof runtime.CrossSection>): number[] | null => {
+      const merged = runtime.Manifold.extrude(face, SVG_EXTRUSION_DEPTH);
+      made.push(merged);
+      if (merged.status() !== "NoError" || merged.numTri() < 1) return null;
+      const mesh = merged.getMesh();
+      const stride = mesh.numProp;
+      const result: number[] = [];
+      for (let index = 0; index < mesh.triVerts.length; index += 1) {
+        const base = mesh.triVerts[index] * stride;
+        result.push(mesh.vertProperties[base], mesh.vertProperties[base + 2], -mesh.vertProperties[base + 1]);
+      }
+      return result;
+    };
+    const isClean = (candidate: number[]) => {
+      const analysis = analyzeTriangleSoup(candidate);
+      return analysis.boundaryEdges === 0 && analysis.nonManifoldEdges === 0;
+    };
+    const positions = extrudeArea(closeBy(SVG_TOUCH_CLOSING));
+    if (!positions) return null;
+    if (isClean(positions)) return { positions, skippedShapes };
+    // A drawing traced from a picture has many corners where outlines meet; a little more closing parts those that the
+    // first one left as an edge of four triangles (#584). The picture loses a few hundredths of a millimetre at its thinnest.
+    for (const closing of SVG_TOUCH_CLOSING_LARGER) {
+      const wider = extrudeArea(closeBy(closing));
+      if (wider && isClean(wider)) return { positions: wider, skippedShapes };
     }
-    return { positions, skippedShapes };
+    // The closing can leave edges of four triangles on an outline with many fine holes (a stencil, #626) that the
+    // plain join does not have. Then the joined outlines are used as they are; if they are no cleaner, the result stays as it was.
+    const plain = extrudeArea(joined);
+    return { positions: plain && isClean(plain) ? plain : positions, skippedShapes };
   } catch {
     return null;
   } finally {

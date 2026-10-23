@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  CORNER_RULER_FIELD_SIZE,
+  spreadCornerRulerFields,
   computeCornerRulerRelativeCoordinates,
   cornerRulerAxisModes,
   computeCornerRulerShift,
@@ -413,5 +415,34 @@ describe("the name of the axis a ruler arm runs along (#597)", () => {
     const turned = rotateCornerRulerFrame(frame);
     expect(worldAxisNameOfDirection(turned.xAxis)).toBe("X");
     expect(worldAxisNameOfDirection(turned.zAxis)).toBe("Y");
+  });
+});
+
+describe("spreadCornerRulerFields (#777)", () => {
+  const box = (p: { x: number; y: number }) => ({ x: p.x, y: p.y, halfWidth: CORNER_RULER_FIELD_SIZE.width / 2, halfHeight: CORNER_RULER_FIELD_SIZE.height / 2 });
+  const overlap = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    const [first, second] = [box(a), box(b)];
+    return Math.abs(first.x - second.x) < first.halfWidth + second.halfWidth && Math.abs(first.y - second.y) < first.halfHeight + second.halfHeight;
+  };
+
+  it("leaves fields that are clear where they are", () => {
+    const fields = [{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 100, y: 300 }];
+    expect(spreadCornerRulerFields(fields)).toEqual(fields);
+  });
+
+  it("moves three fields that sit on each other so that none covers another", () => {
+    const spot = { x: 500, y: 400 };
+    const spread = spreadCornerRulerFields([spot, spot, spot]);
+    expect(spread[0]).toEqual(spot);
+    expect(overlap(spread[0], spread[1])).toBe(false);
+    expect(overlap(spread[0], spread[2])).toBe(false);
+    expect(overlap(spread[1], spread[2])).toBe(false);
+  });
+
+  it("keeps the fields off the ruler's buttons", () => {
+    const button = { x: 500, y: 400, halfWidth: 34, halfHeight: 30 };
+    const [field] = spreadCornerRulerFields([{ x: 500, y: 400 }], [button]);
+    const apart = Math.abs(field.x - button.x) >= button.halfWidth + CORNER_RULER_FIELD_SIZE.width / 2 || Math.abs(field.y - button.y) >= button.halfHeight + CORNER_RULER_FIELD_SIZE.height / 2;
+    expect(apart).toBe(true);
   });
 });

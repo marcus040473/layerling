@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { importedShapeFromSvgWithReport, svgPageOfDrawing } from "@/lib/svgImport";
+import { decodeSvgBytes, importedShapeFromSvgWithReport, svgPageOfDrawing } from "@/lib/svgImport";
 
 /*
  * Keeping a drawing's place on its page (#258): the layers of one document, exported as separate
@@ -74,5 +74,33 @@ describe("an imported drawing on its page", () => {
     const { shape, pageKept } = importedShapeFromSvgWithReport("a.svg", drawing('width="100%" height="100%"', 0, 0, 100, 100), { keepPagePosition: true });
     expect(pageKept).toBe(false);
     expect([shape.x, shape.z]).toEqual([10, -10]);
+  });
+});
+
+describe("an SVG saved as UTF-16 (#317)", () => {
+  const text = `<?xml version="1.0" encoding="UTF-16"?>
+${drawing('width="20mm" height="10mm" viewBox="0 0 20 10"', 0, 0, 20, 10)}`;
+  const le = (value: string) => {
+    const bytes = new Uint8Array(2 + value.length * 2);
+    bytes.set([0xff, 0xfe]);
+    for (let i = 0; i < value.length; i += 1) new DataView(bytes.buffer).setUint16(2 + i * 2, value.charCodeAt(i), true);
+    return bytes;
+  };
+  const be = (value: string) => {
+    const bytes = new Uint8Array(2 + value.length * 2);
+    bytes.set([0xfe, 0xff]);
+    for (let i = 0; i < value.length; i += 1) new DataView(bytes.buffer).setUint16(2 + i * 2, value.charCodeAt(i), false);
+    return bytes;
+  };
+
+  it("reads the text back from either byte order, and plain UTF-8 as before", () => {
+    expect(decodeSvgBytes(le(text))).toBe(text);
+    expect(decodeSvgBytes(be(text))).toBe(text);
+    expect(decodeSvgBytes(new TextEncoder().encode(text))).toBe(text);
+  });
+
+  it("imports the decoded drawing", () => {
+    const result = importedShapeFromSvgWithReport("corel.svg", decodeSvgBytes(le(text)), {});
+    expect(result.shape.width).toBeCloseTo(20, 3);
   });
 });

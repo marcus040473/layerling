@@ -13,7 +13,7 @@ Ovládání myší:
 | kliknutí pravým tlačítkem | na tělese nabídka nejčastějších příkazů: duplikování, plné těleso/výřez, sloučení, skrytí, zamknutí, smazání a další; na prázdném místě vložení a výběr všeho |
 | tažení prostředním tlačítkem | posun pohledu |
 | kolečko | přiblížení a oddálení |
-| [[Ctrl]] a tažení levým tlačítkem | také posun pohledu |
+| [[Ctrl]] / [[Cmd]] a tažení levým tlačítkem | také posun pohledu |
 
 Rychlost přiblížení nastavuje {{ui:workspace.zoomSpeed}} v části {{ui:workspace.appearance}}. Posuvník má rozsah 1 až 14, výchozí je 5; nad 10 se zrychluje jen kolečko.
 
@@ -37,6 +37,7 @@ U levého okraje je úzká lišta. Shora obsahuje:
 - {{ui:camera.focusSelection}} přiblíží výběr, [[F]] nebo [[Shift]]+[[F]].
 - {{ui:camera.zoomIn}} a {{ui:camera.zoomOut}} mění přiblížení po krocích, stejně jako [[+]] a [[−]].
 - {{ui:camera.orthographic}} zapne rovnoběžné promítání bez perspektivy. Rovnoběžné hrany zůstávají rovnoběžné, což usnadňuje měření a zarovnávání. Přepíná je i [[O]]; dalším kliknutím se vrátíte.
+- {{ui:camera.secondView}} otevře druhý pohled na projekt ve vlastním okně, popsaném níže. Druhé kliknutí ho zavře.
 - {{ui:camera.hideWorkplane}}, oko nad mřížkou, skryje podložku, aby bylo vidět spodní strany modelu. Mění pouze zobrazení; nové tvary stále dopadají na pracovní rovinu. Další kliknutí ji ukáže.
 - {{ui:camera.placeWorkplane}}, měření vzdáleností a úhelník jsou samostatné nástroje popsané níže a v kapitole [Měření a poznámky](chapter:measuring-and-notes).
 
@@ -44,11 +45,18 @@ Malá šipka úplně nahoře lištu skryje, pokud překáží.
 
 Projekt se otevírá s naposledy použitým úhlem, přiblížením a polohou pohledu. Pokračujete tak na stejném místě i po návratu na přehled projektů či zavření stránky. Pohled se přenáší také v souboru `.lyl`. Není součástí historie kroků zpět.
 
+V každém projektu si také můžete uložit čtyři vlastní pohledy. [[Shift]]+[[7]], [[Shift]]+[[8]], [[Shift]]+[[9]] nebo [[Shift]]+[[0]] uloží pohled přesně tak, jak je - úhel, polohu, přiblížení a kolmé či perspektivní zobrazení - pod tuto klávesu, a samotná klávesa ([[7]], [[8]], [[9]] nebo [[0]]) ho vrátí. Uložení potvrdí zpráva dole; nové uložení pod stejnou klávesu pohled nahradí. Stejně jako pohled výše zůstávají uložené pohledy s projektem v tomto prohlížeči a přenášejí se v uloženém souboru `.lyl`. Nejsou součástí historie kroků zpět.
+
+### Druhý pohled ve vlastním okně
+
+{{ui:camera.secondView}} otevře okno, které ukazuje tentýž projekt vlastní kamerou, takže ho vidíte ze dvou stran naráz - třeba zepředu, zatímco pracujete shora. Každá změna v editoru se tam hned projeví; projekt se mění jen v hlavním okně a úchyty zůstávají také tam. Ve druhém okně myš a pohledová kostka otáčejí jeho pohledem stejně jako zde, a stejně tak klávesy: [[1]] až [[6]], [[F]], [[Home]], [[O]], [[+]] a [[−]], šipky pro otáčení a [[Ctrl]] se šipkami pro posun. [[F]] tam přiblíží to, co je vybrané v editoru. Fungují tam i čtyři uložené pohledy projektu: [[7]], [[8]], [[9]] a [[0]] je vrátí a [[Shift]] s jednou z těchto kláves pod ni uloží pohled tohoto okna - pro obě okna. Jeho vlastní lišta kamery má {{ui:camera.home}}, {{ui:camera.focusSelection}}, {{ui:camera.zoomIn}}, {{ui:camera.zoomOut}}, {{ui:camera.orthographic}} a {{ui:camera.hideWorkplane}}, které působí jen na toto okno. Okno se otevře tam, kde jste ho nechali, ve stejné velikosti, a zavře se spolu s editorem. Na telefonech a tabletech se tlačítko nezobrazuje.
+
 ## Pohled dovnitř: řez
 
 {{ui:camera.sectionView}}, poslední tlačítko lišty, zobrazí model proříznutý rovinou. Můžete kontrolovat stěny, dutiny i vzájemné uložení dílů. Skutečnou geometrii nemění: projekt, soubory i exporty zůstávají celé. Tam, kde rovina prochází tělesem, je řez vyplněn o něco tmavší barvou tělesa a otvor v něm zůstane prázdný, takže poznáš plné od dutého; vyplněná plocha se objeví chvíli poté, co se rovina zastaví.
 
 - Zvolte osu kolmou k rovině: X pro šířku, Y pro hloubku a Z pro výšku, stejně jako u polohy. Rovina začíná uprostřed modelu.
+- {{ui:camera.sectionOrientation}} určuje, čím se tyto osy řídí. {{ui:camera.sectionOrientationWorld}} bere osy návrhu. {{ui:camera.sectionOrientationWorkplane}} bere osy pracovní roviny: Z pak řeže rovnoběžně s ní, X a Y kolmo na ni a poloha se počítá od jejího počátku. Leží-li pracovní rovina na šikmé ploše, řežeš tak rovnoběžně s touto plochou a řez se posune, když pracovní rovinu přemístíš. {{ui:camera.sectionOrientationView}} natočí rovinu k obrazovce: odebere to, co leží před ní, a posuvníkem ji posouváš ve směru pohledu hlouběji do návrhu, třeba abys dosáhl na zakrytý díl a klikl na něj. Po otočení pohledu na něj klikni znovu a řez se řídí novým pohledem.
 - {{ui:camera.sectionCoarse}} posouvá rovinu přes celý model, {{ui:camera.sectionFine}} jemně kolem současné polohy po desetinách milimetru. Polohu lze i zadat.
 - Tlačítko vedle os obrátí zobrazovanou stranu řezu, {{ui:camera.sectionReset}} vrátí rovinu doprostřed a {{ui:camera.sectionShowPlane}} skryje modrou rovinu.
 - Odkryté části včetně vnitřních stěn lze vybírat kliknutím.
@@ -86,6 +94,8 @@ V {{ui:workspace.customSnapGrids}} přidáte vlastní pojmenovanou rozteč v mil
 
 Rozměry, rozteč a barvu podložky měníte ozubeným kolem v pásu nástrojů. Nastavení obsahuje {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} a {{ui:workspace.history}}. V {{ui:workspace.appearance}} jsou například {{ui:workspace.startInPerspective}} a {{ui:workspace.showShadows}}, v {{ui:workspace.workplane}} volba {{ui:workspace.showGrid}}. Barvy {{ui:workspace.backgroundColor}} a {{ui:workspace.surfaceColor}} se uplatňují ve světlém motivu; tmavé motivy mají vlastní. Barva mřížky je v části {{ui:workspace.workplane}}. {{ui:workspace.gridMajorEvery}} určuje silnější čáru po pěti či deseti krocích, {{ui:workspace.gridMajorColor}} její barvu, kterou používá i středový kříž a okraj podložky. Čáry při přibližování zesilují jako v Tinkercadu a zůstávají viditelné při oddálení. Vypnutím {{ui:workspace.gridLinesGrow}} zachováte tloušťku jeden pixel jako v náčrtu. Hexadecimální barvu potvrdíte [[Enter]]. {{ui:workspace.edgeLines}} zvýrazní obrysy těles barvou {{ui:workspace.edgeColor}}, zpočátku černou. Pomáhá oddělit tmavá tělesa. Výchozí stav je vypnuto a velmi husté importované sítě se vynechávají. Mřížka vždy prochází počátkem, takže hlavní čáry leží na osách bez ohledu na rozměry podložky. Pokud mřížka zmizela, například proto, že barva byla nastavena na barvu desky, {{ui:workspace.resetGrid}} na konci oblasti {{ui:workspace.workplane}} vrátí viditelnost, barvy, rozestup a tloušťku čar na standard, zde i ve výchozím nastavení uloženém tlačítkem {{ui:workspace.makeDefault}}.
 
+{{ui:workspace.strongHoles}} vykreslí díry tmavší šedou, méně průhledně a s tmavou čarou kolem. Pomůže, když se díra mezi průhlednými tělesy špatně hledá. Na rozdíl od hran zůstává zapnuté i v rychlém režimu.
+
 {{ui:workspace.showAxes}}, výchozí zapnuto, kreslí v rohu podložky tři šipky: **X** červeně doprava, **Y** zeleně dozadu a **Z** modře vzhůru, podle údajů polohy. Jde o pravotočivou soustavu jako v Tinkercadu, CAD programech a slicerech. Na pracovní rovině umístěné na ploše se osy přizpůsobí její orientaci. Pokud překážejí, vypněte je.
 
 V {{ui:workspace.appearance}} upravujete i osvětlení. {{ui:workspace.shadowStrength}} určuje tmavost vržených stínů. {{ui:workspace.shadeContrast}} mění poměr rovnoměrného okolního a hlavního světla: výraznější nastavení ztmaví odvrácené strany a zvýrazní stíny, měkčí je zploští. Na horním konci je kontrast velmi silný. {{ui:workspace.shadowSoftness}} změkčí okraje stínů. {{ui:workspace.lightAzimuth}} otáčí hlavním světlem kolem podložky, 0° zepředu a 90° zprava. {{ui:workspace.lightElevation}} mění jeho výšku; při 90° svítí shora jako v Tinkercadu a stíny leží přímo pod tělesy. {{ui:workspace.lightReset}} vše obnoví. {{ui:workspace.classicLook}} nastaví bílou podložku, světle modrou milimetrovou mřížku s tmavší centimetrovou čárou, černé obrysy a horní světlo s měkkými stíny. Každou hodnotu můžete následně změnit samostatně. Výchozí hodnoty odpovídají původnímu vzhledu Layerlingu; vhodné nastavení záleží i na monitoru. Náčrt má vlastní barvy světlého motivu: {{ui:workspace.sketchBackground}} pro okolí listu, {{ui:workspace.sketchPlateColor}} pro list a {{ui:workspace.sketchGridColor}} pro mřížku. {{ui:workspace.sketchMatch}} převezme všechny tři barvy z 3D plochy jedním kliknutím.
@@ -96,7 +106,7 @@ V {{ui:workspace.appearance}} upravujete i osvětlení. {{ui:workspace.shadowStr
 
 ![Editor v tmavém motivu. Vpravo nahoře lze vybrat systémový, světlý, tmavý nebo grafitový motiv.](shot:editor-dark)
 
-{{ui:workspace.toolbarSize}} v {{ui:workspace.appearance}} mění velikost pásu nástrojů, nabídky tvarů a levého ovládání pohledu: {{ui:workspace.toolbarSizeSmall}}, {{ui:workspace.toolbarSizeMedium}} nebo {{ui:workspace.toolbarSizeLarge}}. Malé ovládání nechá více místa na notebooku, velké usnadňuje dotyk i použití na velké obrazovce. Nevejdou-li se velká tlačítka, skupiny pásu se zalomí do dalšího řádku. Nastavení se uchovává v tomto prohlížeči pro všechny projekty.
+{{ui:workspace.toolbarSize}} v {{ui:workspace.appearance}} mění velikost pásu nástrojů, nabídky tvarů, levého ovládání pohledu a panelu vlastností vpravo: {{ui:workspace.toolbarSizeSmall}}, {{ui:workspace.toolbarSizeMedium}} nebo {{ui:workspace.toolbarSizeLarge}}. Malé ovládání nechá více místa na notebooku, velké usnadňuje dotyk i použití na velké obrazovce. Nevejdou-li se velká tlačítka, skupiny pásu se zalomí do dalšího řádku. Nastavení se uchovává v tomto prohlížeči pro všechny projekty.
 
 {{ui:workspace.viewCubePosition}} v {{ui:workspace.appearance}} přesune orientační krychli do jiného rohu pracovní plochy: {{ui:workspace.viewCubePositionTopLeft}} (jako dosud), {{ui:workspace.viewCubePositionTopRight}}, {{ui:workspace.viewCubePositionBottomLeft}} nebo {{ui:workspace.viewCubePositionBottomRight}}. V každém rohu kromě levého horního se ovládání pohledu posune nahoru na místo, které krychle uvolnila. Vpravo dole stojí krychle těsně nad ovládáním {{ui:inspector.snapGrid}}. Dokud jsou vpravo otevřené vlastnosti tvaru, krychle na pravé straně uhne vlevo od nich. Roh se uchovává v tomto prohlížeči pro všechny projekty. V úzkém okně, třeba na telefonu, je nastavení skryté a krychle zůstává vlevo nahoře.
 

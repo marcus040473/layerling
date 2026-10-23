@@ -33,6 +33,7 @@ export const MIN_HINGE_KNUCKLES = 3;
 export const MAX_HINGE_KNUCKLES = 15;
 export const MIN_HINGE_CLEARANCE = 0.1;
 export const MAX_HINGE_CLEARANCE = 1;
+export const MAX_HINGE_ANGLE = 180;
 const MIN_LEAF = 0.4;
 const MIN_KNUCKLE_LENGTH = 1;
 
@@ -46,6 +47,11 @@ function finite(value: number | undefined, fallback: number) {
 
 export function normalizeHingeClearance(value?: number) {
   return clamp(finite(value, DEFAULT_HINGE_CLEARANCE), MIN_HINGE_CLEARANCE, MAX_HINGE_CLEARANCE);
+}
+
+/** How far the second leaf is folded up from lying flat, in degrees: 0 is open, 180 is closed. */
+export function normalizeHingeAngle(value?: number) {
+  return clamp(finite(value, 0), 0, MAX_HINGE_ANGLE);
 }
 
 /** An odd count between 3 and 15, fewer when the knuckles would get shorter than 1 mm. */
@@ -86,6 +92,8 @@ export type HingeShapeFields = Pick<WorkplaneShape, "width" | "height"> & {
   hingeClearance?: number;
   /** No printed pin: the bore runs through every knuckle, for a pin of one's own. */
   hingePinless?: boolean;
+  /** Part B folded up about the pin's axis, in degrees (0 = lying flat, 180 = closed). */
+  hingeAngle?: number;
   sides?: number;
 };
 
@@ -115,7 +123,8 @@ export function hingePlan(shape: HingeShapeFields) {
   // A multiple of four puts a corner exactly at the bottom of every circle.
   const sides = Math.max(16, Math.ceil(roundSideCount(shape.sides, height, height) / 4) * 4);
   const pinless = shape.hingePinless === true;
-  return { width, depth, height, radius, clearance, pinless, pinRadius, boreRadius, leaf, knuckles, knuckleLength, chord, leafStart, segments, sides };
+  const angle = normalizeHingeAngle(shape.hingeAngle);
+  return { width, depth, height, radius, clearance, pinless, angle, pinRadius, boreRadius, leaf, knuckles, knuckleLength, chord, leafStart, segments, sides };
 }
 
 export type HingePlan = ReturnType<typeof hingePlan>;
@@ -218,6 +227,7 @@ export function hingeTriangles(shape: HingeShapeFields) {
   });
 
   // Part B: its leaf runs the whole length, its knuckles carry the bore.
+  const firstOfB = triangles.length;
   const b = plan.segments.filter((segment) => segment.owner === "b");
   let x = left;
   cap(s.bLeaf, [], left, -1);
@@ -231,6 +241,18 @@ export function hingeTriangles(shape: HingeShapeFields) {
   });
   walls(s.bLeaf, x, rightEnd);
   cap(s.bLeaf, [], rightEnd, 1);
+  if (plan.angle > 0) {
+    // B folds up about the axis through the middle of the pin (y = radius, z = 0).
+    const turn = (plan.angle * Math.PI) / 180;
+    const sin = Math.sin(turn);
+    const cos = Math.cos(turn);
+    for (let i = firstOfB; i < triangles.length; i += 1) {
+      triangles[i] = triangles[i].map(([px, py, pz]): Vec3 => {
+        const dy = py - plan.radius;
+        return [px, plan.radius + dy * cos + pz * sin, -dy * sin + pz * cos];
+      });
+    }
+  }
   return triangles;
 }
 
@@ -252,13 +274,13 @@ export function createHingeGeometry(shape: HingeShapeFields): THREE.BufferGeomet
  * `elevation` from the bottom of the shape, before its own turn. Overlapping
  * parts are fused into the two bodies.
  */
-export function hingeLocalParts(shape: HingeShapeFields): Array<Pick<WorkplaneShape, "kind" | "x" | "z" | "elevation" | "width" | "depth" | "height" | "rotationZ" | "bevel">> {
+export function hingeLocalParts(shape: HingeShapeFields): Array<Pick<WorkplaneShape, "kind" | "x" | "z" | "elevation" | "width" | "depth" | "height" | "rotationX" | "rotationZ" | "bevel">> {
   const plan = hingePlan(shape);
   const { width, depth, radius, leaf, leafStart: e, knuckleLength, pinRadius, boreRadius } = plan;
   const leafDepth = depth / 2 - e;
   // A cylinder or tube lies along x when turned 90 degrees about z; its height is then its length.
   const lying = (x: number, diameter: number, length: number) => ({ x, z: 0, elevation: radius - length / 2, width: diameter, depth: diameter, height: length, rotationZ: 90 });
-  const parts: Array<Pick<WorkplaneShape, "kind" | "x" | "z" | "elevation" | "width" | "depth" | "height" | "rotationZ" | "bevel">> = [
+  const parts: Array<Pick<WorkplaneShape, "kind" | "x" | "z" | "elevation" | "width" | "depth" | "height" | "rotationX" | "rotationZ" | "bevel">> = [
     { kind: "box", x: 0, z: -(depth / 2 + e) / 2, elevation: 0, width, depth: leafDepth, height: leaf },
     { kind: "box", x: 0, z: (depth / 2 + e) / 2, elevation: 0, width, depth: leafDepth, height: leaf },
   ];
@@ -275,5 +297,17 @@ export function hingeLocalParts(shape: HingeShapeFields): Array<Pick<WorkplaneSh
       parts.push({ kind: "box", x: center, z: e / 2, elevation: 0, width: knuckleLength, depth: e, height: leaf });
     }
   });
+  if (plan.angle > 0) {
+    // B's boxes fold up about the axis and turn with it; its tubes lie on the axis and only spin in place.
+    const turn = (plan.angle * Math.PI) / 180;
+    const bBoxes = new Set<(typeof parts)[number]>([parts[1], ...parts.filter((part, index) => index > 1 && part.kind === "box" && (part.z ?? 0) > 0)]);
+    bBoxes.forEach((part) => {
+      const dy = (part.elevation ?? 0) + part.height / 2 - radius;
+      const dz = part.z ?? 0;
+      part.elevation = radius + dy * Math.cos(turn) + dz * Math.sin(turn) - part.height / 2;
+      part.z = -dy * Math.sin(turn) + dz * Math.cos(turn);
+      part.rotationX = -plan.angle;
+    });
+  }
   return parts;
 }

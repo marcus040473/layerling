@@ -6,7 +6,7 @@ import { attachProjectAsset, projectAssetFromBytes, sourceFormatForFileName } fr
 import { importedShapeFromStl } from "@/lib/stlImport";
 import { readKeepSvgPage } from "@/lib/importPreferences";
 import { scaleSvgText } from "@/lib/svgScale";
-import { importedShapeFromSvgWithReport, prepareSvgImport } from "@/lib/svgImport";
+import { decodeSvgBytes, importedShapeFromSvgWithReport, prepareSvgImport } from "@/lib/svgImport";
 import { importedShapesFrom3mf } from "@/lib/threemfImport";
 import { sketchProfileFromSvg } from "@/lib/svgSketch";
 import { importedPictureSvg, isPictureFile, svgEmbeddedPicture } from "@/lib/pictureIcon";
@@ -144,7 +144,7 @@ export async function importModelFiles(
         const { importedShapeFromStep } = await import("@/lib/stepImport");
         shape = await importedShapeFromStep(file.name, buffer);
       } else if (isSvg) {
-        let text = isPicture ? await importedPictureSvg(file) : new TextDecoder().decode(bytes);
+        let text = isPicture ? await importedPictureSvg(file) : decodeSvgBytes(bytes);
         const embedded = isPicture ? null : svgEmbeddedPicture(text);
         if (embedded) text = await importedPictureSvg(embedded);
         const traced = isPicture || Boolean(embedded);

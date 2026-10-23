@@ -57,7 +57,7 @@ Kasser, krus, kabinetter og låg har én ting til fælles: de er tomme indeni, m
 
 1. Vælg formen og klik på {{ui:editor.tool.hollow}}, eller højreklik formen og vælg det fra menuen.
 2. Sæt {{ui:shell.wall}}.
-3. Under {{ui:shell.openings}} slår du de sider til der forbliver åbne: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} eller {{ui:shell.side.right}}, så mange du vil - kun {{ui:shell.side.front}} laver en slids til en skuffe, {{ui:shell.side.left}} og {{ui:shell.side.right}} en tunnel. Med ingen side slået til forbliver formen lukket hele vejen rundt, med et hulrum i midten.
+3. Under {{ui:shell.openings}} slår du de sider til der forbliver åbne: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} eller {{ui:shell.side.right}}, så mange du vil - kun {{ui:shell.side.front}} laver en slids til en skuffe, {{ui:shell.side.left}} og {{ui:shell.side.right}} en tunnel. Med ingen side slået til forbliver formen lukket hele vejen rundt, med et hulrum i midten. {{ui:shell.side.closed}} slår alle sider fra med ét klik. {{ui:shell.side.top}} er allerede slået til, når panelet åbner; et klik på den lukker toppen igen. Et legeme, der er lukket hele vejen rundt, ser uændret ud udefra: snitvisningen viser hulrummet.
 4. Bestem om {{ui:shell.edges}} skal være {{ui:shell.edges.round}} eller {{ui:shell.edges.sharp}}.
 5. Klik på {{ui:shell.apply}}.
 

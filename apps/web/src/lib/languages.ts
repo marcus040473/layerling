@@ -16,9 +16,20 @@
  * (Čeština, Dansk, Deutsch, Français, ...); then the others, by the name in their own script.
  * A new language goes in at its place, not at the end.
  */
-export const LANGUAGES = ["en", "cs", "da", "de", "fr", "it", "hu", "nl", "pl", "sl", "tr", "ru", "ar", "ja"] as const;
+export const LANGUAGES = ["en", "cs", "da", "de", "es", "fr", "it", "hu", "nl", "pl", "pt-br", "sl", "tr", "ru", "ar", "ja", "zh-cn", "zh-tw"] as const;
 export type Language = (typeof LANGUAGES)[number];
 export const DEFAULT_LANGUAGE: Language = "en";
+
+/**
+ * Tags that name a script or a region before a language entry of their own: browsers write
+ * zh-Hans, zh-Hant, zh-HK and zh-MO instead of zh-CN and zh-TW.
+ */
+export const LANGUAGE_TAG_ALIASES: Readonly<Record<string, Language>> = {
+  "zh-hans": "zh-cn",
+  "zh-hant": "zh-tw",
+  "zh-hk": "zh-tw",
+  "zh-mo": "zh-tw",
+};
 
 /** The words of a guide page that are not chapter text, in the language of the page. */
 export type GuideStrings = {
@@ -196,6 +207,61 @@ export const LANGUAGE_INFO: Readonly<Record<Language, LanguageInfo>> = {
       printAllLead: "Alle Kapitel hintereinander, zum Drucken oder zum Speichern als PDF: Drücke Strg+P und schalte in den Druckeinstellungen „Kopf- und Fußzeilen“ aus. Möchtest du nur einen Teil drucken, wähle dort die Seitenzahlen.",
       printContents: "Inhalt",
       printButton: "Drucken",
+    },
+  },
+  // Spanish as written in Spain: the whole interface and the 17 chapters of the guide, informal ("tú") like the German
+  // "du". A browser that asks for the Spanish of Latin America (es-MX, es-AR, ...) gets it too, rather than English.
+  // Not marked complete on purpose, like Hungarian: sentences added later show in English until the Spanish ones follow
+  // in a small pull request, so a release never waits for them. The README stays English.
+  es: {
+    name: "Español",
+    htmlLang: "es-ES",
+    numberLocale: "es-ES",
+    quotes: ["«", "»"],
+    guideDir: "guia-es",
+    communityUrl: GITHUB_DISCUSSIONS,
+    readme: "README.md",
+    quickstartAnchor: "windows-quickstart",
+    legal: { imprint: "Aviso legal", privacy: "Política de privacidad" },
+    // The labels of a Spanish keyboard.
+    keyNames: {
+      Ctrl: "Ctrl",
+      Shift: "Mayús",
+      Delete: "Supr",
+      Backspace: "Retroceso",
+      Home: "Inicio",
+      End: "Fin",
+      "Page Up": "Re Pág",
+      "Page Down": "Av Pág",
+      Enter: "Intro",
+      Click: "Clic",
+      RightClick: "Clic derecho",
+      Drag: "Arrastrar",
+    },
+    asciiUmlauts: false,
+    complete: false,
+    guide: {
+      site: "Guía de usuario de layerling",
+      home: "Guía de usuario",
+      openEditor: "Abrir el editor",
+      backToEditor: "Volver al editor",
+      editorElsewhere: "El editor ya está abierto en otra pestaña: cambia a ella.",
+      chapters: "Capítulos",
+      onThisPage: "En esta página",
+      previous: "Capítulo anterior",
+      next: "Capítulo siguiente",
+      overviewLead: "Todo lo que sabe hacer layerling, paso a paso. Las imágenes salen del programa en marcha y se renuevan con cada versión.",
+      sourceNote: "Esta guía crece con el programa. Si falta algo o algo no es correcto, dínoslo en las",
+      forum: "discusiones",
+      notTranslated: "Este capítulo aún no está traducido al español. A continuación, el texto en inglés.",
+      languageMenu: "Idioma",
+      search: "Buscar en la guía",
+      searchNothing: "No se ha encontrado nada.",
+      printAll: "Guía completa, para imprimir",
+      printAllTitle: "Toda la guía en una sola página",
+      printAllLead: "Todos los capítulos seguidos, para imprimir o guardar como PDF: pulsa Ctrl+P y desactiva «Encabezados y pies de página» en las opciones de impresión. Para imprimir solo una parte, elige allí los números de página.",
+      printContents: "Índice",
+      printButton: "Imprimir",
     },
   },
   nl: {
@@ -396,6 +462,47 @@ export const LANGUAGE_INFO: Readonly<Record<Language, LanguageInfo>> = {
       printAllLead: "Все главы подряд — чтобы распечатать или сохранить как PDF: нажмите Ctrl+P и отключите в настройках печати «Колонтитулы». Если нужно распечатать только часть, выберите там номера страниц.",
       printContents: "Содержание",
       printButton: "Печать",
+    },
+  },
+  // Brazilian Portuguese: fetched when chosen, not complete yet (missing sentences show in English).
+  // The code carries the region so it is never taken for the Portuguese of Portugal. It stays a
+  // valid language tag, as every code here is; its export swaps the hyphen (MESSAGES_PT_BR).
+  // The README and the guide stay English until they are translated.
+  "pt-br": {
+    name: "Português do Brasil",
+    htmlLang: "pt-BR",
+    numberLocale: "pt-BR",
+    quotes: ["“", "”"],
+    guideDir: "guia",
+    communityUrl: GITHUB_DISCUSSIONS,
+    readme: "README.md",
+    quickstartAnchor: "windows-quickstart",
+    legal: { imprint: "Informações legais", privacy: "Política de privacidade" },
+    keyNames: { Click: "Clique", RightClick: "Clique direito", Drag: "Arraste" },
+    asciiUmlauts: false,
+    complete: false,
+    guide: {
+      site: "Guia do usuário do layerling",
+      home: "Guia do usuário",
+      openEditor: "Abrir o editor",
+      backToEditor: "Voltar ao editor",
+      editorElsewhere: "O editor já está aberto em outra aba - é só mudar para ela.",
+      chapters: "Capítulos",
+      onThisPage: "Nesta página",
+      previous: "Capítulo anterior",
+      next: "Próximo capítulo",
+      overviewLead: "Tudo o que o layerling sabe fazer, passo a passo. As imagens são tiradas do programa em funcionamento e renovadas a cada versão.",
+      sourceNote: "Este guia cresce junto com o programa. Se algo estiver faltando ou errado, avise nas",
+      forum: "discussões",
+      notTranslated: "Este capítulo ainda não foi traduzido para o português. Segue o texto em inglês.",
+      languageMenu: "Idioma",
+      search: "Pesquisar no guia",
+      searchNothing: "Nada encontrado.",
+      printAll: "Guia completo, para imprimir",
+      printAllTitle: "O guia completo em uma página",
+      printAllLead: "Todos os capítulos em sequência, para imprimir ou salvar como PDF: pressione Ctrl+P e desative \"Cabeçalhos e rodapés\" nas configurações de impressão. Para imprimir só uma parte, escolha ali os números das páginas.",
+      printContents: "Sumário",
+      printButton: "Imprimir",
     },
   },
   sl: {
@@ -646,6 +753,87 @@ export const LANGUAGE_INFO: Readonly<Record<Language, LanguageInfo>> = {
       printButton: "印刷",
     },
   },
+  // Simplified Chinese: the whole interface, the 17 chapters of the guide and a README of its own.
+  // The code carries the region, as Brazilian Portuguese does, so a browser that asks for zh-CN or
+  // zh-Hans-CN is served it; other Chinese variants stay on English until a translation exists.
+  "zh-cn": {
+    name: "简体中文",
+    htmlLang: "zh-CN",
+    numberLocale: "zh-CN",
+    quotes: ["“", "”"],
+    guideDir: "zh-cn",
+    communityUrl: GITHUB_DISCUSSIONS,
+    readme: "README.zh-cn.md",
+    quickstartAnchor: "windows-快速上手",
+    legal: { imprint: "版本说明", privacy: "隐私政策" },
+    // Chinese keyboards label the keys in English; only the mouse actions get Chinese names.
+    keyNames: { Ctrl: "Ctrl", Shift: "Shift", Delete: "Delete", Backspace: "Backspace", Home: "Home", End: "End", "Page Up": "Page Up", "Page Down": "Page Down", Enter: "Enter", Click: "单击", RightClick: "右键单击", Drag: "拖动" },
+    asciiUmlauts: false,
+    complete: false,
+    guide: {
+      site: "layerling 用户指南",
+      home: "用户指南",
+      openEditor: "打开编辑器",
+      backToEditor: "返回编辑器",
+      editorElsewhere: "编辑器已在另一个标签页中打开，请切换到那里。",
+      chapters: "章节",
+      onThisPage: "本页内容",
+      previous: "上一章",
+      next: "下一章",
+      overviewLead: "layerling 的全部功能，逐步讲解。图片取自运行中的程序，并随每个版本更新。",
+      sourceNote: "本指南随程序一同完善。如有缺漏或错误，请到",
+      forum: "讨论区反馈",
+      notTranslated: "本章尚未翻译为简体中文，以下为英文原文。",
+      languageMenu: "语言",
+      search: "搜索指南",
+      searchNothing: "未找到结果。",
+      printAll: "打印完整指南",
+      printAllTitle: "完整用户指南",
+      printAllLead: "所有章节依次排列，可打印或保存为 PDF：按 Ctrl+P，并在打印设置中关闭“页眉和页脚”。只打印部分章节时，请在其中选择页码。",
+      printContents: "目录",
+      printButton: "打印",
+    },
+  },
+  // Traditional Chinese as written in Taiwan: the whole interface, the 17 chapters of the guide
+  // and a README of its own. zh-TW, zh-Hant and the Hong Kong and Macau tags are matched to it.
+  "zh-tw": {
+    name: "繁體中文",
+    htmlLang: "zh-TW",
+    numberLocale: "zh-TW",
+    quotes: ["「", "」"],
+    guideDir: "zh-tw",
+    communityUrl: GITHUB_DISCUSSIONS,
+    readme: "README.zh-tw.md",
+    quickstartAnchor: "windows-快速上手",
+    legal: { imprint: "版本說明", privacy: "隱私權政策" },
+    // Chinese keyboards label the keys in English; only the mouse actions get Chinese names.
+    keyNames: { Ctrl: "Ctrl", Shift: "Shift", Delete: "Delete", Backspace: "Backspace", Home: "Home", End: "End", "Page Up": "Page Up", "Page Down": "Page Down", Enter: "Enter", Click: "點擊", RightClick: "右鍵點擊", Drag: "拖曳" },
+    asciiUmlauts: false,
+    complete: false,
+    guide: {
+      site: "layerling 使用者指南",
+      home: "使用者指南",
+      openEditor: "開啟編輯器",
+      backToEditor: "返回編輯器",
+      editorElsewhere: "編輯器已在另一個分頁中開啟，請切換到那裡。",
+      chapters: "章節",
+      onThisPage: "本頁內容",
+      previous: "上一章",
+      next: "下一章",
+      overviewLead: "layerling 的全部功能，逐步說明。圖片取自執行中的程式，並隨每個版本更新。",
+      sourceNote: "本指南隨程式一同完善。如有缺漏或錯誤，請到",
+      forum: "討論區告訴我們",
+      notTranslated: "本章尚未翻譯為繁體中文，以下為英文原文。",
+      languageMenu: "語言",
+      search: "搜尋指南",
+      searchNothing: "找不到結果。",
+      printAll: "列印完整指南",
+      printAllTitle: "完整使用者指南",
+      printAllLead: "所有章節依次排列，可列印或儲存為 PDF：按 Ctrl+P，並在列印設定中關閉「頁首及頁尾」。只列印部分章節時，請在其中選擇頁碼。",
+      printContents: "目錄",
+      printButton: "列印",
+    },
+  },
 };
 
 export function isLanguage(value: unknown): value is Language {
@@ -654,9 +842,15 @@ export function isLanguage(value: unknown): value is Language {
 
 /**
  * The language a browser asks for, as far as we can serve it. `de-AT` and plain `de` both mean
- * German; anything layerling does not speak falls back to English.
+ * German; anything layerling does not speak falls back to English. A language kept apart by its
+ * region is matched on both: `pt-BR` is `pt-br`.
  */
 export function languageFromTag(tag: string | undefined | null): Language | null {
-  const primary = tag?.trim().toLowerCase().split("-")[0];
+  const subtags = tag?.trim().toLowerCase().split("-") ?? [];
+  const withRegion = subtags.slice(0, 2).join("-");
+  if (isLanguage(withRegion)) return withRegion;
+  const alias = LANGUAGE_TAG_ALIASES[withRegion];
+  if (alias) return alias;
+  const primary = subtags[0];
   return isLanguage(primary) ? primary : null;
 }

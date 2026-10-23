@@ -7,6 +7,8 @@ Die Kürzel wirken, solange die Arbeitsfläche den Fokus hat. Beim Tippen in ein
 
 Im Editor öffnet {{ui:editor.keyboardShortcuts}} im Bereich {{ui:editor.group.help}} dieselbe Liste als Fenster. Der Druckerknopf im Fenster ({{ui:shortcuts.print}}) druckt die Liste für sich, schwarz auf weiß, die ganze Liste auf einer Seite A4 oder Letter in drei Spalten, als Kurzübersicht zum Hinlegen; der Druckdialog des Browsers bietet auch an, sie als PDF zu speichern.
 
+Das Feld oben im Fenster durchsucht die Liste: Es lässt nur die Kürzel stehen, in deren Satz, Gruppe oder Tasten jedes eingetippte Wort vorkommt, so lässt "verrundung" oder "ctrl+z" nur diese Zeilen übrig. Groß- und Kleinschreibung und Akzente spielen keine Rolle, und ein einzelner Buchstabe oder eine Ziffer findet diese Taste und die Wörter, die damit beginnen. Das X am Ende des Feldes leert es; mit leerem Feld ist die ganze Liste wieder da. Der Druckerknopf druckt, was das Fenster zeigt, nach einer Suche also nur die gefundenen Kürzel.
+
 ![Das Fenster mit den Tastenkürzeln im Editor.](shot:shortcuts)
 
 ## Befehlssuche

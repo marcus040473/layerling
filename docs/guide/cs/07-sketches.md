@@ -25,7 +25,8 @@ Pás nástrojů má tyto části:
 - **Výběr:** {{ui:sketch.select}} přesouvá body a čáry. Kliknutí dovnitř uzavřeného obrysu vybere celý tvar, uvnitř otvoru vybere otvor. Rámeček má osm úchytů. Rohy mění oba rozměry a se [[Shift]] zachovávají poměr, boční úchyty jen jeden rozměr. Kruhový úchyt nad rámečkem otáčí celý výběr kolem středu, zobrazuje úhel a se [[Shift]] přichytává po 15°. [[R]] otáčí uzavřený obrys po 45°. Kliknutím na rozměr zadáte číslo, výraz jako „60+12.5“ nebo procenta „150%“. [[Shift]]+klik přidává a odebírá body či čáry. Tažení rámečku na prázdné ploše vybere vše uvnitř. Čáru lze táhnout za oba konce, případně společně s celým výběrem. Šipky posouvají po kroku mřížky, se [[Shift]] po větším kroku. [[Shift]] při tažení omezuje směr na jednu osu. {{ui:sketch.refine}} přidá bod kliknutím na úsek a odstraní kliknutím na bod. Dále jsou dostupné {{ui:sketch.erase}} (klik na bod nebo úsečku ho odstraní, okno přetažené přes více prvků odstraní vše uvnitř a s výběrem tlačítko výběr smaže) a podkladový obrázek {{ui:sketch.addImage}}.
 - **Schránka:** {{ui:editor.tool.copy}}, {{ui:editor.tool.paste}}, {{ui:editor.tool.duplicate}} a {{ui:editor.tool.delete}} pracují s vybranými body, čarami a obrázky jako ve 3D. [[Ctrl]]+[[X]] vyjme výběr. Kopie se vloží na volné místo vedle originálu s mezerou 10 mm a bez dotyku s existujícími čarami, aby se automaticky nespojila. Zůstává vybraná pro okamžitý přesun.
 - **Historie:** {{ui:sketch.undo}} a {{ui:sketch.redo}}.
-- **Pohled:** posun prostředním tlačítkem nebo pravým s [[Shift]] či [[Ctrl]]. [[Home]] zobrazí celý náčrt, [[F]] výběr (bez výběru celý náčrt), [[+]] a [[−]] mění přiblížení. {{ui:camera.tapeTools}} měří mezi dvěma body. Po výběru čáry se zobrazí její délka, u bodu délky navazujících čar. {{ui:sketch.showMeasurements}} v boční liště kóty skryje či zobrazí; samostatné měření zůstává funkční. Délku přímé čáry změníte kliknutím na údaj a zadáním mm. [[Enter]] potvrdí, [[Esc]] zruší. Směr i počátek se zachovají, čáry připojené na druhém konci se přizpůsobí. Je-li vybrán koncový bod, pohybuje se právě on. [[Alt]]+[[Enter]] mění délku souměrně kolem středu. U křivek údaj pouze zobrazuje délku.
+- **Správa:** {{ui:editor.tool.note}} (nebo [[N]]) vloží do náčrtu poznámku jako ve 3D editoru: další kliknutí ji umístí, kamkoli, i na čáru. Tažením za špendlík ji přesunete, kliknutím na špendlík kartu sbalíte. Poznámky náčrtu patří k jeho tělesu: ve 3D zobrazení sedí nahoře na tělese vytvořeném přes {{ui:sketch.extrude}} nebo {{ui:sketch.sweep}} a na nakresleném profilu tělesa vytvořeného přes {{ui:sketch.revolve}} a pohybují se s ním. Po novém otevření náčrtu se zobrazí všechny poznámky tělesa, i ty vložené ve 3D. {{ui:sketch.undo}} vezme poznámku zpět stejně jako čáru a {{ui:sketch.cancel}} zahodí změny poznámek. Více v kapitole Měření a poznámky.
+- **Pohled:** posun prostředním tlačítkem nebo pravým s [[Shift]] či [[Ctrl]]. Když není nic vybráno, posouvá pohled i [[Ctrl]] se šipkami: o desetinu obrazu na stisknutí, se [[Shift]] navíc o polovinu; náčrt se posouvá ve směru šipky. [[Home]] zobrazí celý náčrt, [[F]] výběr (bez výběru celý náčrt), [[+]] a [[−]] mění přiblížení. {{ui:camera.tapeTools}} měří mezi dvěma body. Po výběru čáry se zobrazí její délka, u bodu délky navazujících čar. {{ui:sketch.showMeasurements}} v boční liště kóty skryje či zobrazí; samostatné měření zůstává funkční. Délku přímé čáry změníte kliknutím na údaj a zadáním mm. [[Enter]] potvrdí, [[Esc]] zruší. Směr i počátek se zachovají, čáry připojené na druhém konci se přizpůsobí. Je-li vybrán koncový bod, pohybuje se právě on. [[Alt]]+[[Enter]] mění délku souměrně kolem středu. U křivek údaj pouze zobrazuje délku.
 
 Těleso vzniká pouze z **uzavřeného** obrysu.
 
@@ -83,6 +84,10 @@ Je-li pracovní rovina na boční ploše, kreslíte při pohledu na ni a horní 
 ![Z obrysu vzniklo těleso se zaobleným rohem.](shot:sketch-result)
 
 {{ui:inspector.editSketch}} vás kdykoliv vrátí k náčrtu. Totéž dělá dvojklik jako v Tinkercadu; zamčené těleso se neotevře. Dvojklik lze vypnout přes {{ui:workspace.doubleClickOpensSketch}}. Úpravy hran hotového tělesa se při změně náčrtu ztratí, protože hrany vznikají znovu.
+
+Náčrt s několika obrysy dává jedno těleso a obrysy, které se překrývají, v něm splynou. Chcete-li mít každý obrys zvlášť, vyberte těleso a klikněte na {{ui:inspector.separateParts}}: každý vnější obrys se stane samostatným tělesem s otvory, které v něm leží, a zachová si výšku, barvu a místo tělesa. Každá část má vlastní náčrt k úpravám, i s pomocnými čarami, takže můžete části zvedat nebo snižovat jednotlivě a potom je spojit nebo odečíst. Úpravy hran tomu brání, stejně jako dodatečně roztažené těleso: to se pak rozdělí jako síť.
+
+**Jiný druh tělesa ze stejného náčrtu:** štítek nahoře v náčrtu říká, čím se stane: {{ui:sketch.modeBadgeExtrude}}, {{ui:sketch.modeBadgeRevolve}} nebo {{ui:sketch.modeBadgeSweep}}. Klikni na něj a vyber jiný, i když upravuješ existující těleso: importované SVG, které přijde vysunuté, se po přepnutí na {{ui:sketch.modeBadgeRevolve}} stane vázou nebo knoflíkem. Obrys, který přesahuje přes osu, se posune doleva, až jeho pravý okraj leží na ose; [[Ctrl]]+[[Z]] posun vrátí. Po dokončení nastoupí nové těleso na místo starého, se stejným jménem a barvou a patou ve stejné výšce. Úpravy hran se ztratí, jako při každé změně náčrtu.
 
 ### Rotace profilu
 
@@ -150,7 +155,7 @@ Tyto volby mění pouze podklad, nikoli náčrt.
 
 | Klávesa | Význam |
 | --- | --- |
-| [[Esc]] | ukončení kresleného řetězce, zrušení výběru |
+| [[Esc]] | odložení nástroje pro poznámky; jinak odložení nástroje (zpět na {{ui:sketch.select}}), pak zrušení výběru |
 | [[Delete]] | odstranění vybraného prvku |
 | [[Ctrl]]+[[C]] | kopírování |
 | [[Ctrl]]+[[X]] | vyjmutí |
@@ -161,5 +166,6 @@ Tyto volby mění pouze podklad, nikoli náčrt.
 | číslice, [[<]], [[Tab]], [[Enter]] | zadání a potvrzení délky a úhlu další úsečky |
 | [[R]] | otočení uzavřeného náčrtu o 45° |
 | [[L]] | zamknutí nebo odemknutí podkladu |
+| [[N]] | vložení poznámky: další kliknutí ji umístí do náčrtu |
 
 > **Tip:** Používejte jen nezbytné body. Několik dobře umístěných bodů vytvoří hladší tvar než spletitý obrys s mnoha body.

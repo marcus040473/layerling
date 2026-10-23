@@ -16,7 +16,7 @@ describe("the edge tool's number field", () => {
     container = null;
   });
 
-  const mount = (onChange: (value: number) => void) => {
+  const mount = (onChange: (value: number) => void, extra: { autoFocus?: boolean; onEnter?: (value: number) => void } = {}) => {
     container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -30,6 +30,7 @@ describe("the edge tool's number field", () => {
         workspace: DEFAULT_WORKPLANE_WORKSPACE,
         length: true,
         onChange,
+        ...extra,
       }));
     });
     return container.querySelector<HTMLInputElement>("input[type=text]")!;
@@ -54,5 +55,25 @@ describe("the edge tool's number field", () => {
     act(() => input.blur());
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith(4);
+  });
+
+  // #760: a tool opened from the keyboard is typed into at once, and Enter applies it.
+  it("takes the focus when asked to", () => {
+    const input = mount(vi.fn(), { autoFocus: true });
+    expect(document.activeElement).toBe(input);
+  });
+
+  it("calls onEnter with the typed value on Enter", () => {
+    const onChange = vi.fn();
+    const onEnter = vi.fn();
+    const input = mount(onChange, { onEnter });
+    act(() => input.focus());
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "5");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    act(() => { input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })); });
+    expect(onChange).toHaveBeenCalledWith(5);
+    expect(onEnter).toHaveBeenCalledWith(5);
   });
 });

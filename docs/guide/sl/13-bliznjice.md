@@ -7,6 +7,8 @@ Bližnjice delujejo, dokler ima delovna površina fokus. Pri vpisovanju v polje 
 
 V urejevalniku {{ui:editor.keyboardShortcuts}} v področju {{ui:editor.group.help}} odpre isti seznam kot okno. Gumb s tiskalnikom v oknu ({{ui:shortcuts.print}}) natisne samo seznam, črno na belem in z veliko pisavo; pogovorno okno za tiskanje v brskalniku ponuja tudi shranjevanje v PDF.
 
+Polje na vrhu okna išče po seznamu: obdrži le bližnjice, katerih stavek, skupina ali tipke vsebujejo vsako vtipkano besedo, tako da "ctrl+z" pusti le te vrstice. Velike in male črke ter naglasi niso pomembni, ena sama črka ali števka pa najde to tipko in besede, ki se z njo začnejo. X na koncu polja ga izprazni; s praznim poljem je spet viden ves seznam. Gumb s tiskalnikom natisne, kar kaže okno, zato po iskanju natisne le najdene bližnjice.
+
 ![Okno z bližnjicami na tipkovnici v urejevalniku.](shot:shortcuts)
 
 ## Iskanje ukazov

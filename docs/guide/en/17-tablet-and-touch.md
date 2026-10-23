@@ -24,6 +24,8 @@ layerling runs in the browser of a tablet, and as an app from its home screen. A
 
 Without a Shift key, {{ui:contextMenu.selectMultiple}} in the menu of a long press does what Shift+click does on a computer. While it is on, a message says so, and each tap on a body adds it to the selection or takes it out again. A tap on empty space, or [[Esc]] on a keyboard, ends it and leaves the selection as it is. A finger on empty space still turns the view meanwhile. Then {{ui:editor.tool.group}}, {{ui:editor.tool.align}} or a move work on all the bodies you picked.
 
+The same menu has {{ui:contextMenu.carry}}, the key [[C]] for a touch screen. The selection then follows the finger over the faces of other bodies; a tap sets it down on the face you tap, even a sloped one, and the first tap is enough. The menu entry is also found by searching for "set down" or "cruise" (the command search, [[Ctrl]]+[[K]] on a keyboard).
+
 ## Turning and zooming the view
 
 One finger on empty space turns the view, two fingers zoom and move it. A finger that starts on a body works on the body, not on the view. If you would rather have it turn the view, switch on {{ui:camera.touchRotate}} in the camera bar: one finger then turns the view instead of selecting, wherever it starts. That switch only shows on a device with a touch screen.
@@ -46,3 +48,5 @@ If bodies slip when children or hurried hands touch them, switch on {{ui:workspa
 ## Workshops with children
 
 Fingers and rubber-tip styluses work alike here. Two settings make a class easier: {{ui:workspace.selectBeforeMoving}} so that a touch does not move a body by accident, and {{ui:camera.touchRotate}} so that one finger always turns the view. The question mark button in the Help group of the ribbon switches on the {{ui:interactiveHelp.title}}: a tap on any button, field or handle then explains it, and the same button, or [[Esc]], leaves it.
+
+For a whole class, switch on {{ui:workspace.simpleMode}} in the settings. The ribbon then keeps only the tools a workshop uses (copy, paste, duplicate, delete, undo, group, mirror, chamfer, fillet, hollow, align, export), the shape library a short list, the buttons are larger, and the start page shows the designs and nothing else: no news, no welcome text, no help buttons and no links out of layerling. Switching it on is a tap; switching it off is a press held for two seconds on the button that then takes its place. A link ending in `?mode=simple` switches it on for the device that opens it, `?mode=full` switches it off again. Whoever runs layerling on a server can start everyone in it with `LAYERLING_SIMPLE_MODE=true`, or fix it for everyone with `always`, so that the program has no switch to leave it; see the README.

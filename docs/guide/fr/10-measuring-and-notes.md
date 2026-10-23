@@ -61,10 +61,11 @@ Une note enregistre ce que la géométrie ne dit pas : "Cette vis est trop serr�
 - {{ui:note.detach}} libère une note jointe du corps.
 - {{ui:editor.tool.group}} emporte une note jointe dans le groupe ; {{ui:editor.tool.ungroup}} la confie à la partie visible située dessous, y compris un groupe imbriqué. Tant qu'un groupe est ouvert avec {{ui:group.edit}}, ses notes suivent la partie située dessous et reviennent au groupe avec {{ui:group.done}} ; annuler les remet telles qu'elles étaient.
 - Si son corps est supprimé, ou si plus aucun corps visible ne se trouve dessous, la note reste là où elle était, sur le plan de travail.
-- Faire glisser déplace la note, un clic l'ouvre pour l'éditer.
+- Faire glisser l'épingle déplace la note. Un clic sur l'épingle replie la carte, seul le petit numéro reste ; un autre clic la rouvre. Un clic dans le texte permet de le modifier.
 - Pendant que vous écrivez, [[Enter]] conserve le texte et [[Esc]] le remet tel qu'il était avant de commencer ; [[Shift]]+[[Enter]] démarre une nouvelle ligne.
+- **Dans une esquisse**, {{ui:editor.tool.note}} (sous {{ui:editor.group.manage}}) ou [[N]] place aussi une note, n'importe où sur l'esquisse. Toutes les notes d'une esquisse appartiennent à son corps : dans la vue 3D, elles se posent dessus, sur le dessus d'un corps créé avec {{ui:sketch.extrude}} ou {{ui:sketch.sweep}} et sur le profil dessiné d'un corps créé avec {{ui:sketch.revolve}}, et elles se déplacent avec lui. Quand vous rouvrez l'esquisse, elle affiche les notes du corps, y compris celles placées en 3D. Dans l'esquisse, {{ui:sketch.undo}} annule une note comme une ligne, et {{ui:sketch.cancel}} abandonne ce que vous avez modifié dans les notes.
 
-Les notes sont enregistrées dans la conception, n'apparaissent dans aucune exportation et peuvent être affichées ou masquées avec {{ui:visibility.notes}}.
+Les notes sont enregistrées dans la conception, n'apparaissent dans aucune exportation et peuvent être affichées ou masquées avec {{ui:visibility.notes}} (dans {{ui:editor.visibilityOptions}}, la flèche à côté de l'icône en forme d'œil).
 
 ## Points de référence
 
@@ -75,3 +76,15 @@ Un point de référence est une marque nue dans l'espace, comme une marque de cr
 - Lorsque vous faites glisser une forme, ses bords et son centre s'alignent sur un point, comme ils s'alignent sur d'autres formes ({{ui:workspace.objectSnap}}). Le carré de cadrage s'accroche également aux points.
 - Les points sont enregistrés dans la conception, n'apparaissent dans aucune exportation et sont affichés ou masqués avec les notes par {{ui:visibility.notes}}.
 - Une IA peut les marquer, les lister et les supprimer avec `layerling_add_reference_points`, `layerling_list_reference_points` et `layerling_remove_reference_points`.
+
+## Images de référence
+
+Une image de référence est une image sur laquelle aligner des pièces : posez la photo d'une carte électronique au fond de son boîtier et placez les entretoises, les trous et les découpes des connecteurs exactement dessus. C'est un repère, pas un corps : elle n'est jamais imprimée, jamais exportée (STL, 3MF, OBJ, STEP, SVG), ne fait jamais partie d'un groupe, d'un regroupement ou d'une découpe, et l'estimation d'impression l'ignore.
+
+- Ouvrez {{ui:editor.import}} et choisissez {{ui:import.referenceImage}}, puis une image PNG, JPG, WebP, GIF ou BMP. Elle se pose sur le plan de travail - sur le plateau, ou sur la face où vous avez posé le plan de travail -, son grand côté à 100 mm, à moitié transparente.
+- Déplacez, tournez et redimensionnez-la avec ses poignées comme toute forme. Un corps devant elle est choisi en premier : en travaillant dessus, vous n'attrapez pas l'image par mégarde.
+- {{ui:referenceImage.seeThrough}} dans ses réglages l'estompe de pleinement visible à à peine visible.
+- {{ui:referenceImage.calibrate}} lui donne sa vraie taille, comme dans l'esquisse : cliquez sur deux points de l'image dont vous connaissez la distance réelle - deux trous de fixation de la carte, par exemple - et saisissez cette distance dans {{ui:referenceImage.distance}}. L'image garde ses proportions et son milieu.
+- Verrouillez-la avec le cadenas dans l'en-tête de ses réglages, et elle reste en place : les clics la traversent alors jusqu'au plateau. Choisissez-la dans la liste des objets pour la déverrouiller.
+- L'image est enregistrée une fois dans le fichier du projet, quel que soit le nombre de copies ou d'annulations. Une grande image grossit le fichier d'autant ; le message à l'ajout indique sa taille.
+- Une IA en ajoute une, la déplace, la calibre, l'estompe et la verrouille avec `layerling_reference_image`.

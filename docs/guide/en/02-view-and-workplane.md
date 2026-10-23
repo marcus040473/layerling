@@ -13,9 +13,9 @@ With the mouse:
 | click the right button | on a body, a menu with the most used commands: duplicate, hole or solid, group, hide, lock, delete and more; on empty space Paste and Select all |
 | drag with the middle button | move the view |
 | mouse wheel | zoom in and out |
-| hold [[Ctrl]] and drag with the left button | also moves the view |
+| hold [[Ctrl]] / [[Cmd]] and drag with the left button | also moves the view (on a MacBook trackpad: hold [[Cmd]], press and drag) |
 
-How fast the wheel zooms is set with {{ui:workspace.zoomSpeed}} in the settings, under {{ui:workspace.appearance}}: a slider from 1 to 14, 5 to begin with; above 10 only the wheel gets faster. One notch of a mouse wheel zooms alike in every browser, a trackpad zooms with how far you stroke.
+How fast the wheel zooms is set with {{ui:workspace.zoomSpeed}} in the settings, under {{ui:workspace.appearance}}: a slider from 1 to 14, 5 to begin with. It sets the wheel and the trackpad only: the buttons and the keys [[+]] and [[−]] always zoom in the same small steps. One notch of a mouse wheel zooms alike in every browser, a trackpad zooms with how far you stroke.
 
 On a tablet or phone, two fingers zoom (spread and pinch) and move the view (slide together). One finger on empty space turns the view, and a tap there clears the selection; on a shape or a handle it works on the design, just like the left mouse button. To turn the view with a finger that starts on a shape too, switch on {{ui:camera.touchRotate}} in the camera bar. That switch shows on devices with a touch screen.
 
@@ -39,6 +39,7 @@ At the left edge is a narrow bar. From the top:
 - {{ui:camera.focusSelection}} zooms to the selection ([[F]] or [[Shift]]+[[F]]).
 - {{ui:camera.zoomIn}} and {{ui:camera.zoomOut}} zoom step by step, as do the keys [[+]] and [[−]].
 - {{ui:camera.orthographic}} switches to a flat view in which parallel edges stay parallel. For measuring and lining up edges that is often more comfortable than the perspective view. [[O]] switches back and forth, and a second click returns.
+- {{ui:camera.secondView}} opens a second view of the design in a window of its own, described below. A second click closes it.
 - {{ui:camera.hideWorkplane}} (the eye over a grid) hides the plate with its grid, so you can look at the underside of a design from below. Only the view changes: new shapes still land on the workplane. A second click shows it again.
 - {{ui:camera.placeWorkplane}}, the tape measure and the framing square are tools of their own, covered below and in [Measuring and notes](chapter:measuring-and-notes).
 
@@ -46,11 +47,18 @@ The small arrow at the very top of the bar hides it if it gets in the way.
 
 A design opens the way you left it: the angle, zoom and position of the view are kept with it in this browser, so you continue where you stopped, also after going Home or closing the page. A saved file (.lyl) carries the view along, so it opens in it elsewhere too. The view is not part of the undo history.
 
+You can also keep four views of your own in each design. [[Shift]]+[[7]], [[Shift]]+[[8]], [[Shift]]+[[9]] or [[Shift]]+[[0]] saves the view exactly as it is - angle, position, zoom, and flat or perspective - under that key, and the key alone ([[7]], [[8]], [[9]] or [[0]]) brings it back. A message at the bottom confirms the save; saving again under the same key replaces the view. Like the view above, the saved views stay with the design in this browser and travel in a saved file (.lyl), and they are not part of the undo history.
+
+### A second view in its own window
+
+{{ui:camera.secondView}} opens a window that shows the same design through a camera of its own, so you can see it from two sides at once - from the front, say, while you work from above. Every change you make in the editor shows there straight away; the design is only changed in the main window, and the handles stay there too. In the second window the mouse and the view cube turn its view as they do here, and so do the keys: [[1]] to [[6]], [[F]], [[Home]], [[O]], [[+]] and [[−]], the arrow keys to turn and [[Ctrl]] with the arrows to slide. [[F]] there zooms to what is selected in the editor. The design's four saved views work there too: [[7]], [[8]], [[9]] and [[0]] bring them back, and [[Shift]] with one of these keys saves that window's view under it - for both windows. Its own camera bar has {{ui:camera.home}}, {{ui:camera.focusSelection}}, {{ui:camera.zoomIn}}, {{ui:camera.zoomOut}}, {{ui:camera.orthographic}} and {{ui:camera.hideWorkplane}}, and they act on that window alone. The window opens where you left it, at the same size, and closes with the editor. On phones and tablets the button is not shown.
+
 ## Looking inside: the section view
 
 {{ui:camera.sectionView}}, the last button in the bar (the cut tool), cuts the view open along a plane so you can check walls, cavities and parts that fit into each other. Nothing is cut for real: the design, its files and every export stay whole. Where the plane goes through a solid, the cut is filled with the colour of the body a little darker, and a hole inside it stays empty, so you can tell solid from hollow; the filled face appears a moment after the plane stops moving.
 
 - Choose the axis the plane stands across: X (width), Y (depth) or Z (height), as in the position fields. The plane starts in the middle of your design.
+- {{ui:camera.sectionOrientation}} sets what these axes follow. {{ui:camera.sectionOrientationWorld}} takes the design's axes. {{ui:camera.sectionOrientationWorkplane}} takes the workplane's: Z then cuts parallel to it, X and Y square to it, and the position counts from its origin. With the workplane on a sloped face you cut parallel to that face, and the cut moves along when you move the workplane. {{ui:camera.sectionOrientationView}} turns the plane to face the screen: it takes away what lies in front, and the slider pushes it deeper into the design along your line of sight, for example to reach a buried part and click it. After turning the view, click it again and the cut follows the new view.
 - {{ui:camera.sectionCoarse}} moves the plane across the whole design, {{ui:camera.sectionFine}} moves it a little either side of where it stands, for tenths of a millimetre. You can also type the position.
 - The button beside the axes shows the other side of the cut, {{ui:camera.sectionReset}} puts the plane back in the middle, and {{ui:camera.sectionShowPlane}} hides the blue plane.
 - You can click and select what the cut lays open, inner walls included.
@@ -86,13 +94,15 @@ The grid shows the size of the plate. At the bottom right is the **snap step**: 
 
 ### The settings window
 
-The cogwheel in the ribbon ({{ui:editor.workspaceSettings}}) opens the settings. On the left are five areas: {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} and {{ui:workspace.history}}. A change counts at once. {{ui:workspace.makeDefault}} at the bottom saves the current settings as the default, so that a new design starts with them, and {{ui:workspace.close}} at the top right closes the window. This part goes through the settings one by one.
+The cogwheel in the ribbon ({{ui:editor.workspaceSettings}}) opens the settings. On the left are five areas: {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} and {{ui:workspace.history}}. A change counts at once. {{ui:workspace.makeDefault}} at the bottom saves the current settings as the default, so that a new design starts with them. A file you open brings its own settings; {{ui:workspace.useMyDefault}} next to it puts your saved colours, grid and the rest on the open design, keeping the size of its plate, the printer and the units. {{ui:workspace.close}} at the top right closes the window. This part goes through the settings one by one.
 
 ### Appearance: theme, toolbar and view cube
 
 {{ui:workspace.theme}} sets the colour scheme of the whole program: {{ui:workspace.themeSystem}} follows your computer, the others are {{ui:workspace.themeLight}}, {{ui:workspace.themeDark}} and {{ui:workspace.themeGraphite}}. You can also change it at the top right of the editor.
 
-{{ui:workspace.toolbarSize}} makes the buttons of the ribbon on top, its shape menu and the camera controls on the left smaller or larger: {{ui:workspace.toolbarSizeSmall}}, {{ui:workspace.toolbarSizeMedium}} (as it always was) or {{ui:workspace.toolbarSizeLarge}}. Small leaves more room for the workplane on a laptop; large is easier to hit on a big screen or with a finger. With large buttons the groups of the ribbon go onto a second row when the window is too narrow for them. The size is kept in this browser and holds for every design.
+{{ui:workspace.toolbarSize}} makes the buttons of the ribbon on top, its shape menu, the camera controls on the left and the properties panel on the right smaller or larger: {{ui:workspace.toolbarSizeSmall}}, {{ui:workspace.toolbarSizeMedium}} (as it always was) or {{ui:workspace.toolbarSizeLarge}}. Small leaves more room for the workplane on a laptop; large is easier to hit on a big screen or with a finger. With large buttons the groups of the ribbon go onto a second row when the window is too narrow for them. The size is kept in this browser and holds for every design.
+
+{{ui:workspace.shapeColors}} puts the colour a new shape starts with on the pictures of the shape library (the colour of its kind, or the one you saved with {{ui:inspector.saveDefaults}}). Switch it off if you prefer grey pictures; your browser remembers the choice.
 
 {{ui:workspace.viewCubePosition}} puts the view cube in another corner of the workplane: {{ui:workspace.viewCubePositionTopLeft}} (as it always was), {{ui:workspace.viewCubePositionTopRight}}, {{ui:workspace.viewCubePositionBottomLeft}} or {{ui:workspace.viewCubePositionBottomRight}}. In any corner but the top left, the camera controls move up into the spot the cube left. In the bottom right the cube stands just above the {{ui:inspector.snapGrid}} control. While the properties of a shape are open on the right, a cube on the right steps to the left of them. The corner is kept in this browser and holds for every design. On a narrow window, such as a phone, the setting is hidden and the cube stays in the top left.
 
@@ -120,6 +130,8 @@ The sketch view has its own colours: {{ui:workspace.sketchBackground}} for the w
 
 ![Three dark bodies with edge lines switched on: the outlines keep them apart.](shot:edge-lines)
 
+{{ui:workspace.strongHoles}} draws holes in a darker grey, less see-through and with a dark line round them. It helps when a hole is hard to find among see-through bodies. Unlike the edge lines it stays on in fast mode.
+
 ### Appearance: light and shadows
 
 {{ui:workspace.showShadows}} switches the cast shadows on and off. Two sliders set how the bodies are lit. {{ui:workspace.shadowStrength}} says how dark the cast shadows are, and {{ui:workspace.shadeContrast}} moves light from the even ambient light to the main light: towards "punchy" the shaded sides get darker and the shadows show more, towards "soft" everything gets flatter. At the top end the contrast gets very strong, so shaded sides and shadows turn really dark. {{ui:workspace.shadowSoftness}} makes the edges of the shadows soft instead of crisp. {{ui:workspace.lightAzimuth}} turns the main light round the plate (0° from the front, 90° from the right), and {{ui:workspace.lightElevation}} lifts it; at 90° it stands straight above the plate as in Tinkercad, and the shadows fall right under the bodies. {{ui:workspace.lightReset}} puts everything back.
@@ -142,7 +154,7 @@ The sketch view has its own colours: {{ui:workspace.sketchBackground}} for the w
 
 {{ui:workspace.startInPerspective}}: the editor then opens in the perspective view, not in the flat one.
 
-{{ui:workspace.zoomSpeed}} is a slider from slow to fast: how fast the wheel zooms; above 10 only the wheel gets faster. {{ui:workspace.cameraInertia}}: after you let go of the mouse the view turns on for a moment and slows down gently. Switched off, it stops at once, as in Tinkercad and Fusion 360.
+{{ui:workspace.zoomSpeed}} is a slider from slow to fast: how fast the wheel and the trackpad zoom; the zoom buttons and keys keep their own small steps. {{ui:workspace.cameraInertia}}: after you let go of the mouse the view turns on for a moment and slows down gently. Switched off, it stops at once, as in Tinkercad and Fusion 360.
 
 {{ui:workspace.overhangAngle}} is the angle from which a face counts as an overhang when you switch on Show overhangs in the visibility menu: those faces are hatched red and white. 30° is careful, 70° counts on good cooling of the print; 45° is the usual start.
 

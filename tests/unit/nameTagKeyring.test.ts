@@ -311,7 +311,7 @@ describe("layerling_layer_text's new arguments (#215)", () => {
     expect(layerTextKeyringArgument(true)).toEqual({ keyring: { side: "left", diameter: 3 } });
     expect(layerTextKeyringArgument({ side: "top", diameter: 5.5 })).toEqual({ keyring: { side: "top", diameter: 5.5 } });
     expect(layerTextKeyringArgument({})).toEqual({ keyring: { side: "left", diameter: 3 } });
-    expect(layerTextKeyringArgument({ side: "bottom" })).toEqual({ error: "keyring.side must be left, right or top" });
+    expect(layerTextKeyringArgument({ side: "bottom" })).toEqual({ error: "keyring.side must be left, right, top or free" });
     expect(layerTextKeyringArgument({ diameter: 0.5 })).toEqual({ error: "keyring.diameter must be 1 to 20 mm" });
     expect(layerTextKeyringArgument({ diameter: 25 })).toEqual({ error: "keyring.diameter must be 1 to 20 mm" });
     expect(layerTextKeyringArgument({ diameter: "4" })).toHaveProperty("error");

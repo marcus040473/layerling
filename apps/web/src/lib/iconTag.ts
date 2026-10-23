@@ -1,3 +1,5 @@
+import * as THREE from "three";
+import { quaternionForShape } from "@/lib/geometryRotation";
 import { NAME_TAG_GAP, NAME_TAG_LAYERS } from "@/lib/nameTag";
 import { sketchBodyStretch, stretchedSketchProfile } from "@/lib/sketchResize";
 import { normalizeSketchStroke } from "@/lib/sketchStroke";
@@ -83,7 +85,7 @@ export function iconLayerProfile(area: SketchProfile, layer: TextLayer, keyring?
 export function iconLayerKeyrings(area: SketchProfile, layers: readonly TextLayer[], keyring: NameTagKeyring | null | undefined): (NonNullable<SketchProfile["keyring"]> | undefined)[] {
   if (!keyring || !layers.length) return layers.map(() => undefined);
   const reach = Math.max(0, ...layers.map((layer) => layer.grow));
-  const bottom = iconKeyringFor(area, reach, keyring.side, keyring.diameter, true);
+  const bottom = iconKeyringFor(area, reach, keyring.side, keyring.diameter, true, keyring.along, layers[layers.length - 1].grow, keyring.free);
   if (!bottom) return layers.map(() => undefined);
   const { ear: _ear, ...hole } = bottom;
   return layers.map((_, index) => (index === layers.length - 1 ? bottom : { ...hole }));
@@ -107,7 +109,10 @@ export function iconLayersOf(shapes: WorkplaneShape[]): IconLayerStack | null {
   if (!shapes.length || shapes.length > MAX_TEXT_LAYERS || !shapes.every(isIconLayerBody)) return null;
   const bodies = shapes as Array<WorkplaneShape & { sketchProfile: SketchProfile }>;
   if (new Set(bodies.map((shape) => outlineKey(shape.sketchProfile))).size !== 1) return null;
-  const topDown = [...bodies].sort((a, b) => (b.elevation ?? 0) - (a.elevation ?? 0));
+  // Ordered along the tag's own up, which is not the world's on a side face (#696).
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(quaternionForShape(bodies[0]));
+  const footOf = (shape: WorkplaneShape) => new THREE.Vector3(shape.x, (shape.elevation ?? 0) + shape.height / 2, shape.z).addScaledVector(up, -shape.height / 2);
+  const topDown = [...bodies].sort((a, b) => footOf(b).dot(up) - footOf(a).dot(up));
   const layers = topDown.map((shape, index) => {
     const stroke = normalizeSketchStroke(shape.sketchProfile.stroke);
     const grown = stroke?.align === "grow";
@@ -127,16 +132,25 @@ export function iconLayersOf(shapes: WorkplaneShape[]): IconLayerStack | null {
   const outline = iconSourceProfile(top.sketchProfile);
   const source = stretch ? (({ images: _images, ...profile }) => profile)(stretchedSketchProfile(outline, stretch.x, stretch.z)) : outline;
   const holed = bodies.find((shape) => shape.sketchProfile.keyring);
+  // The place is the middle of the underside: the top layer's middle slid down its up onto the bottom layer's underside.
+  const foot = footOf(top).addScaledVector(up, footOf(bottom).dot(up) - footOf(top).dot(up));
   return {
     source,
     width: top.width,
     layers,
-    keyring: holed?.sketchProfile.keyring ? { side: holed.sketchProfile.keyring.side, diameter: holed.sketchProfile.keyring.diameter } : null,
+    keyring: holed?.sketchProfile.keyring
+      ? {
+        side: holed.sketchProfile.keyring.side,
+        diameter: holed.sketchProfile.keyring.diameter,
+        ...(holed.sketchProfile.keyring.along ? { along: holed.sketchProfile.keyring.along } : {}),
+        ...(holed.sketchProfile.keyring.free ? { free: holed.sketchProfile.keyring.free } : {}),
+      }
+      : null,
     ids: topDown.map((shape) => shape.id),
     place: {
-      x: top.x,
-      z: top.z,
-      elevation: bottom.elevation ?? 0,
+      x: foot.x,
+      z: foot.z,
+      elevation: Math.round(foot.y * 1000) / 1000,
       rotation: top.rotation ?? 0,
       rotationX: top.rotationX ?? 0,
       rotationZ: top.rotationZ ?? 0,

@@ -61,10 +61,11 @@ Egy jegyzet azt rögzíti, amit a geometria nem mond el: „Ez a csavar 0,3 mm-r
 - A {{ui:note.detach}} leválasztja a testről a hozzá csatolt jegyzetet.
 - A {{ui:editor.tool.group}} a csatolt jegyzetet is beviszi a csoportba; a {{ui:editor.tool.ungroup}} az alatta lévő látható részhez adja tovább, akár egy belső csoporthoz is. Amíg egy csoport a {{ui:group.edit}} gombbal nyitva van, a jegyzetei az alattuk lévő résszel együtt mozognak, és a {{ui:group.done}} gombbal visszakerülnek a csoporthoz; a megszakítás visszaállítja őket az eredeti állapotukba.
 - Ha a testét törlöd, vagy már nincs alatta látható test, a jegyzet ott marad, ahol volt, a munkasíkon.
-- Húzással mozgatod a jegyzetet, egy kattintás szerkesztésre nyitja meg.
+- A tűt húzva a jegyzet elmozdul. Egy kattintás a tűre összecsukja a kártyát, csak a kis szám marad; egy újabb kattintás újra kinyitja. A szövegbe kattintva szerkesztheted.
 - Írás közben az [[Enter]] megtartja a szöveget, az [[Esc]] visszaállítja olyanra, amilyen az írás megkezdése előtt volt; a [[Shift]]+[[Enter]] új sort kezd.
+- **Vázlatban** is elhelyez egy jegyzetet a {{ui:editor.tool.note}} (a {{ui:editor.group.manage}} alatt) vagy az [[N]], bárhol a vázlaton. A vázlat összes jegyzete a vázlat testéhez tartozik: a 3D nézetben rajta ülnek, a {{ui:sketch.extrude}} vagy {{ui:sketch.sweep}} művelettel készült test tetején és a {{ui:sketch.revolve}} művelettel készült test megrajzolt profilján, és vele együtt mozognak. Ha újra megnyitod a vázlatot, megmutatja a test jegyzeteit, a 3D-ben elhelyezetteket is. A vázlatban a {{ui:sketch.undo}} egy jegyzetet ugyanúgy visszavon, mint egy vonalat, a {{ui:sketch.cancel}} pedig elveti, amit a jegyzeteken módosítottál.
 
-A jegyzetek a tervben mentődnek, egyik exportban sem jelennek meg, és a {{ui:visibility.notes}} kapcsolóval megjeleníthetők vagy elrejthetők.
+A jegyzetek a tervben mentődnek, egyik exportban sem jelennek meg, és a {{ui:visibility.notes}} (a {{ui:editor.visibilityOptions}} alatt, a szem ikon melletti nyílnál) kapcsolóval megjeleníthetők vagy elrejthetők.
 
 ## Referenciapontok
 
@@ -75,3 +76,15 @@ A referenciapont egy puszta jel a térben, mint egy ceruzajel vagy egy kijelöl�
 - Amikor egy alakzatot húzol, az élei és a közepe úgy illeszkednek egy ponthoz, ahogy más alakzatokhoz ({{ui:workspace.objectSnap}}). A derékszögvonalzó is illeszkedik a pontokhoz.
 - A pontok a tervben mentődnek, egyik exportban sem jelennek meg, és a jegyzetekkel együtt a {{ui:visibility.notes}} kapcsolóval jeleníthetők meg vagy rejthetők el.
 - Egy MI a `layerling_add_reference_points`, a `layerling_list_reference_points` és a `layerling_remove_reference_points` paranccsal jelölheti meg, sorolhatja fel és távolíthatja el őket.
+
+## Mintaképek
+
+A mintakép egy kép, amelyhez a részeket igazíthatod: tedd egy áramköri lap fotóját a doboza aljára, és pontosan rá helyezd a távtartókat, a furatokat és a csatlakozók kivágásait. Segédlet, nem test: sosem nyomtatódik ki, sosem exportálódik (STL, 3MF, OBJ, STEP, SVG), sosem lesz része csoportnak, kötegnek vagy vágásnak, és a nyomtatási becslés sem számol vele.
+
+- Nyisd meg az {{ui:editor.import}} ablakot, és válaszd a {{ui:import.referenceImage}} lehetőséget, majd egy PNG, JPG, WebP, GIF vagy BMP képet. A munkasíkra kerül - a tárgyasztalra vagy arra a felületre, amelyre a munkasíkot tetted -, a hosszabbik oldala 100 mm, félig átlátszó.
+- A fogantyúival úgy mozgatod, forgatod és méretezed, mint bármelyik alakzatot. Az előtte lévő testet választja ki először, így ha rajta dolgozol, nem a képet fogod meg véletlenül.
+- A beállításaiban az {{ui:referenceImage.seeThrough}} a teljesen láthatótól az alig látszóig halványítja.
+- A {{ui:referenceImage.calibrate}} a valódi méretére állítja, mint a vázlatban: kattints a képen két pontra, amelyek valódi távolságát ismered - például a lap két rögzítőfuratára -, és írd be ezt a távolságot a {{ui:referenceImage.distance}} mezőbe. A kép megtartja az arányait és a közepét.
+- A beállításai fejlécében lévő lakattal zárold, és a helyén marad: a kattintások átmennek rajta a tárgyasztalra. Feloldáshoz az objektumlistában válaszd ki újra.
+- A kép egyszer kerül a tervfájlba, akárhányszor másolod vagy vonod vissza. Egy nagy kép ennyivel nagyobbá teszi a fájlt; hozzáadáskor az üzenet megmondja a méretét.
+- Egy MI a `layerling_reference_image` segítségével ad hozzá, mozgat, kalibrál, halványít és zárol egyet.

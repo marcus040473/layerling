@@ -111,4 +111,4 @@ Bei einer Kopie von layerling auf deinem eigenen Rechner oder Server hat der Hin
 
 Wenn dein Teil fertig ist, klickst du auf {{ui:editor.export}}, wählst STL oder 3MF und lädst die Datei herunter. Die öffnest du in deinem Slicer, zum Beispiel in Bambu Studio, PrusaSlicer, OrcaSlicer oder Cura. Wer seinen Drucker in den Einstellungen wählt, sieht schon beim Bauen, ob das Teil auf die Druckplatte passt. Mehr dazu im Kapitel [Drucken](chapter:drucken).
 
-> **Tipp:** Wenn du von Tinkercad kommst, wirst du dich schnell zurechtfinden: Platte, Formen, Körper und Aussparung, Gruppieren, Ausrichten und Spiegeln funktionieren fast genauso. Neu sind vor allem Fase und Verrundung, Aushöhlen, Gewinde und Skizzen.
+> **Tipp:** Wenn du von Tinkercad kommst, wirst du dich schnell zurechtfinden: Platte, Formen, Körper und Aussparung, Gruppieren, Ausrichten und Spiegeln funktionieren fast genauso. Neu sind vor allem Fase und Verrundung, Aushöhlen, Gewinde und Skizzen. Auch deine eigenen Tinkercad-Designs kannst du mitnehmen, siehe [Dateien, Speichern und Weitergeben](chapter:dateien-und-speichern).

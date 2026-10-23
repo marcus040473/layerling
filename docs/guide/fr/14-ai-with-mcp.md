@@ -67,7 +67,7 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_ungroup_objects` | dissout les groupes |
 | `layerling_boolean_cut` | coupe les solides avec des trous |
 | `layerling_intersect_objects` | ne garde que ce que les objets ont en commun (Intersection) |
-| `layerling_separate_parts` | sépare une forme en ses parties détachées |
+| `layerling_separate_parts` | sépare une forme en ses parties détachées, un corps d'esquisse en un corps par contour |
 | `layerling_split_objects` | coupe des solides ou des trous en deux avec un rabot |
 | `layerling_list_edges` | répertorie les véritables bords CAO d'un objet |
 | `layerling_apply_edge_treatment` | chanfreins ou congés arêtes choisies |
@@ -79,6 +79,7 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_layer_text` | transforme un texte en une pile de calques pour une impression multicolore (lettres, bords plus larges, plaque sans trous) ou reconstitue une pile, avec un trou en porte-clés, les coins par calque et un bord de lettre arrondi ou chanfreiné ; avec une liste de noms, une balise par nom |
 | `layerling_layer_icon` | transforme une icône SVG (le texte du fichier ou un corps d'esquisse extrudé) en une balise d'icône en couches pour une impression multicolore - l'icône, des bords plus larges, une plaque sans trous - ou en construit une à nouveau avec une nouvelle largeur ou des nouveaux calques ; avec un compte il remplit l'assiette de copies |
 | `layerling_create_qr_code` | crée un code QR à partir d'un texte ou d'une adresse web, comme {{ui:shape.qrCode}} dans la bibliothèque de formes - le code seul, en relief sur une plaque ou gravé, avec correction d'erreur, largeur, hauteur, zone de silence et en trou si demandé ; avertit quand un module passe sous 0,8 mm |
+| `layerling_reference_image` | ajoute une image de référence à partir d'une image, comme {{ui:import.referenceImage}}, ou en déplace, tourne, calibre (deux points de l'image et leur distance réelle), estompe ou verrouille une - un repère jamais exporté ni imprimé |
 | `layerling_measure_section` | mesure sur un plan de coupe entre deux points qui s'accrochent au contour - épaisseur de paroi, espaces, ajustements |
 | `layerling_show_overhangs` | active ou désactive les hachures en surplomb, définit l'angle et indique pour chaque corps la zone qui aurait besoin de supports |
 | `layerling_estimate_print` | estime le volume, le poids et le filament pour la sélection ou l'ensemble du dessin, élaboré aussi solidement que la fenêtre d'export |
@@ -95,12 +96,13 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_delete_custom_shape` | supprime une forme personnalisée ; les corps insérés restent |
 | `layerling_show_workplane` | cache et affiche la plaque avec sa grille, pour une photo du dessous par exemple (uniquement la vue) |
 | `layerling_set_section_view` | coupe la vue ouverte le long d'un plan pour regarder à l'intérieur (seulement la vue, rien n'est coupé) |
+| `layerling_saved_view` | enregistre la vue actuelle sous la touche 7, 8, 9 ou 0 et y revient, comme Maj+touche et la touche (seulement la vue) |
 | `layerling_clear_history` | supprime définitivement chaque étape d'annulation, comme le fait le bouton "Supprimer l'historique" de la vue Historique ; besoins `confirm: true` |
 | `layerling_set_history_view` | revient sur un état antérieur du projet, comme la vue Historique (la conception réelle reste intacte ; les outils de changement attendent qu'il soit fermé) |
 | `layerling_restore_from_history` | ramène des objets (aussi des pièces dans des groupes) d'un état antérieur dans la conception, sous forme de copies, comme « Ramener dans la conception » de la vue Historique - une étape que l'annulation reprend |
 | `layerling_export_section_svg` | renvoie les contours sur un plan de coupe au format SVG à 1:1, à partir des mêmes corps que l'export |
 | `layerling_export_drawing` | réalise le dessin d'atelier de l'export "2D": trois vues au 1:1 sur une feuille ISO avec les dimensions hors tout et un tableau des alésages ronds, en texte SVG ou PDF |
-| `layerling_export_mesh` | écrit le fichier de la fenêtre d'export en STL, 3MF ou OBJ, à partir des mêmes corps ; vers un chemin de cet ordinateur ou en base64 |
+| `layerling_export_mesh` | écrit le fichier de la fenêtre d'export en STL, 3MF, OBJ, SVG (vue de dessus, empreinte ou arêtes visibles) ou DXF pour la découpe laser, à partir des mêmes corps ; vers un chemin de cet ordinateur ou en base64 |
 | `layerling_save_project` | enregistre toute la conception modifiable comme fichier .lyl à un chemin de l'ordinateur où tourne le serveur MCP, sans boîte de dialogue ; un fichier existant n'est remplacé qu'avec `overwrite`, l'écriture passe par un fichier temporaire, et la cible de Ctrl+S dans l'éditeur reste inchangée |
 | `layerling_set_workplane` | place le plan de travail sur un côté d'un corps ou à l'arrière de la plaque de base, et le cache ou l'affiche |
 | `layerling_capture_image` | prend une photo de la vue : de face, de dessus, de côté, en diagonale depuis un coin et plus encore |

@@ -23,4 +23,11 @@ describe("background, workplane and edge line settings", () => {
     expect(broken.edgeColor).toBe("#000000");
     expect(broken.edgeLines).toBe(false);
   });
+
+  it("draws holes as before until they are asked to stand out (#662)", () => {
+    expect(DEFAULT_WORKPLANE_WORKSPACE.strongHoles).toBe(false);
+    expect(normalizeWorkspaceSettings({ gridColor: "#c08a12" }).strongHoles).toBe(false);
+    expect(normalizeWorkspaceSettings({ strongHoles: true }).strongHoles).toBe(true);
+    expect(normalizeWorkspaceSettings({ strongHoles: "yes" }).strongHoles).toBe(false);
+  });
 });

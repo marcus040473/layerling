@@ -3,6 +3,7 @@ import { constants as fsConstants, promises as fs } from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
 import { inspectLylProjectPackage, LYL_LIMITS, LYL_MEDIA_TYPE } from "@/lib/lylProject";
+import { originMatchesRequest } from "@/lib/sameOrigin";
 import { storeFolderNameProblem } from "@/lib/storeFolderName";
 
 export const runtime = "nodejs";
@@ -17,6 +18,8 @@ const PNG_SIGNATURE = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 const SEARCH_RESULT_LIMIT = 200;
 const SEARCH_DEPTH_LIMIT = 12;
 const SEARCH_FOLDER_LIMIT = 2000;
+/** What an export can be called on the server (#779): the files a slicer or a laser software opens. */
+const EXPORT_FILE_EXTENSIONS = ["stl", "3mf", "obj", "step", "stp", "svg", "dxf", "png", "pdf"];
 
 type SharedProjectFile = {
   fileName: string;
@@ -181,18 +184,7 @@ function unquoteEtag(value: string | null) {
 }
 
 function sameOriginRequest(request: Request) {
-  const origin = request.headers.get("origin");
-  if (!origin) return true;
-  try {
-    const requestUrl = new URL(request.url);
-    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-    const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-    const host = forwardedHost || request.headers.get("host") || requestUrl.host;
-    const protocol = forwardedProtocol || requestUrl.protocol.replace(/:$/, "");
-    return new URL(origin).origin === `${protocol}://${host}`;
-  } catch {
-    return false;
-  }
+  return originMatchesRequest(request);
 }
 
 async function regularFileStat(filePath: string) {
@@ -211,12 +203,14 @@ async function folderContentsCount(folder: string) {
   const entries = await fs.readdir(folder, { withFileTypes: true }).catch(() => []);
   let projects = 0;
   let folders = 0;
+  let files = 0;
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
     if (entry.isDirectory()) folders += 1;
     else if (entry.isFile() && /\.(lyl|skf)$/i.test(entry.name)) projects += 1;
+    else if (entry.isFile()) files += 1;
   }
-  return { projects, folders };
+  return { projects, folders, files };
 }
 
 /** A folder and everything under it. Links are unlinked rather than followed. */
@@ -610,11 +604,68 @@ async function copyProject(root: string, folder: string, requestedName: string, 
 async function deleteFolder(root: string, folder: string, recursive: boolean) {
   if (folder === root) throw new RequestFailure("The store folder itself cannot be removed", 400);
   const counts = await folderContentsCount(folder);
-  if (!recursive && (counts.projects > 0 || counts.folders > 0)) {
+  if (!recursive && (counts.projects > 0 || counts.folders > 0 || counts.files > 0)) {
     throw new RequestFailure("That folder is not empty", 409, counts);
   }
   await removeFolderTree(folder);
   return NextResponse.json({ deleted: true, path: folderKey(root, folder), ...counts }, { headers: { "Cache-Control": "no-store" } });
+}
+
+/** The name an export is written under: a clean stem and one of the known extensions, or null. */
+function exportFileName(requestedName: string) {
+  const extension = /\.([a-z0-9]+)$/i.exec(requestedName)?.[1].toLowerCase() ?? "";
+  if (!EXPORT_FILE_EXTENSIONS.includes(extension)) return null;
+  const stem = path.basename(requestedName.slice(0, -(extension.length + 1)))
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_")
+    .replace(/\s+/g, " ")
+    .replace(/^[.\s]+/, "")
+    .trim()
+    .slice(0, 115) || "Untitled export";
+  return `${stem}.${extension}`;
+}
+
+/**
+ * An export file - STL, 3MF, OBJ, STEP, SVG, PNG or PDF - written into a folder of the store (#779), so a
+ * slicer that shares the folder can open it. It is no project: the list does not show it. A file of that
+ * name is replaced only when the request says so (`overwrite=1`); otherwise the answer is 409 with `exists`.
+ */
+async function saveExportFile(root: string, folder: string, requestedName: string, request: Request) {
+  const fileName = exportFileName(requestedName);
+  if (!fileName) throw new RequestFailure("That file type cannot be saved on the server", 400);
+  const declaredLength = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > LYL_LIMITS.archiveBytes) {
+    throw new RequestFailure("The file exceeds the shared storage size limit", 413);
+  }
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.byteLength === 0) throw new RequestFailure("The file was empty", 400);
+  if (bytes.byteLength > LYL_LIMITS.archiveBytes) throw new RequestFailure("The file exceeds the shared storage size limit", 413);
+
+  const filePath = path.join(folder, fileName);
+  const temporaryPath = path.join(folder, `.${fileName}.${randomUUID()}.tmp`);
+  const lock = await acquireLock(filePath);
+  try {
+    const currentStat = await regularFileStat(filePath);
+    if (currentStat && new URL(request.url).searchParams.get("overwrite") !== "1") {
+      throw new RequestFailure(`${fileName} is already in that folder`, 409, { exists: true, fileName });
+    }
+    const handle = await fs.open(temporaryPath, "wx");
+    try {
+      await handle.writeFile(bytes);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await fs.rename(temporaryPath, filePath);
+    const savedStat = await fs.stat(filePath);
+    return NextResponse.json(
+      { file: { fileName, path: folderKey(root, folder), size: savedStat.size } },
+      { status: currentStat ? 200 : 201, headers: { "Cache-Control": "no-store" } },
+    );
+  } finally {
+    await fs.unlink(temporaryPath).catch(() => undefined);
+    await lock.handle.close().catch(() => undefined);
+    await fs.unlink(lock.lockPath).catch(() => undefined);
+  }
 }
 
 export async function DELETE(request: Request) {
@@ -705,6 +756,8 @@ export async function POST(request: Request) {
     if (copyTo) return await copyProject(root, folder, copyTo, request);
     const renameFileTo = requestUrl.searchParams.get("renameFileTo");
     if (renameFileTo) return await renameProjectFile(root, folder, renameFileTo, request);
+    const exportFile = requestUrl.searchParams.get("exportFile");
+    if (exportFile) return await saveExportFile(root, folder, exportFile, request);
 
     const declaredLength = Number(request.headers.get("content-length") ?? 0);
     const multipartRequest = request.headers.get("content-type")?.toLowerCase().startsWith("multipart/form-data") ?? false;

@@ -1,4 +1,4 @@
-import type { GridfinityLabelCorner, GridfinityType, ShellEdges, ShellOpenings } from "@/types/layerling";
+import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityType, ShellEdges, ShellOpenings } from "@/types/layerling";
 
 export type CadModifierKind = "chamfer" | "chamfillet" | "fillet" | "shell" | "deleteFace";
 
@@ -127,6 +127,8 @@ export type CadModifierProfilePart = {
    */
   twist?: number;
   twistCenter?: { x: number; z: number };
+  /** Degrees between two sections of a twisted loft, where the standard step is too coarse for an outline with fine teeth (a knurl). */
+  twistStep?: number;
   /** Loft only: 0 to 1, how much of an S-curve the sides take between the ends instead of a straight line (#271); built like a turned loft, through sections. */
   smooth?: number;
   /** Loft only, with a twist: how far the lean moves the top; the turning centre moves along with it. */
@@ -143,8 +145,11 @@ export type CadModifierProfilePart = {
    * Extrusion only: chamfer a round body at both ends at 45 degrees - keep
    * what lies within `radius` less `size` plus the distance from the nearer
    * end, measured from the axis through the outline's origin (knurling).
+   * On a loft (a tapered or leaning knurl, #630) the bound narrows with the
+   * body: `bottomScale` and `topScale` are the factors of the two ends and
+   * `lean` is how far the top has moved sideways.
    */
-  capChamfer?: { radius: number; size: number };
+  capChamfer?: { radius: number; size: number; bottomScale?: number; topScale?: number; lean?: { x: number; z: number } };
   /** The first loop is the outer boundary, any further loops are holes. */
   loops: CadModifierProfileLoop[];
   /**
@@ -303,6 +308,20 @@ export type CadModifierGridfinityPart = {
   gridfinityScoopRight?: boolean;
   gridfinityScoopRadius?: number;
   gridfinityFloorHeight?: number;
+  gridfinityOpenBack?: boolean;
+  gridfinityOpenFront?: boolean;
+  gridfinityOpenLeft?: boolean;
+  gridfinityOpenRight?: boolean;
+  gridfinityPaddingBack?: number;
+  gridfinityPaddingFront?: number;
+  gridfinityPaddingLeft?: number;
+  gridfinityPaddingRight?: number;
+  gridfinityCompartmentsX?: number;
+  gridfinityCompartmentsZ?: number;
+  gridfinityDividerThickness?: number;
+  gridfinityDividerPositionsX?: number[];
+  gridfinityDividerPositionsZ?: number[];
+  gridfinityCompartmentLabels?: GridfinityCompartmentLabel[];
   transform?: number[];
   expected?: { bounds: number[]; volume: number };
 };
@@ -375,6 +394,8 @@ export type CadModifierWorkerRequest =
       amount: number;
       quality: CadModifierQuality;
       chamferAngle: number;
+      // Only for "fillet" of one edge (#687): the radius at the edge's end, `amount` the one at its start.
+      endAmount?: number;
       // Only for "shell": which faces stay open; `amount` is the wall thickness.
       shellOpenings?: ShellOpenings;
       shellEdges?: ShellEdges;

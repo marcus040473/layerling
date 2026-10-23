@@ -96,12 +96,9 @@ describe("workplane settings helpers", () => {
     const top = orbitControlsZoomSpeed(ZOOM_SPEED_SLIDER_MAX);
     expect(top / fast).toBeCloseTo((20 ** (1 / 9)) ** (ZOOM_SPEED_SLIDER_MAX - 10));
     expect(orbitControlsZoomSpeed(40)).toBeCloseTo(top);
-    expect(zoomDistanceScale(0.7, ZOOM_SPEED_SLIDER_MAX)).toBeCloseTo(zoomDistanceScale(0.7, 10));
 
-    const slowStep = zoomDistanceScale(0.7, 1);
-    const fastStep = zoomDistanceScale(0.7, 10);
-    expect(zoomDistanceScale(0.7, 5)).toBeCloseTo(0.7);
-    expect(Math.log(fastStep) / Math.log(slowStep)).toBeCloseTo(20);
+    // The buttons and keys +/- always step at the default rate, whatever the slider says.
+    expect(zoomDistanceScale(0.7)).toBeCloseTo(0.7);
   });
 
   it("keeps app limits until a shape receives an explicit customization", () => {
@@ -356,5 +353,14 @@ describe("reset grid (#503)", () => {
     const storage = fakeStorage();
     expect(resetGridInSavedDefault(storage)).toBe(false);
     expect(readWorkspaceDefault(storage)).toBeNull();
+  });
+});
+
+describe("STL as a download (#731)", () => {
+  it("is off until switched on, and a saved choice is kept", () => {
+    expect(DEFAULT_WORKPLANE_WORKSPACE.stlAsDownload).toBe(false);
+    expect(normalizeWorkspaceSettings({}, DEFAULT_WORKPLANE_WORKSPACE).stlAsDownload).toBe(false);
+    expect(normalizeWorkspaceSettings({ stlAsDownload: true }, DEFAULT_WORKPLANE_WORKSPACE).stlAsDownload).toBe(true);
+    expect(normalizeWorkspaceSettings({ stlAsDownload: "yes" }, DEFAULT_WORKPLANE_WORKSPACE).stlAsDownload).toBe(false);
   });
 });

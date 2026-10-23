@@ -247,8 +247,7 @@ async function drawOutline(ctx) {
   await ctx.goto("/?editor=1");
   await ctx.click(ctx.t("editor.modeSketch"));
   await ctx.wait(1500);
-  await ctx.click(ctx.t("sketch.to3d"));
-  await ctx.wait(800);
+  // The "Sketch to 3D" menu is gone: the sketch ribbon offers the extrude button itself.
   await ctx.click(ctx.t("sketch.extrude"), undefined, true);
   await ctx.wait(2500);
   const points = [[430, 250], [640, 250], [640, 400], [540, 400], [540, 560], [430, 560], [430, 250]];
@@ -294,7 +293,8 @@ scenes["open-group"] = async (ctx) => {
   await ctx.mcp("update_object", { id: hole, hole: true });
   await ctx.mcp("group_objects", { ids: [box, hole] });
   await ctx.wait(2500);
-  await ctx.click(ctx.t("editor.tool.showOutliner"));
+  // The object list is open from the start; a click is needed only when it was hidden.
+  await ctx.click(ctx.t("editor.tool.showOutliner")).catch(() => {});
   await ctx.click(ctx.t("group.edit"));
   await ctx.wait(2500);
   await ctx.shot("open-group");

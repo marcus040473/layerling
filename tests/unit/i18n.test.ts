@@ -23,7 +23,7 @@ const FILES = import.meta.glob("../../apps/web/src/lib/messages.*.ts", { eager: 
 const CATALOGUES: Record<string, Record<string, string> | undefined> = {};
 for (const [path, module] of Object.entries(FILES)) {
   const code = /messages\.([a-z-]+)\.ts$/.exec(path)?.[1];
-  if (code) CATALOGUES[code] = module[`MESSAGES_${code.toUpperCase()}`];
+  if (code) CATALOGUES[code] = module[`MESSAGES_${code.toUpperCase().replace(/-/g, "_")}`];
 }
 /** The languages that must have every sentence; a language still on its way is held to less (i18nLanguages.test.ts). */
 const COMPLETE_LANGUAGES = LANGUAGES.filter((language) => LANGUAGE_INFO[language].complete);
@@ -107,8 +107,22 @@ describe("language detection", () => {
     expect(languageFromTag("en-GB")).toBe("en");
     expect(languageFromTag("fr-FR")).toBe("fr");
     expect(languageFromTag("ru-RU")).toBe("ru");
-    expect(languageFromTag("es-ES")).toBe(null);
+    expect(languageFromTag("sv-SE")).toBe(null);
     expect(languageFromTag(undefined)).toBe(null);
+  });
+
+  it("serves Brazilian Portuguese for a browser that asks for pt-BR", () => {
+    expect(languageFromTag("pt-BR")).toBe("pt-br");
+  });
+
+  it("does not serve Brazilian Portuguese for European Portuguese", () => {
+    expect(languageFromTag("pt-PT")).toBe(null);
+  });
+
+  it("serves Spanish for the Spanish of Spain and of Latin America", () => {
+    expect(languageFromTag("es-ES")).toBe("es");
+    expect(languageFromTag("es-MX")).toBe("es");
+    expect(languageFromTag("es-419")).toBe("es");
   });
 
   it("recognises only the languages it can serve", () => {
@@ -119,7 +133,8 @@ describe("language detection", () => {
     expect(isLanguage("ru")).toBe(true);
     expect(isLanguage("it")).toBe(true);
     expect(isLanguage("ar")).toBe(true);
-    expect(isLanguage("es")).toBe(false);
+    expect(isLanguage("es")).toBe(true);
+    expect(isLanguage("sv")).toBe(false);
     expect(isLanguage(null)).toBe(false);
   });
 
@@ -150,10 +165,10 @@ describe("language detection", () => {
     expect(withBrowser(["de-AT", "de"])).toBe("de");
     expect(withBrowser(["de"])).toBe("de");
     // A language we do not serve falls back to English rather than to nothing.
-    expect(withBrowser(["es-ES", "ko"])).toBe("en");
+    expect(withBrowser(["sv-SE", "ko"])).toBe("en");
     expect(withBrowser(["ja-JP", "ja"])).toBe("ja");
     // The first tag we can serve wins, even behind one we cannot.
-    expect(withBrowser(["es-ES", "de-DE"])).toBe("de");
+    expect(withBrowser(["sv-SE", "de-DE"])).toBe("de");
     // A stored choice outranks the browser in both directions.
     expect(withBrowser(["de-DE"], "en")).toBe("en");
     expect(withBrowser(["en-US"], "de")).toBe("de");

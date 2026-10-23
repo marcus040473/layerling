@@ -111,4 +111,4 @@ W kopii layerling na Twoim własnym komputerze lub serwerze komunikat „Dostęp
 
 Gdy część jest gotowa, kliknij {{ui:editor.export}}, wybierz STL lub 3MF i pobierz plik. Otwórz go w slicerze, na przykład w Bambu Studio, PrusaSlicer, OrcaSlicer albo Cura. Jeśli wybierzesz swoją drukarkę w ustawieniach, już podczas budowania zobaczysz, czy część mieści się na stole drukarki. Więcej w rozdziale [Drukowanie](chapter:printing).
 
-> **Wskazówka:** Jeśli przychodzisz z Tinkercada, szybko się odnajdziesz: płyta, kształty, bryła i otwór, grupowanie, wyrównywanie i odbicie lustrzane działają prawie tak samo. Nowe są głównie fazowanie i zaokrąglanie, drążenie, gwinty i szkice.
+> **Wskazówka:** Jeśli przychodzisz z Tinkercada, szybko się odnajdziesz: płyta, kształty, bryła i otwór, grupowanie, wyrównywanie i odbicie lustrzane działają prawie tak samo. Nowe są głównie fazowanie i zaokrąglanie, drążenie, gwinty i szkice. Własne projekty z Tinkercada też możesz przenieść, zobacz [Pliki, zapis i udostępnianie](chapter:files-and-saving).

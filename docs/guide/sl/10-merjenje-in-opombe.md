@@ -61,10 +61,11 @@ Opomba zabeleži, česar geometrija ne pove: »Tu je vijak 0,3 mm preozek«, »P
 - {{ui:note.detach}} prikovano opombo loči od telesa.
 - {{ui:editor.tool.group}} prikovano opombo vzame v skupino; {{ui:editor.tool.ungroup}} jo preda vidnemu delu pod njo, tudi skupini v njej. Dokler je skupina odprta z {{ui:group.edit}}, se njene opombe premikajo z delom pod njimi in se z {{ui:group.done}} vrnejo k skupini; preklic jih vrne, kakršne so bile.
 - Če je njeno telo izbrisano ali pod njo ni več vidnega telesa, opomba ostane, kjer je stala, na delovni ravnini.
-- Vlečenje opombo premakne, klik jo odpre za urejanje.
+- Vlečenje bucike premakne opombo. Klik na buciko kartico zloži, ostane le majhna številka; še en klik jo spet odpre. Klik v besedilo ga uredi.
 - Med pisanjem [[Enter]] obdrži besedilo, [[Esc]] ga vrne, kot je bilo pred začetkom, [[Shift]]+[[Enter]] pa začne novo vrstico.
+- **V skici** opombo postavi tudi {{ui:editor.tool.note}} (pod {{ui:editor.group.manage}}) ali tipka [[N]], kamor koli na skico. Vse opombe skice pripadajo njenemu telesu: v 3D pogledu sedijo na njem, na vrhu telesa, narejenega s funkcijo {{ui:sketch.extrude}} ali {{ui:sketch.sweep}}, in na narisanem profilu telesa, narejenega s funkcijo {{ui:sketch.revolve}}, in se premikajo z njim. Ko skico znova odpreš, pokaže opombe telesa, tudi tiste, postavljene v 3D. V skici {{ui:sketch.undo}} prekliče opombo tako kot črto, {{ui:sketch.cancel}} pa zavrže, kar si spremenil pri opombah.
 
-Opombe se shranijo v načrtu, ne pojavijo se v nobenem izvozu in jih lahko prikažeš ali skriješ prek {{ui:visibility.notes}}.
+Opombe se shranijo v načrtu, ne pojavijo se v nobenem izvozu in jih lahko prikažeš ali skriješ prek {{ui:visibility.notes}} (v {{ui:editor.visibilityOptions}}, puščici poleg ikone očesa).
 
 ## Referenčne točke
 
@@ -75,3 +76,15 @@ Referenčna točka je zgolj oznaka v prostoru, kot svinčnikova črta ali točka
 - Tudi merilni trak lahko označi točko: {{ui:camera.tapeMarkMiddle}}, gumb s križcem pod meritvijo, jo postavi na njeno sredino, na primer v središče okrogle luknje. Od točke tudi meri: trak se zaskoči na referenčne točke kakor na oglišča.
 - Točke se shranijo v načrtu, ne pojavijo se v nobenem izvozu in se skupaj z opombami prikažejo ali skrijejo prek {{ui:visibility.notes}}.
 - Umetna inteligenca jih lahko postavi, našteje in odstrani z `layerling_add_reference_points`, `layerling_list_reference_points` in `layerling_remove_reference_points`.
+
+## Referenčne slike
+
+Referenčna slika je slika, po kateri poravnaš dele: položi fotografijo tiskanega vezja na dno njegovega ohišja in postavi distančnike, luknje in izreze za priključke natanko nanjo. Je pomoč, ne telo: nikoli se ne natisne, nikoli ne izvozi (STL, 3MF, OBJ, STEP, SVG), nikoli ni del skupine, svežnja ali reza, in ocena tiskanja jo izpusti.
+
+- Odpri {{ui:editor.import}} in izberi {{ui:import.referenceImage}}, nato sliko PNG, JPG, WebP, GIF ali BMP. Pristane na delovni ravnini - na plošči ali na ploskvi, na katero si položil delovno ravnino -, z daljšo stranico 100 mm in na pol prosojna.
+- Premikaj, vrti in spreminjaj jo z ročaji kot vsako obliko. Telo pred njo je izbrano prvo, zato pri delu na njej ne zgrabiš slike po nesreči.
+- {{ui:referenceImage.seeThrough}} v njenih nastavitvah jo zbledi od povsem vidne do komaj vidne.
+- {{ui:referenceImage.calibrate}} ji da pravo velikost kot v skici: klikni dve točki na sliki, katerih pravo razdaljo poznaš - na primer dve pritrdilni luknji vezja - in vpiši to razdaljo v {{ui:referenceImage.distance}}. Slika ohrani razmerja in sredino.
+- Zakleni jo s ključavnico v glavi njenih nastavitev in ostane na mestu: kliki gredo tedaj skozi njo na ploščo. Za odklepanje jo izberi v seznamu objektov.
+- Slika je v datoteki načrta shranjena enkrat, kolikorkrat jo kopiraš ali razveljaviš. Velika slika poveča datoteko za toliko; sporočilo ob dodajanju pove njeno velikost.
+- UI jo doda, premakne, umeri, zbledi in zaklene z `layerling_reference_image`.

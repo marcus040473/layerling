@@ -132,11 +132,6 @@ function analyse(positions: ArrayLike<number>, indices: ArrayLike<number> | unde
   return { vertices, triangles, clusters, clusterOfTriangle };
 }
 
-/** How many flat faces the mesh has (every triangle that is not part of a larger flat face counts one). */
-export function planarFaceCount(positions: ArrayLike<number>, indices?: ArrayLike<number>) {
-  return analyse(positions, indices)?.clusters.length ?? 0;
-}
-
 /** Corners where several flat faces meet, moved onto the exact meeting point of their planes. */
 function snapCorners(mesh: PlanarMesh) {
   const { vertices, triangles, clusters, clusterOfTriangle } = mesh;

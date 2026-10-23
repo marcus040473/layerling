@@ -62,7 +62,7 @@ export function MoveDimensionOverlay({
               aria-label={t("aria.axisMovement", { axis: line.axis === "z" ? "Y" : "X" })}
               value={editing.value}
               autoFocus
-              inputMode="decimal"
+              inputMode="text"
               spellCheck={false}
               style={styleForLine(line)}
               onFocus={(event) => selectWholeValue(event.currentTarget)}

@@ -13,6 +13,14 @@ import { useLanguage } from "@/lib/useLanguage";
 import { selectWholeValue } from "@/lib/numberField";
 import type { AlignAxis, WorkplaneWorkspaceSettings } from "@/types/layerling";
 
+export type SplitWorkplaneDirection = "parallel" | "acrossX" | "acrossY";
+
+const SPLIT_WORKPLANE_DIRECTIONS = [
+  { direction: "parallel", label: "split.workplaneParallel", hint: "split.workplaneParallelHint" },
+  { direction: "acrossX", label: "split.workplaneAcrossX", hint: "split.workplaneAcrossXHint" },
+  { direction: "acrossY", label: "split.workplaneAcrossY", hint: "split.workplaneAcrossYHint" },
+] as const satisfies ReadonlyArray<{ direction: SplitWorkplaneDirection; label: string; hint: string }>;
+
 export function SplitPanel({
   axis,
   rotation,
@@ -26,6 +34,7 @@ export function SplitPanel({
   picking,
   onPickToggle,
   onAxisChange,
+  onAlignToWorkplane,
   onRotationChange,
   onPositionChange,
   onApply,
@@ -44,6 +53,8 @@ export function SplitPanel({
   picking: boolean;
   onPickToggle: () => void;
   onAxisChange: (axis: AlignAxis) => void;
+  /** Lays the plane on the workplane, or square to it along its X or Y (#644). */
+  onAlignToWorkplane: (direction: SplitWorkplaneDirection) => void;
   onRotationChange: (index: 0 | 1, rotation: number) => void;
   onPositionChange: (position: number) => void;
   onApply: () => void;
@@ -122,6 +133,17 @@ export function SplitPanel({
               onClick={() => onAxisChange(candidate)}
             >
               {splitAxisLabel(candidate)}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="split-axis-control split-workplane-control" disabled={busy}>
+        <legend>{t("split.workplane")}</legend>
+        <div>
+          {SPLIT_WORKPLANE_DIRECTIONS.map(({ direction, label, hint }) => (
+            <button type="button" key={direction} title={t(hint)} onClick={() => onAlignToWorkplane(direction)}>
+              {t(label)}
             </button>
           ))}
         </div>

@@ -220,11 +220,35 @@ function renderTable(rows, context) {
  * tips), tables, fenced code, rules and pictures written as ![text](shot:name).
  * Returns the HTML and the h2 headings for the page's own table of contents.
  */
+/** The ids the headings of a chapter get, in order: what slugify makes of each, outside code blocks. */
+export function headingIds(markdown) {
+  const ids = [];
+  let inCode = false;
+  for (const line of markdown.replace(/\r\n/g, "\n").split("\n")) {
+    if (/^```/.test(line)) inCode = !inCode;
+    const heading = !inCode && /^(#{1,3}) (.+)$/.exec(line);
+    if (heading) ids.push(slugify(heading[2]));
+  }
+  return ids;
+}
+
+/**
+ * The id of a heading whose own text gives none - an Arabic heading loses every letter in slugify.
+ * It takes the id of the English heading at the same place when the chapter has as many headings
+ * as the English one, so links that use the English anchor still land; otherwise a numbered one.
+ */
+function fallbackHeadingId(context, position) {
+  const english = context.englishHeadingIds;
+  return (english && english[position]) || `section-${position + 1}`;
+}
+
 export function renderBlocks(markdown, context) {
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const html = [];
   const headings = [];
   let index = 0;
+  // Counted across the tips rendered inside this chapter as well, as headingIds counts them.
+  context.headingCount ??= { value: 0 };
   const startsBlock = (line) => /^(#{1,3} |> ?|\s*[-*] |\s*\d+\. |```|---+$|\|)/.test(line) || /^!\[[^\]]*\]\(shot:/.test(line);
 
   while (index < lines.length) {
@@ -234,7 +258,8 @@ export function renderBlocks(markdown, context) {
     const heading = /^(#{1,3}) (.+)$/.exec(line);
     if (heading) {
       const level = heading[1].length;
-      const id = slugify(heading[2]);
+      const position = context.headingCount.value++;
+      const id = slugify(heading[2]) || fallbackHeadingId(context, position);
       if (level === 2) headings.push({ id, text: renderInline(heading[2], { ...context, references: undefined }).replace(/<[^>]+>/g, "") });
       html.push(`<h${level} id="${id}">${renderInline(heading[2], context)}</h${level}>`);
       index += 1;
@@ -338,7 +363,8 @@ export function renderShortcuts(groups, messages, language) {
         .map((entry) => `<tr><td>${entry.combos.map(combo).join(` ${escapeHtml(or)} `)}</td><td>${escapeHtml(messages[entry.label] ?? entry.label)}</td></tr>`)
         .join("");
       const title = messages[group.title] ?? group.title;
-      return `<h2 id="${slugify(title)}">${escapeHtml(title)}</h2>\n<div class="table-scroll"><table class="keys"><tbody>${rows}</tbody></table></div>`;
+      // A title that loses every letter in slugify (Arabic) takes its message key as its id.
+      return `<h2 id="${slugify(title) || slugify(group.title)}">${escapeHtml(title)}</h2>\n<div class="table-scroll"><table class="keys"><tbody>${rows}</tbody></table></div>`;
     })
     .join("\n");
 }
@@ -740,7 +766,7 @@ export async function loadValues() {
 export async function loadMessages(language) {
   const load = async (code) => {
     const module = await import(pathToFileURL(join(root, "apps", "web", "src", "lib", `messages.${code}.ts`)).href);
-    return module[`MESSAGES_${code.toUpperCase()}`];
+    return module[`MESSAGES_${code.toUpperCase().replace(/-/g, "_")}`];
   };
   const english = await load("en");
   return language === "en" ? english : { ...english, ...(await load(language)) };
@@ -814,6 +840,15 @@ export async function buildGuide({ log = console.log } = {}) {
       return { code, name: LANGUAGE_INFO[code].name, htmlLang: target.htmlLang, href: `/${target.dir}/${slug ?? "index"}.html` };
     });
 
+    /** The English chapter's heading ids, when this language's own chapter has just as many headings. */
+    const englishHeadingIdsFor = (chapter) => {
+      if (language === "en" || chapter.fallback) return null;
+      const source = effective.en.find((entry) => entry.number === chapter.number);
+      if (!source) return null;
+      const englishIds = headingIds(source.body);
+      return englishIds.length === headingIds(chapter.body).length ? englishIds : null;
+    };
+
     const searchIndex = [];
     const printable = [];
     for (const [position, chapter] of chapters.entries()) {
@@ -825,6 +860,7 @@ export async function buildGuide({ log = console.log } = {}) {
         imageSize: (name) => imageSizes.get(name) ?? null,
         imageSrc: (name) => (ownPictures.has(name) ? `/${strings.dir}/img/${name}.webp` : `/${GUIDE_LANGUAGES.en.dir}/img/${name}.webp`),
         references: { uiKeys: new Set(), shots: new Set(), chapters: new Set() },
+        englishHeadingIds: englishHeadingIdsFor(chapter),
       };
       let rendered;
       try {

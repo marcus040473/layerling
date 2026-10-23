@@ -327,6 +327,16 @@ export function ToolbarConstructionLineIcon(props: IconProps) {
   );
 }
 
+export function ToolbarMiddleLineIcon(props: IconProps) {
+  return (
+    <ToolbarVectorIcon {...props}>
+      <path d="M8 38 40 10" />
+      <circle cx="24" cy="24" r="4.6" fill="currentColor" stroke="none" />
+      <path d="m8 30 0 8 8 0M40 18l0-8-8 0" />
+    </ToolbarVectorIcon>
+  );
+}
+
 export function ToolbarSplitIcon(props: IconProps) {
   return (
     <ToolbarVectorIcon {...props}>

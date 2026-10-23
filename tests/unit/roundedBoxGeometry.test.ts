@@ -163,12 +163,16 @@ describe("roundedBox geometry", () => {
 
   it("normalizes parameters correctly", () => {
     expect(normalizeCornerFillet(null)).toBe(5);
-    expect(normalizeCornerFillet(7.33)).toBe(7.3);
+    expect(normalizeCornerFillet(7.33)).toBe(7.33);
+    // 0.25 mm used to come back as 0.3 mm (#705)
+    expect(normalizeCornerFillet(0.25)).toBe(0.25);
+    expect(normalizeCornerFillet(7.336)).toBe(7.34);
     expect(normalizeCornerFillet(100, 15)).toBe(15);
     expect(normalizeCornerFillet(-5)).toBe(0);
 
     expect(normalizeTopBottomFillet(undefined)).toBe(0);
-    expect(normalizeTopBottomFillet(3.48)).toBe(3.5);
+    expect(normalizeTopBottomFillet(3.48)).toBe(3.48);
+    expect(normalizeTopBottomFillet(0.25)).toBe(0.25);
     expect(normalizeTopBottomFillet(50, 8)).toBe(8);
 
     expect(normalizeRoundedBoxQuality(0)).toBe(1);

@@ -124,6 +124,13 @@ const METRIC_SIZES: readonly ThreadSizeSpec[] = ([
   { id: "M8", system: "metric", diameter: 8, pitch: 1.25, socket: 6, headDiameter: 13, headHeight: 8, acrossFlats: 13, nutHeight: 6.5, countersunkDiameter: 16 },
   { id: "M10", system: "metric", diameter: 10, pitch: 1.5, socket: 8, headDiameter: 16, headHeight: 10, acrossFlats: 16, nutHeight: 8, countersunkDiameter: 20 },
   { id: "M12", system: "metric", diameter: 12, pitch: 1.75, socket: 10, headDiameter: 18, headHeight: 12, acrossFlats: 18, nutHeight: 10, countersunkDiameter: 24 },
+  // Up to M24, about as far as the inch sizes reach (#659). Heads ISO 4762, nuts ISO 4032.
+  { id: "M14", system: "metric", diameter: 14, pitch: 2, socket: 12, headDiameter: 21, headHeight: 14, acrossFlats: 21, nutHeight: 12.8, countersunkDiameter: 28 },
+  { id: "M16", system: "metric", diameter: 16, pitch: 2, socket: 14, headDiameter: 24, headHeight: 16, acrossFlats: 24, nutHeight: 14.8, countersunkDiameter: 32 },
+  { id: "M18", system: "metric", diameter: 18, pitch: 2.5, socket: 14, headDiameter: 27, headHeight: 18, acrossFlats: 27, nutHeight: 15.8, countersunkDiameter: 36 },
+  { id: "M20", system: "metric", diameter: 20, pitch: 2.5, socket: 17, headDiameter: 30, headHeight: 20, acrossFlats: 30, nutHeight: 18, countersunkDiameter: 40 },
+  { id: "M22", system: "metric", diameter: 22, pitch: 2.5, socket: 17, headDiameter: 33, headHeight: 22, acrossFlats: 34, nutHeight: 19.4, countersunkDiameter: 44 },
+  { id: "M24", system: "metric", diameter: 24, pitch: 3, socket: 19, headDiameter: 36, headHeight: 24, acrossFlats: 36, nutHeight: 21.5, countersunkDiameter: 48 },
 ] satisfies Omit<ThreadSizeSpec, "profile">[]).map((size) => ({ ...size, profile: "v" as const }));
 
 const MILLIMETRES_PER_INCH = 25.4;

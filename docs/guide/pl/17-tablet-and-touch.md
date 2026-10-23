@@ -24,6 +24,8 @@ layerling działa w przeglądarce tabletu oraz jako aplikacja z jego ekranu pocz
 
 Bez klawisza Shift {{ui:contextMenu.selectMultiple}} w menu długiego przytrzymania robi to, co na komputerze Shift+klik. Dopóki jest włączone, informuje o tym komunikat, a każde stuknięcie bryły dodaje ją do zaznaczenia albo ją z niego usuwa. Stuknięcie pustego miejsca albo [[Esc]] na klawiaturze kończy ten tryb i zostawia zaznaczenie bez zmian. Palec na pustym miejscu w tym czasie nadal obraca widok. Potem {{ui:editor.tool.group}}, {{ui:editor.tool.align}} albo przesunięcie działają na wszystkie wybrane bryły.
 
+To samo menu ma {{ui:contextMenu.carry}}, czyli klawisz [[C]] dla ekranu dotykowego. Zaznaczenie podąża wtedy za palcem po ścianach innych brył, a stuknięcie odkłada je na ścianę, którą stukniesz, także skośną. Wystarczy pierwsze stuknięcie. Tę pozycję menu znajdziesz też, szukając „odłóż” albo „cruise” (wyszukiwanie poleceń, [[Ctrl]]+[[K]] na klawiaturze).
+
 ## Obracanie i przybliżanie widoku
 
 Jeden palec na pustym miejscu obraca widok, dwa palce go przybliżają i przesuwają. Palec, który zaczyna ruch na bryle, działa na bryłę, a nie na widok. Jeśli wolisz, żeby obracał widok, włącz {{ui:camera.touchRotate}} na pasku kamery: jeden palec obraca wtedy widok zamiast zaznaczać, niezależnie od tego, gdzie zaczyna. Ten przełącznik pojawia się tylko na urządzeniu z ekranem dotykowym.
@@ -46,3 +48,5 @@ Jeśli bryły się przesuwają, gdy dotykają ich dzieci albo pośpieszne ręce,
 ## Warsztaty z dziećmi
 
 Palce i rysiki z gumową końcówką działają tu tak samo. Dwa ustawienia ułatwiają pracę z klasą: {{ui:workspace.selectBeforeMoving}}, żeby dotyk przypadkiem nie przesuwał bryły, i {{ui:camera.touchRotate}}, żeby jeden palec zawsze obracał widok. Przycisk ze znakiem zapytania w grupie Pomoc na wstążce włącza {{ui:interactiveHelp.title}}: stuknięcie dowolnego przycisku, pola albo uchwytu je wtedy objaśnia, a ten sam przycisk albo [[Esc]] wychodzi z tego trybu.
+
+Dla całej klasy włącz w ustawieniach {{ui:workspace.simpleMode}}. Wstążka zachowuje wtedy tylko narzędzia używane na warsztatach (kopiuj, wklej, duplikuj, usuń, cofnij, grupuj, odbicie lustrzane, fazowanie, zaokrąglenie, wydrąż, wyrównaj, eksport), biblioteka kształtów ma krótką listę, przyciski są większe, a strona startowa pokazuje projekty i nic więcej: bez nowości, tekstu powitalnego, przycisków pomocy i odnośników poza layerling. Włączenie to jedno stuknięcie, a wyłączenie to przytrzymanie przez dwie sekundy przycisku, który pojawia się w jego miejscu. Odnośnik kończący się na `?mode=simple` włącza go na urządzeniu, które go otworzy, a `?mode=full` znów go wyłącza. Kto prowadzi layerling na serwerze, może uruchamiać w nim wszystkich przez `LAYERLING_SIMPLE_MODE=true` albo ustawić go na stałe dla wszystkich przez `always`, tak że program nie ma przełącznika do wyjścia. Zobacz README.

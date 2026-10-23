@@ -33,7 +33,7 @@ Jazyk se volí vpravo nahoře. Vedle něj je barevný motiv: {{ui:theme.short.sy
 Layerling je svobodný software pod licencí AGPL-3.0. Můžete jej provozovat na vlastním počítači nebo serveru, například v dílně, kroužku či škole. Možnosti podrobně popisuje [README na GitHubu](https://github.com/henmedia/layerling/blob/main/README.md#getting-started):
 
 - **Rychlé spuštění ve Windows:** jediný příkaz PowerShellu nainstaluje potřebné součásti a vytvoří zástupce na ploše. Pokud už server běží, další dvojklik otevře pouze stránku, nikoli druhý server.
-- **Docker:** pro NAS a domácí servery bez samostatné instalace Node.js. Každé vydání má připravený obraz `henmedia/layerling` na Docker Hubu i `ghcr.io/henmedia/layerling`, pro amd64 a arm64. Spustíte jej příkazem `docker run -d -p 3000:3000 henmedia/layerling:latest`; na NASu jej vyhledejte v registru správce kontejnerů.
+- **Docker:** pro NAS a domácí servery bez samostatné instalace Node.js. Každé vydání má připravený obraz `henmedia/layerling` na Docker Hubu i `ghcr.io/henmedia/layerling`, pro amd64 a arm64. Spustíte jej příkazem `docker run -d -p 3000:3000 -v layerling-thumbnails:/app/.codex/project-thumbnails henmedia/layerling:latest`; na NASu jej vyhledejte v registru správce kontejnerů.
 - **Statický export:** výsledkem jsou běžné soubory pro webový server. Patří do kořene adresy, například `https://layerling.example.com/` nebo `http://192.168.0.5:8080/`, nikoli do podsložky a nikoli k přímému otevření z disku. Postup je v README. Se zapisovatelnou složkou `store` vedle `index.html` a podporou PHP lze používat i sdílené ukládání projektů.
 
 Most MCP pro AI asistenty je dostupný pouze ve vývojovém serveru, viz [Modelování s AI](chapter:ai-with-mcp).

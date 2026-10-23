@@ -11,9 +11,9 @@ Narzędzie Zmierz jest na dolnym końcu paska kamery przy lewej krawędzi ({{ui:
 
 ![Narzędzie Zmierz z przyciskami: dodaj pomiar, przesuń punkty pomiaru, usuń pomiar, całe krawędzie, usuń wszystkie pomiary.](shot:tape-menu)
 
-1. **{{ui:camera.addMeasurement}}:** kliknij jeden punkt, przeciągnij do następnego i kliknij go. Odległość zostanie opisana.
+1. **{{ui:camera.addMeasurement}}:** kliknij jeden punkt, przeciągnij do następnego i kliknij go. Odległość zostanie opisana. Na przeciwległej krawędzi albo ścianie drugi punkt przyciąga się pod kątem prostym do pierwszego, gdy wskaźnik się zbliży, albo w dowolnym miejscu tej krawędzi lub ściany, gdy trzymasz [[Shift]]. Wzdłuż tej samej ściany albo na płaszczyźnie roboczej [[Shift]] utrzymuje pomiar prosto wzdłuż głównej osi.
 2. **{{ui:camera.moveMeasurement}}:** chwyć punkty i przesuń je, a liczba podąży za nimi.
-3. **{{ui:camera.deleteMeasurement}}:** potem kliknij pomiar, aby go usunąć.
+3. **{{ui:camera.deleteMeasurement}}:** potem kliknij pomiar, aby go usunąć. Gdy aktywne jest **{{ui:camera.addMeasurement}}**, kliknięcie punktu albo linii pomiaru z wciśniętym [[Shift]] albo [[Ctrl]] ([[Cmd]] na Macu) od razu je usuwa, bez przełączania trybu.
 4. **{{ui:camera.tapeWholeEdges}}:** kliknięcie krawędzi mierzy ją w całości, na przykład obwód okręgu. Gdy to jest wyłączone, kliknięcie stawia zamiast tego punkt na krawędzi, a drugi punkt idzie w dowolne miejsce, więc możesz zmierzyć średnicę albo dowolną inną odległość. [[Alt]] odwraca ten przełącznik na jedno kliknięcie. Na okręgu punkt naprzeciwko pierwszego przyciąga się, gdy wskaźnik się do niego zbliży, a punkty leżą na prawdziwym okręgu, więc średnica wychodzi dokładnie.
 5. **{{ui:camera.deleteAllMeasurements}}:** usuwa naraz wszystkie pomiary. Ponieważ tego nie da się cofnąć, layerling najpierw pyta. Gdy nie ma pomiarów, nie ma czego robić.
 6. **{{ui:camera.tapeMarkMiddle}}:** pod liczbą każdego pomiaru jest mały przycisk z celownikiem. Stawia on [punkt odniesienia](#punkty-odniesienia) w środku pomiaru: po kliknięciu okrągłej krawędzi, takiej jak brzeg otworu, w środku tego okręgu (także na zaimportowanej siatce, gdzie nic innego nie oznacza środka otworu), a dla średnicy albo dowolnego prostego pomiaru w połowie jego długości. Przeciągany kształt przyciąga się wtedy do punktu swoim środkiem. Punkt, który już istnieje, nie powstaje drugi raz. Narzędzie Zmierz przyciąga się do punktu odniesienia jak do narożnika, więc możesz mierzyć od środka okręgu albo od środka linii: zaznacz go, a potem kliknij punkt.
@@ -22,7 +22,7 @@ Narzędzie Zmierz jest na dolnym końcu paska kamery przy lewej krawędzi ({{ui:
 
 ## Linijka
 
-{{ui:shape.ruler}} bierzesz z biblioteki kształtów. To wyłącznie narzędzie pomiarowe: nie pojawia się w żadnym eksporcie i nie można jej ani grupować, ani ciąć. Dla każdej bryły, która dotyka linijki albo na nią nachodzi, pokazuje wymiar jako unoszącą się liczbę wprost w widoku. Tę liczbę możesz zmienić na miejscu, a bryła za nią podąży. Unoszący się znak plus tworzy kopię mierzonego kształtu.
+{{ui:shape.ruler}} bierzesz z biblioteki kształtów. To wyłącznie narzędzie pomiarowe: nie pojawia się w żadnym eksporcie i nie można jej ani grupować, ani ciąć. Dla każdej bryły, która dotyka linijki albo na nią nachodzi, pokazuje wymiar jako unoszącą się liczbę wprost w widoku. Tę liczbę możesz zmienić na miejscu, a bryła za nią podąży. Unoszący się znak plus tworzy kopię mierzonego kształtu. Jej podziałka jest w milimetrach. Po przełączeniu jednostki na cale (przełącznik w prawym dolnym rogu) jest w calach, z kreską co jedną szesnastą cala i ponumerowanymi pełnymi calami.
 
 ## Kątownik
 
@@ -63,17 +63,30 @@ Notatka zapisuje to, czego geometria nie mówi: „Ta śruba jest o 0,3 mm za ci
 - {{ui:note.detach}} odpina przypiętą notatkę od bryły.
 - {{ui:editor.tool.group}} zabiera przypiętą notatkę do grupy; {{ui:editor.tool.ungroup}} przekazuje ją widocznej części pod nią, także grupie w środku. Dopóki grupa jest otwarta przez {{ui:group.edit}}, jej notatki poruszają się z częścią pod nimi i wracają do grupy po {{ui:group.done}}; anulowanie przywraca je do stanu sprzed edycji.
 - Gdy jej bryła zostanie usunięta albo pod nią nie ma już widocznej bryły, notatka zostaje tam, gdzie stała, na płaszczyźnie roboczej.
-- Przeciąganie przesuwa notatkę, a kliknięcie otwiera ją do edycji.
+- Przeciągnięcie pinezki przesuwa notatkę. Kliknięcie pinezki zwija kartę, zostaje tylko mały numer; kolejne kliknięcie znów ją rozwija. Kliknięcie w tekst pozwala go edytować.
 - Podczas pisania [[Enter]] zachowuje tekst, a [[Esc]] przywraca go do stanu sprzed rozpoczęcia. [[Shift]]+[[Enter]] zaczyna nowy wiersz.
+- **W szkicu** notatkę umieszcza też {{ui:editor.tool.note}} (w sekcji {{ui:editor.group.manage}}) lub klawisz [[N]], w dowolnym miejscu szkicu. Wszystkie notatki szkicu należą do jego bryły: w widoku 3D siedzą na niej, na wierzchu bryły utworzonej przez {{ui:sketch.extrude}} lub {{ui:sketch.sweep}} i na narysowanym profilu bryły utworzonej przez {{ui:sketch.revolve}}, i przesuwają się razem z nią. Po ponownym otwarciu szkic pokazuje notatki bryły, także te umieszczone w 3D. W szkicu {{ui:sketch.undo}} cofa notatkę tak jak linię, a {{ui:sketch.cancel}} odrzuca zmiany w notatkach.
 
-Notatki zapisują się w projekcie, nie pojawiają się w żadnym eksporcie i można je pokazać albo ukryć przez {{ui:visibility.notes}}.
+Notatki zapisują się w projekcie, nie pojawiają się w żadnym eksporcie i można je pokazać albo ukryć przez {{ui:visibility.notes}} (w {{ui:editor.visibilityOptions}}, strzałce obok ikony oka).
 
 ## Punkty odniesienia
 
 Punkt odniesienia to sam znak w przestrzeni, jak kreska ołówkiem albo punkt trasowania w warsztacie: nie należy do żadnej bryły, nigdy nie jest drukowany, a inne rzeczy się do niego przyciągają. Kliknij bryłę prawym przyciskiem i wybierz {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} albo {{ui:contextMenu.markMidpoints}}: punkty pojawią się na górnej ścianie bryły (całego zaznaczenia, jeśli zaznaczyłeś kilka).
 
-- Przeciągnij punkt, aby go przesunąć, albo kliknij go, aby zobaczyć jego współrzędne i wpisać nowe. Są w ustawionej jednostce. Każdą kartę można odsunąć za tytuł, jeśli coś zasłania, osobno: pozostałe zostają na miejscu, a dwukrotne kliknięcie tytułu odkłada ją z powrotem. Karta dotknięta ostatnio stoi przed pozostałymi. **Usuń wszystkie** w karcie albo w menu prawego przycisku usuwa naraz wszystkie punkty. {{ui:common.delete}} usuwa punkt.
+- Przeciągnij punkt, aby go przesunąć, albo kliknij go, aby zobaczyć jego współrzędne i wpisać nowe. Są w ustawionej jednostce. Każdą kartę można odsunąć za tytuł, jeśli coś zasłania, osobno: pozostałe zostają na miejscu, a dwukrotne kliknięcie tytułu odkłada ją z powrotem. Karta dotknięta ostatnio stoi przed pozostałymi. **Usuń wszystkie** w karcie albo **Usuń wszystkie punkty odniesienia** w menu prawego przycisku (na bryle albo na pustym miejscu widoku 3D) usuwa naraz wszystkie punkty. {{ui:common.delete}} usuwa punkt.
 - Narzędzie Zmierz też potrafi postawić punkt: {{ui:camera.tapeMarkMiddle}}, przycisk z celownikiem pod pomiarem, stawia go w jego środku, na przykład w środku okrągłego otworu. Mierzy też od punktu: przyciąga się do punktów odniesienia jak do narożników.
 - Gdy przeciągasz kształt, jego krawędzie i środek przyciągają się do punktu, tak jak do innych kształtów ({{ui:workspace.objectSnap}}). Kątownik też przyciąga się do punktów.
 - Punkty zapisują się w projekcie, nie pojawiają się w żadnym eksporcie i są pokazywane albo ukrywane razem z notatkami przez {{ui:visibility.notes}}.
 - AI może je stawiać, wypisywać i usuwać poleceniami `layerling_add_reference_points`, `layerling_list_reference_points` i `layerling_remove_reference_points`.
+
+## Obrazy referencyjne
+
+Obraz referencyjny to obraz, do którego wyrównujesz części: połóż zdjęcie płytki drukowanej na dnie jej obudowy i ustaw na nim dystanse, otwory i wycięcia na złącza. To pomoc, a nie bryła: nigdy nie jest drukowany ani eksportowany (STL, 3MF, OBJ, STEP, SVG), nigdy nie wchodzi do grupy, pakietu ani cięcia, a szacunek wydruku go pomija.
+
+- Otwórz {{ui:editor.import}} i wybierz {{ui:import.referenceImage}}, a potem obraz PNG, JPG, WebP, GIF lub BMP. Trafia na płaszczyznę roboczą - na płytę albo na ścianę, na której ustawiono płaszczyznę roboczą - z dłuższym bokiem 100 mm, półprzezroczysty.
+- Przesuwaj go, obracaj i zmieniaj jego rozmiar uchwytami jak każdy kształt. Bryła przed nim jest wybierana pierwsza, więc praca na nim nie chwyta obrazu.
+- {{ui:referenceImage.seeThrough}} w jego ustawieniach rozjaśnia go od pełnego do ledwo widocznego.
+- {{ui:referenceImage.calibrate}} nadaje mu prawdziwy rozmiar, jak w szkicu: kliknij dwa punkty na obrazie, których rzeczywistą odległość znasz - na przykład dwa otwory montażowe płytki - i wpisz tę odległość w {{ui:referenceImage.distance}}. Obraz zachowuje proporcje i środek.
+- Zablokuj go kłódką w nagłówku jego ustawień, a zostanie na miejscu: kliknięcia przechodzą przez niego na płytę. Wybierz go na liście obiektów, aby go odblokować.
+- Obraz jest zapisany w pliku projektu tylko raz, niezależnie od tego, ile razy go skopiujesz lub cofniesz. Duży obraz powiększa plik o tyle samo; komunikat przy dodawaniu podaje jego rozmiar.
+- AI dodaje, przesuwa, kalibruje, rozjaśnia i blokuje go za pomocą `layerling_reference_image`.

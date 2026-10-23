@@ -21,7 +21,7 @@
     <a href="#layerling-mcp-skill"><img alt="Von einer KI steuerbar" src="https://img.shields.io/badge/KI--steuerbar-MCP--Server-16c0d4"></a>
   </p>
 
-  <p><a href="README.md">English</a> · <strong>Deutsch</strong> · <a href="README.nl.md">Nederlands</a></p>
+  <p><a href="README.md">English</a> · <strong>Deutsch</strong> · <a href="README.nl.md">Nederlands</a> · <a href="README.zh-cn.md">简体中文</a> · <a href="README.zh-tw.md">繁體中文</a></p>
 </div>
 
 <p align="center">
@@ -114,8 +114,10 @@ Ein vollständiges CAD-Paket ist es nicht: Es gibt keine parametrische Zeitleist
 
 - **Perspektivisch oder gerade von vorn** – zwischen normaler und orthografischer Ansicht wechseln, über den Würfelknopf neben den Zoomtasten oder mit **O**. Blickrichtung und Ausschnitt bleiben erhalten.
 - **Ansicht am Würfel drehen** – Ziehen am Ansichtswürfel dreht die Ansicht wie die rechte Maustaste, auf dem Tablet mit einem Finger; ein Klick springt weiter auf die gerade Seite, ein Klick auf eine Ecke oder Kante schaut von dort. Die Tasten **1**–**6** springen ebenfalls, **Umschalt+1**–**6** zoomen dabei auf die Auswahl.
+- **Vier gespeicherte Ansichten je Entwurf** – **Umschalt+7**, **8**, **9** oder **0** speichert die Ansicht genau so, wie sie ist (Blickwinkel, Ausschnitt, Zoom), und die Taste allein holt sie zurück. Jeder Entwurf hat seine eigenen, und eine gespeicherte `.lyl`-Datei nimmt sie mit.
 - **Der Ansichtswürfel in jeder Ecke** – Einstellungen > Darstellung > **Position des Ansichtswürfels** stellt den Würfel oben links, oben rechts, unten links oder unten rechts hin; in jeder Ecke außer oben links rückt die Kamerasteuerung an seinen Platz nach oben.
 - **Von unten schauen** – das Auge über dem Gitter in der Kameraleiste blendet die Platte aus, damit die Unterseite eines Entwurfs frei zu sehen ist.
+- **Eine zweite Ansicht im eigenen Fenster** – ein Knopf in der Kameraleiste öffnet ein zweites Fenster, das denselben Entwurf durch eine eigene Kamera zeigt, mit eigenem Ansichtswürfel und eigener Kameraleiste, und folgt jeder Änderung. Es öffnet sich dort, wo du es zuletzt gelassen hast.
 - **Fenster nach Wunsch** – Objektliste, Einstellungen, Schnittansicht, Maßband und die Werkzeugfenster für Kanten, Aushöhlen und Muster lassen sich an ihrer Titelleiste frei verschieben und öffnen sich dort wieder; ein Doppelklick dockt sie an.
 - **Rechtsklick-Menü** – ein kurzer Rechtsklick auf einen Körper bringt die häufigsten Befehle: duplizieren, Aussparung oder Körper, gruppieren, Fase, Rundung und Aushöhlen für einen Körper, spiegeln und um Prozent skalieren, ausblenden, sperren, auf die Arbeitsebene setzen, löschen. Ziehen mit der rechten Taste dreht weiter die Ansicht.
 - **Schnittansicht** – die Ansicht entlang einer Ebene quer zu X, Y oder Z aufschneiden, um Wände, Hohlräume und ineinandergreifende Teile zu sehen, mit grobem und feinem Regler. Geschnitten wird nur die Ansicht: Entwurf und jeder Export bleiben ganz. Den Schnitt selbst speichert „Schnitt als SVG“ im Maßstab 1:1, etwa für einen Laser oder eine Schablone, und „Messen“ liest Wandstärken und Spalte direkt auf dem Schnitt ab, im rechten Winkel zur Wand eingerastet.
@@ -197,10 +199,10 @@ Um layerling auf einem Rechner, NAS (Synology, Unraid usw.) oder Heimserver ohne
 Am schnellsten geht es mit einem einzigen Befehl:
 
 ```bash
-docker run -d --name layerling -p 3000:3000 --restart unless-stopped ghcr.io/henmedia/layerling:latest
+docker run -d --name layerling -p 3000:3000 -v layerling-thumbnails:/app/.codex/project-thumbnails --restart unless-stopped ghcr.io/henmedia/layerling:latest
 ```
 
-Auf einem NAS mit Container-Verwaltung (Synology Container Manager, Unraid, Portainer) suchst du in der Registrierung (Docker Hub) nach `henmedia/layerling` oder trägst `henmedia/layerling:latest` ein und gibst Port 3000 frei. Zum Aktualisieren das Image neu holen und den Container neu anlegen (oder Watchtower das erledigen lassen).
+Die Option `-v` legt die Vorschaubilder der Startseite in ein Docker-Volume namens `layerling-thumbnails`, damit sie ein Update überstehen; ohne sie liegen sie im Container und sind bei jedem Neuanlegen weg (die Entwürfe selbst liegen im Browser und sind nicht betroffen). Auf einem NAS mit Container-Verwaltung (Synology Container Manager, Unraid, Portainer) suchst du in der Registrierung (Docker Hub) nach `henmedia/layerling` oder trägst `henmedia/layerling:latest` ein, gibst Port 3000 frei und legst ein Volume für `/app/.codex/project-thumbnails` an. Zum Aktualisieren das Image neu holen und den Container neu anlegen (oder Watchtower das erledigen lassen).
 
 Die Image-Tags sind reine Versionsnummern **ohne „v“**: `ghcr.io/henmedia/layerling:1.42.0`, das GitHub-Release heißt dagegen `v1.42.0`. Ein Pull holt nur das neue Image; ein vorhandener Container läuft mit dem alten weiter, bis er entfernt und neu angelegt wird:
 
@@ -208,7 +210,7 @@ Die Image-Tags sind reine Versionsnummern **ohne „v“**: `ghcr.io/henmedia/la
 docker pull ghcr.io/henmedia/layerling:latest
 docker stop layerling
 docker rm layerling
-docker run -d --name layerling -p 3000:3000 --restart unless-stopped ghcr.io/henmedia/layerling:latest
+docker run -d --name layerling -p 3000:3000 -v layerling-thumbnails:/app/.codex/project-thumbnails --restart unless-stopped ghcr.io/henmedia/layerling:latest
 ```
 
 Mit `docker inspect layerling | grep image.version` siehst du, welche Version der Container wirklich ausführt. Hast du für den Serverspeicher einen Ordner eingebunden, gib dieselbe `-v`-Option wieder mit an.
@@ -244,6 +246,8 @@ Der Container läuft als der Benutzer mit der Nummer 999, und dieser muss in den
 Das Farbschema, das Leute beim ersten Besuch bekommen, legst du mit `LAYERLING_DEFAULT_THEME` fest: `system`, `light`, `dark` oder `graphite` (auf demselben Weg, in `compose.yml` oder in der Umgebung von `npm run start`). Wer layerling schon geöffnet hat, behält das Schema, das sein Browser bereits hat, und jeder kann es weiter mit dem Umschalter ändern. Ohne die Einstellung folgt das Schema dem System. Eine Kopie, die als reine Dateien ausgeliefert wird, hat keinen Server, der sie lesen könnte, dort gilt sie nicht.
 
 Ist der gemeinsame Ordner eingerichtet, lässt `LAYERLING_NEW_DESIGNS_ON_SERVER` neue Entwürfe auf dem Server beginnen: `true` ist der Anfangswert für alle, die noch nicht gewählt haben (sie können **Neue Entwürfe auf dem Server** auf der Startseite abwählen), `always` gilt für alle und sperrt den Haken. Es wird auf demselben Weg gesetzt, und eine als reine Dateien ausgelieferte Kopie hat keinen Server, der es lesen könnte.
+
+Hinter einem Reverse-Proxy mit Domain muss der Proxy den ursprünglichen `Host` und `X-Forwarded-Proto` weitergeben (nginx: `proxy_set_header Host $host;` und `proxy_set_header X-Forwarded-Proto $scheme;`), sonst lehnt der Server das Speichern mit "Der Serverspeicher nimmt nur Anfragen von dieser Seite an." ab. Schreibt der Proxy den Host um und lässt sich das nicht ändern, trägst du die Adresse, unter der die Leute layerling öffnen, in `LAYERLING_ALLOWED_ORIGINS` ein (kommagetrennt, zum Beispiel `https://layerling.example.com`).
 
 ### Statisches Hosting: reine Dateien auf einem Webserver
 
@@ -326,7 +330,7 @@ Diesen Weg nimmst du, wenn du den Quelltext ändern willst.
 
 ### Was du brauchst
 
-- Node.js 20 oder neuer
+- Node.js 22.18 oder neuer (die Skripte für Anleitung und Schriften laden TypeScript-Dateien direkt, das können ältere Versionen nicht); 24 geht auch, das Docker-Image nutzt es
 - npm, in Node.js enthalten
 
 Die Versionen prüfst du mit `node -v` und `npm -v`. Funktionieren die Befehle nicht, installiere Node.js von der

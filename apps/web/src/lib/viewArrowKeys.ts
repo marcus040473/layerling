@@ -30,20 +30,34 @@ export const VIEW_PAN_COARSE_STEP = 0.5;
  * was taken.
  */
 export function handleViewArrowKey(event: ArrowKeyEvent, hasSelection: boolean): boolean {
-  if (hasSelection || event.altKey) return false;
-  const x = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
-  const y = event.key === "ArrowUp" ? 1 : event.key === "ArrowDown" ? -1 : 0;
-  if (!x && !y) return false;
-  if (event.ctrlKey || event.metaKey) {
+  if (hasSelection) return false;
+  const step = viewArrowStep(event);
+  if (!step) return false;
+  if (step.pan) {
     if (!window.layerlingPanView) return false;
-    const step = event.shiftKey ? VIEW_PAN_COARSE_STEP : VIEW_PAN_STEP;
-    window.layerlingPanView(x * step, y * step);
+    window.layerlingPanView(...step.pan);
     return true;
   }
   if (!window.layerlingOrbitView) return false;
-  const angle = event.shiftKey ? 90 : 15;
-  window.layerlingOrbitView(-x * angle, y * angle);
+  window.layerlingOrbitView(...step.orbit);
   return true;
+}
+
+/**
+ * What an arrow key does to the view: a turn (azimuth, polar in degrees) or, with Ctrl or Cmd, a
+ * slide (right, up in parts of the view's height). Null for any other key, or with Alt.
+ */
+export function viewArrowStep(event: ArrowKeyEvent): { orbit: [number, number]; pan?: undefined } | { pan: [number, number]; orbit?: undefined } | null {
+  if (event.altKey) return null;
+  const x = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+  const y = event.key === "ArrowUp" ? 1 : event.key === "ArrowDown" ? -1 : 0;
+  if (!x && !y) return null;
+  if (event.ctrlKey || event.metaKey) {
+    const step = event.shiftKey ? VIEW_PAN_COARSE_STEP : VIEW_PAN_STEP;
+    return { pan: [x * step, y * step] };
+  }
+  const angle = event.shiftKey ? 90 : 15;
+  return { orbit: [-x * angle, y * angle] };
 }
 
 export function orbitViewBy({ camera, controls }: ViewCamera, azimuthDegrees: number, polarDegrees: number) {

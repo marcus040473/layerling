@@ -34,7 +34,8 @@ export function ScalePercentPanel({
   /** Why the last try did not go through, already in words. */
   error: string | null;
   onChange: (patch: Partial<ScalePercentSettings>) => void;
-  onApply: () => void;
+  /** With a percentage when Enter in the field applies it, before the state holds the typed value. */
+  onApply: (percent?: number) => void;
   onCancel: () => void;
 }) {
   useLanguage();
@@ -66,6 +67,8 @@ export function ScalePercentPanel({
         step={1}
         unit="%"
         workspace={workspace}
+        autoFocus
+        onEnter={(value) => { if (Math.round(value) !== 100) onApply(value); }}
         onChange={(value) => onChange({ percent: value })}
       />
 
@@ -94,7 +97,7 @@ export function ScalePercentPanel({
 
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={Math.round(settings.percent) === 100} onClick={onApply}>
+        <button type="button" className="primary" disabled={Math.round(settings.percent) === 100} onClick={() => onApply()}>
           <Check size={17} />
           {t("scalePercent.apply")}
         </button>

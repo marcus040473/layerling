@@ -68,6 +68,27 @@ describe("a sketch swept along its path, with the real OCCT kernel", () => {
     expect(bounds.ymax).toBeCloseTo(6, 3);
   });
 
+  it("puts the left or right edge of the section on the path when the sketch says so (#732)", () => {
+    // The path runs right along z = 0 and the section is drawn at its start, so looking along it the sketch's right is towards +z.
+    const body = (sweepAnchor?: "left" | "center" | "right") => {
+      const solid = buildSweptSketchSolid(kernel, { ...sketch(outline([[-35, 0], [-25, 0], [-25, 6], [-35, 6]]), path([[-30, 0], [30, 0]])), ...(sweepAnchor ? { sweepAnchor } : {}) });
+      expect(kernel.isValid(solid)).toBe(true);
+      expect(kernel.getVolume(solid)).toBeCloseTo(10 * 6 * 60, 1);
+      return kernel.getBoundingBox(solid, false);
+    };
+    const centred = body("center");
+    expect(centred.zmin).toBeCloseTo(-5, 3);
+    expect(centred.zmax).toBeCloseTo(5, 3);
+    const left = body("left");
+    expect(left.zmin).toBeCloseTo(0, 3);
+    expect(left.zmax).toBeCloseTo(10, 3);
+    const right = body("right");
+    expect(right.zmin).toBeCloseTo(-10, 3);
+    expect(right.zmax).toBeCloseTo(0, 3);
+    // Left out is the middle, as before.
+    expect(body().zmin).toBeCloseTo(-5, 3);
+  });
+
   it("turns a corner as a mitre, and the volume is the section times the length of the path", () => {
     const solid = buildSweptSketchSolid(kernel, sketch(section(), path([[-20, 0], [20, 0], [20, 30]])));
     expect(kernel.isValid(solid)).toBe(true);

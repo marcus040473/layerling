@@ -248,6 +248,18 @@ describe("a part with a section of its own in the guide (#424)", () => {
   });
 });
 
+describe("the cards of a shape's properties (#424)", () => {
+  it("lead every part of the properties, taper and twist to the shape's settings, and the rotation to its own section", () => {
+    page('<div data-help-section-all="shapeSettings"><label><span class="range-property-name">Length</span><input id="length" type="range"></label><button id="save">Save as default</button></div>'
+      + '<div data-help-section-all="rotating"><button id="reset">Back to the default</button></div>');
+    const length = resolveHelpTarget(document.getElementById("length"));
+    expect(length?.sectionOnly).toBe(true);
+    expect(length?.guideHref).toContain("the-shape-s-settings");
+    expect(resolveHelpTarget(document.getElementById("save"))?.guideHref).toContain("the-shape-s-settings");
+    expect(resolveHelpTarget(document.getElementById("reset"))?.guideHref).toContain("rotating-and-setting-the-pivot");
+  });
+});
+
 describe("fields in a label that names them for the help (#424)", () => {
   it("names a field by the label's data-help, not by the label's words with their hint, value and options", () => {
     page('<label id="t" data-help="Fast mode"><span><span>Fast mode</span><small>For slower computers: turns off shadows, edge lines on all bodies and the camera inertia</small></span><input id="c" type="checkbox"></label><label data-help="Theme"><span>Theme</span><select id="s"><option>System</option><option>Light</option></select></label>');

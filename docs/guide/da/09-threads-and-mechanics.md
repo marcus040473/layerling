@@ -16,7 +16,7 @@ Vælg {{ui:shape.thread}} i formbiblioteket. Under {{ui:inspector.threadRole}} b
 
 ![En skrue med cylinderhoved. Til højre: type og hovedform, længere nede størrelse, deling og profil.](shot:thread-screw)
 
-Du vælger størrelsen under {{ui:prop.threadSize}} fra en liste: metrisk fra M2 til M12, tomme-størrelserne UNC og UNF fra No. 4 til 1 tomme, og rørgevindene G1/16 til G4. Vælger du {{ui:thread.customSize}}, sætter du selv {{ui:prop.diameter}} og {{ui:prop.pitch}}. For en tomme- eller G-størrelse beder feltet om {{ui:prop.threadsPerInch}} i stedet for delingen i millimeter.
+Du vælger størrelsen under {{ui:prop.threadSize}} fra en liste: metrisk fra M2 til M24, tomme-størrelserne UNC og UNF fra No. 4 til 1 tomme, og rørgevindene G1/16 til G4. Vælger du {{ui:thread.customSize}}, sætter du selv {{ui:prop.diameter}} og {{ui:prop.pitch}}. For en tomme- eller G-størrelse beder feltet om {{ui:prop.threadsPerInch}} i stedet for delingen i millimeter.
 
 Listen grupperer størrelserne efter serie, og en linje under feltet navngiver serien af den størrelse du valgte, med eksempler du kender fra hverdagen:
 

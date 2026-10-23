@@ -1,0 +1,364 @@
+/* The keyboard shortcut list. It borrows the workspace modal's card and
+   header; only the list itself is its own. */
+.shortcuts-modal {
+  position: fixed;
+  z-index: 60;
+  padding-top: 46px;
+}
+
+.shortcuts-modal-card {
+  display: grid;
+  width: min(1080px, calc(100vw - 32px));
+  height: auto;
+  max-height: min(860px, calc(100vh - 92px));
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.shortcuts-modal[data-compact="true"] .shortcuts-modal-card {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.shortcuts-modal[data-compact="true"] .shortcuts-groups {
+  columns: 1;
+}
+
+/* The search sits above the list and stays put while the list scrolls. */
+.shortcuts-modal-card .workspace-modal-content {
+  height: auto;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.shortcuts-search {
+  padding: 14px 24px 0;
+}
+
+.shortcuts-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: min(100%, 420px);
+}
+
+.shortcuts-search-icon {
+  position: absolute;
+  left: 10px;
+  color: #a3917f;
+  pointer-events: none;
+}
+
+.shortcuts-search-input {
+  width: 100%;
+  padding: 7px 32px 7px 34px;
+  color: inherit;
+  background: #ffffff;
+  border: 1px solid #e2d9cd;
+  border-radius: 6px;
+  outline: none;
+  font-size: 13px;
+  transition: border-color 120ms ease;
+}
+
+.shortcuts-search-input:focus {
+  border-color: #d46b08;
+}
+
+.shortcuts-search-clear {
+  position: absolute;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: #a3917f;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.shortcuts-search-clear:hover {
+  color: #563e24;
+  background: #f3ece2;
+}
+
+.shortcuts-no-matches {
+  margin: 0;
+  color: #a3917f;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.shortcuts-modal-body {
+  gap: 18px;
+}
+
+.shortcuts-intro {
+  margin: 0;
+  color: #7a6550;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.shortcuts-groups {
+  columns: 300px;
+  column-gap: 30px;
+}
+
+.shortcuts-group {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  margin-bottom: 15px;
+  break-inside: avoid;
+}
+
+.shortcuts-group h3 {
+  margin: 0;
+  padding-bottom: 7px;
+  color: #543b21;
+  border-bottom: 1px solid #f0eae0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.shortcuts-group dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.shortcuts-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 3px 12px;
+}
+
+.shortcuts-row dt {
+  min-width: 0;
+  margin: 0;
+  flex: 1 1 auto;
+  color: #6c5a48;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+
+.shortcuts-row dd {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 0 0 0 auto;
+}
+
+.shortcuts-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.shortcuts-plus,
+.shortcuts-or {
+  color: #a4917c;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.shortcuts-row kbd {
+  padding: 2px 6px;
+  color: #5f4529;
+  background: #f6f3ed;
+  border: 1px solid #dacfc2;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] .shortcuts-search-input {
+  color: #e5ded5;
+  background: #1e1a16;
+  border-color: #443a30;
+}
+
+html[data-theme="dark"] .shortcuts-search-input:focus {
+  border-color: #f6ad55;
+}
+
+html[data-theme="dark"] .shortcuts-search-clear:hover {
+  color: #f1eadd;
+  background: #3a2e22;
+}
+
+html[data-theme="dark"] .shortcuts-intro,
+html[data-theme="dark"] .shortcuts-row dt {
+  color: #cbbba6;
+}
+
+html[data-theme="dark"] .shortcuts-group h3 {
+  color: #f1e6d4;
+  border-bottom-color: #4a3b2c;
+}
+
+html[data-theme="dark"] .shortcuts-row kbd {
+  color: #f1eadd;
+  background: #322518;
+  border-color: #635241;
+}
+
+html[data-theme="dark"] .shortcuts-plus,
+html[data-theme="dark"] .shortcuts-or {
+  color: #9b8a76;
+}
+
+/* The printed list of shortcuts (Print button of the window, or Ctrl+P while it is open): black on
+   white and in large type, with nothing else of the app. The sheet is a child of the body, hidden on
+   screen; while the attribute is on <html>, every other child of the body goes. */
+.shortcuts-print-sheet {
+  display: none;
+}
+
+@media print {
+  /* The whole list on one side of a sheet, as a reference to keep at hand (#490): three columns in smaller, still sharp type. */
+  @page {
+    margin: 10mm;
+  }
+
+  html[data-print-shortcuts],
+  html[data-print-shortcuts] body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  html[data-print-shortcuts] body > *:not(.shortcuts-print-sheet) {
+    display: none !important;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet {
+    display: block;
+    color: #000;
+    background: #fff;
+    font-size: 9pt;
+    /* The arrows must not turn into coloured emoji on a black-and-white sheet. */
+    font-variant-emoji: text;
+  }
+
+  /* No heading: the room is for the list. */
+  html[data-print-shortcuts] .shortcuts-print-sheet h1 {
+    display: none;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-groups {
+    columns: 3;
+    column-gap: 6mm;
+  }
+
+  /* A long group may run over into the next column; a heading never stays alone at the foot of one. */
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-group {
+    margin-bottom: 3mm;
+    break-inside: auto;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-group h3 {
+    break-after: avoid;
+    margin: 0 0 1mm;
+    color: #000;
+    border-bottom: 0.3mm solid #000;
+    font-size: 9.5pt;
+  }
+
+  /* Plain blocks, not grids: a block fragments across the columns, a grid does not (the sketch's list is one long group). */
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-group {
+    display: contents;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-group dl {
+    display: block;
+    margin: 0;
+  }
+
+  /* The name on the left, the keys on the right on one line where they fit, else the keys below the name. */
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 2mm;
+    padding-bottom: 0.7mm;
+    margin-bottom: 0.7mm;
+    border-bottom: 0.1mm solid #bbb;
+    break-inside: avoid;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-row dd {
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    gap: 0.8mm;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-row dt {
+    line-height: 1.25;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-row dt {
+    color: #000;
+    font-size: 9pt;
+    font-weight: 600;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-row kbd {
+    color: #000;
+    background: #fff;
+    padding: 0 1.2mm;
+    border: 0.25mm solid #000;
+    border-bottom-width: 0.25mm;
+    border-radius: 0.8mm;
+    font-size: 8pt;
+    line-height: 1.3;
+    /* Fonts whose arrows are plain strokes, not coloured emoji. */
+    font-family: "Segoe UI Symbol", "Apple Symbols", "DejaVu Sans", Arial, sans-serif;
+  }
+
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-plus,
+  html[data-print-shortcuts] .shortcuts-print-sheet .shortcuts-or {
+    color: #000;
+    font-size: 8.5pt;
+  }
+}
+
+@media (max-width: 960px) {
+  .shortcuts-modal {
+    padding-top: 18px;
+  }
+
+  .shortcuts-modal-card {
+    width: calc(100vw - 24px);
+  }
+}
+
+/* In line with the list below it, whose padding the workspace modal narrows on smaller screens. */
+@media (max-width: 1240px) {
+  .shortcuts-search {
+    padding-inline: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .shortcuts-search {
+    padding-inline: 16px;
+  }
+}

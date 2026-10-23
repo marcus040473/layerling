@@ -4,7 +4,7 @@ import { cadSketchRegions, orderedCadSketchPaths, type CadSketchRegion, type Ord
 import { circularArcMidpoint } from "@/lib/sketchCircularArc";
 import { isConstructionSegment } from "@/lib/sketchConstruction";
 import { pathWire } from "@/lib/sketchCadWire";
-import type { SketchPoint, SketchProfile } from "@/types/layerling";
+import type { SketchPoint, SketchProfile, SweepAnchor } from "@/types/layerling";
 
 /*
  * A sketch swept along a path (#400). The closed outlines drawn as usual are the cross-section;
@@ -12,8 +12,8 @@ import type { SketchPoint, SketchProfile } from "@/types/layerling";
  *
  * The path lies flat in the sketch plane. The cross-section is drawn as seen when looking along
  * the path from the end it is drawn at: the sketch's x is across the path, up on the screen is up
- * on the body. It is centred on the path across, and stands on the sketch plane with its lowest
- * point. The solid is built by OpenCascade, so Fillet, Chamfer and the STEP export work on it.
+ * on the body. It is centred on the path across, or has its left or right edge on it (the sketch's
+ * sweepAnchor, #732), and stands on the sketch plane with its lowest point. The solid is built by OpenCascade, so Fillet, Chamfer and the STEP export work on it.
  */
 
 export type SweepProblem = "no-profile" | "no-path" | "many-paths";
@@ -51,6 +51,13 @@ function profileBounds(regions: CadSketchRegion[]) {
   const xs = points.map((point) => point.x);
   const zs = points.map((point) => point.z);
   return { minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs) };
+}
+
+/** The x in the sketch that runs along the path: the middle of the cross-section, or its left or right edge. */
+export function sweepAnchorX(bounds: { minX: number; maxX: number }, anchor: SweepAnchor | undefined) {
+  if (anchor === "left") return bounds.minX;
+  if (anchor === "right") return bounds.maxX;
+  return (bounds.minX + bounds.maxX) / 2;
 }
 
 /**
@@ -131,7 +138,7 @@ export function buildSweptSketchSolid(cad: OcctKernel, sketch: SketchProfile): S
   const start = path.steps[0].from;
   const direction = sweepStartDirection(path);
   const bounds = profileBounds(regions);
-  const centreX = (bounds.minX + bounds.maxX) / 2;
+  const centreX = sweepAnchorX(bounds, sketch.sweepAnchor);
   const spine = pathWire(cad, path);
   // The cross-section keeps standing upright along the path; a corner of straight pieces is a mitre.
   const sweep = (outline: OrderedCadSketchPath) => cad.sweepAdvanced(sectionWire(cad, outline, start, direction, centreX, bounds.maxZ), spine, {

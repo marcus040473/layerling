@@ -26,6 +26,7 @@ import {
   shapeTransformShouldRemainEditable,
   shapeWithParametricSource,
   shellNeedingRebuild,
+  hollowStretchSincePicture,
   shellRebuildEntry,
   patchTouchesBodyParameters,
   shapeTaperDimensions,
@@ -127,9 +128,13 @@ describe("workplane shape helpers", () => {
     expect(shapeTaperScaleAt(gear, 0.5, "width")).toBe(1);
     expect(shapeTaperScaleAt(gear, 0.5, "depth")).toBe(1);
 
+    const thread = shape({ kind: "thread", taperBottomWidth: 10, taperTopWidth: 30 });
+    expect(shapeHasTaper(thread)).toBe(false);
+    expect(shapeTaperScaleAt(thread, 0.5, "width")).toBe(1);
+
+    // The knurl takes a taper since #630.
     const knurl = shape({ kind: "knurl", taperBottomWidth: 10, taperTopWidth: 30 });
-    expect(shapeHasTaper(knurl)).toBe(false);
-    expect(shapeTaperScaleAt(knurl, 0.5, "width")).toBe(1);
+    expect(shapeHasTaper(knurl)).toBe(true);
 
     const pyramid = shape({ kind: "pyramid", taperBottomWidth: 10, taperTopWidth: 30 });
     expect(shapeHasTaper(pyramid)).toBe(false);
@@ -411,8 +416,8 @@ describe("workplane shape helpers", () => {
   });
 
   it("tapers and twists every shape but those with fixed measures or a top of their own (#111)", () => {
-    for (const kind of ["box", "slot", "roundedBox", "star", "heart", "crescent", "honeycomb", "dovetail"] as const) expect(shapeSupportsTaper(kind)).toBe(true);
-    for (const kind of ["gear", "thread", "spring", "knurl", "hinge", "pyramid", "bentTube", "teardrop", "counterbore", "countersink", "doubleCountersink", "ruler"] as const) expect(shapeSupportsTaper(kind)).toBe(false);
+    for (const kind of ["box", "slot", "roundedBox", "star", "heart", "crescent", "honeycomb", "dovetail", "knurl"] as const) expect(shapeSupportsTaper(kind)).toBe(true);
+    for (const kind of ["gear", "thread", "spring", "hinge", "pyramid", "bentTube", "teardrop", "counterbore", "countersink", "doubleCountersink", "ruler"] as const) expect(shapeSupportsTaper(kind)).toBe(false);
   });
 
   it("hollows a resized hollow body again instead of keeping bands at its sides", () => {
@@ -440,6 +445,19 @@ describe("workplane shape helpers", () => {
     filleted.edgeTreatments = [feature, { kind: "fillet", amount: 1, edgeCount: 1 }];
     expect(shellRebuildEntry(filleted)).toBeNull();
     expect(preservesEdgeTreatmentSize(filleted)).toBe(true);
+  });
+
+  it("reads the stretch of a hollow body in the axes of the shape it was hollowed from, a quarter turn apart (#729)", () => {
+    const feature = { kind: "shell" as const, amount: 2, edgeCount: 0, openings: "top" as const };
+    // Hollowed from a 60 x 20 box turned by 90 degrees, so the body stands 20 wide and 60 deep in the world.
+    const applied = { x: 0, z: 0, elevation: 0, width: 20, depth: 60, height: 20, rotation: 0, rotationX: 0, rotationZ: 0, mirrorX: false, mirrorY: false, mirrorZ: false };
+    const entry = { id: "h", createdAt: 1, feature, before: shape({ kind: "box", width: 60, depth: 20, height: 20, rotation: 90 }), appliedFrame: applied };
+    const body = shape({ kind: "mesh", width: 20, depth: 30, height: 20, edgeTreatments: [feature], edgeTreatmentHistory: [entry] });
+    // Its depth halved: that is the box's width (its own x axis lies along the world's z), not its depth.
+    expect(hollowStretchSincePicture(body, entry)).toEqual({ x: 0.5, z: 1, height: 1 });
+    // Without the quarter turn the axes keep their places.
+    const straight = { ...entry, before: shape({ kind: "box", width: 20, depth: 60, height: 20 }) };
+    expect(hollowStretchSincePicture(body, straight)).toEqual({ x: 1, z: 0.5, height: 1 });
   });
 
   it("uses child edge features when preserving the size of grouped treatments", () => {

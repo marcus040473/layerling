@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { canonicalizeShape, withHoleMode } from "@/lib/workplaneShapes";
 import { sceneShape } from "@/lib/shapeCatalog";
-import type { ParametricSource, ShapeKind, SketchOperation, SketchProfile, SketchRevolveSettings, SketchStroke, WorkplaneShape } from "@/types/layerling";
+import type { WorkplaneShape } from "@/types/layerling";
 import { type Vec3, meshForShape, appendMeshData, boundsForCuboids, meshAabb } from "@/lib/editorMeshCore";
 import { groupedShape } from "@/lib/editorBooleans";
 

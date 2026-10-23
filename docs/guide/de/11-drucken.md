@@ -5,7 +5,7 @@ summary: Den eigenen Drucker wählen, gewarnt werden, wenn etwas nicht passt, un
 
 ## Den Drucker wählen
 
-Öffne die Einstellungen (das Zahnrad im Menüband, {{ui:editor.workspaceSettings}}) und wechsle zum Bereich {{ui:workspace.workplane}}. Bei {{ui:workspace.printer}} suchst du deinen Drucker aus einer Liste von über fünfzig gängigen Modellen aus, darunter Bambu Lab, Prusa, Creality, Anycubic, Elegoo und viele mehr.
+Öffne die Einstellungen (das Zahnrad im Menüband, {{ui:editor.workspaceSettings}}) und wechsle zum Bereich {{ui:workspace.workplane}}. Bei {{ui:workspace.printer}} suchst du deinen Drucker aus einer Liste von über 220 gängigen Modellen aus, darunter Bambu Lab, Prusa, Creality, Anycubic, Elegoo und viele mehr.
 
 ![Die Einstellungen der Arbeitsebene mit gewähltem Drucker. Druckbett und maximale Druckhöhe stammen aus dem Slicer-Profil.](shot:settings-workplane)
 
@@ -24,6 +24,8 @@ Ein Körper, der über den Rand der Druckplatte hinausragt, wird markiert. Dazu 
 ![Der Quader ist breiter als das Druckbett des Bambu Lab A1 mini. Die Meldung unten sagt, um wie viel.](shot:printer-overhang)
 
 Die Warnung hindert dich nicht am Weiterarbeiten. Sie ist ein Hinweis, damit du nicht erst im Slicer feststellst, dass das Teil zu groß ist. Ein zu großes Teil lässt sich oft aufteilen: schneide es mit {{ui:editor.tool.split}} in zwei Hälften und drucke beide getrennt.
+
+Legst du Teile absichtlich neben der Platte ab, klick auf das kleine Kreuz in der Meldung. Dann ist die Warnung für genau diese Körper weg. Passt einer davon wieder und du schiebst ihn später erneut hinaus, oder ragt ein anderer Körper über, erscheint die Meldung wieder. Ausgeblendete Körper zählen nie mit, das Ausblenden der abgelegten Teile hilft also auch.
 
 ## Das Teil richtig hinlegen
 

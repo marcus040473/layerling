@@ -1,6 +1,7 @@
 
 import { Crosshair, Eye, EyeOff, Plus, Rows3, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type Dispatch, type MutableRefObject, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
+import type { CameraTurn } from "@/lib/viewCubeTransition";
 import * as THREE from "three";
 import { disposeBoundsTree } from "three-mesh-bvh";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -10,12 +11,12 @@ import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeome
 import { type AppThemePalette, type ResolvedAppTheme } from "@/lib/appTheme";
 import { t } from "@/lib/i18n";
 import { displayToMillimeters, formatLengthMm, formatMeasurementNumber, lengthDisplayUnit, millimetersToDisplay, parseMeasurementInput } from "@/lib/measurementUnits";
-import { computeCornerRulerRelativeCoordinates, cornerRulerAxisModes, cornerRulerDimensionMatchesFromCorner, cornerRulerFlatRotation, cornerRulerTicks, pointAlongRuler, rulerDimensionMatch, worldAxisNameOfDirection, type CornerRulerAxis, type CornerRulerAxisModes, type CornerRulerFrame, type CornerRulerMode, type RulerDimensionField, type RulerDimensionMatch } from "@/lib/rulerDimensions";
+import { computeCornerRulerRelativeCoordinates, cornerRulerAxisModes, cornerRulerDimensionMatchesFromCorner, cornerRulerFlatRotation, cornerRulerTicks, pointAlongRuler, rulerDimensionMatch, spreadCornerRulerFields, worldAxisNameOfDirection, type CornerRulerAxis, type CornerRulerAxisModes, type CornerRulerFrame, type CornerRulerMode, type RulerDimensionField, type RulerDimensionMatch } from "@/lib/rulerDimensions";
 import { type PlacementPoint, type PlacementWorkplane } from "@/lib/placementWorkplane";
 import { capturePointer } from "@/lib/pointerCapture";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { displayY, insideZ } from "@/lib/displayAxes";
-import { isNonSolidShapeKind, preservesEdgeTreatmentSize, resizedImportedMeshPositions, shapeDepth, shapeExtrudeDeformAt, shapeHasExtrudeDeform, shapeHasTaper, shapeOverallFootprintDimensions, shapeTaperScaleAt, shapeWidth } from "@/lib/workplaneShapes";
+import { isNonSolidShape, preservesEdgeTreatmentSize, resizedImportedMeshPositions, shapeDepth, shapeExtrudeDeformAt, shapeHasExtrudeDeform, shapeHasTaper, shapeOverallFootprintDimensions, shapeTaperScaleAt, shapeWidth } from "@/lib/workplaneShapes";
 import { type RotationAxis } from "@/components/workplane/TransformOverlay";
 import { type AlignAxes, type FrameCuboid } from "@/lib/alignFrame";
 import type { MeasurementAccuracy, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -91,6 +92,8 @@ export type ThreeState = {
   animationId: number;
   needsRender: boolean;
   wasCameraMoving: boolean;
+  /** The view cube turn under way: the camera eases to the clicked face instead of jumping. */
+  cameraTurn?: CameraTurn | null;
   lastOverlaySync: number;
   lastViewCubeSync: number;
   /** True while a handle of the align tool shows its preview: the drawn parts have moved then (#235). */
@@ -121,7 +124,7 @@ export type MoveDimensionSession = {
 };
 
 /** Breite einer offenen Notizkarte samt Nadel und Abstand, in Bildpunkten. */
-const NOTE_CARD_REACH = 260;
+export const NOTE_CARD_REACH = 260;
 
 /** Weiter waechst das Textfeld nicht mit; darueber hinaus wird darin gerollt. */
 const NOTE_TEXT_MAX_HEIGHT = 168;
@@ -313,19 +316,7 @@ export function syncMoveDimensionWorldLines(
     }
     const geometry = new LineSegmentsGeometry();
     geometry.setPositions(points);
-    const material = new LineMaterial({
-      color,
-      linewidth,
-      worldUnits: false,
-      transparent: true,
-      opacity,
-      depthTest: false,
-      depthWrite: false,
-      alphaToCoverage: false,
-    });
-    material.toneMapped = false;
-    const rect = state.renderer.domElement.getBoundingClientRect();
-    material.resolution.set(Math.max(1, rect.width), Math.max(1, rect.height));
+    const material = sharedOverlayLineMaterial(state, { color, linewidth, opacity, depthTest: false });
     const lines = new LineSegments2(geometry, material);
     lines.renderOrder = renderOrder;
     lines.frustumCulled = false;
@@ -347,16 +338,7 @@ export function syncMoveDimensionWorldLines(
         base.x - perpendicular.x, base.y, base.z - perpendicular.z,
       ], 3),
     );
-    const arrowMaterial = new THREE.MeshBasicMaterial({
-      color: solidColor,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 1,
-      depthTest: false,
-      depthWrite: false,
-    });
-    arrowMaterial.toneMapped = false;
-    const arrow = new THREE.Mesh(geometry, arrowMaterial);
+    const arrow = new THREE.Mesh(geometry, sharedOverlayArrowMaterial(solidColor));
     arrow.renderOrder = 1002;
     arrow.frustumCulled = false;
     setObjectRenderLayer(arrow, RENDER_LAYER_HELPERS);
@@ -381,6 +363,59 @@ export function syncMoveDimensionWorldLines(
   addWideSegments(solidPoints, solidColor, 1.45, 1, 1001);
   addWideSegments(guidePoints, guideColor, 1.05, 0.72, 1000);
   state.needsRender = true;
+}
+
+/**
+ * Materials of the overlay lines and arrows, shared by everything drawn with the same look (marked
+ * cached, so clearing a layer leaves them). The guides and the measures are drawn anew at every
+ * step of a drag and at every change of the selection; a new material each time made three.js
+ * throw away the compiled shaders with the old one and compile them again for the new one.
+ */
+const sharedOverlayMaterials = new Map<string, THREE.Material>();
+
+type OverlayLineLook = { color: string; linewidth: number; opacity: number; depthTest: boolean; dashSize?: number };
+
+export function sharedOverlayLineMaterial(state: ThreeState, look: OverlayLineLook) {
+  const key = `line:${look.color}:${look.linewidth}:${look.opacity}:${look.depthTest}:${look.dashSize ?? ""}`;
+  let material = sharedOverlayMaterials.get(key) as LineMaterial | undefined;
+  if (!material) {
+    material = new LineMaterial({
+      color: look.color,
+      linewidth: look.linewidth,
+      worldUnits: false,
+      ...(look.dashSize ? { dashed: true, dashSize: look.dashSize, gapSize: look.dashSize } : {}),
+      transparent: true,
+      opacity: look.opacity,
+      depthTest: look.depthTest,
+      depthWrite: false,
+      alphaToCoverage: false,
+    });
+    material.toneMapped = false;
+    material.userData.cached = true;
+    sharedOverlayMaterials.set(key, material);
+  }
+  const rect = state.renderer.domElement.getBoundingClientRect();
+  material.resolution.set(Math.max(1, rect.width), Math.max(1, rect.height));
+  return material;
+}
+
+function sharedOverlayArrowMaterial(color: string) {
+  const key = `arrow:${color}`;
+  let material = sharedOverlayMaterials.get(key) as THREE.MeshBasicMaterial | undefined;
+  if (!material) {
+    material = new THREE.MeshBasicMaterial({
+      color,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 1,
+      depthTest: false,
+      depthWrite: false,
+    });
+    material.toneMapped = false;
+    material.userData.cached = true;
+    sharedOverlayMaterials.set(key, material);
+  }
+  return material;
 }
 
 export function syncTransformGuideWorldLines(
@@ -409,24 +444,15 @@ export function syncTransformGuideWorldLines(
   const positions = segments.flatMap(([start, end]) => [start.x, start.y, start.z, end.x, end.y, end.z]);
   const geometry = new LineSegmentsGeometry();
   geometry.setPositions(positions);
-  const material = new LineMaterial({
+  const material = sharedOverlayLineMaterial(state, {
     color: theme === "dark" ? "#cfe1ea" : "#1f272e",
     linewidth: 1.15,
-    worldUnits: false,
-    dashed: true,
     dashSize: 0.625,
-    gapSize: 0.625,
-    transparent: true,
     opacity: theme === "dark" ? 0.86 : 0.72,
     // Bodies hide the guides: the footprint lies under the selected body and must not shine
     // through it or through its neighbours (#219).
     depthTest: true,
-    depthWrite: false,
-    alphaToCoverage: false,
   });
-  material.toneMapped = false;
-  const rect = state.renderer.domElement.getBoundingClientRect();
-  material.resolution.set(Math.max(1, rect.width), Math.max(1, rect.height));
   const lines = new LineSegments2(geometry, material);
   lines.computeLineDistances();
   lines.renderOrder = 999;
@@ -839,7 +865,8 @@ export function NoteOverlay({
   onToggle: (noteId: string) => void;
   onTextChange: (noteId: string, text: string) => void;
   onTextCommit: (noteId: string) => void;
-  onDetach: (noteId: string) => void;
+  /** Left out where a note cannot be released from a body: in a sketch, every note is the sketch body's. */
+  onDetach?: (noteId: string) => void;
   onRemove: (noteId: string) => void;
   onEditingIdChange: (noteId: string | null) => void;
 }) {
@@ -930,7 +957,7 @@ export function NoteOverlay({
                   onChange={(text) => onTextChange(note.id, text)}
                 />
                 <div className="note-card-actions">
-                  {note.attached ? (
+                  {!onDetach ? <span /> : note.attached ? (
                     <button type="button" className="note-action" onClick={() => onDetach(note.id)}>{t("note.detach")}</button>
                   ) : <span className="note-hint">{t("note.free")}</span>}
                   <span className="note-card-end">
@@ -1075,7 +1102,7 @@ export function syncRulerDimensionOverlay(
       const rulerPose = { x: ruler.x, z: ruler.z, rotation: ruler.rotation, length: shapeWidth(ruler), crossWidth: shapeDepth(ruler) };
       const axisAcross = new THREE.Vector3(0, 0, 1).applyQuaternion(quaternionForShape(ruler));
       shapes.forEach((candidate) => {
-        if (candidate.id === ruler.id || isNonSolidShapeKind(candidate.kind) || candidate.hidden) return;
+        if (candidate.id === ruler.id || isNonSolidShape(candidate) || candidate.hidden) return;
         const match = rulerDimensionMatch(rulerPose, {
           x: candidate.x,
           z: candidate.z,
@@ -1266,7 +1293,7 @@ export function syncCornerRulerToolOverlay(
     // Mehrere markierte Koerper zaehlen zusammen wie einer: gemessen wird
     // ihre gemeinsame Umrissbox, wie beim Abstand zum Nullpunkt.
     const wanted = new Set(selectedIds);
-    const selectedShapes = shapes.filter((s) => wanted.has(s.id) && !s.hidden && !isNonSolidShapeKind(s.kind));
+    const selectedShapes = shapes.filter((s) => wanted.has(s.id) && !s.hidden && !isNonSolidShape(s));
 
     rulers.forEach((ruler) => {
       const armWidth = CORNER_RULER_ARM_WIDTH;
@@ -1356,14 +1383,20 @@ export function syncCornerRulerToolOverlay(
           y: (elevBaseScreen.y + elevTargetScreen.y) / 2,
         };
 
+        // A body at the corner leaves no distance: the three fields would sit on each other and on the ruler's
+        // buttons (#777), so they step aside. Where there is room they stay at the middle of their arrows.
+        const [xFieldPos, zFieldPos, elevationFieldPos] = spreadCornerRulerFields(
+          [xLabelPos, zLabelPos, elevationLabelPos],
+          [{ x: handleScreen.x, y: handleScreen.y + 2, halfWidth: 34, halfHeight: 30 }],
+        );
         selectedCoordinate = {
           shapeIds: selectedShapes.map((shape) => shape.id),
           xValue: coords.x,
           zValue: coords.z,
           elevationValue: coords.elevation,
-          xLabel: { x: xLabelPos.x, y: xLabelPos.y, text: formatMeasure(coords.x, accuracy) },
-          zLabel: { x: zLabelPos.x, y: zLabelPos.y, text: formatMeasure(coords.z, accuracy) },
-          elevationLabel: { x: elevationLabelPos.x, y: elevationLabelPos.y, text: formatMeasure(coords.elevation, accuracy) },
+          xLabel: { x: xFieldPos.x, y: xFieldPos.y, text: formatMeasure(coords.x, accuracy) },
+          zLabel: { x: zFieldPos.x, y: zFieldPos.y, text: formatMeasure(coords.z, accuracy) },
+          elevationLabel: { x: elevationFieldPos.x, y: elevationFieldPos.y, text: formatMeasure(coords.elevation, accuracy) },
         };
         // The numbers' arrows, and the guide lines along the floor to the body (not up in the air at its middle).
         pushSegment(lines.arrows, corner, xEndWorld);
@@ -1379,7 +1412,7 @@ export function syncCornerRulerToolOverlay(
       const flatRotation = cornerRulerFlatRotation(ruler.frame);
       shapes.forEach((candidate) => {
         if (flatRotation === null) return;
-        if (isNonSolidShapeKind(candidate.kind) || candidate.hidden) return;
+        if (isNonSolidShape(candidate) || candidate.hidden) return;
         if (wanted.has(candidate.id)) return;
         const { armX, armZ } = cornerRulerDimensionMatchesFromCorner(
           { x: ruler.corner.x, z: ruler.corner.z },
@@ -1617,6 +1650,7 @@ export function CornerRulerToolOverlay({
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={() => onCoordinateClick(item.id, selected.shapeIds, axis, value, label.x, label.y)}
                     >
+                      <span className="ruler-coordinate-axis" aria-hidden="true">{axisName.toLowerCase()}</span>
                       {label.text}
                     </button>
                   </span>
@@ -1696,19 +1730,7 @@ export function syncOriginDimensionWorldLines(state: ThreeState, frame: OriginDi
     }
     const geometry = new LineSegmentsGeometry();
     geometry.setPositions(points);
-    const material = new LineMaterial({
-      color,
-      linewidth,
-      worldUnits: false,
-      transparent: true,
-      opacity,
-      depthTest: false,
-      depthWrite: false,
-      alphaToCoverage: false,
-    });
-    material.toneMapped = false;
-    const rect = state.renderer.domElement.getBoundingClientRect();
-    material.resolution.set(Math.max(1, rect.width), Math.max(1, rect.height));
+    const material = sharedOverlayLineMaterial(state, { color, linewidth, opacity, depthTest: false });
     const lines = new LineSegments2(geometry, material);
     lines.renderOrder = renderOrder;
     lines.frustumCulled = false;
@@ -1729,16 +1751,7 @@ export function syncOriginDimensionWorldLines(state: ThreeState, frame: OriginDi
         base.x - perpendicular.x, base.y, base.z - perpendicular.z,
       ], 3),
     );
-    const arrowMaterial = new THREE.MeshBasicMaterial({
-      color: solidColor,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 1,
-      depthTest: false,
-      depthWrite: false,
-    });
-    arrowMaterial.toneMapped = false;
-    const arrow = new THREE.Mesh(geometry, arrowMaterial);
+    const arrow = new THREE.Mesh(geometry, sharedOverlayArrowMaterial(solidColor));
     arrow.renderOrder = 1002;
     arrow.frustumCulled = false;
     setObjectRenderLayer(arrow, RENDER_LAYER_HELPERS);

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { placeColoredParts } from "@/lib/coloredImport";
+import { reportedMeshExtent } from "@/lib/importedMeshBase";
 import { createLocalId } from "@/lib/localIds";
 import { zUpToLayerling } from "@/lib/meshCoordinates";
 import type { WorkplaneShape } from "@/types/layerling";
@@ -150,9 +151,9 @@ function importedObjShapeFromTriangles(
   const normals = rawNormals?.length === rawPositions.length
     ? [...rawNormals]
     : generatedFaceNormals(rawPositions);
-  const width = Math.max(1, sizeX);
-  const height = Math.max(1, sizeY);
-  const depth = Math.max(1, sizeZ);
+  const width = reportedMeshExtent(sizeX);
+  const height = reportedMeshExtent(sizeY);
+  const depth = reportedMeshExtent(sizeZ);
 
   return {
     id: createLocalId("uploaded-mesh"),
@@ -255,6 +256,10 @@ function parseObjParts(source: string, materialColors: ReadonlyMap<string, strin
   // `legacyAxes` haelt diese alte Lesart fuer Projekte, die ihr Netz aus der
   // mitgespeicherten Datei neu bauen - sonst kippte dort ein Koerper um.
   const layerlingZUpExport = isLayerlingObj(source) && (legacyAxes || /^#.*\bZ-up\b/m.test(source));
+  // Tinkercad writes its OBJ with Z up and says so in the first line (#599). A project that stored
+  // such a file never rebuilds it from the file (see `importedShapesFromObj`), so `legacyAxes`
+  // leaves it alone.
+  const zUp = layerlingZUpExport || (!legacyAxes && isTinkercadObj(source));
   const vertices: THREE.Vector3[] = [];
   const vertexColors: Array<string | undefined> = [];
   const normals: THREE.Vector3[] = [];
@@ -330,13 +335,13 @@ function parseObjParts(source: string, materialColors: ReadonlyMap<string, strin
         const ref = refs[faceIndex];
         const point = vertices[ref.vertexIndex];
         const position: [number, number, number] = [point.x, point.y, point.z];
-        target.positions.push(...(layerlingZUpExport ? zUpToLayerling(position) : position));
+        target.positions.push(...(zUp ? zUpToLayerling(position) : position));
         if (ref.normalIndex === undefined) {
           target.completeNormals = false;
         } else {
           const normal = normals[ref.normalIndex];
           const sourceNormal: [number, number, number] = [normal.x, normal.y, normal.z];
-          target.normals.push(...(layerlingZUpExport ? zUpToLayerling(sourceNormal) : sourceNormal));
+          target.normals.push(...(zUp ? zUpToLayerling(sourceNormal) : sourceNormal));
         }
       });
       faceCount += 1;
@@ -369,6 +374,10 @@ function partNormals(part: ObjPart) {
  */
 function isLayerlingObj(source: string) {
   return /^# Layerling OBJ export\b/m.test(source);
+}
+
+function isTinkercadObj(source: string) {
+  return /^# Object Export From Tinkercad\b/m.test(source);
 }
 
 export function importedShapeFromObj(fileName: string, source: string, legacyAxes = false): WorkplaneShape {
@@ -407,7 +416,7 @@ export function importedShapesFromObj(fileName: string, source: string, mtlSourc
     const color = parts[0]?.color;
     // Eine eigene OBJ traegt ihr Netz selbst: die .lyl baut OBJ-Quellen in der
     // alten Achsen-Lesart nach (siehe `legacyAxes`).
-    const own = isLayerlingObj(source) ? { ...whole, importedMesh: { ...whole.importedMesh!, sourceFormat: "json" as const } } : whole;
+    const own = isLayerlingObj(source) || isTinkercadObj(source) ? { ...whole, importedMesh: { ...whole.importedMesh!, sourceFormat: "json" as const } } : whole;
     return { shapes: [color ? { ...own, color } : own], split: false, missingMaterialColors, droppedVertexColors };
   }
 

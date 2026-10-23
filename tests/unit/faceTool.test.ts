@@ -136,7 +136,10 @@ describe("face tool", () => {
   });
 
   it("keeps the settings in range", () => {
-    expect(normalizeFaceTool({ inset: -4, radius: -1, depth: 0 })).toEqual({ direction: "out", inset: 0, radius: 0, depth: 0.2 });
+    expect(normalizeFaceTool({ inset: -4, radius: -1, depth: 0 })).toEqual({ direction: "out", inset: 0, radius: 0, depth: 0.2, separate: false });
     expect(normalizeFaceTool({ direction: "in", depth: 5 }).direction).toBe("in");
+    // The switch for a body of its own (#750) only counts when it is exactly true.
+    expect(normalizeFaceTool({ separate: true }).separate).toBe(true);
+    expect(normalizeFaceTool({ separate: "yes" as unknown as boolean }).separate).toBe(false);
   });
 });

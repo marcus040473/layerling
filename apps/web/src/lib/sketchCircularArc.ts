@@ -24,6 +24,15 @@ function bezierPoint(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Poi
  * circle where they cannot on a spline.
  */
 export function circularArcMidpoint(p0: Point, p1: Point, p2: Point, p3: Point): Point | null {
+  return circularArc(p0, p1, p2, p3)?.mid ?? null;
+}
+
+/** The centre of the circle a Bezier curve is an arc of, null for any other curve: where a point snaps to a circle's middle. */
+export function circularArcCenter(p0: Point, p1: Point, p2: Point, p3: Point): Point | null {
+  return circularArc(p0, p1, p2, p3)?.center ?? null;
+}
+
+function circularArc(p0: Point, p1: Point, p2: Point, p3: Point): { mid: Point; center: Point } | null {
   const mid = bezierPoint(p0, p1, p2, p3, 0.5);
   const ax = p0.x - mid.x;
   const az = p0.z - mid.z;
@@ -43,5 +52,5 @@ export function circularArcMidpoint(p0: Point, p1: Point, p2: Point, p3: Point):
     const point = bezierPoint(p0, p1, p2, p3, step / 10);
     if (Math.abs(Math.hypot(point.x - cx, point.z - cz) - radius) > ARC_TOLERANCE * radius) return null;
   }
-  return mid;
+  return { mid, center: { x: cx, z: cz } };
 }

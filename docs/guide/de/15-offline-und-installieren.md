@@ -16,6 +16,8 @@ Auf der Startseite erscheint dafür ein Hinweis mit {{ui:installHint.install}}, 
 
 Den Hinweis auf der Startseite kannst du mit {{ui:installHint.dismiss}} schließen. Startest du die installierte App in Chrome oder Edge ein zweites Mal, holt sie das offene Fenster nach vorn, statt ein weiteres zu öffnen.
 
+Auf einem Computer meldet sich eine installierte App in Chrome oder Edge außerdem als Programm für `.lyl`-Dateien an: Ein Doppelklick auf einen Entwurf im Dateimanager öffnet ihn in layerling, und [[Strg]]+[[S]] speichert wieder in diese Datei. Auf Android geht das nicht, dort bietet der Browser für installierte Web-Apps keine Dateizuordnung; öffne einen Entwurf dort auf der Startseite mit {{ui:dashboard.importGeometry}}.
+
 ## Aktualisierungen
 
 Wenn es eine neuere Fassung gibt, zeigt layerling das auf der Startseite an. Über {{ui:dashboard.updateBannerLink}} liest du nach, was sich geändert hat. Die Versionsnummer steht unten rechts. Nach einem Neuladen der Seite hast du die neue Fassung.
@@ -33,7 +35,7 @@ Die Sprache wählst du oben rechts in der Sprachliste. Das Farbschema daneben bi
 layerling ist freie Software (AGPL-3.0) und lässt sich auf einem eigenen Rechner oder Server betreiben, etwa in der Werkstatt, im Verein oder in der Schule. Dafür gibt es mehrere Wege, die in der [README auf GitHub](https://github.com/henmedia/layerling/blob/main/README.de.md#loslegen) beschrieben sind:
 
 - **Der Schnellstart unter Windows:** Eine einzige Zeile in PowerShell installiert alles und legt eine Verknüpfung auf dem Desktop an. Läuft layerling schon, startet ein weiterer Doppelklick keinen zweiten Server, sondern öffnet nur die Seite.
-- **Docker:** Für NAS-Geräte und Heimserver, ohne dass Node.js installiert sein muss. Jedes Release gibt es als fertiges Image `henmedia/layerling` auf Docker Hub (auch `ghcr.io/henmedia/layerling`) für amd64 und arm64; `docker run -d -p 3000:3000 henmedia/layerling:latest` startet es, auf einem NAS suchst du es in der Registrierung der Container-Verwaltung.
+- **Docker:** Für NAS-Geräte und Heimserver, ohne dass Node.js installiert sein muss. Jedes Release gibt es als fertiges Image `henmedia/layerling` auf Docker Hub (auch `ghcr.io/henmedia/layerling`) für amd64 und arm64; `docker run -d -p 3000:3000 -v layerling-thumbnails:/app/.codex/project-thumbnails henmedia/layerling:latest` startet es, auf einem NAS suchst du es in der Registrierung der Container-Verwaltung. Das Volume `layerling-thumbnails` hält die Vorschaubilder der Startseite über ein Update hinweg; ohne es fehlen sie nach jedem Neuanlegen des Containers, bis du den Entwurf wieder öffnest.
 - **Statischer Export:** Das Ergebnis besteht aus reinen Dateien, die jeder Webserver ausliefern kann. Sie gehören an die Wurzel einer Adresse (`https://layerling.example.com/` oder `http://192.168.0.5:8080/`), nicht in einen Unterordner und nicht von der Festplatte geöffnet; die Schritte stehen in der README. Mit einem beschreibbaren Ordner `store` neben der `index.html` und PHP auf dem Server wird daraus auch die gemeinsame Ablage für Entwürfe.
 
 Die MCP-Brücke für KI-Assistenten gibt es nur beim Entwicklungsserver, siehe [Mit einer KI bauen](chapter:ki-mit-mcp).

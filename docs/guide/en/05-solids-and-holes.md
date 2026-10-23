@@ -42,10 +42,10 @@ A whole group can also be a solid or a hole. A simple rule applies:
 Sometimes parts should only stay together without becoming one - a white logo on a black plate for a multicolour print, say. That is what {{ui:editor.tool.bundle}} ([[Ctrl]]+[[B]]) is for, as in Tinkercad. A bundle moves, turns and resizes like a shape, but nothing is merged:
 
 - Every part keeps its colour and stays a solid or a hole.
-- Holes cut nothing.
+- Holes cut nothing. When you group the bundle with other parts, its holes cut those parts but still not the bundle's own solids, as in Tinkercad. So a peg with its hole beside it, say, can be used again and again as a bundle.
 - In an STL, 3MF or OBJ export every part is a body of its own; in 3MF and OBJ with its colour.
 
-{{ui:editor.tool.ungroup}} ([[Ctrl]]+[[Shift]]+[[G]]) takes a bundle apart again, [[E]] opens it for editing like a group. Chamfer, fillet and hollowing do not work on a bundle, because it is not one body: group it for that, or work on its parts one by one. If a hole in the bundle should cut after all, group the bundle (Ctrl+G).
+{{ui:editor.tool.ungroup}} ([[Ctrl]]+[[Shift]]+[[G]]) takes a bundle apart again, [[E]] opens it for editing like a group. Chamfer, fillet and hollowing do not work on a bundle, because it is not one body: group it for that, or work on its parts one by one. If a hole in the bundle should cut the bundle's own solids too, take the bundle apart and group its parts ([[Ctrl]]+[[G]]).
 
 ## Intersection
 
@@ -67,9 +67,10 @@ A note: fillets and chamfers you had put on the **whole** group are lost on rebu
 
 ## Splitting
 
-{{ui:editor.tool.split}} in the {{ui:editor.group.modify}} area cuts the selection in two with a plane - a part too big for the print bed, say, or one you want to see the inside of. Select one or more solids or holes and click it. A translucent plane shows exactly where the cut will go; nothing changes until you apply it.
+{{ui:editor.tool.split}} in the {{ui:editor.group.modify}} area cuts the selection in two with a plane - a part too big for the print bed, say, or one you want to see the inside of. Select one or more solids or holes and click it. A translucent plane shows exactly where the cut will go, and a white line marks it on the bodies themselves, where the plane meets them; nothing changes until you apply it.
 
-- {{ui:split.orientation}}: **X** makes an upright cut between left and right, **Y** between front and back, **Z** a horizontal cut between top and bottom. The axes are named as on the Position card, with Z up; Z is where the plane starts.
+- {{ui:split.orientation}}: **X** makes an upright cut between left and right, **Y** between front and back, **Z** a horizontal cut between top and bottom. The axes are named as on the Position card, with Z up. The plane starts parallel to the workplane, so on the base plate with Z.
+- {{ui:split.workplane}}: {{ui:split.workplaneParallel}} lays the plane parallel to the workplane, {{ui:split.workplaneAcrossX}} and {{ui:split.workplaneAcrossY}} stand it square to it, across its X or Y direction. Where the workplane's origin crosses the selection the plane goes through it, otherwise through the middle. So you put the workplane on a sloped face with [[W]] and cut right there, without turning the sliders.
 - {{ui:split.position}}: where the plane crosses, with the slider or typed in. It starts in the middle. You can also drag the arrow head on the plane; the plane moves along the arrow in 0.1 mm steps.
 - {{ui:split.pickFace}}, the button next to the position, lays the plane on a face: click it, then click the face. Orientation, both rotations and position are set to match. While you pick, a blue plane under the pointer shows the face it will take. A face of a body that is not selected works too, to line the cut up with it, but the plane stays within the selection. [[Esc]] stops picking and leaves the plane where it was.
 - The two rotation sliders below turn the plane about the other two axes, up to 180° either way, for an angled cut. They can be combined.

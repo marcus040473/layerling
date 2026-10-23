@@ -17,7 +17,10 @@ Die App läuft standardmäßig unter `http://127.0.0.1:3000/`.
 
 - Halte Änderungen auf ein Thema begrenzt.
 - Vermeide Umbauten, die nichts damit zu tun haben.
-- Führe `npm run typecheck` aus.
+- Führe `npm run typecheck` und `npm test` (die Unit-Tests) aus. Die CI prüft beides, danach `npm run test:e2e`, den
+  Produktions-Build und den statischen Export, und schlägt fehl, wenn ein Build-Schritt eine eingecheckte Datei geändert hat.
+- Texte der Oberfläche oder der Anleitung geändert: Führe `npm run guide` und `npm run i18n:status` aus. Eine Farbe in
+  `globals.css` geändert: Führe `npm run theme:graphite` aus (ein Test schlägt fehl, solange das Graphit-Design veraltet ist).
 - Teste den Editor-Ablauf, den du geändert hast, von Hand.
 - Füge bei Änderungen an der Oberfläche nach Möglichkeit Bildschirmfotos oder kurze Aufnahmen bei.
 - Weise auf Änderungen an Speicherung, Import, Export, Gruppierung oder Rückgängig/Wiederholen ausdrücklich hin.

@@ -49,6 +49,13 @@ describe("keyboard nudge step", () => {
     expect(keyboardNudgeStep("1.0 mm", true)).toBe(5);
   });
 
+  it("Alt moves a fifth of the step, and Shift wins when both are held (#749)", () => {
+    expect(keyboardNudgeStep("1.0 mm", false, 5, true)).toBeCloseTo(0.2, 10);
+    expect(keyboardNudgeStep("5.0 mm", false, 10, true)).toBeCloseTo(1, 10);
+    expect(keyboardNudgeStep("Off", false, 5, true)).toBeCloseTo(0.002, 10);
+    expect(keyboardNudgeStep("1.0 mm", true, 5, true)).toBe(5);
+  });
+
   it("keeps Shift a coarser step of the same grid", () => {
     for (const size of ALL_SIZES) {
       expect(keyboardNudgeStep(size, true)).toBeCloseTo(

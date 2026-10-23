@@ -1,5 +1,5 @@
 import { sketchPrimitiveGeometry } from "@/lib/sketchPrimitives";
-import type { SketchPoint, SketchProfile, SketchSegment } from "@/types/layerling";
+import type { SketchPoint, SketchProfile, SketchSegment, SweepAnchor } from "@/types/layerling";
 
 /*
  * A sketch for a sweep (#400) put together from numbers, for the MCP bridge: the path as a chain of
@@ -21,6 +21,8 @@ export type SweepSketchRequest = {
   path: ReadonlyArray<{ x: number; z: number }>;
   closed?: boolean;
   section: SweepSectionRequest;
+  /** Which part of the section runs along the path; the middle when left out (#732). */
+  anchor?: SweepAnchor;
 };
 
 const MAX_SIZE = 1000;
@@ -38,6 +40,13 @@ export function sweepPathFromParams(value: unknown): Array<{ x: number; z: numbe
     if (typeof point.x !== "number" || typeof point.z !== "number" || !Number.isFinite(point.x) || !Number.isFinite(point.z)) throw new Error("every path point needs numbers x and z");
     return { x: point.x, z: point.z };
   });
+}
+
+/** Which part of the section runs along the path: left, center (the default) or right, or an error sentence. */
+export function sweepAnchorFromParams(value: unknown): SweepAnchor {
+  if (value === undefined || value === null) return "center";
+  if (value === "left" || value === "center" || value === "right") return value;
+  throw new Error("anchor must be left, center or right");
 }
 
 export function sweepSectionFromParams(value: unknown): SweepSectionRequest {
@@ -92,5 +101,5 @@ export function sweepSketchProfile(request: SweepSketchRequest, makeId: (prefix:
   for (let index = 0; index < count; index += 1) {
     segments.push({ id: makeId("sweep-path-segment"), startId: pathPoints[index].id, endId: pathPoints[(index + 1) % pathPoints.length].id, kind: "line", construction: true });
   }
-  return { points, segments, images: [] };
+  return { points, segments, images: [], ...(request.anchor && request.anchor !== "center" ? { sweepAnchor: request.anchor } : {}) };
 }

@@ -4,6 +4,7 @@ import { CircleHelp } from "lucide-react";
 import { guideHref, type GuideChapter, type GuideSection } from "@/lib/guideLinks";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
+import { useSimpleMode } from "@/lib/useSimpleMode";
 
 /**
  * A small question mark that opens the chapter of the user guide about
@@ -13,6 +14,8 @@ import { useLanguage } from "@/lib/useLanguage";
  */
 export function GuideHelpLink({ chapter, section, className = "", iconSize = 18, strokeWidth = 2 }: { chapter?: GuideChapter; section?: GuideSection; className?: string; iconSize?: number; strokeWidth?: number }) {
   const language = useLanguage();
+  // The guide leads out of the program, to chapters with videos and links (#695).
+  if (useSimpleMode()) return null;
   return (
     <a
       className={`guide-help-link ${className}`.trim()}

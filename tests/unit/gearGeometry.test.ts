@@ -59,7 +59,8 @@ describe("gear geometry", () => {
 
   it("normalizes editable gear settings to supported values", () => {
     expect(normalizeGearTeeth(2)).toBe(6);
-    expect(normalizeGearTeeth(200)).toBe(64);
+    expect(normalizeGearTeeth(500)).toBe(500);
+    expect(normalizeGearTeeth(600)).toBe(500);
     expect(normalizeGearToothSize(20, 30, 20)).toBe(4.4);
     expect(gearSettings({ width: 30, depth: 30, teeth: 20, toothSize: 3, toothWidth: 2.4, centerHoleSize: 7, gearType: "bevel", helixAngle: -30, helixQuality: 24 })).toEqual({
       teeth: 20,

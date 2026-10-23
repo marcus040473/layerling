@@ -29,7 +29,7 @@ describe("round gear teeth (#201)", () => {
   });
 
   it("puts tip and root where the involute has them and runs every arc into the next", () => {
-    for (const teeth of [6, 8, 12, 20, 40, 64]) {
+    for (const teeth of [6, 8, 12, 20, 40, 64, 150]) {
       for (const backlash of [0, 0.2, 0.6]) {
         const module = 1.5;
         const diameter = involuteGearDiameter(module, teeth, "round");
@@ -65,7 +65,7 @@ describe("round gear teeth (#201)", () => {
   });
 
   it("makes the tooth half a pitch thick on the pitch circle, less half the backlash", () => {
-    for (const teeth of [6, 8, 16, 32, 64]) {
+    for (const teeth of [6, 8, 16, 32, 64, 150]) {
       for (const backlash of [0, 0.2, 0.5]) {
         const module = 2;
         const diameter = involuteGearDiameter(module, teeth, "round");
@@ -94,7 +94,7 @@ describe("round gear teeth (#201)", () => {
   });
 
   it("draws the outline without a bulge: its angle keeps rising, for every tooth count", () => {
-    for (const teeth of [6, 7, 12, 30, 64]) {
+    for (const teeth of [6, 7, 12, 30, 64, 150]) {
       for (const backlash of [0, 0.2, 0.5]) {
         const diameter = involuteGearDiameter(2, teeth, "round");
         const corners = gearOutlineCorners(diameter, diameter, { teeth, gearProfile: "round", gearBacklash: backlash });

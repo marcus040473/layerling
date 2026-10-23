@@ -41,6 +41,26 @@ describe("the outline of a body under a sketch (#596)", () => {
     expect(plain.map(([x, z]) => `${x.toFixed(1)},${z.toFixed(1)}`).sort().join("|")).not.toBe(turned.map(([x, z]) => `${x.toFixed(1)},${z.toFixed(1)}`).sort().join("|"));
   });
 
+  it("shows a group by the outlines of its parts, not as a box (#778)", () => {
+    // A thin round plate under a smaller hexagon, grouped: the box of the group would be 40 x 40.
+    const group = shape({
+      kind: "mesh", x: 0, z: 0, width: 40, depth: 40, height: 14,
+      groupedShapes: [
+        shape({ id: "plate", kind: "cylinder", x: 0, z: 0, width: 40, depth: 40, height: 4 }),
+        shape({ id: "hex", kind: "polygon", sides: 6, x: 0, z: 0, elevation: 4, width: 12, depth: 12, height: 10 }),
+      ],
+    });
+    const footprint = shapeMeshFootprint(group);
+    expect(footprint?.world).toBe(true);
+    const points = corners(footprint?.outlineD ?? null);
+    // The plate is round: far more than four corners, and none of them on the box's corner (20, 20).
+    expect(points.length).toBeGreaterThan(40);
+    expect(points.some(([x, z]) => Math.abs(x - 20) < 0.5 && Math.abs(z - 20) < 0.5)).toBe(false);
+    // Both parts are in it: the plate reaches 20 from the middle, the hexagon's corners stay within 6.5.
+    expect(Math.max(...points.map(([x]) => Math.abs(x)))).toBeGreaterThan(19);
+    expect(points.some(([x, z]) => Math.hypot(x, z) < 6.5)).toBe(true);
+  });
+
   it("leaves boxes and round shapes to the cheaper drawing", () => {
     expect(shapeMeshFootprint(shape({ kind: "box" }))).toBeNull();
     expect(shapeMeshFootprint(shape({ kind: "cylinder" }))).toBeNull();

@@ -130,6 +130,9 @@ export function cadTransformRequiresGeneralTransform(transform: number[]) {
 export const CAD_MODIFIER_KERNEL_RESTART_MESSAGE =
   "The CAD kernel ran out of room and was restarted. Wait a moment, then start the edge tool again; no page refresh is needed.";
 
+/** The kernel rounds one edge at a time with a radius that changes along it (#687). */
+export const VARIABLE_FILLET_ONE_EDGE_MESSAGE = "A variable radius works on one edge at a time";
+
 /**
  * Eine Ausnahme aus dem WebAssembly heraus heisst: nicht dieser eine Aufruf ist
  * schiefgegangen, sondern der Kernel selbst kann nicht mehr. Ein gescheitertes
@@ -312,6 +315,9 @@ export function cadModifierUserErrorMessage(rawError: string | null | undefined)
   }
   if (rawError.includes("The edge preview timed out")) {
     return t("edge.errorPreviewTimeout");
+  }
+  if (rawError.includes(VARIABLE_FILLET_ONE_EDGE_MESSAGE)) {
+    return t("edge.variableOneEdge");
   }
   if (
     rawError.includes("The CAD worker could not start") ||

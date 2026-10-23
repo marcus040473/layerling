@@ -30,6 +30,16 @@ export type ArraySettings = {
   radiusChange: number;
 };
 
+/**
+ * The settings with the circle centre moved to the pivot (scene x and z), or the same object when it already sits
+ * there: a pivot dragged to a new place moves the pattern's circle with it (#638).
+ */
+export function arrayFollowingPivot(settings: ArraySettings, pivot: { x: number; z: number }): ArraySettings {
+  const centerX = pivot.x;
+  const centerY = -pivot.z;
+  return settings.centerX === centerX && settings.centerY === centerY ? settings : { ...settings, centerX, centerY };
+}
+
 export const ARRAY_MIN_COUNT = 2;
 export const ARRAY_MAX_COUNT = 100;
 

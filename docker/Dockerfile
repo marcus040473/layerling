@@ -27,6 +27,11 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/apps/web/.next ./apps/web/.next
 COPY --from=builder /app/apps/web/public ./apps/web/public
 
+# The start page keeps the preview pictures of the designs here; the folder must belong to the user the
+# server runs as, or every picture is refused and the cards stay on "No preview yet".
+RUN mkdir -p /app/.codex/project-thumbnails \
+  && chown -R nextjs:nodejs /app/.codex
+
 USER nextjs
 EXPOSE 3000
 

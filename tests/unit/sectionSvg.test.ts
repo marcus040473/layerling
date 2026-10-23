@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
-import { loopArea, projectSectionPoint, sectionSvgDocument, sliceMeshContours, type SectionMesh } from "@/lib/sectionSvg";
+import { footprintCutOffset, FOOTPRINT_CUT_HEIGHT, loopArea, projectSectionPoint, sectionSvgDocument, sliceMeshContours, type SectionMesh } from "@/lib/sectionSvg";
 
 /** Ein three.js-Koerper als Netz, wie der Export es liefert: Ecken je Dreieck, ungeschweisst. */
 function meshFromGeometry(geometry: THREE.BufferGeometry): SectionMesh {
@@ -123,5 +123,37 @@ describe("sectionSvgDocument", () => {
 
   it("returns nothing when no body is cut", () => {
     expect(sectionSvgDocument([{ name: "Leer", color: "#000", loops: [] }], "x", 0, "Leer")).toBeNull();
+  });
+});
+
+describe("footprintCutOffset (#692)", () => {
+  it("cuts a hair above the lowest point, so only the footprint is drawn, not the wider top", () => {
+    // A cup standing on y = 2: 5 mm radius at the bottom, 10 mm at the top.
+    const geometry = new THREE.CylinderGeometry(10, 5, 10, 64);
+    geometry.translate(0, 7, 0);
+    const cup = meshFromGeometry(geometry);
+    const offset = footprintCutOffset([cup]);
+    expect(offset).toBeCloseTo(2 + FOOTPRINT_CUT_HEIGHT, 6);
+    const [area] = closedAreas(cup, "y", offset ?? 0);
+    expect(area).toBeGreaterThan(Math.PI * 25 * 0.98);
+    expect(area).toBeLessThan(Math.PI * 25 * 1.02);
+  });
+
+  it("cuts at the workplane when a part reaches below it, so what stands on it is drawn (#727)", () => {
+    // A 20 mm cube on the workplane, and a bar tilted so that it goes 2.5 mm below it.
+    const cube = new THREE.BoxGeometry(20, 20, 20);
+    cube.translate(0, 10, 0);
+    const bar = new THREE.BoxGeometry(21, 7, 20);
+    bar.rotateZ(Math.PI / 4);
+    bar.translate(30, 3, 0);
+    const meshes = [meshFromGeometry(cube), meshFromGeometry(bar)];
+    const offset = footprintCutOffset(meshes);
+    expect(offset).toBeCloseTo(FOOTPRINT_CUT_HEIGHT, 6);
+    expect(closedAreas(meshes[0]!, "y", offset ?? 0)[0]).toBeCloseTo(400, 0);
+    expect(closedAreas(meshes[1]!, "y", offset ?? 0).length).toBeGreaterThan(0);
+  });
+
+  it("has nothing to cut without bodies", () => {
+    expect(footprintCutOffset([])).toBeNull();
   });
 });

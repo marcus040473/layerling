@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ShapeAsset } from "@/types/layerling";
-import { makeShapeFromAsset, parseDroppedShapeAsset, sceneShape, toolbarShapeAssets } from "@/lib/shapeCatalog";
+import { clipboardShape, makeShapeFromAsset, parseDroppedShapeAsset, sceneShape, shapeAssetColor, toolbarShapeAssets } from "@/lib/shapeCatalog";
 
 describe("shape catalog", () => {
   it("exposes roundedBox directly after box in the toolbar catalog", () => {
@@ -300,5 +300,47 @@ describe("dragging from the shape library", () => {
     expect(parseDroppedShapeAsset("not json")).toBeNull();
     expect(parseDroppedShapeAsset(JSON.stringify({ ...toolbarShapeAssets[0], kind: "nonsense" }))).toBeNull();
     expect(parseDroppedShapeAsset(JSON.stringify({ ...toolbarShapeAssets[0], hole: "yes" }))).toBeNull();
+  });
+});
+
+describe("clipboardShape (#642)", () => {
+  it("keeps what sceneShape does not name: see-through, mirroring, edges, twist", () => {
+    const copied = sceneShape({ id: "a", name: "Box", kind: "box", color: "#d41721", width: 20, depth: 20, height: 10 });
+    const withExtras = {
+      ...copied,
+      transparent: true,
+      mirrorX: true,
+      extrudeTwist: 15,
+      edgeTreatments: [{ id: "e1", kind: "fillet", amount: 2, edges: ["top"] }],
+    };
+    // Through the text the other design reads from local storage.
+    const pasted = clipboardShape(JSON.parse(JSON.stringify(withExtras)));
+    expect(pasted?.transparent).toBe(true);
+    expect(pasted?.mirrorX).toBe(true);
+    expect(pasted?.extrudeTwist).toBe(15);
+    expect(pasted?.edgeTreatments).toEqual(withExtras.edgeTreatments);
+    expect(pasted?.width).toBe(20);
+  });
+
+  it("fills the defaults of a sparse copy and refuses what is no shape", () => {
+    const pasted = clipboardShape({ name: "Box", kind: "box", color: "#fff" });
+    expect(pasted?.height).toBe(20);
+    expect(pasted?.elevation).toBe(0);
+    expect(clipboardShape({ name: "Box", kind: "box" })).toBeNull();
+    expect(clipboardShape("box")).toBeNull();
+  });
+});
+
+describe("the colour the library shows", () => {
+  const box = toolbarShapeAssets.find((asset) => asset.id === "box")!;
+
+  it("is the asset's own until the shape defaults name another", () => {
+    expect(shapeAssetColor(box)).toBe(box.color);
+    expect(shapeAssetColor(box, { color: "#123456" })).toBe("#123456");
+  });
+
+  it("is the same colour the shape is added in", () => {
+    expect(makeShapeFromAsset(box).color).toBe(box.color);
+    expect(makeShapeFromAsset(box, undefined, { color: "#123456" }).color).toBe("#123456");
   });
 });

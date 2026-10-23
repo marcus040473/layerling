@@ -6,8 +6,8 @@ import { normalizeTextEdge, textEdgeLevels, textHasEdge } from "@/lib/textEdge";
 import { loftedTextEdge } from "@/lib/textEdgeLoft";
 import { loadedManifoldRuntime, requestManifoldRuntime } from "@/lib/manifoldHandle";
 import { normalizeSketchStroke, strokeRegion, type Keep } from "@/lib/sketchStroke";
-import { createTextGeometry, keyringEarRadius, textGlyphShapes, textKeyringCenter, textKeyringOf, textLetterOffset } from "@/lib/textGeometry";
-import type { TextEdge, TextKeyringSide, WorkplaneShape } from "@/types/layerling";
+import { createTextGeometry, freeKeyringStrip, keyringBandCenter, keyringEarRadius, textGlyphShapes, textKeyringCenter, textKeyringOf, textLetterOffset } from "@/lib/textGeometry";
+import type { TextKeyringSide, WorkplaneShape } from "@/types/layerling";
 
 /**
  * Fill modes for the Text shape (#215, as similar tools's): instead of the filled letters, a line
@@ -92,23 +92,23 @@ function textRegion(runtime: ManifoldToplevel, keep: Keep, shape: WorkplaneShape
   }).filter((letter): letter is CrossSection => Boolean(letter));
   if (!letters.length) return null;
   const region = keep(runtime.CrossSection.union(letters));
-  return stroke ? strokeRegion(runtime, keep, region, stroke) : region;
+  return stroke ? strokeRegion(keep, region, stroke) : region;
 }
 
 /**
  * How far the text's outline - the letters with the fill's line or widening, no key ring -
  * reaches towards a side, from the middle of the letters, within `halfBand` either side of the
- * line through that middle (#215): where a key ring tab's flat end meets the plate. Null when
- * none of the outline is in the band.
+ * line through that middle (#215), or `shift` mm along the side off it (#671): where a key ring
+ * tab's flat end meets the plate. Null when none of the outline is in the band.
  */
-export function textOutlineReach(runtime: ManifoldToplevel, shape: WorkplaneShape, side: TextKeyringSide, halfBand: number): number | null {
+export function textOutlineReach(runtime: ManifoldToplevel, shape: WorkplaneShape, side: TextKeyringSide, halfBand: number, shift = 0): number | null {
   const made: CrossSection[] = [];
   const keep: Keep = (section) => {
     made.push(section);
     return section;
   };
   try {
-    const near = outlineInBand(runtime, keep, shape, side, halfBand);
+    const near = outlineInBand(runtime, keep, shape, side, halfBand, shift);
     if (!near) return null;
     const middle = textLetterOffset(shape);
     const reach = near.bounds();
@@ -119,12 +119,12 @@ export function textOutlineReach(runtime: ManifoldToplevel, shape: WorkplaneShap
   }
 }
 
-/** The text's outline, no key ring, within `halfBand` either side of the line through the letters' middle towards a side; null when empty. */
-function outlineInBand(runtime: ManifoldToplevel, keep: Keep, shape: WorkplaneShape, side: TextKeyringSide, halfBand: number): CrossSection | null {
+/** The text's outline, no key ring, within `halfBand` either side of the line through the letters' middle (moved `shift` along the side) towards a side; null when empty. */
+function outlineInBand(runtime: ManifoldToplevel, keep: Keep, shape: WorkplaneShape, side: TextKeyringSide, halfBand: number, shift: number): CrossSection | null {
   const region = textRegion(runtime, keep, shape);
   if (!region || region.isEmpty()) return null;
   const { min, max } = region.bounds();
-  const middle = textLetterOffset(shape);
+  const middle = keyringBandCenter(textLetterOffset(shape), side, shift);
   const [x0, z0, x1, z1] = side === "top" ? [middle.x - halfBand, min[1], middle.x + halfBand, max[1]] : [min[0], middle.z - halfBand, max[0], middle.z + halfBand];
   const band = keep(new runtime.CrossSection([[[x0, z0], [x1, z0], [x1, z1], [x0, z1]]], "Positive"));
   const near = keep(region.intersect(band));
@@ -135,23 +135,25 @@ function outlineInBand(runtime: ManifoldToplevel, keep: Keep, shape: WorkplaneSh
  * Where a key ring hole's middle (#215) stands `clearance` clear of the text's outline - the
  * letters with the fill's line or widening, no key ring - on the line through the letters'
  * middle towards a side: its distance from that middle. Only the outline within `halfBand`
- * either side of that line counts, the band the tab runs in. Null when none of it is there.
+ * either side of that line counts, the band the tab runs in. The line can be moved `shift` mm
+ * along the side (#671). Null when none of it is there.
  */
-export function textOutlineClearance(runtime: ManifoldToplevel, shape: WorkplaneShape, side: TextKeyringSide, halfBand: number, clearance: number): number | null {
+export function textOutlineClearance(runtime: ManifoldToplevel, shape: WorkplaneShape, side: TextKeyringSide, halfBand: number, clearance: number, shift = 0): number | null {
   const made: CrossSection[] = [];
   const keep: Keep = (section) => {
     made.push(section);
     return section;
   };
   try {
-    const near = outlineInBand(runtime, keep, shape, side, halfBand);
+    const near = outlineInBand(runtime, keep, shape, side, halfBand, shift);
     if (!near) return null;
     const middle = textLetterOffset(shape);
+    const line = keyringBandCenter(middle, side, shift);
     const top = side === "top";
     // Along the side (s, outwards) and across it (v), from the letters' middle; seen from above
     // the letters read along +x with their tops towards -z.
     const along = ([x, z]: readonly number[]) => (side === "right" ? x - middle.x : side === "left" ? middle.x - x : middle.z - z);
-    const across = ([x, z]: readonly number[]) => (top ? x - middle.x : z - middle.z);
+    const across = ([x, z]: readonly number[]) => (top ? x - line.x : z - line.z);
     // A point of the outline at (s, v) keeps the middle clear from s + sqrt(c² - v²) on; the
     // furthest such place over the outline's edges is where the middle goes. Along an edge that
     // is a concave function, so a ternary search finds its top.
@@ -214,7 +216,7 @@ function withKeyringHole(runtime: ManifoldToplevel, keep: Keep, shape: Workplane
 
 /**
  * The ear of a key ring hole (#215), on the bottom layer: a straight-sided tab sticking straight
- * out from the middle of its side, as wide as the hole and a 1.75 mm wall either side, its far
+ * out from the middle of its side (or where `along` moved it, #671), as wide as the hole and a 1.75 mm wall either side, its far
  * end a half circle round the hole. Inwards the tab runs on until it overlaps the outline by half its width, wherever the
  * letters end on that side, so the two are one piece; outside the plate it stays a clean tab.
  */
@@ -224,6 +226,11 @@ function withKeyringEar(runtime: ManifoldToplevel, keep: Keep, shape: WorkplaneS
   if (!keyring || !center) return filled;
   const disc = (radius: number) => keyringDisc(runtime, keep, center, radius);
   let outline = filled;
+  if (keyring.ear && keyring.free) {
+    // A free ear (#598) is drawn as it was placed: the disc round the hole and the strip towards the tag.
+    const strip = keep(new runtime.CrossSection([freeKeyringStrip(center, keyring.diameter, keyring.free)], "Positive"));
+    return keep(keep(filled.add(strip)).add(disc(keyringEarRadius(keyring.diameter))));
+  }
   if (keyring.ear && !filled.isEmpty()) {
     const radius = keyringEarRadius(keyring.diameter);
     const rectangle = (x0: number, z0: number, x1: number, z1: number) => keep(new runtime.CrossSection([[

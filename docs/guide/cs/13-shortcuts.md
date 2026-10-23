@@ -7,6 +7,8 @@ Zkratky fungují, když je aktivní pracovní plocha. Při psaní do textového 
 
 Stejný seznam otevřete v editoru pomocí {{ui:editor.keyboardShortcuts}} v části {{ui:editor.group.help}}. Tlačítko tiskárny v okně ({{ui:shortcuts.print}}) vytiskne samotný seznam černě na bílém a velkým písmem; dialog tisku v prohlížeči nabízí i uložení do PDF.
 
+Pole nahoře v okně prohledává seznam: ponechá jen zkratky, v jejichž větě, skupině nebo klávesách se vyskytuje každé napsané slovo, takže "ctrl+z" ponechá jen tyto řádky. Na velikosti písmen a diakritice nezáleží a jediné písmeno nebo číslice najde tuto klávesu a slova, která jím začínají. Křížek X na konci pole ho vymaže; s prázdným polem je zpět celý seznam. Tlačítko tiskárny tiskne to, co okno ukazuje, takže po hledání vytiskne jen nalezené zkratky.
+
 ![Okno klávesových zkratek v editoru.](shot:shortcuts)
 
 ## Vyhledávání příkazů

@@ -65,7 +65,7 @@ export async function statusOfAll() {
   const rows = [];
   for (const language of languages) {
     if (language === "en") continue;
-    const catalogue = await load(`messages.${language}.ts`, `MESSAGES_${language.toUpperCase()}`);
+    const catalogue = await load(`messages.${language}.ts`, `MESSAGES_${language.toUpperCase().replace(/-/g, "_")}`);
     const analysis = analyseCatalogue(english, catalogue);
     const guide = await analyseGuide(language);
     const problems = [];

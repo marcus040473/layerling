@@ -559,7 +559,7 @@ function boundsOf(positions: number[], count: number, transform?: (point: Vec3) 
 
 /**
  * Size of the body exactly as the parameters describe it. These become the
- * shape's width, depth and height whenever a bent-tube parameter changes.
+ * shape's width, depth and height when it is made; a changed parameter keeps a stretch the handles gave it.
  */
 export function bentTubeNaturalDimensions(shape: BentTubeShapeFields) {
   const mesh = buildBentTubeMesh(bentTubeSettings(shape));
@@ -747,15 +747,24 @@ function startOffset(shape: Placement & BentTubeShapeFields, fitted: { width: nu
 export function bentTubeParameterPatch(shape: Placement & BentTubeShapeFields, changes: BentTubeShapeFields): Partial<WorkplaneShape> {
   const current = normalizedBentTubeFields(shape);
   const nextFields = normalizedBentTubeFields({ ...current, ...changes });
+  const naturalNow = bentTubeNaturalDimensions(current);
   const natural = bentTubeNaturalDimensions(nextFields);
+  // A tube pulled larger or smaller by its handles keeps that stretch: the new size is the new natural size by the
+  // factor it had before, so changing the inner profile or the wall does not put it back to its natural size (#737).
+  const stretch = (now: number, natural0: number) => (now > 0 && natural0 > 0 && Number.isFinite(now / natural0) ? now / natural0 : 1);
+  const stretched = {
+    width: natural.width * stretch(shape.width, naturalNow.width),
+    depth: natural.depth * stretch(shape.depth, naturalNow.depth),
+    height: natural.height * stretch(shape.height, naturalNow.height),
+  };
   const before = startOffset(shape, { width: shape.width, depth: shape.depth, height: shape.height });
-  const after = startOffset({ ...shape, ...nextFields }, natural);
+  const after = startOffset({ ...shape, ...nextFields }, stretched);
   return {
     ...nextFields,
-    width: natural.width,
-    depth: natural.depth,
-    height: natural.height,
-    size: natural.size,
+    width: stretched.width,
+    depth: stretched.depth,
+    height: stretched.height,
+    size: Math.max(stretched.width, stretched.depth),
     x: shape.x + before[0] - after[0],
     z: shape.z + before[2] - after[2],
   };

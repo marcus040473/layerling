@@ -233,7 +233,8 @@ describe("G pipe thread series (ISO 228-1)", () => {
     // dazwischen behaelt die Steigung des naechsten Schraubengewindes.
     expect(defaultThreadPitch(9)).toBeCloseTo(25.4 / 16, 9);
     expect(defaultThreadPitch(13)).toBeCloseTo(25.4 / 13, 9);
-    expect(defaultThreadPitch(21)).toBeCloseTo(25.4 / 10, 9);
+    // Since M14 to M24 are in the list (#659), 21 mm lies between M20 and M22, nearer than 3/4".
+    expect(defaultThreadPitch(21)).toBe(2.5);
     expect(defaultThreadPitch(33)).toBeCloseTo(25.4 / 8, 9);
     expect(defaultThreadPitch(8)).toBe(1.25);
     expect(threadUsesInchPitch(21)).toBe(false);

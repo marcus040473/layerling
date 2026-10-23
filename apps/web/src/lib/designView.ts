@@ -53,3 +53,53 @@ export function writeDesignView(projectId: string | null | undefined, view: Desi
     // Without storage the design simply opens in the standard view, as it always did.
   }
 }
+
+/**
+ * Four views a design keeps on request, under the keys 7, 8, 9 and 0: Shift and the key saves the
+ * view, the key alone goes back to it. Kept like the design's own view - per design, beside it in
+ * the browser and in a `.lyl` file -, never in the undo history.
+ */
+export const SAVED_VIEW_KEYS = ["7", "8", "9", "0"] as const;
+export type SavedDesignViews = (DesignView | null)[];
+
+const SAVED_VIEWS_STORAGE_PREFIX = "layerling.savedViews.";
+
+/** The four slots read from storage or a file, or null when none holds a view. */
+export function normalizeSavedViews(value: unknown): SavedDesignViews | null {
+  if (!Array.isArray(value)) return null;
+  const views = SAVED_VIEW_KEYS.map((_, slot) => normalizeDesignView(value[slot]));
+  return views.some(Boolean) ? views : null;
+}
+
+export function readSavedViews(projectId: string | null | undefined): SavedDesignViews {
+  const empty = SAVED_VIEW_KEYS.map(() => null);
+  if (!projectId) return empty;
+  try {
+    const stored = window.localStorage.getItem(SAVED_VIEWS_STORAGE_PREFIX + projectId);
+    return (stored ? normalizeSavedViews(JSON.parse(stored)) : null) ?? empty;
+  } catch {
+    return empty;
+  }
+}
+
+export function writeSavedViews(projectId: string | null | undefined, views: SavedDesignViews | null) {
+  if (!projectId) return;
+  try {
+    const kept = normalizeSavedViews(views);
+    if (kept) window.localStorage.setItem(SAVED_VIEWS_STORAGE_PREFIX + projectId, JSON.stringify(kept));
+    else window.localStorage.removeItem(SAVED_VIEWS_STORAGE_PREFIX + projectId);
+  } catch {
+    // Without storage a saved view lasts until the design is left.
+  }
+}
+
+/**
+ * The slot a key press names, and whether it saves (Shift) or goes back. The key's position
+ * (`Digit7`) counts too, because Shift turns the digit into "/" and the like, and on some layouts
+ * the digit itself needs Shift.
+ */
+export function savedViewForKey(key: string, code: string, shiftKey: boolean): { slot: number; save: boolean } | undefined {
+  const keys: readonly string[] = SAVED_VIEW_KEYS;
+  const slot = keys.indexOf(keys.includes(key) ? key : (/^Digit([0-9])$/.exec(code)?.[1] ?? ""));
+  return slot < 0 ? undefined : { slot, save: shiftKey };
+}

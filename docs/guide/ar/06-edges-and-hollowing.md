@@ -58,7 +58,7 @@ summary: الشطف والتنعيم على حواف مختارة، وجدران
 
 1. حدد الجسم وانقر على {{ui:editor.tool.hollow}}، أو انقر بالزر الأيمن على الجسم واختره من القائمة.
 2. اضبط {{ui:shell.wall}}.
-3. تحت {{ui:shell.openings}}، شغّل الجوانب التي تبقى مفتوحة: {{ui:shell.side.top}} أو {{ui:shell.side.bottom}} أو {{ui:shell.side.front}} أو {{ui:shell.side.back}} أو {{ui:shell.side.left}} أو {{ui:shell.side.right}}، بقدر ما تشاء - {{ui:shell.side.front}} وحده يصنع فتحة لدرج، و{{ui:shell.side.left}} مع {{ui:shell.side.right}} نفقًا. وإذا لم تشغّل أي جانب، يبقى الجسم مغلقًا من كل الجهات، وفي وسطه تجويف.
+3. تحت {{ui:shell.openings}}، شغّل الجوانب التي تبقى مفتوحة: {{ui:shell.side.top}} أو {{ui:shell.side.bottom}} أو {{ui:shell.side.front}} أو {{ui:shell.side.back}} أو {{ui:shell.side.left}} أو {{ui:shell.side.right}}، بقدر ما تشاء - {{ui:shell.side.front}} وحده يصنع فتحة لدرج، و{{ui:shell.side.left}} مع {{ui:shell.side.right}} نفقًا. وإذا لم تشغّل أي جانب، يبقى الجسم مغلقًا من كل الجهات، وفي وسطه تجويف. يطفئ {{ui:shell.side.closed}} كل الجوانب بنقرة واحدة. يكون {{ui:shell.side.top}} مفعّلًا عند فتح اللوحة؛ والنقر عليه يغلق الجهة العليا من جديد. الجسم المغلق من كل الجهات يبدو من الخارج دون تغيير: يُظهر عرض المقطع التجويف.
 4. قرر ما إذا كانت {{ui:shell.edges}} يجب أن تكون {{ui:shell.edges.round}} أو {{ui:shell.edges.sharp}}.
 5. انقر على {{ui:shell.apply}}.
 

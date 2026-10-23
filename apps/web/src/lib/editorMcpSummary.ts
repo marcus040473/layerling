@@ -32,6 +32,8 @@ export function debugShapeSummary(shape: WorkplaneShape): Record<string, unknown
     mirrorZ: Boolean(shape.mirrorZ),
     importedTriangles: shape.importedMesh?.triangleCount ?? 0,
     imagePlate: shape.imagePlate ? `${shape.imagePlate.pixelWidth}x${shape.imagePlate.pixelHeight}` : null,
+    // A reference image (#680): how opaque it is drawn; never exported.
+    ...(shape.imagePlate ? { referenceImage: { opacity: shape.imagePlate.opacity ?? 1, pixels: { width: shape.imagePlate.pixelWidth, height: shape.imagePlate.pixelHeight } } } : {}),
     edgeTreatments: shape.edgeTreatments ?? [],
     cadDisplayEdgeCount: shape.cadDisplayEdges?.length ?? null,
     cadDisplayEdgesVersion: shape.cadDisplayEdgesVersion ?? null,
@@ -66,7 +68,7 @@ export function compactShapeSummary(shape: WorkplaneShape, index: number) {
     `${index}:${shape.kind}${shape.hole ? "H" : "S"}${shape.importedMesh ? "I" : ""}${shape.imagePlate ? "P" : ""}`,
     `g${shape.groupedShapes?.length ?? 0}`,
     `tri${shape.importedMesh?.triangleCount ?? 0}`,
-    `edge${shape.edgeTreatments?.map((feature) => `${feature.kind}:${feature.amount}:${feature.edgeCount}:${feature.chamferAngle ?? ""}`).join("|") ?? ""}`,
+    `edge${shape.edgeTreatments?.map((feature) => `${feature.kind}:${feature.amount}:${feature.edgeCount}:${feature.chamferAngle ?? ""}${feature.endAmount !== undefined ? `>${feature.endAmount}` : ""}`).join("|") ?? ""}`,
     `viewEdges${shape.cadDisplayEdges?.length ?? "auto"}v${shape.cadDisplayEdgesVersion ?? 0}`,
     `edgeResize${shape.edgeResizeMode ?? "scale"}`,
     `brep${shape.cadBrep?.length ?? 0}`,
@@ -88,7 +90,7 @@ function mcpShapeSettings(shape: WorkplaneShape): Record<string, string | number
     const value = shape[key];
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
       settings[key] = value;
-    } else if (key === "bentTubeSegments" && Array.isArray(value)) {
+    } else if ((key === "bentTubeSegments" || key === "gridfinityDividerPositionsX" || key === "gridfinityDividerPositionsZ" || key === "gridfinityCompartmentLabels") && Array.isArray(value)) {
       // Eine Liste passt nicht in die flache Auskunft; als Text geht sie
       // hinaus und wird so auch wieder angenommen.
       settings[key] = JSON.stringify(value);
@@ -209,6 +211,6 @@ function mcpLoftSettings(shape: WorkplaneShape): Record<string, string | number>
     loftBottomWidth: m.bottomWidth, loftBottomDepth: m.bottomDepth, loftTopWidth: m.topWidth, loftTopDepth: m.topDepth,
     loftBottomCorner: m.bottomCorner, loftTopCorner: m.topCorner, loftBottomSides: m.bottomSides, loftTopSides: m.topSides,
     loftOffsetX: m.offsetX, loftOffsetZ: m.offsetZ, loftWall: m.wall,
-    loftTwist: m.twist, loftTiltX: m.tiltX, loftTiltZ: m.tiltZ, loftSmooth: m.smooth,
+    loftTwist: m.twist, loftTiltX: m.tiltX, loftTiltZ: m.tiltZ, loftSmooth: m.smooth, loftSegments: m.segments,
   };
 }

@@ -63,17 +63,30 @@ A note records what the geometry does not say: "This screw is 0.3 mm too tight",
 - {{ui:note.detach}} releases an attached note from the body.
 - {{ui:editor.tool.group}} takes an attached note into the group; {{ui:editor.tool.ungroup}} hands it to the visible part under it, a group inside included. While a group is open with {{ui:group.edit}}, its notes move with the part under them and go back to the group with {{ui:group.done}}; cancelling puts them back as they were.
 - If its body is deleted, or no visible body is under it any more, the note stays where it stood, on the workplane.
-- Dragging moves the note, a click opens it for editing.
+- Dragging the pin moves the note. A click on the pin folds the card away, only the small number stays; another click opens it again. A click into the text edits it.
 - While you write, [[Enter]] keeps the text and [[Esc]] puts it back to how it was before you started; [[Shift]]+[[Enter]] starts a new line.
+- **In a sketch**, {{ui:editor.tool.note}} (under {{ui:editor.group.manage}}) or [[N]] places a note too, anywhere on the sketch. All of a sketch's notes belong to its body: in the 3D view they sit on it, on the top of an extruded or swept body and on the drawn profile of a revolved one, and move with it. When you open the sketch again it shows the body's notes, including those placed in 3D. In the sketch, Undo takes back a note like a line, and {{ui:sketch.cancel}} discards what you changed in the notes.
 
-Notes are saved in the design, appear in no export and can be shown or hidden with {{ui:visibility.notes}}.
+Notes are saved in the design, appear in no export and can be shown or hidden with {{ui:visibility.notes}} (in {{ui:editor.visibilityOptions}}, the arrow beside the eye icon).
 
 ## Reference points
 
 A reference point is a bare mark in space, like a pencil mark or a layout point in a workshop: it belongs to no body, is never printed, and other things snap to it. Right-click a body and choose {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} or {{ui:contextMenu.markMidpoints}}: the points appear on the top face of the body (of the whole selection, if you selected several).
 
-- Drag a point to move it, or click it to see its coordinates and type new ones; they use the unit you set. Each card can be dragged away by its title if it covers something, on its own: the others stay where they are, and a double-click on the title puts it back. The card you touched last stands in front of the others. **Delete all** in a card, or in the right-click menu, deletes every point at once. {{ui:common.delete}} removes it.
+- Drag a point to move it, or click it to see its coordinates and type new ones; they use the unit you set. Each card can be dragged away by its title if it covers something, on its own: the others stay where they are, and a double-click on the title puts it back. The card you touched last stands in front of the others. **Delete all** in a card, or **Delete all reference points** in the right-click menu (of a body, or of an empty spot of the 3D view), deletes every point at once. {{ui:common.delete}} removes it.
 - The tape measure can mark a point too: {{ui:camera.tapeMarkMiddle}}, the crosshair button under a measurement, puts one in its middle, in the centre of a round hole for example. And it measures from a point: the tape snaps to reference points like to corners.
 - When you drag a shape, its edges and its centre snap to a point, like they snap to other shapes ({{ui:workspace.objectSnap}}). The framing square snaps to points too.
 - Points are saved in the design, appear in no export, and are shown or hidden together with the notes by {{ui:visibility.notes}}.
 - An AI can mark, list and remove them with `layerling_add_reference_points`, `layerling_list_reference_points` and `layerling_remove_reference_points`.
+
+## Reference images
+
+A reference image is a picture to line parts up on: lay a photo of a circuit board on the floor of its case, and place the standoffs, holes and connector cut-outs right on it. It is a guide, not a body: it is never printed, never exported (STL, 3MF, OBJ, STEP, SVG), never part of a group, a bundle or a cut, and the print estimate leaves it out.
+
+- Open {{ui:editor.import}} and choose {{ui:import.referenceImage}}, then a PNG, JPG, WebP, GIF or BMP picture. It lands on the workplane - on the plate, or on the face you set the workplane on - with its longer side 100 mm, half see-through.
+- Move, turn and resize it with its handles like any shape. A body in front of it is picked first, so working on top of it does not grab the picture.
+- {{ui:referenceImage.seeThrough}} in its settings fades it from solid to barely there.
+- {{ui:referenceImage.calibrate}} gives it its true size, as in the sketch: click two points on the picture whose real distance you know - two mounting holes of the board, say - and type that distance in {{ui:referenceImage.distance}}. The picture keeps its proportions and its middle.
+- Lock it with the lock in the header of its settings, and it stays put: clicks then go through it to the plate. Pick it in the object list to unlock it.
+- The picture is saved once in the design file, however often it is copied or undone. A large picture makes the file larger by as much; the message when you add it says how large it is.
+- An AI adds, moves, calibrates, fades and locks one with `layerling_reference_image`.

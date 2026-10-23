@@ -12,27 +12,30 @@ export function placeSketchShape(
   workplane: PlacementWorkplane,
   existing?: WorkplaneShape | null,
 ) {
-  if (existing) {
-    return canonicalizeShape({
-      ...shape,
-      x: existing.x,
-      z: existing.z,
-      elevation: existing.elevation ?? 0,
-      rotation: existing.rotation,
-      rotationX: existing.rotationX ?? 0,
-      rotationZ: existing.rotationZ ?? 0,
-      mirrorX: existing.mirrorX,
-      mirrorY: existing.mirrorY,
-      mirrorZ: existing.mirrorZ,
-      locked: existing.locked,
-      hidden: existing.hidden,
-    });
-  }
+  if (existing) return placedLikeExisting(shape, existing);
 
   const basePoint = placementWorkplanePoint(workplane, shape.x, shape.z);
   return canonicalizeShape({
     ...shape,
     ...placementPatchForNewShape(shape, workplane, basePoint),
+  });
+}
+
+/** A rebuilt sketch body put where the body it replaces stands, turned and mirrored as that one. */
+export function placedLikeExisting(shape: WorkplaneShape, existing: WorkplaneShape) {
+  return canonicalizeShape({
+    ...shape,
+    x: existing.x,
+    z: existing.z,
+    elevation: existing.elevation ?? 0,
+    rotation: existing.rotation,
+    rotationX: existing.rotationX ?? 0,
+    rotationZ: existing.rotationZ ?? 0,
+    mirrorX: existing.mirrorX,
+    mirrorY: existing.mirrorY,
+    mirrorZ: existing.mirrorZ,
+    locked: existing.locked,
+    hidden: existing.hidden,
   });
 }
 

@@ -14,7 +14,7 @@ This was selected over pure JSON because imported STL/STEP data and exact B-Rep 
 project.lyl
 ├── project.json
 └── assets/
-    ├── source/          Original imported STL, SVG, or STEP files
+    ├── source/          Original imported STL, OBJ, 3MF, SVG, or STEP files
     ├── derived-mesh/    Exact caches for baked operations or legacy imports
     ├── brep/            Exact STEP/B-Rep payloads
     ├── display-edges/   Deduplicated display-edge polylines of CAD objects
@@ -45,9 +45,10 @@ Large object data lives in `assets/` and is referenced by content hash, never re
 - Position, rotation, dimensions, mirrors, colour, solid/hole role, visibility, and lock state
 - Nested groups, boolean operands, subtraction results, and intersection metadata
 - Sketch points, lines, Bezier/smooth handles, disjoint profiles, reference images, and extrusion depth
-- Imported STL, SVG, and STEP sources, stored once and reused by instances
+- Imported STL, OBJ, 3MF, SVG, and STEP sources, stored once and reused by instances
 - Exact imported STEP data, current exact CAD B-Rep, display edges, chamfer/fillet settings, and reversible edge-treatment history
-- Undo and redo states according to the export choice: Unlimited, 100, 50, or 30 recent actions. Unlimited means every state still retained by the editor, including available redo states.
+- Custom fonts used by texts, embedded in `project.json` as a subset of the characters the design's texts use (at most 64 fonts), so the file opens with its lettering on another computer
+- Undo and redo states according to the export choice: Unlimited, 100, 50, or 30 recent actions, the custom limit set in the workspace settings, or None (the current state only, for sharing a file without its steps). Unlimited means every state still retained by the editor, including available redo states.
 - Workspace units, grid/snap settings, dimensions, and active offset workplane
 
 Native primitives are regenerated from definitions and do not receive mesh assets. Source-backed STL, SVG, and STEP objects are regenerated from their original asset. Derived mesh assets are written only when the current editor has genuinely baked geometry (for example a boolean or edge treatment), or when an older local project no longer has its original imported source.
@@ -84,4 +85,5 @@ Future schema changes should add a version-to-version migration, run validation 
 - The current workplane system stores a base plane plus numeric offset. It does not expose persistent associative face-workplane references, so `.lyl` cannot preserve an association that the editor itself does not model.
 - Geometric sketch constraints and dimensions are not yet part of layerling's sketch data model. Existing points, segments, curve handles, profiles, and extrusion depth are preserved exactly.
 - The camera is stored as optional editor state, `editor.view` (#220): `orthographic`, `position`, `target`, `up` and `zoom`. It is not part of the undo history; a reader that does not know it passes over it, and a file without it opens in the standard view.
-- OBJ is currently an export format, not an import format. An OBJ source-asset record is reserved in the schema for future import support.
+- OBJ and 3MF are import formats as well as export formats; their source files are kept like STL ones and the bodies are rebuilt from them on load.
+- The views saved under the keys 7, 8, 9 and 0 are stored as optional editor state too, `editor.savedViews`: an array of four entries in that order, each a view like `editor.view` or `null` for an empty slot. It is left out when no slot holds a view, is not part of the undo history, and a reader that does not know it passes over it.

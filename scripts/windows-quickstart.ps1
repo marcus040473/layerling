@@ -107,6 +107,19 @@ if (-not (Test-CommandExists "git") -or -not (Test-CommandExists "node")) {
         "Close this PowerShell window, open a new one, and run this script again - it will pick up right where it left off.")
 }
 
+# An older Node.js that was already installed cannot build layerling: the guide and font
+# scripts load TypeScript files directly, which needs Node.js 22.18 or newer.
+$nodeVersionText = (& node --version | Out-String).Trim()
+if ($nodeVersionText -match '^v(\d+)\.(\d+)') {
+    $nodeMajor = [int]$Matches[1]
+    $nodeMinor = [int]$Matches[2]
+    if ($nodeMajor -lt 22 -or ($nodeMajor -eq 22 -and $nodeMinor -lt 18)) {
+        throw ("Node.js $nodeVersionText is too old; layerling needs 22.18 or newer. " +
+            "Update it (for example: winget upgrade OpenJS.NodeJS.LTS, or the current LTS from https://nodejs.org), " +
+            "then close this PowerShell window, open a new one, and run this script again.")
+    }
+}
+
 # A layerling server already running from this folder would break if it were updated
 # underneath, and a second server would share its build folder and break it too (#102).
 $portState = Get-LayerlingPortState

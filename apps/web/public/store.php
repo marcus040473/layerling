@@ -24,6 +24,8 @@ const SEARCH_RESULT_LIMIT = 200;
 const SEARCH_DEPTH_LIMIT = 12;
 const SEARCH_FOLDER_LIMIT = 2000;
 const MAX_PROJECT_BYTES   = 512 * 1024 * 1024;  // mirrors LYL_LIMITS.archiveBytes
+/** The files an export may be called on the server (#779), as in route.ts. */
+const EXPORT_FILE_EXTENSIONS = ['stl', '3mf', 'obj', 'step', 'stp', 'svg', 'png', 'pdf'];
 const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024;
 const LYL_MEDIA_TYPE      = 'application/vnd.layerling.project+zip';
 /** A folder name may not look like a path, a hidden file, or carry control codes. */
@@ -303,7 +305,25 @@ function same_origin(): bool
     } else {
         $scheme = 'http';
     }
-    return strcasecmp($origin, $scheme . '://' . $host) === 0;
+    if (strcasecmp($origin, $scheme . '://' . $host) === 0) {
+        return true;
+    }
+    // A proxy that closes HTTPS but does not say so: an https Origin on the very same host is this site.
+    if ($forwardedProto === '' && strcasecmp($origin, 'https://' . $host) === 0) {
+        return true;
+    }
+    // LAYERLING_ALLOWED_ORIGINS: full origins or bare hosts, for a proxy that rewrites the host.
+    $listed = getenv('LAYERLING_ALLOWED_ORIGINS');
+    if (is_string($listed) && $listed !== '') {
+        $bare = preg_replace('#^https?://#i', '', $origin);
+        foreach (explode(',', $listed) as $entry) {
+            $entry = rtrim(trim($entry), '/');
+            if ($entry !== '' && (strcasecmp($entry, $origin) === 0 || strcasecmp($entry, $bare) === 0)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /** A .lyl is a ZIP. Anything else never reaches the disk. */
@@ -368,6 +388,7 @@ function folder_contents_count(string $folder): array
 {
     $projects = 0;
     $folders = 0;
+    $files = 0;
     foreach (scandir($folder) ?: [] as $entry) {
         if ($entry === '.' || $entry === '..' || $entry[0] === '.') {
             continue;
@@ -379,9 +400,11 @@ function folder_contents_count(string $folder): array
         }
         if (preg_match('/\.(lyl|skf)$/i', $entry)) {
             $projects += 1;
+        } elseif (is_file($full)) {
+            $files += 1;
         }
     }
-    return ['projects' => $projects, 'folders' => $folders];
+    return ['projects' => $projects, 'folders' => $folders, 'files' => $files];
 }
 
 /**
@@ -726,6 +749,73 @@ function handle_save(string $root, string $folder): void
     send_json(['project' => $record], $currentStat === null ? 201 : 200, ['ETag' => '"' . $record['revision'] . '"']);
 }
 
+/** The name an export is written under: a clean stem and one of the known extensions, or null. */
+function export_file_name(string $requested): ?string
+{
+    if (preg_match('/\.([a-z0-9]+)$/i', $requested, $match) !== 1) {
+        return null;
+    }
+    $extension = strtolower($match[1]);
+    if (!in_array($extension, EXPORT_FILE_EXTENSIONS, true)) {
+        return null;
+    }
+    $stem = substr($requested, 0, -(strlen($extension) + 1));
+    $stem = basename($stem);
+    $stem = preg_replace('/[<>:"\/\\\\|?*\x00-\x1f]/', '_', $stem);
+    $stem = preg_replace('/\s+/', ' ', $stem);
+    $stem = ltrim(trim($stem), '. ');
+    $stem = function_exists('mb_substr') ? mb_substr($stem, 0, 115) : substr($stem, 0, 115);
+    return ($stem === '' ? 'Untitled export' : $stem) . '.' . $extension;
+}
+
+/**
+ * An export file - STL, 3MF, OBJ, STEP, SVG, PNG or PDF - written into a folder of the store (#779), so a
+ * slicer that shares the folder can open it. It is no project: the list does not show it. A file of that
+ * name is replaced only when the request says so (overwrite=1); otherwise the answer is 409 with `exists`.
+ */
+function handle_save_export(string $root, string $folder, string $requested): void
+{
+    if (!same_origin()) {
+        fail('Shared projects only accept same-origin saves', 403);
+    }
+    $fileName = export_file_name($requested);
+    if ($fileName === null) {
+        fail('That file type cannot be saved on the server', 400);
+    }
+    $declaredLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    $bytes = (string) file_get_contents('php://input');
+    if ($declaredLength > 0 && $bytes === '') {
+        fail('The upload was larger than this server accepts. Raise post_max_size in php.ini.', 413);
+    }
+    if ($bytes === '') {
+        fail('The file was empty', 400);
+    }
+    if (strlen($bytes) > MAX_PROJECT_BYTES) {
+        fail('The file exceeds the shared storage size limit', 413);
+    }
+
+    $filePath = $folder . DIRECTORY_SEPARATOR . $fileName;
+    acquire_lock($filePath);
+    $exists = regular_file_stat($filePath) !== null;
+    if ($exists && ($_GET['overwrite'] ?? '') !== '1') {
+        fail($fileName . ' is already in that folder', 409, ['exists' => true, 'fileName' => $fileName]);
+    }
+    $temporaryPath = $folder . DIRECTORY_SEPARATOR . '.' . $fileName . '.' . bin2hex(random_bytes(8)) . '.tmp';
+    cleanup_later($temporaryPath);
+    if (file_put_contents($temporaryPath, $bytes) === false) {
+        fail('The store folder is not writable by the web server', 500);
+    }
+    if (!@rename($temporaryPath, $filePath)) {
+        fail('The finished file could not be moved into place', 500);
+    }
+    cleanup_now($temporaryPath);
+    $savedStat = regular_file_stat($filePath);
+    send_json(
+        ['file' => ['fileName' => $fileName, 'path' => folder_key($root, $folder), 'size' => $savedStat === null ? strlen($bytes) : $savedStat['size']]],
+        $exists ? 200 : 201
+    );
+}
+
 /**
  * Removing a folder. An empty one goes without further ado; one that still
  * holds something needs `recursive=1`, so a request that lost its way cannot
@@ -740,7 +830,7 @@ function handle_delete_folder(string $root, string $folder, bool $recursive): vo
         fail('The store folder itself cannot be removed', 400);
     }
     $counts = folder_contents_count($folder);
-    if (!$recursive && ($counts['projects'] > 0 || $counts['folders'] > 0)) {
+    if (!$recursive && ($counts['projects'] > 0 || $counts['folders'] > 0 || $counts['files'] > 0)) {
         fail('That folder is not empty', 409, $counts);
     }
     if (!remove_folder_tree($folder)) {
@@ -1077,6 +1167,10 @@ switch ($method) {
         $renameFileTo = $_GET['renameFileTo'] ?? null;
         if ($renameFileTo !== null && $renameFileTo !== '') {
             handle_rename_file($root, $folder, (string) $renameFileTo);
+        }
+        $exportFile = $_GET['exportFile'] ?? null;
+        if ($exportFile !== null && $exportFile !== '') {
+            handle_save_export($root, $folder, (string) $exportFile);
         }
         handle_save($root, $folder);
         break;

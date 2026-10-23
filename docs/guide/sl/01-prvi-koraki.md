@@ -111,4 +111,4 @@ Pri kopiji programa layerling na tvojem računalniku ali strežniku ima obvestil
 
 Ko je tvoj del končan, klikni {{ui:editor.export}}, izberi STL ali 3MF in prenesi datoteko. Odpreš jo v svojem rezalniku, na primer v Bambu Studiu, PrusaSliceru, OrcaSliceru ali Curi. Kdor v nastavitvah izbere svoj tiskalnik, že med gradnjo vidi, ali del gre na tiskalno ploščo. Več o tem v poglavju [Tiskanje](chapter:tiskanje).
 
-> **Namig:** Če prihajaš iz Tinkercada, se boš hitro znašel: plošča, oblike, telesa in luknje, združevanje v skupine, poravnava in zrcaljenje delujejo skoraj enako. Novo so predvsem posnetje in zaokrožitev, izdolbljenje, navoji in skice.
+> **Namig:** Če prihajaš iz Tinkercada, se boš hitro znašel: plošča, oblike, telesa in luknje, združevanje v skupine, poravnava in zrcaljenje delujejo skoraj enako. Novo so predvsem posnetje in zaokrožitev, izdolbljenje, navoji in skice. Prenesete lahko tudi svoje načrte iz Tinkercada, glejte [Datoteke, shranjevanje in deljenje](chapter:datoteke-in-shranjevanje).

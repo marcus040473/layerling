@@ -304,7 +304,7 @@ export function MyShapesSection(props: MyShapesSectionProps) {
               onDragEnd={onDragDone}
             >
               {shape.thumbnail ? <img src={shape.thumbnail} alt="" draggable={false} /> : <span className="my-shape-no-preview" />}
-              <span>{shape.name}</span>
+              <span translate="no">{shape.name}</span>
             </button>
             <div className="my-shape-tile-actions" data-count={actionCount}>
               {moving === shape.id ? renderMovePicker(shape) : confirmDelete === shape.id ? (
@@ -435,7 +435,7 @@ export function MyShapesSection(props: MyShapesSectionProps) {
               <button className="my-shapes-folder-toggle" type="button" aria-expanded={open} onClick={() => setFolderOpen(folder.id, !open)}>
                 {open ? <ChevronDown aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
                 <Folder aria-hidden="true" />
-                <span className="my-shapes-folder-name">{folder.name}</span>
+                <span className="my-shapes-folder-name" translate="no">{folder.name}</span>
                 <span className="my-shapes-count">{shapeCount}</span>
               </button>
               <div className="my-shapes-folder-actions">

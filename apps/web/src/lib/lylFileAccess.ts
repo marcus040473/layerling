@@ -127,3 +127,23 @@ export async function pickFilesToImport(extensions: string[]): Promise<Array<{ f
     throw error;
   }
 }
+
+interface LaunchQueueWindow {
+  launchQueue?: { setConsumer(consumer: (params: { files?: LylFileHandle[] }) => void): void };
+}
+
+/**
+ * A .lyl double-clicked in the file manager reaches the installed app through the manifest's
+ * file_handlers (#605). The browser queues what was opened; this takes it from there, file by file.
+ * Browsers without the launch queue (Firefox, Safari, a plain tab) never call back.
+ */
+export function onLylFilesLaunched(consumer: (file: File, handle: LylFileHandle) => void) {
+  if (typeof window === "undefined") return;
+  const queue = (window as unknown as LaunchQueueWindow).launchQueue;
+  if (!queue) return;
+  queue.setConsumer((params) => {
+    for (const handle of params.files ?? []) {
+      void handle.getFile().then((file) => consumer(file, handle)).catch(() => undefined);
+    }
+  });
+}

@@ -1,0 +1,116 @@
+/* The second view's window (components/workplane/SecondViewWindow.tsx). It
+   takes the editor's stylesheets, so the view cube looks the same there. */
+
+.second-view-root,
+.second-view-stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--background);
+}
+
+.second-view-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.second-view-canvas canvas {
+  display: block;
+}
+
+/* The cube's corner follows the setting (viewCube.css) at any width here: the
+   3D view keeps it top left in a phone-wide window, but this window is never
+   on a phone, only made narrow. Nothing stands in the bottom right corner here,
+   so both bottom corners sit 12 px up. */
+html[data-view-cube-position] .second-view-stage .camera-controls {
+  top: 22px;
+}
+
+html[data-view-cube-position="top-right"] .second-view-stage .view-cube,
+html[data-view-cube-position="bottom-right"] .second-view-stage .view-cube {
+  right: 10px;
+  left: auto;
+}
+
+html[data-view-cube-position="bottom-left"] .second-view-stage .view-cube,
+html[data-view-cube-position="bottom-right"] .second-view-stage .view-cube {
+  top: auto;
+  bottom: 12px;
+}
+
+html[data-view-cube-position="top-right"] .second-view-stage .view-cube {
+  transform-origin: top right;
+}
+
+html[data-view-cube-position="bottom-left"] .second-view-stage .view-cube {
+  transform-origin: bottom left;
+}
+
+html[data-view-cube-position="bottom-right"] .second-view-stage .view-cube {
+  transform-origin: bottom right;
+}
+
+/* A container of its own name: the 3D view's two-column rule (globals.css,
+   "@container workplane") is measured for its longer bar and does not apply here. */
+.second-view-stage {
+  container: second-view / size;
+}
+
+/* The bar here has seven buttons. Below 780 px of window it is scaled to 88%
+   and starts 96 px down (globals.css), so one column needs about 380 px at
+   Medium, 450 at Large and 320 at Small. Only lower than that does it take
+   two columns, the zoom pair side by side as in the 3D view. */
+@container second-view (max-height: 400px) {
+  html:not([data-toolbar-size="small"]) .second-view-stage .camera-controls {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    transform: none;
+  }
+
+  html:not([data-toolbar-size="small"]) .second-view-stage .camera-controls > .camera-zoom-button {
+    order: 1;
+  }
+
+  html:not([data-toolbar-size="small"]) .second-view-stage .camera-controls > .workplane-display-control-group {
+    order: 2;
+  }
+}
+
+@container second-view (max-height: 470px) {
+  html[data-toolbar-size="large"] .second-view-stage .camera-controls {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    transform: none;
+  }
+
+  html[data-toolbar-size="large"] .second-view-stage .camera-controls > .camera-zoom-button {
+    order: 1;
+  }
+
+  html[data-toolbar-size="large"] .second-view-stage .camera-controls > .workplane-display-control-group {
+    order: 2;
+  }
+}
+
+@container second-view (max-height: 340px) {
+  html[data-toolbar-size="small"] .second-view-stage .camera-controls {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    transform: none;
+  }
+
+  html[data-toolbar-size="small"] .second-view-stage .camera-controls > .camera-zoom-button {
+    order: 1;
+  }
+
+  html[data-toolbar-size="small"] .second-view-stage .camera-controls > .workplane-display-control-group {
+    order: 2;
+  }
+}
+
+/* The status message (globals.css .editor-status), placed for this window:
+   it has no toolbar above it, and no settings panel on the right. */
+.second-view-stage .second-view-notice {
+  top: 22px;
+  max-width: calc(100vw - 130px);
+}

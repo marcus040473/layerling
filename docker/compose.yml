@@ -18,13 +18,25 @@ services:
       # With the shared folder on: new designs start on the server. "true" is the start for people who have not
       # chosen (they can untick it on the start page), "always" holds for everyone.
       # LAYERLING_NEW_DESIGNS_ON_SERVER: "always"
+      # The simple mode for children and workshops: fewer tools, larger buttons, a start page without links out of layerling.
+      # "true" is the start for people who have not chosen; "always" takes the switch to leave it away.
+      # LAYERLING_SIMPLE_MODE: "always"
       # Let an AI client (MCP) drive the open editors over the network. Off by default; whoever has the
       # token can read and change the open designs, so use a long random one on a trusted network. See the README.
+      # Behind a reverse proxy that rewrites the host, so saving to the server is refused ("only accept requests from
+      # this site"): list the address people use. Normally the proxy just has to pass Host and X-Forwarded-Proto.
+      # LAYERLING_ALLOWED_ORIGINS: "https://layerling.example.com"
       # LAYERLING_MCP_REMOTE: "true"
       # LAYERLING_MCP_TOKEN: "a-long-random-secret-of-at-least-16-characters"
       # LAYERLING_MCP_ALLOWED_HOSTS: "layerling.example.com"   # only for a real domain, e.g. behind a reverse proxy
     # With the shared folder: the container runs as the user with the number 999, which must be allowed to write
     # to the mounted folder ("sudo chown 999:999 ./shared-projects"), or run it as yourself with:
     # user: "1000:1000"   # your own numbers: id -u and id -g
-    # volumes:
-    #   - ./shared-projects:/shared-projects:z
+    volumes:
+      # The preview pictures of the start page. In a named volume they survive a rebuild or update; Docker
+      # fills it from the image the first time, so it belongs to the container's user without a chown.
+      - layerling-thumbnails:/app/.codex/project-thumbnails
+      # - ./shared-projects:/shared-projects:z
+
+volumes:
+  layerling-thumbnails:

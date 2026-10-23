@@ -16,7 +16,7 @@ import type { ManifoldToplevel } from "manifold-3d";
 import type { CadModifierDeflection } from "@/lib/cadModifierTypes";
 import { SKETCH_INSET_UNSUPPORTED, SKETCH_STROKE_UNSUPPORTED, type SketchCadBuildResponse } from "@/lib/sketchCadTypes";
 import { insetSketchProfile } from "@/lib/faceTool";
-import type { ParametricSource, ShapeKind, SketchInset, SketchProfile, SketchRevolveSettings, SketchStroke, WorkplaneShape } from "@/types/layerling";
+import type { SketchInset, SketchOperation, SketchProfile, SketchRevolveSettings, SketchStroke, WorkplaneShape } from "@/types/layerling";
 import { MIN_SHAPE_DIMENSION, cleanModelDimension, getManifoldRuntime, meshForShape } from "@/lib/editorMeshCore";
 
 export function emptySketchProfile(): SketchProfile {
@@ -384,6 +384,10 @@ export function shapeFromCadMesh(
     taperBottomDepth: undefined,
     taperTopScale: undefined,
     taperBottomScale: undefined,
+    // Twist and lean are in the mesh as well, so they go the way the taper does.
+    extrudeTwist: undefined,
+    extrudeTopOffsetX: undefined,
+    extrudeTopOffsetZ: undefined,
     importedMesh: {
       positions: flattenedPositions,
       normals: flattenedNormals.length === flattenedPositions.length ? flattenedNormals : undefined,
@@ -494,4 +498,65 @@ export function defaultMcpSketchProfile(width: number, depth: number): SketchPro
     ],
     images: [],
   };
+}
+
+/** The kind of body a sketch body was made as; bodies from before `sketchOperation` was kept tell it by their revolve settings. */
+export function sketchBodyOperation(shape: WorkplaneShape): SketchOperation {
+  return shape.sketchOperation ?? (shape.sketchRevolve ? "revolve" : "extrude");
+}
+
+/**
+ * An outline moved left until its rightmost point lies on a revolve's axis, x = 0 (#655): an imported SVG
+ * is centred on itself, so the half cross-section of a vase would reach across the axis. Pictures and a
+ * key ring hole move with it; an outline already left of the axis stays where it is.
+ */
+export function sketchProfileLeftOfAxis(profile: SketchProfile): SketchProfile {
+  if (!profile.points.length) return profile;
+  const shift = Math.max(...profile.points.map((point) => point.x));
+  if (shift <= 1e-6) return profile;
+  const move = (point: { x: number; z: number }) => ({ x: point.x - shift, z: point.z });
+  return {
+    ...profile,
+    points: profile.points.map((point) => ({
+      ...point,
+      x: point.x - shift,
+      ...(point.handleIn ? { handleIn: move(point.handleIn) } : {}),
+      ...(point.handleOut ? { handleOut: move(point.handleOut) } : {}),
+    })),
+    images: (profile.images ?? []).map((image) => ({ ...image, x: image.x - shift })),
+    ...(profile.keyring ? { keyring: { ...profile.keyring, x: profile.keyring.x - shift } } : {}),
+  };
+}
+
+/**
+ * A sketch body made again from its outline as another kind of body (#655): an imported SVG comes in
+ * extruded, revolved it gives a vase. The new body takes the old one's place, name and colour and stands
+ * where it stood, its foot at the same height. A revolve takes the outline left of its axis; an extrusion
+ * made from another kind is 10 mm high, as a new sketch is. Edge treatments go, as when a sketch is edited.
+ */
+export async function sketchBodyAsOperation(
+  existing: WorkplaneShape,
+  profile: SketchProfile,
+  operation: SketchOperation,
+  revolveSettings: Partial<SketchRevolveSettings> = existing.sketchRevolve ?? {},
+) {
+  const built = operation === "revolve"
+    ? await shapeFromRevolvedSketchProfile(sketchProfileLeftOfAxis(profile), revolveSettings, null)
+    : operation === "sweep"
+      ? await cadShapeFromSketchSweep(profile, null)
+      : await cadShapeFromSketchProfile(profile, 10, null);
+  if (!built) return null;
+  return canonicalizeShape({
+    ...built,
+    id: existing.id,
+    name: existing.name,
+    color: existing.color,
+    hole: existing.hole,
+    x: existing.x,
+    z: existing.z,
+    elevation: existing.elevation ?? 0,
+    rotation: existing.rotation,
+    locked: existing.locked,
+    hidden: existing.hidden,
+  });
 }

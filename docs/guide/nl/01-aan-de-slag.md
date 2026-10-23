@@ -111,4 +111,4 @@ Op een kopie van layerling op je eigen computer of server heeft de melding "Upda
 
 Is je onderdeel klaar, klik dan op {{ui:editor.export}}, kies STL of 3MF en download het bestand. Open het in je slicer, bijvoorbeeld Bambu Studio, PrusaSlicer, OrcaSlicer of Cura. Kies je in de instellingen je printer, dan zie je al tijdens het bouwen of het onderdeel op het printbed past. Meer in [Printen](chapter:printen).
 
-> **Tip:** Kom je van Tinkercad, dan vind je snel je weg: plaat, vormen, lichaam en gat, groeperen, uitlijnen en spiegelen werken bijna hetzelfde. Nieuw zijn vooral afschuinen en afronden, uithollen, schroefdraad en schetsen.
+> **Tip:** Kom je van Tinkercad, dan vind je snel je weg: plaat, vormen, lichaam en gat, groeperen, uitlijnen en spiegelen werken bijna hetzelfde. Nieuw zijn vooral afschuinen en afronden, uithollen, schroefdraad en schetsen. Ook je eigen Tinkercad-ontwerpen kunnen mee, zie [Bestanden, opslaan en delen](chapter:bestanden-en-opslaan).

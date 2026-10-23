@@ -69,7 +69,8 @@ export function pickShapeAt(
     const shapeId = entry.object.userData.shapeId;
     if (typeof shapeId !== "string") return false;
     const shape = shapes.find((candidate) => candidate.id === shapeId);
-    return shape ? !shape.imagePlate && !shape.previewOnly : false;
+    // A reference image (#680) is picked where no body lies over it, unless it is locked: then clicks go through to the plate.
+    return shape ? !(shape.imagePlate && shape.locked) && !shape.previewOnly : false;
   };
   const pickableHits = state.raycaster.intersectObjects(state.shapeLayer.children, true).filter(pickable);
   const hit = pickableHits[0];
@@ -124,6 +125,14 @@ export function pickShapeIdAt(state: ThreeState, clientX: number, clientY: numbe
   aimPickRay(state, clientX, clientY, RENDER_LAYER_SHAPES);
   const hit = firstShapeHit(state);
   return hit ? (hit.object.userData.shapeId as string) : null;
+}
+
+/** Where the ray meets one reference image (#680), through anything in front of it: a point to calibrate it by. */
+export function pickImagePoint(state: ThreeState, shapeId: string, clientX: number, clientY: number): { x: number; y: number; z: number } | null {
+  aimPickRay(state, clientX, clientY, RENDER_LAYER_SHAPES);
+  const hit = state.raycaster.intersectObjects(state.shapeLayer.children, true)
+    .find((entry) => entry.object instanceof THREE.Mesh && entry.object.userData.shapeId === shapeId);
+  return hit ? { x: hit.point.x, y: hit.point.y, z: hit.point.z } : null;
 }
 
 export type LayFlatPick = { shapeId: string; normal: { x: number; y: number; z: number }; point: { x: number; y: number; z: number } };

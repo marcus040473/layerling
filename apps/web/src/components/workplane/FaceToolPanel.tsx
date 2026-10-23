@@ -13,7 +13,7 @@ const DIRECTIONS: readonly FaceToolDirection[] = ["out", "in"];
 
 /**
  * "Face": once a flat face of the body is picked, the body it adds (out) or the pocket it cuts
- * (in) shows while the numbers change, and "Create" groups it with the body. What it adds stays
+ * (in) shows while the numbers change, and "Create" groups it with the body, or leaves it as a body of its own with the switch on (#750). What it adds stays
  * an ordinary sketch body.
  */
 export function FaceToolPanel({
@@ -116,6 +116,11 @@ export function FaceToolPanel({
         length
         onChange={(value) => onChange({ depth: value })}
       />
+
+      <label className="edge-modifier-check" title={t("faceTool.separateHint")}>
+        <input type="checkbox" checked={settings.separate} onChange={(event) => onChange({ separate: event.currentTarget.checked })} />
+        <span>{t("faceTool.separate")}</span>
+      </label>
 
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>

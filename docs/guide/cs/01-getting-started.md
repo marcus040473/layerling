@@ -111,4 +111,4 @@ Ve vlastní instalaci na počítači nebo serveru obsahuje oznámení o dostupn�
 
 Hotový díl stáhněte přes {{ui:editor.export}} ve formátu STL nebo 3MF. Otevřete ho ve sliceru, například Bambu Studio, PrusaSlicer, OrcaSlicer nebo Cura. Pokud v nastavení vyberete svou tiskárnu, už během modelování uvidíte, zda se díl vejde na podložku. Více v kapitole [Příprava pro tisk](chapter:printing).
 
-> **Tip:** Pokud znáte Tinkercad, rychle se zorientujete. Podložka, tvary, plná tělesa a výřezy, slučování, zarovnávání i zrcadlení fungují velmi podobně. Navíc máte zejména zkosení a zaoblení hran, vytváření dutin, závity a náčrty.
+> **Tip:** Pokud znáte Tinkercad, rychle se zorientujete. Podložka, tvary, plná tělesa a výřezy, slučování, zarovnávání i zrcadlení fungují velmi podobně. Navíc máte zejména zkosení a zaoblení hran, vytváření dutin, závity a náčrty. Můžete si přenést i vlastní návrhy z Tinkercadu, viz [Soubory, ukládání a sdílení](chapter:files-and-saving).

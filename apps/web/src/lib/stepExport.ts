@@ -11,6 +11,7 @@ import { gridfinityPartSolid } from "@/lib/gridfinitySolid";
 import { profileExtrusionSolid } from "@/lib/cadProfileSolid";
 import { cadTransformRequiresGeneralTransform } from "@/lib/cadModifierRuntime";
 import { hingeWorldParts } from "@/lib/hingeParts";
+import { restoreGroupedChildren } from "@/lib/editorBooleans";
 
 /**
  * Why a body did not go into the STEP file, in a word the editor can say in the user's language
@@ -444,13 +445,30 @@ export function aabbsOverlap(a: Aabb, b: Aabb): boolean {
   );
 }
 
-export async function exportShapesToStep(shapes: WorkplaneShape[]): Promise<StepExportResult> {
-  const brep = await loadBrepWithOcct();
+type ScopePart = { solid: BrepSolid; box: Aabb; name: string; kind: WorkplaneShape["kind"]; color: string };
 
-  const skipped: SkippedShape[] = [];
-  const holes: { box: Aabb; solid: BrepSolid }[] = [];
+/**
+ * A plain group, taken apart: its parts are built as the exact bodies they are, and its holes cut
+ * only its own solids (#709). A group already made of one body (a CAD source, an imported STEP), the
+ * result of an intersection, a bundle, or a group with edge treatments is left to the usual way.
+ */
+function isOpenableGroup(shape: WorkplaneShape) {
+  return Boolean(shape.groupedShapes?.length)
+    && !shape.cadBrep
+    && !shape.importedMesh?.brepStep
+    && !shape.edgeTreatments?.length
+    && !shapeHasShapeDeform(shape)
+    && (shape.groupOperation === undefined || shape.groupOperation === "group");
+}
+
+/** The cutters among these shapes, a group of holes opened into the holes it holds. */
+function collectHoles(brep: Brep, shapes: WorkplaneShape[], skipped: SkippedShape[], holes: { box: Aabb; solid: BrepSolid }[]) {
   for (const shape of shapes.filter((s) => s.hole)) {
     const source = stepSourceForShape(shape);
+    if (source === "unsupported" && isOpenableGroup(shape)) {
+      collectHoles(brep, restoreGroupedChildren(shape).filter((child) => !child.hidden), skipped, holes);
+      continue;
+    }
     if (source === "unsupported") {
       skipped.push(describe(shape, `hole ${unsupportedReason()}; cut omitted`));
       continue;
@@ -464,11 +482,22 @@ export async function exportShapesToStep(shapes: WorkplaneShape[]): Promise<Step
     }
     holes.push({ box: worldAabb(shape), solid: built.solid });
   }
+}
 
-  const parts: { shape: BrepSolid; name: string; color: string }[] = [];
+/** The solids of these shapes with the holes among them cut out; a group is a scope of its own. */
+async function buildScope(brep: Brep, shapes: WorkplaneShape[], skipped: SkippedShape[]): Promise<ScopePart[]> {
+  const holes: { box: Aabb; solid: BrepSolid }[] = [];
+  collectHoles(brep, shapes, skipped, holes);
+
+  const parts: ScopePart[] = [];
   for (const shape of shapes.filter((s) => !s.hole)) {
     let built: BuildOutcome;
     const source = stepSourceForShape(shape);
+    if (source === "unsupported" && isOpenableGroup(shape)) {
+      // Its holes were cut inside; the holes around it still reach its bodies below.
+      parts.push(...await buildScope(brep, restoreGroupedChildren(shape).filter((child) => !child.hidden), skipped));
+      continue;
+    }
     if (shape.kind === "hinge" && !shape.cadBrep && !shapeHasShapeDeform(shape)) {
       built = buildHingeBody(brep, shape);
     } else if (source === "imported") {
@@ -496,21 +525,24 @@ export async function exportShapesToStep(shapes: WorkplaneShape[]): Promise<Step
       skipped.push(describe(shape, built.skip));
       continue;
     }
-
-    let solid = built.solid;
-    const solidBox = worldAabb(shape);
-    const overlapping = holes.filter((hole) => aabbsOverlap(solidBox, hole.box));
-    if (overlapping.length > 0) {
-      const cut = brep.cutAll(solid, overlapping.map((hole) => hole.solid));
-      if (cut.ok) {
-        solid = cut.value;
-      } else {
-        skipped.push(describe(shape, "hole subtraction failed; exported solid without holes"));
-      }
-    }
-
-    parts.push({ shape: toCadZUp(brep, solid), name: shape.name, color: shape.color });
+    parts.push({ solid: built.solid, box: worldAabb(shape), name: shape.name, kind: shape.kind, color: shape.color });
   }
+
+  return parts.map((part) => {
+    const overlapping = holes.filter((hole) => aabbsOverlap(part.box, hole.box));
+    if (overlapping.length === 0) return part;
+    const cut = brep.cutAll(part.solid, overlapping.map((hole) => hole.solid));
+    if (cut.ok) return { ...part, solid: cut.value };
+    skipped.push({ name: part.name, kind: part.kind, reason: "hole subtraction failed; exported solid without holes", code: "failed" });
+    return part;
+  });
+}
+
+export async function exportShapesToStep(shapes: WorkplaneShape[]): Promise<StepExportResult> {
+  const brep = await loadBrepWithOcct();
+
+  const skipped: SkippedShape[] = [];
+  const parts = (await buildScope(brep, shapes, skipped)).map((part) => ({ shape: toCadZUp(brep, part.solid), name: part.name, color: part.color }));
 
   if (parts.length === 0) {
     // Der Aufrufer uebersetzt diesen Fall; der Text hier ist nur fuer Protokolle.

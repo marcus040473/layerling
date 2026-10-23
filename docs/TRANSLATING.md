@@ -1,6 +1,6 @@
 # Translating layerling
 
-layerling speaks English, German, Dutch, French, Russian, Czech and Slovenian in full. Further languages are welcome (see the
+layerling speaks English, German, Dutch, French, Russian, Czech, Slovenian, Simplified Chinese and Traditional Chinese in full. Further languages are welcome (see the
 [discussion](https://github.com/henmedia/layerling/discussions/141)); this page is how to add one. You do not have to
 finish it in one go: a language may start with a few hundred sentences and one chapter of the guide, and everything
 it does not have yet shows in English.
@@ -9,7 +9,7 @@ A language is three things:
 
 1. **An entry** in `apps/web/src/lib/languages.ts`: its name, how it writes numbers, its quotation marks, where its
    community meets, and the words of the guide pages.
-2. **The sentences of the interface**, in `apps/web/src/lib/messages.<code>.ts` (about 2,300 of them).
+2. **The sentences of the interface**, in `apps/web/src/lib/messages.<code>.ts` (about 2,700 of them; `npm run i18n:status` gives the current count).
 3. **The user guide**, in `docs/guide/<code>/` (17 chapters).
 
 ## Adding a language
@@ -29,12 +29,16 @@ A language is three things:
    names as the English ones** (`03-shapes.md`), and translate the text. The number in front pairs a chapter with the
    English one. The chapters you leave out are built from the English ones, with a line saying so at the top.
    Buttons are written `{{ui:key}}`, never by hand: the guide takes their names from your sentences, so they always
-   match the interface. The pictures are shared, do not add copies. The built pages of a guide (`apps/web/public/<guide folder>/`) are generated: add that folder to `.gitignore`, as the others are, so they are not committed.
+   match the interface. The pictures are shared: do not copy the English ones. A language may take a set of its own from its own interface with `scripts/guide-screenshots.mjs` (Arabic has, in `docs/guide/images/ar`); a picture it lacks is taken from English. The built pages of a guide (`apps/web/public/<guide folder>/`) are generated: add that folder to `.gitignore`, as the others are, so they are not committed.
 
-   Once every chapter is translated, a language may give them names of its own, as German and Dutch do
-   (`03-vormen.md`): add the names to `GUIDE_CHAPTERS` in `apps/web/src/lib/guideLinks.ts`, and the ids of the
-   translated headings to `GUIDE_SECTIONS`, so the question marks in the program land on the right page and
-   heading. The tests in `tests/unit/guide.test.ts` check both against the chapters.
+   A translated heading gets an id of its own, which the question marks in the program do not know yet. With each
+   chapter you translate, add the ids of its translated headings to `GUIDE_SECTIONS` in
+   `apps/web/src/lib/guideLinks.ts`, not only once the guide is complete: Hungarian, with one chapter still in
+   English, already has them. Without them a question mark opens the right chapter but not the right heading.
+
+   Once every chapter is translated, a language may give them names of its own, as German, Dutch and Slovenian do
+   (`03-vormen.md`): add the names to `GUIDE_CHAPTERS`. The tests in `tests/unit/guide.test.ts` check both against
+   the chapters.
 5. **Check.**
 
    ```

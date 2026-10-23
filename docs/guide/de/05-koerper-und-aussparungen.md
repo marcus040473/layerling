@@ -42,10 +42,10 @@ Auch eine ganze Gruppe kann ein Körper oder eine Aussparung sein. Dabei gilt ei
 Manchmal sollen Teile nur zusammenbleiben, ohne eins zu werden – etwa ein weißes Logo auf einer schwarzen Platte für den Mehrfarbdruck. Dafür gibt es {{ui:editor.tool.bundle}} ([[Strg]]+[[B]]), wie in Tinkercad. Ein Bündel lässt sich verschieben, drehen und in der Größe ändern wie eine Form, aber nichts wird verrechnet:
 
 - Jedes Teil behält seine Farbe und bleibt Körper oder Aussparung.
-- Aussparungen schneiden nicht.
+- Aussparungen schneiden nicht. Gruppierst du das Bündel mit anderen Teilen, schneiden seine Aussparungen diese Teile, die Körper des Bündels selbst aber weiterhin nicht – wie in Tinkercad. So lässt sich zum Beispiel ein Zapfen mit seiner Bohrung daneben als Bündel immer wieder verwenden.
 - Beim Export als STL, 3MF oder OBJ ist jedes Teil ein eigener Körper; im 3MF und OBJ mit seiner Farbe.
 
-{{ui:editor.tool.ungroup}} ([[Strg]]+[[Umschalt]]+[[G]]) löst ein Bündel wieder auf, [[E]] öffnet es zum Bearbeiten wie eine Gruppe. Kanten fasen, verrunden und aushöhlen geht an einem Bündel nicht, weil es kein einzelner Körper ist: Gruppiere es dafür, oder bearbeite seine Teile einzeln. Soll eine Aussparung im Bündel doch schneiden, gruppiere das Bündel (Strg+G).
+{{ui:editor.tool.ungroup}} ([[Strg]]+[[Umschalt]]+[[G]]) löst ein Bündel wieder auf, [[E]] öffnet es zum Bearbeiten wie eine Gruppe. Kanten fasen, verrunden und aushöhlen geht an einem Bündel nicht, weil es kein einzelner Körper ist: Gruppiere es dafür, oder bearbeite seine Teile einzeln. Soll eine Aussparung im Bündel auch dessen eigene Körper schneiden, löse das Bündel auf und gruppiere seine Teile ([[Strg]]+[[G]]).
 
 ## Schnittmenge
 
@@ -67,9 +67,10 @@ Ein Hinweis: Fasen und Verrundungen, die du auf die **ganze** Gruppe gelegt hatt
 
 ## Teilen
 
-{{ui:editor.tool.split}} im Bereich {{ui:editor.group.modify}} schneidet die Auswahl mit einer Ebene in zwei – etwa ein Teil, das zu groß für das Druckbett ist, oder eins, in das du hineinschauen willst. Markiere einen oder mehrere Körper oder Aussparungen und klicke darauf. Eine durchscheinende Ebene zeigt genau, wo der Schnitt liegt; geändert wird erst, wenn du ihn anwendest.
+{{ui:editor.tool.split}} im Bereich {{ui:editor.group.modify}} schneidet die Auswahl mit einer Ebene in zwei – etwa ein Teil, das zu groß für das Druckbett ist, oder eins, in das du hineinschauen willst. Markiere einen oder mehrere Körper oder Aussparungen und klicke darauf. Eine durchscheinende Ebene zeigt genau, wo der Schnitt liegt, und eine weiße Linie markiert ihn auf den Körpern selbst, dort wo die Ebene sie trifft; geändert wird erst, wenn du ihn anwendest.
 
-- {{ui:split.orientation}}: **X** schneidet senkrecht zwischen links und rechts, **Y** zwischen vorne und hinten, **Z** waagerecht zwischen oben und unten. Die Achsen heißen wie in der Positionskarte, Z zeigt nach oben; die Ebene beginnt mit Z.
+- {{ui:split.orientation}}: **X** schneidet senkrecht zwischen links und rechts, **Y** zwischen vorne und hinten, **Z** waagerecht zwischen oben und unten. Die Achsen heißen wie in der Positionskarte, Z zeigt nach oben. Die Ebene beginnt parallel zur Arbeitsebene, auf der Grundplatte also mit Z.
+- {{ui:split.workplane}}: {{ui:split.workplaneParallel}} legt die Ebene parallel zur Arbeitsebene, {{ui:split.workplaneAcrossX}} und {{ui:split.workplaneAcrossY}} stellen sie senkrecht dazu, quer zu ihrer X- oder Y-Richtung. Schneidet der Ursprung der Arbeitsebene die Auswahl, geht die Ebene durch ihn, sonst durch die Mitte. So setzt du die Arbeitsebene mit [[W]] auf eine schräge Fläche und schneidest genau dort, ohne an den Drehreglern zu drehen.
 - {{ui:split.position}}: wo die Ebene durchgeht, mit dem Schieberegler oder als Zahl. Sie beginnt in der Mitte. Du kannst auch die Pfeilspitze an der Ebene ziehen; die Ebene wandert dann in Schritten von 0,1 mm entlang des Pfeils.
 - {{ui:split.pickFace}}, die Schaltfläche neben der Lage, legt die Ebene auf eine Fläche: Klicke darauf und dann auf die Fläche. Richtung, beide Drehungen und Lage werden passend gesetzt. Während du wählst, zeigt eine blaue Ebene unter dem Zeiger, welche Fläche sie übernimmt. Auch die Fläche eines nicht markierten Körpers geht, um den Schnitt daran auszurichten – die Ebene bleibt aber innerhalb der Auswahl. [[Esc]] beendet das Wählen und lässt die Ebene, wo sie war.
 - Die beiden Drehregler darunter drehen die Ebene um die anderen beiden Achsen, bis 180° in jede Richtung, für einen schrägen Schnitt. Sie lassen sich kombinieren.

@@ -3,16 +3,20 @@
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MAX_OVERHANG_ANGLE, MIN_OVERHANG_ANGLE } from "@/lib/overhangLimits";
 import { Box as BoxIcon, ChevronDown, Grid3X3, History, Palette, Plus, RotateCcw, Ruler, Trash2, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useMovablePanel } from "@/lib/useMovablePanel";
 import { createPortal } from "react-dom";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 import { APP_THEME_OPTIONS, type AppThemePreference } from "@/lib/appTheme";
 import { setToolbarSize, TOOLBAR_SIZE_OPTIONS, type ToolbarSize } from "@/lib/toolbarSize";
 import { useToolbarSize } from "@/lib/useToolbarSize";
+import { useSimpleMode } from "@/lib/useSimpleMode";
+import { useShapeColors } from "@/lib/useShapeColors";
+import { setShapeColors } from "@/lib/shapeColors";
+import { isSimpleModeFixedByServer, setSimpleMode } from "@/lib/simpleMode";
 import { useViewCubePosition } from "@/lib/useViewCubePosition";
 import { setViewCubePosition, VIEW_CUBE_POSITION_OPTIONS, type ViewCubePosition } from "@/lib/viewCubePosition";
-import { gearCenterHoleLimits, gearToothPitch, gearTypeHasHelix } from "@/lib/gearGeometry";
+import { gearCenterHoleLimits, gearToothPitch, gearTypeHasHelix, MAX_GEAR_TEETH, MIN_GEAR_TEETH } from "@/lib/gearGeometry";
 import { automaticSideCount } from "@/lib/roundSideCount";
 import { torusTessellation } from "@/lib/torusTessellation";
 import { printerPresetById } from "@/lib/printBed";
@@ -72,7 +76,7 @@ import { numberLocale, t, type MessageKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { measurementOptionLabel, normalizeScaleForUnits, parseMeasurementInput, scaleOptionsForUnits, WORKSPACE_UNIT_OPTIONS } from "@/lib/measurementUnits";
 import { shapeAssetDefaultDimensions, shapeAssetLabel, shapeAssetSpecialDefaults, toolbarShapeAssets } from "@/lib/shapeCatalog";
-import { BOOLEAN_TRIANGLE_LIMIT_PRESETS, BOOLEAN_TRIANGLE_LIMIT_STEP, DEFAULT_WORKPLANE_WORKSPACE, ZOOM_SPEED_SLIDER_MAX, MAX_BOOLEAN_TRIANGLE_LIMIT, MAX_CUSTOM_SHAPE_DIMENSION, MAX_HIGH_RESOLUTION_SIDES, MAX_HIGH_RESOLUTION_STEPS, MIN_BOOLEAN_TRIANGLE_LIMIT, MIN_CUSTOM_SHAPE_DIMENSION, booleanTriangleLimitPreset, workspaceForUnits, snapGridForUnits, type BooleanTriangleLimitPreset, DEFAULT_SNAP_GRID, MAX_CUSTOM_SNAP_GRID, MAX_CUSTOM_SNAP_GRID_NAME, MAX_CUSTOM_SNAP_GRIDS, MIN_CUSTOM_SNAP_GRID, customSnapGridDivisors, customSnapGridLabel, customSnapGridSize, parseCustomSnapGrid, resetGridInSavedDefault, snapGridOptions, standardGridSettings } from "@/lib/workplaneSettings";
+import { BOOLEAN_TRIANGLE_LIMIT_PRESETS, BOOLEAN_TRIANGLE_LIMIT_STEP, DEFAULT_WORKPLANE_WORKSPACE, ZOOM_SPEED_SLIDER_MAX, MAX_BOOLEAN_TRIANGLE_LIMIT, MAX_CUSTOM_SHAPE_DIMENSION, MAX_HIGH_RESOLUTION_SIDES, MAX_HIGH_RESOLUTION_STEPS, MIN_BOOLEAN_TRIANGLE_LIMIT, MIN_CUSTOM_SHAPE_DIMENSION, booleanTriangleLimitPreset, workspaceForUnits, snapGridForUnits, type BooleanTriangleLimitPreset, DEFAULT_SNAP_GRID, MAX_CUSTOM_SNAP_GRID, MAX_CUSTOM_SNAP_GRID_NAME, MAX_CUSTOM_SNAP_GRIDS, MIN_CUSTOM_SNAP_GRID, customSnapGridDivisors, customSnapGridLabel, customSnapGridSize, parseCustomSnapGrid, readWorkspaceDefault, resetGridInSavedDefault, snapGridOptions, standardGridSettings, workspaceWithSavedDefault } from "@/lib/workplaneSettings";
 import { DEFAULT_SKETCH_BACKGROUND, DEFAULT_SKETCH_GRID_COLOR, DEFAULT_SKETCH_PLATE_COLOR, IMPERIAL_GRID_BLOCK_PRESETS, inchGridPresetMm, workplaneGridPalette } from "@/lib/workplaneGrid";
 import type { BentTubeProfile, CustomSnapGrid, GearProfile, GearType, GridSize, ShapeCustomization, ShapeKind, ThreadHand, ThreadHead, ThreadProfile, ThreadRole, WorkplaneWorkspaceSettings } from "@/types/layerling";
 import { DEFAULT_LOFT } from "@/lib/loftGeometry";
@@ -302,7 +306,7 @@ function specialFieldsForShape(
     const fields: ShapeSpecialField[] = [
       { type: "select", key: "gearType", label: t("inspector.gearType"), defaultValue: defaults.gearType ?? "spur", options: GEAR_TYPE_OPTIONS.map((option) => ({ value: option.value, label: t(option.label) })) },
       { type: "select", key: "gearProfile", label: t("prop.gearProfile"), defaultValue: defaults.gearProfile ?? "involute", options: GEAR_PROFILE_OPTIONS.map((option) => ({ value: option.value, label: t(option.label) })) },
-      { type: "number", key: "teeth", label: t("prop.teeth"), defaultValue: defaults.teeth ?? 12, min: 6, max: 64, step: 1 },
+      { type: "number", key: "teeth", label: t("prop.teeth"), defaultValue: defaults.teeth ?? 12, min: MIN_GEAR_TEETH, max: MAX_GEAR_TEETH, step: 1 },
       ...(gearProfile === "involute" || gearProfile === "round" ? [
         ...(gearProfile === "involute" ? [
           { type: "number", key: "gearPressureAngle", label: t("prop.gearPressureAngle"), defaultValue: defaults.gearPressureAngle ?? 20, min: 14.5, max: 30, step: 0.5, unit: "°" },
@@ -419,8 +423,8 @@ function specialFieldsForShape(
   }
   if (kind === "roundedBox") {
     return [
-      { type: "number", key: "cornerFillet", label: t("prop.cornerFillet"), defaultValue: defaults.cornerFillet ?? DEFAULT_ROUNDED_BOX_CORNER_FILLET, min: 0, max: Math.max(1, Math.min(dimensions.width, dimensions.depth) / 2), step: 0.1, unit: "mm" },
-      { type: "number", key: "topBottomFillet", label: t("prop.topBottomFillet"), defaultValue: defaults.topBottomFillet ?? DEFAULT_ROUNDED_BOX_TOP_BOTTOM_FILLET, min: 0, max: Math.max(1, dimensions.height / 2), step: 0.1, unit: "mm" },
+      { type: "number", key: "cornerFillet", label: t("prop.cornerFillet"), defaultValue: defaults.cornerFillet ?? DEFAULT_ROUNDED_BOX_CORNER_FILLET, min: 0, max: Math.max(1, Math.min(dimensions.width, dimensions.depth) / 2), step: 0.05, unit: "mm" },
+      { type: "number", key: "topBottomFillet", label: t("prop.topBottomFillet"), defaultValue: defaults.topBottomFillet ?? DEFAULT_ROUNDED_BOX_TOP_BOTTOM_FILLET, min: 0, max: Math.max(1, dimensions.height / 2), step: 0.05, unit: "mm" },
       { type: "number", key: "roundedBoxQuality", label: t("prop.quality"), defaultValue: defaults.roundedBoxQuality ?? DEFAULT_ROUNDED_BOX_QUALITY, min: MIN_ROUNDED_BOX_QUALITY, max: MAX_ROUNDED_BOX_QUALITY, step: 1 },
     ];
   }
@@ -459,9 +463,12 @@ export function WorkspaceSettingsModal({
   onClose: () => void;
 }) {
   const [defaultSaved, setDefaultSaved] = useState(false);
+  // A default saved earlier or just now: what "Use my default" puts on this design (#754).
+  const savedDefault = useMemo(() => readWorkspaceDefault(), [defaultSaved]);
   useLanguage();
   const [activeSection, setActiveSection] = useState<WorkspaceSettingsSection>("appearance");
   const toolbarSize = useToolbarSize();
+  const shapeColors = useShapeColors();
   const viewCubePosition = useViewCubePosition();
   const [selectedShapeKind, setSelectedShapeKind] = useState<ShapeKind>(toolbarShapeAssets[0].kind);
   const [dimensionDrafts, setDimensionDrafts] = useState(() => ({
@@ -720,6 +727,7 @@ export function WorkspaceSettingsModal({
                     <strong>{t("workspace.appearance")}</strong>
                     <span>{t("workspace.appearanceHint")}</span>
                   </div>
+                  <SimpleModeSetting />
                   <WorkspaceToggle
                     label={t("workspace.fastMode")}
                     description={t("workspace.fastModeHint")}
@@ -752,6 +760,12 @@ export function WorkspaceSettingsModal({
                       ))}
                     </select>
                   </label>
+                  <WorkspaceToggle
+                    label={t("workspace.shapeColors")}
+                    description={t("workspace.shapeColorsHint")}
+                    checked={shapeColors}
+                    onChange={setShapeColors}
+                  />
                   <label className="workspace-select view-cube-position-setting" data-help={t("workspace.viewCubePosition")}>
                     <span>{t("workspace.viewCubePosition")}</span>
                     <select
@@ -799,6 +813,12 @@ export function WorkspaceSettingsModal({
                     presets={EDGE_COLOR_PRESETS}
                     disabled={!workspace.edgeLines || workspace.fastMode}
                     onChange={(nextEdgeColor) => patchWorkspace({ edgeColor: nextEdgeColor })}
+                  />
+                  <WorkspaceToggle
+                    label={t("workspace.strongHoles")}
+                    description={t("workspace.strongHolesHint")}
+                    checked={workspace.strongHoles}
+                    onChange={(strongHoles) => patchWorkspace({ strongHoles })}
                   />
                   <ColorSettingControl
                     label={t("workspace.sketchBackground")}
@@ -882,6 +902,12 @@ export function WorkspaceSettingsModal({
                     label={t("workspace.objectSnap")}
                     checked={workspace.objectSnap}
                     onChange={(objectSnap) => patchWorkspace({ objectSnap })}
+                  />
+                  <WorkspaceToggle
+                    label={t("workspace.stlAsDownload")}
+                    description={t("workspace.stlAsDownloadHint")}
+                    checked={workspace.stlAsDownload}
+                    onChange={(stlAsDownload) => patchWorkspace({ stlAsDownload })}
                   />
                   <WorkspaceToggle
                     label={t("workspace.showShadows")}
@@ -1471,15 +1497,30 @@ export function WorkspaceSettingsModal({
 
             <div className="workspace-modal-footer">
               <span>{t("workspace.footerHint")}</span>
-              <button
-                className="make-default-button"
-                onClick={() => {
-                  onMakeDefault();
-                  setDefaultSaved(true);
-                }}
-              >
-                {defaultSaved ? t("workspace.defaultSaved") : t("workspace.makeDefault")}
-              </button>
+              <div className="workspace-footer-buttons">
+                {savedDefault ? (
+                  <button
+                    className="make-default-button"
+                    title={t("workspace.useMyDefaultHint")}
+                    onClick={() => {
+                      const next = workspaceWithSavedDefault(workspace, savedDefault.workspace);
+                      setGridBlockSizeDraft(next.gridBlockSize.toFixed(next.accuracy));
+                      onWorkspaceChange({ ...next, scale: normalizeScaleForUnits(next.units, next.scale) });
+                    }}
+                  >
+                    {t("workspace.useMyDefault")}
+                  </button>
+                ) : null}
+                <button
+                  className="make-default-button"
+                  onClick={() => {
+                    onMakeDefault();
+                    setDefaultSaved(true);
+                  }}
+                >
+                  {defaultSaved ? t("workspace.defaultSaved") : t("workspace.makeDefault")}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1809,6 +1850,61 @@ function ColorSettingControl({
         </button>
         {popover}
       </div>
+    </div>
+  );
+}
+
+/** How long the button to leave the simple mode is held: a child does not switch it off by a tap, an adult does (#695). */
+const SIMPLE_MODE_HOLD_MS = 2000;
+
+/**
+ * The simple mode switch (#695). Switching it on is a tap; switching it off is a press held for two seconds. A server that
+ * fixes the mode (`LAYERLING_SIMPLE_MODE=always`) takes the switch away.
+ */
+function SimpleModeSetting() {
+  const simple = useSimpleMode();
+  const [holding, setHolding] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const cancel = () => {
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    timerRef.current = null;
+    setHolding(false);
+  };
+  const start = () => {
+    if (timerRef.current !== null) return;
+    setHolding(true);
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      setHolding(false);
+      setSimpleMode(false);
+    }, SIMPLE_MODE_HOLD_MS);
+  };
+  useEffect(() => cancel, []);
+  if (isSimpleModeFixedByServer()) return null;
+  if (!simple) {
+    return <WorkspaceToggle label={t("workspace.simpleMode")} description={t("workspace.simpleModeHint")} checked={false} onChange={() => setSimpleMode(true)} />;
+  }
+  return (
+    <div className="workspace-toggle simple-mode-setting" data-help={t("workspace.simpleMode")}>
+      <span className="workspace-toggle-copy">
+        <span>{t("workspace.simpleMode")}</span>
+        <small>{t("workspace.simpleModeHint")}</small>
+      </span>
+      <button
+        type="button"
+        className={holding ? "simple-mode-hold holding" : "simple-mode-hold"}
+        onPointerDown={start}
+        onPointerUp={cancel}
+        onPointerLeave={cancel}
+        onPointerCancel={cancel}
+        onKeyDown={(event) => {
+          if ((event.key === "Enter" || event.key === " ") && !event.repeat) start();
+        }}
+        onKeyUp={cancel}
+        onBlur={cancel}
+      >
+        {t("workspace.simpleModeOff")}
+      </button>
     </div>
   );
 }

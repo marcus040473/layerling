@@ -172,6 +172,8 @@ async function callTool(name, args) {
       return bridgeCommand("clear_history", args);
     case "layerling_layer_icon":
       return bridgeCommand("layer_icon", args, 60000);
+    case "layerling_reference_image":
+      return bridgeCommand("reference_image", args, 60000);
     case "layerling_create_qr_code":
       return bridgeCommand("create_qr_code", args, 60000);
     case "layerling_measure_section":
@@ -194,6 +196,8 @@ async function callTool(name, args) {
       return bridgeCommand("restore_from_history", args);
     case "layerling_show_workplane":
       return bridgeCommand("show_workplane", args);
+    case "layerling_saved_view":
+      return bridgeCommand("saved_view", args);
     case "layerling_export_section_svg":
       return bridgeCommand("export_section_svg", args);
     case "layerling_export_drawing":

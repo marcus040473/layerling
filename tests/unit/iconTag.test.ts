@@ -78,6 +78,21 @@ describe("icon tag", () => {
     expect(stack?.source).toEqual({ points: square.points, segments: square.segments });
   });
 
+  it("reads a stack on a side face back along its own up (#696)", () => {
+    // Turned so that its up points along +x: the layers stand out of a face facing +x, their underside at x = 10.
+    const turn = { rotation: 0, rotationX: 90, rotationZ: 270 };
+    const layer = (id: string, from: number, height: number, profile: SketchProfile) =>
+      body({ id, ...turn, x: 10 + from + height / 2, z: 0, elevation: 10 - height / 2, height, sketchProfile: profile });
+    const plate = layer("plate", 0, 3, iconLayerProfile(square, ICON_TAG_LAYERS[2]));
+    const rim = layer("rim", 3, 1.2, iconLayerProfile(square, { grow: 1.5, height: 1.2, color: "#d41721", join: "miter" }));
+    const top = layer("top", 4.2, 1.2, square);
+    const stack = iconLayersOf([top, plate, rim])!;
+    expect(stack.ids).toEqual(["top", "rim", "plate"]);
+    expect(stack.place.x).toBeCloseTo(10, 6);
+    expect(stack.place.z).toBeCloseTo(0, 6);
+    expect(stack.place.elevation).toBeCloseTo(10, 6);
+  });
+
   it("takes one sketch body as a stack of itself, and refuses parts that are not one icon", () => {
     expect(iconLayersOf([body({ sketchProfile: square })])?.layers).toEqual([{ grow: 0, height: 1.2, color: "#ffffff" }]);
     const other = body({ id: "o", sketchProfile: rectangles([0, 0, 1, 1], [2, 2, 3, 3]) });

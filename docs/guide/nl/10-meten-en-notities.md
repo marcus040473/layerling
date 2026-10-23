@@ -61,10 +61,11 @@ Een notitie legt vast wat de geometrie niet zegt: "Deze schroef zit 0,3 mm te kr
 - {{ui:note.detach}} maakt een vastgemaakte notitie los van het lichaam.
 - {{ui:editor.tool.group}} neemt een vastgemaakte notitie mee in de groep; {{ui:editor.tool.ungroup}} geeft haar door aan het zichtbare onderdeel eronder, ook aan een groep daarbinnen. Zolang een groep met {{ui:group.edit}} open is, bewegen de notities van die groep mee met het onderdeel eronder en gaan ze met {{ui:group.done}} terug naar de groep; annuleren zet ze terug zoals ze waren.
 - Wordt haar lichaam verwijderd, of ligt er geen zichtbaar lichaam meer onder, dan blijft de notitie staan waar ze stond, op het werkvlak.
-- Slepen verplaatst de notitie, een klik opent haar om te bewerken.
+- Slepen aan de speld verplaatst de notitie. Een klik op de speld klapt de kaart in, alleen het kleine nummer blijft staan; nog een klik klapt hem weer open. Een klik in de tekst bewerkt hem.
 - Terwijl je schrijft, bewaart [[Enter]] de tekst en zet [[Esc]] hem terug zoals hij was voordat je begon; [[Shift]]+[[Enter]] begint een nieuwe regel.
+- **In een schets** zet {{ui:editor.tool.note}} (onder {{ui:editor.group.manage}}) of [[N]] ook een notitie, waar je maar wilt op de schets. Alle notities van een schets horen bij haar lichaam: in de 3D-weergave zitten ze erop, bovenop een lichaam gemaakt met {{ui:sketch.extrude}} of {{ui:sketch.sweep}} en op het getekende profiel van een lichaam gemaakt met {{ui:sketch.revolve}}, en ze bewegen mee. Open je de schets opnieuw, dan toont ze de notities van het lichaam, ook die in 3D zijn gezet. In de schets neemt {{ui:sketch.undo}} een notitie terug zoals een lijn, en {{ui:sketch.cancel}} verwerpt wat je aan de notities hebt veranderd.
 
-Notities worden in het ontwerp opgeslagen, komen in geen enkele export terecht en kun je tonen of verbergen met {{ui:visibility.notes}}.
+Notities worden in het ontwerp opgeslagen, komen in geen enkele export terecht en kun je tonen of verbergen met {{ui:visibility.notes}} (onder {{ui:editor.visibilityOptions}}, de pijl naast het oog-pictogram).
 
 ## Referentiepunten
 
@@ -75,3 +76,15 @@ Een referentiepunt is een kaal merkteken in de ruimte, zoals een potloodstreep o
 - Sleep je een vorm, dan klikken zijn randen en zijn midden vast aan een punt, zoals ze aan andere vormen vastklikken ({{ui:workspace.objectSnap}}). Ook de winkelhaak klikt vast aan punten.
 - Punten worden in het ontwerp opgeslagen, komen in geen enkele export terecht en worden samen met de notities getoond of verborgen met {{ui:visibility.notes}}.
 - Een AI kan ze markeren, opsommen en verwijderen met `layerling_add_reference_points`, `layerling_list_reference_points` en `layerling_remove_reference_points`.
+
+## Referentieafbeeldingen
+
+Een referentieafbeelding is een afbeelding om onderdelen op uit te lijnen: leg een foto van een printplaat op de bodem van haar behuizing en zet de afstandhouders, gaten en uitsparingen voor de aansluitingen er precies op. Het is een hulpmiddel, geen lichaam: ze wordt nooit geprint, nooit geëxporteerd (STL, 3MF, OBJ, STEP, SVG), hoort nooit bij een groep, een bundel of een snede, en de printschatting laat haar weg.
+
+- Open {{ui:editor.import}} en kies {{ui:import.referenceImage}}, daarna een PNG-, JPG-, WebP-, GIF- of BMP-afbeelding. Ze komt op het werkvlak - op de plaat, of op het vlak waar je het werkvlak op hebt gelegd -, met de langste zijde 100 mm, half doorzichtig.
+- Verplaats, draai en schaal haar met haar grepen zoals elke vorm. Een lichaam ervoor wordt eerst gekozen, dus wie erop werkt, pakt niet per ongeluk de afbeelding.
+- {{ui:referenceImage.seeThrough}} in haar instellingen vervaagt haar van helemaal zichtbaar tot nauwelijks nog te zien.
+- {{ui:referenceImage.calibrate}} geeft haar haar echte grootte, zoals in de schets: klik op twee punten op de afbeelding waarvan je de werkelijke afstand kent - twee bevestigingsgaten van de printplaat bijvoorbeeld - en typ die afstand bij {{ui:referenceImage.distance}}. De afbeelding houdt haar verhoudingen en haar midden.
+- Vergrendel haar met het slot in de kop van haar instellingen, dan blijft ze liggen: klikken gaan er dan doorheen naar de plaat. Kies haar in de objectlijst om haar te ontgrendelen.
+- De afbeelding staat één keer in het ontwerpbestand, hoe vaak ze ook wordt gekopieerd of ongedaan gemaakt. Een grote afbeelding maakt het bestand zoveel groter; de melding bij het toevoegen noemt haar grootte.
+- Een AI voegt er een toe, verplaatst, kalibreert, vervaagt en vergrendelt haar met `layerling_reference_image`.

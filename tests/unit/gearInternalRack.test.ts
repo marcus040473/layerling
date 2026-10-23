@@ -91,6 +91,9 @@ describe("ring gear (#201)", () => {
     expect(pair?.distance).toBeCloseTo(18, 12);
     expect(pair?.current).toBeCloseTo(18, 12);
     expect(involuteGearPair(pinion, ring)?.distance).toBeCloseTo(18, 12);
+    // #645: 20 mm apart they would mesh at 20 x 2 / (30 - 12), whichever comes first.
+    expect(involuteGearPair(ring, { ...pinion, x: 20 })?.fitModule).toBeCloseTo(40 / 18, 12);
+    expect(involuteGearPair({ ...pinion, x: 20 }, ring)?.fitModule).toBeCloseTo(40 / 18, 12);
     // Two ring gears do not mesh, and a rack has no centre.
     expect(involuteGearPair(ring, { ...ring, x: 5 })).toBeNull();
     expect(involuteGearPair(pinion, { ...pinion, gearType: "rack", width: 24 * Math.PI, depth: 7.5 })).toBeNull();

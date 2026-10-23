@@ -1,21 +1,23 @@
 # The user guide
 
-The guide at [layerling.com/guide](https://layerling.com/guide/index.html) (English) and
-[layerling.com/anleitung](https://layerling.com/anleitung/index.html) (German) is written here and built into plain
-static pages. It ships with the program: `npm run export` and `npm run dev` build it, nothing else to deploy. The build
+The guide at [layerling.com/guide](https://layerling.com/guide/index.html) (English),
+[layerling.com/anleitung](https://layerling.com/anleitung/index.html) (German) and in eleven more languages (Arabic,
+Czech, Danish, Dutch, French, Hungarian, Polish, Russian, Simplified Chinese, Slovenian, Traditional Chinese) is written here and built into plain static pages;
+the three interface languages without a guide of their own (Italian, Japanese, Turkish) show the English one. It ships with the program: `npm run export` and `npm run dev` build it, nothing else to deploy. The build
 also writes a `search-index.json` per language (one entry per section of every chapter), which the search box in the
 header of each page reads; nothing to maintain, a new chapter or heading is in it with the next build.
 
 ```
 docs/guide/
-  de/01-erste-schritte.md     one file per chapter, the number is the order and pairs the two languages
-  en/01-getting-started.md
-  images/de/*.webp            the pictures, taken from the running program
-  images/en/*.webp
+  en/01-getting-started.md    one file per chapter, the number is the order and pairs the languages
+  de/01-erste-schritte.md     a language may give its chapters names of its own (de, nl, sl do)
+  fr/01-getting-started.md    ... or keep the English file names
+  images/en/*.webp            the pictures, taken from the running program
+  images/de/*.webp            a language with pictures of its own; the others show the English ones
 ```
 
-Further languages get a folder of their own and the English file names; a chapter they have not translated is built from
-the English one, with a note at the top, so every language has every chapter. See [../TRANSLATING.md](../TRANSLATING.md).
+A chapter a language has not translated is built from the English one, with a note at the top, so every language has
+every chapter. See [../TRANSLATING.md](../TRANSLATING.md).
 
 ## Writing a chapter
 
@@ -28,13 +30,15 @@ paragraphs, lists, tables, `> **Tip:**` boxes, code. Beyond that:
 | `[[Ctrl]]+[[Z]]` | keys |
 | `[text](chapter:solids-and-holes)` | a link to another chapter of the same language, by its file name without the number |
 | `![Caption](shot:hole-after)` | a picture from `images/<language>/hole-after.webp`, with the caption below |
-| `{{shortcuts}}` | the table of keyboard shortcuts, read from `ShortcutsModal.tsx` |
+| `{{shortcuts}}` | the table of keyboard shortcuts, read from `ShortcutsModal.tsx` - keep the word as it is in a translation, or the page shows the placeholder instead of the table |
 
 **Never type a button's name by hand.** Use `{{ui:...}}`. Explain in your own words, name in the program's words.
 
 **A new feature gets its lines in the guide** - together with the welcome text (`welcome.*`) and its MCP action. The
-test `tests/unit/guide.test.ts` checks that both languages have the same chapters and pictures, that every interface
-name, chapter link and picture exists, and that every MCP tool is named in the AI chapter.
+test `tests/unit/guide.test.ts` checks that the fully translated languages (de, en, nl, ru, cs) have the same chapters,
+sections and pictures and that every interface name, chapter link and picture exists; `tests/unit/guideAllLanguages.test.ts`
+checks every language folder for headings that render, `#` links that land, unknown `{{...}}` placeholders and every
+MCP tool in the AI chapter.
 
 ## The pictures
 

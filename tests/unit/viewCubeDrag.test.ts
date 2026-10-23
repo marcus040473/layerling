@@ -172,25 +172,32 @@ describe("view cube corners and edges (#202)", () => {
 
 // The faces are buttons inside the draggable cube. A drag must not also click
 // the face it ends on, and a plain click must still reach the face.
-describe("view cube wiring in the viewport", () => {
-  const source = readFileSync(
-    fileURLToPath(new URL("../../apps/web/src/components/WorkplaneViewport.tsx", import.meta.url)),
+describe("view cube wiring", () => {
+  const cube = readFileSync(
+    fileURLToPath(new URL("../../apps/web/src/components/workplane/ViewCube.tsx", import.meta.url)),
     "utf8",
   );
-  const cube = source.slice(source.indexOf('className={`view-cube '), source.indexOf('<div className={`camera-controls'));
 
   it("keeps a click on every face jumping to its view", () => {
     for (const face of ["top", "bottom", "front", "back", "right", "left"]) {
-      expect(cube).toContain(`onClick={() => setViewCubeFace("${face}")}`);
-      expect(cube).toContain(`{viewCubeZones("${face}")}`);
+      expect(cube).toContain(`{ face: "${face}", className: `);
     }
+    expect(cube).toContain("onClick={() => lookFrom((rig) => setCameraToViewFace(rig, face))}");
+    expect(cube).toContain("{zones(face)}");
   });
 
   it("handles the drag on the cube and swallows the click that ends it", () => {
-    expect(cube).toContain("onPointerDown={handleViewCubePointerDown}");
-    expect(cube).toContain("onPointerMove={handleViewCubePointerMove}");
-    expect(cube).toContain("onPointerUp={endViewCubeDrag}");
-    expect(cube).toContain("onPointerCancel={endViewCubeDrag}");
-    expect(cube).toContain("onClickCapture={handleViewCubeClickCapture}");
+    expect(cube).toContain("onPointerDown={handlePointerDown}");
+    expect(cube).toContain("onPointerMove={handlePointerMove}");
+    expect(cube).toContain("onPointerUp={endDrag}");
+    expect(cube).toContain("onPointerCancel={endDrag}");
+    expect(cube).toContain("onClickCapture={handleClickCapture}");
+  });
+
+  it("is the cube of both the 3D view and the second view", () => {
+    for (const file of ["WorkplaneViewport.tsx", "workplane/SecondViewWindow.tsx"]) {
+      const source = readFileSync(fileURLToPath(new URL(`../../apps/web/src/components/${file}`, import.meta.url)), "utf8");
+      expect(source).toMatch(/<ViewCube getRig=\{\w+\} cubeRef=\{\w+\} \/>/);
+    }
   });
 });

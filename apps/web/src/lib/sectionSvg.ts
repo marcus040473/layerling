@@ -271,3 +271,24 @@ export function sectionSvgDocument(bodies: readonly SectionBody[], axis: Section
   ].join("\n");
   return { svg, loopCount, openCount, bodyCount: drawn.length, width, height };
 }
+
+/**
+ * Where the SVG export cuts for the footprint on the workplane (#692): a hair above the workplane, so a flat bottom
+ * standing on it is cut through rather than along, and a part reaching below it is cut where it passes through (#727).
+ * When no body reaches through the workplane (all above it, all below it), the cut is a hair above the lowest point
+ * instead. Null when there is nothing to cut.
+ */
+export const FOOTPRINT_CUT_HEIGHT = 0.01;
+
+export function footprintCutOffset(meshes: readonly SectionMesh[]): number | null {
+  let lowest = Number.POSITIVE_INFINITY;
+  let highest = Number.NEGATIVE_INFINITY;
+  meshes.forEach((mesh) => mesh.vertices.forEach((vertex) => {
+    if (vertex[1] < lowest) lowest = vertex[1];
+    if (vertex[1] > highest) highest = vertex[1];
+  }));
+  if (!Number.isFinite(lowest)) return null;
+  const aboveWorkplane = FOOTPRINT_CUT_HEIGHT;
+  const reachesThrough = lowest <= aboveWorkplane && highest > aboveWorkplane;
+  return reachesThrough ? aboveWorkplane : lowest + FOOTPRINT_CUT_HEIGHT;
+}

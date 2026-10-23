@@ -1,0 +1,174 @@
+---
+title: "Schizzi: dal contorno al corpo"
+summary: Disegnare un contorno piatto, arrotondarne o smussarne gli angoli e trasformarlo in un corpo estrudendolo o ruotandolo.
+---
+
+Non tutto si può costruire combinando forme di base. Per creare pezzi con un contorno personalizzato, come una staffa, il profilo di un dente o un vaso, prima si disegna il **contorno** e poi lo si trasforma in un corpo. A questo serve la modalità Schizzo.
+
+## Iniziare uno schizzo
+
+In alto, passa da {{ui:editor.modeGeometry}} a {{ui:editor.modeSketch}}. Nel gruppo {{ui:sketch.group.create}} della barra multifunzione trovi affiancati tre pulsanti, uno per ciascun tipo di corpo che puoi ottenere dal contorno:
+
+- **{{ui:sketch.extrude}}:** il contorno viene estruso verso l’alto, come con un tagliabiscotti.
+- **{{ui:sketch.revolve}}:** il contorno ruota attorno a un asse, come su un tornio. Puoi creare vasi, tazze, coni e qualsiasi forma rotonda.
+- **{{ui:sketch.sweep}}:** il contorno segue un percorso, per esempio per creare una canalina che gira un angolo, un condotto o un anello attorno a una forma. Vedi [Estrudere lungo un percorso](#estrudere-lungo-un-percorso) qui sotto.
+
+L’editor mostra un foglio con una griglia: è la superficie su cui disegnare.
+
+## Disegnare
+
+In modalità Schizzo, la barra multifunzione è divisa in sezioni:
+
+- **Disegno:** {{ui:sketch.line}} crea segmenti rettilinei. Fai clic sui punti uno dopo l’altro; tenendo premuto [[Shift]], la nuova linea si aggancia a incrementi di 15°, comprese le direzioni orizzontale e verticale. La lunghezza e l’angolo della nuova linea sono mostrati vicino al puntatore. Puoi anche digitare la lunghezza desiderata: vedi [Disegnare linee con valori numerici](#disegnare-linee-con-valori-numerici). {{ui:sketch.arc}} disegna un vero arco circolare attraverso tre punti: fai clic prima sulle due estremità, poi sul punto attraverso cui deve passare l’arco. Fino al terzo clic, un’anteprima segue il puntatore e un messaggio indica il raggio. Se fai clic su un punto esistente, l’estremità vi si unisce e puoi chiudere il contorno con un arco. [[Esc]] elimina i punti già inseriti e torna a {{ui:sketch.select}}. Dopo la creazione, l’arco è geometria normale composta da punti e curve: puoi spostarlo, tagliarlo o cancellarlo come qualsiasi altra linea. {{ui:sketch.bezier}} si modella con le maniglie: fai clic su un punto e trascina nella direzione in cui la linea deve proseguire, come con lo strumento Penna di Illustrator o Inkscape. Più trascini, più la curva si piega. Anche il tratto verso il punto successivo si incurva mentre trascini, così vedi subito il risultato. Se trascinare mentre posizioni un punto ti risulta scomodo, per esempio se arrivi da Tinkercad e vuoi semplicemente fare clic sui punti, scegli {{ui:sketch.smooth}}. {{ui:sketch.smooth}} crea un percorso morbido attraverso i punti su cui fai clic. Per chiudere il contorno, alla fine fai clic di nuovo sul primo punto. Per terminare la serie di segmenti senza chiudere il contorno, fai clic destro senza spostare il puntatore oppure fai doppio clic sull’ultimo punto.
+- **Forme:** {{ui:sketch.addShape}} propone contorni già pronti: {{ui:sketch.rectangle}}, {{ui:sketch.circle}}, {{ui:sketch.ellipse}}, {{ui:sketch.halfCircle}}, {{ui:sketch.pieSlice}}, {{ui:sketch.boltCircle}} (un disco con fori), {{ui:sketch.triangle}}, {{ui:sketch.hexagon}}, {{ui:sketch.polygon}} e {{ui:sketch.star}}. Fai clic su una forma per inserirla all’origine dello schizzo oppure trascinala dal menu nella posizione desiderata. In fondo al menu, {{ui:sketch.polygonSides}} imposta il numero di lati del poligono e di punte della stella; {{ui:sketch.starInner}} determina quanto le rientranze della stella si avvicinano al centro (dal 10 al 90% del raggio esterno). Entrambi i valori si applicano alla forma successiva che aggiungi. Come tutte le forme dello schizzo, in seguito sono composte da normali punti d’angolo, che puoi spostare, arrotondare o smussare singolarmente.
+- **Sovrapposizioni:** se sovrapponi due contorni chiusi, restano due corpi separati che si uniranno nell’editor 3D; la sovrapposizione non crea un foro. Un foro si ottiene solo quando un contorno è interamente contenuto in un altro. Spostare i contorni non unisce le linee nei punti in cui si incrociano, quindi puoi separarli di nuovo. Se invece disegni una linea che attraversa altre linee, layerling inserisce un punto a ogni intersezione.
+- **Selezione:** {{ui:sketch.select}} sposta punti e linee. Facendo clic all’interno di un contorno chiuso selezioni tutto il contorno, così puoi trascinarlo o ridimensionarlo subito; all’interno di un foro selezioni il foro. Il riquadro della selezione ha otto maniglie: quelle agli angoli modificano insieme larghezza e altezza, mantenendo le proporzioni mentre tieni premuto [[Shift]]. Quelle sui lati modificano una sola dimensione. {{ui:sketch.keepProportions}} nella barra che appare mantiene le proporzioni senza [[Shift]]: angoli e lati ridimensionano allora allo stesso modo in entrambe le direzioni e, digitando una larghezza o un’altezza, cambia anche l’altra misura. layerling ricorda questa impostazione. {{ui:sketch.lockOutline}} accanto blocca il contorno selezionato, come un corpo bloccato nell’editor 3D (anche [[L]] esegue lo stesso comando): non puoi più spostarlo, ridimensionarlo, ruotarlo o modificarlo; le linee diventano più chiare e il riquadro perde le maniglie. Puoi comunque iniziare una linea dai suoi angoli. {{ui:sketch.unlockOutline}} o un altro [[L]] sbloccano il contorno. La maniglia rotonda sopra il riquadro ruota l’intera selezione attorno al proprio centro: il valore sopra la maniglia mostra l’angolo; tenendo premuto [[Shift]], la rotazione procede a scatti di 15°. [[R]] ruota un intero contorno chiuso di 45° a ogni pressione. Fai clic sull’indicatore della larghezza o dell’altezza per digitare una nuova misura, anche come somma (“60+12.5”) o percentuale (“150%”). Tenendo premuto [[Shift]], un clic su un punto o una linea lo aggiunge alla selezione o lo rimuove, così puoi selezionarne diversi e spostarli insieme. Trascina un riquadro nello spazio vuoto per selezionare tutto ciò che contiene. Puoi trascinare anche una linea: si sposta usando le sue due estremità oppure, se fa parte di una selezione, si sposta l’intera selezione. I tasti freccia spostano la selezione di un passo della griglia; con [[Shift]] lo spostamento è più ampio. Tenendo premuto [[Shift]] mentre trascini, il movimento resta vincolato a un asse. {{ui:sketch.refine}} aggiunge un punto facendo clic su un segmento e ne rimuove uno facendo clic sul punto. Sono inoltre disponibili {{ui:sketch.erase}} (fai clic su un punto o una linea per cancellarlo; trascina un riquadro su più elementi per cancellare tutto ciò che contiene; se ci sono elementi selezionati, il pulsante cancella la selezione) e l’inserimento di un’immagine di riferimento con {{ui:sketch.addImage}}. Quando elimini un punto, layerling unisce i due punti vicini, mantenendo chiuso il contorno. Per chiudere una fessura, per esempio dopo aver cancellato un lato di un esagono, trascina un’estremità aperta sull’altra: si agganciano e diventano un unico punto, chiudendo di nuovo il contorno. Nel punto in cui una linea taglia un cerchio, i tratti che proseguono diritti vengono uniti: arco con arco, linea con linea, e il cerchio resta rotondo. Per cancellare solo un tratto di cerchio, per esempio per creare un angolo arrotondato, fai clic esattamente sull’arco tra due punti con la gomma; il resto rimane.
+- **Appunti:** {{ui:editor.tool.copy}}, {{ui:editor.tool.paste}}, {{ui:editor.tool.duplicate}} e {{ui:editor.tool.delete}} agiscono sui punti, sulle linee e sulle immagini selezionate, come nell’editor 3D; [[Ctrl]]+[[X]] taglia. Gli elementi incollati o duplicati vengono posizionati accanto all’originale, con uno spazio di 10 mm, nel primo punto libero in cui non toccano linee esistenti: non si uniranno mai agli elementi già presenti. Restano selezionati, così puoi trascinarli subito nella posizione corretta.
+- **Cronologia:** {{ui:sketch.undo}} e {{ui:sketch.redo}}.
+- **Gestisci:** {{ui:editor.tool.note}} (o [[N]]) inserisce una nota nello schizzo, come nell’editor 3D: il clic successivo la posiziona, ovunque, anche su una linea. Trascina il fermaglio per spostarla; un clic sul fermaglio comprime la scheda. Le note di uno schizzo appartengono al suo corpo: nella vista 3D stanno sopra un corpo creato con {{ui:sketch.extrude}} o {{ui:sketch.sweep}} e sul profilo disegnato di uno creato con {{ui:sketch.revolve}}, e si spostano con lui. Riaprendo lo schizzo compaiono tutte le note del corpo, comprese quelle inserite in 3D. {{ui:sketch.undo}} annulla una nota come una linea e {{ui:sketch.cancel}} scarta ciò che è cambiato nelle note. Maggiori dettagli nel capitolo Misurazioni e annotazioni.
+- **Vista:** sposta la vista con il tasto centrale del mouse oppure con [[Shift]] o [[Ctrl]] insieme al tasto destro, come nell’editor 3D. [[Home]] mostra l’intero schizzo; [[F]] ingrandisce la selezione oppure, se non c’è una selezione, tutto lo schizzo; [[+]] e [[−]] ingrandiscono e rimpiccioliscono la vista, come nell’editor 3D. {{ui:camera.tapeTools}} nella barra laterale misura la distanza tra due punti. Anche lo schizzo mostra le misure appena fai clic su un elemento: la lunghezza di una linea oppure, per un punto, la lunghezza delle linee che vi si incontrano. Il pulsante {{ui:sketch.showMeasurements}} nella barra laterale nasconde o mostra queste misure se sono d’intralcio, per esempio mentre modelli le curve; il metro a nastro continua a funzionare. Su una linea retta puoi fare clic sull’etichetta della misura e digitare la lunghezza in millimetri; [[Enter]] la applica e [[Esc]] annulla. La linea mantiene la propria direzione, il punto iniziale resta fermo e si spostano le linee all’altra estremità. Se selezioni un punto finale, si sposta quello. [[Alt]]+[[Enter]] allunga la linea in entrambe le direzioni attorno al suo centro. Sulle curve, l’etichetta mostra solo la lunghezza.
+
+Un corpo può essere creato solo da un contorno **chiuso**.
+
+![Un contorno a forma di L. Nel punto d’angolo selezionato in alto a sinistra sono indicate in millimetri le lunghezze delle due linee e, in gradi, l’angolo tra loro.](shot:sketch-outline)
+
+I tasti da [[1]] a [[4]] selezionano gli strumenti di disegno nell’ordine in cui compaiono nella barra: {{ui:sketch.line}}, {{ui:sketch.bezier}}, {{ui:sketch.smooth}} e {{ui:sketch.refine}}. Funzionano finché non stai disegnando una linea; durante il disegno, le cifre indicano la lunghezza (vedi sotto).
+
+## Disegnare linee con valori numerici
+
+Dopo aver impostato il primo punto con {{ui:sketch.line}} o {{ui:sketch.smooth}}, digita un numero: accanto alla linea si aprono due campi, {{ui:sketch.typedLength}} in millimetri e {{ui:sketch.typedAngle}} in gradi. [[<]] o [[Tab]] sposta il cursore sul campo dell’angolo: per esempio, “50<30” crea una linea lunga 50 mm con un angolo di 30°, come in AutoCAD. [[Enter]] fissa il punto e puoi digitare subito la misura della linea successiva; [[Esc]] chiude i campi senza terminare la serie di linee.
+
+L’angolo si misura in senso antiorario a partire da destra: 0° verso destra, 90° verso l’alto, 180° verso sinistra e 270° verso il basso. Se lasci vuoto il campo dell’angolo, la linea segue il puntatore: inserisci soltanto la lunghezza e indica la direzione con il mouse. Le somme, come “40+12.5”, funzionano in entrambi i campi. Se il punto finirebbe fuori dalla piastra, il campo te lo segnala e resta in attesa di un altro valore.
+
+## Curvare un lato rettilineo
+
+Seleziona una linea retta e fai clic su {{ui:sketch.curveLine}} nella barra che appare: il lato si incurva verso l’esterno, come in Tinkercad, e mostra due maniglie. Trascinale per modellare la curva; più sono lontane, più la curva è pronunciata. {{ui:sketch.straightenLine}} rende di nuovo rettilineo il lato. Puoi arrotondare un punto selezionandolo e scegliendo {{ui:sketch.smooth}}: il punto riceve le proprie maniglie e le linee adiacenti diventano curve. Fai clic su una maniglia per selezionarla; poi i tasti freccia la spostano di un passo della griglia, oppure di un passo più ampio con [[Shift]], permettendoti di impostare la curva con precisione.
+
+![Il lato inferiore del contorno a L è stato curvato e le due maniglie sono visibili alle estremità.](shot:sketch-curve)
+
+## Leggere e impostare gli angoli
+
+Fai clic su un punto d’angolo in cui si incontrano **due linee rette**: accanto alle lunghezze, layerling mostra l’**angolo** tra loro in gradi, indicato da un piccolo arco. Su un contorno chiuso viene mostrato l’angolo interno, quindi un rientro ha un valore superiore a 180°. Fai clic sul valore e digita l’angolo desiderato. Una delle due linee ruota attorno all’angolo mantenendo la propria lunghezza; l’altra resta dov’è. La linea che ruoterà è tratteggiata. [[Tab]] passa all’altra linea, [[Enter]] applica il valore e [[Esc]] annulla. Gli elementi collegati all’estremità opposta della linea ruotata si spostano insieme a essa.
+
+Spostando un punto cambiano tre angoli: quello nel punto stesso e quelli nei due angoli vicini, alle estremità opposte delle linee che vi arrivano. Per questo layerling mostra anche questi due angoli, che puoi selezionare e modificare. Puoi così impostare, per esempio, l’angolo in basso a sinistra su 75,5° mentre è selezionato il punto in alto a sinistra che si sposterà. Anche qui puoi eseguire calcoli, per esempio “90-14.5”.
+
+Un angolo non viene mostrato se in quel punto si incontra una curva o se si uniscono più di due linee. Il pulsante {{ui:sketch.showMeasurements}} nella barra laterale nasconde gli angoli insieme alle lunghezze.
+
+## Arrotondare o smussare gli angoli
+
+Fai clic su un punto d’angolo e scegli {{ui:sketch.filletCorner}} oppure {{ui:sketch.chamferCorner}}. Compare un piccolo campo per impostare {{ui:sketch.filletRadius}} o {{ui:sketch.chamferDistance}}. Inserisci la misura e confermala con il segno di spunta. Lo strumento funziona sugli angoli formati da due linee rette.
+
+Puoi modificare più angoli insieme: selezionali tenendo premuto [[Shift]] e facendo clic su ciascuno, oppure racchiudili in un riquadro, quindi scegli {{ui:sketch.filletCorner}} o {{ui:sketch.chamferCorner}} dalla barra che appare. Tutti ricevono lo stesso raggio o la stessa distanza. Se due angoli selezionati condividono un lato, ciascuno può occupare al massimo il 45% di quel lato: un rettangolo arrotondato su tutti i lati risulterà quindi uniforme. I punti che non sono angoli tra due linee rette vengono esclusi e un messaggio indica quanti. Un riquadro attorno a un’intera forma, o un clic al suo interno, seleziona insieme angoli e linee; la barra propone allora {{ui:sketch.curveLine}} e {{ui:sketch.straightenLine}} per tutte le linee selezionate, accanto agli strumenti per gli angoli.
+
+![L’angolo in alto a sinistra è arrotondato con un raggio di 12 mm.](shot:sketch-fillet)
+
+## Specchiare
+
+Seleziona punti e linee, facendo clic, tenendo premuto [[Shift]] mentre fai clic oppure trascinando un riquadro attorno agli elementi. Poi fai clic su {{ui:sketch.mirror}} nella barra e scegli l’asse: {{ui:sketch.mirrorLeftRight}} riflette rispetto all’asse verticale al centro della piastra; {{ui:sketch.mirrorTopBottom}} rispetto all’asse orizzontale; {{ui:sketch.mirrorAcrossLine}} rispetto a una linea retta dello schizzo che selezioni con un clic. La copia viene aggiunta dall’altro lato e l’originale resta dov’è; non sono collegati, quindi puoi modificarli separatamente. I punti che si trovano sull’asse vengono condivisi: se le estremità di un contorno a metà coincidono con l’asse, il contorno risultante si chiude. Puoi quindi disegnare metà di una staffa, selezionarla, specchiarla e creare il corpo. Una linea di costruzione è un buon asse. [[Esc]] annulla.
+
+## Linee di costruzione
+
+Una linea di costruzione ti aiuta a posizionare i punti senza entrare a far parte del corpo. È tratteggiata e non viene mai considerata parte del contorno: puoi prolungarla quanto vuoi oltre la forma senza che il corpo si allarghi.
+
+- Attiva {{ui:sketch.construction}} nel gruppo {{ui:sketch.group.draw}}. Da quel momento, le nuove linee, comprese quelle inserite con valori numerici, diventano linee di costruzione. Premi di nuovo il pulsante per tornare alle linee normali.
+- Per trasformare una linea già disegnata in una linea di costruzione, selezionala e scegli {{ui:sketch.makeConstruction}}. {{ui:sketch.makeSolid}} la riconverte in una linea normale.
+- I nuovi punti si agganciano ai punti in cui la linea di costruzione incrocia un’altra linea, indicati da un cerchio blu, e alle sue estremità. Così puoi posizionare un angolo a metà di una linea, a distanza fissa da uno spigolo o su un’intersezione, senza fare calcoli.
+- I nuovi punti si agganciano anche al punto medio di ogni linea retta dello schizzo, al centro di ogni cerchio e angolo arrotondato e ai punti medi dei lati di un corpo visualizzato sotto lo schizzo (#624). Un punto che stai trascinando ignora il punto medio delle proprie linee.
+- {{ui:sketch.fromMiddle}} nel gruppo {{ui:sketch.group.draw}} disegna una linea a partire dal suo punto medio: fai clic prima sul centro e poi sull’estremità; la linea si estende per la stessa lunghezza anche dall’altro lato. Il centro diventa un punto vero e proprio. Fai di nuovo clic sul pulsante per tornare a disegnare linee normali.
+- Una linea di costruzione non divide il contorno nei punti in cui lo attraversa. Durante una rotazione può anche trovarsi a destra dell’asse.
+
+## Trasformare lo schizzo in un corpo
+
+Fai clic su {{ui:sketch.finishSketch}}. Il contorno diventa un corpo appoggiato al piano di lavoro. Nelle sue impostazioni puoi modificare altezza, colore e tutto il resto, come per qualsiasi altra forma. Quando lo ridimensioni, dopo un istante layerling lo ricrea a partire dallo schizzo, che si ridimensiona insieme al corpo. In questo modo resta una geometria esatta, su cui puoi applicare smussi e raccordi; se in seguito riapri lo schizzo, avrà le dimensioni correnti del corpo.
+
+Se il piano di lavoro è appoggiato sul lato di un corpo, disegni guardando quel lato: anche sul corpo finale, la parte superiore dello schizzo sarà rivolta verso l’alto. Il contorno tenue del corpo nella vista Schizzo ne mostra la posizione. Se invece il piano di lavoro attraversa un corpo, la vista Schizzo mostra il contorno del taglio: per esempio, un corpo cavo appare come un anello e puoi allineare lo schizzo alle sue pareti. I punti posizionati o trascinati vicino a un angolo di questi contorni si agganciano esattamente a esso; un piccolo cerchio blu indica l’aggancio. Così puoi includere nello schizzo gli spigoli di altri corpi anche quando il piano di lavoro non vi coincide esattamente. Per ricalcare un oggetto esistente, attiva {{ui:sketch.showPartEdges}} (il pulsante con i livelli tra i comandi della vista a sinistra): tutti gli spigoli dei corpi vengono disegnati sul piano dello schizzo, sottili e tenui, come visti in trasparenza, a qualsiasi altezza si trovino. Un piano verticale, per esempio appoggiato a una faccia anteriore, mostra così la vista frontale. La scelta viene ricordata dal browser.
+
+![Il contorno è diventato un corpo. L’angolo è arrotondato.](shot:sketch-result)
+
+Con {{ui:inspector.editSketch}} puoi tornare allo schizzo in qualsiasi momento per modificarlo. Anche un doppio clic sul corpo lo apre, come in Tinkercad (un corpo bloccato resta chiuso); {{ui:workspace.doubleClickOpensSketch}} nelle impostazioni disattiva questa funzione. Tuttavia, gli smussi e i raccordi già applicati al corpo vengono persi, perché i suoi spigoli sono creati di nuovo.
+
+Uno schizzo con più contorni crea un solo corpo e i contorni sovrapposti vengono uniti. Per ottenere un corpo separato per ciascun contorno, seleziona il corpo e fai clic su {{ui:inspector.separateParts}}: ogni contorno esterno diventa un corpo autonomo insieme ai fori che contiene e mantiene altezza, colore e posizione del corpo originale. Ogni parte ha uno schizzo modificabile, complete delle linee di costruzione; puoi quindi alzarle o abbassarle singolarmente e poi unirle o sottrarle. I trattamenti degli spigoli impediscono questa operazione, così come un corpo già allungato: in quel caso viene separato come mesh.
+
+**Creare un altro tipo di corpo dallo stesso schizzo:** l’etichetta in cima allo schizzo indica il risultato, {{ui:sketch.modeBadgeExtrude}}, {{ui:sketch.modeBadgeRevolve}} o {{ui:sketch.modeBadgeSweep}}. Fai clic sull’etichetta e scegli un’altra modalità, anche mentre modifichi un corpo esistente. Per esempio, un SVG importato, che inizialmente viene estruso, diventa un vaso o una manopola se lo converti in {{ui:sketch.modeBadgeRevolve}}. Se un contorno oltrepassa l’asse, viene spostato a sinistra finché il suo bordo destro coincide con l’asse: così la sezione di metà di un SVG ruota attorno al proprio lato rettilineo. [[Ctrl]]+[[Z]] annulla lo spostamento. Quando completi l’operazione, il nuovo corpo sostituisce quello precedente mantenendone nome, colore e altezza della base. Come per qualsiasi modifica allo schizzo, i trattamenti degli spigoli vengono rimossi.
+
+### Ruotare un profilo
+
+Per creare un corpo mediante rotazione, disegna **la metà della sezione trasversale a sinistra dell’asse** visualizzato nello schizzo. Accanto compare un’anteprima 3D della rotazione, che mostra subito l’aspetto del corpo. Il contorno deve essere chiuso, oppure puoi creare una linea aperta da usare come traccia, come descritto più sotto. Al termine, fai clic su {{ui:sketch.finishRevolve}}. Gli altri corpi del progetto sono mostrati frontalmente, nella stessa vista del profilo e con l’asse al centro: puoi disegnare il profilo accanto o sopra di loro. Il corpo viene posizionato dove l’hai disegnato e la linea orizzontale al centro dello schizzo rappresenta il pavimento: un profilo disegnato sopra di essa crea un corpo più alto, il cui punto più basso è la base.
+
+Un corpo ottenuto con una rotazione è una geometria esatta, come quello estruso: puoi applicare smussi e raccordi e svuotarlo per creare una tazza o un vaso. Un corpo ruotato con una versione precedente di layerling è una mesh; apri {{ui:inspector.editSketch}} e completa di nuovo lo schizzo per renderlo esatto. Come in precedenza, un profilo che attraversa l’asse non può essere creato come geometria esatta e diventa una mesh.
+
+**Un unico filamento continuo: {{ui:prop.pitch}}.** Una rotazione trasforma il contorno in anelli chiusi. Seleziona il corpo ottenuto e imposta {{ui:prop.pitch}} nel pannello delle proprietà su un valore maggiore di 0: indica di quanto sale a ogni giro e trasforma il profilo in un’elica continua, come il filamento su una bobina o una molla. {{ui:prop.sweep}} diventa {{ui:prop.turns}} e permette di impostare fino a 200 giri; un numero negativo crea una spirale sinistrorsa. Se i giri sono più ravvicinati dell’altezza del profilo, si fondono in un unico corpo: puoi usare anche un nucleo pieno con passo fine. L’elica è una mesh, quindi smussi, raccordi e svuotamento non sono disponibili; se crei molti giri, mantieni basso {{ui:prop.sides}}. Impostando il passo su 0 tornano gli anelli.
+
+## Estrudere lungo un percorso
+
+{{ui:sketch.sweep}} estrude un contorno lungo un percorso, per esempio una canalina che gira un angolo, un condotto, una protezione attorno a una cinghia o un anello intorno a un esagono. Lo trovi accanto a {{ui:sketch.extrude}} e {{ui:sketch.revolve}} nel gruppo {{ui:sketch.group.create}}.
+
+Disegna due elementi sullo stesso foglio:
+
+- **La sezione trasversale**, come al solito sotto forma di contorno chiuso. Disegnala come apparirebbe guardando lungo il percorso, dal suo punto iniziale: la direzione trasversale corrisponde alla sinistra e alla destra dello schizzo, mentre la parte superiore resta in alto sul corpo finale. Una sezione cava, una canalina o un tubo si disegna con un contorno e un altro al suo interno. La sezione è centrata sul percorso e il punto più basso del corpo poggia sul piano dello schizzo.
+- **Il percorso**, come {{ui:sketch.construction}}: attivalo e disegna una linea o una curva continua, aperta o chiusa (una linea chiusa crea un anello). Il percorso resta piatto sul piano dello schizzo.
+
+Disegna la sezione vicino all’estremità del percorso da cui deve iniziare: il percorso partirà dall’estremità a essa più vicina. Poi fai clic su {{ui:sketch.finishSweep}}. Un angolo tra segmenti rettilinei diventa un taglio a mitra, mentre una curva resta uniforme e la sezione rimane verticale per tutto il percorso. Il corpo è una geometria esatta, come quello estruso: puoi applicare raccordi, smussi ed esportarlo in STEP. Se manca un contorno chiuso o un percorso, oppure se ci sono più percorsi separati, layerling te lo segnala. Con {{ui:inspector.editSketch}} puoi riaprire lo schizzo e modificare la sezione o il percorso.
+
+## Creare un corpo dalla traccia
+
+Normalmente, il corpo occupa l’area all’interno di un contorno chiuso. Con {{ui:sketch.stroke}} nella sezione {{ui:sketch.group.finish}}, puoi invece trasformare la linea stessa in un corpo con la larghezza desiderata. Attiva {{ui:sketch.strokeOn}} nel pannello: lo schizzo mostra subito il risultato.
+
+- Un **contorno chiuso** diventa una cornice. {{ui:sketch.strokeAlign}} stabilisce dove si trova la parete: {{ui:sketch.strokeAlign.center}} lungo la linea disegnata, {{ui:sketch.strokeAlign.inside}} all’interno oppure {{ui:sketch.strokeAlign.outside}} all’esterno. L’opzione esterna è utile per aggiungere una tolleranza: disegna il contorno di un foro, per esempio una coda di rondine, e applica una traccia esterna di 0,2 mm per creare il gioco necessario alla stampa.
+- Una **linea aperta** diventa una striscia centrata sulla linea. {{ui:sketch.strokeCap}} determina la forma delle estremità: {{ui:sketch.strokeCap.flat}}, {{ui:sketch.strokeCap.square}} (più lunga di metà della larghezza) o {{ui:sketch.strokeCap.round}}.
+- {{ui:sketch.strokeJoin}} si applica a entrambe le forme: {{ui:sketch.strokeJoin.miter}}, {{ui:sketch.strokeJoin.round}} o {{ui:sketch.strokeJoin.bevel}}.
+
+Lo schizzo conserva la linea disegnata. Riaprendolo puoi continuare a modificare la linea e la traccia; disattivando l’opzione, il corpo viene ricreato usando di nuovo l’area. Per generare la traccia, le curve vengono suddivise in brevi segmenti rettilinei.
+
+Durante una rotazione, la traccia diventa una parete sottile: disegna **una sola linea aperta** a sinistra dell’asse per creare la parete di un vaso o di una tazza, attiva {{ui:sketch.stroke}} e imposta la larghezza; la rotazione farà girare quella striscia. La parte che attraversa l’asse viene tagliata lungo l’asse stesso.
+
+## Riempimento e sagoma
+
+Puoi impostare la traccia anche senza aprire lo schizzo: nelle proprietà di un corpo creato da uno schizzo scegli {{ui:prop.sketchFill.area}}, {{ui:prop.sketchFill.outside}}, {{ui:prop.sketchFill.inside}} o {{ui:prop.sketchFill.center}} sotto {{ui:prop.sketchFill}}, con {{ui:prop.sketchLineWidth}} e {{ui:sketch.strokeJoin}}. Il corpo viene ricreato subito nella posizione corrente. Queste opzioni corrispondono alle modalità di riempimento dell’importazione SVG di Tinkercad: predefinita, contorno esterno e contorno interno. {{ui:prop.sketchFill.grow}} mantiene l’area piena e la estende in ogni direzione della larghezza della traccia, con angoli vivi, arrotondati o smussati. È utile per creare una base sotto un logo multicolore, risultato che con la sola traccia esterna sarebbe soltanto un anello. {{ui:prop.sketchFill.shrink}} fa l’opposto: l’area resta piena e il bordo si sposta verso l’interno della larghezza della traccia, compresi i fori, che si allargano. Puoi applicare entrambe le opzioni a copie dello stesso schizzo per creare un accoppiamento: il foro mantiene la dimensione disegnata, mentre la parte che lo attraversa viene rimpicciolita di 0,5 mm con {{ui:prop.sketchFill.shrink}}; oppure puoi creare una parete interna a una forma ricavata dallo stesso contorno. Se la larghezza supera lo spazio disponibile nel contorno, non rimane alcuna area. Nel pannello della traccia dello schizzo, le stesse due opzioni si trovano sotto {{ui:sketch.strokeAlign}}.
+
+{{ui:prop.sketchSilhouette}} esclude tutti i contorni interamente contenuti in un altro, quindi i fori e tutto ciò che si trova al loro interno. Rimane solo il contorno esterno. Insieme a {{ui:prop.sketchFill.outside}}, permette di creare un tagliabiscotti: importa due volte lo stesso SVG, una con la sagoma come area per la base e l’altra con la sagoma e una traccia esterna da 1 a 2 mm per le pareti. L’interruttore è disponibile anche nel pannello {{ui:sketch.stroke}} in modalità Schizzo.
+
+Quando il corpo viene ricreato, i raccordi e gli smussi applicati agli spigoli vengono rimossi, come quando modifichi lo schizzo.
+
+## Pareti inclinate per stampi
+
+Un corpo estruso da uno schizzo ha pareti verticali. Per uno stampo, una matrice per goffratura o un punzone servono invece pareti inclinate, sia all’esterno sia all’interno, e uno spessore uniforme. layerling non offre un angolo di sformo per l’estrusione, ma puoi ottenere questo risultato con {{ui:inspector.taper}} su contorni semplici. Ecco un metodo:
+
+1. Disegna il contorno e il foro necessario, quindi crea un corpo. Duplicalo con [[Ctrl]]+[[D]].
+2. Sul primo corpo, attiva {{ui:prop.sketchSilhouette}} per riempire il foro e usa {{ui:inspector.taper}} per rendere la base più larga della sommità.
+3. Sulla copia, riapri lo schizzo ed elimina il contorno esterno, lasciando solo quello del foro. Completa lo schizzo, imposta il corpo come {{ui:inspector.hole}} e usa {{ui:inspector.taper}} per renderne la base più stretta della sommità.
+4. Sposta il foro dentro il primo corpo, al posto del foro originale, e raggruppa i due corpi.
+
+Le pareti saranno inclinate sia all’esterno sia all’interno. La rastremazione ridimensiona l’intero contorno: il metodo è esatto per forme semplici, per cui puoi impostare dimensioni che mantengano parallele le pareti, ma è solo approssimativo per i dettagli fini, come le lettere.
+
+## Usare un’immagine come modello
+
+Con {{ui:sketch.addImage}} puoi inserire una foto o un disegno sotto lo schizzo e ricalcarlo. Puoi modificarne dimensioni, opacità e posizione. Quando l’immagine è nella posizione giusta, bloccarla con [[L]] evita di spostarla per sbaglio mentre disegni. Un’immagine bloccata non intralcia: i clic la attraversano, così puoi selezionare punti e linee sovrapposti e trascinare un riquadro attorno a essi. Per selezionarla di nuovo, per esempio per sbloccarla, fai clic tenendo premuto [[Alt]]. Se le impostazioni sul bordo destro coprono l’immagine, spostale trascinando la barra del titolo; un doppio clic le riancora.
+
+In {{ui:sketch.imageAlign}} puoi correggere l’orientamento di una foto non scattata frontalmente:
+
+- **{{ui:sketch.imageRotation}}:** ruota l’immagine attorno al suo centro usando la maniglia rotonda sopra il riquadro oppure inserendo un valore in gradi. Con [[Shift]] la maniglia si aggancia a incrementi di 15°.
+- **{{ui:sketch.centreImageX}}** e **{{ui:sketch.centreImageY}}:** posizionano il centro dell’immagine su X = 0 o Y = 0. Per una rotazione, X = 0 è l’asse e l’immagine risulta simmetrica rispetto a esso.
+- **{{ui:sketch.calibrateImage}}:** fai clic su due punti dell’immagine la cui distanza reale è nota, per esempio le estremità di un righello o un diametro noto, e inserisci la misura. L’immagine viene ridimensionata in modo uniforme per corrispondere alla distanza reale; il primo punto resta fermo.
+- **{{ui:sketch.cropImage}}:** le maniglie del riquadro ritagliano l’immagine invece di ridimensionarla. La parte tagliata resta memorizzata e ricompare con {{ui:sketch.uncropImage}} oppure trascinando di nuovo una maniglia verso l’esterno.
+
+Tutte e quattro le opzioni modificano solo l’immagine di riferimento, non lo schizzo.
+
+## Tasti in modalità Schizzo
+
+| Tasto | Effetto |
+| --- | --- |
+| [[Esc]] | disattiva lo strumento nota; altrimenti disattiva lo strumento (torna a {{ui:sketch.select}}), poi deseleziona tutto |
+| [[Delete]] | elimina l’elemento selezionato |
+| [[Ctrl]]+[[C]] | copia la selezione |
+| [[Ctrl]]+[[X]] | taglia la selezione |
+| [[Ctrl]]+[[V]] | incolla |
+| [[Ctrl]]+[[D]] | duplica la selezione |
+| [[Ctrl]]+[[Z]] | annulla |
+| [[Shift]] | durante il disegno: aggancia la linea a incrementi di 15°; durante il trascinamento: vincola il movimento a un asse |
+| cifra, [[<]], [[Tab]], [[Enter]] | durante il disegno: inserisce e conferma lunghezza e angolo della linea successiva |
+| [[R]] | ruota lo schizzo chiuso di 45° |
+| [[L]] | blocca o sblocca il contorno selezionato o l’immagine di riferimento |
+| [[N]] | inserisci una nota: il clic successivo la mette nello schizzo |
+
+> **Suggerimento:** usa meno punti possibile. Un contorno con pochi punti posizionati bene produce un corpo più liscio di un contorno intricato con moltissimi punti.

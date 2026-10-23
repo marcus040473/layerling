@@ -403,3 +403,54 @@ export function rulerTicks(length: number, inches = false): RulerTick[] {
   }
   return ticks;
 }
+
+/** The size of a green number field with its switch, in screen pixels (a little over the real one, so a gap is left). */
+export const CORNER_RULER_FIELD_SIZE = { width: 74, height: 30 } as const;
+
+type ScreenPoint = { x: number; y: number };
+type ScreenBox = { x: number; y: number; halfWidth: number; halfHeight: number };
+
+function boxesOverlap(a: ScreenBox, b: ScreenBox) {
+  return Math.abs(a.x - b.x) < a.halfWidth + b.halfWidth && Math.abs(a.y - b.y) < a.halfHeight + b.halfHeight;
+}
+
+/**
+ * Moves the centres of the green number fields apart where they would cover each other or the ruler's
+ * own buttons (#777): a body next to the ruler's corner has next to no distance, so all numbers sit
+ * where the arms meet. A field that is clear stays where it is; one that is not takes the nearest
+ * free place around its own spot, to the side, above or below. The order is kept, so the first
+ * numbers stay and the later ones step aside.
+ */
+export function spreadCornerRulerFields(
+  fields: ScreenPoint[],
+  obstacles: ScreenBox[] = [],
+  size: { width: number; height: number } = CORNER_RULER_FIELD_SIZE,
+): ScreenPoint[] {
+  const halfWidth = size.width / 2;
+  const halfHeight = size.height / 2;
+  const placed: ScreenBox[] = [];
+  return fields.map((field) => {
+    const free = (x: number, y: number) => {
+      const box = { x, y, halfWidth, halfHeight };
+      return !placed.some((other) => boxesOverlap(box, other)) && !obstacles.some((other) => boxesOverlap(box, other));
+    };
+    let best: ScreenPoint = field;
+    if (!free(field.x, field.y)) {
+      let bestDistance = Infinity;
+      for (let ring = 1; ring <= 4; ring += 1) {
+        for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+          const x = field.x + dx * ring * size.width;
+          const y = field.y + dy * ring * size.height;
+          const distance = Math.hypot(x - field.x, y - field.y);
+          if (distance < bestDistance && free(x, y)) {
+            best = { x, y };
+            bestDistance = distance;
+          }
+        }
+        if (bestDistance < Infinity) break;
+      }
+    }
+    placed.push({ x: best.x, y: best.y, halfWidth, halfHeight });
+    return best;
+  });
+}

@@ -57,7 +57,7 @@ Del, uvožen kot STEP, prav tako obdrži svojo geometrijo CAD: posnetja, zaokro�
 
 1. Izberi telo in klikni {{ui:editor.tool.hollow}}, ali klikni z desnim gumbom na telo in izberi v meniju.
 2. Nastavi {{ui:shell.wall}}.
-3. Pod {{ui:shell.openings}} vklopi strani, ki ostanejo odprte: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} ali {{ui:shell.side.right}}, poljubno veliko – {{ui:shell.side.front}} sama da jašek za predal, {{ui:shell.side.left}} in {{ui:shell.side.right}} predor. Če ni vklopljena nobena stran, telo ostane povsod zaprto, z votlino v sredini.
+3. Pod {{ui:shell.openings}} vklopi strani, ki ostanejo odprte: {{ui:shell.side.top}}, {{ui:shell.side.bottom}}, {{ui:shell.side.front}}, {{ui:shell.side.back}}, {{ui:shell.side.left}} ali {{ui:shell.side.right}}, poljubno veliko – {{ui:shell.side.front}} sama da jašek za predal, {{ui:shell.side.left}} in {{ui:shell.side.right}} predor. Če ni vklopljena nobena stran, telo ostane povsod zaprto, z votlino v sredini. {{ui:shell.side.closed}} izklopi vse strani z enim klikom. {{ui:shell.side.top}} je ob odprtju plošče že vklopljen; klik nanj zgornjo stran spet zapre. Telo, zaprto z vseh strani, je od zunaj videti nespremenjeno: votlino pokaže prerez.
 4. Odloči, ali naj bodo {{ui:shell.edges}} {{ui:shell.edges.round}} ali {{ui:shell.edges.sharp}}.
 5. Klikni {{ui:shell.apply}}.
 

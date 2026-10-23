@@ -93,7 +93,12 @@ type OriginalFaceSnapshot = {
 function faceBoundaryPoints(cad: OcctKernel, face: ShapeHandle): Vec3[] {
   const edges = cad.getSubShapes(face, "edge");
   try {
-    const points = edges.slice(0, 6).map((edge) => edgeMidpoint(cad, edge));
+    // The tip of a cone is an edge of no length; the wall has no normal there, so it would fail the comparison.
+    const real = edges.filter((edge) => {
+      const box = cad.getBoundingBox(edge, false);
+      return Math.hypot(box.xmax - box.xmin, box.ymax - box.ymin, box.zmax - box.zmin) > 1e-6;
+    });
+    const points = real.slice(0, 6).map((edge) => edgeMidpoint(cad, edge));
     return points.length ? points : [faceSamplePoint(cad, face)];
   } finally {
     releaseAll(cad, edges);

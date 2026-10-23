@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { handleViewArrowKey, panViewBy, VIEW_PAN_COARSE_STEP, VIEW_PAN_STEP, visibleViewHeight } from "@/lib/viewArrowKeys";
+import { handleViewArrowKey, panViewBy, viewArrowStep, VIEW_PAN_COARSE_STEP, VIEW_PAN_STEP, visibleViewHeight } from "@/lib/viewArrowKeys";
 
 const key = (key: string, mods: Partial<{ shiftKey: boolean; ctrlKey: boolean; metaKey: boolean; altKey: boolean }> = {}) => ({
   key, shiftKey: false, ctrlKey: false, metaKey: false, altKey: false, ...mods,
@@ -66,5 +66,23 @@ describe("panViewBy", () => {
     const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 1, 1000);
     camera.zoom = 2;
     expect(visibleViewHeight(viewFrom(camera))).toBeCloseTo(50);
+  });
+});
+
+describe("the arrow key step", () => {
+  const press = (key: string, modifiers: Partial<{ shiftKey: boolean; ctrlKey: boolean; metaKey: boolean; altKey: boolean }> = {}) => ({
+    key, shiftKey: false, ctrlKey: false, metaKey: false, altKey: false, ...modifiers,
+  });
+
+  it("turns with the arrows and slides with Ctrl or Cmd, as the 3D view does with nothing selected", () => {
+    expect(viewArrowStep(press("ArrowRight"))).toEqual({ orbit: [-15, 0] });
+    expect(viewArrowStep(press("ArrowUp", { shiftKey: true }))?.orbit?.[1]).toBe(90);
+    expect(viewArrowStep(press("ArrowLeft", { ctrlKey: true }))).toEqual({ pan: [-VIEW_PAN_STEP, 0] });
+    expect(viewArrowStep(press("ArrowDown", { metaKey: true, shiftKey: true }))).toEqual({ pan: [0, -VIEW_PAN_COARSE_STEP] });
+  });
+
+  it("leaves other keys and Alt alone", () => {
+    expect(viewArrowStep(press("a"))).toBeNull();
+    expect(viewArrowStep(press("ArrowLeft", { altKey: true }))).toBeNull();
   });
 });

@@ -9,7 +9,7 @@ export const DEFAULT_GEAR_TYPE: GearType = "spur";
 export const DEFAULT_GEAR_HELIX_ANGLE = 22.5;
 export const DEFAULT_GEAR_HELIX_QUALITY = 16;
 export const MIN_GEAR_TEETH = 6;
-export const MAX_GEAR_TEETH = 64;
+export const MAX_GEAR_TEETH = 500;
 export const MIN_GEAR_HELIX_ANGLE = -45;
 export const MAX_GEAR_HELIX_ANGLE = 45;
 export const MIN_GEAR_HELIX_QUALITY = 4;
@@ -177,14 +177,42 @@ export function involuteGearPair(a: GearPairShape, b: GearPairShape) {
   const modules = [moduleOf(a), moduleOf(b)] as const;
   const current = Math.hypot(a.x - b.x, a.z - b.z);
   const internal = isRing(a) || isRing(b);
-  if (Math.abs(modules[0] - modules[1]) > 1e-3 * Math.max(modules[0], modules[1])) return { modules, current, distance: null, internal };
   const teethA = normalizeGearTeeth(a.teeth);
   const teethB = normalizeGearTeeth(b.teeth);
-  if (internal) {
-    const [ring, pinion] = isRing(a) ? [teethA, teethB] : [teethB, teethA];
-    return { modules, current, distance: (modules[0] * Math.max(0, ring - pinion)) / 2, internal };
-  }
-  return { modules, current, distance: involuteCentreDistance(modules[0], teethA, teethB), internal };
+  const [ring, pinion] = isRing(a) ? [teethA, teethB] : [teethB, teethA];
+  // The module both would need to mesh where their centres stand now (#645): centre distance x 2 / (teeth + teeth),
+  // inside a ring gear / (ring teeth - pinion teeth). None while the centres sit on one another.
+  const teethSpan = internal ? ring - pinion : teethA + teethB;
+  const fitModule = current > 1e-6 && teethSpan > 0 ? (current * 2) / teethSpan : null;
+  if (Math.abs(modules[0] - modules[1]) > 1e-3 * Math.max(modules[0], modules[1])) return { modules, current, distance: null, internal, fitModule };
+  if (internal) return { modules, current, distance: (modules[0] * Math.max(0, ring - pinion)) / 2, internal, fitModule };
+  return { modules, current, distance: involuteCentreDistance(modules[0], teethA, teethB), internal, fitModule };
+}
+
+type GearResizeShape = GearPairShape & Pick<WorkplaneShape, "id" | "centerHoleSize" | "toothSize">;
+
+/**
+ * "Fit module" (#645): both gears of a pair resized to one module, so they mesh where their
+ * centres stand now. Each keeps its teeth, place, height and centre hole - the hole only shrinks
+ * when the smaller gear has no room left for it.
+ */
+export function gearPairFitPatches(a: GearResizeShape, b: GearResizeShape, module: number) {
+  return [a, b].map((shape) => {
+    const width = shape.width ?? shape.size;
+    const depth = shape.depth ?? width;
+    const next = gearSizeForModule(module, { ...shape, width, depth });
+    // A gear with no hole size of its own has one that follows its size; it is taken as it is now.
+    const hole = normalizeGearCenterHoleSize(shape.centerHoleSize, width, depth, shape.toothSize, shape);
+    return {
+      id: shape.id,
+      patch: {
+        width: next.width,
+        depth: next.depth,
+        size: Math.max(next.width, next.depth),
+        centerHoleSize: normalizeGearCenterHoleSize(hole, next.width, next.depth, shape.toothSize, shape),
+      } satisfies Partial<WorkplaneShape>,
+    };
+  });
 }
 
 /** inv(a) = tan a - a, the angle an involute has turned through at pressure angle a. */

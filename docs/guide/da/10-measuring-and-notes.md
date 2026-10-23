@@ -61,10 +61,11 @@ En note registrerer hvad geometrien ikke siger: "Denne skrue er 0,3 mm for stram
 - {{ui:note.detach}} frigør en vedhæftet note fra formen.
 - {{ui:editor.tool.group}} tager en vedhæftet note med ind i gruppen; {{ui:editor.tool.ungroup}} giver den videre til den synlige del under den, også en gruppe indeni. Mens en gruppe er åben med {{ui:group.edit}}, følger dens noter med den del, de sidder på, og går tilbage til gruppen med {{ui:group.done}}; annullering sætter dem tilbage, som de var.
 - Hvis dens form slettes, eller der ikke længere er en synlig form under den, bliver noten stående, hvor den var, på arbejdsplanet.
-- Trækning flytter noten, et klik åbner den til redigering.
+- Træk i nålen flytter noten. Et klik på nålen folder kortet sammen, så kun det lille tal bliver stående, og et klik mere åbner det igen. Et klik i teksten redigerer den.
 - Mens du skriver, bevarer [[Enter]] teksten og [[Esc]] sætter den tilbage til hvordan den var før du begyndte; [[Shift]]+[[Enter]] starter en ny linje.
+- **I en skitse** sætter {{ui:editor.tool.note}} (under {{ui:editor.group.manage}}) eller [[N]] også en note, hvor som helst på skitsen. Alle en skitses noter hører til dens form: i 3D-visningen sidder de på den, oven på en form lavet med {{ui:sketch.extrude}} eller {{ui:sketch.sweep}} og på den tegnede profil af en form lavet med {{ui:sketch.revolve}}, og de flytter sig med den. Når du åbner skitsen igen, viser den formens noter, også dem der er sat i 3D. I skitsen tager {{ui:sketch.undo}} en note tilbage ligesom en linje, og {{ui:sketch.cancel}} kasserer det, du har ændret i noterne.
 
-Noter gemmes i designet, optræder i ingen eksport og kan vises eller skjules med {{ui:visibility.notes}}.
+Noter gemmes i designet, optræder i ingen eksport og kan vises eller skjules med {{ui:visibility.notes}} (under {{ui:editor.visibilityOptions}}, pilen ved siden af øje-ikonet).
 
 ## Referencepunkter
 
@@ -75,3 +76,15 @@ Et referencepunkt er et bart mærke i rummet, som en blyantsmarkering eller et l
 - Når du trækker en form, snapper dens kanter og dens centrum til et punkt, ligesom de snapper til andre former ({{ui:workspace.objectSnap}}). Vinkelmåleren snapper også til punkter.
 - Punkter gemmes i designet, optræder i ingen eksport og vises eller skjules sammen med noterne af {{ui:visibility.notes}}.
 - En AI kan markere, liste og fjerne dem med `layerling_add_reference_points`, `layerling_list_reference_points` og `layerling_remove_reference_points`.
+
+## Referencebilleder
+
+Et referencebillede er et billede at rette dele ind efter: læg et foto af et printkort i bunden af dets kasse, og placer afstandsstykker, huller og udskæringer til stik lige oven på det. Det er en hjælpelinje, ikke en form: det bliver aldrig printet eller eksporteret (STL, 3MF, OBJ, STEP, SVG), aldrig en del af en gruppe, en samling eller et snit, og printestimatet tæller det ikke med.
+
+- Åbn {{ui:editor.import}} og vælg {{ui:import.referenceImage}}, derefter et PNG-, JPG-, WebP-, GIF- eller BMP-billede. Det lægges på arbejdsplanet - på pladen eller på den flade, du satte arbejdsplanet på - med den længste side 100 mm, halvt gennemsigtigt.
+- Flyt, drej og skaler det med håndtagene som enhver form. En form foran det vælges først, så arbejde oven på det griber ikke billedet.
+- {{ui:referenceImage.seeThrough}} i dets indstillinger falmer det fra helt dækkende til næsten usynligt.
+- {{ui:referenceImage.calibrate}} giver det dets rigtige størrelse, som i skitsen: klik på to punkter på billedet, hvis virkelige afstand du kender - f.eks. to monteringshuller på printkortet - og skriv afstanden i {{ui:referenceImage.distance}}. Billedet beholder sine proportioner og sin midte.
+- Lås det med låsen i overskriften af dets indstillinger, så bliver det liggende: klik går så igennem det til pladen. Vælg det i objektlisten for at låse det op.
+- Billedet gemmes kun én gang i designfilen, uanset hvor ofte det kopieres eller fortrydes. Et stort billede gør filen tilsvarende større; beskeden, når du tilføjer det, siger hvor stort det er.
+- En AI tilføjer, flytter, kalibrerer, falmer og låser et med `layerling_reference_image`.

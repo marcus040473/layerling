@@ -1,4 +1,4 @@
-import { canonicalizeShape } from "@/lib/workplaneShapes";
+import { canonicalizeShape, hollowStretchSincePicture } from "@/lib/workplaneShapes";
 import type { EdgeTreatmentHistoryEntry, WorkplaneShape } from "@/types/layerling";
 
 export function edgeTreatmentAppliedFrame(shape: WorkplaneShape): NonNullable<EdgeTreatmentHistoryEntry["appliedFrame"]> {
@@ -71,9 +71,10 @@ export function restoreShapeBeforeEdgeTreatment(shape: WorkplaneShape, entry: Ed
     ? compactEdgeTreatmentHistory(shape.edgeTreatmentHistory?.slice(0, entryIndex))
     : undefined;
   const applied = entry.appliedFrame;
-  const width = applied ? before.width * shape.width / Math.max(0.001, applied.width) : before.width;
-  const depth = applied ? before.depth * shape.depth / Math.max(0.001, applied.depth) : before.depth;
-  const height = applied ? before.height * shape.height / Math.max(0.001, applied.height) : before.height;
+  const stretch = hollowStretchSincePicture(shape, entry);
+  const width = applied ? before.width * stretch.x : before.width;
+  const depth = applied ? before.depth * stretch.z : before.depth;
+  const height = applied ? before.height * stretch.height : before.height;
   const toggleMirror = (beforeValue: boolean | undefined, currentValue: boolean | undefined, appliedValue: boolean | undefined) => (
     Boolean(beforeValue) !== (Boolean(currentValue) !== Boolean(appliedValue))
   ) || undefined;

@@ -1,6 +1,7 @@
 import { checkedTypefaceData, customFontName, isCustomFontId, textCharacters, typefaceSubset } from "@/lib/customFonts";
 import { customFontEntry, registerCustomFont } from "@/lib/textFonts";
-import { strFromU8, strToU8, unzip, zip, type AsyncZippable } from "fflate";
+import { strFromU8, strToU8, unzip } from "fflate";
+import { boundedProjectZip } from "@/lib/boundedProjectZip";
 import { editorHistoryEntry, hydrateEditorHistoryState, type EditorHistoryEntry } from "@/lib/editorHistory";
 import { normalizePlacementWorkplane, placementWorkplaneIsBase, type PlacementWorkplane } from "@/lib/placementWorkplane";
 import { importedShapeFromObj } from "@/lib/objImport";
@@ -14,8 +15,9 @@ import { normalizeQrSettings } from "@/lib/qrCode";
 import { importedShapeFromStl } from "@/lib/stlImport";
 import { importedShapeFromSvg } from "@/lib/svgImport";
 import { importedShapeFrom3mf } from "@/lib/threemfImport";
-import { normalizeDesignView, readDesignView, type DesignView } from "@/lib/designView";
+import { normalizeDesignView, normalizeSavedViews, readDesignView, readSavedViews, type DesignView, type SavedDesignViews } from "@/lib/designView";
 import { isSketchKeyring } from "@/lib/sketchKeyring";
+import { isReferenceImageOpacity } from "@/lib/referenceImage";
 import { isThreadProfile } from "@/lib/threadProfiles";
 import { normalizeSnapGrid, normalizeWorkspaceSettings } from "@/lib/workplaneSettings";
 import type { CadDisplayEdge, GridSize, ProjectAsset, ProjectAssetSourceFormat, SketchOperation, SketchRevolveSettings, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -33,7 +35,7 @@ function knownSchema(schema: unknown) {
 export const LYL_FORMAT_VERSION = 2;
 export const LYL_MINIMUM_READER_VERSION = 2;
 export const LYL_OLDEST_READABLE_FORMAT_VERSION = 1;
-export const LYL_CREATED_WITH_VERSION = "1.92.1";
+export const LYL_CREATED_WITH_VERSION = "1.104.0";
 export const LYL_MEDIA_TYPE = "application/vnd.layerling.project+zip";
 
 export const LYL_LIMITS = {
@@ -210,6 +212,8 @@ export type LylProjectDocumentV1 = {
     sketchPlacementWorkplane?: PlacementWorkplane;
     /** Where the camera looked when the design was saved (#220); older readers pass over it. */
     view?: DesignView;
+    /** The views saved under 7, 8, 9 and 0, null where a slot is empty; older readers pass over them. */
+    savedViews?: SavedDesignViews;
   };
 };
 
@@ -230,6 +234,8 @@ export type LylProjectExportInput = {
   sketchPlacementWorkplane?: PlacementWorkplane;
   /** The camera's view; when left out, the one the browser keeps for this design goes in. */
   view?: DesignView | null;
+  /** The views saved under 7 to 0; when left out, the ones the browser keeps for this design go in. */
+  savedViews?: SavedDesignViews | null;
   compressionLevel?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   /** Weitere Dateien im Paket, etwa der Fehlerbericht; ein Leser uebergeht sie. */
   extraFiles?: Record<string, Uint8Array>;
@@ -252,6 +258,8 @@ export type LylRestoredProject = {
   sketchPlacementWorkplane: PlacementWorkplane;
   /** The view the design was saved in, when the file has one. */
   view?: DesignView;
+  /** The views saved under 7 to 0, when the file has any. */
+  savedViews?: SavedDesignViews;
   migratedFromVersion?: number;
   /** Set when a newer layerling saved the design: its version, for a hint that an update helps. */
   savedWithNewerVersion?: string;
@@ -734,6 +742,7 @@ async function serializeShapeNode(
       ...(sketchProfile.silhouette ? { silhouette: true } : {}),
       ...(sketchProfile.keyring ? { keyring: sketchProfile.keyring } : {}),
       ...(sketchProfile.inset ? { inset: sketchProfile.inset } : {}),
+      ...(sketchProfile.sweepAnchor && sketchProfile.sweepAnchor !== "center" ? { sweepAnchor: sketchProfile.sweepAnchor } : {}),
     };
   }
 
@@ -946,17 +955,8 @@ function activeProjectIndexes(state: LylStateV1) {
   return { features, groups, sketches, exactCad };
 }
 
-function zipAsync(files: AsyncZippable, level: NonNullable<LylProjectExportInput["compressionLevel"]> = 6) {
-  return new Promise<Uint8Array>((resolve, reject) => {
-    // fflate encodes the ZIP entry mtime as a DOS date using local-time getters and
-    // rejects years outside 1980-2099. A UTC-pinned "1980-01-01T00:00:00Z" rolls back
-    // to 1979 in any timezone west of UTC, so build the epoch from local components to
-    // keep the year at exactly 1980 everywhere.
-    zip(files, { level, mtime: new Date(1980, 0, 1) }, (error, data) => {
-      if (error) reject(error);
-      else resolve(data);
-    });
-  });
+function zipAsync(files: ArchiveFiles, level: NonNullable<LylProjectExportInput["compressionLevel"]> = 6) {
+  return boundedProjectZip(files, level);
 }
 
 function unzipAsync(bytes: Uint8Array) {
@@ -1030,6 +1030,7 @@ export async function exportLylProject(input: LylProjectExportInput) {
   const now = Date.now();
   const sketchPlacementWorkplane = normalizePlacementWorkplane(input.sketchPlacementWorkplane);
   const view = input.view === undefined ? readDesignView(input.projectId) : normalizeDesignView(input.view);
+  const savedViews = normalizeSavedViews(input.savedViews === undefined ? readSavedViews(input.projectId) : input.savedViews);
   const selectedWorkplaneId = placementWorkplaneIsBase(placementWorkplane) ? "workplane-base" : "workplane-active";
   const document: Omit<LylProjectDocumentV1, "states"> & { states: typeof STATES_PLACEHOLDER } = {
     schema: LYL_SCHEMA_ID,
@@ -1064,6 +1065,7 @@ export async function exportLylProject(input: LylProjectExportInput) {
       placementWorkplane,
       sketchPlacementWorkplane,
       ...(view ? { view } : {}),
+      ...(savedViews ? { savedViews } : {}),
     },
   };
   // The states are already text; put them in where the placeholder stands. The
@@ -1168,6 +1170,7 @@ function validateSketchProfile(value: unknown, label: string) {
     pointIds.add(id);
     finiteNumber(point.x, `${label}.points[${index}].x`);
     finiteNumber(point.z, `${label}.points[${index}].z`);
+    if (point.locked !== undefined && typeof point.locked !== "boolean") throw new Error(`${label}.points[${index}].locked must be true or false`);
   });
   const segmentIds = new Set<string>();
   profile.segments.forEach((rawSegment, index) => {
@@ -1181,7 +1184,8 @@ function validateSketchProfile(value: unknown, label: string) {
     if (segment.construction !== undefined && typeof segment.construction !== "boolean") throw new Error(`${label}.segments[${index}].construction must be true or false`);
   });
   if (profile.silhouette !== undefined && typeof profile.silhouette !== "boolean") throw new Error(`${label}.silhouette must be true or false`);
-  if (profile.keyring !== undefined && !isSketchKeyring(profile.keyring)) throw new Error(`${label}.keyring must be { side, diameter, x, z }`);
+  if (profile.keyring !== undefined && !isSketchKeyring(profile.keyring)) throw new Error(`${label}.keyring must be { side, diameter, x, z } and a free place (#598) with corners of -1 or 1 if it has one`);
+  if (profile.sweepAnchor !== undefined && profile.sweepAnchor !== "left" && profile.sweepAnchor !== "center" && profile.sweepAnchor !== "right") throw new Error(`${label}.sweepAnchor must be left, center or right`);
   if (profile.inset !== undefined) {
     const inset = objectRecord(profile.inset, `${label}.inset`);
     const distance = finiteNumber(inset.distance, `${label}.inset.distance`);
@@ -1236,7 +1240,9 @@ function validateBentTubeDefinition(definition: Record<string, unknown>, label: 
 
 function validateShapeDefinition(definition: Record<string, unknown>, label: string) {
   const id = stringValue(definition.id, `${label}.id`);
-  stringValue(definition.name, `${label}.name`);
+  // An emptied name is a name too: the editor shows the shape's default name for it, so a design
+  // renamed to nothing must still open (it is what the object list stores when its field is cleared).
+  if (typeof definition.name !== "string") throw new Error(`${label}.name must be a string`);
   const kind = stringValue(definition.kind, `${label}.kind`);
   if (!SHAPE_KINDS.has(kind)) throw new Error(`${label} has unknown shape type '${kind}'`);
   stringValue(definition.color, `${label}.color`);
@@ -1281,6 +1287,13 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   if (definition.layeredIcon !== undefined && typeof definition.layeredIcon !== "boolean") {
     throw new Error(`${label}.layeredIcon must be true or false`);
   }
+  if (definition.keyringTab !== undefined && typeof definition.keyringTab !== "boolean") {
+    throw new Error(`${label}.keyringTab must be true or false`);
+  }
+  // A reference image's see-through (#680): 0.1 to 1, or none on an old picture plate.
+  if (definition.imagePlate !== undefined && !isReferenceImageOpacity((definition.imagePlate as { opacity?: unknown } | null)?.opacity)) {
+    throw new Error(`${label}.imagePlate.opacity must be a number from 0.1 to 1`);
+  }
   // A QR code's settings (#553): a text and known choices. Old projects have none.
   if (definition.qrCode !== undefined && !normalizeQrSettings(definition.qrCode)) {
     throw new Error(`${label}.qrCode must hold the code's text`);
@@ -1291,9 +1304,9 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   if (textJoin !== undefined && !SKETCH_STROKE_JOINS.includes(textJoin as never)) {
     throw new Error(`${label}.textStroke.join must be miter, round or bevel`);
   }
-  // A name tag's key ring hole (#215): a known side, a diameter within range, how far beyond the letters it sits.
+  // A name tag's key ring hole (#215): a known side, a diameter within range, how far beyond the letters it sits; where it was put freely (#598).
   if (definition.textKeyring !== undefined && !isTextKeyring(definition.textKeyring)) {
-    throw new Error(`${label}.textKeyring must be a side (left, right or top), a diameter of 1 to 20 mm and an offset`);
+    throw new Error(`${label}.textKeyring must be a side (left, right or top), a diameter of 1 to 20 mm and an offset, and a free place (#598) with corners of -1 or 1 if it has one`);
   }
   if (definition.parametricSource !== undefined) {
     // Was der Koerper vor dem Drehen war. Fehlt oder stimmt hier etwas nicht,
@@ -1417,7 +1430,7 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   }
   if (kind === "gear") {
     const teeth = finiteNumber(definition.teeth, `${label}.teeth`);
-    if (!Number.isInteger(teeth) || teeth < 6 || teeth > 64) throw new Error(`${label}.teeth is outside the supported range`);
+    if (!Number.isInteger(teeth) || teeth < 6 || teeth > 150) throw new Error(`${label}.teeth is outside the supported range`);
     const toothSize = finiteNumber(definition.toothSize, `${label}.toothSize`);
     if (toothSize <= 0) throw new Error(`${label}.toothSize must be positive`);
     if (definition.toothWidth !== undefined) {
@@ -1527,14 +1540,14 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
     }
   }
   if (kind === "gridfinity") {
-    // The size is rounded to whole grid units on loading, and the geometry clamps the label shelf's, the finger scoop's and the floor's values; only nonsense is refused.
+    // The size is rounded to whole grid units on loading, and the geometry clamps the label shelf's, the finger scoop's, the floor's and the dividers' values; only nonsense is refused.
     if (definition.gridfinityType !== undefined && definition.gridfinityType !== "bin" && definition.gridfinityType !== "baseplate") {
       throw new Error(`${label}.gridfinityType is invalid`);
     }
-    for (const key of ["gridfinityLip", "gridfinityMagnets", "gridfinityHalfGrid", "gridfinityLabelBack", "gridfinityLabelFront", "gridfinityLabelLeft", "gridfinityLabelRight", "gridfinityScoopBack", "gridfinityScoopFront", "gridfinityScoopLeft", "gridfinityScoopRight", "hingePinless"] as const) {
+    for (const key of ["gridfinityLip", "gridfinityMagnets", "gridfinityHalfGrid", "gridfinityLabelBack", "gridfinityLabelFront", "gridfinityLabelLeft", "gridfinityLabelRight", "gridfinityScoopBack", "gridfinityScoopFront", "gridfinityScoopLeft", "gridfinityScoopRight", "gridfinityOpenBack", "gridfinityOpenFront", "gridfinityOpenLeft", "gridfinityOpenRight", "hingePinless"] as const) {
       if (definition[key] !== undefined && typeof definition[key] !== "boolean") throw new Error(`${label}.${key} must be true or false`);
     }
-    for (const key of ["gridfinityLabelBackWidth", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelFrontWidth", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelLeftWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelRightWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelCornerSize", "gridfinityScoopRadius", "gridfinityFloorHeight"] as const) {
+    for (const key of ["gridfinityLabelBackWidth", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelFrontWidth", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelLeftWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelRightWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelCornerSize", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityCompartmentsX", "gridfinityCompartmentsZ", "gridfinityDividerThickness"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       // Only an offset runs both ways along a wall.
@@ -1543,10 +1556,40 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
     if (definition.gridfinityLabelCorner !== undefined && definition.gridfinityLabelCorner !== "round" && definition.gridfinityLabelCorner !== "chamfer") {
       throw new Error(`${label}.gridfinityLabelCorner is invalid`);
     }
+    for (const key of ["gridfinityDividerPositionsX", "gridfinityDividerPositionsZ"] as const) {
+      if (definition[key] === undefined) continue;
+      if (!Array.isArray(definition[key])) throw new Error(`${label}.${key} must be an array`);
+      const positions = definition[key] as unknown[];
+      if (positions.length > 64) throw new Error(`${label}.${key} has an unsupported number of dividers`);
+      positions.forEach((raw, index) => {
+        const position = finiteNumber(raw, `${label}.${key}[${index}]`);
+        if (position < 0 || position > 1e6) throw new Error(`${label}.${key}[${index}] is outside the supported range`);
+      });
+    }
+    if (definition.gridfinityCompartmentLabels !== undefined) {
+      if (!Array.isArray(definition.gridfinityCompartmentLabels)) throw new Error(`${label}.gridfinityCompartmentLabels must be an array`);
+      const labels = definition.gridfinityCompartmentLabels as unknown[];
+      if (labels.length > 576) throw new Error(`${label}.gridfinityCompartmentLabels has an unsupported number of labels`);
+      labels.forEach((raw, index) => {
+        const entryLabel = `${label}.gridfinityCompartmentLabels[${index}]`;
+        const entry = objectRecord(raw, entryLabel);
+        for (const key of ["column", "row"] as const) {
+          const value = finiteNumber(entry[key], `${entryLabel}.${key}`);
+          if (value < 0 || value > 1e6) throw new Error(`${entryLabel}.${key} is outside the supported range`);
+        }
+        if (entry.side !== "back" && entry.side !== "front" && entry.side !== "left" && entry.side !== "right") throw new Error(`${entryLabel}.side is invalid`);
+        for (const key of ["length", "width"] as const) {
+          if (entry[key] === undefined) continue;
+          const value = finiteNumber(entry[key], `${entryLabel}.${key}`);
+          if (value < 0 || value > 1e6) throw new Error(`${entryLabel}.${key} is outside the supported range`);
+        }
+        if (entry.align !== undefined && entry.align !== "start" && entry.align !== "middle" && entry.align !== "end") throw new Error(`${entryLabel}.align is invalid`);
+      });
+    }
   }
   if (kind === "hinge") {
     // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
-    for (const key of ["hingeKnuckles", "hingePinDiameter", "hingeLeafThickness", "hingeClearance"] as const) {
+    for (const key of ["hingeKnuckles", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "hingeAngle"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (value < 0 || value > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
@@ -1558,7 +1601,7 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   }
   if (kind === "loft") {
     // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
-    for (const key of ["loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftBottomSides", "loftTopSides", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTwist", "loftTiltX", "loftTiltZ", "loftSmooth"] as const) {
+    for (const key of ["loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftBottomSides", "loftTopSides", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTwist", "loftTiltX", "loftTiltZ", "loftSmooth", "loftSegments"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (Math.abs(value) > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
@@ -1964,6 +2007,7 @@ async function restoreV1(document: LylProjectDocumentV1, assetById: Map<string, 
   const placementWorkplane = normalizePlacementWorkplane(document.editor.placementWorkplane, document.editor.placementElevation);
   const hydrated = hydrateEditorHistoryState(shapes, history, document.history.index, "unlimited", notes, placementWorkplane);
   const restoredView = normalizeDesignView(document.editor.view);
+  const restoredSavedViews = normalizeSavedViews(document.editor.savedViews);
   if (hydrated.entries.length !== history.length || hydrated.index !== document.history.index) throw new Error("Undo history could not be restored without data loss");
   return {
     sourceProjectId: document.metadata.projectId,
@@ -1981,6 +2025,7 @@ async function restoreV1(document: LylProjectDocumentV1, assetById: Map<string, 
     placementWorkplane: normalizePlacementWorkplane(document.editor.placementWorkplane, document.editor.placementElevation),
     sketchPlacementWorkplane: normalizePlacementWorkplane(document.editor.sketchPlacementWorkplane),
     ...(restoredView ? { view: restoredView } : {}),
+    ...(restoredSavedViews ? { savedViews: restoredSavedViews } : {}),
     ...(document.formatVersion < LYL_FORMAT_VERSION ? { migratedFromVersion: document.formatVersion } : {}),
   } satisfies LylRestoredProject;
 }
@@ -2102,6 +2147,24 @@ export async function inspectLylProjectPackage(input: ArrayBuffer | Uint8Array):
     modifiedAt: Date.parse(validated.document.metadata.modifiedAt),
     formatVersion: validated.document.formatVersion,
   };
+}
+
+/**
+ * The package with another design name inside. Renaming a design on the start page changes its card only; the
+ * saved package keeps the old name until the design is changed again, so whatever hands the package on writes the
+ * card's name in first (#689). Everything else stays as it was; a package that already has the name comes back as is.
+ */
+export async function withLylProjectName(input: ArrayBuffer | Uint8Array, projectName: string): Promise<Uint8Array> {
+  const bytes = projectInputBytes(input);
+  const name = projectName.trim();
+  const prefix = strFromU8(bytes.subarray(0, Math.min(bytes.length, 64))).trimStart();
+  if (!name || prefix.startsWith("{")) return bytes;
+  const { files, validated } = await readPackagedLyl(bytes);
+  if (validated.document.metadata.projectName === name) return bytes;
+  const raw = JSON.parse(strFromU8(files["project.json"])) as { metadata: { projectName: string } };
+  raw.metadata.projectName = name;
+  files["project.json"] = strToU8(JSON.stringify(raw));
+  return zipAsync(Object.fromEntries(Object.entries(files).sort(([a], [b]) => a.localeCompare(b))), 1);
 }
 
 export async function importLylProject(input: ArrayBuffer | Uint8Array, options: ImportLylOptions = {}): Promise<LylRestoredProject> {

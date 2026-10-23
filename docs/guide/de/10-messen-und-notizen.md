@@ -63,17 +63,30 @@ Eine Notiz hält fest, was die Geometrie nicht sagt: „Hier ist eine Schraube 0
 - {{ui:note.detach}} löst eine angeheftete Notiz vom Körper.
 - {{ui:editor.tool.group}} nimmt eine angeheftete Notiz mit in die Gruppe; {{ui:editor.tool.ungroup}} gibt sie an das sichtbare Teil darunter weiter, auch an eine Gruppe darin. Solange eine Gruppe mit {{ui:group.edit}} offen ist, wandern ihre Notizen mit dem Teil darunter und kehren mit {{ui:group.done}} zur Gruppe zurück; Abbrechen stellt sie wieder her, wie sie waren.
 - Wird ihr Körper gelöscht oder liegt kein sichtbarer Körper mehr darunter, bleibt die Notiz stehen, wo sie war, auf der Arbeitsebene.
-- Ziehen verschiebt die Notiz, ein Klick öffnet sie zum Bearbeiten.
+- Ziehen an der Nadel verschiebt die Notiz. Ein Klick auf die Nadel klappt die Karte zu, nur die kleine Nummer bleibt; ein weiterer Klick klappt sie wieder auf. Ein Klick in den Text bearbeitet ihn.
 - Beim Schreiben übernimmt [[Enter]] den Text, und [[Esc]] stellt ihn wieder her, wie er vorher war; [[Umschalt]]+[[Enter]] beginnt eine neue Zeile.
+- **In einer Skizze** setzt {{ui:editor.tool.note}} (unter {{ui:editor.group.manage}}) oder [[N]] ebenso eine Notiz, irgendwo auf die Skizze. Alle Notizen einer Skizze gehören zu ihrem Körper: In der 3D-Ansicht sitzen sie darauf, oben auf einem extrudierten oder gezogenen Körper und auf dem gezeichneten Profil eines gedrehten, und wandern mit ihm. Öffnest du die Skizze wieder, zeigt sie die Notizen des Körpers, auch die in 3D gesetzten. In der Skizze nimmt Rückgängig eine Notiz zurück wie eine Linie, und {{ui:sketch.cancel}} verwirft, was du an den Notizen geändert hast.
 
-Notizen werden im Entwurf gespeichert, tauchen in keinem Export auf und lassen sich über {{ui:visibility.notes}} ein- und ausblenden.
+Notizen werden im Entwurf gespeichert, tauchen in keinem Export auf und lassen sich über {{ui:visibility.notes}} (unter {{ui:editor.visibilityOptions}}, dem Pfeil neben dem Augen-Symbol) ein- und ausblenden.
 
 ## Bezugspunkte
 
 Ein Bezugspunkt ist eine bloße Markierung im Raum, wie ein Bleistiftstrich oder ein Anreißpunkt in der Werkstatt: Er gehört zu keinem Körper, wird nie gedruckt, und andere Dinge rasten an ihm ein. Klicke einen Körper mit der rechten Maustaste an und wähle {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} oder {{ui:contextMenu.markMidpoints}}: Die Punkte erscheinen auf der Oberseite des Körpers (der ganzen Auswahl, wenn du mehrere gewählt hast).
 
-- Ziehe einen Punkt, um ihn zu verschieben, oder klicke ihn an, um seine Koordinaten zu sehen und neue einzutippen; sie gelten in der eingestellten Einheit. Jede Karte lässt sich am Titel wegziehen, wenn sie etwas verdeckt, und zwar einzeln: Die anderen bleiben, wo sie sind, und ein Doppelklick auf den Titel holt sie zurück. Die Karte, die du zuletzt angefasst hast, liegt vor den anderen. **Alle löschen** in einer Karte oder im Rechtsklickmenü löscht alle Punkte auf einmal. {{ui:common.delete}} entfernt ihn.
+- Ziehe einen Punkt, um ihn zu verschieben, oder klicke ihn an, um seine Koordinaten zu sehen und neue einzutippen; sie gelten in der eingestellten Einheit. Jede Karte lässt sich am Titel wegziehen, wenn sie etwas verdeckt, und zwar einzeln: Die anderen bleiben, wo sie sind, und ein Doppelklick auf den Titel holt sie zurück. Die Karte, die du zuletzt angefasst hast, liegt vor den anderen. **Alle löschen** in einer Karte oder **Alle Bezugspunkte löschen** im Rechtsklickmenü (eines Körpers oder einer leeren Stelle der 3D-Ansicht) löscht alle Punkte auf einmal. {{ui:common.delete}} entfernt ihn.
 - Das Maßband kann auch einen Punkt setzen: {{ui:camera.tapeMarkMiddle}}, der Fadenkreuz-Knopf unter einer Messung, legt einen in ihre Mitte, etwa in den Mittelpunkt einer runden Bohrung. Und es misst von einem Punkt aus: Das Maßband rastet an Bezugspunkten ein wie an Ecken.
 - Ziehst du eine Form, rasten ihre Kanten und ihre Mitte an einem Punkt ein, wie sie an anderen Formen einrasten ({{ui:workspace.objectSnap}}). Auch das Winkellineal rastet an Punkten ein.
 - Punkte werden im Entwurf gespeichert, tauchen in keinem Export auf und werden zusammen mit den Notizen über {{ui:visibility.notes}} ein- und ausgeblendet.
 - Eine KI kann sie mit `layerling_add_reference_points`, `layerling_list_reference_points` und `layerling_remove_reference_points` setzen, auflisten und entfernen.
+
+## Referenzbilder
+
+Ein Referenzbild ist ein Bild, an dem du Teile ausrichtest: Leg das Foto einer Platine auf den Boden ihres Gehäuses und setz die Abstandshalter, Löcher und Ausschnitte für die Anschlüsse genau darauf. Es ist eine Hilfe, kein Körper: Es wird nie gedruckt, nie exportiert (STL, 3MF, OBJ, STEP, SVG), gehört nie zu einer Gruppe, einem Bündel oder einem Schnitt, und die Druckschätzung lässt es weg.
+
+- Öffne {{ui:editor.import}} und wähle {{ui:import.referenceImage}}, dann ein PNG-, JPG-, WebP-, GIF- oder BMP-Bild. Es landet auf der Arbeitsebene - auf der Platte oder auf der Fläche, auf die du die Arbeitsebene gelegt hast -, mit der längeren Seite 100 mm und halb durchsichtig.
+- Verschieb, dreh und skalier es mit seinen Griffen wie jede Form. Ein Körper davor wird zuerst gewählt, du greifst also beim Arbeiten darauf nicht versehentlich das Bild.
+- {{ui:referenceImage.seeThrough}} in seinen Einstellungen blendet es von ganz sichtbar bis kaum noch da.
+- {{ui:referenceImage.calibrate}} gibt ihm seine wirkliche Größe wie in der Skizze: Klicke zwei Punkte auf dem Bild an, deren wirklichen Abstand du kennst - zwei Befestigungslöcher der Platine etwa - und gib diesen Abstand unter {{ui:referenceImage.distance}} ein. Das Bild behält seine Proportionen und seine Mitte.
+- Sperre es mit dem Schloss im Kopf seiner Einstellungen, dann bleibt es liegen: Klicks gehen durch es hindurch auf die Platte. In der Objektliste wählst du es wieder aus, um es zu entsperren.
+- Das Bild liegt einmal in der Entwurfsdatei, egal wie oft es kopiert oder rückgängig gemacht wird. Ein großes Bild macht die Datei um so viel größer; die Meldung beim Hinzufügen nennt seine Größe.
+- Eine KI legt eines mit `layerling_reference_image` an, verschiebt, kalibriert, blendet und sperrt es.

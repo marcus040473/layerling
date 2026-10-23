@@ -149,4 +149,30 @@ describe("chamfilleting a solid with the real OCCT kernel", () => {
     kernel.release(result);
     kernel.release(solid);
   });
+  it("chamfillets the foot of a cone with a pointed tip: chamfer on the plate, blend into the wall (forum, DrJones)", () => {
+    // The tip is an edge of no length; the wall used to be taken for a new face because of it, so the edge between the
+    // plate and the chamfer was rounded instead of the one between the chamfer and the wall.
+    const cone = yUp(kernel.makeCone(10, 0, 20));
+    const { bottom, all } = bottomEdgesOf(cone);
+    expect(bottom).toHaveLength(1);
+    const result = chamfilletSolid(kernel, cone, bottom, 2, 45);
+
+    expect(kernel.isValid(result)).toBe(true);
+    expect(kernel.isSolid(result)).toBe(true);
+
+    const faces = kernel.getSubShapes(result, "face");
+    const parts = faces.map((face) => ({ type: kernel.surfaceType(face), box: kernel.getBoundingBox(face, false) }));
+    // The blend runs on into the wall: it ends well above the small chamfer on the plate, at the wall's own radius.
+    const blend = parts.find((part) => part.type === "torus" || part.type === "bspline");
+    expect(blend).toBeDefined();
+    expect(blend!.box.ymax).toBeGreaterThan(1.2);
+    expect((blend!.box.xmax - blend!.box.xmin) / 2).toBeGreaterThan(9.2);
+    const chamfer = parts.find((part) => part.type === "cone" && part.box.ymax < 0.5);
+    expect(chamfer).toBeDefined();
+    faces.forEach((face) => kernel.release(face));
+
+    all.forEach((edge) => kernel.release(edge));
+    kernel.release(result);
+    kernel.release(cone);
+  });
 });

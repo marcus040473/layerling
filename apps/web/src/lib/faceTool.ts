@@ -22,9 +22,11 @@ export type FaceToolSettings = {
   radius: number;
   /** How far the new body stands out of the face, or the pocket reaches into it, in mm. */
   depth: number;
+  /** Leaves the new body (or the pocket's hole) as a part of its own instead of grouping it with the body (#750). */
+  separate: boolean;
 };
 
-export const DEFAULT_FACE_TOOL: FaceToolSettings = { direction: "out", inset: 0, radius: 0, depth: 2 };
+export const DEFAULT_FACE_TOOL: FaceToolSettings = { direction: "out", inset: 0, radius: 0, depth: 2, separate: false };
 export const FACE_TOOL_MAX_INSET = 50;
 export const FACE_TOOL_MAX_RADIUS = 30;
 export const FACE_TOOL_MIN_DEPTH = 0.2;
@@ -44,6 +46,7 @@ export function normalizeFaceTool(settings: Partial<FaceToolSettings>): FaceTool
     inset: clamp(number(settings.inset, DEFAULT_FACE_TOOL.inset), 0, FACE_TOOL_MAX_INSET),
     radius: clamp(number(settings.radius, DEFAULT_FACE_TOOL.radius), 0, FACE_TOOL_MAX_RADIUS),
     depth: clamp(number(settings.depth, DEFAULT_FACE_TOOL.depth), FACE_TOOL_MIN_DEPTH, FACE_TOOL_MAX_DEPTH),
+    separate: settings.separate === true,
   };
 }
 

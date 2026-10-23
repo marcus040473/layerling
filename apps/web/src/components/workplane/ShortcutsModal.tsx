@@ -1,7 +1,7 @@
 "use client";
 
-import { Printer, X } from "lucide-react";
-import { Fragment, useEffect } from "react";
+import { Printer, Search, X } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useMovablePanel } from "@/lib/useMovablePanel";
 import { t, type MessageKey } from "@/lib/i18n";
@@ -50,7 +50,9 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     shortcuts: [
       { combos: ["Ctrl+Z"], label: "shortcuts.undo" },
       { combos: ["Ctrl+Shift+Z", "Ctrl+Y"], label: "shortcuts.redo" },
-      { combos: ["← / →"], label: "shortcuts.historyView" },
+      { combos: ["← / →", "Wheel"], label: "shortcuts.historyView" },
+      { combos: ["PgUp / PgDn"], label: "shortcuts.historyViewPage" },
+      { combos: ["Home / End"], label: "shortcuts.historyViewEnds" },
       { combos: ["Esc"], label: "shortcuts.historyViewClose" },
     ],
   },
@@ -100,6 +102,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     shortcuts: [
       { combos: ["← / → / ↑ / ↓"], label: "shortcuts.nudge" },
       { combos: ["Shift+← / → / ↑ / ↓"], label: "shortcuts.nudgeCoarse" },
+      { combos: ["Alt+← / → / ↑ / ↓"], label: "shortcuts.nudgeFine" },
       { combos: ["Ctrl+↑ / ↓"], label: "shortcuts.raise" },
       { combos: ["R"], label: "shortcuts.rotate" },
       { combos: ["Shift+R"], label: "shortcuts.rotateFine" },
@@ -115,6 +118,8 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     shortcuts: [
       { combos: ["1 – 6"], label: "shortcuts.views" },
       { combos: ["Shift+1 – 6"], label: "shortcuts.viewsFocus" },
+      { combos: ["7 / 8 / 9 / 0"], label: "shortcuts.savedViews" },
+      { combos: ["Shift+7 / 8 / 9 / 0"], label: "shortcuts.saveView" },
       { combos: ["← / → / ↑ / ↓"], label: "shortcuts.orbit" },
       { combos: ["Shift+← / → / ↑ / ↓"], label: "shortcuts.orbitCoarse" },
       { combos: ["Ctrl+← / → / ↑ / ↓"], label: "shortcuts.pan" },
@@ -153,6 +158,9 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { combos: ["Ctrl+Shift+Z", "Ctrl+Y"], label: "shortcuts.redo" },
       { combos: ["R"], label: "shortcuts.sketchRotate" },
       { combos: ["L"], label: "shortcuts.sketchLockImage" },
+      { combos: ["N"], label: "shortcuts.note" },
+      { combos: ["Ctrl+← / → / ↑ / ↓"], label: "shortcuts.pan" },
+      { combos: ["Ctrl+Shift+← / → / ↑ / ↓"], label: "shortcuts.panCoarse" },
       { combos: ["Home"], label: "shortcuts.sketchResetView" },
       { combos: ["F", "Shift+F"], label: "shortcuts.sketchFocusSelection" },
       { combos: ["+", "−"], label: "shortcuts.sketchZoom" },
@@ -181,7 +189,61 @@ function comboKeys(combo: string) {
   return parts.length > 0 ? parts : [combo];
 }
 
-function ShortcutKeys({ combos }: { combos: string[] }) {
+/**
+ * Whether the keyboard is an Apple one - a Mac, or an iPad with a keyboard,
+ * which reports itself as a Mac. Browsers do not say "Darwin"; the user agent
+ * says Macintosh. The editor takes Cmd wherever it takes Ctrl, and Option is
+ * Alt, so the list shows the keys under the names on that keyboard.
+ */
+function appleKeyboard() {
+  return typeof navigator !== "undefined" && /Macintosh|Mac OS X|iPhone|iPad|iPod/.test(navigator.userAgent);
+}
+
+const APPLE_KEY_NAMES: Record<string, string> = { Ctrl: "Cmd", Alt: "Option" };
+
+function keyLabel(key: string, apple: boolean) {
+  if (key === "Click") return t("shortcuts.click");
+  if (key === "RightClick") return t("shortcuts.rightClick");
+  if (key === "Drag") return t("shortcuts.drag");
+  if (key === "Wheel") return t("shortcuts.wheel");
+  return apple ? APPLE_KEY_NAMES[key] ?? key : key;
+}
+
+/** Lower case and without accents, so "ecran" finds "écran" and "ctrl" finds "Ctrl". */
+function searchText(text: string) {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase();
+}
+
+/** Chinese and Japanese write words without spaces, so there a single character is a whole word. */
+const UNSPACED_SCRIPT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u;
+
+/** Whether a row is found by every word typed - in its sentence, its group's title or its keys. */
+function shortcutMatches(group: ShortcutGroup, shortcut: Shortcut, terms: string[], apple: boolean) {
+  const keys = shortcut.combos.flatMap((combo) => comboKeys(combo).flatMap((key) => [key, keyLabel(key, apple)]));
+  const combos = shortcut.combos.flatMap((combo) => [combo, comboKeys(combo).map((key) => keyLabel(key, apple)).join("+")]);
+  const text = searchText([t(group.title), t(shortcut.label), ...combos, ...keys].join(" "));
+  const words = text.split(/[^\p{L}\p{N}]+/u);
+  const singleKeys = new Set(keys.flatMap((key) => searchText(key).split(/[\s/]+/)));
+  return terms.every((term) => {
+    if (term.length > 1 || UNSPACED_SCRIPT.test(term)) return text.includes(term);
+    return singleKeys.has(term) || words.some((word) => word.startsWith(term));
+  });
+}
+
+/**
+ * The groups with only the rows the search finds, in the window's language and under the key
+ * names it shows. A single character is a key or the start of a word, not any letter inside
+ * one: "r" finds R and "Rotate", not every sentence with an r in it.
+ */
+function filterGroups(groups: ShortcutGroup[], query: string, apple: boolean) {
+  const terms = searchText(query).split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return groups;
+  return groups
+    .map((group) => ({ ...group, shortcuts: group.shortcuts.filter((shortcut) => shortcutMatches(group, shortcut, terms, apple)) }))
+    .filter((group) => group.shortcuts.length > 0);
+}
+
+function ShortcutKeys({ combos, apple }: { combos: string[]; apple: boolean }) {
   return (
     <>
       {combos.map((combo, comboIndex) => (
@@ -191,7 +253,7 @@ function ShortcutKeys({ combos }: { combos: string[] }) {
             {comboKeys(combo).map((key, keyIndex) => (
               <Fragment key={key}>
                 {keyIndex > 0 ? <span className="shortcuts-plus" aria-hidden="true">+</span> : null}
-                <kbd>{key === "Click" ? t("shortcuts.click") : key === "RightClick" ? t("shortcuts.rightClick") : key === "Drag" ? t("shortcuts.drag") : key}</kbd>
+                <kbd>{keyLabel(key, apple)}</kbd>
               </Fragment>
             ))}
           </span>
@@ -203,6 +265,7 @@ function ShortcutKeys({ combos }: { combos: string[] }) {
 
 /** The groups with their rows, the same markup in the window and on the printed sheet. */
 function ShortcutGroups({ groups }: { groups: ShortcutGroup[] }) {
+  const apple = appleKeyboard();
   return (
     <div className="shortcuts-groups">
       {groups.map((group) => (
@@ -213,7 +276,7 @@ function ShortcutGroups({ groups }: { groups: ShortcutGroup[] }) {
               <div className="shortcuts-row" key={`${group.title}:${shortcut.label}`}>
                 <dt>{t(shortcut.label)}</dt>
                 <dd>
-                  <ShortcutKeys combos={shortcut.combos} />
+                  <ShortcutKeys combos={shortcut.combos} apple={apple} />
                 </dd>
               </div>
             ))}
@@ -254,19 +317,25 @@ function useShortcutsPrinting() {
 export function ShortcutsModal({ sketchMode, onClose }: { sketchMode: boolean; onClose: () => void }) {
   useLanguage();
   const print = useShortcutsPrinting();
-  const groups = SHORTCUT_GROUPS.filter((group) => (group.mode === "sketch") === sketchMode);
+  const modeGroups = SHORTCUT_GROUPS.filter((group) => (group.mode === "sketch") === sketchMode);
+  // The search only narrows what the window shows and prints; it starts empty every time.
+  const [query, setQuery] = useState("");
+  const groups = filterGroups(modeGroups, query, appleKeyboard());
+  const searchRef = useRef<HTMLInputElement>(null);
   // Moved by its title bar like every panel, and remembered where it stood.
   const movable = useMovablePanel<HTMLDivElement>("layerling.editor.shortcutsPosition", { floatingStyle: { position: "absolute", margin: 0 } });
   const cardRef = movable.panelRef;
 
+  // Ready to type into the search - except on a touch screen, where focusing it would pop up the keyboard.
   useEffect(() => {
-    cardRef.current?.focus();
+    const touch = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+    (touch ? cardRef.current : searchRef.current)?.focus();
   }, []);
 
   return (
     <div
       className="workspace-modal shortcuts-modal"
-      data-compact={groups.length <= 2 ? "true" : undefined}
+      data-compact={modeGroups.length <= 2 ? "true" : undefined}
       role="dialog"
       aria-modal="true"
       aria-label={t("shortcuts.title")}
@@ -301,12 +370,37 @@ export function ShortcutsModal({ sketchMode, onClose }: { sketchMode: boolean; o
           </div>
         </header>
         <div className="workspace-modal-content">
+          <div className="shortcuts-search">
+            <div className="shortcuts-search-box">
+              <Search size={15} className="shortcuts-search-icon" aria-hidden="true" />
+              <input
+                ref={searchRef}
+                className="shortcuts-search-input"
+                type="text"
+                placeholder={t("shortcuts.search")}
+                aria-label={t("shortcuts.search")}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              {query ? (
+                <button
+                  className="shortcuts-search-clear"
+                  type="button"
+                  aria-label={t("shortcuts.clearSearch")}
+                  title={t("shortcuts.clearSearch")}
+                  onClick={() => {
+                    setQuery("");
+                    searchRef.current?.focus();
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              ) : null}
+            </div>
+          </div>
           <div className="workspace-modal-body shortcuts-modal-body">
             <p className="shortcuts-intro">{t("shortcuts.intro")}</p>
-            <ShortcutGroups groups={groups} />
-          </div>
-          <div className="workspace-modal-footer">
-            <span>{t("shortcuts.footer")}</span>
+            {groups.length > 0 ? <ShortcutGroups groups={groups} /> : <p className="shortcuts-no-matches">{t("shortcuts.noMatches")}</p>}
           </div>
         </div>
       </div>

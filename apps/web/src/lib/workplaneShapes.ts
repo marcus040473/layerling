@@ -1,7 +1,8 @@
 import { createLocalId } from "@/lib/localIds";
+import { repairClampedMeshBase } from "@/lib/importedMeshBase";
 import { fieldFormulasEqual } from "@/lib/fieldFormulas";
 import { threadFootprintPatch } from "@/lib/threadGeometry";
-import { gridfinityFootprintPatch } from "@/lib/gridfinityGeometry";
+import { GRIDFINITY_PADDING_KEYS, gridfinityCompartmentLabelsEqual, gridfinityDividerPositionsEqual, gridfinityFootprintPatch, normalizeGridfinityPadding } from "@/lib/gridfinityGeometry";
 import { MCP_SHAPE_SETTING_KEYS } from "@/lib/mcpShapeSettings";
 import { bentTubeSegmentsEqual } from "@/lib/bentTubeGeometry";
 import { vaseSettingsEqual } from "@/lib/vaseSettings";
@@ -120,8 +121,8 @@ export function shapeTaperDimensions(shape: WorkplaneShape) {
 }
 
 /**
- * Arten, die eine Verjuengung ueberhaupt annehmen. Zahnrad, Gewinde, Feder und
- * Raendel kennen sie gar nicht, die Pyramide hat mit Laenge und Breite oben ihre
+ * Arten, die eine Verjuengung ueberhaupt annehmen. Zahnrad, Gewinde und Feder
+ * kennen sie gar nicht (das Raendel seit #630 doch), die Pyramide hat mit Laenge und Breite oben ihre
  * eigene, die wirklich greift, und Scharnier, Senkungen, gebogenes Rohr und
  * Lineal haben feste Masse, die eine Verjuengung nur verdurbe. Der Tropfen ist
  * der Querschnitt eines waagerechten Lochs; oben und unten gibt es fuer ihn
@@ -129,7 +130,7 @@ export function shapeTaperDimensions(shape: WorkplaneShape) {
  * Wabe und Schwalbenschwanz sie an. Die Liste steht hier, damit das Merkmalsfeld, die
  * Vorschau und die MCP-Bruecke nicht je ihre eigene fuehren.
  */
-const SHAPES_WITHOUT_TAPER = new Set<WorkplaneShape["kind"]>(["gear", "thread", "spring", "pyramid", "ruler", "hinge", "knurl", "counterbore", "countersink", "doubleCountersink", "teardrop", "bentTube", "loft", "vase", "gridfinity"]);
+const SHAPES_WITHOUT_TAPER = new Set<WorkplaneShape["kind"]>(["gear", "thread", "spring", "pyramid", "ruler", "hinge", "counterbore", "countersink", "doubleCountersink", "teardrop", "bentTube", "loft", "vase", "gridfinity"]);
 
 export function shapeSupportsTaper(kind: WorkplaneShape["kind"]) {
   return !SHAPES_WITHOUT_TAPER.has(kind);
@@ -144,6 +145,15 @@ export function shapeSupportsTaper(kind: WorkplaneShape["kind"]) {
  */
 export function isNonSolidShapeKind(kind: WorkplaneShape["kind"]) {
   return kind === "ruler";
+}
+
+/**
+ * A shape that is a guide, not a body: a ruler, or a reference image (#680) - a picture laid on
+ * the plate or a face to line parts up on. Neither is exported, cut, grouped, printed or counted
+ * in the print estimate.
+ */
+export function isNonSolidShape(shape: Pick<WorkplaneShape, "kind" | "imagePlate">) {
+  return isNonSolidShapeKind(shape.kind) || Boolean(shape.imagePlate);
 }
 
 /**
@@ -303,9 +313,29 @@ export function meshYawDegrees(shape: WorkplaneShape) {
 }
 
 function edgeTreatmentPreserveZone(shape: WorkplaneShape): number {
-  const own = Math.max(...(shape.edgeTreatments ?? []).map((feature) => feature.amount), 0);
+  const own = Math.max(...(shape.edgeTreatments ?? []).map((feature) => Math.max(feature.amount, feature.endAmount ?? 0)), 0);
   const child = Math.max(...(shape.groupedShapes ?? []).map(edgeTreatmentPreserveZone), 0);
   return Math.max(own, child);
+}
+
+/**
+ * How far the body has been stretched since the hollowing, in the axes of the shape it was hollowed from. A hollowed
+ * body is often baked in the pose of the moment (its turn becomes its mesh, width and depth change places), while
+ * `before` keeps the pose it had: with the two a quarter turn apart, the body's width is `before`'s depth, and
+ * reading them side by side stretched the wrong axis (#729).
+ */
+export function hollowStretchSincePicture(shape: WorkplaneShape, entry: NonNullable<WorkplaneShape["edgeTreatmentHistory"]>[number]) {
+  const applied = entry.appliedFrame;
+  const width = shapeWidth(shape);
+  const depth = shapeDepth(shape);
+  if (!applied) return { x: 1, z: 1, height: 1 };
+  const turn = Math.abs((((entry.before.rotation ?? 0) - applied.rotation) % 180 + 180) % 180);
+  const swapped = Math.abs(turn - 90) < 0.5;
+  return {
+    x: swapped ? depth / Math.max(0.001, applied.depth) : width / Math.max(0.001, applied.width),
+    z: swapped ? width / Math.max(0.001, applied.width) : depth / Math.max(0.001, applied.depth),
+    height: shape.height / Math.max(0.001, applied.height),
+  };
 }
 
 /**
@@ -322,7 +352,8 @@ export function shellRebuildEntry(shape: WorkplaneShape) {
   if (features[features.length - 1]?.kind !== "shell" || last?.feature.kind !== "shell" || !last.appliedFrame) return null;
   // A star, knurl or thread is round by definition; stretched unevenly there is
   // nothing to hollow again, so it keeps the bands as before.
-  const stretched = Math.abs(shapeWidth(shape) / Math.max(0.001, last.appliedFrame.width) - shapeDepth(shape) / Math.max(0.001, last.appliedFrame.depth)) > 1e-3;
+  const stretch = hollowStretchSincePicture(shape, last);
+  const stretched = Math.abs(stretch.x - stretch.z) > 1e-3;
   if (stretched && (last.before.kind === "star" || last.before.kind === "knurl" || last.before.kind === "thread")) return null;
   return last;
 }
@@ -436,7 +467,8 @@ export function mirroredAxisCount(shape: WorkplaneShape) {
   return [shape.mirrorX, shape.mirrorY, shape.mirrorZ].filter(Boolean).length;
 }
 
-export function canonicalizeShape(shape: WorkplaneShape): WorkplaneShape {
+export function canonicalizeShape(unrepaired: WorkplaneShape): WorkplaneShape {
+  const shape = repairClampedMeshBase(unrepaired);
   const next: WorkplaneShape = {
     ...shape,
     rotation: cleanRotationDegrees(shape.rotation ?? 0),
@@ -453,6 +485,8 @@ export function canonicalizeShape(shape: WorkplaneShape): WorkplaneShape {
   }
   // A Gridfinity bin or baseplate is whole grid units, whatever set its box.
   if (shape.kind === "gridfinity") {
+    // Padding is stored as the geometry reads it, 0 to 41 mm, so a saved project opens again whatever gave it (#455).
+    for (const key of Object.values(GRIDFINITY_PADDING_KEYS)) if (typeof next[key] === "number") next[key] = normalizeGridfinityPadding(next[key]);
     const footprint = gridfinityFootprintPatch(next);
     Object.assign(next, footprint);
     next.size = resizedShapeSize(footprint.width, footprint.depth);
@@ -588,6 +622,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.hingeLeafThickness === b.hingeLeafThickness &&
     a.hingeClearance === b.hingeClearance &&
     a.hingePinless === b.hingePinless &&
+    a.hingeAngle === b.hingeAngle &&
     a.gridfinityType === b.gridfinityType &&
     a.gridfinityLip === b.gridfinityLip &&
     a.gridfinityMagnets === b.gridfinityMagnets &&
@@ -616,6 +651,20 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.gridfinityScoopRight === b.gridfinityScoopRight &&
     a.gridfinityScoopRadius === b.gridfinityScoopRadius &&
     a.gridfinityFloorHeight === b.gridfinityFloorHeight &&
+    a.gridfinityOpenBack === b.gridfinityOpenBack &&
+    a.gridfinityOpenFront === b.gridfinityOpenFront &&
+    a.gridfinityOpenLeft === b.gridfinityOpenLeft &&
+    a.gridfinityOpenRight === b.gridfinityOpenRight &&
+    a.gridfinityPaddingBack === b.gridfinityPaddingBack &&
+    a.gridfinityPaddingFront === b.gridfinityPaddingFront &&
+    a.gridfinityPaddingLeft === b.gridfinityPaddingLeft &&
+    a.gridfinityPaddingRight === b.gridfinityPaddingRight &&
+    a.gridfinityCompartmentsX === b.gridfinityCompartmentsX &&
+    a.gridfinityCompartmentsZ === b.gridfinityCompartmentsZ &&
+    a.gridfinityDividerThickness === b.gridfinityDividerThickness &&
+    gridfinityDividerPositionsEqual(a.gridfinityDividerPositionsX, b.gridfinityDividerPositionsX) &&
+    gridfinityDividerPositionsEqual(a.gridfinityDividerPositionsZ, b.gridfinityDividerPositionsZ) &&
+    gridfinityCompartmentLabelsEqual(a.gridfinityCompartmentLabels, b.gridfinityCompartmentLabels) &&
     a.dovetailNeckWidth === b.dovetailNeckWidth &&
     a.dovetailClearance === b.dovetailClearance &&
     a.loftBottomOutline === b.loftBottomOutline &&
@@ -633,6 +682,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.loftWall === b.loftWall &&
     a.loftTwist === b.loftTwist &&
     a.loftSmooth === b.loftSmooth &&
+    a.loftSegments === b.loftSegments &&
     a.slotEndRatio === b.slotEndRatio &&
     a.loftTiltX === b.loftTiltX &&
     a.loftTiltZ === b.loftTiltZ &&

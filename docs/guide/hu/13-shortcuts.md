@@ -7,6 +7,8 @@ A billentyűparancsok addig működnek, amíg a munkasík van fókuszban. Amíg 
 
 A szerkesztőben a {{ui:editor.group.help}} területen lévő {{ui:editor.keyboardShortcuts}} ugyanezt a listát nyitja meg ablakként. Az ablak nyomtató gombja ({{ui:shortcuts.print}}) csak a listát nyomtatja ki, fehér alapon feketével és nagy betűkkel; a böngésző nyomtatási párbeszédablaka PDF-ként is felkínálja a mentést.
 
+Az ablak tetején lévő mező a listában keres: csak azokat a billentyűparancsokat hagyja meg, amelyek mondatában, csoportjában vagy billentyűiben minden beírt szó szerepel, így a "ctrl+z" csak ezeket a sorokat hagyja meg. A kis- és nagybetű és az ékezetek nem számítanak, egyetlen betű vagy számjegy pedig azt a billentyűt és az azzal kezdődő szavakat találja meg. A mező végén lévő X kiüríti; üres mezővel ismét a teljes lista látszik. A nyomtató gomb azt nyomtatja, amit az ablak mutat, így keresés után csak a talált billentyűparancsokat.
+
 ![A billentyűparancsok ablak a szerkesztőben.](shot:shortcuts)
 
 ## Parancskereső

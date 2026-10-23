@@ -111,4 +111,4 @@ På en kopi af layerling på din egen computer eller server har meddelelsen "Opd
 
 Når din del er færdig, klik på {{ui:editor.export}}, vælg STL eller 3MF og download filen. Åbn den i din slicer, for eksempel Bambu Studio, PrusaSlicer, OrcaSlicer eller Cura. Hvis du vælger din printer i indstillingerne, kan du mens du bygger se om delen passer på printlejet. Mere i [Printning](chapter:printing).
 
-> **Tip:** Hvis du kommer fra Tinkercad finder du hurtigt rundt: plade, former, solid og hul, gruppér, justér og spejl virker næsten ens. Det nye er mest fas og rund, udhuling, gevind og skitser.
+> **Tip:** Hvis du kommer fra Tinkercad finder du hurtigt rundt: plade, former, solid og hul, gruppér, justér og spejl virker næsten ens. Det nye er mest fas og rund, udhuling, gevind og skitser. Dine egne Tinkercad-designs kan også komme med, se [Filer, lagring og deling](chapter:files-and-saving).

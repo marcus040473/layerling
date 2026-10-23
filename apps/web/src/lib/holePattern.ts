@@ -207,16 +207,6 @@ export function faceOutlineFromTriangles(
   return loops.length ? { loops } : null;
 }
 
-export function polygonArea(points: readonly Point2[]) {
-  let area = 0;
-  for (let i = 0; i < points.length; i += 1) {
-    const a = points[i];
-    const b = points[(i + 1) % points.length];
-    area += a.u * b.v - b.u * a.v;
-  }
-  return area / 2;
-}
-
 function insideRegion(loops: readonly Point2[][], point: Point2) {
   // Even-odd over every loop: inside the outer edge, outside the openings.
   let inside = false;

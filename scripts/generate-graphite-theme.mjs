@@ -217,7 +217,7 @@ export function graphiteThemeCss(sourceCss) {
 }
 
 /** The style sheets the app loads, in the order layout.tsx imports them. */
-export const GRAPHITE_SOURCES = ["apps/web/src/app/globals.css", "apps/web/src/app/historyView.css", "apps/web/src/app/myShapes.css", "apps/web/src/app/viewCube.css"];
+export const GRAPHITE_SOURCES = ["apps/web/src/app/globals.css", "apps/web/src/app/historyView.css", "apps/web/src/app/notes.css", "apps/web/src/app/myShapes.css", "apps/web/src/app/viewCube.css", "apps/web/src/app/shortcuts.css"];
 export const GRAPHITE_TARGET = "apps/web/public/assets/theme/graphite-theme.css";
 
 /** The app's style sheets as one text, in the order they apply. */
