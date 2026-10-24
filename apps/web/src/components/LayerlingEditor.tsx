@@ -157,7 +157,8 @@ import { useRememberedFlag } from "@/lib/useRememberedFlag";
 import { BUG_REPORT_FILE, bugReportText, rememberBugReportEvent, type BugReportEvent } from "@/lib/bugReport";
 import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_TILINGS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { normalizeSurfaceTextureOwnImage, SURFACE_TEXTURE_OWN_IMAGE_SIZE } from "@/lib/surfaceTextureImages";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
 import { SURFACE_TEXT_FONTS, surfaceTextOutline } from "@/lib/surfaceTextOutline";
@@ -10269,16 +10270,20 @@ export function LayerlingEditor({
         ["textContent", "textFont"].forEach((key) => {
           if (params[key] !== undefined && typeof params[key] !== "string") throw new Error(`${key} must be text`);
         });
-        const choices: Record<string, readonly string[]> = { pattern: SURFACE_TEXTURE_PATTERNS, profile: SURFACE_TEXTURE_PROFILES, direction: SURFACE_TEXTURE_DIRECTIONS, projection: SURFACE_TEXTURE_PROJECTIONS, axis: SURFACE_TEXTURE_AXES, detail: SURFACE_TEXTURE_DETAILS, crackStyle: SURFACE_TEXTURE_CRACK_STYLES, crackStart: SURFACE_TEXTURE_CRACK_STARTS };
+        const choices: Record<string, readonly string[]> = { pattern: SURFACE_TEXTURE_PATTERNS, profile: SURFACE_TEXTURE_PROFILES, direction: SURFACE_TEXTURE_DIRECTIONS, projection: SURFACE_TEXTURE_PROJECTIONS, axis: SURFACE_TEXTURE_AXES, detail: SURFACE_TEXTURE_DETAILS, crackStyle: SURFACE_TEXTURE_CRACK_STYLES, crackStart: SURFACE_TEXTURE_CRACK_STARTS, image: SURFACE_TEXTURE_IMAGES, imageTiling: SURFACE_TEXTURE_TILINGS };
         Object.entries(choices).forEach(([key, allowed]) => {
           if (params[key] !== undefined && !allowed.includes(String(params[key]))) throw new Error(`${key} must be one of ${allowed.join(", ")}`);
         });
         Object.keys(SURFACE_TEXTURE_LIMITS).forEach((key) => {
           if (params[key] !== undefined && !Number.isFinite(mcpNumber(params[key], Number.NaN))) throw new Error(`${key} must be a number`);
         });
-        ["keepEdges", "outside", "inside", "crackGold"].forEach((key) => {
+        ["keepEdges", "outside", "inside", "crackGold", "imageInvert"].forEach((key) => {
           if (params[key] !== undefined && typeof params[key] !== "boolean") throw new Error(`${key} must be true or false`);
         });
+        if (params.imageOwn !== undefined && !normalizeSurfaceTextureOwnImage(params.imageOwn)) {
+          throw new Error(`imageOwn must be { width, height, data }: whole numbers from 2 to ${SURFACE_TEXTURE_OWN_IMAGE_SIZE} and width × height grey values (0 to 255, a row at a time from the top) as Base64`);
+        }
+        if (params.image === "own" && params.imageOwn === undefined && !(under && target.surfaceTexture?.imageOwn)) throw new Error("image own needs imageOwn: the grey values of one's own image");
         // Masks: the bodies named in `masks`, or else the bodies marked as masks that reach into this one.
         let masks: SurfaceTextureMask[];
         if (params.masks !== undefined) {
@@ -10318,7 +10323,9 @@ export function LayerlingEditor({
           t("status.surfaceTextured", { pattern: surfacePatternLabel(settings.pattern), triangles: formatTriangleCount(outcome.stats.triangles) }),
         );
         const { triangles, around, spacing, limited, tooDeep, bedClamped, cracks, text, projection } = outcome.stats;
-        const { masks: _planes, textOutline: _outline, ...shown } = settings;
+        // One's own image is told by its size, not its grey values.
+        const { masks: _planes, textOutline: _outline, imageOwn, ...rest } = settings;
+        const shown = { ...rest, imageOwn: imageOwn ? { width: imageOwn.width, height: imageOwn.height } : null };
         return {
           object: mcpShapeSummary(textured),
           ...(gold ? { gold: mcpShapeSummary(gold) } : {}),

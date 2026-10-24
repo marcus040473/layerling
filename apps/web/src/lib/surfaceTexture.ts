@@ -18,6 +18,10 @@
  *   the joint profile, so the joints are straight instead of jagged.
  * - Bumps: cut along spokes through every bump's middle and rings at the
  *   levels of its profile (a half ball, a cone, a soft or a flat top).
+ * - Cells (Voronoi): cut like honeycomb, along the borders between cells of
+ *   irregular shape; another seed, another arrangement.
+ * - Knitting, rope, basket weave, grain and an image (a grey height map, see
+ *   surfaceTextureImages.ts): refined evenly, finer where the value jumps.
  * - Cracks (kintsugi, see vase/crack.mjs): lines that grow across the surface,
  *   with kinks, branches and a tapering width; only the band round them is
  *   refined. Their notch can be filled by a body of its own (gold, a second
@@ -61,8 +65,20 @@ import {
 } from "@/lib/surfaceTextureMesh";
 import { crackEdgeNear, crackFillBody, crackNetwork, crackValue, surfaceIndex, type CrackNetwork, type CrackSurfaceIndex } from "@/lib/vase/crack.mjs";
 import { nearestSurfacePoint, unfoldSurface } from "@/lib/vase/unfold.mjs";
+import {
+  blurGreyImage,
+  normalizeSurfaceTextureOwnImage,
+  ownGreyImage,
+  ownImageKey,
+  sampleGreyImage,
+  SURFACE_TEXTURE_IMAGE_PRESETS,
+  SURFACE_TEXTURE_IMAGE_TILE,
+  surfaceTexturePresetImage,
+  type GreyImage,
+  type SurfaceTextureOwnImage,
+} from "@/lib/surfaceTextureImages";
 
-export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cracks", "text"] as const;
+export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "knit", "rope", "weave", "grain", "image", "cracks", "text"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
 /** round: a soft bell; pointed: a V (a cone on a bump); flat: a flat floor or top; dome: a half circle (half a ball on a bump). */
@@ -87,6 +103,13 @@ export type SurfaceTextureCrackStyle = (typeof SURFACE_TEXTURE_CRACK_STYLES)[num
 /** Where cracks begin: at the top rim (a vase, a cup), at the bottom, at the rim towards the middle (a plate), anywhere. */
 export const SURFACE_TEXTURE_CRACK_STARTS = ["top", "bottom", "rim", "anywhere"] as const;
 export type SurfaceTextureCrackStart = (typeof SURFACE_TEXTURE_CRACK_STARTS)[number];
+
+/** Image: a ready image (see surfaceTextureImages.ts) or one's own. */
+export const SURFACE_TEXTURE_IMAGES = [...SURFACE_TEXTURE_IMAGE_PRESETS, "own"] as const;
+export type SurfaceTextureImage = (typeof SURFACE_TEXTURE_IMAGES)[number];
+/** Image tiles: repeated, mirrored (no seam at their borders) or every other row half a tile along. */
+export const SURFACE_TEXTURE_TILINGS = ["repeat", "mirror", "staggered"] as const;
+export type SurfaceTextureTiling = (typeof SURFACE_TEXTURE_TILINGS)[number];
 
 export const SURFACE_TEXTURE_AXES = ["x", "y", "z"] as const;
 export type SurfaceTextureAxis = (typeof SURFACE_TEXTURE_AXES)[number];
@@ -164,6 +187,21 @@ export type SurfaceTextureSettings = {
   textHeight: number;
   /** Turned on the surface, degrees. */
   textTurn: number;
+  /** Cells and grain: another number, another arrangement. */
+  seed: number;
+  /** Image: which one (light = the full depth); "own" is `imageOwn`. The tile's width is the spacing. */
+  image: SurfaceTextureImage;
+  /** One's own image: its grey values, at most SURFACE_TEXTURE_OWN_IMAGE_SIZE points a side. */
+  imageOwn: SurfaceTextureOwnImage | null;
+  /** The tile's height, mm (0: as high as the image is for its width). */
+  tileHeight: number;
+  /** The tiles turned on the surface, degrees. */
+  imageTurn: number;
+  /** Light and dark swapped. */
+  imageInvert: boolean;
+  /** Softened over this many points of the image. */
+  imageBlur: number;
+  imageTiling: SurfaceTextureTiling;
   /**
    * The letters' outlines, made from the words and the font where fonts are at hand (see surfaceTextOutline.ts):
    * rings [x0, y0, x1, y1, ...] in mm, y up, the text's box centred on 0, 0. Inside by the even-odd rule.
@@ -213,6 +251,14 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   textHeight: 50,
   textTurn: 0,
   textOutline: [],
+  seed: 1,
+  image: "topography",
+  imageOwn: null,
+  tileHeight: 0,
+  imageTurn: 0,
+  imageInvert: false,
+  imageBlur: 0,
+  imageTiling: "repeat",
 });
 
 type NumberKey = { [K in keyof SurfaceTextureSettings]: SurfaceTextureSettings[K] extends number ? K : never }[keyof SurfaceTextureSettings];
@@ -241,6 +287,10 @@ export const SURFACE_TEXTURE_LIMITS: Record<NumberKey, [number, number]> = {
   textAround: [-180, 180],
   textHeight: [0, 100],
   textTurn: [-180, 180],
+  seed: [1, 9999],
+  tileHeight: [0, 200],
+  imageTurn: [-180, 180],
+  imageBlur: [0, 8],
 };
 
 const CHOICES = {
@@ -252,6 +302,8 @@ const CHOICES = {
   detail: SURFACE_TEXTURE_DETAILS,
   crackStyle: SURFACE_TEXTURE_CRACK_STYLES,
   crackStart: SURFACE_TEXTURE_CRACK_STARTS,
+  image: SURFACE_TEXTURE_IMAGES,
+  imageTiling: SURFACE_TEXTURE_TILINGS,
 } as const;
 
 /** Points per half crack width, by detail (as the vase tool). */
@@ -293,7 +345,10 @@ const DETAIL_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 3, medium: 
 export const SURFACE_TEXTURE_MAX_TRIANGLES = 600_000;
 export const SURFACE_TEXTURE_PREVIEW_TRIANGLES = 200_000;
 
-const CELL_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps"];
+/** Cut along their cell borders (see sliceCells). */
+const CELL_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells"];
+/** Around a cylinder a whole number of cells, stitches, strands, stakes or tiles goes round. */
+const ROUND_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells", "knit", "rope", "weave", "image"];
 const SQRT3 = Math.sqrt(3);
 
 function clamp(value: number, min: number, max: number) {
@@ -320,7 +375,8 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
     } else if (typeof fallback === "boolean") {
       if (typeof value === "boolean") target[key] = value;
       else if (value === "true" || value === "false") target[key] = value === "true";
-    } else if ((CHOICES[key as keyof typeof CHOICES] as readonly string[]).includes(String(value))) {
+    } else if ((CHOICES[key as keyof typeof CHOICES] as readonly string[] | undefined)?.includes(String(value))) {
+      // Lists and objects (masks, outlines, one's own image) have their own checks below.
       target[key] = String(value);
     }
   });
@@ -330,11 +386,41 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
   if (out.zoneTo < out.zoneFrom) [out.zoneFrom, out.zoneTo] = [out.zoneTo, out.zoneFrom];
   out.crackCount = Math.round(out.crackCount);
   out.crackSeed = Math.round(out.crackSeed);
-  // Bumps without a profile of their own are half balls; the V a groove gets by default would make them cones.
-  if (out.pattern === "bumps" && source.profile === undefined) out.profile = "dome";
+  out.seed = Math.round(out.seed);
+  // What a pattern is not told starts as it looks right (see SURFACE_TEXTURE_STARTERS), not as the knurling would.
+  const starter = SURFACE_TEXTURE_STARTERS[out.pattern];
+  if (starter) {
+    (Object.keys(starter) as (keyof SurfaceTextureSettings)[]).forEach((key) => {
+      if (source[key] === undefined) (target as Record<string, unknown>)[key] = starter[key];
+    });
+  }
+  out.imageOwn = normalizeSurfaceTextureOwnImage(source.imageOwn);
+  // One's own image asked for without one: the first ready image.
+  if (out.image === "own" && !out.imageOwn) out.image = SURFACE_TEXTURE_IMAGE_PRESETS[0];
+  if (out.pattern === "image" && source.spacing === undefined) out.spacing = surfaceTextureImageTile(out.image);
   out.masks = normalizeSurfaceTextureMasks(source.masks);
   out.textOutline = normalizeSurfaceTextOutline(source.textOutline);
   return out;
+}
+
+/**
+ * Where a pattern starts when it is chosen, for what it is not told: bumps as half balls (the V a groove gets by default
+ * would make them cones), and knitting, rope and weave raised and round as their models, at the size those were
+ * measured at.
+ */
+export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Partial<SurfaceTextureSettings>>> = {
+  bumps: { profile: "dome" },
+  cells: { spacing: 9, depth: 0.8, width: 0.22, profile: "round" },
+  knit: { spacing: 5, depth: 1.2, width: 0.85, profile: "round", direction: "outward" },
+  rope: { spacing: 6, depth: 3, width: 0.6, profile: "round", direction: "outward" },
+  weave: { spacing: 10, depth: 1.6, width: 0.6, profile: "round", direction: "outward" },
+  grain: { spacing: 1.2, depth: 0.25 },
+  image: { depth: 0.6 },
+};
+
+/** A fitting tile width for an image, mm (one's own: 40). */
+export function surfaceTextureImageTile(image: SurfaceTextureImage) {
+  return image === "own" ? 40 : SURFACE_TEXTURE_IMAGE_TILE[image];
 }
 
 /** A text's outlines kept to what can be used: rings of at least three finite points, within the limit on points. */
@@ -452,13 +538,236 @@ function hexSite(u: number, v: number, spacing: number) {
 /** Normals of the hexagon's six sides (as hexCell: a corner up). */
 const HEX_NORMALS = [1, 0, 0.5, SQRT3 / 2, -0.5, SQRT3 / 2, -1, 0, -0.5, -SQRT3 / 2, 0.5, -SQRT3 / 2];
 
+function hash3(i: number, j: number, k: number) {
+  let h = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ Math.imul(k, 1274126177);
+  h = Math.imul(h ^ (h >>> 13), 1103515245);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967295;
+}
+
+/** Cells: the points of the 5 × 5 grid cells round (u, v), their key and the squared distance (see cellSites). */
+const CELL_PTS = new Float64Array(50);
+const CELL_D = new Float64Array(25);
+const CELL_KEY = new Float64Array(25);
+
+/**
+ * Cells (Voronoi) in the pattern's plane: one point in every grid cell of `cell` mm, set off by the seed. With `around`
+ * (around a cylinder) the grid repeats exactly after that many cells: no seam. Fills CELL_PTS, CELL_D and CELL_KEY with
+ * the 25 points round (u, v); returns how many and which is nearest.
+ */
+function cellSites(u: number, v: number, cell: number, around: number | null, seed: number) {
+  const ci = Math.floor(u / cell), cj = Math.floor(v / cell);
+  let d1 = Infinity, k1 = 0, n = 0;
+  for (let dj = -2; dj <= 2; dj += 1) {
+    for (let di = -2; di <= 2; di += 1) {
+      const i = ci + di, j = cj + dj;
+      const wi = around ? ((i % around) + around) % around : i;
+      const px = (i + 0.1 + 0.8 * hash3(wi, j, seed)) * cell;
+      const py = (j + 0.1 + 0.8 * hash3(wi, j, seed + 7919)) * cell;
+      const d = (px - u) ** 2 + (py - v) ** 2;
+      CELL_PTS[n * 2] = px;
+      CELL_PTS[n * 2 + 1] = py;
+      CELL_D[n] = d;
+      CELL_KEY[n] = (wi + 50000) * 100000 + (j + 50000);
+      if (d < d1) {
+        d1 = d;
+        k1 = n;
+      }
+      n += 1;
+    }
+  }
+  return { n, k1 };
+}
+
+/** Distance at (x, y) to the border between cell points A (sx, sy) and B (bx, by): (|x - B|² - |x - A|²) / 2 |A - B|. */
+function bisectorDistance(sx: number, sy: number, bx: number, by: number, x: number, y: number) {
+  return ((bx - x) ** 2 + (by - y) ** 2 - (sx - x) ** 2 - (sy - y) ** 2) / (2 * (Math.hypot(bx - sx, by - sy) || 1));
+}
+
+/**
+ * Distance to the nearest cell border, mm: exactly, the smallest distance to the borders between the nearest point and
+ * every other - the second nearest point alone jumped at the corners (steps in the joint where it changes).
+ */
+function cellEdge(u: number, v: number, cell: number, around: number | null, seed: number) {
+  const { n, k1 } = cellSites(u, v, cell, around, seed);
+  const sx = CELL_PTS[k1 * 2], sy = CELL_PTS[k1 * 2 + 1];
+  let best = Infinity;
+  for (let k = 0; k < n; k += 1) {
+    if (k === k1) continue;
+    const d = bisectorDistance(sx, sy, CELL_PTS[k * 2], CELL_PTS[k * 2 + 1], u, v);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+/** The cross-section of a yarn or strand: round (and dome) a half circle, else as the other patterns. */
+function yarn(e2: number, profile: SurfaceTextureProfile) {
+  if (e2 >= 1) return 0;
+  return profile === "round" || profile === "dome" ? Math.sqrt(1 - e2) : surfaceFalloff(Math.sqrt(e2), profile);
+}
+
+/**
+ * Stockinette: columns of stitches `W` wide, each stitch a V of two slanted loops of yarn that meet at the bottom in
+ * the middle and reach into the next row. `width` is the yarn's thickness. Fine ripples across hint at the twisted fibres.
+ */
+function knit(u: number, v: number, W: number, s: SurfaceTextureSettings) {
+  const H = W * 0.75;
+  const x = u - (Math.floor(u / W) + 0.5) * W;
+  const row = Math.floor(v / H);
+  // A loop: from the bottom middle up and out, steeper than 45 degrees and into the next row; a narrow gutter stays
+  // between the columns.
+  const sx = W * 0.42, sy = H * 1.3;
+  const len = Math.hypot(sx, sy);
+  const half = len * 0.5;
+  const b = (W / 4) * clamp(s.width, 0.3, 1) * 0.95;
+  let best = 0;
+  for (let k = -1; k <= 1; k += 1) {
+    const y = v - (row + k) * H;
+    for (const side of [-1, 1]) {
+      const ax = (side * sx) / len, ay = sy / len;
+      const dx = x - (side * sx) / 2, dy = y - 0.2 * H - sy / 2;
+      const t = (dx * ax + dy * ay) / half;
+      const nn = (-dx * ay + dy * ax) / b;
+      const e2 = t * t + nn * nn;
+      if (e2 >= 1) continue;
+      const fiber = 1 - 0.1 * (0.5 + 0.5 * Math.cos((2 * Math.PI * t * half) / (b * 1.1)));
+      best = Math.max(best, yarn(e2, s.profile) * fiber);
+    }
+  }
+  return best;
+}
+
+/**
+ * A wound rope as a real three-strand rope: rings one above the other `spacing` apart that grip into each other - the
+ * rope is a circle of radius R = spacing × (0.5 + 0.5 × width), of which the part above the joint shows, so the joint
+ * stays flat (width 0.6: R = 0.8 spacing). On it three strands (radius 0.46 R) as slanted ridges, about 40 degrees to the
+ * rope, flatter to the ring's edge. One strand per cell round, so the pattern closes at the seam. In mm, then 0 to 1.
+ */
+function rope(u: number, v: number, cellU: number, s: SurfaceTextureSettings) {
+  const P = s.spacing;
+  const y = v - (Math.floor(v / P) + 0.5) * P;
+  const R = P * (0.5 + 0.5 * clamp(s.width, 0.1, 1));
+  const rim = Math.sqrt(R * R - (P * P) / 4);
+  const groove = R - rim;
+  const strandR = 0.46 * R;
+  // The ring: the rope circle's height above the joint.
+  const ringHeight = Math.sqrt(Math.max(0, R * R - y * y)) - rim;
+  // The strands: phase across the slanted ridges, 0 on the crest, 1 in the gutter between two strands.
+  const q = u / cellU - (1.15 * y) / P;
+  const d = Math.abs(q - Math.floor(q) - 0.5) * 2;
+  const tilt = Math.sqrt(Math.max(0, 1 - (y * y) / (R * R)));
+  const strand = strandR * tilt * yarn(d * d, s.profile);
+  return (ringHeight + strand) / (groove + strandR);
+}
+
+/**
+ * Basket weave: upright stakes `S` apart and weavers in rows of 2/3 S, over and under the stakes in turn - row j lies over
+ * stake i when i + j is even. The height is the larger of weaver and stake: the weaver a band with a soft cross-section
+ * (1 in the middle, 0.45 at its edge, shaped by `profile`), rising from 0.25 under a stake to 1 over one (a cosine
+ * between); the stake a round rod 0.7 high and width × S / 2 across, showing where the weaver runs under it and in the
+ * joints between the rows. Soft cross-sections, so nothing overhangs by more than 45 degrees. Around a cylinder it needs
+ * an even number of stakes (see makeSurfaceTextureLayout), or two "over"s would meet at the seam.
+ */
+function weave(u: number, v: number, S: number, s: SurfaceTextureSettings) {
+  const rowH = (2 / 3) * S;
+  const j = Math.floor(v / rowH);
+  const y = v - (j + 0.5) * rowH;
+  const over = 0.5 + 0.5 * Math.cos((Math.PI * u) / S + Math.PI * j);
+  const band = 0.45 + 0.55 * surfaceFalloff(Math.abs((2 * y) / rowH), s.profile);
+  const weaver = (0.25 + 0.75 * over) * band;
+  const r = (clamp(s.width, 0.1, 1) * S) / 4;
+  const x = Math.abs(u - Math.round(u / S) * S);
+  // A round rod, 0 at its edge: the weaver covers the stake's foot, a wide back stays where the weaver runs under it.
+  const stake = x < r ? 0.7 * yarn((x / r) * (x / r), s.profile) : 0;
+  return Math.max(weaver, stake);
+}
+
+function valueNoise(x: number, y: number, z: number) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const f = (t: number) => t * t * (3 - 2 * t);
+  const fx = f(x - xi), fy = f(y - yi), fz = f(z - zi);
+  let sum = 0;
+  for (let dz = 0; dz < 2; dz += 1) {
+    for (let dy = 0; dy < 2; dy += 1) {
+      for (let dx = 0; dx < 2; dx += 1) {
+        const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy) * (dz ? fz : 1 - fz);
+        sum += w * hash3(xi + dx, yi + dy, zi + dz);
+      }
+    }
+  }
+  return sum;
+}
+
+/** Grain: noise in space (no projection, so no seam and no stretching anywhere), grains about `size` mm, 0 to 1. */
+function grain(x: number, y: number, z: number, size: number, seed: number) {
+  // Another seed: the same noise further along (a whole number of its cells, so seed 1 is where it began).
+  const ox = 7919 * (seed - 1);
+  const n =
+    0.55 * valueNoise(x / size + ox, y / size, z / size) +
+    0.3 * valueNoise((2 * x) / size + 17 + ox, (2 * y) / size, (2 * z) / size) +
+    0.15 * valueNoise((4 * x) / size + ox, (4 * y) / size + 31, (4 * z) / size);
+  return clamp((n - 0.2) / 0.6, 0, 1);
+}
+
+/** Mirrored tiles: 0 to 1, then back to 0, and so on. */
+function mirrorTile(t: number) {
+  const f = t - 2 * Math.floor(t / 2);
+  return f <= 1 ? f : 2 - f;
+}
+
+/** An image's grey value at (u, v) mm, its tiles `layout.cell` wide and `layout.tileHeight` high. */
+function imageValue(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  const image = layout.image;
+  if (!image) return 0;
+  let uu = u, vv = v;
+  if (s.imageTurn) {
+    const a = (s.imageTurn * Math.PI) / 180;
+    const ru = uu * Math.cos(a) + vv * Math.sin(a);
+    vv = -uu * Math.sin(a) + vv * Math.cos(a);
+    uu = ru;
+  }
+  let tu = uu / layout.cell, tv = vv / (layout.tileHeight || layout.cell);
+  const mirror = s.imageTiling === "mirror";
+  if (mirror) {
+    tu = mirrorTile(tu);
+    tv = mirrorTile(tv);
+  } else if (s.imageTiling === "staggered" && Math.floor(tv) % 2) tu += 0.5;
+  const grey = sampleGreyImage(image, tu, tv, mirror);
+  return s.imageInvert ? 1 - grey : grey;
+}
+
+/**
+ * The image a texture samples, softened as asked (kept for the last few) - and at least to the mesh: given the triangles'
+ * edge and the tile's width (mm), over a quarter of an edge. The mesh cannot follow an edge of the picture that is sharper
+ * than its own triangles: terrazzo's chips came out in steps of the grid, about 0.6 mm each, which a printer prints too
+ * (cutting along the picture's contour lines did not help: the facets next to the cut still followed the grid). Softened,
+ * their walls slope over about a triangle and run smoothly; a 0.4 mm nozzle could not print them sharper anyway.
+ */
+const imageCache = new Map<string, GreyImage>();
+const SOFTEN_TO_MESH = 0.25;
+function textureImage(s: SurfaceTextureSettings, edge = 0, tileWidth = 1): GreyImage | null {
+  const own = s.image === "own" ? s.imageOwn : null;
+  if (s.image === "own" && !own) return null;
+  const plain = own ? ownGreyImage(own) : surfaceTexturePresetImage(s.image as Exclude<SurfaceTextureImage, "own">, 512);
+  // Softening counts in points of an image 256 wide, so it softens a ready image (512 wide) as much as one's own.
+  const asked = s.imageBlur * Math.max(1, plain.width / 256);
+  const radius = Math.min(16, Math.round(Math.max(asked, (SOFTEN_TO_MESH * edge * plain.width) / tileWidth)));
+  const key = `${own ? ownImageKey(own) : s.image}|${radius}`;
+  const cached = imageCache.get(key);
+  if (cached) return cached;
+  const image = blurGreyImage(plain, radius);
+  if (imageCache.size > 8) imageCache.clear();
+  imageCache.set(key, image);
+  return image;
+}
+
 /** Where the pattern lies on the body: axis, radius, and spacing after rounding (see makeLayout). */
 export type SurfaceTextureLayout = {
   /** How the pattern lies on this body ("auto" decided). */
   projection: Exclude<SurfaceTextureProjection, "auto">;
   /** Grooves: distance between two grooves across them. */
   period: number;
-  /** Honeycomb and bumps: centre spacing. */
+  /** Honeycomb, bumps and cells: centre spacing; knitting: a stitch's width; rope: a strand's; weave: between stakes; image: a tile's width. */
   cell: number;
   /** Around a cylinder: how many grooves or cells go round, else null. */
   around: number | null;
@@ -474,6 +783,9 @@ export type SurfaceTextureLayout = {
   crack?: CrackNetwork | null;
   /** Text: where it is stuck on and the window round it (set by the session). */
   text?: SurfaceTextPlacement | null;
+  /** Image: the grey values and a tile's height, mm. */
+  image?: GreyImage | null;
+  tileHeight?: number;
 };
 
 /**
@@ -620,6 +932,16 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
       return surfaceFalloff(hexCell(u, v, layout.cell).edge / ((layout.cell / 2) * s.width), s.profile);
     case "bumps":
       return surfaceFalloff(hexCell(u, v, layout.cell).center / ((layout.cell / 2) * s.width), s.profile);
+    case "cells":
+      return surfaceFalloff(cellEdge(u, v, layout.cell, layout.around, s.seed) / ((layout.cell / 2) * s.width), s.profile);
+    case "knit":
+      return knit(u, v, layout.cell, s);
+    case "rope":
+      return rope(u, v, layout.cell, s);
+    case "weave":
+      return weave(u, v, layout.cell, s);
+    case "image":
+      return imageValue(u, v, s, layout);
     default:
       return 0;
   }
@@ -629,6 +951,8 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
 export function surfaceTextureValueAt(x: number, y: number, z: number, nx: number, ny: number, nz: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   // Cracks lie on the surface itself, not in a projection.
   if (s.pattern === "cracks") return layout.crack ? crackValue(layout.crack, x, y, z, nx, ny, nz, CRACK_PROFILE[s.profile]) : 0;
+  // Grain is noise in space: no projection.
+  if (s.pattern === "grain") return grain(x, y, z, s.spacing, s.seed);
   const pos = [x, y, z];
   const projection = s.projection === "auto" ? layout.projection : s.projection;
   if (projection === "cylinder") {
@@ -804,7 +1128,12 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
     rMin = rMax = radius;
   }
   const layout: SurfaceTextureLayout = { projection: s.projection as SurfaceTextureLayout["projection"], period: s.spacing, cell: s.spacing, around: null, angle: s.angle, center: [c1, c2], radius, rMin, rMax };
-  if (s.projection !== "cylinder") return layout;
+  if (s.pattern === "image") layout.image = textureImage(s);
+  const tileHeight = () => (s.tileHeight > 0 ? s.tileHeight : layout.image ? (layout.cell * layout.image.height) / layout.image.width : layout.cell);
+  if (s.projection !== "cylinder") {
+    layout.tileHeight = tileHeight();
+    return layout;
+  }
   const C = 2 * Math.PI * radius;
   if (s.pattern === "grooves" || s.pattern === "knurl") {
     const cos = Math.abs(Math.cos((s.angle * Math.PI) / 180));
@@ -818,11 +1147,13 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
       const k = Math.round((C * cos) / s.spacing);
       layout.angle = ((s.angle < 0 ? -1 : 1) * (Math.acos(Math.min(1, (k * s.spacing) / C)) * 180)) / Math.PI;
     }
-  } else if (CELL_PATTERNS.includes(s.pattern)) {
-    const k = Math.max(1, Math.round(C / s.spacing));
+  } else if (ROUND_PATTERNS.includes(s.pattern)) {
+    // Weave: an even number of stakes, or two weavers "over" would meet at the seam.
+    const k = s.pattern === "weave" ? Math.max(2, 2 * Math.round(C / (2 * s.spacing))) : Math.max(1, Math.round(C / s.spacing));
     layout.cell = C / k;
     layout.around = k;
   }
+  layout.tileHeight = tileHeight();
   return layout;
 }
 
@@ -894,13 +1225,26 @@ function stripesAreCut(s: SurfaceTextureSettings) {
   return (s.pattern === "grooves" || s.pattern === "knurl") && s.projection !== "allRound";
 }
 
+/** What else shapes the pattern and so its refining: the cells' and the grain's seed, the image and its tiles. */
+function patternExtras(s: SurfaceTextureSettings) {
+  if (s.pattern === "cells" || s.pattern === "grain") return [s.seed];
+  if (s.pattern === "image") return [s.image === "own" && s.imageOwn ? ownImageKey(s.imageOwn) : s.image, s.tileHeight, s.imageTurn, s.imageInvert, s.imageBlur, s.imageTiling];
+  return null;
+}
+
 /** Edge length at which the pattern is cleanly resolved. */
 function targetEdge(s: SurfaceTextureSettings) {
-  // Honeycomb and bumps that are cut (see sliceCells) get their detail from the cuts: the grid only
+  // Honeycomb, cells and bumps that are cut (see sliceCells) get their detail from the cuts: the grid only
   // has to follow the body's roundness (a 1.2 mm chord on 30 mm radius: 0.006 mm).
   if (cellsAreCut(s)) return s.spacing / 2.5;
-  const narrow = s.width < 0.35 ? 0.65 : 1;
-  return (s.spacing / DETAIL_STEPS[s.detail]) * narrow;
+  const steps = DETAIL_STEPS[s.detail];
+  // An image: about 14 points per tile and step of detail (its tile has 256 image points and more).
+  if (s.pattern === "image") return Math.min(s.spacing, s.tileHeight > 0 ? s.tileHeight : s.spacing) / (steps * 14);
+  const narrow = s.width < 0.35 && s.pattern !== "grain" ? 0.65 : 1;
+  // Knitting: a stitch has two loops of about a quarter of its width each; a rope's strands and the weave's rows are
+  // narrower than the spacing too.
+  const size = s.pattern === "grain" ? s.spacing / 2 : s.pattern === "knit" ? s.spacing / 2.2 : s.pattern === "rope" ? s.spacing / 1.5 : s.pattern === "weave" ? s.spacing / 2 : s.spacing;
+  return (size / steps) * narrow;
 }
 
 function cellsAreCut(s: SurfaceTextureSettings) {
@@ -1034,17 +1378,17 @@ const BUMP_RING_POINTS: Record<SurfaceTextureDetail, number> = { coarse: 20, med
 const BUMP_RINGS: Record<SurfaceTextureDetail, number> = { coarse: 3, medium: 5, fine: 8 };
 
 /**
- * Honeycomb and bumps: cut instead of refining evenly - otherwise the triangles lie at any slant to
+ * Honeycomb, cells and bumps: cut instead of refining evenly - otherwise the triangles lie at any slant to
  * the joint and their edges look jagged (flat shaded in a slicer even more). Bumps: after the cell
  * borders (step 1 below), straight spokes through every bump's middle - there they meet, so the tip
  * of a cone or a ball is a point of the mesh - and rings at the profile levels, each point exactly on
  * its circle. Then every bump is a fan of facets round its middle, as round as its spokes. In a cell the distance
- * to the joint is the smallest of six distances that are linear in the unrolled surface (one per
- * side). So, in three steps:
+ * to the joint is the smallest of a few distances that are linear in the unrolled surface (one per
+ * side of a hexagon; for cells, one per neighbour cell: the border halfway to its point). So, in three steps:
  * 1. Cut at the cell borders (between two cell middles, the middle of the joint). Then every
  *    triangle lies in one cell.
- * 2. Cut at the corner lines, where in the corners of the joint the nearest side changes (in the
- *    joint only). Then the distance is linear in every triangle.
+ * 2. Cut at the corner lines, where next to the joint the nearest side changes. Then the
+ *    distance is linear in every triangle.
  * 3. Cut at the profile levels (see profileLevels; a round profile gets `steps` of them, fewer
  *    down to 2 when the triangles would not fit `maxTriangles` - counted before cutting, since
  *    the cut is the dear part). Every flank gets rows of points exactly on its contour lines.
@@ -1058,10 +1402,35 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
   const period = cyl ? 2 * Math.PI * R : 0;
   const cell = layout.cell;
   const hw = (cell / 2) * clamp(s.width, 0.02, 1);
-  // Per point eight numbers: distance to the joint, cell key, nearest side (0 to 5), cell middle u and v, and the point's
-  // own u, v and whether it lies on the axis (1).
-  const REC = 8;
+  // Cells (Voronoi): the joint lies on the borders between irregular cell points instead of a hexagon's sides.
+  const voronoi = s.pattern === "cells";
+  const around = cyl ? layout.around : null;
+  // Per point ten numbers: distance to the joint, cell key, nearest side (honeycomb: 0 to 5; cells: the key of the cell
+  // behind it), cell middle u and v, the point's own u, v and whether it lies on the axis (1), and - cells - the point of
+  // the cell behind the nearest border, u and v.
+  const REC = 10;
   const describe = (u: number, v: number, rec: Float64Array, o: number) => {
+    if (voronoi) {
+      const { n, k1 } = cellSites(u, v, cell, around, s.seed);
+      const sx = CELL_PTS[k1 * 2], sy = CELL_PTS[k1 * 2 + 1];
+      let best = Infinity, kb = 0;
+      for (let k = 0; k < n; k += 1) {
+        if (k === k1) continue;
+        const d = (CELL_D[k] - CELL_D[k1]) / (2 * (Math.hypot(CELL_PTS[k * 2] - sx, CELL_PTS[k * 2 + 1] - sy) || 1));
+        if (d < best) {
+          best = d;
+          kb = k;
+        }
+      }
+      rec[o] = best;
+      rec[o + 1] = CELL_KEY[k1];
+      rec[o + 2] = CELL_KEY[kb];
+      rec[o + 3] = sx;
+      rec[o + 4] = sy;
+      rec[o + 8] = CELL_PTS[kb * 2];
+      rec[o + 9] = CELL_PTS[kb * 2 + 1];
+      return;
+    }
     const c = hexSite(u, v, cell);
     let lo = Infinity, kb = 0;
     for (let k = 0; k < 6; k += 1) {
@@ -1077,8 +1446,10 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
     rec[o + 3] = c.x;
     rec[o + 4] = c.y;
   };
-  // Distance to the joint at (x, y) over side k of the cell with middle (sx, sy).
-  const g = (sx: number, sy: number, k: number, x: number, y: number) => cell / 2 - HEX_NORMALS[k * 2] * (x - sx) - HEX_NORMALS[k * 2 + 1] * (y - sy);
+  // Distance to the joint at (x, y) over a border of the cell with middle (sx, sy): its side k (honeycomb), or the border
+  // towards the cell point (bx, by) (cells).
+  const g = (sx: number, sy: number, k: number, bx: number, by: number, x: number, y: number) =>
+    voronoi ? bisectorDistance(sx, sy, bx, by, x, y) : cell / 2 - HEX_NORMALS[k * 2] * (x - sx) - HEX_NORMALS[k * 2 + 1] * (y - sy);
   const uvOf = (verts: ArrayLike<number>, i: number): [number, number, boolean] => {
     const pos = [verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]];
     if (!cyl) return [pos[i1], pos[i2], false];
@@ -1525,25 +1896,44 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
     result.limited = Boolean(mesh.limited || cur.limited);
     return { mesh: result, reduced: rings < wanted || rimEdge > hw / BUMP_RIM_STEPS[s.detail], fixed: Float32Array.from(fixed) };
   }
-  // 2. Corner lines: edges whose ends are nearest to different sides are cut exactly where both are equally far - in the
-  // joint only. An end on the cell border may count to the neighbour cell; then (rarely) it is measured again in the cell
-  // of the edge's middle.
+  // 2. Corner lines: edges whose ends are nearest to different sides are cut exactly where both are equally far, when an
+  // end lies in the joint - also where that place lies in the cell's flat middle: an edge from one arm of a joint's corner
+  // to the other ran over the middle uncut, and its triangles bent (up to a quarter of the depth). An end on the cell
+  // border may count to the neighbour cell; then (rarely) it is measured again in the cell of the edge's middle.
   const scratch = new Float64Array(REC * 3);
-  const kink: CutAt = (rec, a, b, ua, va, ub, vb) => {
+  const kink: CutAt = (rec, a, b, ua, va, ub, vb, shift) => {
     let oa = a * REC, ob = b * REC;
     if (rec[oa] >= hw * 1.02 && rec[ob] >= hw * 1.02) return -1;
     if (rec[oa + 1] === rec[ob + 1] && rec[oa + 2] === rec[ob + 2]) return -1;
     let R0 = rec;
+    // b's cell point behind its border lies in b's own unrolled place: across the seam it is brought round.
+    let sh = shift;
     if (rec[oa + 1] !== rec[ob + 1]) {
       describe((ua + ub) / 2, (va + vb) / 2, scratch, 0);
       const sx = scratch[3], sy = scratch[4];
       const relabel = (u: number, v: number, o: number) => {
         let lo = Infinity;
-        for (let k = 0; k < 6; k += 1) {
-          const d = g(sx, sy, k, u, v);
-          if (d < lo) {
-            lo = d;
-            scratch[o + 2] = k;
+        if (voronoi) {
+          // The nearest border of this cell, its point fixed (as describe, the cell given).
+          const { n } = cellSites(u, v, cell, around, s.seed);
+          for (let k = 0; k < n; k += 1) {
+            const px = CELL_PTS[k * 2], py = CELL_PTS[k * 2 + 1];
+            if (Math.abs(px - sx) < 1e-9 && Math.abs(py - sy) < 1e-9) continue;
+            const d = bisectorDistance(sx, sy, px, py, u, v);
+            if (d < lo) {
+              lo = d;
+              scratch[o + 2] = CELL_KEY[k];
+              scratch[o + 8] = px;
+              scratch[o + 9] = py;
+            }
+          }
+        } else {
+          for (let k = 0; k < 6; k += 1) {
+            const d = g(sx, sy, k, 0, 0, u, v);
+            if (d < lo) {
+              lo = d;
+              scratch[o + 2] = k;
+            }
           }
         }
         scratch[o] = lo;
@@ -1555,14 +1945,16 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
       R0 = scratch;
       oa = REC;
       ob = REC * 2;
+      sh = 0;
       if (scratch[oa + 2] === scratch[ob + 2]) return -1;
     }
     const sx = R0[oa + 3], sy = R0[oa + 4];
     const ka = R0[oa + 2], kb = R0[ob + 2];
-    const ha = g(sx, sy, ka, ua, va) - g(sx, sy, kb, ua, va), hb = g(sx, sy, ka, ub, vb) - g(sx, sy, kb, ub, vb);
+    const gA = (x: number, y: number) => g(sx, sy, ka, R0[oa + 8], R0[oa + 9], x, y);
+    const gB = (x: number, y: number) => g(sx, sy, kb, R0[ob + 8] + sh, R0[ob + 9], x, y);
+    const ha = gA(ua, va) - gB(ua, va), hb = gA(ub, vb) - gB(ub, vb);
     const t = ha / (ha - hb);
-    if (!(t > 0.02 && t < 0.98)) return -1;
-    return g(sx, sy, ka, ua + t * (ub - ua), va + t * (vb - va)) < hw * 1.02 ? t : -1;
+    return t > 0.02 && t < 0.98 ? t : -1;
   };
   let cur = split(mesh, border, triple);
   cur = split(cur, border, triple);
@@ -1960,6 +2352,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       const minEdge = Math.sqrt(texturableArea(smooth.points) / (0.15 * maxTriangles));
       raised = edge < minEdge;
       if (raised) edge = minEdge;
+      if (s.pattern === "image") layout.image = textureImage(s, edge, layout.cell);
     }
     let smoothKey = 2166136261;
     for (let i = 0; i < smooth.points.length; i += 1) smoothKey = Math.imul(smoothKey ^ smooth.points[i] ^ (i & 0xff), 16777619);
@@ -1967,7 +2360,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       ? JSON.stringify([s.pattern, crackCache?.key ?? null])
       : text
         ? JSON.stringify([s.pattern, layout.text ? [layout.text.point, layout.text.face] : null, s.axis, s.textTurn, outlineKey(s.textOutline)])
-        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center]);
+        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center, patternExtras(s)]);
     const key = `${edge.toFixed(5)}|${smoothKey}|${maxTriangles}|${s.edgeAngle}|${s.detail}|${scale}|${layoutKey}`;
     if (cache?.key === key) return cache;
     let mesh: SurfaceMesh;

@@ -23,6 +23,7 @@ import {
   type SurfaceTextureCrackStyle,
   type SurfaceTextureDetail,
   type SurfaceTextureDirection,
+  type SurfaceTextureImage,
   type SurfaceTextureMask,
   type SurfaceTextureMaskMode,
   type SurfaceTexturePattern,
@@ -30,6 +31,7 @@ import {
   type SurfaceTextureProjection,
   type SurfaceTextureSettings,
   type SurfaceTextureStats,
+  type SurfaceTextureTiling,
 } from "@/lib/surfaceTexture";
 import { canonicalizeShape, cleanNearZero, isNonSolidShapeKind } from "@/lib/workplaneShapes";
 import type { EdgeTreatmentHistoryEntry, ShapeKind, WorkplaneShape } from "@/types/layerling";
@@ -65,8 +67,23 @@ export const SURFACE_TEXTURE_LABELS: {
   mask: Record<SurfaceTextureMaskMode | "none", MessageKey>;
   crackStyle: Record<SurfaceTextureCrackStyle, MessageKey>;
   crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
+  image: Record<SurfaceTextureImage, MessageKey>;
+  tiling: Record<SurfaceTextureTiling, MessageKey>;
 } = {
-  pattern: { grooves: "surfaceTexture.grooves", knurl: "surfaceTexture.knurl", honeycomb: "surfaceTexture.honeycomb", bumps: "surfaceTexture.bumps", cracks: "surfaceTexture.cracks", text: "surfaceTexture.text" },
+  pattern: {
+    grooves: "surfaceTexture.grooves",
+    knurl: "surfaceTexture.knurl",
+    honeycomb: "surfaceTexture.honeycomb",
+    bumps: "surfaceTexture.bumps",
+    cells: "surfaceTexture.cells",
+    knit: "surfaceTexture.knit",
+    rope: "surfaceTexture.rope",
+    weave: "surfaceTexture.weave",
+    grain: "surfaceTexture.grain",
+    image: "surfaceTexture.image",
+    cracks: "surfaceTexture.cracks",
+    text: "surfaceTexture.text",
+  },
   profile: { round: "surfaceTexture.round", pointed: "surfaceTexture.pointed", flat: "surfaceTexture.flat", dome: "surfaceTexture.dome" },
   bumpShape: { dome: "surfaceTexture.bumpDome", pointed: "surfaceTexture.bumpCone", round: "surfaceTexture.bumpSoft", flat: "surfaceTexture.bumpFlat" },
   direction: { inward: "surfaceTexture.inward", outward: "surfaceTexture.outward", both: "surfaceTexture.both" },
@@ -76,6 +93,22 @@ export const SURFACE_TEXTURE_LABELS: {
   mask: { none: "surfaceTexture.maskNone", exclude: "surfaceTexture.maskExclude", only: "surfaceTexture.maskOnly" },
   crackStyle: { crack: "surfaceTexture.crackStyleCrack", lightning: "surfaceTexture.crackStyleLightning" },
   crackStart: { top: "surfaceTexture.crackStartTop", bottom: "surfaceTexture.crackStartBottom", rim: "surfaceTexture.crackStartRim", anywhere: "surfaceTexture.crackStartAnywhere" },
+  image: {
+    topography: "surfaceTexture.imageTopography",
+    wood: "surfaceTexture.imageWood",
+    woodRift: "surfaceTexture.imageWoodRift",
+    guilloche: "surfaceTexture.imageGuilloche",
+    terrazzo: "surfaceTexture.imageTerrazzo",
+    craquelure: "surfaceTexture.imageCraquelure",
+    cord: "surfaceTexture.imageCord",
+    moire: "surfaceTexture.imageMoire",
+    mosaic: "surfaceTexture.imageMosaic",
+    folds: "surfaceTexture.imageFolds",
+    fingerprint: "surfaceTexture.imageFingerprint",
+    rosettes: "surfaceTexture.imageRosettes",
+    own: "surfaceTexture.imageOwn",
+  },
+  tiling: { repeat: "surfaceTexture.tilingRepeat", mirror: "surfaceTexture.tilingMirror", staggered: "surfaceTexture.tilingStaggered" },
 };
 
 /** The pattern's name in the current language. */

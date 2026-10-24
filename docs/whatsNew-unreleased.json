@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Sechs neue Muster für die Oberfläche",
+      "en": "Six new surface patterns"
+    },
+    "body": {
+      "de": "Zellen, Strick, Seil, Geflecht, Körnung und Bild: Zellen mit glatt geschnittenen Fugen, gestrickte Maschen, ein gewickeltes Seil, ein Korbgeflecht, feine Körnung wie gestrahlt und Graubilder als Höhenkarte – zwölf Vorlagen wie Holz, Topografie oder Terrazzo, oder ein eigenes Bild.",
+      "en": "Cells, knitting, rope, basket weave, grain and image: cells with cleanly cut joints, knitted stitches, a wound rope, a basket weave, fine grain as if blasted and grey pictures as height maps – twelve ready ones such as wood, topography or terrazzo, or your own."
+    }
+  },
+  {
+    "title": {
       "de": "Saubere Kanten am Würfel",
       "en": "Clean edges on a cube"
     },

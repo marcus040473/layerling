@@ -4,7 +4,7 @@ import { displayY, displayYTurn, insideZ, insideZTurn } from "@/lib/displayAxes"
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
-import { ChevronDown, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, Layers, Link2, Lock, Minus, Pencil, Plus, RefreshCw, RotateCcw, Ruler, Split, Tags, Unlock, Waves } from "lucide-react";
+import { ChevronDown, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Layers, Link2, Lock, Minus, Pencil, Plus, RefreshCw, RotateCcw, Ruler, Split, Tags, Unlock, Waves } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import {
@@ -164,7 +164,8 @@ import { displayShapeName, makeShapeFromAsset, renamedShapeName } from "@/lib/sh
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES,
   SURFACE_TEXTURE_CRACK_STARTS,
-  SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, type SurfaceTextureMaskMode, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+  SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, surfaceTextureImageTile, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { SURFACE_TEXTURE_OWN_IMAGE_SIZE, surfaceTextureOwnImage } from "@/lib/surfaceTextureImages";
 import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, surfaceTextureEntry } from "@/lib/surfaceTextureShape";
 import { LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, type VaseSettings } from "@/lib/vaseSettings";
@@ -4331,6 +4332,58 @@ function CylinderWrapCard({
 /** The shapes a bump can take, the half ball first. */
 const BUMP_SHAPES = ["dome", "pointed", "round", "flat"] as const;
 
+/** What the spacing and the width are called where they mean something else than a groove's. */
+const SURFACE_SPACING_LABEL: Partial<Record<SurfaceTexturePattern, MessageKey>> = {
+  cells: "inspector.surfaceSpacingCells",
+  knit: "inspector.surfaceSpacingKnit",
+  rope: "inspector.surfaceSpacingRope",
+  weave: "inspector.surfaceSpacingWeave",
+  grain: "inspector.surfaceSpacingGrain",
+  image: "inspector.surfaceSpacingImage",
+};
+const SURFACE_COVERAGE_LABEL: Partial<Record<SurfaceTexturePattern, MessageKey>> = {
+  cells: "inspector.surfaceCoverageCells",
+  knit: "inspector.surfaceCoverageKnit",
+  rope: "inspector.surfaceCoverageRope",
+  weave: "inspector.surfaceCoverageWeave",
+};
+
+/**
+ * The settings when another pattern is chosen. A pattern with values of its own to start from (cells, knitting, rope,
+ * weave, grain, an image) gets them, and leaving one gives the next the plain defaults back, so a knitted stitch's 5 mm
+ * do not become knurling's spacing. Bumps start as half balls: the V the grooves have by default would make them cones.
+ */
+function surfaceSettingsForPattern(current: SurfaceTextureSettings, pattern: SurfaceTexturePattern): Partial<SurfaceTextureSettings> {
+  const leaving = current.pattern === "bumps" ? null : SURFACE_TEXTURE_STARTERS[current.pattern];
+  const reset = leaving ? Object.fromEntries(Object.keys(leaving).map((key) => [key, SURFACE_TEXTURE_DEFAULTS[key as keyof SurfaceTextureSettings]])) : {};
+  const starter = pattern === "bumps" ? (current.profile === "pointed" ? { profile: "dome" as const } : {}) : SURFACE_TEXTURE_STARTERS[pattern] ?? {};
+  const tile = pattern === "image" ? { spacing: surfaceTextureImageTile(current.image), tileHeight: 0 } : {};
+  return { ...reset, ...starter, ...tile, pattern };
+}
+
+/** A picture file as one's own image for the texture: drawn small (SURFACE_TEXTURE_OWN_IMAGE_SIZE) and turned grey. */
+async function surfaceImageFromFile(file: File) {
+  const url = URL.createObjectURL(file);
+  try {
+    const picture = new Image();
+    picture.src = url;
+    await picture.decode();
+    // A drawing without a size of its own (an SVG) is drawn as large as one's image may be.
+    const width = picture.naturalWidth || SURFACE_TEXTURE_OWN_IMAGE_SIZE, height = picture.naturalHeight || SURFACE_TEXTURE_OWN_IMAGE_SIZE;
+    const scale = Math.min(1, SURFACE_TEXTURE_OWN_IMAGE_SIZE / Math.max(width, height));
+    const w = Math.max(2, Math.round(width * scale)), h = Math.max(2, Math.round(height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("no canvas");
+    context.drawImage(picture, 0, 0, w, h);
+    return surfaceTextureOwnImage(context.getImageData(0, 0, w, h).data, w, h);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export function SurfaceTextureCard({
   shape,
   workspace,
@@ -4369,7 +4422,9 @@ export function SurfaceTextureCard({
   const applied = shape.surfaceTexture;
   // A texture made or changed elsewhere (by an assistant, by redo, in a project opened again) shows its own settings;
   // one taken off leaves the card as it was, to apply again.
-  const appliedKey = applied ? JSON.stringify({ ...applied, masks: applied.masks.length, textOutline: applied.textOutline.length }) : "";
+  const appliedKey = applied
+    ? JSON.stringify({ ...applied, masks: applied.masks.length, textOutline: applied.textOutline.length, imageOwn: applied.imageOwn ? applied.imageOwn.data.length : 0 })
+    : "";
   const [shownKey, setShownKey] = useState(appliedKey);
   if (appliedKey !== shownKey) {
     setShownKey(appliedKey);
@@ -4394,6 +4449,21 @@ export function SurfaceTextureCard({
   );
   const striped = settings.pattern === "grooves" || settings.pattern === "knurl";
   const cracks = settings.pattern === "cracks";
+  // Grain lies in space: no projection, no axis. An image's grey values are its profile and width.
+  const grain = settings.pattern === "grain";
+  const image = settings.pattern === "image";
+  const imageInput = useRef<HTMLInputElement>(null);
+  const [imageError, setImageError] = useState("");
+  const loadImage = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const imageOwn = await surfaceImageFromFile(file);
+      setImageError("");
+      set({ image: "own", imageOwn, tileHeight: 0 });
+    } catch (error) {
+      setImageError(t("status.surfaceImageFailed", { error: error instanceof Error ? error.message : String(error) }));
+    }
+  };
   // A text goes where it is put: what stays smooth for a pattern all over does not hold it back, so those fields go.
   const text = settings.pattern === "text";
   const percent = (id: string, label: string, value: number, onChange: (value: number) => void) => range(id, label, Math.round(value * 100), [0, 100], 1, (share) => onChange(share / 100));
@@ -4432,8 +4502,7 @@ export function SurfaceTextureCard({
                 value={settings.pattern}
                 options={options(SURFACE_TEXTURE_PATTERNS, (value) => t(SURFACE_TEXTURE_LABELS.pattern[value]))}
                 disabled={disabled || busy}
-                // Bumps start as half balls: the V the grooves have by default would make them cones.
-                onChange={(value) => set({ pattern: value as SurfaceTextureSettings["pattern"], ...(value === "bumps" && settings.profile === "pointed" ? { profile: "dome" as const } : {}) })}
+                onChange={(value) => set(surfaceSettingsForPattern(settings, value as SurfaceTexturePattern))}
               />
               {cracks ? (
                 <>
@@ -4475,7 +4544,71 @@ export function SurfaceTextureCard({
                   <p className="cylinder-wrap-hint">{t("inspector.surfaceTextHint")}</p>
                 </>
               ) : (
-                range("surfaceSpacing", t("inspector.surfaceSpacing"), settings.spacing, [SURFACE_TEXTURE_LIMITS.spacing[0], 50], 0.1, (spacing) => set({ spacing }))
+                <>
+                  {image ? (
+                    <>
+                      <SelectProperty
+                        type="select"
+                        label={t("inspector.surfaceImage")}
+                        value={settings.image}
+                        // One's own image is there to choose again once it is loaded.
+                        options={options(
+                          SURFACE_TEXTURE_IMAGES.filter((value) => value !== "own" || settings.imageOwn),
+                          (value) => t(SURFACE_TEXTURE_LABELS.image[value]),
+                        )}
+                        disabled={disabled || busy}
+                        onChange={(value) => {
+                          const next = value as SurfaceTextureSettings["image"];
+                          set({ image: next, spacing: surfaceTextureImageTile(next), tileHeight: 0 });
+                        }}
+                      />
+                      <input
+                        ref={imageInput}
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={(event) => {
+                          void loadImage(event.target.files?.[0]);
+                          event.target.value = "";
+                        }}
+                      />
+                      <button className="inspector-action-button" type="button" disabled={disabled || busy} onClick={() => imageInput.current?.click()}>
+                        <ImageUp size={17} strokeWidth={2.5} />
+                        <span>{t("inspector.surfaceImageLoad")}</span>
+                      </button>
+                      {imageError ? <p className="cylinder-wrap-hint">{imageError}</p> : null}
+                    </>
+                  ) : null}
+                  {range(
+                    "surfaceSpacing",
+                    t(SURFACE_SPACING_LABEL[settings.pattern] ?? "inspector.surfaceSpacing"),
+                    settings.spacing,
+                    [SURFACE_TEXTURE_LIMITS.spacing[0], image ? SURFACE_TEXTURE_LIMITS.spacing[1] : 50],
+                    0.1,
+                    (spacing) => set({ spacing }),
+                  )}
+                  {image ? (
+                    <>
+                      {range("surfaceTileHeight", t("inspector.surfaceTileHeight"), settings.tileHeight, SURFACE_TEXTURE_LIMITS.tileHeight, 0.5, (tileHeight) => set({ tileHeight }))}
+                      <SelectProperty
+                        type="select"
+                        label={t("inspector.surfaceImageTiling")}
+                        value={settings.imageTiling}
+                        options={options(SURFACE_TEXTURE_TILINGS, (value) => t(SURFACE_TEXTURE_LABELS.tiling[value]))}
+                        disabled={disabled || busy}
+                        onChange={(value) => set({ imageTiling: value as SurfaceTextureSettings["imageTiling"] })}
+                      />
+                      <ToggleProperty label={t("inspector.surfaceImageInvert")} value={settings.imageInvert} disabled={disabled || busy} onChange={(imageInvert) => set({ imageInvert })} />
+                      <p className="cylinder-wrap-hint">{t("inspector.surfaceImageHint")}</p>
+                    </>
+                  ) : null}
+                  {settings.pattern === "cells" || grain ? (
+                    <>
+                      {range("surfaceSeed", t("inspector.surfaceSeed"), settings.seed, [1, 999], 1, (seed) => set({ seed }))}
+                      <p className="cylinder-wrap-hint">{t("inspector.surfaceSeedHint")}</p>
+                    </>
+                  ) : null}
+                </>
               )}
               {settings.pattern === "bumps" ? (
                 <SelectProperty
@@ -4503,7 +4636,9 @@ export function SurfaceTextureCard({
                   {settings.crackGold ? range("surfaceCrackRecess", t("inspector.surfaceCrackRecess"), settings.crackRecess, SURFACE_TEXTURE_LIMITS.crackRecess, 0.05, (crackRecess) => set({ crackRecess })) : null}
                   {settings.crackGold ? <p className="cylinder-wrap-hint">{t("inspector.surfaceCrackGoldHint")}</p> : null}
                 </>
-              ) : text ? null : (
+              ) : text ? null : grain ? (
+                <p className="cylinder-wrap-hint">{t("inspector.surfaceGrainHint")}</p>
+              ) : (
                 <SelectProperty
                   type="select"
                   label={t("inspector.surfaceProjection")}
@@ -4514,7 +4649,7 @@ export function SurfaceTextureCard({
                   onChange={(value) => set({ projection: value as SurfaceTextureSettings["projection"] })}
                 />
               )}
-              {cracks || text || settings.projection !== "allRound" ? (
+              {!grain && (cracks || text || settings.projection !== "allRound") ? (
                 <SelectProperty
                   type="select"
                   label={t("inspector.surfaceAxis")}
@@ -4538,12 +4673,24 @@ export function SurfaceTextureCard({
                       {range("surfaceCrackSeed", t("inspector.surfaceCrackSeed"), settings.crackSeed, [0, 999], 1, (crackSeed) => set({ crackSeed }))}
                       <p className="cylinder-wrap-hint">{t("inspector.surfaceCrackSeedHint")}</p>
                     </>
-                  ) : text ? null : (
-                    range("surfaceCoverage", t("inspector.surfaceCoverage"), Math.round(settings.width * 100), [SURFACE_TEXTURE_LIMITS.width[0] * 100, 100], 1, (share) => set({ width: share / 100 }))
+                  ) : text || grain ? null : image ? (
+                    <>
+                      {range("surfaceImageTurn", t("inspector.surfaceImageTurn"), settings.imageTurn, SURFACE_TEXTURE_LIMITS.imageTurn, 1, (imageTurn) => set({ imageTurn }))}
+                      {range("surfaceImageBlur", t("inspector.surfaceImageBlur"), settings.imageBlur, SURFACE_TEXTURE_LIMITS.imageBlur, 1, (imageBlur) => set({ imageBlur }))}
+                    </>
+                  ) : (
+                    range(
+                      "surfaceCoverage",
+                      t(SURFACE_COVERAGE_LABEL[settings.pattern] ?? "inspector.surfaceCoverage"),
+                      Math.round(settings.width * 100),
+                      [SURFACE_TEXTURE_LIMITS.width[0] * 100, 100],
+                      1,
+                      (share) => set({ width: share / 100 }),
+                    )
                   )}
                   {text ? null : (
                     <>
-                      {settings.pattern === "bumps" ? null : (
+                      {settings.pattern === "bumps" || grain || image ? null : (
                         <SelectProperty
                           type="select"
                           label={t("inspector.surfaceProfile")}
