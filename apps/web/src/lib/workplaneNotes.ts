@@ -156,7 +156,7 @@ export function shapeIdMapping(before: readonly WorkplaneShape[], after: readonl
 
 /**
  * Notes that come into a design with bodies from somewhere else (a custom
- * shape), made to fit it: each gets a fresh id - the package was saved from
+ * shape, an inserted design), made to fit it: each gets a fresh id - the package was saved from
  * some design and its note ids may well be ones this design already uses - and
  * its pin moves over to its body's new id. A note whose body did not come
  * along is let go, as `detachNotesFromMissingShapes` would. Each comes in

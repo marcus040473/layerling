@@ -5,7 +5,7 @@ summary: Abrir layerling como un programa normal, incluso sin red, y cómo hacer
 
 ## Instalar como aplicación
 
-layerling se puede instalar como un programa normal. Así tiene su propio icono y su propia ventana, sin barra de direcciones. Después de la primera visita, se abre incluso **sin internet**. Tus diseños se quedan en tu ordenador. Merece la pena instalarlo: la aplicación arranca más rápido, porque no tiene que volver a cargarse cada vez, funciona sin internet y le ahorra trabajo al servidor. No pierdes nada, porque layerling te sigue avisando cuando sale una versión nueva.
+layerling se puede instalar como un programa normal. Así tiene su propio icono y su propia ventana, sin barra de direcciones. Después de la primera visita, se abre incluso **sin internet**. Tus diseños se quedan en tu ordenador. Merece la pena instalarlo: la aplicación arranca más rápido, porque no tiene que volver a cargarse cada vez, funciona sin internet y le ahorra trabajo al servidor. No pierdes nada, porque layerling te sigue avisando cuando sale una versión nueva. Eso también protege tus diseños: Safari en el Mac, el iPhone y el iPad borra los datos guardados de un sitio web que no se ha visitado en siete días, pero no los de una aplicación instalada.
 
 Si tu navegador lo permite, en la página de inicio aparece un aviso con {{ui:installHint.install}}. Si no:
 

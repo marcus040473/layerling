@@ -9,11 +9,10 @@ import {
   GRIDFINITY_FOOT,
   GRIDFINITY_FOOT_HEIGHT,
   GRIDFINITY_GRID,
+  GRIDFINITY_LEDGE_INSET,
   GRIDFINITY_MAGNET_DEPTH,
   GRIDFINITY_MAGNET_DIAMETER,
-  GRIDFINITY_OPEN_REACH,
   GRIDFINITY_SOCKET,
-  GRIDFINITY_WALL,
   type GridfinityCompartmentPieces,
   type GridfinityLabelCornerShape,
   type GridfinityLabelPieces,
@@ -65,6 +64,11 @@ import {
  * A chamfer on the lip's top (#780) is cut once the inside is out and checked,
  * by keeping what lies under its face, so everything before it is built and
  * checked as on a sharp lip.
+ *
+ * A wall thicker than 1.75 mm stops at a ledge 0.85 mm under the top, which a
+ * loft cannot step across: below it the inside is a prism of the wall's inset,
+ * run up into the loft over the ledge so their faces do not meet, and the
+ * floor's rounding, the scoops and the compartments are cut on the prism.
  */
 
 /** z up to y up: (x, y, z) -> (x, z, -y). */
@@ -89,16 +93,19 @@ function oneSolid(cad: OcctKernel, shape: ShapeHandle, what: string) {
  * meet, with no arc.
  */
 function roundedWire(cad: OcctKernel, cx: number, cz: number, hx: number, hz: number, radius: number, z: number, square?: ReturnType<typeof gridfinityOpenCorners>) {
+  // An inside set in past its corners' radius (a wall of 3.75 mm or more) has square corners.
+  const r = Math.max(0, radius);
+  const squared = r > 0 ? square : { backLeft: true, backRight: true, frontLeft: true, frontRight: true };
   const at = (x: number, depth: number) => ({ x: cx + x, y: -(cz + depth), z });
-  const ax = hx - radius;
-  const az = hz - radius;
-  const k = radius * Math.SQRT1_2;
-  if (square && Object.values(square).some(Boolean)) {
+  const ax = hx - r;
+  const az = hz - r;
+  const k = r * Math.SQRT1_2;
+  if (squared && Object.values(squared).some(Boolean)) {
     const corners = [
-      { square: square.backRight, start: at(ax, -hz), middle: at(ax + k, -az - k), end: at(hx, -az), point: at(hx, -hz) },
-      { square: square.frontRight, start: at(hx, az), middle: at(ax + k, az + k), end: at(ax, hz), point: at(hx, hz) },
-      { square: square.frontLeft, start: at(-ax, hz), middle: at(-ax - k, az + k), end: at(-hx, az), point: at(-hx, hz) },
-      { square: square.backLeft, start: at(-hx, -az), middle: at(-ax - k, -az - k), end: at(-ax, -hz), point: at(-hx, -hz) },
+      { square: squared.backRight, start: at(ax, -hz), middle: at(ax + k, -az - k), end: at(hx, -az), point: at(hx, -hz) },
+      { square: squared.frontRight, start: at(hx, az), middle: at(ax + k, az + k), end: at(ax, hz), point: at(hx, hz) },
+      { square: squared.frontLeft, start: at(-ax, hz), middle: at(-ax - k, az + k), end: at(-hx, az), point: at(-hx, hz) },
+      { square: squared.backLeft, start: at(-hx, -az), middle: at(-ax - k, -az - k), end: at(-ax, -hz), point: at(-hx, -hz) },
     ];
     // Each side from the corner before it, then the corner's arc unless it is square: the same edges in the same order.
     return cad.makeWire(corners.flatMap((corner, i) => {
@@ -146,10 +153,17 @@ function binSolid(cad: OcctKernel, plan: GridfinityPlan, scoops: GridfinityScoop
   if (plan.lip) inside.push([0, wallTop], [0, wallTop + PAST]);
   else inside.push([inside[inside.length - 1][0], wallTop + PAST]);
   // Through an open side it runs on until its corners, and the floor's rounding, lie 2 mm beyond the outline.
-  const grown = gridfinityOpenGrown(hx, hz, open, GRIDFINITY_OPEN_REACH);
-  let cutter = steppedSolid(cad, grown.x, grown.z, grown.hx, grown.hz, GRIDFINITY_BIN_RADIUS, inside);
-  const loft = cutter;
-  if (compartments) cutter = compartmentCutter(cad, loft, compartments, hx, hz, wallTop);
+  const grown = gridfinityOpenGrown(hx, hz, open, plan.reach);
+  // A ledge: two steps at one height, the wall's inset and the support's foot.
+  const ledged = inside.length > 2 && inside[1][1] === inside[2][1];
+  const upper = ledged ? steppedSolid(cad, grown.x, grown.z, grown.hx, grown.hz, GRIDFINITY_BIN_RADIUS, inside.slice(2)) : null;
+  // Up into the loft by half the ledge's width (at most 0.4 mm), where the loft, leaning out with the support, is wider.
+  const into = Math.min((plan.wallThickness - GRIDFINITY_LEDGE_INSET) / 2, 0.4);
+  let cutter = upper
+    ? prism(cad, grown.hx - plan.wallThickness, grown.hz - plan.wallThickness, plan.innerRadius, inside[0][1], inside[1][1] + into, grown.x, grown.z)
+    : steppedSolid(cad, grown.x, grown.z, grown.hx, grown.hz, GRIDFINITY_BIN_RADIUS, inside);
+  const below = cutter;
+  if (compartments) cutter = compartmentCutter(cad, below, compartments, hx, hz, wallTop, !upper);
   else if (plan.floorRounding > 0) {
     const floor = inside[0][1];
     const floorEdges = cad.getSubShapes(cutter, "edge").filter((edge) => {
@@ -159,13 +173,16 @@ function binSolid(cad: OcctKernel, plan: GridfinityPlan, scoops: GridfinityScoop
     cutter = cad.fillet(cutter, floorEdges, plan.floorRounding);
   }
   if (scoops) cutter = scoopedCutter(cad, cutter, scoops);
+  if (upper) cutter = oneSolid(cad, cad.fuse(cutter, upper), "bin's inside");
+  // The whole inside without the compartments, the floor's rounding or the scoops, for the dividers' check.
+  const loft = upper ? oneSolid(cad, cad.fuse(below, upper), "bin's inside") : below;
   const block = body;
   // A bin without the lip whose floor is raised to the top is one solid block, with no inside to cut.
   if (plan.floor < wallTop) body = oneSolid(cad, cad.cut(body, cutter), "bin");
   // Checked before the magnet holes, which take volume the bound does not count; the loft's PAST over the top cuts nothing.
   if (compartments) {
     const [inset] = inside[inside.length - 1];
-    const over = (4 * (hx - inset) * (hz - inset) - (4 - Math.PI) * (GRIDFINITY_BIN_RADIUS - inset) ** 2) * PAST;
+    const over = (4 * (hx - inset) * (hz - inset) - (4 - Math.PI) * Math.max(0, GRIDFINITY_BIN_RADIUS - inset) ** 2) * PAST;
     const bound = gridfinityDividerBound(plan, compartments) + gridfinityCompartmentFloorBound(plan, compartments);
     // Through an open side the inside runs on past the block, so what it would leave is measured by cutting it.
     const plain = opened ? cad.getVolume(cad.cut(block, loft)) : cad.getVolume(block) - cad.getVolume(loft) + over;
@@ -189,32 +206,36 @@ function lipChamferKeeper(cad: OcctKernel, plan: GridfinityPlan, hx: number, hz:
   const run = 1 + Math.SQRT2;
   const out = 1;
   const steps: GridfinityStep[] = [[-out, -PAST], [-out, wallTop - size - out / run], [size * run, wallTop], [size * run, wallTop + PAST]];
-  const grown = gridfinityOpenGrown(hx, hz, plan.open, GRIDFINITY_OPEN_REACH);
+  const grown = gridfinityOpenGrown(hx, hz, plan.open, plan.reach);
   return steppedSolid(cad, grown.x, grown.z, grown.hx, grown.hz, GRIDFINITY_BIN_RADIUS, steps);
 }
 
 /**
  * The cutter for a bin with dividers (#554): the inside above the dividers' top and a rounded prism for each
  * compartment, its floor edges filleted and its scoops taken out, fused into one and kept to the inside, so the bin
- * is cut once. Cutting the compartments one by one took 7 to 15 times as long.
+ * is cut once. Cutting the compartments one by one took 7 to 15 times as long. Under a ledge the loft over it is the
+ * inside above the dividers' top, so no box is added (`withAbove` false).
  */
-function compartmentCutter(cad: OcctKernel, loft: ShapeHandle, pieces: GridfinityCompartmentPieces, hx: number, hz: number, wallTop: number) {
-  const above = cad.makeBoxFromCorners({ x: -hx - 1, y: -hz - 1, z: pieces.top }, { x: hx + 1, y: hz + 1, z: wallTop + 1 });
+function compartmentCutter(cad: OcctKernel, loft: ShapeHandle, pieces: GridfinityCompartmentPieces, hx: number, hz: number, wallTop: number, withAbove = true) {
+  const above = withAbove ? cad.makeBoxFromCorners({ x: -hx - 1, y: -hz - 1, z: pieces.top }, { x: hx + 1, y: hz + 1, z: wallTop + 1 }) : null;
   const cutters = pieces.cells.map((cell) => {
     // A compartment on an open side runs out through it as the inside does.
-    const grown = gridfinityOpenGrown(cell.inside.hx, cell.inside.hz, cell.open, GRIDFINITY_OPEN_REACH);
+    const grown = gridfinityOpenGrown(cell.inside.hx, cell.inside.hz, cell.open, pieces.reach);
     let cutter = prism(cad, grown.hx, grown.hz, cell.inside.radius, pieces.floor, pieces.top + GRIDFINITY_DIVIDER_CUTTER_OVERLAP, grown.x, grown.z);
-    const floorEdges = cad.getSubShapes(cutter, "edge").filter((edge) => {
-      const box = cad.getBoundingBox(edge);
-      return Math.abs(box.zmin - pieces.floor) < 1e-6 && Math.abs(box.zmax - pieces.floor) < 1e-6;
-    });
-    cutter = cad.fillet(cutter, floorEdges, pieces.floorRounding);
+    // Square corners (a wall of 3.75 mm or more) have no rounding to the floor either.
+    if (pieces.floorRounding > 0) {
+      const floorEdges = cad.getSubShapes(cutter, "edge").filter((edge) => {
+        const box = cad.getBoundingBox(edge);
+        return Math.abs(box.zmin - pieces.floor) < 1e-6 && Math.abs(box.zmax - pieces.floor) < 1e-6;
+      });
+      cutter = cad.fillet(cutter, floorEdges, pieces.floorRounding);
+    }
     if (cell.scoops) cutter = scoopedCutter(cad, cutter, cell.scoops);
     return cad.translate(cutter, cell.centre.x, -cell.centre.z, 0);
   });
-  const fused = cad.fuseAll([above, ...cutters]);
+  const fused = cad.fuseAll([...(above ? [above] : []), ...cutters]);
   // A fuse the kernel gets wrong can leave a compartment out, which would be left solid without a word.
-  if (cad.getVolume(fused) < gridfinityCompartmentCutBound(pieces, { box: cad.getVolume(above), cutters: cutters.map((cutter) => cad.getVolume(cutter)) }) - PIECE_MISSED) {
+  if (cad.getVolume(fused) < gridfinityCompartmentCutBound(pieces, { box: above ? cad.getVolume(above) : 0, cutters: cutters.map((cutter) => cad.getVolume(cutter)) }) - PIECE_MISSED) {
     throw new Error("The Gridfinity bin's compartments could not be cut");
   }
   return cad.common(fused, loft);
@@ -236,12 +257,12 @@ function polygonFace(cad: OcctKernel, points: Array<{ x: number; y: number; z: n
 
 /** The label shelves and their corner pieces, in the shape's own frame (y up), each cut to the bin's inside. */
 function labelSolids(cad: OcctKernel, pieces: GridfinityLabelPieces) {
-  const { hx, hz, radius, open = {} } = pieces.inside;
+  const { hx, hz, radius, open = {}, wallThickness = 0 } = pieces.inside;
   const y0 = pieces.floor;
   const y1 = pieces.top;
   // The inside: the inner wall's rounded rectangle from the floor up to the shelves' top, out to the outline and square
   // in the corners at an open side, so a shelf beside it ends flush with the wall's end.
-  const grown = gridfinityOpenGrown(hx, hz, open, GRIDFINITY_WALL);
+  const grown = gridfinityOpenGrown(hx, hz, open, wallThickness);
   const inside = cad.transform(prism(cad, grown.hx, grown.hz, radius, y0, y1, grown.x, grown.z, gridfinityOpenCorners(open)), Z_TO_Y_UP);
   const profile = (p: GridfinityLabelProfile) => {
     const { start, end } = gridfinityLabelProfileEnds(pieces, p);

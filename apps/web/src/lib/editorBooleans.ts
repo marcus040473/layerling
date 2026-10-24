@@ -1,5 +1,6 @@
 
 import { removeLooseSplinters } from "@/lib/meshSplinters";
+import { closeSmallMeshHoles } from "@/lib/meshHoleFill";
 import type { ManifoldToplevel } from "manifold-3d";
 import { ADDITION, Brush, Evaluator, HOLLOW_INTERSECTION, HOLLOW_SUBTRACTION, INTERSECTION, SUBTRACTION, type CSGOperation } from "three-bvh-csg";
 import * as THREE from "three";
@@ -32,6 +33,8 @@ export type GroupBuildResult = {
    * solid's surface has gaps: how many open edges it has. 0 when the cut is closed (#346).
    */
   openGapEdges?: number;
+  /** How many small openings of an open mesh were capped so the kernel took it (#791). */
+  closedHoles?: number;
   /**
    * The solids were grouped by laying their meshes together, not merged into one, because they have
    * more triangles than the limit.
@@ -605,6 +608,65 @@ export function meshDataToManifoldMesh(runtime: ManifoldToplevel, mesh: MeshData
   return manifoldMesh;
 }
 
+/**
+ * The openings capped, and the ones too large to cap, since the last `takeHoleFillTally`, per mesh:
+ * one task may build the same body more than once.
+ */
+let holeFillTally = new Map<string, { closed: number; open: number }>();
+
+export function takeHoleFillTally() {
+  const values = [...holeFillTally.values()];
+  holeFillTally = new Map();
+  return { closed: values.reduce((sum, entry) => sum + entry.closed, 0), open: values.reduce((sum, entry) => sum + entry.open, 0) };
+}
+
+function noteHoleFill(data: MeshData, closed: number, open: number) {
+  if (closed === 0 && open === 0) return;
+  holeFillTally.set(`${data.faces.length}|${data.vertices.length}|${data.vertices[0]?.join(",") ?? ""}`, { closed, open });
+}
+
+function manifoldOfMeshData(runtime: ManifoldToplevel, data: MeshData) {
+  const mesh = meshDataToManifoldMesh(runtime, data);
+  try {
+    return runtime.Manifold.ofMesh(mesh);
+  } finally {
+    disposeManifold(mesh);
+  }
+}
+
+/**
+ * The solid of a mesh. A mesh with small openings (an OBJ figure whose eyes are left open, #791)
+ * is refused by the kernel as "Not manifold"; its openings are then capped and the mesh is tried
+ * again, and the tally says how many were capped or stayed open for the message.
+ */
+export function manifoldFromMeshData(runtime: ManifoldToplevel, data: MeshData): ManifoldSolid {
+  let solid: ManifoldSolid | null = null;
+  let refusal: unknown = null;
+  try {
+    solid = manifoldOfMeshData(runtime, data);
+    if (solid.status() === "NoError") return solid;
+  } catch (error) {
+    refusal = error;
+  }
+  const repair = closeSmallMeshHoles(data);
+  if (repair.closed > 0) {
+    try {
+      const repaired = manifoldOfMeshData(runtime, repair.mesh);
+      if (repaired.status() === "NoError") {
+        disposeManifold(solid);
+        noteHoleFill(data, repair.closed, repair.open);
+        return repaired;
+      }
+      disposeManifold(repaired);
+    } catch {
+      // The capped mesh is refused too; the first answer stands.
+    }
+  }
+  noteHoleFill(data, 0, repair.open);
+  if (solid) return solid;
+  throw refusal;
+}
+
 function boxBoundsToManifold(runtime: ManifoldToplevel, bounds: Cuboid, created: ManifoldSolid[]) {
   const width = bounds.maxX - bounds.minX;
   const height = bounds.maxY - bounds.minY;
@@ -713,13 +775,7 @@ export function shapeToManifoldSolid(runtime: ManifoldToplevel, shape: Workplane
     return primitive;
   }
 
-  const mesh = meshDataToManifoldMesh(runtime, meshForShape(shape));
-  let solid: ManifoldSolid;
-  try {
-    solid = runtime.Manifold.ofMesh(mesh);
-  } finally {
-    disposeManifold(mesh);
-  }
+  const solid = manifoldFromMeshData(runtime, meshForShape(shape));
   if (solid.status() !== "NoError") return solid;
   // A group of solids is the loose pile of its parts' surfaces, and parts that
   // overlap or lie on top of one another (a frame whose posts stand in its
@@ -757,12 +813,14 @@ function shapesToManifoldUnion(runtime: ManifoldToplevel, shapes: WorkplaneShape
 
 export async function splitShapeByPlane(shape: WorkplaneShape, plane: Pick<ModelSplitPlane, "axis" | "normal" | "position">) {
   const created: ManifoldSolid[] = [];
+  takeHoleFillTally();
   try {
     const runtime = await getManifoldRuntime();
     let solid = shapeToManifoldSolid(runtime, shape, created);
     if (!solid || solid.status() !== "NoError" || solid.numTri() < 1) {
-      return { parts: null, error: t("split.error.notClosed", { status: solid?.status() ?? "empty" }) };
+      return { parts: null, error: openHolesError() ?? t("split.error.notClosed", { status: solid?.status() ?? "empty" }) };
     }
+    const { closed: closedHoles } = takeHoleFillTally();
     created.push(solid);
     const normalized = unionSplitManifoldComponents(runtime, solid);
     created.push(...normalized.created);
@@ -802,7 +860,7 @@ export async function splitShapeByPlane(shape: WorkplaneShape, plane: Pick<Model
         `${shape.name} (${label}-)`,
       );
       return positiveShape && negativeShape
-        ? { parts: [canonicalizeShape(positiveShape), canonicalizeShape(negativeShape)] as [WorkplaneShape, WorkplaneShape] }
+        ? { parts: [canonicalizeShape(positiveShape), canonicalizeShape(negativeShape)] as [WorkplaneShape, WorkplaneShape], closedHoles }
         : { parts: null, error: t("split.error.store") };
     } finally {
       disposeManifold(positiveMesh);
@@ -810,16 +868,29 @@ export async function splitShapeByPlane(shape: WorkplaneShape, plane: Pick<Model
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error ?? "");
-    return { parts: null, error: message ? t("split.error.kernel", { message }) : t("split.error.kernelUnknown") };
+    return { parts: null, error: openHolesError() ?? (message ? t("split.error.kernel", { message }) : t("split.error.kernelUnknown")) };
   } finally {
     Array.from(new Set(created)).forEach(disposeManifold);
   }
 }
 
+/** A status message with the note that small holes of the mesh were closed first (#791). */
+export function withClosedHolesNote(message: string, closedHoles = 0) {
+  if (closedHoles < 1) return message;
+  const note = closedHoles === 1 ? t("status.holeClosedOne") : t("status.holesClosedMany", { count: closedHoles });
+  return `${/[.!?。]$/.test(message) ? message : `${message}.`} ${note}`;
+}
+
+/** Why a mesh with openings too large to cap could not be cut, or null when that was not the cause (#791). */
+function openHolesError() {
+  const { open } = takeHoleFillTally();
+  return open > 0 ? t("status.holesTooLarge", { count: open }) : null;
+}
+
 export type SplitShapesOutcome =
   | { status: "stale" }
   | { status: "failed"; shape: WorkplaneShape; error: string }
-  | { status: "done"; replacements: Map<string, WorkplaneShape[]>; splitCount: number };
+  | { status: "done"; replacements: Map<string, WorkplaneShape[]>; splitCount: number; closedHoles: number };
 
 /** The cut of one target, or `missed` when the plane does not go through it. */
 export async function splitShapeIfCrossed(shape: WorkplaneShape, plane: Pick<ModelSplitPlane, "axis" | "normal" | "position">) {
@@ -840,6 +911,7 @@ export async function splitShapesByPlane(
 ): Promise<SplitShapesOutcome> {
   const replacements = new Map<string, WorkplaneShape[]>();
   let splitCount = 0;
+  let closedHoles = 0;
   for (const shape of targets) {
     const result = await splitOne(shape, plane);
     if ("missed" in result) continue;
@@ -847,8 +919,9 @@ export async function splitShapesByPlane(
     if (!result.parts) return { status: "failed", shape, error: result.error ?? t("split.error.failedDefault") };
     replacements.set(shape.id, result.parts);
     splitCount += 1;
+    closedHoles += result.closedHoles ?? 0;
   }
-  return { status: "done", replacements, splitCount };
+  return { status: "done", replacements, splitCount, closedHoles };
 }
 
 function manifoldMeshToPositions(mesh: InstanceType<ManifoldToplevel["Mesh"]>) {
@@ -2221,6 +2294,7 @@ function withMulticolorGroupsOpened(selection: WorkplaneShape[]): WorkplaneShape
 }
 
 export async function buildGroupedShapeFromSelection(selected: WorkplaneShape[], triangleLimit: number): Promise<GroupBuildResult> {
+  takeHoleFillTally();
   // What the group carries as its parts; the cut itself is made from what was selected.
   const groupable = withMulticolorGroupsOpened(selected);
   const booleanSelection = expandGroupsForBoolean(selected);
@@ -2261,17 +2335,21 @@ export async function buildGroupedShapeFromSelection(selected: WorkplaneShape[],
   const mergeWarning = unmergedTriangles > triangleLimit
     ? t("status.groupNotMerged", { triangles: formatTriangleCount(unmergedTriangles), limit: formatTriangleCount(triangleLimit) })
     : undefined;
+  const holes = takeHoleFillTally();
   return {
     group,
     openGapEdges,
     mergeWarning,
+    closedHoles: group ? holes.closed : 0,
     booleanSelection,
     hasSolid,
     hasHole,
     hasImportedMesh,
     consumed,
-    failureNotice: hasImportedMesh && hasSolid && hasHole
-      ? importedCutFailureNotice(booleanSelection, Boolean(group) || consumed, triangleLimit)
-      : hasSolid && hasHole ? "Could not cut this selection" : "Could not group this selection",
+    failureNotice: holes.open > 0 && !group && !consumed
+      ? t("status.holesTooLarge", { count: holes.open })
+      : hasImportedMesh && hasSolid && hasHole
+        ? importedCutFailureNotice(booleanSelection, Boolean(group) || consumed, triangleLimit)
+        : hasSolid && hasHole ? "Could not cut this selection" : "Could not group this selection",
   };
 }

@@ -13,7 +13,7 @@ import { CAMERA_FOV, CAMERA_MAX_DISTANCE, CAMERA_MIN_DISTANCE, CAMERA_TARGET, up
 import { horizontalPlacementWorkplane, placementWorkplaneIsBase, placementWorkplaneLiesOnBase, placementWorkplaneQuaternion, type PlacementWorkplane } from "@/lib/placementWorkplane";
 import { printerPresetById } from "@/lib/printBed";
 import { DEFAULT_WORKPLANE_WORKSPACE, effectiveViewSettings, viewPixelRatio, orbitControlsZoomSpeed } from "@/lib/workplaneSettings";
-import { workplaneGridBandWidths, AXIS_ARROW_COLORS, axisArrowLayout, fillLightPosition, keyLightPosition, sceneLightLevels, shadowBlurRadius, workplaneGridLayout, workplaneGridLines, workplaneGridPalette, workplaneLabelLayout, workplaneThemePalette, WORKPLANE_LABEL_ASPECT, WORKPLANE_LINE_ELEVATION, type WorkplaneGridLayout } from "@/lib/workplaneGrid";
+import { workplaneGridBandWidths, AXIS_ARROW_COLORS, axisArrowLayout, fillLightPosition, keyLightPosition, sceneLightLevels, shadowBlurRadius, softSceneLightLevels, workplaneGridLayout, workplaneGridLines, workplaneGridPalette, workplaneLabelLayout, workplaneThemePalette, WORKPLANE_LABEL_ASPECT, WORKPLANE_LINE_ELEVATION, type WorkplaneGridLayout } from "@/lib/workplaneGrid";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 import { pivotKeptAhead, ZOOM_PIVOT_REACH_MM } from "@/lib/zoomPivot";
 import { RENDER_LAYER_SHAPES } from "@/components/workplane/viewportPicking";
@@ -127,6 +127,15 @@ export function createThreeScene(host: HTMLDivElement): ThreeState {
   fill.position.set(-95, 45, -60);
   scene.add(fill);
 
+  // The light of "Soft light" (#812): it sits in the camera and shines where the camera looks, so it turns
+  // with the view. Off (0) unless the setting is on.
+  const head = new THREE.DirectionalLight("#ffffff", 0);
+  head.position.set(0, 0, 0);
+  head.target.position.set(0, 0, -1);
+  camera.add(head);
+  camera.add(head.target);
+  scene.add(camera);
+
   const workplaneLayer = new THREE.Group();
   workplaneLayer.name = "Workplane";
   workplaneLayer.layers.set(RENDER_LAYER_WORKPLANE);
@@ -214,7 +223,7 @@ export function createThreeScene(host: HTMLDivElement): ThreeState {
     sectionPlane: null,
     sectionPlaneHelper: null,
     sectionCapGroup: null,
-    lights: { ambient, key, fill },
+    lights: { ambient, key, fill, head },
     disposeInteractionListeners: () => {},
     resize,
   };
@@ -389,10 +398,11 @@ export function rebuildWorkplane(
   state.controls.enableDamping = view.cameraInertia;
   const pixelRatio = viewPixelRatio(workspace, window.devicePixelRatio);
   if (state.renderer.getPixelRatio() !== pixelRatio) state.renderer.setPixelRatio(pixelRatio);
-  const lightLevels = sceneLightLevels(workspace.shadeContrast);
+  const lightLevels = workspace.softLighting ? softSceneLightLevels(workspace.shadeContrast) : sceneLightLevels(workspace.shadeContrast);
   state.lights.ambient.intensity = lightLevels.ambient;
   state.lights.key.intensity = lightLevels.key;
   state.lights.fill.intensity = lightLevels.fill;
+  state.lights.head.intensity = lightLevels.head;
   state.lights.key.shadow.intensity = workspace.shadowStrength / 100;
   state.lights.key.shadow.radius = shadowBlurRadius(workspace.shadowSoftness);
   const keyPosition = keyLightPosition(workspace.lightAzimuth, workspace.lightElevation);

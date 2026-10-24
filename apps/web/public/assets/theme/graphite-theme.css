@@ -3257,6 +3257,12 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .inspector-bundle-note 
   box-shadow: 0 1px 4px rgba(44, 44, 44, 0.12);
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .tape-label.editable:hover,
+:where(html[data-theme="dark"][data-palette="graphite"]) .tape-label.editable:focus-visible {
+  color: #ad5900;
+  border-color: #ad5900;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .tape-mark {
   color: #2d2d2d;
   background: rgba(255, 255, 255, 0.96);

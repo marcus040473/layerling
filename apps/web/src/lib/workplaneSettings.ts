@@ -60,6 +60,7 @@ export const DEFAULT_WORKPLANE_WORKSPACE: WorkplaneWorkspaceSettings = {
   cameraInertia: true,
   fastMode: false,
   shadeContrast: 0,
+  softLighting: false,
   shadowStrength: 100,
   shadowSoftness: 0,
   lightAzimuth: DEFAULT_LIGHT_AZIMUTH,
@@ -414,6 +415,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.gridfinityOpenLeft = typeof source.gridfinityOpenLeft === "boolean" ? source.gridfinityOpenLeft : fallbackEntry?.gridfinityOpenLeft;
       entry.gridfinityOpenRight = typeof source.gridfinityOpenRight === "boolean" ? source.gridfinityOpenRight : fallbackEntry?.gridfinityOpenRight;
       entry.gridfinityLipChamfer = optionalShapeNumber(source.gridfinityLipChamfer, fallbackEntry?.gridfinityLipChamfer, 0, MAX_CUSTOM_SHAPE_DIMENSION);
+      entry.gridfinityWallThickness = optionalShapeNumber(source.gridfinityWallThickness, fallbackEntry?.gridfinityWallThickness, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingBack = optionalShapeNumber(source.gridfinityPaddingBack, fallbackEntry?.gridfinityPaddingBack, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingFront = optionalShapeNumber(source.gridfinityPaddingFront, fallbackEntry?.gridfinityPaddingFront, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingLeft = optionalShapeNumber(source.gridfinityPaddingLeft, fallbackEntry?.gridfinityPaddingLeft, 0, MAX_CUSTOM_SHAPE_DIMENSION);
@@ -698,6 +700,7 @@ export function normalizeWorkspaceSettings(value: unknown, fallback: WorkplaneWo
     cameraInertia: booleanOrDefault(candidate.cameraInertia, fallback.cameraInertia),
     fastMode: booleanOrDefault(candidate.fastMode, fallback.fastMode),
     shadeContrast: Math.round(Math.max(-100, Math.min(100, numberOrDefault(candidate.shadeContrast, fallback.shadeContrast)))),
+    softLighting: booleanOrDefault(candidate.softLighting, fallback.softLighting),
     shadowStrength: Math.round(Math.max(0, Math.min(100, numberOrDefault(candidate.shadowStrength, fallback.shadowStrength)))),
     shadowSoftness: Math.round(Math.max(0, Math.min(100, numberOrDefault(candidate.shadowSoftness, fallback.shadowSoftness)))),
     lightAzimuth: Math.round(Math.max(-180, Math.min(180, numberOrDefault(candidate.lightAzimuth, fallback.lightAzimuth)))),

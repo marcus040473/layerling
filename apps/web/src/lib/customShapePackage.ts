@@ -66,3 +66,14 @@ export function placeCustomShape(restored: { shapes: WorkplaneShape[]; notes?: W
   const { notes, dropped } = notesForInsertedShapes(incoming, shapeIdMapping(restored.shapes, shapes), existingNotes);
   return { shapes, notes, dropped };
 }
+
+/**
+ * A whole saved design put into one that has `existingNotes`, its bodies where
+ * they were saved: as a custom shape, but every note comes along, the free ones
+ * and the reference points too - they belong to these bodies' design.
+ */
+export function placeInsertedDesign(restored: { shapes: WorkplaneShape[]; notes?: WorkplaneNote[] }, existingNotes: readonly WorkplaneNote[]) {
+  const shapes = restored.shapes.map((shape) => canonicalizeShape(cloneWorkplaneShapeTreeWithFreshIds(shape, "insert")));
+  const { notes, dropped } = notesForInsertedShapes(restored.notes ?? [], shapeIdMapping(restored.shapes, shapes), existingNotes);
+  return { shapes, notes, dropped };
+}

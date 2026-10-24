@@ -46,4 +46,13 @@ describe("the mouse wheel in a number field (#226)", () => {
     for (let index = 0; index < 10; index += 1) value = wheelNextValue(value, 1, 1, { ctrl: true });
     expect(value).toBe(1);
   });
+
+  it("steps by the snap grid with Shift where a field passes it, and ten steps without one (#749)", () => {
+    expect(wheelNextValue(20, 1, 1, { shift: true }, 5)).toBe(25);
+    expect(wheelNextValue(20, -1, 1, { shift: true }, 0.5)).toBe(19.5);
+    expect(wheelNextValue(20, 1, 1, { shift: true }, undefined)).toBe(30);
+    expect(wheelNextValue(20, 1, 1, { shift: true }, 0)).toBe(30);
+    expect(wheelNextValue(20, 1, 1, {}, 5)).toBe(21);
+    expect(wheelNextValue(20, 1, 1, { shift: true, alt: true }, 5)).toBe(20.01);
+  });
 });

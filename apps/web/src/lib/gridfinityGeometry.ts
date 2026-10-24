@@ -26,10 +26,11 @@ import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityType,
  * - magnet holes for 6 x 2 mm magnets, 6.5 mm wide, 13 mm from the middle of
  *   each unit in both directions.
  *
- * The wall (0.95 mm), the floor (1.2 mm) and the depth of the magnet holes
- * (2.4 mm) are not in the specification and are fixed here. The top of the
- * lip is sharp as drawn; the edge tool rounds it. A baseplate has no magnet
- * holes: the specification's plate is an open frame with nothing to hold one.
+ * The wall (0.95 mm unless it is set), the floor (1.2 mm) and the depth of the
+ * magnet holes (2.4 mm) are not in the specification; the floor and the holes'
+ * depth are fixed here. The top of the lip is sharp as drawn; the edge tool
+ * rounds it. A baseplate has no magnet holes: the specification's plate is an
+ * open frame with nothing to hold one.
  *
  * Every outline of the body is an inset of one rounded rectangle whose corner
  * centres stay where they are - the outer wall, the inside, each step of the
@@ -58,9 +59,10 @@ import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityType,
  * quarter circle into the wall, from wall to wall, so small parts can be
  * pushed out. Unless it is set, the radius is half the height from the floor
  * up to where the lip's support leaves the wall, or to the top without the
- * lip. A bin with a scoop has every inner floor edge rounded by 2.8 mm,
- * the inner corners' radius (the wall profile's last step, filleted in the
- * exact body), and the scoop is that rounding made large on its wall.
+ * lip. A bin with a scoop has every inner floor edge rounded as much as its
+ * inner corners, 2.8 mm with a wall of 0.95 (the wall profile's last step,
+ * filleted in the exact body), and the scoop is that rounding made large on its
+ * wall.
  * The scoops come from the same pieces in both kernels (gridfinityScoopPieces):
  * joined like the shelves in the mesh, cut out of the inside in the exact body.
  *
@@ -105,6 +107,16 @@ import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityType,
  * The lip's top can be chamfered (#780) as the edge tool would: the chamfer
  * takes its size off the outer wall and off the slope a stacked bin's feet rest
  * on. The bin keeps its height setting, and its top comes down by 0.71 times it.
+ *
+ * The bin's wall can be set from 0.8 mm up to where the walls meet: its inside
+ * face is the outline set in by it, with the corner centres kept, so the inner
+ * corners are rounded by 3.75 mm less the wall and square from a wall of
+ * 3.75 mm; the outside, the feet and the lip never change. With the lip, a wall
+ * over 1.75 mm stops at a flat ledge 0.85 mm under 7 mm per height unit, where
+ * the shelves and dividers stop, 0.5 mm clear of a stacked bin's feet, and the
+ * floor goes no higher. Where the walls leave less than 1 mm inside, the bin is
+ * solid. Scoops and shelves that no longer have room are left out, and fewer
+ * compartments are built and offered.
  */
 
 export const GRIDFINITY_GRID = 42;
@@ -115,7 +127,10 @@ export const GRIDFINITY_FOOT_HEIGHT = 4.75;
 export const GRIDFINITY_CLEARANCE = 0.25;
 export const GRIDFINITY_BIN_RADIUS = 3.75;
 export const GRIDFINITY_BASEPLATE_RADIUS = 4;
-export const GRIDFINITY_WALL = 0.95;
+/** The bin's wall unless it is set: not in the specification. */
+export const DEFAULT_GRIDFINITY_WALL_THICKNESS = 0.95;
+/** The thinnest wall: two lines of a 0.4 mm nozzle. The thickest is where the walls meet. */
+export const MIN_GRIDFINITY_WALL_THICKNESS = 0.8;
 export const GRIDFINITY_FLOOR = 1.2;
 export const GRIDFINITY_MAGNET_DIAMETER = 6.5;
 export const GRIDFINITY_MAGNET_DEPTH = 2.4;
@@ -150,7 +165,7 @@ export const DEFAULT_GRIDFINITY_LABEL_WIDTH = 14;
 export const DEFAULT_GRIDFINITY_LABEL_CORNER: GridfinityLabelCorner = "round";
 export const DEFAULT_GRIDFINITY_LABEL_CORNER_SIZE = 2;
 export const MAX_GRIDFINITY_LABEL_CORNER_SIZE = 10;
-/** The smallest scoop radius: below about 3.2 mm the floor's 2.8 mm rounding (SCOOP_FLOOR_ROUNDING) still shows through the sunk scoop. */
+/** The smallest scoop radius: below about 3.2 mm the floor's 2.8 mm rounding (the inner corners' radius with a wall of 0.95) still shows through the sunk scoop. */
 export const MIN_GRIDFINITY_SCOOP_RADIUS = 3.5;
 /** The lowest floor inside a bin, measured from the underside: the 1.2 mm floor on the feet. */
 export const MIN_GRIDFINITY_FLOOR_HEIGHT = GRIDFINITY_FOOT_HEIGHT + GRIDFINITY_FLOOR;
@@ -179,6 +194,8 @@ export const GRIDFINITY_FOOT: GridfinityStep[] = [[2.95, 0], [2.15, 0.8], [2.15,
 export const GRIDFINITY_SOCKET: GridfinityStep[] = [[2.85, 0], [2.85, 0.35], [2.15, 1.05], [2.15, 2.85], [0, 5]];
 /** The lip's inner face, from where it leaves the support to the sharp top on the outer wall. */
 const LIP: GridfinityStep[] = [[2.6, 0], [1.9, 0.7], [1.9, 2.5], [0, 4.4]];
+/** How far in the lip's support is at the ledge, 0.85 mm under 7 mm per height unit (LABEL_DROP): a wall thicker than this stops at a ledge. */
+export const GRIDFINITY_LEDGE_INSET = LIP[0][0] - LABEL_DROP;
 
 const CORNER_STEPS = 8;
 const MAGNET_SIDES = 32;
@@ -218,6 +235,7 @@ export type GridfinityShapeFields = Pick<WorkplaneShape, "width" | "height"> & {
   gridfinityOpenLeft?: boolean;
   gridfinityOpenRight?: boolean;
   gridfinityLipChamfer?: number;
+  gridfinityWallThickness?: number;
   gridfinityPaddingBack?: number;
   gridfinityPaddingFront?: number;
   gridfinityPaddingLeft?: number;
@@ -375,6 +393,9 @@ export function gridfinityDrawerPatch(shape: GridfinityShapeFields, axis: "x" | 
   return { ...sides, width, depth };
 }
 
+/** An inside narrower than this (mm) would not print: the bin is solid instead. */
+const MIN_GRIDFINITY_INSIDE = 1;
+
 /** Everything the body is built from, in the shape's own frame: x across, z deep, y up from 0, centred on x and z. */
 export function gridfinityPlan(shape: GridfinityShapeFields) {
   const type = normalizeGridfinityType(shape.gridfinityType);
@@ -400,31 +421,50 @@ export function gridfinityPlan(shape: GridfinityShapeFields) {
       : cells.map((cell) => ({ x: cell.x + (cell.i % 2 === 0 ? -1 : 1) * halfOffset, z: cell.z + (cell.j % 2 === 0 ? -1 : 1) * halfOffset }))
     : [];
   const top = count.y * GRIDFINITY_HEIGHT_UNIT;
-  const floor = floorHeight(shape.gridfinityFloorHeight, { type, top, lip });
+  // The wall's inside face, set in from the outline; the outside never changes. Walls that leave an inside narrower
+  // than MIN_GRIDFINITY_INSIDE make the bin solid: the floor goes up to the highest it takes.
+  // A bin open on every side has no wall to set, nor walls left to meet.
+  const walled = LABEL_WALLS.some((wall) => shape[GRIDFINITY_OPEN_WALL_KEYS[wall]] !== true);
+  const wallThickness = type === "bin" && walled ? clampLabel(shape.gridfinityWallThickness, DEFAULT_GRIDFINITY_WALL_THICKNESS, MIN_GRIDFINITY_WALL_THICKNESS, wallMaxThickness(size)) : DEFAULT_GRIDFINITY_WALL_THICKNESS;
+  const solid = type === "bin" && Math.min(size.width, size.depth) / 2 - wallThickness < MIN_GRIDFINITY_INSIDE / 2;
+  const floor = solid ? floorMaxHeight({ type, top, lip, wallThickness }) : floorHeight(shape.gridfinityFloorHeight, { type, top, lip, wallThickness });
   // Any bin but a solid block can be open on a side (#682), with no wall there above the floor.
   const fits = openFits({ type, top, lip, floor });
   const open = Object.fromEntries(LABEL_WALLS.map((wall) => [wall, fits && shape[GRIDFINITY_OPEN_WALL_KEYS[wall]] === true])) as Record<GridfinityWall, boolean>;
   // A bin with a finger scoop has every inner floor edge rounded, and the scoop is the rounding made large on its wall.
-  const scooped = scoopFits({ type, top, lip, floor }) && LABEL_WALLS.some((wall) => shape[GRIDFINITY_SCOOP_WALL_KEYS[wall]] === true && !open[wall]);
-  const floorRounding = scooped ? SCOOP_FLOOR_ROUNDING : 0;
+  const scooped = scoopFits({ type, top, lip, floor, wallThickness }) && LABEL_WALLS.some((wall) => shape[GRIDFINITY_SCOOP_WALL_KEYS[wall]] === true && !open[wall]);
+  const innerRadius = gridfinityInnerRadius(wallThickness);
+  const floorRounding = scooped ? innerRadius : 0;
   // To 0.01 mm: a chamfer of a millionth of a millimetre left the exact body's cut with no solid.
   const lipChamfer = lip ? Math.round(clampLabel(shape.gridfinityLipChamfer, 0, 0, MAX_GRIDFINITY_LIP_CHAMFER) * 100) / 100 : 0;
-  return { type, count, lip, magnets, halfGrid: pitch !== GRIDFINITY_GRID, pitch, size, cells, magnetHoles, top, floor, floorRounding, open, padding, centre, lipChamfer };
+  return { type, count, lip, magnets, halfGrid: pitch !== GRIDFINITY_GRID, pitch, size, cells, magnetHoles, top, floor, floorRounding, open, padding, centre, lipChamfer, wallThickness, innerRadius, solid, reach: gridfinityOpenReach(wallThickness) };
+}
+
+/** The radius of the inside's corners: the outline's, set in by the wall with its centres kept; square from a wall of 3.75 mm. */
+function gridfinityInnerRadius(wallThickness: number) {
+  return Math.max(0, GRIDFINITY_BIN_RADIUS - wallThickness);
+}
+
+/** The thickest wall a bin of this size takes: where its walls meet. */
+function wallMaxThickness(size: { width: number; depth: number }) {
+  return Math.max(MIN_GRIDFINITY_WALL_THICKNESS, Math.min(size.width, size.depth) / 2);
 }
 
 export type GridfinityPlan = ReturnType<typeof gridfinityPlan>;
 
 /**
- * The highest floor (#455): with the lip, where the lip's support leaves the wall, so the lip and its support stay
- * whole and a stacked bin's feet keep 1.3 mm clear; without it the top, a solid block. Never under the 1.2 mm floor.
+ * The highest floor (#455): with the lip, where the lip's support leaves the wall, at most the ledge 0.85 mm under the
+ * top, so a stacked bin's feet keep at least 0.5 mm clear; without it the top, a solid block. Within FLOOR_SNAP of the
+ * 1.2 mm floor there is nothing to raise.
  */
-function floorMaxHeight({ type, top, lip }: { type: GridfinityType; top: number; lip: boolean }) {
+function floorMaxHeight({ type, top, lip, wallThickness }: { type: GridfinityType; top: number; lip: boolean; wallThickness: number }) {
   if (type !== "bin") return MIN_GRIDFINITY_FLOOR_HEIGHT;
-  return Math.max(MIN_GRIDFINITY_FLOOR_HEIGHT, lip ? top - (LIP[0][0] - GRIDFINITY_WALL) : top);
+  const max = lip ? Math.min(top - (LIP[0][0] - wallThickness), top - LABEL_DROP) : top;
+  return max < MIN_GRIDFINITY_FLOOR_HEIGHT + FLOOR_SNAP + 1e-9 ? MIN_GRIDFINITY_FLOOR_HEIGHT : max;
 }
 
 /** The floor as it is built: its own height within what the bin takes, raised onto the highest within FLOOR_SNAP of it. */
-function floorHeight(value: number | undefined, plan: { type: GridfinityType; top: number; lip: boolean }) {
+function floorHeight(value: number | undefined, plan: { type: GridfinityType; top: number; lip: boolean; wallThickness: number }) {
   const max = floorMaxHeight(plan);
   const height = clampLabel(value, MIN_GRIDFINITY_FLOOR_HEIGHT, MIN_GRIDFINITY_FLOOR_HEIGHT, max);
   // A little over FLOOR_SNAP, as 21 - 20.95 comes out as 0.05000000000000071.
@@ -449,6 +489,30 @@ export function gridfinityLipChamfer(shape: GridfinityShapeFields) {
 /** Whether the bin's floor can be raised at all: not in a bin of 1 height unit with the lip, whose support reaches the floor. */
 export function gridfinityFloorFits(shape: GridfinityShapeFields) {
   return gridfinityFloorMaxHeight(shape) > MIN_GRIDFINITY_FLOOR_HEIGHT;
+}
+
+/** The thickest wall the bin takes, for its slider. */
+export function gridfinityWallMaxThickness(shape: GridfinityShapeFields) {
+  return wallMaxThickness(gridfinityPlan(shape).size);
+}
+
+/** The bin's wall thickness as it is built. */
+export function gridfinityWallThickness(shape: GridfinityShapeFields) {
+  return gridfinityPlan(shape).wallThickness;
+}
+
+/** Whether the bin's walls leave no inside, so it is built solid. */
+export function gridfinityWallSolid(shape: GridfinityShapeFields) {
+  return gridfinityPlan(shape).solid;
+}
+
+/**
+ * Whether the bin has a wall to set: a bin with a side closed that is not a solid block. Worked out without the wall's own
+ * setting, so the row stays at the thickest wall, which builds the bin solid.
+ */
+export function gridfinityWallFits(shape: GridfinityShapeFields) {
+  const fields = { ...shape, gridfinityWallThickness: undefined };
+  return gridfinityOpenFits(fields) && !Object.values(gridfinityPlan(fields).open).every(Boolean);
 }
 
 export type GridfinityWall = "back" | "front" | "left" | "right";
@@ -476,8 +540,10 @@ const LABEL_END_SNAP = 1;
 const LABEL_MIN_FRONT = 1;
 /** Kept between a corner piece and anything near it, and between a hidden end and the front of the shelf it is in. */
 const LABEL_CLEARANCE = 0.5;
-/** How far the lip's 45 degree support leans into the bin at the shelf's top: it starts 1.65 under the top, the shelf 0.85. */
-const LABEL_LIP_LEAN = 0.8;
+/** How far the lip's 45 degree support leans into the bin past the wall at the shelf's top: 0.8 mm with a wall of 0.95, none from 1.75. */
+function labelLipLean(wallThickness: number) {
+  return Math.max(0, GRIDFINITY_LEDGE_INSET - wallThickness);
+}
 
 /**
  * A shelf's cross-section pushed along its wall from u = from to u = to; u runs left to right seen
@@ -520,10 +586,10 @@ export type GridfinityLabelPieces = {
   floor: number;
   /**
    * The bin's inside the pieces are cut to: half sizes and corner radius of the inner wall, and the open sides it reaches
-   * out through to the outline, the wall's 0.95 mm further (the exact body cuts them to that; the display mesh runs the
+   * out through to the outline, the wall's thickness further (the exact body cuts them to that; the display mesh runs the
    * inside on and cuts them off at the outline); only when a side is open, so a closed bin's pieces are as before.
    */
-  inside: { hx: number; hz: number; radius: number; open?: Record<GridfinityWall, boolean> };
+  inside: { hx: number; hz: number; radius: number; open?: Record<GridfinityWall, boolean>; wallThickness?: number };
   /** Each shelf, with the round corners taken off the front of a shelf that stops short of the walls. */
   shelves: Array<{ profile: GridfinityLabelProfile; notches: GridfinityLabelCornerShape[] }>;
   /** The rounding or chamfer where a shelf meets a wall or another shelf, trimmed to lie under the shelves it joins. */
@@ -536,17 +602,17 @@ function clampLabel(value: number | undefined, fallback: number, min: number, ma
 
 /** The inner half sizes of a bin of this plan: from the middle to the inner wall, across and deep. */
 function labelInside(plan: GridfinityPlan) {
-  return { hx: plan.size.width / 2 - GRIDFINITY_WALL, hz: plan.size.depth / 2 - GRIDFINITY_WALL };
+  return { hx: plan.size.width / 2 - plan.wallThickness, hz: plan.size.depth / 2 - plan.wallThickness };
 }
 
 /**
  * The largest rounding or chamfer the shelves take: 10 mm, but never so much that a shelf of the
- * smallest width with its corner reaches within 1 mm of the middle, which only happens in a bin one
- * cell of the half-size grid wide or deep.
+ * smallest width with its corner reaches within 1 mm of the middle, which happens in a bin one cell of
+ * the half-size grid wide or deep, or with a thick wall.
  */
 export function gridfinityLabelMaxCornerSize(plan: GridfinityPlan) {
   const { hx, hz } = labelInside(plan);
-  return Math.min(MAX_GRIDFINITY_LABEL_CORNER_SIZE, Math.min(hx, hz) - 1 - MIN_GRIDFINITY_LABEL_WIDTH);
+  return Math.max(0, Math.min(MAX_GRIDFINITY_LABEL_CORNER_SIZE, Math.min(hx, hz) - 1 - MIN_GRIDFINITY_LABEL_WIDTH));
 }
 
 /** The rounding or chamfer the shelves are set to, in mm, as it is built. */
@@ -559,10 +625,11 @@ function labelFloorWidth(plan: GridfinityPlan) {
   return (plan.top - LABEL_DROP - LABEL_LAND - plan.floor - LABEL_FLOOR_CLEARANCE) / LABEL_RISE;
 }
 
-/** Whether a bin can have label shelves: 3 height units or more, and room above the floor for the narrowest shelf. */
+/** Whether a bin can have label shelves: 3 height units or more, room above the floor for the narrowest shelf, and across the inside for it and 1 mm. */
 export function gridfinityLabelFits(shape: GridfinityShapeFields) {
   const plan = gridfinityPlan(shape);
-  return plan.type === "bin" && plan.count.y >= MIN_GRIDFINITY_LABEL_HEIGHT_UNITS && labelFloorWidth(plan) >= MIN_GRIDFINITY_LABEL_WIDTH;
+  const { hx, hz } = labelInside(plan);
+  return plan.type === "bin" && plan.count.y >= MIN_GRIDFINITY_LABEL_HEIGHT_UNITS && labelFloorWidth(plan) >= MIN_GRIDFINITY_LABEL_WIDTH && Math.min(hx, hz) >= 1 + MIN_GRIDFINITY_LABEL_WIDTH;
 }
 
 /**
@@ -595,10 +662,10 @@ export function gridfinityLabelLength(shape: GridfinityShapeFields, wall: Gridfi
 
 /**
  * How close to a wall an end runs into it: LABEL_END_SNAP from the wall's face beside the shelf's top,
- * where the lip's support leans LABEL_LIP_LEAN into the bin.
+ * where the lip's support leans into the bin by up to 0.8 mm, less as the wall grows.
  */
-function labelEndSnap(plan: { lip: boolean }) {
-  return LABEL_END_SNAP + (plan.lip ? LABEL_LIP_LEAN : 0);
+function labelEndSnap(plan: { lip: boolean; wallThickness: number }) {
+  return LABEL_END_SNAP + (plan.lip ? labelLipLean(plan.wallThickness) : 0);
 }
 
 /** Whether a shelf of this length on a wall of this half length runs from wall to wall: it would leave at most the snap at both ends. */
@@ -651,7 +718,7 @@ export function gridfinityLabelPieces(shape: GridfinityShapeFields): GridfinityL
     const centre = clamp(sign * offset, -along + length / 2, along - length / 2);
     return { centre, length, short: [centre - length / 2 > -along + snap, centre + length / 2 < along - snap] };
   };
-  return labelPiecesIn({ hx, hz, walls, widthOf, spanOf, size, round, top: plan.top - LABEL_DROP, floor: plan.floor, open: plan.open });
+  return labelPiecesIn({ hx, hz, walls, widthOf, spanOf, size, round, top: plan.top - LABEL_DROP, floor: plan.floor, open: plan.open, wallThickness: plan.wallThickness });
 }
 
 /** A shelf's middle and length along its wall, and whether each end (0 at u = -along, 1 at u = along) stops short of the wall there. */
@@ -662,7 +729,7 @@ type LabelSpan = { centre: number; length: number; short: boolean[] };
  * end, meet one another and the walls, and the corner pieces between them. An end at an open side runs out through it
  * as into a wall, and is cut off at the outline.
  */
-function labelPiecesIn({ hx, hz, walls, widthOf, spanOf, size, round, top, floor, open }: {
+function labelPiecesIn({ hx, hz, walls, widthOf, spanOf, size, round, top, floor, open, wallThickness }: {
   hx: number;
   hz: number;
   walls: GridfinityWall[];
@@ -673,6 +740,7 @@ function labelPiecesIn({ hx, hz, walls, widthOf, spanOf, size, round, top, floor
   top: number;
   floor: number;
   open?: Record<GridfinityWall, boolean>;
+  wallThickness: number;
 }): GridfinityLabelPieces {
   const alongOf = (wall: GridfinityWall) => (wall === "back" || wall === "front" ? hx : hz);
   const spans = new Map(walls.map((wall) => [wall, spanOf(wall, alongOf(wall))]));
@@ -782,7 +850,7 @@ function labelPiecesIn({ hx, hz, walls, widthOf, spanOf, size, round, top, floor
       corners.push({ at: point((end === 0 ? -along : along) + inward * sideWidth, width), a: direction(wall, inward, 0), b: direction(wall, 0, 1), size: cornerSize, round, under: strips, reachA: LABEL_PAST, reachB: 0 });
     });
   });
-  return { top, floor, inside: { hx, hz, radius: GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL, ...(open && LABEL_WALLS.some((wall) => open[wall]) ? { open } : {}) }, shelves, corners };
+  return { top, floor, inside: { hx, hz, radius: gridfinityInnerRadius(wallThickness), ...(open && LABEL_WALLS.some((wall) => open[wall]) ? { open, wallThickness } : {}) }, shelves, corners };
 }
 
 /** The shelf's cross-section, wall side first: top, the straight strip at the front, the underside back down to the wall. */
@@ -815,24 +883,24 @@ const SCOOP_SINK = 0.02;
 const SCOOP_STEPS = 4 * CORNER_STEPS;
 /** The straight wall kept above the largest scoop, so it does not run out in a sliver at the top of a bin without the lip. */
 const SCOOP_WALL_ABOVE = 0.5;
-/** The rounding of every inner floor edge of a bin with a scoop: the inner corners' radius. */
-const SCOOP_FLOOR_ROUNDING = GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL;
 /**
  * The radius whose sunk circle runs, on the end walls, through the point where the inner corner's rounding meets the
- * floor's, SCOOP_FLOOR_ROUNDING out from the scoop's wall and up from the floor (9.63 mm). A radius within
- * SCOOP_CORNER_CLEAR of it leaves edges shorter than 0.01 mm in the exact body, and very close the kernel's cut leaves the
- * scoop out, so it is drawn that far below.
+ * floor's, the floor's rounding (the inner corners' radius) out from the scoop's wall and up from the floor (9.63 mm
+ * with a wall of 0.95). A radius within SCOOP_CORNER_CLEAR of it leaves edges shorter than 0.01 mm in the exact body,
+ * and very close the kernel's cut leaves the scoop out, so it is drawn that far below.
  */
-const SCOOP_CORNER_RADIUS = (SCOOP_FLOOR_ROUNDING + SCOOP_SINK) / (1 - Math.SQRT1_2);
+function scoopCornerRadius(rounding: number) {
+  return (rounding + SCOOP_SINK) / (1 - Math.SQRT1_2);
+}
 const SCOOP_CORNER_CLEAR = 0.03;
 
 /** How high a scoop can rise: from the floor up to the highest floor, where the lip's support leaves the wall, or the top without the lip. */
-function scoopDepth(plan: { type: GridfinityType; top: number; lip: boolean; floor: number }) {
+function scoopDepth(plan: { type: GridfinityType; top: number; lip: boolean; floor: number; wallThickness: number }) {
   return floorMaxHeight(plan) - plan.floor;
 }
 
 /** Whether a scoop of the smallest radius fits under the lip's support, or under the top without the lip. */
-function scoopFits(plan: { type: GridfinityType; top: number; lip: boolean; floor: number }) {
+function scoopFits(plan: { type: GridfinityType; top: number; lip: boolean; floor: number; wallThickness: number }) {
   return plan.type === "bin" && scoopDepth(plan) - SCOOP_WALL_ABOVE >= MIN_GRIDFINITY_SCOOP_RADIUS;
 }
 
@@ -843,13 +911,16 @@ function scoopFits(plan: { type: GridfinityType; top: number; lip: boolean; floo
  */
 export function gridfinityScoopMaxRadius(shape: GridfinityShapeFields) {
   const plan = gridfinityPlan(shape);
-  const { hx, hz } = labelInside(plan);
   const on = (wall: GridfinityWall) => shape[GRIDFINITY_SCOOP_WALL_KEYS[wall]] === true && !plan.open[wall];
-  const room = (wall: GridfinityWall) => {
-    const [half, facing] = wall === "back" || wall === "front" ? [hz, on(wall === "back" ? "front" : "back")] : [hx, on(wall === "left" ? "right" : "left")];
-    return facing ? half - 1 : 2 * half - 2;
-  };
-  return Math.min(scoopDepth(plan) - SCOOP_WALL_ABOVE, ...LABEL_WALLS.filter(on).map(room));
+  const rooms = LABEL_WALLS.filter(on).map((wall) => scoopRoom(plan, on, wall)).filter((room) => room >= MIN_GRIDFINITY_SCOOP_RADIUS - 1e-9);
+  return Math.min(scoopDepth(plan) - SCOOP_WALL_ABOVE, ...rooms);
+}
+
+/** The room a wall's scoop has across the bin: up to 1 mm from the middle with a scoop facing it, else up to 2 mm from the far wall. */
+function scoopRoom(plan: GridfinityPlan, on: (wall: GridfinityWall) => boolean, wall: GridfinityWall) {
+  const { hx, hz } = labelInside(plan);
+  const [half, facing] = wall === "back" || wall === "front" ? [hz, on(wall === "back" ? "front" : "back")] : [hx, on(wall === "left" ? "right" : "left")];
+  return facing ? half - 1 : 2 * half - 2;
 }
 
 /** Whether a bin of this size can have a scoop at all. */
@@ -883,19 +954,22 @@ export function gridfinityScoopPieces(shape: GridfinityShapeFields): GridfinityS
   const plan = gridfinityPlan(shape);
   const { open } = plan;
   // An open side has no wall for a scoop (#682); its setting is kept for when it is closed again.
-  const walls = LABEL_WALLS.filter((wall) => shape[GRIDFINITY_SCOOP_WALL_KEYS[wall]] === true && !open[wall]);
-  if (walls.length === 0) return null;
   const { hx, hz } = labelInside(plan);
+  // A wall whose scoop would leave less than 2 mm of floor even at the smallest radius has none, as in a compartment.
+  const on = (wall: GridfinityWall) => shape[GRIDFINITY_SCOOP_WALL_KEYS[wall]] === true && !open[wall];
+  const walls = LABEL_WALLS.filter((wall) => on(wall) && scoopRoom(plan, on, wall) >= MIN_GRIDFINITY_SCOOP_RADIUS - 1e-9);
+  if (walls.length === 0) return null;
   const floor = plan.floor;
   const chosen = gridfinityScoopRadius(shape);
-  const radius = Math.abs(chosen - SCOOP_CORNER_RADIUS) < SCOOP_CORNER_CLEAR ? SCOOP_CORNER_RADIUS - SCOOP_CORNER_CLEAR : chosen;
+  const corner = scoopCornerRadius(plan.innerRadius);
+  const radius = Math.abs(chosen - corner) < SCOOP_CORNER_CLEAR ? corner - SCOOP_CORNER_CLEAR : chosen;
   const scoops = walls.map((wall): GridfinityScoop => {
     const along = wall === "back" || wall === "front" ? hx : hz;
     // An end at an open side runs as far past the outline as the other runs into the wall.
-    const [start, end] = LABEL_SIDE_WALLS[wall].map((side) => (open[side] ? GRIDFINITY_WALL : 0));
+    const [start, end] = LABEL_SIDE_WALLS[wall].map((side) => (open[side] ? plan.wallThickness : 0));
     return { wall, from: -along - start - LABEL_PAST, to: along + end + LABEL_PAST };
   });
-  return { floor, radius, centre: [radius - SCOOP_SINK, floor + radius - SCOOP_SINK], inside: { hx, hz, radius: GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL }, scoops };
+  return { floor, radius, centre: [radius - SCOOP_SINK, floor + radius - SCOOP_SINK], inside: { hx, hz, radius: plan.innerRadius }, scoops };
 }
 
 /**
@@ -925,11 +999,17 @@ export const GRIDFINITY_OPEN_WALL_KEYS = { back: "gridfinityOpenBack", front: "g
 /** How far a cutter that runs out through an open side stays straight past the outline before its rounding starts. */
 const OPEN_CLEAR = 2;
 /**
- * How far the inside's cutter and a compartment's run out through an open side: far enough that their 3.75 mm corners
- * and the floor's 2.8 mm rounding lie OPEN_CLEAR beyond the outline, where the bin is not. Scoops reach 1 mm past it
- * (LABEL_PAST) and shelves 1 mm past the inside, as into a wall, so none of them ends on a rounding of the cutter.
+ * How far the inside's cutter and a compartment's run out through an open side, for a wall up to 3.75 mm; a thicker
+ * wall takes gridfinityOpenReach. Far enough that their 3.75 mm corners and the floor's rounding lie OPEN_CLEAR beyond the
+ * outline, where the bin is not. Scoops reach 1 mm past it (LABEL_PAST) and shelves 1 mm past the inside, as into a
+ * wall, so none of them ends on a rounding of the cutter.
  */
-export const GRIDFINITY_OPEN_REACH = GRIDFINITY_BIN_RADIUS + OPEN_CLEAR;
+const GRIDFINITY_OPEN_REACH = GRIDFINITY_BIN_RADIUS + OPEN_CLEAR;
+
+/** How far the cutters run out through an open side for a wall this thick: never less than OPEN_CLEAR past the outline. */
+function gridfinityOpenReach(wallThickness: number) {
+  return Math.max(GRIDFINITY_OPEN_REACH, wallThickness + OPEN_CLEAR);
+}
 
 /** Whether a bin has sides to open: every bin but a solid block, one without the lip whose floor is raised to the top. */
 function openFits({ type, top, lip, floor }: { type: GridfinityType; top: number; lip: boolean; floor: number }) {
@@ -978,9 +1058,15 @@ export function gridfinityUnitCompartments(shape: GridfinityShapeFields, axis: G
 function compartmentCounts(shape: GridfinityShapeFields) {
   if (!gridfinityDividerFits(shape)) return { x: 1, z: 1 };
   const along = (value: number | undefined, max: number) => (Number.isFinite(value) ? clamp(Math.round(value as number), 1, max) : 1);
-  const z = along(shape.gridfinityCompartmentsZ, gridfinityUnitCompartments(shape, "z"));
-  const x = along(shape.gridfinityCompartmentsX, Math.min(gridfinityUnitCompartments(shape, "x"), Math.floor(MAX_GRIDFINITY_COMPARTMENTS / z)));
+  const z = along(shape.gridfinityCompartmentsZ, compartmentRoom(shape, "z"));
+  const x = along(shape.gridfinityCompartmentsX, Math.min(compartmentRoom(shape, "x"), Math.floor(MAX_GRIDFINITY_COMPARTMENTS / z)));
   return { x, z };
+}
+
+/** The most compartments along an axis: 4 a grid unit, and no more than leave each 6 mm wide between dividers, which a thick wall can bring down. */
+function compartmentRoom(shape: GridfinityShapeFields, axis: GridfinityAxis) {
+  const thickness = gridfinityDividerThickness(shape);
+  return Math.max(1, Math.min(gridfinityUnitCompartments(shape, axis), Math.floor((insideLength(gridfinityPlan(shape), axis) + thickness) / (MIN_GRIDFINITY_COMPARTMENT + thickness))));
 }
 
 /** The compartments along an axis as they are built. */
@@ -991,7 +1077,7 @@ export function gridfinityCompartmentCount(shape: GridfinityShapeFields, axis: G
 /** The most compartments the settings window offers along an axis, beside those built along the other: 40 in all are never crossed by hand. */
 export function gridfinityCompartmentMax(shape: GridfinityShapeFields, axis: GridfinityAxis) {
   const counts = compartmentCounts(shape);
-  return Math.min(gridfinityUnitCompartments(shape, axis), Math.floor(MAX_GRIDFINITY_COMPARTMENTS / counts[axis === "x" ? "z" : "x"]));
+  return Math.min(compartmentRoom(shape, axis), Math.floor(MAX_GRIDFINITY_COMPARTMENTS / counts[axis === "x" ? "z" : "x"]));
 }
 
 /** The dividers' thickness as it is built: its own, else 1.2 mm, between 0.8 and 3. */
@@ -1098,8 +1184,6 @@ export function gridfinityCompartments(shape: GridfinityShapeFields) {
   return { top: plan.top - LABEL_DROP, thickness, xs, zs, cells };
 }
 
-/** Every compartment's floor edges are rounded as the inner corners, with a scoop or without, so the dividers meet the floor in a curve. */
-const COMPARTMENT_FLOOR_ROUNDING = SCOOP_FLOOR_ROUNDING;
 /** How far each compartment's cutter reaches up into the cutter over the dividers' top, so their faces do not coincide. */
 export const GRIDFINITY_DIVIDER_CUTTER_OVERLAP = 0.3;
 
@@ -1108,7 +1192,10 @@ export type GridfinityCompartmentPieces = {
   top: number;
   floor: number;
   thickness: number;
+  /** Every compartment's floor edges are rounded as the inner corners, with a scoop or without, so the dividers meet the floor in a curve. */
   floorRounding: number;
+  /** How far a compartment's cutter runs out through an open side (gridfinityOpenReach). */
+  reach: number;
   /** Each compartment, its inside, its scoops and its label in its own frame, centred on its middle. */
   cells: Array<{ column: number; row: number; centre: FlatPoint; onWall: Record<GridfinityWall, boolean>; open: Record<GridfinityWall, boolean>; inside: { hx: number; hz: number; radius: number }; scoops: GridfinityScoopPieces | null; labels: GridfinityLabelPieces | null }>;
 };
@@ -1118,7 +1205,7 @@ export type GridfinityCompartmentPieces = {
  * the radius made smaller where it would leave less than 2 mm of floor, as the bin's is. Where even the smallest
  * radius would leave less, that way's scoops are left out, both of a facing pair, as a bin too low has none.
  */
-function compartmentScoops(pieces: GridfinityScoopPieces, hx: number, hz: number, open?: Record<GridfinityWall, boolean>): GridfinityScoopPieces | null {
+function compartmentScoops(pieces: GridfinityScoopPieces, hx: number, hz: number, wallThickness: number, open?: Record<GridfinityWall, boolean>): GridfinityScoopPieces | null {
   const walls = pieces.scoops.map((scoop) => scoop.wall);
   const ways = ([[hz, ["back", "front"]], [hx, ["left", "right"]]] as const).map(([half, pair]) => {
     const on = pair.filter((wall) => walls.includes(wall));
@@ -1126,14 +1213,15 @@ function compartmentScoops(pieces: GridfinityScoopPieces, hx: number, hz: number
   }).filter((way) => way.on.length > 0 && way.room >= MIN_GRIDFINITY_SCOOP_RADIUS - 1e-9);
   if (ways.length === 0) return null;
   const chosen = Math.min(pieces.radius, ...ways.map((way) => way.room));
-  const radius = Math.abs(chosen - SCOOP_CORNER_RADIUS) < SCOOP_CORNER_CLEAR ? SCOOP_CORNER_RADIUS - SCOOP_CORNER_CLEAR : chosen;
+  const corner = scoopCornerRadius(pieces.inside.radius);
+  const radius = Math.abs(chosen - corner) < SCOOP_CORNER_CLEAR ? corner - SCOOP_CORNER_CLEAR : chosen;
   const scoops = walls.filter((wall) => ways.some((way) => (way.on as readonly GridfinityWall[]).includes(wall))).map((wall): GridfinityScoop => {
     const along = wall === "back" || wall === "front" ? hx : hz;
     // An end at the bin's open side runs past the outline, as the bin's own scoops do.
-    const [start, end] = LABEL_SIDE_WALLS[wall].map((side) => (open?.[side] ? GRIDFINITY_WALL : 0));
+    const [start, end] = LABEL_SIDE_WALLS[wall].map((side) => (open?.[side] ? wallThickness : 0));
     return { wall, from: -along - start - LABEL_PAST, to: along + end + LABEL_PAST };
   });
-  return { floor: pieces.floor, radius, centre: [radius - SCOOP_SINK, pieces.floor + radius - SCOOP_SINK], inside: { hx, hz, radius: GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL }, scoops };
+  return { floor: pieces.floor, radius, centre: [radius - SCOOP_SINK, pieces.floor + radius - SCOOP_SINK], inside: { hx, hz, radius: pieces.inside.radius }, scoops };
 }
 
 /** A compartment label's shortest length, in per cent of its side. */
@@ -1199,8 +1287,8 @@ function compartmentLabelPieces(shape: GridfinityShapeFields, cell: GridfinityCo
   const length = (label.length / 100) * 2 * along;
   if (length < MIN_GRIDFINITY_COMPARTMENT_LABEL_MM) return null;
   // The lip's support leans into the bin only where the end meets the bin's wall, not a divider.
-  const snapAt = (end: number) => LABEL_END_SNAP + (plan.lip && cell.onWall[LABEL_SIDE_WALLS[side][end]] ? LABEL_LIP_LEAN : 0);
-  const rounding = GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL;
+  const snapAt = (end: number) => LABEL_END_SNAP + (plan.lip && cell.onWall[LABEL_SIDE_WALLS[side][end]] ? labelLipLean(plan.wallThickness) : 0);
+  const rounding = plan.innerRadius;
   // The end piece beside a free end, as labelPiecesIn makes it on a wall alone.
   const piece = Math.min(size, width - (round ? Math.min(size, width / 2, (length - LABEL_MIN_FRONT) / 2) : 0) - LABEL_CLEARANCE);
   const snapped = (gap: number) => {
@@ -1218,7 +1306,7 @@ function compartmentLabelPieces(shape: GridfinityShapeFields, cell: GridfinityCo
     const to = short[1] ? half - snapped(half - centre - length / 2) : centre + length / 2;
     return { centre: (from + to) / 2, length: to - from, short };
   };
-  return labelPiecesIn({ hx: cell.hx, hz: cell.hz, walls: [side], widthOf: () => width, spanOf, size, round, top: plan.top - LABEL_DROP, floor: plan.floor, open: cell.open });
+  return labelPiecesIn({ hx: cell.hx, hz: cell.hz, walls: [side], widthOf: () => width, spanOf, size, round, top: plan.top - LABEL_DROP, floor: plan.floor, open: cell.open, wallThickness: plan.wallThickness });
 }
 
 /**
@@ -1235,15 +1323,16 @@ export function gridfinityCompartmentPieces(shape: GridfinityShapeFields): Gridf
     top: compartments.top,
     floor: plan.floor,
     thickness: compartments.thickness,
-    floorRounding: COMPARTMENT_FLOOR_ROUNDING,
+    floorRounding: plan.innerRadius,
+    reach: plan.reach,
     cells: compartments.cells.map((cell) => ({
       column: cell.column,
       row: cell.row,
       centre: cell.centre,
       onWall: cell.onWall,
       open: cell.open,
-      inside: { hx: cell.hx, hz: cell.hz, radius: GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL },
-      scoops: scoops && compartmentScoops(scoops, cell.hx, cell.hz, cell.open),
+      inside: { hx: cell.hx, hz: cell.hz, radius: plan.innerRadius },
+      scoops: scoops && compartmentScoops(scoops, cell.hx, cell.hz, plan.wallThickness, cell.open),
       labels: compartmentLabelPieces(shape, cell),
     })),
   };
@@ -1254,7 +1343,8 @@ export function gridfinityScoopsLeftOut(shape: GridfinityShapeFields) {
   const scoops = gridfinityScoopPieces(shape);
   const compartments = scoops && gridfinityCompartments(shape);
   if (!scoops || !compartments) return false;
-  return compartments.cells.some((cell) => (compartmentScoops(scoops, cell.hx, cell.hz)?.scoops.length ?? 0) < scoops.scoops.length);
+  const { wallThickness } = gridfinityPlan(shape);
+  return compartments.cells.some((cell) => (compartmentScoops(scoops, cell.hx, cell.hz, wallThickness)?.scoops.length ?? 0) < scoops.scoops.length);
 }
 
 /**
@@ -1264,7 +1354,7 @@ export function gridfinityScoopsLeftOut(shape: GridfinityShapeFields) {
  */
 export function gridfinityCompartmentCutBound(pieces: GridfinityCompartmentPieces, volumes: { box: number; cutters: number[] }) {
   return pieces.cells.reduce((sum, { inside: { hx, hz, radius }, open }, i) => {
-    const grown = gridfinityOpenGrown(hx, hz, open, GRIDFINITY_OPEN_REACH);
+    const grown = gridfinityOpenGrown(hx, hz, open, pieces.reach);
     return sum + volumes.cutters[i] - (4 * grown.hx * grown.hz - (4 - Math.PI) * radius ** 2) * GRIDFINITY_DIVIDER_CUTTER_OVERLAP;
   }, volumes.box);
 }
@@ -1280,13 +1370,13 @@ export function gridfinityDividerBound(plan: GridfinityPlan, pieces: GridfinityC
   const support = floorMaxHeight(plan);
   // A corner touching an open side is square: the inside's cutter and a compartment's run straight out there. What the
   // dividers add between the inner wall's line and the outline is left out.
-  const rounded = (x: number, z: number, open: Record<GridfinityWall, boolean>) => 4 * x * z - ((4 - Math.PI) * (GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL) ** 2 * Object.values(gridfinityOpenCorners(open)).filter((square) => !square).length) / 4;
+  const rounded = (x: number, z: number, open: Record<GridfinityWall, boolean>) => 4 * x * z - ((4 - Math.PI) * plan.innerRadius ** 2 * Object.values(gridfinityOpenCorners(open)).filter((square) => !square).length) / 4;
   const area = pieces.cells.reduce((rest, cell) => rest - rounded(cell.inside.hx, cell.inside.hz, cell.open), rounded(hx, hz, plan.open));
   const lean = Math.max(0, pieces.top - support);
   // Above the support's foot: the inside kept clear of it less each compartment's rectangle there, and back the rounded
   // corners where two dividers meet, 6 mm or more from the walls.
   const span = (from: number, to: number, half: number) => Math.max(0, Math.min(to, half - lean) - Math.max(from, lean - half));
-  const corner = ((4 - Math.PI) * (GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL) ** 2) / 4;
+  const corner = ((4 - Math.PI) * plan.innerRadius ** 2) / 4;
   const inner: Array<[GridfinityWall, GridfinityWall]> = [["back", "left"], ["back", "right"], ["front", "left"], ["front", "right"]];
   const clear = pieces.cells.reduce((rest, { centre, inside, onWall }) => rest
     - span(centre.x - inside.hx, centre.x + inside.hx, hx) * span(centre.z - inside.hz, centre.z + inside.hz, hz)
@@ -1296,6 +1386,7 @@ export function gridfinityDividerBound(plan: GridfinityPlan, pieces: GridfinityC
 
 /** How much of a floor fillet's section of radius r lies under the height h above the floor. */
 function filletUnder(r: number, h: number) {
+  if (r <= 0) return 0;
   const a = r - Math.min(h, r);
   // r h less the part of a quarter circle from a up to r: the fillet's width at y is r - sqrt(r² - (r - y)²).
   return r * Math.min(h, r) - ((Math.PI * r * r) / 4 - (a * Math.sqrt(r * r - a * a) + r * r * Math.asin(a / r)) / 2);
@@ -1442,29 +1533,44 @@ export function gridfinityHasPieces(shape: GridfinityShapeFields) {
  * The bin's wall from the outside over the top to the floor inside, as insets
  * from the outline: up the outer wall, over the lip (or the flat top of a bin
  * without one), down the inside to the floor. The lip rests on a 45 degree
- * support that grows out of the wall below it. A chamfer on the lip's top
- * takes `chamfer` off the outer wall and off the slope, as the edge tool does.
+ * support that grows out of the wall below it; a wall thicker than 1.75 mm
+ * stops at a flat ledge 0.85 mm under the top, where the support starts. A
+ * chamfer on the lip's top takes `chamfer` off the outer wall and off the
+ * slope, as the edge tool does.
  */
 export function gridfinityWallProfile(plan: GridfinityPlan, floorRounding = plan.floorRounding, chamfer = plan.lipChamfer): GridfinityStep[] {
   const floor = plan.floor;
   const top = plan.top;
+  const wallThickness = plan.wallThickness;
   // The wall down to the floor, with the floor's edge rounded along a quarter circle when there is a rounding.
   const toFloor = (): GridfinityStep[] => {
-    if (floorRounding <= 0) return [[GRIDFINITY_WALL, floor]];
+    if (floorRounding <= 0) return [[wallThickness, floor]];
     const r = floorRounding;
     return Array.from({ length: CORNER_STEPS + 1 }, (_, k): GridfinityStep => {
       const angle = (k / CORNER_STEPS) * (Math.PI / 2);
-      return [GRIDFINITY_WALL + r - r * Math.cos(angle), floor + r - r * Math.sin(angle)];
+      return [wallThickness + r - r * Math.cos(angle), floor + r - r * Math.sin(angle)];
     });
   };
-  if (!plan.lip) return [[0, GRIDFINITY_FOOT_HEIGHT], [0, top], [GRIDFINITY_WALL, top], ...toFloor()];
+  if (!plan.lip) {
+    // A solid bin's top ends half the smallest inside from the middle, so it is never a line.
+    if (plan.solid) return [[0, GRIDFINITY_FOOT_HEIGHT], [0, top], [Math.min(wallThickness, Math.min(plan.size.width, plan.size.depth) / 2 - MIN_GRIDFINITY_INSIDE / 2), top]];
+    return [[0, GRIDFINITY_FOOT_HEIGHT], [0, top], [wallThickness, top], ...toFloor()];
+  }
   const profile: GridfinityStep[] = [[0, GRIDFINITY_FOOT_HEIGHT]];
   [...LIP].reverse().forEach(([inset, y]) => profile.push([inset, top + y]));
   if (chamfer > 0) profile.splice(1, 1, [0, top + GRIDFINITY_LIP_HEIGHT - chamfer], [chamfer * Math.SQRT1_2, top + GRIDFINITY_LIP_HEIGHT - chamfer * Math.SQRT1_2]);
-  const support = LIP[0][0] - GRIDFINITY_WALL;
-  // A low bin has no straight wall inside: the support runs down to the floor.
-  if (top - support > floor) profile.push([GRIDFINITY_WALL, top - support], ...toFloor());
-  else profile.push([LIP[0][0] - (top - floor), floor]);
+  const support = LIP[0][0] - wallThickness;
+  const ledge = top - LABEL_DROP;
+  // A low bin has no straight wall inside: the support runs down to the floor, also within FLOOR_SNAP of it, and never
+  // thinner than the wall. A wall over 1.75 mm stops at the ledge; a floor at the ledge ends the support on it.
+  if (support >= LABEL_DROP) {
+    if (top - support > floor + FLOOR_SNAP) profile.push([wallThickness, top - support], ...toFloor());
+    else {
+      const end = LIP[0][0] - (top - floor);
+      profile.push([end < wallThickness - 1e-9 ? wallThickness : end, floor]);
+    }
+  } else if (floor < ledge) profile.push([GRIDFINITY_LEDGE_INSET, ledge], [wallThickness, ledge], ...toFloor());
+  else profile.push([GRIDFINITY_LEDGE_INSET, floor]);
   return profile;
 }
 
@@ -1481,15 +1587,19 @@ type LoopPoint = { x: number; z: number; nx: number; nz: number; wall?: Gridfini
  * along it (#682).
  */
 function roundedLoop(cx: number, cz: number, hx: number, hz: number, radius: number, inset: number, breaksX: number[] = [], breaksZ: number[] = [], open?: Record<GridfinityWall, boolean>): LoopPoint[] {
-  const ax = hx - radius;
-  const az = hz - radius;
-  const r = radius - inset;
+  // Set in past its radius, the rectangle has square corners and shorter sides: they keep every point of the outlines
+  // of their family, those beyond the ends moved onto them, so neighbouring outlines still match point for point.
+  const ax = Math.min(hx - radius, hx - inset);
+  const az = Math.min(hz - radius, hz - inset);
+  const r = Math.max(0, radius - inset);
+  const shrink = Math.max(0, inset - radius);
   const points: LoopPoint[] = [];
   const side = (fromX: number, fromZ: number, toX: number, toZ: number, nx: number, nz: number, breaks: number[], wall: GridfinityWall) => {
     const tag = open ? { wall } : {};
     points.push({ x: fromX, z: fromZ, nx, nz, ...tag });
     const along = fromX !== toX;
-    const ordered = breaks.filter((b) => (along ? b > Math.min(fromX, toX) + 1e-9 && b < Math.max(fromX, toX) - 1e-9 : b > Math.min(fromZ, toZ) + 1e-9 && b < Math.max(fromZ, toZ) - 1e-9));
+    const [low, high] = along ? [Math.min(fromX, toX), Math.max(fromX, toX)] : [Math.min(fromZ, toZ), Math.max(fromZ, toZ)];
+    const ordered = breaks.filter((b) => b > low - shrink + 1e-9 && b < high + shrink - 1e-9).map((b) => clamp(b, low, high));
     ordered.sort((a, b) => (along ? (toX > fromX ? a - b : b - a) : toZ > fromZ ? a - b : b - a));
     ordered.forEach((b) => points.push(along ? { x: b, z: fromZ, nx, nz, ...tag } : { x: fromX, z: b, nx, nz, ...tag }));
     points.push({ x: toX, z: toZ, nx, nz, ...tag });
@@ -1801,7 +1911,7 @@ export function gridfinityLabelledTriangles(runtime: ManifoldToplevel, shape: Gr
     mesh.merge();
     const bin = keep(new Manifold(mesh));
     // The shelves, the scoops and the dividers are cut to the same inside, from the floor up past the highest of them.
-    const { floor, inside: { hx, hz, radius } } = pieces ?? scoopPieces ?? { floor: compartments!.floor, inside: { ...labelInside(gridfinityPlan(shape)), radius: GRIDFINITY_BIN_RADIUS - GRIDFINITY_WALL } };
+    const { floor, inside: { hx, hz, radius } } = pieces ?? scoopPieces ?? { floor: compartments!.floor, inside: { ...labelInside(gridfinityPlan(shape)), radius: gridfinityPlan(shape).innerRadius } };
     const y0 = floor - LABEL_INSIDE_OVERLAP;
     const height = Math.max(pieces?.top ?? 0, scoopPieces?.centre[1] ?? 0, compartments?.top ?? 0) - y0 + LABEL_INSIDE_OVERLAP;
     // A cylinder standing on y = y0 at (x, z).
@@ -1812,8 +1922,8 @@ export function gridfinityLabelledTriangles(runtime: ManifoldToplevel, shape: Gr
     };
     const r = radius + LABEL_INSIDE_OVERLAP;
     // Through an open side the inside runs out as the exact body's cutter does, and every piece is cut off at the outline (#682).
-    const { open, size } = gridfinityPlan(shape);
-    const grown = gridfinityOpenGrown(hx, hz, open, GRIDFINITY_OPEN_REACH);
+    const { open, size, reach } = gridfinityPlan(shape);
+    const grown = gridfinityOpenGrown(hx, hz, open, reach);
     const inside = keep(Manifold.hull([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => post(grown.x + sx * (grown.hx - radius), grown.z + sz * (grown.hz - radius), r))));
     const trim = LABEL_WALLS.some((wall) => open[wall]) ? keep(Manifold.cube([size.width - 2 * LABEL_OPEN_TRIM, 4 * size.height, size.depth - 2 * LABEL_OPEN_TRIM], true)) : null;
     const profileOf = (of: GridfinityLabelPieces) => (p: GridfinityLabelProfile) => {
@@ -1839,11 +1949,12 @@ export function gridfinityLabelledTriangles(runtime: ManifoldToplevel, shape: Gr
       const r = c.floorRounding;
       const reach = c.top + GRIDFINITY_DIVIDER_CUTTER_OVERLAP - (c.floor + r);
       const cutters = c.cells.map((cell) => {
-        const grown = gridfinityOpenGrown(cell.inside.hx, cell.inside.hz, cell.open, GRIDFINITY_OPEN_REACH);
+        const grown = gridfinityOpenGrown(cell.inside.hx, cell.inside.hz, cell.open, c.reach);
         const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]): Vec3 => [grown.x + sx * (grown.hx - r), c.floor + r, grown.z + sz * (grown.hz - r)]);
         const ball = (at: Vec3) => keep(keep(Manifold.sphere(r, LABEL_CIRCLE_SEGMENTS)).translate(at));
         const column = (at: Vec3) => keep(keep(keep(Manifold.cylinder(reach, r, r, LABEL_CIRCLE_SEGMENTS)).rotate([-90, 0, 0])).translate(at));
-        const cutter = keep(Manifold.hull([...corners.map(ball), ...corners.map(column)]));
+        // Square inner corners (a wall of 3.75 mm or more) have no rounding: the hull of the corners' points.
+        const cutter = keep(r > 0 ? Manifold.hull([...corners.map(ball), ...corners.map(column)]) : Manifold.hull([...corners, ...corners.map(([x, y, z]): Vec3 => [x, y + reach, z])]));
         const scooped = cell.scoops ? keep(cutter.subtract(keep(Manifold.union(cell.scoops.scoops.map((scoop) => scoopPrism(cell.scoops!, scoop)))))) : cutter;
         return keep(scooped.translate([cell.centre.x, 0, cell.centre.z]));
       });
@@ -1860,7 +1971,7 @@ export function gridfinityLabelledTriangles(runtime: ManifoldToplevel, shape: Gr
     const compartmentLabels = (c: GridfinityCompartmentPieces) => c.cells.flatMap((cell) => {
       if (!cell.labels) return [];
       const { radius: cr } = cell.inside;
-      const { hx: cx, hz: cz, x: ox, z: oz } = gridfinityOpenGrown(cell.inside.hx, cell.inside.hz, cell.open, GRIDFINITY_OPEN_REACH);
+      const { hx: cx, hz: cz, x: ox, z: oz } = gridfinityOpenGrown(cell.inside.hx, cell.inside.hz, cell.open, c.reach);
       const own = keep(Manifold.hull([[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => post(ox + sx * (cx - cr), oz + sz * (cz - cr), cr + LABEL_INSIDE_OVERLAP))));
       return labelParts(cell.labels).map((part) => keep(keep(part.intersect(own)).translate([cell.centre.x, 0, cell.centre.z])));
     });

@@ -5,7 +5,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { t } from "@/lib/i18n";
-import type { ScaleByPercentMode } from "@/lib/scaleByPercent";
+import { isUnchangedPercent, type ScaleByPercentMode } from "@/lib/scaleByPercent";
 import { useLanguage } from "@/lib/useLanguage";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
@@ -65,10 +65,11 @@ export function ScalePercentPanel({
         min={5}
         max={500}
         step={1}
+        decimals={2}
         unit="%"
         workspace={workspace}
         autoFocus
-        onEnter={(value) => { if (Math.round(value) !== 100) onApply(value); }}
+        onEnter={(value) => { if (!isUnchangedPercent(value)) onApply(value); }}
         onChange={(value) => onChange({ percent: value })}
       />
 
@@ -97,7 +98,7 @@ export function ScalePercentPanel({
 
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={Math.round(settings.percent) === 100} onClick={() => onApply()}>
+        <button type="button" className="primary" disabled={isUnchangedPercent(settings.percent)} onClick={() => onApply()}>
           <Check size={17} />
           {t("scalePercent.apply")}
         </button>

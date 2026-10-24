@@ -530,6 +530,7 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         gridfinityOpenLeft: shape.gridfinityOpenLeft,
         gridfinityOpenRight: shape.gridfinityOpenRight,
         gridfinityLipChamfer: shape.gridfinityLipChamfer,
+        gridfinityWallThickness: shape.gridfinityWallThickness,
         gridfinityPaddingBack: shape.gridfinityPaddingBack,
         gridfinityPaddingFront: shape.gridfinityPaddingFront,
         gridfinityPaddingLeft: shape.gridfinityPaddingLeft,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { quaternionForShape } from "@/lib/geometryRotation";
 import { heightPatchKeepingBase } from "@/lib/rotationPivot";
+import { patchWithResizeAnchor } from "@/components/workplane/viewportResize";
 import type { WorkplaneShape } from "@/types/layerling";
 import * as THREE from "three";
 
@@ -64,5 +65,39 @@ describe("a height change keeps the base of a turned body in place (forum, DrJon
     expect(heightPatchKeepingBase(turned, same)).toBe(same);
     const width = { width: 30 };
     expect(heightPatchKeepingBase(turned, width)).toBe(width);
+  });
+});
+
+/** The middle of the top face in the world. */
+function topCentre(shape: WorkplaneShape) {
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(quaternionForShape(shape));
+  return new THREE.Vector3(shape.x, (shape.elevation ?? 0) + shape.height / 2, shape.z).addScaledVector(up, shape.height / 2);
+}
+
+describe("the Height field keeps the base of a turned body in place (#808)", () => {
+  // The text and the box from the report: laid on a face of a pyramid, 63.43 degrees about X, 1 mm high.
+  const onSlope = { x: -38, z: 67.885913, elevation: 8.846209, height: 1, rotationX: 63.43 };
+
+  it("grows a text and a box on a slope from the middle of their base, as the handle does", () => {
+    for (const kind of ["text", "box"] as const) {
+      const before = box({ kind, ...onSlope, ...(kind === "text" ? { text: "TEXT", width: 6.29, depth: 2 } : {}) });
+      const after = { ...before, ...patchWithResizeAnchor(before, { height: 10 }, "height", null) };
+      expect(after.height).toBe(10);
+      expect(baseCentre(after).distanceTo(baseCentre(before))).toBeLessThan(1e-6);
+    }
+  });
+
+  it("keeps the top instead after a pull on the lower handle", () => {
+    const before = box(onSlope);
+    const anchor = { shapeId: before.id, handleKey: "height-bottom", signs: { x: 0, z: 0 }, pressedY: "bottom" as const };
+    const after = { ...before, ...patchWithResizeAnchor(before, { height: 10 }, "height", anchor) };
+    expect(topCentre(after).distanceTo(topCentre(before))).toBeLessThan(1e-6);
+  });
+
+  it("still keeps the bottom of a body that is not turned at its height and leaves x and z alone", () => {
+    const before = box();
+    const patch = patchWithResizeAnchor(before, { height: 25 }, "height", null);
+    expect(patch.elevation).toBeCloseTo(12, 6);
+    expect("x" in patch || "z" in patch).toBe(false);
   });
 });

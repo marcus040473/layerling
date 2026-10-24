@@ -5,7 +5,7 @@ summary: Avviare layerling come un normale programma anche senza connessione e u
 
 ## Installare come app
 
-Puoi installare layerling come un normale programma. Avrà un’icona e una finestra proprie, senza barra degli indirizzi. Dopo la prima visita, si avvia anche **senza connessione Internet**. I tuoi progetti restano sul computer. Installare l’app è comodo: si avvia più rapidamente perché non deve essere ricaricata ogni volta, funziona offline e riduce il carico sul server. Non perdi gli aggiornamenti: layerling ti avvisa quando è disponibile una nuova versione.
+Puoi installare layerling come un normale programma. Avrà un’icona e una finestra proprie, senza barra degli indirizzi. Dopo la prima visita, si avvia anche **senza connessione Internet**. I tuoi progetti restano sul computer. Installare l’app è comodo: si avvia più rapidamente perché non deve essere ricaricata ogni volta, funziona offline e riduce il carico sul server. Non perdi gli aggiornamenti: layerling ti avvisa quando è disponibile una nuova versione. Questo protegge anche i tuoi progetti: Safari su Mac, iPhone e iPad cancella i dati salvati di un sito non visitato da sette giorni, ma non quelli di un'app installata.
 
 Se il browser lo consente, nella pagina iniziale compare l’avviso {{ui:installHint.install}}. In caso contrario:
 

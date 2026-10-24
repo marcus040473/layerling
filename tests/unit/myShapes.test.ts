@@ -14,7 +14,7 @@ import { customShapeFileName } from "@/lib/customShapesServer";
 import { CUSTOM_SHAPES_BACKUP_FOLDER, packBackup, unpackBackup, unpackCustomShapes, zipHoldsDesigns } from "@/lib/projectBackup";
 import { DEFAULT_SNAP_GRID, DEFAULT_WORKPLANE_WORKSPACE } from "@/lib/workplaneSettings";
 import { notesAttachedToShapes, notesForInsertedShapes, NOTE_COUNT_LIMIT, translateNotes } from "@/lib/workplaneNotes";
-import { placeCustomShape } from "@/lib/customShapePackage";
+import { placeCustomShape, placeInsertedDesign } from "@/lib/customShapePackage";
 import type { WorkplaneNote, WorkplaneShape } from "@/types/layerling";
 
 function box(id: string, x: number, z: number, elevation: number, overrides: Partial<WorkplaneShape> = {}): WorkplaneShape {
@@ -115,6 +115,32 @@ describe("my shapes", () => {
     expect(incoming[1].anchor?.shapeId).toBe(inserted[1].groupedShapes?.[0].id);
     // The package is left alone.
     expect(restored.notes?.[0].anchor?.shapeId).toBe("a");
+  });
+
+  it("inserts a whole design with all its notes and reference points, after the ones already there", () => {
+    const restored = {
+      shapes: [box("a", 40, 10, 5), box("g", 60, 30, 5, { groupedShapes: [box("p", 3, 4, 0)] })],
+      notes: [
+        { id: "note-1", text: "Pinned", x: 40, y: 11, z: 10, anchor: { shapeId: "a", normalized: [0.5, 0.5, 0] } },
+        { id: "point-1", text: "", x: 1, y: 1, z: 1, kind: "point" },
+        { id: "note-2", text: "Free", x: 7, y: 8, z: 9 },
+        { id: "note-3", text: "Inner", x: 63, y: 6, z: 34, anchor: { shapeId: "p", normalized: [0, 0.5, 0] } },
+      ] satisfies WorkplaneNote[],
+    };
+    const existing: WorkplaneNote[] = [{ id: "note-1", text: "Mine", x: 1, y: 2, z: 3 }];
+    const { shapes, notes, dropped } = placeInsertedDesign(restored, existing);
+    expect(dropped).toBe(0);
+    // The bodies stay where they were saved, under fresh ids.
+    expect(shapes.map((shape) => [shape.x, shape.z])).toEqual([[40, 10], [60, 30]]);
+    expect(shapes[0].id).not.toBe("a");
+    expect(notes.map((note) => note.text)).toEqual(["Pinned", "", "Free", "Inner"]);
+    expect(notes[1].kind).toBe("point");
+    expect([notes[1].x, notes[1].y, notes[1].z]).toEqual([1, 1, 1]);
+    expect([notes[2].x, notes[2].y, notes[2].z]).toEqual([7, 8, 9]);
+    expect(notes[0].anchor?.shapeId).toBe(shapes[0].id);
+    expect(notes[2].anchor).toBeUndefined();
+    expect(notes[3].anchor?.shapeId).toBe(shapes[1].groupedShapes?.[0].id);
+    expect(new Set([...existing, ...notes].map((note) => note.id)).size).toBe(5);
   });
 
   it("brings in only as many notes as the design has room for, and lets go of a pin whose body is missing", () => {

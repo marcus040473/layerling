@@ -253,12 +253,23 @@ export function workplaneGridLines(span: number, layout: WorkplaneGridLayout) {
  */
 export function sceneLightLevels(contrast: number) {
   const c = Math.max(-100, Math.min(100, Number.isFinite(contrast) ? contrast : 0)) / 100;
-  if (c <= 0) return { ambient: 2.1 * (1 - 0.5 * c), key: 3.1 * (1 + 0.5 * c), fill: 1.2 };
+  if (c <= 0) return { ambient: 2.1 * (1 - 0.5 * c), key: 3.1 * (1 + 0.5 * c), fill: 1.2, head: 0 };
   // Towards "punchy" the range reaches further than it used to (#143): the even light and the
   // fill light fade much more, so shaded sides and shadows get really dark at the top end.
   // The first half of the slider is close to the old one.
   const strong = c * c;
-  return { ambient: 2.1 * (1 - 0.5 * c - 0.3 * strong), key: 3.1 * (1 + 0.5 * c + 0.2 * strong), fill: 1.2 * (1 - 0.6 * strong) };
+  return { ambient: 2.1 * (1 - 0.5 * c - 0.3 * strong), key: 3.1 * (1 + 0.5 * c + 0.2 * strong), fill: 1.2 * (1 - 0.6 * strong), head: 0 };
+}
+
+/**
+ * Soft light (#812): most of the light comes from the viewer's eye (`head`, carried with the camera), so a face
+ * turned towards you is lit and none is left dark, and the fixed lights are much weaker, so a face turned up is no
+ * longer burnt out to white (the renderer clips, it has no tone mapping). The key light stays a little for the
+ * shadows. Contrast still works: towards "punchy" the eye light takes over from the even light.
+ */
+export function softSceneLightLevels(contrast: number) {
+  const c = Math.max(-100, Math.min(100, Number.isFinite(contrast) ? contrast : 0)) / 100;
+  return { ambient: 1.5 * (1 - 0.4 * c), key: 0.9 * (1 + 0.3 * c), fill: 0.25, head: 2.4 * (1 + 0.25 * c) };
 }
 
 /** Where the main light stands by default: in front, to the right and above, as layerling always had it. */

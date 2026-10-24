@@ -144,3 +144,25 @@ export function withSegmentHandles(profile: SketchProfile, segmentIds: ReadonlyS
   });
   return next;
 }
+
+/**
+ * Lines up a point's two handles for a smooth point (#347): both on one line through the point, each
+ * keeping its own length, in the direction the two handles share (from the in handle to the out handle).
+ * A corner with two broken handles then turns smooth on the spot instead of only changing its name.
+ * Null when the handles point the same way from the point and give no direction to line up along.
+ */
+export function alignedSmoothHandles(point: Pick<SketchPoint, "x" | "z" | "handleIn" | "handleOut">) {
+  if (!point.handleIn || !point.handleOut) return null;
+  const inLength = Math.hypot(point.handleIn.x - point.x, point.handleIn.z - point.z);
+  const outLength = Math.hypot(point.handleOut.x - point.x, point.handleOut.z - point.z);
+  const dx = point.handleOut.x - point.handleIn.x;
+  const dz = point.handleOut.z - point.handleIn.z;
+  const length = Math.hypot(dx, dz);
+  if (length < 1e-9 || inLength < 1e-9 || outLength < 1e-9) return null;
+  const ux = dx / length;
+  const uz = dz / length;
+  return {
+    handleIn: { x: point.x - ux * inLength, z: point.z - uz * inLength },
+    handleOut: { x: point.x + ux * outLength, z: point.z + uz * outLength },
+  };
+}

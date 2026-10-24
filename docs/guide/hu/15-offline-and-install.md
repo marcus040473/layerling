@@ -5,7 +5,7 @@ summary: Indítsd a layerlinget úgy, mint egy normál programot, akár hálóza
 
 ## Telepítés alkalmazásként
 
-A layerling úgy telepíthető, mint egy normál program. Ilyenkor saját ikont és saját ablakot kap, címsor nélkül. Az első látogatás után **internet nélkül** is elindul. A terveid a számítógépeden maradnak. Érdemes telepíteni: az alkalmazás gyorsabban indul, mert nem kell minden alkalommal újra letölteni, internet nélkül is működik, és tehermentesíti a szervert. Semmit nem veszítesz, mert a layerling továbbra is jelzi, ha új verzió jelent meg.
+A layerling úgy telepíthető, mint egy normál program. Ilyenkor saját ikont és saját ablakot kap, címsor nélkül. Az első látogatás után **internet nélkül** is elindul. A terveid a számítógépeden maradnak. Érdemes telepíteni: az alkalmazás gyorsabban indul, mert nem kell minden alkalommal újra letölteni, internet nélkül is működik, és tehermentesíti a szervert. Semmit nem veszítesz, mert a layerling továbbra is jelzi, ha új verzió jelent meg. Ez a terveidet is védi: a Safari Macen, iPhone-on és iPaden törli annak a weboldalnak a mentett adatait, amelyet hét napig nem látogattak, a telepített alkalmazásét viszont nem.
 
 A kezdőlapon megjelenik egy {{ui:installHint.install}} feliratú jelzés, ha a böngésződ képes rá. Különben:
 

@@ -712,6 +712,100 @@ describe("exact Gridfinity baseplates with padding", () => {
   });
 });
 
+describe("exact Gridfinity bins with a set wall", () => {
+  /** One valid solid with the mesh's volume and box. */
+  const expectBuilt = (part: CadModifierGridfinityPart, tolerance = 0.002) => {
+    const context = JSON.stringify(part);
+    const solid = gridfinityPartSolid(cad, part);
+    expect(cad.isValid(solid), context).toBe(true);
+    expect(cad.isSolid(solid) ? 1 : cad.getSubShapes(solid, "solid").length, context).toBe(1);
+    const exact = Math.abs(cad.getVolume(solid));
+    expect(Math.abs(exact - meshVolume(part)) / exact, context).toBeLessThan(tolerance);
+    const box = cad.getBoundingBox(solid);
+    const { min, max } = meshBounds(part);
+    [box.xmin - min[0], box.ymin - min[1], box.zmin - min[2], box.xmax - max[0], box.ymax - max[1], box.zmax - max[2]].forEach((d) => expect(Math.abs(d), context).toBeLessThan(0.01));
+    expect(cad.getSubShapes(solid, "edge").filter((edge) => cad.getLength(edge) > 1e-9 && cad.getLength(edge) < 0.01), context).toHaveLength(0);
+    return solid;
+  };
+
+  it("builds thin, thick and square-cornered walls as one valid solid with the mesh's volume and box", () => {
+    for (const part of [
+      bin({ gridfinityWallThickness: 0.8 }),
+      bin({ gridfinityWallThickness: 1.75, gridfinityOpenFront: true }),
+      bin({ gridfinityWallThickness: 2.5 }),
+      bin({ gridfinityWallThickness: 2.5, gridfinityScoopFront: true, gridfinityLabelBack: true, gridfinityMagnets: true }),
+      bin({ gridfinityWallThickness: 3.7, gridfinityScoopFront: true }),
+      bin({ gridfinityWallThickness: 3.75 }),
+      bin({ gridfinityWallThickness: 6, gridfinityLip: false, height: 21 }),
+      bin({ gridfinityWallThickness: 6, gridfinityHalfGrid: true, width: 20.5, depth: 41.5 }),
+      bin({ width: 41.5, depth: 41.5, height: 7 + GRIDFINITY_LIP_HEIGHT, gridfinityWallThickness: 2.5 }),
+    ]) expectBuilt(part);
+  });
+
+  it("builds compartments with their scoops and labels under a ledge and with square corners, the dividers flush with it", () => {
+    for (const part of [
+      bin({ gridfinityWallThickness: 2.5, gridfinityCompartmentsX: 3, gridfinityCompartmentsZ: 2, gridfinityScoopFront: true, gridfinityCompartmentLabels: [{ column: 1, row: 1, side: "back" }] }),
+      bin({ gridfinityWallThickness: 4, gridfinityCompartmentsX: 2, gridfinityOpenRight: true }),
+    ]) expectBuilt(part);
+  });
+
+  it("keeps an open side open with a 6 mm wall", () => {
+    const solid = expectBuilt(bin({ gridfinityWallThickness: 6, gridfinityOpenFront: true }));
+    // Above the floor, just inside the outline in the open side's middle, there is nothing.
+    expect(material(solid, 0, 41.5 / 2 - 0.5, 8, 18)).toBeLessThan(1e-6);
+  });
+
+  it("builds a bin solid where its walls meet, with the lip's pocket kept on top", () => {
+    const lipped = expectBuilt(bin({ width: 41.5, depth: 41.5, gridfinityWallThickness: 99 }));
+    // Solid up to the ledge in the middle, open above it.
+    expect(material(lipped, 0, 0, 6, 21 - 0.85 - 0.01)).toBeGreaterThan(0.3 * 0.3 * (21 - 0.85 - 6) * 0.99);
+    expect(material(lipped, 0, 0, 21 - 0.85 + 0.01, 25)).toBeLessThan(1e-6);
+    expectBuilt(bin({ width: 41.5, depth: 41.5, gridfinityLip: false, height: 21, gridfinityWallThickness: 99 }));
+  });
+
+  it("keeps a bin stacked on a thick wall's ledge 0.5 mm clear, as on the shelves", () => {
+    const plain = gridfinityPartSolid(cad, bin({ width: 41.5, depth: 41.5 }));
+    // From a wall of about 3 mm the ledge reaches in under the stacked bin's feet, which start 2.95 mm in.
+    for (const part of [bin({ width: 41.5, depth: 41.5, gridfinityWallThickness: 4 }), bin({ width: 41.5, depth: 41.5, gridfinityWallThickness: 4, gridfinityFloorHeight: 30 })]) {
+      const thick = gridfinityPartSolid(cad, part);
+      expect(overlap(thick, cad.translate(plain, 0, 21 - 0.34, 0))).toBeLessThan(0.01);
+      // Pushed 0.45 mm further down the feet cut into the lip only, as much as on a plain bin; 0.55 mm down they reach the ledge.
+      const clear = cad.translate(plain, 0, 21 - 0.35 - 0.45, 0);
+      expect(overlap(thick, clear)).toBeCloseTo(overlap(plain, clear), 2);
+      const sunk = cad.translate(plain, 0, 21 - 0.35 - 0.55, 0);
+      expect(overlap(thick, sunk)).toBeGreaterThan(overlap(plain, sunk) + 1);
+    }
+  });
+
+  it("builds the tightest cases at the thinnest wall: 6 mm compartments, adjacent scoops and label ends near the rounding", () => {
+    // Sixteen compartments' polygon corners in the mesh: 0.18 % off the exact body at 0.95 mm, 0.21 % at 0.8 with corners of 2.95.
+    for (const part of [
+      bin({ width: 41.5, depth: 41.5, gridfinityWallThickness: 0.8, gridfinityCompartmentsX: 4, gridfinityCompartmentsZ: 4, gridfinityScoopFront: true, gridfinityScoopLeft: true, gridfinityDividerPositionsX: [6.6, 13.8, 21], gridfinityDividerPositionsZ: [6.6, 13.8, 21] }),
+      bin({ width: 41.5, depth: 41.5, gridfinityWallThickness: 0.8, gridfinityCompartmentsX: 2, gridfinityCompartmentLabels: [{ column: 0, row: 0, side: "back", length: 90, align: "start" }, { column: 1, row: 0, side: "left", length: 50, align: "end" }] }),
+    ]) expectBuilt(part, 0.0025);
+  });
+
+  it("builds the smallest finger scoop at the thinnest wall, its floor rounded by 2.95 mm", () => {
+    for (const part of [
+      bin({ gridfinityWallThickness: 0.8, gridfinityScoopFront: true, gridfinityScoopRadius: 3.5 }),
+      bin({ gridfinityWallThickness: 0.8, gridfinityScoopFront: true, gridfinityScoopBack: true, gridfinityScoopRadius: 3.5 }),
+    ]) expectBuilt(part);
+  });
+
+  it("builds the same solid as before with a wall of 0.95 mm set", () => {
+    for (const [part, volume, faces, edges] of [
+      [bin({ gridfinityWallThickness: 0.95 }), 23248.7382, 100, 210],
+      [bin({ gridfinityLip: false, height: 21, gridfinityWallThickness: 0.95 }), 21312.6174, 69, 154],
+    ] as const) {
+      const context = JSON.stringify(part);
+      const solid = gridfinityPartSolid(cad, part);
+      expect(Math.abs(Math.abs(cad.getVolume(solid)) - volume), context).toBeLessThan(1e-4);
+      expect(cad.getSubShapes(solid, "face"), context).toHaveLength(faces);
+      expect(cad.getSubShapes(solid, "edge"), context).toHaveLength(edges);
+    }
+  });
+});
+
 describe("exact Gridfinity bins with a lip chamfer", () => {
   /** The bin as the edge tool leaves it: its sharp lip's top edges chamfered by `size`. */
   const edgeTool = (part: CadModifierGridfinityPart, size: number) => {
@@ -778,5 +872,39 @@ describe("exact Gridfinity bins with a lip chamfer", () => {
       expect(cad.getSubShapes(solid, "face"), context).toHaveLength(faces);
       expect(cad.getSubShapes(solid, "edge"), context).toHaveLength(edges);
     }
+  });
+});
+
+describe("exact Gridfinity bins with a lip chamfer on a set wall", () => {
+  /** The bin as the edge tool leaves it: its sharp lip's top edges chamfered by `size`. */
+  const edgeTool = (part: CadModifierGridfinityPart, size: number) => {
+    const solid = gridfinityPartSolid(cad, part);
+    const top = cad.getBoundingBox(solid).ymax;
+    return cad.chamfer(solid, cad.getSubShapes(solid, "edge").filter((edge) => cad.getBoundingBox(edge).ymin > top - 1e-6), size);
+  };
+
+  it("builds a chamfered lip over a thick wall and its ledge as the edge tool does, with the mesh's volume and box", () => {
+    for (const fields of [{ gridfinityWallThickness: 2.5 }, { gridfinityWallThickness: 4, gridfinityOpenFront: true }]) {
+      const part = bin({ ...fields, gridfinityLipChamfer: 0.25 });
+      const context = JSON.stringify(part);
+      const solid = gridfinityPartSolid(cad, part);
+      expect(cad.isValid(solid), context).toBe(true);
+      expect(cad.isSolid(solid) ? 1 : cad.getSubShapes(solid, "solid").length, context).toBe(1);
+      const exact = Math.abs(cad.getVolume(solid));
+      expect(Math.abs(exact - meshVolume(part)) / exact, context).toBeLessThan(0.002);
+      const box = cad.getBoundingBox(solid);
+      const { min, max } = meshBounds(part);
+      [box.xmin - min[0], box.ymin - min[1], box.zmin - min[2], box.xmax - max[0], box.ymax - max[1], box.zmax - max[2]].forEach((d) => expect(Math.abs(d), context).toBeLessThan(0.01));
+      const chamfered = edgeTool(bin(fields), 0.25);
+      expect(Math.abs(exact - Math.abs(cad.getVolume(chamfered))), context).toBeLessThan(1e-3);
+      expect(overlap(solid, chamfered) / Math.abs(cad.getVolume(chamfered)), context).toBeGreaterThan(1 - 1e-6);
+    }
+  });
+
+  it("still stacks a bin 0.35 mm into a chamfered lip over a thick wall, clear of its ledge", () => {
+    const lower = gridfinityPartSolid(cad, bin({ width: 41.5, depth: 41.5, gridfinityWallThickness: 4, gridfinityLipChamfer: 1 }));
+    const upper = gridfinityPartSolid(cad, bin({ width: 41.5, depth: 41.5 }));
+    expect(overlap(lower, cad.translate(upper, 0, 21 - 0.34, 0))).toBeLessThan(0.01);
+    expect(overlap(lower, cad.translate(upper, 0, 21 - 0.5, 0))).toBeGreaterThan(1);
   });
 });

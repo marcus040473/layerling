@@ -1,6 +1,6 @@
 {
   "name": "layerling",
-  "version": "1.106.1",
+  "version": "1.107.0",
   "private": true,
   "description": "Easy 3D CAD for 3D printing. A local-first 3D editor that runs in your browser.",
   "author": {
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "copy:occt": "node scripts/copy-occt-wasm.mjs",
-    "fonts:japanese": "node scripts/build-japanese-typeface.mjs",
+    "fonts:japanese": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-japanese-typeface.mjs",
     "clean:cache": "node scripts/clean-next-cache.mjs",
     "predev": "node scripts/check-node-version.mjs && npm run copy:occt && npm run fonts:japanese && npm run guide",
     "dev": "next dev apps/web",
@@ -30,8 +30,8 @@
     "icons:shapes": "vitest run --config tests/vitest.tools.config.ts tests/tools/renderShapeIcons.tool.ts",
     "icons:brand": "vitest run --config tests/vitest.tools.config.ts tests/tools/renderBrandIcons.tool.ts",
     "icons:social": "node scripts/render-social-card.mjs",
-    "guide": "node scripts/build-guide.mjs",
-    "i18n:status": "node scripts/i18n-status.mjs",
+    "guide": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-guide.mjs",
+    "i18n:status": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/i18n-status.mjs",
     "videos:sync": "node scripts/sync-videos.mjs",
     "guide:images": "node scripts/guide-screenshots.mjs",
     "theme:graphite": "node scripts/generate-graphite-theme.mjs",
@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@types/three": "^0.184.1",
-    "brepjs": "^18.164.3",
+    "brepjs": "^20.5.0",
     "fflate": "^0.8.3",
     "lucide-react": "^0.511.0",
     "manifold-3d": "^3.5.0",
@@ -68,9 +68,6 @@
     "vitest": "^4.1.12"
   },
   "overrides": {
-    "brepjs": {
-      "occt-wasm": "$occt-wasm"
-    },
     "postcss": "8.5.28"
   }
 }

@@ -396,8 +396,12 @@ function triangleArea2d(a: { x: number; z: number }, b: { x: number; z: number }
   return Math.abs((b.x - a.x) * (c.z - a.z) - (c.x - a.x) * (b.z - a.z)) / 2;
 }
 
+/** One triangle of a fill, always wound the same way: under the nonzero rule triangles wound against each other cancel where they overlap, as the parts of a group do (#778). */
 function trianglePath(points: Array<{ x: number; z: number }>) {
-  return `M ${points[0].x} ${points[0].z} L ${points[1].x} ${points[1].z} L ${points[2].x} ${points[2].z} Z`;
+  const [a, b, c] = (points[1].x - points[0].x) * (points[2].z - points[0].z) - (points[2].x - points[0].x) * (points[1].z - points[0].z) < 0
+    ? [points[0], points[2], points[1]]
+    : points;
+  return `M ${a.x} ${a.z} L ${b.x} ${b.z} L ${c.x} ${c.z} Z`;
 }
 
 function convexHull(points: Array<{ x: number; z: number }>) {
@@ -482,9 +486,26 @@ function boundaryPath(points: Array<{ x: number; z: number }>, triangles: number
   return commands.join(" ");
 }
 
-function importedMeshFootprint(shape: WorkplaneShape): SketchReferenceFootprint | null {
+export function importedMeshFootprint(shape: WorkplaneShape): SketchReferenceFootprint | null {
   if (!shape.importedMesh) return null;
-  return footprintOfPositions(resizedImportedMeshPositions(shape), (x, z) => sketchReferencePoint(shape, x, z), Math.max(shape.width, shape.depth, shape.height), shape.height);
+  const positions = resizedImportedMeshPositions(shape);
+  const project = (x: number, z: number) => sketchReferencePoint(shape, x, z);
+  const size = Math.max(shape.width, shape.depth, shape.height);
+  const counts = shape.importedMesh.partTriangleCounts;
+  if (!counts?.length) return footprintOfPositions(positions, project, size, shape.height);
+  // On a workplane set on a face (#778) each part shows as it is seen from the plane: the face on the plane alone was a thin
+  // strip when the plane stood a little askew, and a group left out its parts behind the plane.
+  const fills: string[] = [];
+  const outlines: string[] = [];
+  let start = 0;
+  for (const count of counts) {
+    const part = footprintOfPositions(positions.slice(start * 9, (start + count) * 9), project, size, shape.height, true);
+    if (part?.fillD) fills.push(part.fillD);
+    if (part?.outlineD) outlines.push(part.outlineD);
+    start += count;
+  }
+  if (!outlines.length) return null;
+  return { fillD: fills.length === outlines.length ? fills.join(" ") : null, outlineD: outlines.join(" ") };
 }
 
 /** More triangles than this and a body is shown by its box, not by an outline made of its triangles. */
@@ -541,12 +562,16 @@ function groupMeshFootprint(shape: WorkplaneShape, mesh: ReturnType<typeof meshF
   return { fillD: fills.length === outlines.length ? fills.join(" ") : null, outlineD: outlines.join(" "), world: true };
 }
 
-/** The outline of a mesh seen from above: its bottom triangles, as a fill and as the boundary round them; the hull when it has no flat bottom. */
+/**
+ * The outline of a mesh seen from above: its bottom triangles, as a fill and as the boundary round them; as it is seen from
+ * above when it has no flat bottom or `asSeen` asks for that (#778).
+ */
 function footprintOfPositions(
   positions: ArrayLike<number>,
   project: (x: number, z: number) => { x: number; z: number },
   size: number,
   height: number,
+  asSeen = false,
 ): SketchReferenceFootprint | null {
   if (positions.length < 9) return null;
   let minY = Number.POSITIVE_INFINITY;
@@ -577,11 +602,30 @@ function footprintOfPositions(
     triangles.push([offset, offset + 1, offset + 2]);
   }
 
-  if (triangles.length > 0) {
+  if (triangles.length > 0 && !asSeen) {
     return {
       fillD: triangles.length <= 5000 ? triangles.map((triangle) => trianglePath(triangle.map((index) => points[index]))).join(" ") : null,
       outlineD: boundaryPath(points, triangles, tolerance),
     };
+  }
+
+  // No face lies on the plane: the body as it is seen from the plane. The triangles turned towards it cover that outline once,
+  // edge to edge, on a closed body; the hull round all points was drawn here before and showed a tower of a box, a cylinder, a
+  // sphere and a cone as one rough polygon (#778). A body turned the other way round has the larger side the other way.
+  const facing: number[][][] = [[], []];
+  const facingArea = [0, 0];
+  for (let index = 0; index + 2 < allProjected.length; index += 3) {
+    const [a, b, c] = allProjected.slice(index, index + 3);
+    const signed = (b.x - a.x) * (c.z - a.z) - (c.x - a.x) * (b.z - a.z);
+    if (Math.abs(signed) / 2 <= tolerance) continue;
+    const side = signed > 0 ? 0 : 1;
+    facing[side].push([index, index + 1, index + 2]);
+    facingArea[side] += Math.abs(signed) / 2;
+  }
+  const seen = facingArea[0] >= facingArea[1] ? facing[0] : facing[1];
+  if (seen.length > 0 && seen.length <= REFERENCE_OUTLINE_TRIANGLE_LIMIT) {
+    const outlineD = boundaryPath(allProjected, seen, tolerance);
+    if (outlineD) return { fillD: seen.length <= 5000 ? seen.map((triangle) => trianglePath(triangle.map((index) => allProjected[index]))).join(" ") : null, outlineD };
   }
 
   const hull = convexHull(allProjected);

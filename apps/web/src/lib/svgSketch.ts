@@ -135,7 +135,11 @@ function subPathRing(path: THREE.Path, tolerance: number): SvgPiece[] | null {
  * the mesh.
  */
 export function sketchProfileFromSvg(source: string): SketchProfile | null {
-  const profilePaths = svgProfilePaths(parseSvgForImport(source).paths);
+  return sketchProfileFromSvgPaths(svgProfilePaths(parseSvgForImport(source).paths));
+}
+
+/** The sketch of some of a drawing's profile paths, as {@link sketchProfileFromSvg} reads them: one colour of it, say (#818). */
+export function sketchProfileFromSvgPaths(profilePaths: readonly THREE.ShapePath[]): SketchProfile | null {
   let extent = 1;
   profilePaths.forEach((path) => path.subPaths.forEach((subPath) => subPath.curves.forEach((curve) => {
     const point = (curve as THREE.Curve<THREE.Vector2>).getPoint(0);

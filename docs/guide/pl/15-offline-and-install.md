@@ -5,7 +5,7 @@ summary: Uruchamiaj layerling jak zwykły program, także bez sieci, i dowiedz s
 
 ## Instalacja jako aplikacja
 
-layerling można zainstalować jak zwykły program. Dostaje wtedy ikonę i własne okno, bez paska adresu. Po pierwszej wizycie uruchamia się nawet **bez internetu**. Twoje projekty zostają na Twoim komputerze. Instalacja się opłaca: aplikacja uruchamia się szybciej, bo nie musi być za każdym razem wczytywana od nowa, działa bez internetu i odciąża serwer. Nic nie tracisz, bo layerling nadal informuje, gdy wychodzi nowa wersja.
+layerling można zainstalować jak zwykły program. Dostaje wtedy ikonę i własne okno, bez paska adresu. Po pierwszej wizycie uruchamia się nawet **bez internetu**. Twoje projekty zostają na Twoim komputerze. Instalacja się opłaca: aplikacja uruchamia się szybciej, bo nie musi być za każdym razem wczytywana od nowa, działa bez internetu i odciąża serwer. Nic nie tracisz, bo layerling nadal informuje, gdy wychodzi nowa wersja. To chroni też Twoje projekty: Safari na Macu, iPhonie i iPadzie usuwa zapisane dane strony, której nie odwiedzono przez siedem dni, ale nie dane zainstalowanej aplikacji.
 
 Jeśli Twoja przeglądarka to potrafi, na stronie startowej pojawia się wskazówka z przyciskiem {{ui:installHint.install}}. W przeciwnym razie:
 

@@ -4,9 +4,9 @@ import { importExtensionSupported } from "@/lib/importExtensions";
 import { attachProjectAsset, projectAssetFromBytes, sourceFormatForFileName } from "@/lib/projectAssets";
 import { readKeepSvgPage } from "@/lib/importPreferences";
 import { scaleSvgText } from "@/lib/svgScale";
-import { decodeSvgBytes, importedShapeFromSvgWithReport, prepareSvgImport } from "@/lib/svgImport";
+import { decodeSvgBytes, importedColourShapesFromSvg, importedShapeFromSvgWithReport, prepareSvgImport } from "@/lib/svgImport";
 import { importedShapesFrom3mf } from "@/lib/threemfImport";
-import { sketchProfileFromSvg } from "@/lib/svgSketch";
+import { sketchProfileFromSvg, sketchProfileFromSvgPaths } from "@/lib/svgSketch";
 import { DXF_SKETCH_COLOR, DXF_SKETCH_HEIGHT, DxfImportError, sketchProfileFromDxf } from "@/lib/dxfImport";
 import { importedPictureSvg, isPictureFile, svgEmbeddedPicture } from "@/lib/pictureIcon";
 import { createLocalId } from "@/lib/localIds";
@@ -232,6 +232,19 @@ export async function importModelFiles(
         if (svg.pageKept === false) result.notes.push(t("status.importSvgNoPage", { name: file.name }));
         // A shape that does not build into a solid is left out; say so instead of leaving a gap unexplained (#258).
         if (svg.skippedShapes > 0) result.notes.push(t("status.importSvgSkipped", { name: file.name, count: svg.skippedShapes }));
+        // A drawing of several colours comes in as one body per colour, each in its colour and in its place (#818). A body
+        // carries its outline as a sketch, or else its mesh: the file holds every colour and would build them all again.
+        const colours = traced ? null : importedColourShapesFromSvg(file.name, text, svg);
+        if (colours) {
+          for (const part of colours.parts) {
+            const mesh = { ...part.shape, mirrorZ: true };
+            const profile = options.svgAsSketch ? sketchProfileFromSvgPaths(part.paths) : null;
+            const sketched = profile ? await options.svgAsSketch!(mesh, profile).catch(() => null) : null;
+            result.shapes.push(sketched ?? { ...mesh, importedMesh: { ...mesh.importedMesh!, sourceFormat: "json" } });
+          }
+          result.importedFileNames.push(file.name);
+          continue;
+        }
         // A sketch body carries its outline itself and needs neither the file nor its mesh.
         const profile = options.svgAsSketch ? sketchProfileFromSvg(text) : null;
         const sketched = profile ? await options.svgAsSketch!(shape, profile).catch(() => null) : null;

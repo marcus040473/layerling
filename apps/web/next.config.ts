@@ -62,6 +62,12 @@ const nextConfig: NextConfig = {
       "brepkit-wasm": false,
       "brepjs-opencascade": false,
     };
+    // The same helper builds one import path at runtime, which webpack reports as a
+    // "Critical dependency" on every compile; it is harmless (#819).
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings ?? []),
+      { module: /node_modules[\\/]brepjs[\\/]/, message: /Critical dependency/ },
+    ];
     return config;
   },
   ...(isStaticExport

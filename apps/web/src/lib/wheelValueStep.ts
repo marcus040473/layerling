@@ -33,8 +33,13 @@ export function wheelBaseStep(min: number, max: number, sliderStep: number, inch
   return Math.max(Number.isFinite(sliderStep) && sliderStep > 0 ? sliderStep : 0, natural);
 }
 
-/** The value after `notches` wheel notches (positive up), without the float noise of repeated addition. */
-export function wheelNextValue(current: number, notches: number, baseStep: number, keys: { shift?: boolean; ctrl?: boolean; alt?: boolean }): number {
-  const next = current + notches * baseStep * wheelValueFactor(keys);
+/**
+ * The value after `notches` wheel notches (positive up), without the float noise of repeated addition. A `shiftStep`
+ * replaces the tenfold step of Shift: a size or position field passes the snap grid, as ten millimetres was too big a
+ * jump for a fine grid (#749, MartinShake).
+ */
+export function wheelNextValue(current: number, notches: number, baseStep: number, keys: { shift?: boolean; ctrl?: boolean; alt?: boolean }, shiftStep?: number): number {
+  const coarse = keys.shift && !keys.ctrl && !keys.alt && shiftStep !== undefined && Number.isFinite(shiftStep) && shiftStep > 0;
+  const next = current + notches * (coarse ? shiftStep : baseStep * wheelValueFactor(keys));
   return Math.round(next * 1e6) / 1e6;
 }

@@ -7954,6 +7954,19 @@ html[data-theme="dark"] .inspector-bundle-note {
   transform: translate(-50%, -50%);
 }
 
+/* A measurement with a body at one end: a click types a length and moves that body (#823). */
+.tape-label.editable {
+  font-family: inherit;
+  pointer-events: auto;
+  cursor: text;
+}
+
+.tape-label.editable:hover,
+.tape-label.editable:focus-visible {
+  color: #ad5900;
+  border-color: #ad5900;
+}
+
 /* The button under a measurement that puts a reference point in its middle (#323). */
 .tape-mark {
   position: absolute;

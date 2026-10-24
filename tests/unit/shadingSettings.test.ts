@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LIGHT_AZIMUTH, DEFAULT_LIGHT_ELEVATION, fillLightPosition, keyLightPosition, sceneLightLevels, shadowBlurRadius } from "@/lib/workplaneGrid";
+import { DEFAULT_LIGHT_AZIMUTH, DEFAULT_LIGHT_ELEVATION, fillLightPosition, keyLightPosition, sceneLightLevels, shadowBlurRadius, softSceneLightLevels } from "@/lib/workplaneGrid";
 import { DEFAULT_WORKPLANE_WORKSPACE, normalizeWorkspaceSettings } from "@/lib/workplaneSettings";
 
 describe("shading contrast and shadow strength", () => {
   it("start as the lighting layerling always had", () => {
     expect(DEFAULT_WORKPLANE_WORKSPACE.shadeContrast).toBe(0);
     expect(DEFAULT_WORKPLANE_WORKSPACE.shadowStrength).toBe(100);
-    expect(sceneLightLevels(0)).toEqual({ ambient: 2.1, key: 3.1, fill: 1.2 });
+    expect(sceneLightLevels(0)).toEqual({ ambient: 2.1, key: 3.1, fill: 1.2, head: 0 });
   });
 
   it("moves light from the even ambient to the key light for more contrast, and back for less", () => {
@@ -24,6 +24,32 @@ describe("shading contrast and shadow strength", () => {
     expect(normalizeWorkspaceSettings({ shadeContrast: 40, shadowStrength: 60 })).toMatchObject({ shadeContrast: 40, shadowStrength: 60 });
     expect(normalizeWorkspaceSettings({ shadeContrast: 900, shadowStrength: -5 })).toMatchObject({ shadeContrast: 100, shadowStrength: 0 });
     expect(normalizeWorkspaceSettings({ gridColor: "#c08a12" })).toMatchObject({ shadeContrast: 0, shadowStrength: 100 });
+  });
+});
+
+describe("soft light (#812)", () => {
+  it("is off until switched on, and a saved choice is kept", () => {
+    expect(DEFAULT_WORKPLANE_WORKSPACE.softLighting).toBe(false);
+    expect(normalizeWorkspaceSettings({}).softLighting).toBe(false);
+    expect(normalizeWorkspaceSettings({ softLighting: true }).softLighting).toBe(true);
+    expect(normalizeWorkspaceSettings({ softLighting: "yes" }).softLighting).toBe(false);
+  });
+
+  it("lights mostly from the viewer's eye and much less from the fixed lights, so a face turned up is not burnt out", () => {
+    const standard = sceneLightLevels(0);
+    const soft = softSceneLightLevels(0);
+    expect(standard.head).toBe(0);
+    expect(soft.head).toBeGreaterThan(soft.key);
+    expect(soft.ambient + soft.key).toBeLessThan((standard.ambient + standard.key) / 2);
+    // Some key light stays, for the shadows.
+    expect(soft.key).toBeGreaterThan(0);
+  });
+
+  it("still follows the contrast setting, within range", () => {
+    expect(softSceneLightLevels(100).ambient).toBeLessThan(softSceneLightLevels(-100).ambient);
+    expect(softSceneLightLevels(100).head).toBeGreaterThan(softSceneLightLevels(-100).head);
+    expect(softSceneLightLevels(900)).toEqual(softSceneLightLevels(100));
+    expect(softSceneLightLevels(Number.NaN)).toEqual(softSceneLightLevels(0));
   });
 });
 

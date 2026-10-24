@@ -8,6 +8,7 @@ import { gridfinityFootprintPatch } from "@/lib/gridfinityGeometry";
 import { type SelectionFrame } from "@/lib/liftGeometry";
 import { scaledHorizontalShapePatch } from "@/lib/scaleByPercent";
 import { POSITION_TYPED_LIMIT } from "@/lib/workplaneSettings";
+import { heightPatchKeepingBase, shapeIsTurned } from "@/lib/rotationPivot";
 import { cleanNearZero, proportionalResizeScale, resizedImportedMeshPositions, resizedShapeSize, shapeDepth, shapeHasTaper, shapeWidth } from "@/lib/workplaneShapes";
 import { type DimensionMark, type RotationAxis, type RotationPlaneView, type RotationWheelView, type TransformHandleKind } from "@/components/workplane/TransformOverlay";
 import type { WorkplaneShape } from "@/types/layerling";
@@ -184,7 +185,11 @@ export function patchWithResizeAnchor(
     return patch;
   }
   if (axis === "height") {
-    return patchWithPreservedWorldYEdge(shape, patch, anchor?.shapeId === shape.id && anchor.pressedY === "bottom" ? "top" : "bottom");
+    const keep = anchor?.shapeId === shape.id && anchor.pressedY === "bottom" ? "top" : "bottom";
+    // A turned body grows along its own up axis from the middle of its base, as with the handle; keeping only its
+    // lowest point at the same height let the base slide along a sloped face (#808).
+    if (shapeIsTurned(shape)) return heightPatchKeepingBase(shape, patch, keep === "top" ? "top" : "base");
+    return patchWithPreservedWorldYEdge(shape, patch, keep);
   }
 
   if (axis !== "width" && axis !== "depth") {

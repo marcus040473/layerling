@@ -1,5 +1,6 @@
 "use client";
 
+import { requestPersistentStorage } from "@/lib/persistentStorage";
 import { Archive, ArchiveRestore, ArrowLeft, Clock3, Copy, EllipsisVertical, Folder, FolderInput, FolderKanban, FolderPlus, FolderUp, Grid3X3, List, Pencil, Plus, RefreshCw, Search, Server, ShieldAlert, SlidersHorizontal, Sparkles, Trash2, X } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { AppFooter } from "@/components/AppFooter";
@@ -1211,6 +1212,11 @@ export default function Home() {
       setProjects(storageProjects);
     }
   }, [mounted, projects]);
+
+  // With a design to keep, ask the browser once not to clear the storage first (lib/persistentStorage.ts).
+  useEffect(() => {
+    if (mounted && projects.length > 0) void requestPersistentStorage();
+  }, [mounted, projects.length]);
 
   // Closing the window while a save is still being written would lose it; the
   // browser asks first. A save takes well under a second, so this rarely shows.

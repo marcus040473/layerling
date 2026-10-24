@@ -855,9 +855,91 @@ export function importedShapeFromSvgWithReport(
   fileName: string,
   source: string,
   options: { keepPagePosition?: boolean } = {},
-): { shape: WorkplaneShape; skippedShapes: number; pageKept: boolean | null } {
+): { shape: WorkplaneShape; skippedShapes: number; pageKept: boolean | null; middle: { x: number; y: number } } {
   const parsed = parseSvgForImport(source);
-  const { rawPositions, rawNormals, analysis, skippedShapes } = buildSvgExtrusionFromPaths(parsed.paths);
+  const { shape, skippedShapes, middle } = svgMeshShape(fileName, buildSvgExtrusionFromPaths(parsed.paths));
+  let pageKept: boolean | null = null;
+  if (options.keepPagePosition) {
+    const page = svgPageOfDrawing(source);
+    pageKept = page !== null;
+    if (page) {
+      // The drawing's middle, and the middle of its page, in the drawing's own units with y running
+      // down; the page's middle goes where a centred drawing's middle goes, so every file of a page
+      // meets there and the drawing sits where it was drawn. The mesh lies mirrored (z = -y) until
+      // the import turns it back, so a drawing's y is the shape's z.
+      shape.x += middle.x - (page.x + page.width / 2);
+      shape.z += middle.y - (page.y + page.height / 2);
+    }
+  }
+  return { shape, skippedShapes, pageKept, middle };
+}
+
+/** More colours than this and a drawing is not split by colour (#818): a traced or shaded picture has a colour for every shade. */
+export const MAX_SVG_COLOUR_PARTS = 12;
+
+/** The colour a profile path is drawn in: its fill, or for an outline its stroke. */
+function profilePathColour(path: THREE.ShapePath) {
+  if (pathHasVisibleFill(path)) return `#${path.color.getHexString()}`;
+  const stroke = (path as THREE.ShapePath & { userData?: { style?: SvgPathStyle } }).userData?.style?.stroke;
+  try {
+    return `#${new THREE.Color(stroke ?? "#000000").getHexString()}`;
+  } catch {
+    return "#000000";
+  }
+}
+
+/** The drawing's profile paths sorted by their colour, in the order the colours first appear; one entry for a drawing of one colour. */
+export function svgColourGroups(paths: readonly THREE.ShapePath[]) {
+  const groups = new Map<string, THREE.ShapePath[]>();
+  for (const path of svgProfilePaths(paths)) {
+    const colour = profilePathColour(path);
+    groups.set(colour, [...(groups.get(colour) ?? []), path]);
+  }
+  return [...groups.entries()].map(([colour, profilePaths]) => ({ colour, paths: profilePaths }));
+}
+
+/**
+ * A drawing of several colours as one body per colour (#818), each in its colour and where it lies in the drawing, placed
+ * from `whole` - the import of the whole drawing - so that a kept page holds for them as well. Null for a drawing of one
+ * colour, or of more than {@link MAX_SVG_COLOUR_PARTS}. A colour that builds no solid is left out and counted.
+ */
+export function importedColourShapesFromSvg(
+  fileName: string,
+  source: string,
+  whole: { shape: WorkplaneShape; middle: { x: number; y: number } },
+): { parts: Array<{ shape: WorkplaneShape; paths: THREE.ShapePath[] }>; skippedShapes: number } | null {
+  const groups = svgColourGroups(parseSvgForImport(source).paths);
+  if (groups.length < 2 || groups.length > MAX_SVG_COLOUR_PARTS) return null;
+  const baseName = whole.shape.name;
+  const parts: Array<{ shape: WorkplaneShape; paths: THREE.ShapePath[] }> = [];
+  let skippedShapes = 0;
+  for (const group of groups) {
+    let built: ReturnType<typeof buildSvgExtrusionFromPaths>;
+    try {
+      built = buildSvgExtrusionFromPaths(group.paths);
+    } catch {
+      skippedShapes += group.paths.length;
+      continue;
+    }
+    const { shape, middle, skippedShapes: skipped } = svgMeshShape(fileName, built);
+    skippedShapes += skipped;
+    parts.push({
+      shape: {
+        ...shape,
+        name: `${baseName} ${group.colour}`,
+        color: group.colour,
+        x: whole.shape.x + middle.x - whole.middle.x,
+        z: whole.shape.z + middle.y - whole.middle.y,
+      },
+      paths: group.paths,
+    });
+  }
+  return parts.length ? { parts, skippedShapes } : null;
+}
+
+/** The mesh body of a built drawing, centred, and the drawing's middle in its own units with y running down. */
+function svgMeshShape(fileName: string, built: ReturnType<typeof buildSvgExtrusionFromPaths>) {
+  const { rawPositions, rawNormals, analysis, skippedShapes } = built;
   const centerX = analysis.width / 2;
   const centerZ = analysis.depth / 2;
   let minX = Number.POSITIVE_INFINITY;
@@ -900,22 +982,7 @@ export function importedShapeFromSvgWithReport(
     locked: false,
     hidden: false,
   };
-  let pageKept: boolean | null = null;
-  if (options.keepPagePosition) {
-    const page = svgPageOfDrawing(source);
-    pageKept = page !== null;
-    if (page) {
-      // The drawing's middle, and the middle of its page, in the drawing's own units with y running
-      // down; the page's middle goes where a centred drawing's middle goes, so every file of a page
-      // meets there and the drawing sits where it was drawn. The mesh lies mirrored (z = -y) until
-      // the import turns it back, so a drawing's y is the shape's z.
-      const middleX = minX + analysis.width / 2;
-      const middleY = -(minZ + analysis.depth / 2);
-      shape.x += middleX - (page.x + page.width / 2);
-      shape.z += middleY - (page.y + page.height / 2);
-    }
-  }
-  return { shape, skippedShapes, pageKept };
+  return { shape, skippedShapes, middle: { x: minX + analysis.width / 2, y: -(minZ + analysis.depth / 2) } };
 }
 
 export function invalidSvgMeshReason(shape: WorkplaneShape) {

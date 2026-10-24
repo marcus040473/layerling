@@ -108,7 +108,7 @@ export type ThreeState = {
   /** The filled cut face of the section view (#516). */
   sectionCapGroup: THREE.Group | null;
   /** The scene's lights, so the settings can change how punchy the shading is. */
-  lights: { ambient: THREE.HemisphereLight; key: THREE.DirectionalLight; fill: THREE.DirectionalLight };
+  lights: { ambient: THREE.HemisphereLight; key: THREE.DirectionalLight; fill: THREE.DirectionalLight; head: THREE.DirectionalLight };
   disposeInteractionListeners: () => void;
   resize: () => void;
 };
@@ -193,7 +193,8 @@ export type TapeModel = {
 
 export type TapeOverlayState = {
   points: Array<TapePoint & { screenX: number; screenY: number }>;
-  segments: Array<TapeSegment & { x1: number; y1: number; x2: number; y2: number; screenPoints?: string; labelX: number; labelY: number; label: string }>;
+  /** `editable`: a straight measurement with a body at one end at least, so typing a length can move that body (#823). */
+  segments: Array<TapeSegment & { x1: number; y1: number; x2: number; y2: number; screenPoints?: string; labelX: number; labelY: number; label: string; editable: boolean }>;
   hover: { screenX: number; screenY: number; edgeScreenPoints?: string } | null;
 };
 
@@ -501,6 +502,20 @@ export function tapeSegmentWorldPoints(state: ThreeState, model: TapeModel, segm
   return start && end ? [tapePointWorld(state, start), tapePointWorld(state, end)] : [];
 }
 
+/**
+ * The body a typed length moves: the one at the second point, as in Tinkercad, unless only the
+ * body at the first point is selected. A whole edge, or both ends on the same body, moves nothing (#823).
+ */
+export function tapeMovableShapeId(model: TapeModel, segmentId: string, selectedIds: readonly string[]) {
+  const segment = model.segments.find((candidate) => candidate.id === segmentId);
+  if (!segment || segment.edge) return null;
+  const startShapeId = model.points.find((point) => point.id === segment.startId)?.attachment?.shapeId ?? null;
+  const endShapeId = model.points.find((point) => point.id === segment.endId)?.attachment?.shapeId ?? null;
+  if (startShapeId === endShapeId) return null;
+  if (startShapeId && selectedIds.includes(startShapeId) && !(endShapeId && selectedIds.includes(endShapeId))) return startShapeId;
+  return endShapeId ?? startShapeId;
+}
+
 function tapePolylineLength(points: THREE.Vector3[]) {
   let length = 0;
   for (let index = 0; index + 1 < points.length; index += 1) length += points[index].distanceTo(points[index + 1]);
@@ -564,6 +579,7 @@ export function syncTapeOverlay(
         labelX: labelScreen.x,
         labelY: labelScreen.y - 18,
         label: formatMeasure(tapePolylineLength(worldPoints), accuracy),
+        editable: tapeMovableShapeId(model, segment.id, []) !== null,
       },
     ];
   });
@@ -986,6 +1002,7 @@ export function TapeOverlay({
   onPointPointerUp,
   onSegmentPointerDown,
   onMarkMiddle,
+  onEditLength,
 }: {
   overlay: TapeOverlayState;
   startPointId: string | null;
@@ -999,6 +1016,8 @@ export function TapeOverlay({
   onSegmentPointerDown: (event: ReactPointerEvent<SVGElement>, segmentId: string) => void;
   /** Puts a reference point in the middle of a measurement (#323). */
   onMarkMiddle?: (segmentId: string) => void;
+  /** Opens the field to type a length, which moves the body at one end (#823). */
+  onEditLength?: (segmentId: string) => void;
 }) {
   return (
     <div className={`tape-overlay ${active ? "active" : ""} ${deleteMode ? "delete-mode" : ""} ${quickDelete ? "quick-delete" : ""} ${moveMode ? "move-mode" : ""}`} aria-label={t("aria.tapeMeasurements")}>
@@ -1041,7 +1060,19 @@ export function TapeOverlay({
         {active && overlay.hover?.edgeScreenPoints ? <polyline className="tape-hover-edge" points={overlay.hover.edgeScreenPoints} fill="none" /> : null}
         {active && overlay.hover ? <circle className="tape-hover-point" cx={overlay.hover.screenX} cy={overlay.hover.screenY} r="5" /> : null}
       </svg>
-      {overlay.segments.map((segment) => (
+      {overlay.segments.map((segment) => segment.editable && onEditLength && !deleteMode ? (
+        <button
+          key={`${segment.id}-label`}
+          type="button"
+          className="tape-label editable"
+          style={{ left: segment.labelX, top: segment.labelY }}
+          title={t("camera.tapeTypeLength")}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => onEditLength(segment.id)}
+        >
+          {segment.label}
+        </button>
+      ) : (
         <span key={`${segment.id}-label`} className="tape-label" style={{ left: segment.labelX, top: segment.labelY }}>
           {segment.label}
         </span>

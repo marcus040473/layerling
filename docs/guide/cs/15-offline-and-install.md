@@ -5,7 +5,7 @@ summary: Spouštění Layerlingu jako běžné aplikace, práce bez připojení 
 
 ## Instalace jako aplikace
 
-Layerling lze nainstalovat jako běžný program. Získá vlastní ikonu a okno bez adresního řádku. Po první návštěvě se spustí i **bez internetu**. Projekty zůstávají na vašem počítači. Instalace se vyplatí: aplikace se spouští rychleji, protože se nemusí pokaždé znovu stahovat, funguje bez internetu a odlehčuje serveru. Nic neztratíte, protože layerling vám dál oznámí, když vyjde nová verze.
+Layerling lze nainstalovat jako běžný program. Získá vlastní ikonu a okno bez adresního řádku. Po první návštěvě se spustí i **bez internetu**. Projekty zůstávají na vašem počítači. Instalace se vyplatí: aplikace se spouští rychleji, protože se nemusí pokaždé znovu stahovat, funguje bez internetu a odlehčuje serveru. Nic neztratíte, protože layerling vám dál oznámí, když vyjde nová verze. To chrání i tvé návrhy: Safari na Macu, iPhonu a iPadu maže uložená data webu, který se sedm dní nenavštívil, ale ne data nainstalované aplikace.
 
 Podporuje-li to prohlížeč, zobrazí se na úvodní stránce nabídka {{ui:installHint.install}}. Jinak postupujte takto:
 

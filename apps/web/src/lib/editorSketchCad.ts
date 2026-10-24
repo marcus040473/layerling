@@ -412,7 +412,34 @@ export function shapeFromCadMesh(
   });
 }
 
-export function sketchReferenceShapeOnWorkplane(shape: WorkplaneShape, workplane: PlacementWorkplane): WorkplaneShape {
+/** A group's triangles part by part, by the range of vertices each visible part takes in the group's mesh; null for a single body or a mesh that does not add up. */function groupPartFaces(shape: WorkplaneShape, mesh: ReturnType<typeof meshForShape>): number[][][] | null {
+  const children = (shape.groupedShapes ?? []).filter((entry) => !entry.hidden);
+  if (children.length < 2) return null;
+  const ends: number[] = [];
+  let end = 0;
+  for (const child of children) {
+    try {
+      end += meshForShape(child).vertices.length;
+    } catch {
+      return null;
+    }
+    ends.push(end);
+  }
+  if (end !== mesh.vertices.length) return null;
+  const parts: number[][][] = children.map(() => []);
+  mesh.faces.forEach((face) => {
+    const part = ends.findIndex((partEnd) => face[0] < partEnd);
+    if (part >= 0) parts[part].push(face);
+  });
+  return parts.filter((faces) => faces.length > 0);
+}
+
+/**
+ * A body as the sketch shows it on a workplane. With `seen` (a workplane on a face) the sketch shows each part as it is seen
+ * from the plane, not only the face on it (#778): a plane set on a facet of a round body stands a little askew, and the face
+ * "on the plane" was then a thin strip of one end, with the parts behind it left out.
+ */
+export function sketchReferenceShapeOnWorkplane(shape: WorkplaneShape, workplane: PlacementWorkplane, seen = false): WorkplaneShape {
   const mesh = meshForShape(shape);
   const projectedVertices = mesh.vertices.map(([x, y, z]) => {
     const local = placementWorkplaneCoordinates(workplane, { x, y, z });
@@ -437,10 +464,14 @@ export function sketchReferenceShapeOnWorkplane(shape: WorkplaneShape, workplane
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
   const centerZ = (minZ + maxZ) / 2;
-  const positions = mesh.faces.flatMap(([a, b, c]) => [a, b, c].flatMap((index) => {
+  const triangle = ([a, b, c]: number[]) => [a, b, c].flatMap((index) => {
     const vertex = projectedVertices[index];
     return [vertex.x - centerX, vertex.y - centerY, vertex.z - centerZ];
-  }));
+  });
+  // A group keeps its parts apart, part after part, so that the sketch shows the outline of each (#778). The mesh holds the
+  // visible parts one after the other.
+  const parts = seen ? groupPartFaces(shape, mesh) ?? [mesh.faces] : null;
+  const positions = (parts ?? [mesh.faces]).flatMap((faces) => faces.flatMap(triangle));
   const width = Math.max(0.01, maxX - minX);
   const depth = Math.max(0.01, maxZ - minZ);
   const height = Math.max(0.01, maxY - minY);
@@ -467,6 +498,7 @@ export function sketchReferenceShapeOnWorkplane(shape: WorkplaneShape, workplane
       baseDepth: depth,
       baseHeight: height,
       triangleCount: mesh.faces.length,
+      partTriangleCounts: parts?.map((faces) => faces.length),
       sourceFormat: "json",
     },
     groupedShapes: undefined,

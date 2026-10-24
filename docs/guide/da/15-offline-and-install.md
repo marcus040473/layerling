@@ -5,7 +5,7 @@ summary: Start layerling som et almindeligt program, også uden netværk, og hvo
 
 ## Installér som app
 
-layerling kan installeres som et almindeligt program. Det får så et ikon og sit eget vindue, uden en adresselinje. Efter det første besøg starter det også **uden internet**. Dine designs bliver på din computer. Det er værd at installere: Appen starter hurtigere, fordi den ikke skal hentes igen hver gang, den virker uden internet og aflaster serveren. Du mister ingenting, for layerling fortæller dig stadig, når der kommer en ny version.
+layerling kan installeres som et almindeligt program. Det får så et ikon og sit eget vindue, uden en adresselinje. Efter det første besøg starter det også **uden internet**. Dine designs bliver på din computer. Det er værd at installere: Appen starter hurtigere, fordi den ikke skal hentes igen hver gang, den virker uden internet og aflaster serveren. Du mister ingenting, for layerling fortæller dig stadig, når der kommer en ny version. Det beskytter også dine designs: Safari på Mac, iPhone og iPad sletter de gemte data fra et websted, der ikke har været besøgt i syv dage, men ikke fra en installeret app.
 
 På startsiden vises et tip med {{ui:installHint.install}} hvis din browser kan gøre det. Ellers:
 

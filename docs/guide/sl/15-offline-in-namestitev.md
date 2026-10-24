@@ -5,7 +5,7 @@ summary: layerling zaženi kot običajen program, tudi brez omrežja – in kako
 
 ## Namestitev kot aplikacije
 
-layerling je mogoče namestiti kot običajen program. Potem dobi lastno ikono in lastno okno brez naslovne vrstice. Po prvem obisku se zažene tudi **brez interneta**. Tvoji načrti pri tem ostanejo na tvojem računalniku. Namestitev se splača: aplikacija se zažene hitreje, ker je ni treba vsakič znova naložiti, deluje brez interneta in razbremeni strežnik. Nič ne izgubite, saj vam layerling še naprej sporoči, ko izide nova različica.
+layerling je mogoče namestiti kot običajen program. Potem dobi lastno ikono in lastno okno brez naslovne vrstice. Po prvem obisku se zažene tudi **brez interneta**. Tvoji načrti pri tem ostanejo na tvojem računalniku. Namestitev se splača: aplikacija se zažene hitreje, ker je ni treba vsakič znova naložiti, deluje brez interneta in razbremeni strežnik. Nič ne izgubite, saj vam layerling še naprej sporoči, ko izide nova različica. To varuje tudi tvoje načrte: Safari na Macu, iPhonu in iPadu izbriše shranjene podatke spletnega mesta, ki ga sedem dni nisi obiskal, podatkov nameščene aplikacije pa ne.
 
 Na začetni strani se za to pokaže opomba z {{ui:installHint.install}}, če tvoj brskalnik to zna. Sicer:
 

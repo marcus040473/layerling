@@ -5,7 +5,7 @@ summary: layerling wie ein normales Programm starten, auch ohne Netz – und wie
 
 ## Als App installieren
 
-layerling lässt sich wie ein normales Programm installieren. Es bekommt dann ein eigenes Symbol und ein eigenes Fenster ohne Adressleiste. Nach dem ersten Besuch startet es auch **ohne Internet**. Deine Entwürfe bleiben dabei auf deinem Rechner. Das Installieren lohnt sich: Die App startet schneller, weil sie nicht jedes Mal neu geladen werden muss, sie läuft ohne Internet und entlastet den Server. Du verlierst nichts, denn layerling zeigt dir weiter an, wenn es eine neue Version gibt.
+layerling lässt sich wie ein normales Programm installieren. Es bekommt dann ein eigenes Symbol und ein eigenes Fenster ohne Adressleiste. Nach dem ersten Besuch startet es auch **ohne Internet**. Deine Entwürfe bleiben dabei auf deinem Rechner. Das Installieren lohnt sich: Die App startet schneller, weil sie nicht jedes Mal neu geladen werden muss, sie läuft ohne Internet und entlastet den Server. Du verlierst nichts, denn layerling zeigt dir weiter an, wenn es eine neue Version gibt. Das schützt auch deine Entwürfe: Safari auf dem Mac und auf iPhone und iPad löscht die gespeicherten Daten einer Website, die sieben Tage nicht besucht wurde, nicht aber die einer installierten App.
 
 Auf der Startseite erscheint dafür ein Hinweis mit {{ui:installHint.install}}, wenn dein Browser es kann. Sonst:
 

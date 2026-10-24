@@ -5,7 +5,7 @@ summary: Commencez à superposer comme un programme normal, même sans réseau, 
 
 ## Installation en tant qu'application
 
-layerling peut être installé comme un programme normal. Il obtient alors une icône et une fenêtre qui lui est propre, sans barre d'adresse. Après la première visite, cela commence même **sans Internet**. Vos créations restent sur votre ordinateur. L'installation vaut la peine : l'application démarre plus vite, car elle n'a pas à être rechargée à chaque fois, elle fonctionne sans internet et décharge le serveur. Vous ne perdez rien, car layerling vous indique toujours quand une nouvelle version est disponible.
+layerling peut être installé comme un programme normal. Il obtient alors une icône et une fenêtre qui lui est propre, sans barre d'adresse. Après la première visite, cela commence même **sans Internet**. Vos créations restent sur votre ordinateur. L'installation vaut la peine : l'application démarre plus vite, car elle n'a pas à être rechargée à chaque fois, elle fonctionne sans internet et décharge le serveur. Vous ne perdez rien, car layerling vous indique toujours quand une nouvelle version est disponible. Cela protège aussi vos conceptions : Safari sur Mac, iPhone et iPad efface les données enregistrées d'un site qui n'a pas été visité depuis sept jours, mais pas celles d'une application installée.
 
 Sur la page de démarrage, un indice {{ui:installHint.install}} apparaît si votre navigateur peut le faire. Sinon:
 

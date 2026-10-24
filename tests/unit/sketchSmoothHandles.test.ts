@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sketchPrimitiveGeometry } from "@/lib/sketchPrimitives";
-import { withSegmentHandles, withSmoothSketchHandles } from "@/lib/sketchSmoothHandles";
+import { alignedSmoothHandles, withSegmentHandles, withSmoothSketchHandles } from "@/lib/sketchSmoothHandles";
 import type { SketchProfile } from "@/types/layerling";
 
 let counter = 0;
@@ -87,5 +87,29 @@ describe("the point button 'smooth' (#171)", () => {
     // A handle that is there is not replaced, and a line segment is left alone.
     expect(byId("b").handleOut).toBeDefined();
     expect(byId("d").handleIn).toBeUndefined();
+  });
+});
+
+describe("a corner with two handles made smooth (#347)", () => {
+  it("lines both handles up through the point, each keeping its length", () => {
+    // A corner: the in handle up and to the left, the out handle straight to the right.
+    const aligned = alignedSmoothHandles({ x: 0, z: 0, handleIn: { x: -3, z: 4 }, handleOut: { x: 10, z: 0 } });
+
+    expect(aligned).not.toBeNull();
+    const { handleIn, handleOut } = aligned!;
+    expect(Math.hypot(handleIn.x, handleIn.z)).toBeCloseTo(5, 9);
+    expect(Math.hypot(handleOut.x, handleOut.z)).toBeCloseTo(10, 9);
+    // On one line through the point, on opposite sides.
+    expect(handleIn.x * handleOut.z - handleIn.z * handleOut.x).toBeCloseTo(0, 9);
+    expect(handleIn.x * handleOut.x + handleIn.z * handleOut.z).toBeLessThan(0);
+    // Along the direction from the in handle to the out handle.
+    const len = Math.hypot(13, -4);
+    expect(handleOut.x / 10).toBeCloseTo(13 / len, 9);
+    expect(handleOut.z / 10).toBeCloseTo(-4 / len, 9);
+  });
+
+  it("leaves a point without a usable direction to the editor's own smoothing", () => {
+    expect(alignedSmoothHandles({ x: 0, z: 0, handleOut: { x: 1, z: 0 } })).toBeNull();
+    expect(alignedSmoothHandles({ x: 1, z: 1, handleIn: { x: 1, z: 1 }, handleOut: { x: 2, z: 1 } })).toBeNull();
   });
 });

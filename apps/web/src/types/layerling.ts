@@ -238,6 +238,8 @@ export type ShapeCustomization = {
   gridfinityOpenRight?: boolean;
   /** Gridfinity bin with the lip: a chamfer on the lip's top in mm, down the outer wall and down the slope, as the edge tool's; missing is none, sharp as the specification draws it, at most 1 (#780). */
   gridfinityLipChamfer?: number;
+  /** Gridfinity bin: the wall's thickness in mm, set in from an outline that never changes; missing is 0.95, at least 0.8, at most where the walls meet, which builds the bin solid (#455). */
+  gridfinityWallThickness?: number;
   /** Gridfinity baseplate: a solid border at the plate's height along the back, in mm, outside the grid and inside the box; missing is none, at most 41 (#455). */
   gridfinityPaddingBack?: number;
   /** Gridfinity baseplate: the border along the front. */
@@ -364,6 +366,8 @@ export type WorkplaneWorkspaceSettings = {
   fastMode: boolean;
   /** Lighting contrast, -100 (soft) to 100 (punchy); 0 is the original look. */
   shadeContrast: number;
+  /** Soft light (#812): most of the light comes from the viewer's eye and turns with the camera, so no face is left dark or burnt out. Off by default. */
+  softLighting: boolean;
   /** How dark the cast shadows are, 0 to 100 (100 = as before). */
   shadowStrength: number;
   /** How soft the shadow edges are, 0 (crisp, as before) to 100. */
@@ -868,6 +872,8 @@ export type WorkplaneShape = {
   gridfinityOpenRight?: boolean;
   /** Gridfinity bin with the lip: a chamfer on the lip's top in mm, down the outer wall and down the slope, as the edge tool's; missing is none, sharp as the specification draws it, at most 1 (#780). */
   gridfinityLipChamfer?: number;
+  /** Gridfinity bin: the wall's thickness in mm, set in from an outline that never changes; missing is 0.95, at least 0.8, at most where the walls meet, which builds the bin solid (#455). */
+  gridfinityWallThickness?: number;
   /** Gridfinity baseplate: a solid border at the plate's height along the back, in mm, outside the grid and inside the box; missing is none, at most 41 (#455). */
   gridfinityPaddingBack?: number;
   /** Gridfinity baseplate: the border along the front. */
@@ -1038,6 +1044,9 @@ export type WorkplaneShape = {
     baseDepth: number;
     baseHeight: number;
     triangleCount: number;
+    // Only on the sketch's own copy of a body on a workplane set on a face: how many triangles of `positions` belong to
+    // each visible part in turn (one count for a single body); the sketch shows each part as seen from the plane (#778). Never saved.
+    partTriangleCounts?: number[];
     sourceFormat: "stl" | "obj" | "svg" | "json" | "step" | "3mf";
     // IndexedDB persistence uses this only in compact stored shape records.
     // Runtime editor shapes are hydrated with the full immutable mesh resource.

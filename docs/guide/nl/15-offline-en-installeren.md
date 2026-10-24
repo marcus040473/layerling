@@ -5,7 +5,7 @@ summary: Start layerling als een gewoon programma, ook zonder netwerk, en lees h
 
 ## Installeren als app
 
-layerling kun je installeren als een gewoon programma. Het krijgt dan een eigen pictogram en een eigen venster, zonder adresbalk. Na het eerste bezoek start het zelfs **zonder internet**. Je ontwerpen blijven op je computer. Installeren loont: de app start sneller, omdat ze niet elke keer opnieuw geladen hoeft te worden, werkt zonder internet en ontlast de server. Je verliest niets, want layerling meldt je nog steeds wanneer er een nieuwe versie is.
+layerling kun je installeren als een gewoon programma. Het krijgt dan een eigen pictogram en een eigen venster, zonder adresbalk. Na het eerste bezoek start het zelfs **zonder internet**. Je ontwerpen blijven op je computer. Installeren loont: de app start sneller, omdat ze niet elke keer opnieuw geladen hoeft te worden, werkt zonder internet en ontlast de server. Je verliest niets, want layerling meldt je nog steeds wanneer er een nieuwe versie is. Dat beschermt ook je ontwerpen: Safari op de Mac, iPhone en iPad wist de opgeslagen gegevens van een website die zeven dagen niet is bezocht, maar niet die van een geïnstalleerde app.
 
 Op de startpagina verschijnt een hint met {{ui:installHint.install}} als je browser dat kan. Anders:
 

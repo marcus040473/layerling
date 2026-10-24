@@ -165,17 +165,23 @@ function shapePivotFrame(shape: WorkplaneShape) {
  * not along the body's own up axis, so the base slides: a pocket on a sloped workplane wandered along the plane when
  * its height was changed with the slider (forum, DrJones). The patch gets the position that keeps the middle of the
  * base where it was. A patch that sets the position itself, or a body that is not turned, stays as it is.
+ * `keep: "top"` keeps the middle of the top face instead, as after a pull on the lower handle.
  */
-export function heightPatchKeepingBase(shape: WorkplaneShape, patch: Partial<WorkplaneShape>): Partial<WorkplaneShape> {
+export function heightPatchKeepingBase(shape: WorkplaneShape, patch: Partial<WorkplaneShape>, keep: "base" | "top" = "base"): Partial<WorkplaneShape> {
   const height = patch.height;
   if (typeof height !== "number" || !Number.isFinite(height) || height === shape.height) return patch;
   if ("x" in patch || "z" in patch || "elevation" in patch) return patch;
-  const turn = quaternionForShape(shape);
-  if (Math.abs(turn.w) > 1 - 1e-9) return patch;
-  const up = new THREE.Vector3(0, mirrorSign(shape.mirrorY), 0).applyQuaternion(turn);
-  const base = new THREE.Vector3(shape.x, (shape.elevation ?? 0) + shape.height / 2, shape.z).addScaledVector(up, -shape.height / 2);
-  const centre = base.addScaledVector(up, height / 2);
+  if (!shapeIsTurned(shape)) return patch;
+  const up = new THREE.Vector3(0, mirrorSign(shape.mirrorY), 0).applyQuaternion(quaternionForShape(shape));
+  const side = keep === "top" ? 1 : -1;
+  const kept = new THREE.Vector3(shape.x, (shape.elevation ?? 0) + shape.height / 2, shape.z).addScaledVector(up, side * shape.height / 2);
+  const centre = kept.addScaledVector(up, -side * height / 2);
   return { ...patch, x: centre.x, z: centre.z, elevation: centre.y - height / 2 };
+}
+
+/** Whether a body is turned at all, so that its own up axis is not the world's. */
+export function shapeIsTurned(shape: WorkplaneShape): boolean {
+  return Math.abs(quaternionForShape(shape).w) <= 1 - 1e-9;
 }
 
 /** Where a body's own pivot lies in the world, or null if it has none. */

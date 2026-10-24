@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scaleShapesByPercent } from "@/lib/scaleByPercent";
+import { isUnchangedPercent, scaleShapesByPercent } from "@/lib/scaleByPercent";
 import type { WorkplaneShape } from "@/types/layerling";
 
 function box(id: string, x: number, z: number, size = 10, elevation = 0, extra: Partial<WorkplaneShape> = {}): WorkplaneShape {
@@ -21,6 +21,13 @@ describe("scaling by percent (#179)", () => {
     expect(patch.x).toBeCloseTo(5, 9);
     expect(patch.z).toBeCloseTo(-3, 9);
     expect(patch.elevation).toBeCloseTo(0, 9);
+  });
+
+  it("takes a percentage with decimals as it is (#817)", () => {
+    expect(patchOf(scaleShapesByPercent([box("a", 0, 0, 40)], 102.5, "together", noLimit), "a").width).toBeCloseTo(41, 9);
+    expect(isUnchangedPercent(100)).toBe(true);
+    expect(isUnchangedPercent(100.4)).toBe(false);
+    expect(isUnchangedPercent(99.75)).toBe(false);
   });
 
   it("together: the layout grows around the common centre", () => {

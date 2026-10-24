@@ -59,6 +59,11 @@ export function worldBoxOfShapes(shapes: readonly WorkplaneShape[]) {
   return box;
 }
 
+/** 100 % changes nothing, so the window does not apply it; 100.4 % is a change (#817). */
+export function isUnchangedPercent(percent: number) {
+  return Math.abs(percent - 100) < 1e-9;
+}
+
 export type ScaleByPercentResult =
   | { ok: true; patches: Array<{ id: string; patch: Partial<WorkplaneShape> }> }
   | { ok: false; reason: "percent" | "tooSmall" | "tooLarge"; name?: string };

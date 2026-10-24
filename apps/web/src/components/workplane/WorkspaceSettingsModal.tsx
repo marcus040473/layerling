@@ -985,6 +985,12 @@ export function WorkspaceSettingsModal({
                       <span>{t("workspace.lightAbove")}</span>
                     </small>
                   </label>
+                  <WorkspaceToggle
+                    label={t("workspace.softLighting")}
+                    description={t("workspace.softLightingHint")}
+                    checked={workspace.softLighting}
+                    onChange={(softLighting) => patchWorkspace({ softLighting })}
+                  />
                   <label className="workspace-range" data-help={t("workspace.shadeContrast")}>
                     <span>{t("workspace.shadeContrast")}: {workspace.shadeContrast}</span>
                     <input
@@ -1004,13 +1010,14 @@ export function WorkspaceSettingsModal({
                   <div className="property-defaults-actions">
                     <button
                       type="button"
-                      disabled={(["shadowStrength", "shadowSoftness", "shadeContrast", "lightAzimuth", "lightElevation"] as const).every((key) => workspace[key] === DEFAULT_WORKPLANE_WORKSPACE[key])}
+                      disabled={(["shadowStrength", "shadowSoftness", "shadeContrast", "lightAzimuth", "lightElevation", "softLighting"] as const).every((key) => workspace[key] === DEFAULT_WORKPLANE_WORKSPACE[key])}
                       onClick={() => patchWorkspace({
                         shadowStrength: DEFAULT_WORKPLANE_WORKSPACE.shadowStrength,
                         shadowSoftness: DEFAULT_WORKPLANE_WORKSPACE.shadowSoftness,
                         shadeContrast: DEFAULT_WORKPLANE_WORKSPACE.shadeContrast,
                         lightAzimuth: DEFAULT_WORKPLANE_WORKSPACE.lightAzimuth,
                         lightElevation: DEFAULT_WORKPLANE_WORKSPACE.lightElevation,
+                        softLighting: DEFAULT_WORKPLANE_WORKSPACE.softLighting,
                       })}
                     >
                       {t("workspace.lightReset")}
@@ -1620,6 +1627,7 @@ function classicLookPatch(workspace: WorkplaneWorkspaceSettings): Partial<Workpl
     shadowSoftness: 100,
     lightAzimuth: 90,
     lightElevation: 90,
+    softLighting: false,
   };
 }
 
