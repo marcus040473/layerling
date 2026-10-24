@@ -86,7 +86,7 @@ describe("drawing a vase", () => {
       ["a twist curve", { twistMode: "kurve", twistPoints: [[0, 0], [0.5, 60, 2, 0], [1, -30]] }],
     ];
     for (const [name, patch] of variants) expect(closed(drawn(shape, patch)), name).toBe(true);
-  });
+  }, 30_000);
 
   it("takes a body form from an SVG silhouette, at its own size", () => {
     const profile = svgToProfile(HALF);

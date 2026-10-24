@@ -44,6 +44,8 @@ import {
   collapseShortEdges,
   dropFins,
   fadeWeights,
+  freeBorder,
+  nearBorder,
   faceCross,
   fixCaps,
   creaseMoves,
@@ -267,6 +269,20 @@ export const SURFACE_TEXTURE_MAX_TEXT_POINTS = 60_000;
 
 /** Points per groove width or joint across (grooves, knurling, honeycomb). */
 const CROSS_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 6, medium: 10, fine: 16 };
+/**
+ * On the straight faces of an angular body the pattern does not fade out towards a smooth edge but ends at a straight
+ * border, the fade's width away, in a short steep wall this wide (mm). Faded, a groove's or a bump's end is curved, and
+ * the long cut triangles there showed it in teeth; this way everything up to the border is flat or the pattern itself.
+ */
+const BORDER_WALL = 0.15;
+/** How far past the fade the distance to a smooth edge is known: the longest triangle on a straight face reaching into it. */
+const FADE_BEYOND = 10;
+/**
+ * Straight smooth edges at least this long (mm) are cut along on their own, at most this many on one flat face (a box, a
+ * plate, a prism); a round rim of many short sides is cut along the distance to the nearest of them.
+ */
+const BORDER_LINE_MIN = 3;
+const BORDER_LINES_MAX = 16;
 /** Points per spacing for the patterns refined evenly. */
 const DETAIL_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 3, medium: 5, fine: 8 };
 /**
@@ -955,7 +971,7 @@ function profileLevels(profile: SurfaceTextureProfile, steps: number) {
  * across, along as coarse as the mesh. Triangles of faces that surely stay smooth (`smoothFace`)
  * stay whole.
  */
-function sliceStripes(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, steps: number, smoothFace: Uint8Array) {
+function sliceStripes(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, steps: number, smoothFace: Uint8Array, first: SurfaceTextureLayout | null = null) {
   const P = layout.period;
   const F = stripeFields(mesh, s, layout);
   // Profile places per period: groove middle at P/2 (stripe: |x - floor(x) - 0.5|), edges at P/2 ± w P/2.
@@ -970,7 +986,11 @@ function sliceStripes(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
   const I = mesh.indices;
   const sliced = new Uint8Array(I.length / 3);
   for (let f = 0; f < sliced.length; f += 1) sliced[f] = smoothFace[mesh.parents[f]] || F.pole[I[f * 3]] || F.pole[I[f * 3 + 1]] || F.pole[I[f * 3 + 2]] ? 0 : 1;
-  return sliceByField(mesh, F.cross, F.crossDiff, P, offsets, sliced, F.alongDiff);
+  // Knurling's second family: two triangles over an edge along the first one's lines stay apart, or the quad's new
+  // triangles reached across a line of the first family (its profile bent inside them: lumps in the diamonds).
+  const A = first ? stripeFields(mesh, s, first) : null;
+  const keep = A ? (p: number, q: number) => Math.abs(A.crossDiff(p, q)) < 1e-6 : null;
+  return sliceByField(mesh, F.cross, F.crossDiff, P, offsets, sliced, F.alongDiff, false, keep);
 }
 
 /**
@@ -1000,6 +1020,12 @@ function sliceKnurlCrease(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: 
 const SNAP = 0.05;
 /** The same for a bump's rim, which has to stay round (short edges there are pulled together afterwards). */
 const RIM_SNAP = 0.004;
+/**
+ * A point this close to its bump's circle (mm, either side) is a rim point itself: the edges at it are not cut again.
+ * Cut 0.02 mm beside a grid point 0.005 mm outside, the sliver between them counted as inside on both sides of the
+ * point - the rim touched itself there, and the bump kept its cut grid.
+ */
+const RIM_NEAR = 1.5 * RIM_SNAP;
 
 /** Bumps: points on a rim per radius, and rings inwards (fewer for a cone and a flat top, see sliceBumps). */
 const BUMP_RIM_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 1.6, medium: 2, fine: 3 };
@@ -1221,6 +1247,7 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
       const [cx, cy] = middleOf(rec, a, b, ua, va, ub, vb);
       const px = ua - cx, py = va - cy, dx = ub - ua, dy = vb - va;
       const fa = px * px + py * py - hw * hw, fb = (px + dx) ** 2 + (py + dy) ** 2 - hw * hw;
+      if (Math.abs(Math.hypot(px, py) - hw) < RIM_NEAR || Math.abs(Math.hypot(px + dx, py + dy) - hw) < RIM_NEAR) return -1;
       const A = dx * dx + dy * dy, B = 2 * (px * dx + py * dy);
       const disc = B * B - 4 * A * fa;
       if (!(A > 0) || disc <= 0) return -1;
@@ -1285,9 +1312,8 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
     const v = cur.vertices, I = cur.indices, T = I.length / 3;
     const rec = recordsOf(v);
     const skip = skipOf(v, rec, I, cur.parents);
-    // A rim point may lie this far off its circle (a point of the grid next to it, as good as on it); the ring inwards
-    // keeps more room than that.
-    const near = SURFACE_MIN_EDGE;
+    // A rim point may lie this far off its circle (see RIM_NEAR); the ring inwards keeps more room than that.
+    const near = RIM_NEAR;
     type Bump = { cx: number; cy: number; faces: number[]; bad: boolean; at: number[] };
     // Triangles squeezed to a line face no way: they go to the bump on their side of the body afterwards.
     const flat: [number, number][] = [];
@@ -1708,6 +1734,8 @@ type RefinedState = {
   text?: { values: Float32Array; torn: number } | null;
   /** Bumps laid anew: the value of their points (NaN: from the pattern), by point number; points added later have none. */
   fixed?: Float32Array | null;
+  /** Per input triangle: the axis (0, 1, 2) of the straight face it was cut on as flat (all round on an angular body), else 255. */
+  straightAxis?: Uint8Array | null;
 };
 
 export type SurfaceTextureStats = {
@@ -2068,7 +2096,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       for (;;) {
         mesh = sliceStripes(coarse, s, layout, steps, smooth.faces);
         if (s.pattern === "knurl") {
-          mesh = sliceStripes(mesh, s, { ...layout, angle: -layout.angle }, steps, smooth.faces);
+          mesh = sliceStripes(mesh, s, { ...layout, angle: -layout.angle }, steps, smooth.faces, layout);
           mesh = sliceKnurlCrease(mesh, s, layout, smooth.faces);
         }
         if (mesh.indices.length / 3 <= maxTriangles || s.profile !== "round" || steps <= 1) break;
@@ -2127,7 +2155,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     }
     // All round on straight faces: each axis' faces cut as flat ones. Points keep their numbers from cut to cut, so the
     // bumps' values of one axis stay right after the next.
+    let straightCut = false;
     if (straight && !mesh.limited) {
+      straightCut = true;
       for (let k = 0; k < 3; k += 1) {
         if (!straight.includes(k)) continue;
         const sk = axisSettings(k);
@@ -2146,7 +2176,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
           const steps = CROSS_STEPS[s.detail] / 2;
           mesh = sliceStripes(mesh, sk, layout, steps, skip);
           if (s.pattern === "knurl") {
-            mesh = sliceStripes(mesh, sk, { ...layout, angle: -layout.angle }, steps, skip);
+            mesh = sliceStripes(mesh, sk, { ...layout, angle: -layout.angle }, steps, skip, layout);
             mesh = sliceKnurlCrease(mesh, sk, layout, skip);
           }
         } else {
@@ -2165,8 +2195,88 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     }
     const cutFaces = straight ? Uint8Array.from(straight, (k) => (k === 255 ? 0 : 1)) : null;
     if (!slice && !cracks && !text && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles, cutFaces);
-    cache = { ...withNormals(key, mesh, edge, crossMax, raised || Boolean(mesh.limited), slice ? { smoothFace: smooth.faces } : null, s.edgeAngle), text: unrolledText, fixed };
+    // Only when they were cut: over the budget they were not.
+    const straightAxis = straightCut ? straight : null;
+    cache = { ...withNormals(key, mesh, edge, crossMax, raised || Boolean(mesh.limited), slice ? { smoothFace: smooth.faces } : null, s.edgeAngle), text: unrolledText, fixed, straightAxis };
     return cache;
+  }
+
+  /**
+   * The long straight smooth edges of the flat faces cut along their pattern (see refineTransitions): input edges between
+   * such a face and a face that stays smooth, or (sharp edges kept smooth) one bending away by more than the edge angle,
+   * joined where they lie on one line. Each with the face's axis and its place along it, and from where to where along
+   * the line through a and b it runs; none for a face with many of them (a round rim).
+   */
+  function borderLines(s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axisOf: Uint8Array) {
+    const v = base.vertices, I = base.indices;
+    const smooth = smoothBaseVertices(s, layout).faces;
+    const limit = Math.cos((s.edgeAngle * Math.PI) / 180);
+    const unit = (f: number) => {
+      const [x, y, z] = faceCross(v, I[f * 3], I[f * 3 + 1], I[f * 3 + 2]);
+      const l = Math.hypot(x, y, z) || 1;
+      return [x / l, y / l, z / l];
+    };
+    const byEdge = new Map<number, number[]>();
+    for (let f = 0; f < I.length / 3; f += 1) {
+      for (let k = 0; k < 3; k += 1) {
+        const p = I[f * 3 + k], q = I[f * 3 + ((k + 1) % 3)];
+        const key = Math.min(p, q) * 67108864 + Math.max(p, q);
+        const list = byEdge.get(key);
+        if (list) list.push(f);
+        else byEdge.set(key, [f]);
+      }
+    }
+    // Per flat face (axis and place along it), its smooth edges; edges on one line are one line, from - to along it.
+    const planes = new Map<string, { axis: number; plane: number; a: number; b: number; from: number; to: number }[]>();
+    const seen = new Set<string>();
+    for (let f = 0; f < I.length / 3; f += 1) {
+      const axis = axisOf[f];
+      if (axis === 255) continue;
+      const nf = unit(f);
+      const ax = AXIS_INDEX[SURFACE_TEXTURE_AXES[axis]];
+      const plane = v[I[f * 3] * 3 + ax];
+      const planeKey = `${axis}|${plane.toFixed(6)}`;
+      for (let k = 0; k < 3; k += 1) {
+        const p = I[f * 3 + k], q = I[f * 3 + ((k + 1) % 3)];
+        const others = (byEdge.get(Math.min(p, q) * 67108864 + Math.max(p, q)) ?? []).filter((g) => g !== f);
+        const free = others.some((g) => {
+          if (smooth[g]) return true;
+          const ng = unit(g);
+          return s.keepEdges && nf[0] * ng[0] + nf[1] * ng[1] + nf[2] * ng[2] < limit;
+        });
+        const key = `${planeKey}|${Math.min(p, q)}|${Math.max(p, q)}`;
+        if (!free || seen.has(key)) continue;
+        seen.add(key);
+        let list = planes.get(planeKey);
+        if (!list) planes.set(planeKey, (list = []));
+        const dx = v[q * 3] - v[p * 3], dy = v[q * 3 + 1] - v[p * 3 + 1], dz = v[q * 3 + 2] - v[p * 3 + 2];
+        const dl = Math.hypot(dx, dy, dz);
+        if (dl === 0) continue;
+        // On a line already found: it reaches further.
+        const on = list.find((line) => {
+          const ex = v[line.b * 3] - v[line.a * 3], ey = v[line.b * 3 + 1] - v[line.a * 3 + 1], ez = v[line.b * 3 + 2] - v[line.a * 3 + 2];
+          const el = Math.hypot(ex, ey, ez);
+          const distanceTo = (i: number) => {
+            const px = v[i * 3] - v[line.a * 3], py = v[i * 3 + 1] - v[line.a * 3 + 1], pz = v[i * 3 + 2] - v[line.a * 3 + 2];
+            return Math.hypot(py * ez - pz * ey, pz * ex - px * ez, px * ey - py * ex) / el;
+          };
+          return distanceTo(p) < 1e-6 && distanceTo(q) < 1e-6;
+        });
+        if (on) {
+          const ex = v[on.b * 3] - v[on.a * 3], ey = v[on.b * 3 + 1] - v[on.a * 3 + 1], ez = v[on.b * 3 + 2] - v[on.a * 3 + 2];
+          const el = Math.hypot(ex, ey, ez);
+          const at = (i: number) => ((v[i * 3] - v[on.a * 3]) * ex + (v[i * 3 + 1] - v[on.a * 3 + 1]) * ey + (v[i * 3 + 2] - v[on.a * 3 + 2]) * ez) / el;
+          on.from = Math.min(on.from, at(p), at(q));
+          on.to = Math.max(on.to, at(p), at(q));
+        } else list.push({ axis, plane, a: p, b: q, from: 0, to: dl });
+      }
+    }
+    const lines: { axis: number; plane: number; a: number; b: number; from: number; to: number }[] = [];
+    for (const list of planes.values()) {
+      const long = list.filter((line) => line.to - line.from >= BORDER_LINE_MIN);
+      if (long.length <= BORDER_LINES_MAX) lines.push(...long);
+    }
+    return lines;
   }
 
   /**
@@ -2174,7 +2284,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
    * neighbours at the border. Grooves are cut along at contour lines (halving would also halve
    * across); otherwise edges at those points are split. The old state when there is nothing to do.
    */
-  function refineTransitions(state: RefinedState, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, w: Float32Array, maxEdge: number, maxTriangles: number): RefinedState {
+  function refineTransitions(state: RefinedState, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, w: Float32Array, distance: Float64Array | null, maxEdge: number, maxTriangles: number): RefinedState {
     const { mesh, adj } = state;
     const n = w.length;
     const flags = new Uint8Array(n);
@@ -2203,13 +2313,86 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       fine = sliceByField(mesh, F.along, F.alongDiff, maxEdge, [0], sliced, F.crossDiff);
       if (fine.indices.length / 3 > maxTriangles) fine.limited = true;
     } else {
-      // Splitting names the triangles it split: fine -> grid -> input.
-      const split = subdivide(mesh, maxEdge, maxTriangles, null, flags);
-      fine = { ...split, parents: Uint32Array.from(split.parents, (f) => mesh.parents[f]) };
+      let cutMesh: SurfaceMesh = mesh;
+      let pointFlags = flags;
+      const axisOf = state.straightAxis;
+      if (axisOf && distance) {
+        // Straight faces cut along their pattern end at a border (see BORDER_WALL): cut along it and the foot of its wall.
+        // Halving their long triangles cut across the grooves' profile, and the pattern ran out in teeth. First along the
+        // distance to the nearest smooth place - right where it changes linearly over a triangle, as along a round rim.
+        // Then each long straight smooth edge of a flat face on its own: the distance to one line is exactly linear on
+        // the face. The nearest of several lines is not: over a long fan from a box's corner to its edge the border came
+        // out in the wrong place, and the grooves ran up to the edge there.
+        const reach = s.fade + s.margin;
+        const wall = Math.min(BORDER_WALL, s.fade);
+        const levels = wall > 0 ? [reach - wall, reach] : [reach];
+        {
+          const I = mesh.indices;
+          const sliced = new Uint8Array(I.length / 3);
+          let any = false;
+          for (let f = 0; f < sliced.length; f += 1) {
+            if (axisOf[mesh.parents[f]] === 255) continue;
+            if (Math.min(distance[I[f * 3]], distance[I[f * 3 + 1]], distance[I[f * 3 + 2]]) >= reach) continue;
+            sliced[f] = 1;
+            any = true;
+          }
+          if (any) {
+            const known = reach + FADE_BEYOND;
+            const field = Float64Array.from(distance, (d) => Math.min(d, known));
+            cutMesh = sliceByField(mesh, field, (i, j) => field[j] - field[i], 1e6, levels, sliced);
+          }
+        }
+        const bv = base.vertices;
+        for (const { axis, plane, a, b, from, to } of borderLines(s, layout, axisOf)) {
+          const ax = AXIS_INDEX[SURFACE_TEXTURE_AXES[axis]];
+          const v = cutMesh.vertices, I = cutMesh.indices;
+          const n0 = v.length / 3;
+          // Distance to the line through a and b (input points), and the place along it.
+          const dx = bv[b * 3] - bv[a * 3], dy = bv[b * 3 + 1] - bv[a * 3 + 1], dz = bv[b * 3 + 2] - bv[a * 3 + 2];
+          const dl = Math.hypot(dx, dy, dz) || 1;
+          const field = new Float64Array(n0);
+          const along = new Float64Array(n0);
+          for (let i = 0; i < n0; i += 1) {
+            const px = v[i * 3] - bv[a * 3], py = v[i * 3 + 1] - bv[a * 3 + 1], pz = v[i * 3 + 2] - bv[a * 3 + 2];
+            field[i] = Math.hypot(py * dz - pz * dy, pz * dx - px * dz, px * dy - py * dx) / dl;
+            along[i] = (px * dx + py * dy + pz * dz) / dl;
+          }
+          const sliced = new Uint8Array(I.length / 3);
+          let any = false;
+          for (let f = 0; f < sliced.length; f += 1) {
+            if (axisOf[cutMesh.parents[f]] !== axis || Math.abs(v[I[f * 3] * 3 + ax] - plane) > 1e-6) continue;
+            const c = [I[f * 3], I[f * 3 + 1], I[f * 3 + 2]];
+            if (Math.min(field[c[0]], field[c[1]], field[c[2]]) >= reach) continue;
+            // Only by the edge itself, not along its line beyond its ends.
+            if (Math.max(along[c[0]], along[c[1]], along[c[2]]) < from - reach || Math.min(along[c[0]], along[c[1]], along[c[2]]) > to + reach) continue;
+            sliced[f] = 1;
+            any = true;
+          }
+          if (any) cutMesh = sliceByField(cutMesh, field, (i, j) => field[j] - field[i], 1e6, levels, sliced);
+        }
+        if (cutMesh.indices.length / 3 > maxTriangles) cutMesh.limited = true;
+        // The other faces are split as before, but not at a point of a straight face: its edges into the cut band would
+        // be halved across the pattern again (a smooth bottom shares the box's edge with the face above it).
+        const onCut = new Uint8Array(cutMesh.vertices.length / 3);
+        const J = cutMesh.indices;
+        for (let f = 0; f < J.length / 3; f += 1) {
+          if (axisOf[cutMesh.parents[f]] === 255) continue;
+          onCut[J[f * 3]] = 1;
+          onCut[J[f * 3 + 1]] = 1;
+          onCut[J[f * 3 + 2]] = 1;
+        }
+        pointFlags = new Uint8Array(onCut.length);
+        for (let i = 0; i < flags.length; i += 1) pointFlags[i] = flags[i] && !onCut[i] ? 1 : 0;
+      }
+      if (pointFlags.includes(1)) {
+        // Splitting names the triangles it split: fine -> grid -> input.
+        const split = subdivide(cutMesh, maxEdge, maxTriangles, null, pointFlags);
+        fine = { ...split, parents: Uint32Array.from(split.parents, (f) => cutMesh.parents[f]) };
+      } else fine = cutMesh;
     }
     if (fine.indices.length === mesh.indices.length) return state;
-    // Splitting adds points behind the others: the bumps' values keep their numbers.
-    return { ...withNormals(state.key, fine, state.edge, state.crossMax, state.limited || Boolean(fine.limited), state.slice, s.edgeAngle), fixed: state.fixed };
+    // Splitting and cutting add points behind the others: the bumps' values keep their numbers.
+    return { ...withNormals(state.key, fine, state.edge, state.crossMax, state.limited || Boolean(fine.limited), state.slice, s.edgeAngle), fixed: state.fixed, straightAxis: state.straightAxis };
   }
 
   // Whether the body is round, per axis: asked once, not on every change of a setting.
@@ -2236,8 +2419,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // A text goes where it was put: what stays smooth for a pattern all over (bottom, top, a wall, the height band, sharp
     // edges) does not hold it back - masks do.
     const placed = s.pattern === "text";
-    /** Weight per point: 0 = smooth, 1 = the full pattern, faded in over `fade` mm. */
-    const weightsFor = ({ mesh, normals, crease, down, up, adj }: RefinedState) => {
+    /** Weight per point: 0 = smooth, 1 = the full pattern, faded in over `fade` mm (straight faces: see BORDER_WALL). */
+    const weightsFor = (state: RefinedState) => {
+      const { mesh, normals, crease, down, up, adj } = state;
       const v = mesh.vertices;
       const n = v.length / 3;
       const zMin = base.min[2];
@@ -2269,21 +2453,74 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         }
         w0[i] = free ? 0 : 1;
       }
-      return fadeWeights(v, adj, w0, s.fade, s.margin);
+      const faded = fadeWeights(v, mesh.indices, adj, w0, s.fade, s.margin, state.straightAxis ? FADE_BEYOND : 0);
+      // Straight faces cut along their pattern: a border with a short wall instead of the fade (see BORDER_WALL).
+      const axisOf = state.straightAxis;
+      if (axisOf && faded.distance) {
+        const reach = s.fade + s.margin;
+        const wall = Math.min(BORDER_WALL, s.fade);
+        // Per point the axis of a straight face it lies on (255: none).
+        const axisAt = new Uint8Array(n).fill(255);
+        const I = mesh.indices;
+        for (let f = 0; f < I.length / 3; f += 1) {
+          const k = axisOf[mesh.parents[f]];
+          if (k === 255) continue;
+          axisAt[I[f * 3]] = k;
+          axisAt[I[f * 3 + 1]] = k;
+          axisAt[I[f * 3 + 2]] = k;
+        }
+        for (let i = 0; i < n; i += 1) {
+          if (axisAt[i] === 255 || w0[i] === 0) continue;
+          const d = faded.distance[i];
+          faded.weights[i] = d >= reach ? 1 : wall > 0 && d > reach - wall ? (d - (reach - wall)) / wall : 0;
+        }
+        // Bumps the border would cut stay off whole: a half bump at the frame looked like a mistake.
+        if (s.pattern === "bumps") {
+          const radius = (layout.cell / 2) * s.width;
+          const near = nearBorder(v, freeBorder(I, w0), reach + radius);
+          const off = new Map<string, boolean>();
+          for (let i = 0; i < n; i += 1) {
+            const k = axisAt[i];
+            if (k === 255 || faded.weights[i] === 0) continue;
+            const ax = AXIS_INDEX[SURFACE_TEXTURE_AXES[k]];
+            const [i1, i2] = acrossAxes(SURFACE_TEXTURE_AXES[k]);
+            const p = [v[i * 3], v[i * 3 + 1], v[i * 3 + 2]];
+            const site = hexSite(p[i1], p[i2], layout.cell);
+            if (Math.hypot(p[i1] - site.x, p[i2] - site.y) >= radius) continue;
+            // Opposite faces share their sites: the face's place along its axis tells them apart.
+            const key = `${site.key}|${k}|${Math.round(p[ax] * 1000)}`;
+            let drop = off.get(key);
+            if (drop === undefined) {
+              const middle = p.slice();
+              middle[i1] = site.x;
+              middle[i2] = site.y;
+              drop = near(middle);
+              off.set(key, drop);
+            }
+            if (drop) faded.weights[i] = 0;
+          }
+        }
+      }
+      return faded;
     };
 
     let state = r;
-    let weights = weightsFor(state);
+    let faded = weightsFor(state);
+    let weights = faded.weights;
     // The groove grid: triangles along it are up to a few mm long. Where the pattern fades out (rim, smooth faces), the
-    // fade over such a long triangle would smear and look restless. There - only there - it is refined finely.
-    if (r.crossMax > 0) {
+    // fade over such a long triangle would smear and look restless. There - only there - it is refined finely; on the
+    // straight faces of an angular body cut along lines of equal distance to the edge.
+    if (r.crossMax > 0 || r.straightAxis) {
       const weightKey = JSON.stringify([r.key, s.bottomFree, s.topFree, s.zoneFrom, s.zoneTo, s.keepEdges, s.edgeAngle, s.fade, s.margin, s.outside, s.inside, layout.center, s.masks]);
       if (fadeCache?.key === weightKey) state = fadeCache.state;
       else {
-        state = refineTransitions(r, s, layout, weights, Math.max(2 * r.crossMax, Math.min(0.5, Math.max(s.fade, 0.25) / 2)), maxTriangles);
+        state = refineTransitions(r, s, layout, weights, faded.distance, Math.max(2 * r.crossMax, Math.min(0.5, Math.max(s.fade, 0.25) / 2)), maxTriangles);
         fadeCache = { key: weightKey, state };
       }
-      if (state !== r) weights = weightsFor(state);
+      if (state !== r) {
+        faded = weightsFor(state);
+        weights = faded.weights;
+      }
     }
 
     const { mesh, directions, moves } = state;

@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Saubere Kanten am Würfel",
+      "en": "Clean edges on a cube"
+    },
+    "body": {
+      "de": "Auf den ebenen Seiten eckiger Körper endet die Oberfläche jetzt an einem geraden Rand statt in Zacken: Rillen und Rändel hören sauber auf, Waben werden am Rand abgeschnitten, und es bleiben nur ganze Noppen stehen. Die Breite des Rands ist „Einblenden über“.",
+      "en": "On the flat sides of an angular body the surface texture now ends at a straight border instead of in teeth: grooves and knurling stop cleanly, honeycomb is cut off at the border, and only whole bumps stay. The border's width is \"Fade in over\"."
+    }
+  },
+  {
+    "title": {
       "de": "Noppen als Halbkugel oder Kegel",
       "en": "Bumps as half balls or cones"
     },

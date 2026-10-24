@@ -453,10 +453,11 @@ export function subdivide(
  * points in the mesh. Triangles not cut take in the points on the edges they share with cut ones
  * (fans), so the mesh stays closed. With `ydiff` (the field along the levels), two cut triangles
  * that meet over their longest edge and make a flat convex quad are cut as that quad: otherwise
- * its diagonal would cut every strip once more. Parents point into `mesh.parents`. With `withField`, the field comes
+ * its diagonal would cut every strip once more - but not over an edge `keepEdge` says must stay (a line cut before:
+ * the quad's new triangles would reach across it). Parents point into `mesh.parents`. With `withField`, the field comes
  * back for every point too (a field that does not wrap round): a point on a level has that level.
  */
-export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: FieldDiff, P: number, offsets: number[], sliced: Uint8Array, ydiff: FieldDiff | null = null, withField = false): SurfaceMesh & { field?: Float64Array } {
+export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: FieldDiff, P: number, offsets: number[], sliced: Uint8Array, ydiff: FieldDiff | null = null, withField = false, keepEdge: ((p: number, q: number) => boolean) | null = null): SurfaceMesh & { field?: Float64Array } {
   const verts = Array.from(mesh.vertices);
   const fieldAll = withField ? Array.from(field) : null;
   const I = mesh.indices;
@@ -488,6 +489,7 @@ export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: Field
       const [f, g] = list;
       if (pairOf[f] >= 0 || pairOf[g] >= 0) return;
       const F = longestOf(f), G = longestOf(g);
+      if (keepEdge && keepEdge(F.p, F.q)) return;
       // The quad in the order of f: p, s (tip of g), q, r (tip of f); convex in (across, along)?
       const ring = [F.p, G.r, F.q, F.r];
       const xs = ring.map((i) => diff(F.p, i)), ys = ring.map((i) => ydiff(F.p, i));
@@ -741,19 +743,110 @@ function smoothstep(edge0: number, edge1: number, x: number) {
   return t * t * (3 - 2 * t);
 }
 
+/** Distance from point p to the segment a-b (a point when a = b). */
+function segmentDistance(v: ArrayLike<number>, p: number, a: number, b: number) {
+  const px = v[p * 3] - v[a * 3], py = v[p * 3 + 1] - v[a * 3 + 1], pz = v[p * 3 + 2] - v[a * 3 + 2];
+  const dx = v[b * 3] - v[a * 3], dy = v[b * 3 + 1] - v[a * 3 + 1], dz = v[b * 3 + 2] - v[a * 3 + 2];
+  const l2 = dx * dx + dy * dy + dz * dz;
+  const t = l2 > 0 ? Math.min(1, Math.max(0, (px * dx + py * dy + pz * dz) / l2)) : 0;
+  return Math.hypot(px - t * dx, py - t * dy, pz - t * dz);
+}
+
 /**
- * Weight per point from the distance (along the surface, Dijkstra over the edges) to the nearest
- * point that stays smooth (`w0` = 0): smooth up to `margin`, then fading in over `fade` mm.
+ * The border of the part that stays smooth (`w0` = 0) as segments between point numbers: the mesh edges between two
+ * smooth corners of a triangle whose third corner is not smooth, and single smooth corners (a = b).
  */
-export function fadeWeights(v: Float64Array, adj: Adjacency, w0: Uint8Array, fade: number, margin = 0) {
-  const n = w0.length;
-  const w = new Float32Array(n);
-  const reach = fade + margin;
-  if (reach <= 0) {
-    for (let i = 0; i < n; i += 1) w[i] = w0[i];
-    return w;
+export function freeBorder(indices: Uint32Array, w0: Uint8Array) {
+  const segA: number[] = [], segB: number[] = [];
+  const known = new Map<number, number>();
+  const segment = (a: number, b: number) => {
+    const p = Math.min(a, b), q = Math.max(a, b);
+    const key = p * 67108864 + q;
+    if (!known.has(key)) {
+      known.set(key, segA.length);
+      segA.push(p);
+      segB.push(q);
+    }
+  };
+  for (let t = 0; t < indices.length; t += 3) {
+    const a = indices[t], b = indices[t + 1], c = indices[t + 2];
+    const fa = w0[a] === 0, fb = w0[b] === 0, fc = w0[c] === 0;
+    const count = Number(fa) + Number(fb) + Number(fc);
+    if (count === 2) {
+      if (!fa) segment(b, c);
+      else if (!fb) segment(c, a);
+      else segment(a, b);
+    } else if (count === 1) {
+      const p = fa ? a : fb ? b : c;
+      segment(p, p);
+    }
   }
+  return { segA, segB };
+}
+
+/**
+ * Whether a place lies within `reach` of the border (see freeBorder): segments sorted into a grid of that size, so a
+ * question looks at a few of them only.
+ */
+export function nearBorder(v: ArrayLike<number>, border: { segA: number[]; segB: number[] }, reach: number) {
+  const size = Math.max(reach, 1e-3);
+  const grid = new Map<string, number[]>();
+  const { segA, segB } = border;
+  for (let k = 0; k < segA.length; k += 1) {
+    const a = segA[k] * 3, b = segB[k] * 3;
+    const lo = [0, 1, 2].map((c) => Math.floor((Math.min(v[a + c], v[b + c]) - reach) / size));
+    const hi = [0, 1, 2].map((c) => Math.floor((Math.max(v[a + c], v[b + c]) + reach) / size));
+    for (let x = lo[0]; x <= hi[0]; x += 1) {
+      for (let y = lo[1]; y <= hi[1]; y += 1) {
+        for (let z = lo[2]; z <= hi[2]; z += 1) {
+          const key = `${x},${y},${z}`;
+          const list = grid.get(key);
+          if (list) list.push(k);
+          else grid.set(key, [k]);
+        }
+      }
+    }
+  }
+  return (p: ArrayLike<number>) => {
+    const list = grid.get(`${Math.floor(p[0] / size)},${Math.floor(p[1] / size)},${Math.floor(p[2] / size)}`);
+    if (!list) return false;
+    for (const k of list) {
+      const a = segA[k] * 3, b = segB[k] * 3;
+      const px = p[0] - v[a], py = p[1] - v[a + 1], pz = p[2] - v[a + 2];
+      const dx = v[b] - v[a], dy = v[b + 1] - v[a + 1], dz = v[b + 2] - v[a + 2];
+      const l2 = dx * dx + dy * dy + dz * dz;
+      const t = l2 > 0 ? Math.min(1, Math.max(0, (px * dx + py * dy + pz * dz) / l2)) : 0;
+      if (Math.hypot(px - t * dx, py - t * dy, pz - t * dz) < reach) return true;
+    }
+    return false;
+  };
+}
+
+/**
+ * Distance per point to the border of the part that stays smooth (`w0` = 0), up to `limit` (Infinity beyond, 0 on the
+ * smooth part). The border is made of the mesh edges between two smooth corners of a triangle whose third corner is not
+ * smooth (and of single smooth corners). Spread like Dijkstra over the edges, but each point measures straight to the
+ * nearest border segment it was reached from, or to one next to it: summed along the edges, the distance zigzagged on
+ * long slanted triangles (grooves on a box's face), and the pattern faded out in teeth along the edge.
+ */
+export function freeDistance(v: ArrayLike<number>, indices: Uint32Array, adj: Adjacency, w0: Uint8Array, limit: number) {
+  const n = w0.length;
   const dist = new Float64Array(n).fill(Infinity);
+  const { segA, segB } = freeBorder(indices, w0);
+  // The segments at each smooth point (compressed rows).
+  const start = new Uint32Array(n + 1);
+  for (let k = 0; k < segA.length; k += 1) {
+    start[segA[k] + 1] += 1;
+    if (segB[k] !== segA[k]) start[segB[k] + 1] += 1;
+  }
+  for (let i = 0; i < n; i += 1) start[i + 1] += start[i];
+  const fill = start.slice(0, n);
+  const at = new Uint32Array(start[n]);
+  for (let k = 0; k < segA.length; k += 1) {
+    at[fill[segA[k]]++] = k;
+    if (segB[k] !== segA[k]) at[fill[segB[k]]++] = k;
+  }
+  const src = new Int32Array(n).fill(-1);
   const heapKey: number[] = [];
   const heapVal: number[] = [];
   const push = (k: number, val: number) => {
@@ -795,29 +888,56 @@ export function fadeWeights(v: Float64Array, adj: Adjacency, w0: Uint8Array, fad
   for (let i = 0; i < n; i += 1) {
     if (w0[i] !== 0) continue;
     dist[i] = 0;
-    for (let e = adj.start[i]; e < adj.start[i + 1]; e += 1) {
-      if (w0[adj.nb[e]] !== 0) {
-        push(0, i);
-        break;
-      }
+    if (start[i + 1] > start[i]) {
+      src[i] = at[start[i]];
+      push(0, i);
     }
   }
   while (heapKey.length) {
     const d0 = heapKey[0];
     const i = pop();
     if (d0 > dist[i]) continue;
+    const s0 = src[i];
     for (let e = adj.start[i]; e < adj.start[i + 1]; e += 1) {
       const j = adj.nb[e];
       if (w0[j] === 0) continue;
-      const nd = d0 + Math.hypot(v[i * 3] - v[j * 3], v[i * 3 + 1] - v[j * 3 + 1], v[i * 3 + 2] - v[j * 3 + 2]);
-      if (nd < dist[j] && nd < reach) {
-        dist[j] = nd;
-        push(nd, j);
+      let best = dist[j], bestSeg = -1;
+      // The segments at both ends of the source segment: past its end the next one along the border is nearer.
+      for (const end of [segA[s0], segB[s0]]) {
+        for (let k = start[end]; k < start[end + 1]; k += 1) {
+          const sg = at[k];
+          const d = segmentDistance(v, j, segA[sg], segB[sg]);
+          if (d < best) {
+            best = d;
+            bestSeg = sg;
+          }
+        }
+      }
+      if (bestSeg >= 0 && best < limit) {
+        dist[j] = best;
+        src[j] = bestSeg;
+        push(best, j);
       }
     }
   }
+  return dist;
+}
+
+/**
+ * Weight per point from the distance to the part that stays smooth (`w0` = 0, see freeDistance): smooth up to `margin`,
+ * then fading in over `fade` mm. The distance comes back too, known `beyond` mm past the fade (for cutting along it).
+ */
+export function fadeWeights(v: Float64Array, indices: Uint32Array, adj: Adjacency, w0: Uint8Array, fade: number, margin = 0, beyond = 0) {
+  const n = w0.length;
+  const w = new Float32Array(n);
+  const reach = fade + margin;
+  if (reach <= 0) {
+    for (let i = 0; i < n; i += 1) w[i] = w0[i];
+    return { weights: w, distance: null };
+  }
+  const dist = freeDistance(v, indices, adj, w0, reach + beyond);
   for (let i = 0; i < n; i += 1) w[i] = w0[i] === 0 || dist[i] <= margin ? 0 : dist[i] >= reach ? 1 : smoothstep(margin, reach, dist[i]);
-  return w;
+  return { weights: w, distance: dist };
 }
 
 /**
