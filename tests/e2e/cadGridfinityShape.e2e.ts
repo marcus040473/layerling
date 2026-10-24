@@ -711,3 +711,72 @@ describe("exact Gridfinity baseplates with padding", () => {
     expect(overlap(cad.translate(seated, 0.3, 0, 0), p)).toBeGreaterThan(1);
   });
 });
+
+describe("exact Gridfinity bins with a lip chamfer", () => {
+  /** The bin as the edge tool leaves it: its sharp lip's top edges chamfered by `size`. */
+  const edgeTool = (part: CadModifierGridfinityPart, size: number) => {
+    const solid = gridfinityPartSolid(cad, part);
+    const top = cad.getBoundingBox(solid).ymax;
+    return cad.chamfer(solid, cad.getSubShapes(solid, "edge").filter((edge) => cad.getBoundingBox(edge).ymin > top - 1e-6), size);
+  };
+
+  it("builds chamfered bins as one valid solid with the mesh's volume and box", () => {
+    for (const fields of [
+      {},
+      { gridfinityOpenFront: true },
+      { gridfinityOpenLeft: true, gridfinityOpenBack: true },
+      { gridfinityOpenBack: true, gridfinityOpenFront: true, gridfinityOpenLeft: true, gridfinityOpenRight: true },
+      { gridfinityHalfGrid: true, width: 20.5, depth: 41.5 },
+      { gridfinityMagnets: true, gridfinityScoopFront: true, gridfinityLabelBack: true },
+      { gridfinityCompartmentsX: 3, gridfinityCompartmentsZ: 2, gridfinityScoopFront: true, gridfinityCompartmentLabels: [{ column: 1, row: 1, side: "back" as const }] },
+      { width: 41.5, depth: 41.5, height: 7 + GRIDFINITY_LIP_HEIGHT },
+    ]) {
+      for (const gridfinityLipChamfer of [0.25, 1]) {
+        const part = bin({ ...fields, gridfinityLipChamfer });
+        const context = JSON.stringify(part);
+        const solid = gridfinityPartSolid(cad, part);
+        expect(cad.isValid(solid), context).toBe(true);
+        expect(cad.isSolid(solid) ? 1 : cad.getSubShapes(solid, "solid").length, context).toBe(1);
+        const exact = Math.abs(cad.getVolume(solid));
+        expect(Math.abs(exact - meshVolume(part)) / exact, context).toBeLessThan(0.002);
+        const box = cad.getBoundingBox(solid);
+        const { min, max } = meshBounds(part);
+        [box.xmin - min[0], box.ymin - min[1], box.zmin - min[2], box.xmax - max[0], box.ymax - max[1], box.zmax - max[2]].forEach((d) => expect(Math.abs(d), context).toBeLessThan(0.01));
+      }
+    }
+  });
+
+  it("chamfers the lip as the edge tool does, closed and beside an open side, from the smallest chamfer kept", () => {
+    for (const fields of [{}, { gridfinityOpenFront: true }, { gridfinityOpenLeft: true, gridfinityOpenBack: true }]) {
+      for (const size of [0.01, 0.25, 1]) {
+        const context = `${JSON.stringify(fields)} ${size}`;
+        const built = gridfinityPartSolid(cad, bin({ ...fields, gridfinityLipChamfer: size }));
+        const chamfered = edgeTool(bin(fields), size);
+        expect(Math.abs(Math.abs(cad.getVolume(built)) - Math.abs(cad.getVolume(chamfered))), context).toBeLessThan(1e-3);
+        expect(overlap(built, chamfered) / Math.abs(cad.getVolume(chamfered)), context).toBeGreaterThan(1 - 1e-6);
+      }
+    }
+  });
+
+  it("still stacks a bin 0.35 mm into a chamfered lip", () => {
+    const lower = gridfinityPartSolid(cad, bin({ width: 41.5, depth: 41.5, gridfinityLipChamfer: 1 }));
+    const upper = gridfinityPartSolid(cad, bin({ width: 41.5, depth: 41.5 }));
+    expect(overlap(lower, cad.translate(upper, 0, 21 - 0.34, 0))).toBeLessThan(0.01);
+    expect(overlap(lower, cad.translate(upper, 0, 21 - 0.5, 0))).toBeGreaterThan(1);
+  });
+
+  it("builds the same solid as before with no chamfer, and none without the lip", () => {
+    // As in "builds the same solids as before open sides came in".
+    for (const [part, volume, faces, edges] of [
+      [bin({ gridfinityLipChamfer: 0 }), 23248.7382, 100, 210],
+      [bin({ gridfinityLipChamfer: 1e-6 }), 23248.7382, 100, 210],
+      [bin({ gridfinityLip: false, height: 21, gridfinityLipChamfer: 0.5 }), 21312.6174, 69, 154],
+    ] as const) {
+      const context = JSON.stringify(part);
+      const solid = gridfinityPartSolid(cad, part);
+      expect(Math.abs(Math.abs(cad.getVolume(solid)) - volume), context).toBeLessThan(1e-4);
+      expect(cad.getSubShapes(solid, "face"), context).toHaveLength(faces);
+      expect(cad.getSubShapes(solid, "edge"), context).toHaveLength(edges);
+    }
+  });
+});

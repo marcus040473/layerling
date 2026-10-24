@@ -25,4 +25,16 @@ Vejledningen du læser har også en søgeboks, øverst på hver side: tast et or
 - Navnet på en form i dit design finder den form og vælger den, hvilket hjælper i et design med mange dele. Former vises først når du taster.
 - Det virker også i skitsetilstand, med skitseværktøjerne.
 
+## Interaktiv hjælp
+
+Kan du ikke finde hvor du skal læse om en knap eller et felt? Lad programmet tage dig derhen. Klik på spørgsmålstegnet i området {{ui:editor.group.help}}, eller tryk [[Shift]]+[[F1]]. Markøren bliver til et spørgsmålstegn, og alt der ligger under det bliver markeret med en ramme.
+
+- Klik på en knap, et felt, en kontakt, et håndtag, en gruppe i båndet eller en vindues titellinje. Den gør **ikke** det den normalt gør. I stedet åbnes et lille vindue, med elementets navn, et kort resumé af den del af denne vejledning der handler om det, op til to andre steder der nævner det, og {{ui:interactiveHelp.open}}.
+- Hjælpen handler om elementet du pegede på, ikke om hele vinduet omkring det. Et element uden eget navn bruger det nærmeste omkring sig; inde i et vindue falder den tilbage på vindues spørgsmålstegn.
+- {{ui:interactiveHelp.open}} åbner vejledningen ved det afsnit i en ny fane. Der er afsnittet markeret med farve, fra sin overskrift til sin slut, så du ser hvor det begynder og slutter.
+- Siger vejledningen intet om elementet, siger vinduet det og tilbyder {{ui:interactiveHelp.search}}.
+- [[Esc]], eller spørgsmålstegnet igen, forlader tilstanden. På en touchskærm er der intet hover: et tryk på et element åbner vinduet med det samme.
+
+Vinduet flyttes på sin titellinje som de andre vinduer. Programmet finder afsnittet ud fra elementets navn – teksten på en knap, navnet på et felt – fordi denne vejledning skriver hver knap som den hedder i programmet. Det slår det op i den samme søgning som feltet øverst på hver side i vejledningen, på det sprog du bruger, og kører helt i din browser.
+
 {{shortcuts}}

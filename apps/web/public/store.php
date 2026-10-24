@@ -25,27 +25,32 @@ const SEARCH_DEPTH_LIMIT = 12;
 const SEARCH_FOLDER_LIMIT = 2000;
 const MAX_PROJECT_BYTES   = 512 * 1024 * 1024;  // mirrors LYL_LIMITS.archiveBytes
 /** The files an export may be called on the server (#779), as in route.ts. */
-const EXPORT_FILE_EXTENSIONS = ['stl', '3mf', 'obj', 'step', 'stp', 'svg', 'png', 'pdf'];
+const EXPORT_FILE_EXTENSIONS = ['stl', '3mf', 'obj', 'step', 'stp', 'svg', 'dxf', 'png', 'pdf'];
 const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024;
 const LYL_MEDIA_TYPE      = 'application/vnd.layerling.project+zip';
 /** A folder name may not look like a path, a hidden file, or carry control codes. */
 const FOLDER_NAME_UNSAFE = "<>:\"|?*/\\";
 
 /**
- * Apache stops serving anything executable from the folder. Belt and braces:
- * only .lyl and .png ever get written, and both under names we built ourselves.
- * `php_flag` is deliberately absent - it throws a 500 on servers running PHP as
- * FPM rather than as a module, which would break the whole directory.
+ * Apache serves nothing from the folder at all. The app never fetches a file there by its address -
+ * projects, pictures and exports all go through this script - and a slicer that shares the folder
+ * reads it on disk. An export is written as it comes (#779), so an SVG with a script in it, opened
+ * from the folder, would run on the app's own address and reach every visitor's designs in their
+ * browser (GHSA-wj5x-5r5v-89r3). Nothing in here may execute either. `php_flag` is deliberately
+ * absent - it throws a 500 on servers running PHP as FPM rather than as a module, which would break
+ * the whole directory. An existing store gets this guard on its next request (ensure_store_guard).
  */
 const STORE_HTACCESS = <<<'HTACCESS'
-# Written by store.php. Projects live here; nothing in here may execute.
+# Written by store.php. Projects live here; nothing in here is served or may execute.
 Options -ExecCGI -Indexes
 RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phar
 RemoveType .php .phtml .phar
 <IfModule mod_authz_core.c>
-  <FilesMatch "\.(?i:ph(p[0-9]?|tml|ar))$">
-    Require all denied
-  </FilesMatch>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
 </IfModule>
 HTACCESS;
 
@@ -769,7 +774,54 @@ function export_file_name(string $requested): ?string
 }
 
 /**
- * An export file - STL, 3MF, OBJ, STEP, SVG, PNG or PDF - written into a folder of the store (#779), so a
+ * Whether an export file is what its name says and nothing a browser could run (GHSA-wj5x-5r5v-89r3).
+ * The guard file keeps the folder from being served, but many servers never read it (Debian's Apache
+ * ignores .htaccess under /var/www, nginx always does), so the bytes are checked as well: an SVG may hold
+ * only plain drawing elements - what layerling's own SVG, drawing and section exports write - and no
+ * event handler, link, script URL or DOCTYPE; the binary formats must start with their signature, STEP
+ * with its header; STL, OBJ and DXF may not start with a tag, so a server that sends no type for them
+ * cannot have the browser take them for a web page.
+ */
+function export_bytes_acceptable(string $extension, string $bytes): bool
+{
+    $head = ltrim(substr($bytes, 0, 4096), "\xEF\xBB\xBF \t\r\n\0");
+    switch ($extension) {
+        case 'png':
+            return strncmp($bytes, "\x89PNG\r\n\x1a\n", 8) === 0;
+        case 'pdf':
+            return strncmp($bytes, '%PDF-', 5) === 0;
+        case '3mf':
+            return strncmp($bytes, "PK\x03\x04", 4) === 0;
+        case 'step':
+        case 'stp':
+            return strncmp($head, 'ISO-10303-21', 12) === 0;
+        case 'svg':
+            return svg_is_plain_drawing($bytes);
+        default:
+            return $head !== '' && $head[0] !== '<';
+    }
+}
+
+/** An SVG made only of shapes, text and their descriptions, with nothing in it that runs or loads. */
+function svg_is_plain_drawing(string $svg): bool
+{
+    if (preg_match('/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|javascript\s*:|\son[a-z]+\s*=|href\s*=|url\s*\(/i', $svg) === 1) {
+        return false;
+    }
+    $allowed = ['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'text', 'tspan', 'title', 'desc', 'metadata'];
+    if (preg_match_all('/<\s*([A-Za-z_][\w:.\-]*)/', $svg, $tags) === false) {
+        return false;
+    }
+    foreach ($tags[1] as $tag) {
+        if (!in_array(strtolower($tag), $allowed, true)) {
+            return false;
+        }
+    }
+    return in_array('svg', array_map('strtolower', $tags[1]), true);
+}
+
+/**
+ * An export file - STL, 3MF, OBJ, STEP, SVG, DXF, PNG or PDF - written into a folder of the store (#779), so a
  * slicer that shares the folder can open it. It is no project: the list does not show it. A file of that
  * name is replaced only when the request says so (overwrite=1); otherwise the answer is 409 with `exists`.
  */
@@ -792,6 +844,10 @@ function handle_save_export(string $root, string $folder, string $requested): vo
     }
     if (strlen($bytes) > MAX_PROJECT_BYTES) {
         fail('The file exceeds the shared storage size limit', 413);
+    }
+    $extension = strtolower((string) pathinfo($fileName, PATHINFO_EXTENSION));
+    if (!export_bytes_acceptable($extension, $bytes)) {
+        fail('That is not a ' . strtoupper($extension) . ' file layerling would write', 400);
     }
 
     $filePath = $folder . DIRECTORY_SEPARATOR . $fileName;

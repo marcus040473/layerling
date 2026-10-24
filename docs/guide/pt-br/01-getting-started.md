@@ -13,7 +13,7 @@ Abra [layerling.com](https://layerling.com/). Na página inicial, clique em {{ui
 
 Se você já tem um arquivo para continuar, use {{ui:dashboard.importGeometry}}. Isso funciona tanto para projetos do layerling (`.lyl`) quanto para arquivos STL, OBJ, 3MF, STEP ou SVG.
 
-Depois, todos os seus projetos aparecem na página inicial com uma miniatura. Eles ficam guardados no seu navegador e são salvos automaticamente a cada alteração, por isso não há botão de salvar. **layerling não se responsabiliza pelos projetos guardados no navegador.** Um navegador pode falhar, ou uma atualização pode causar problemas, então faça backup dos seus projetos de vez em quando com {{ui:dashboard.backupAll}} na página inicial, ou salve-os como arquivos. Para restaurar um backup, use {{ui:dashboard.restoreBackup}}. Como juntar projetos num arquivo e passá-los adiante está em [Arquivos e salvamento](chapter:files-and-saving).
+Depois, todos os seus projetos aparecem na página inicial com uma miniatura. Eles ficam guardados no seu navegador e são salvos automaticamente a cada alteração, por isso não há botão de salvar. **layerling não se responsabiliza pelos projetos guardados no navegador.** Um navegador pode falhar, ou uma atualização pode causar problemas, então faça backup dos seus projetos de vez em quando com {{ui:dashboard.backupAll}} na página inicial, ou salve-os como arquivos. Para restaurar um backup, use {{ui:dashboard.restoreBackup}}. Como juntar projetos num arquivo e passá-los adiante está em [Arquivos e salvamento](chapter:files-and-saving). Se quiser um lembrete, ative {{ui:workspace.confirmTabClose}} nas configurações (a engrenagem na faixa): o navegador pergunta antes de fechar ou recarregar uma aba com um projeto aberto.
 
 ## Conhecendo o editor
 

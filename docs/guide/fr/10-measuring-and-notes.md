@@ -63,9 +63,9 @@ Une note enregistre ce que la géométrie ne dit pas : "Cette vis est trop serr�
 - Si son corps est supprimé, ou si plus aucun corps visible ne se trouve dessous, la note reste là où elle était, sur le plan de travail.
 - Faire glisser l'épingle déplace la note. Un clic sur l'épingle replie la carte, seul le petit numéro reste ; un autre clic la rouvre. Un clic dans le texte permet de le modifier.
 - Pendant que vous écrivez, [[Enter]] conserve le texte et [[Esc]] le remet tel qu'il était avant de commencer ; [[Shift]]+[[Enter]] démarre une nouvelle ligne.
-- **Dans une esquisse**, {{ui:editor.tool.note}} (sous {{ui:editor.group.manage}}) ou [[N]] place aussi une note, n'importe où sur l'esquisse. Toutes les notes d'une esquisse appartiennent à son corps : dans la vue 3D, elles se posent dessus, sur le dessus d'un corps créé avec {{ui:sketch.extrude}} ou {{ui:sketch.sweep}} et sur le profil dessiné d'un corps créé avec {{ui:sketch.revolve}}, et elles se déplacent avec lui. Quand vous rouvrez l'esquisse, elle affiche les notes du corps, y compris celles placées en 3D. Dans l'esquisse, {{ui:sketch.undo}} annule une note comme une ligne, et {{ui:sketch.cancel}} abandonne ce que vous avez modifié dans les notes.
+- **Dans une esquisse**, {{ui:editor.tool.note}} (sous {{ui:editor.group.manage}}) ou [[N]] place aussi une note, n'importe où sur l'esquisse. Toutes les notes d'une esquisse appartiennent à son corps : dans la vue 3D, elles se posent dessus, sur le dessus d'un corps créé avec {{ui:sketch.extrude}} ou {{ui:sketch.sweep}} et sur le profil dessiné d'un corps créé avec {{ui:sketch.revolve}}, et elles se déplacent avec lui. Quand vous rouvrez l'esquisse, elle affiche les notes du corps, y compris celles placées en 3D. Dans l'esquisse, {{ui:sketch.undo}} annule une note comme une ligne, et {{ui:sketch.cancel}} abandonne ce que vous avez modifié dans les notes. [[Shift]]+[[N]] affiche ou masque aussi les notes ici.
 
-Les notes sont enregistrées dans la conception, n'apparaissent dans aucune exportation et peuvent être affichées ou masquées avec {{ui:visibility.notes}} (dans {{ui:editor.visibilityOptions}}, la flèche à côté de l'icône en forme d'œil).
+Les notes sont enregistrées dans la conception, n'apparaissent dans aucune exportation et peuvent être affichées ou masquées avec {{ui:visibility.notes}} (dans {{ui:editor.visibilityOptions}}, la flèche à côté de l'icône en forme d'œil) ou avec [[Shift]]+[[N]].
 
 ## Points de référence
 
@@ -74,7 +74,7 @@ Un point de référence est une marque nue dans l'espace, comme une marque de cr
 - Le ruban à mesurer peut également marquer un point : {{ui:camera.tapeMarkMiddle}}, le bouton en réticule sous une mesure, en place un en son milieu, par exemple au centre d'un trou rond.
 - Faites glisser un point pour le déplacer, ou cliquez dessus pour voir ses coordonnées et en saisir de nouvelles ; ils utilisent l'unité que vous avez définie. Chaque carte peut être déplacée par son titre si elle recouvre quelque chose, individuellement : les autres restent là où elles sont, et un double-clic sur le titre la remet en place. La carte que vous avez touchée en dernier se trouve devant les autres. **Tout supprimer** dans une carte, ou dans le menu contextuel du clic droit, supprime tous les points en une seule fois. {{ui:common.delete}} le supprime.
 - Lorsque vous faites glisser une forme, ses bords et son centre s'alignent sur un point, comme ils s'alignent sur d'autres formes ({{ui:workspace.objectSnap}}). Le carré de cadrage s'accroche également aux points.
-- Les points sont enregistrés dans la conception, n'apparaissent dans aucune exportation et sont affichés ou masqués avec les notes par {{ui:visibility.notes}}.
+- Les points sont enregistrés dans la conception, n'apparaissent dans aucune exportation et sont affichés ou masqués avec les notes par {{ui:visibility.notes}} ([[Shift]]+[[N]]).
 - Une IA peut les marquer, les lister et les supprimer avec `layerling_add_reference_points`, `layerling_list_reference_points` et `layerling_remove_reference_points`.
 
 ## Images de référence

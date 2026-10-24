@@ -364,3 +364,12 @@ describe("STL as a download (#731)", () => {
     expect(normalizeWorkspaceSettings({ stlAsDownload: "yes" }, DEFAULT_WORKPLANE_WORKSPACE).stlAsDownload).toBe(false);
   });
 });
+
+describe("Ask before closing the tab", () => {
+  it("is off until switched on, and a saved choice is kept", () => {
+    expect(DEFAULT_WORKPLANE_WORKSPACE.confirmTabClose).toBe(false);
+    expect(normalizeWorkspaceSettings({}, DEFAULT_WORKPLANE_WORKSPACE).confirmTabClose).toBe(false);
+    expect(normalizeWorkspaceSettings({ confirmTabClose: true }, DEFAULT_WORKPLANE_WORKSPACE).confirmTabClose).toBe(true);
+    expect(normalizeWorkspaceSettings({ confirmTabClose: "yes" }, DEFAULT_WORKPLANE_WORKSPACE).confirmTabClose).toBe(false);
+  });
+});

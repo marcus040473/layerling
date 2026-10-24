@@ -285,15 +285,6 @@ export function keyringAlongLimit(across: number, diameter: number) {
 }
 
 /**
- * How far the ear of a key ring hole reaches out beyond the letters and the fill's reach, on
- * its side: what the box gains there. 0 for a text without an ear.
- */
-export function textKeyringReach(shape: Pick<WorkplaneShape, "textKeyring" | "textCurved" | "textStroke">): number {
-  const reaches = textKeyringReaches(shape);
-  return Math.max(reaches.left, reaches.right, reaches.top, reaches.bottom);
-}
-
-/**
  * How far the ear reaches out beyond the letters and the fill's reach on each side (#215): on its
  * one side for a hole on a side; for a free hole (#598) on the sides of the corner it keeps to,
  * which do not change with the letters. Seen from above the tops of the letters are towards -z.

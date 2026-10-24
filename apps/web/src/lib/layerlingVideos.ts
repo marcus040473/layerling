@@ -7,16 +7,18 @@
  */
 export const LAYERLING_VIDEOS = [
   {
-    title: "I'm 100% In on Layerling - The Next Big Free CAD",
+    // A whole playlist, so new videos in it arrive here without a release.
+    title: "Layerling CAD Videos",
     channel: "Printology",
     lang: "EN",
-    url: "https://youtu.be/IO7S-7bxS5o",
+    url: "https://www.youtube.com/playlist?list=PLc09BHr_6nn8",
   },
   {
-    title: "10 Things Layerling Can Do That Tinkercad Can't!",
+    // A whole playlist, so new videos in it arrive here without a release.
+    title: "Print by Layer",
     channel: "Print N Repeat",
     lang: "EN",
-    url: "https://youtu.be/cx0OVHgUsJM",
+    url: "https://www.youtube.com/playlist?list=PLejZBz4L7CGQ",
   },
   {
     title: "Layerling la nueva herramienta gratuita de modelado 3D, más completo que Tinkercad",
@@ -25,10 +27,11 @@ export const LAYERLING_VIDEOS = [
     url: "https://youtu.be/-EEt0RSINoY",
   },
   {
-    title: "Layerling - Tussen Tinkercad en Fusion 360 in, en Helemaal Gratis!",
+    // A whole playlist, so new videos in it arrive here without a release.
+    title: "Layerling",
     channel: "Werkplaats Marc",
     lang: "NL",
-    url: "https://youtu.be/X-UuvsfDI-s",
+    url: "https://www.youtube.com/playlist?list=PLQuXPoMXTnRQ",
   },
   {
     // A whole playlist, so new videos in it arrive here without a release.
@@ -36,12 +39,6 @@ export const LAYERLING_VIDEOS = [
     channel: "TECHNOBENTO",
     lang: "EN",
     url: "https://www.youtube.com/playlist?list=PLYqVFeqYBrPE",
-  },
-  {
-    title: "The PERFECT FREE CAD Program Between Tinkercad and Fusion 360!",
-    channel: "Print N Repeat",
-    lang: "EN",
-    url: "https://youtu.be/GIoG-IHPXyg",
   },
   {
     // A whole playlist, so new videos in it arrive here without a release.

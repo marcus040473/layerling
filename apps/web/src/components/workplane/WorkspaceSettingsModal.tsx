@@ -910,6 +910,12 @@ export function WorkspaceSettingsModal({
                     onChange={(stlAsDownload) => patchWorkspace({ stlAsDownload })}
                   />
                   <WorkspaceToggle
+                    label={t("workspace.confirmTabClose")}
+                    description={t("workspace.confirmTabCloseHint")}
+                    checked={workspace.confirmTabClose}
+                    onChange={(confirmTabClose) => patchWorkspace({ confirmTabClose })}
+                  />
+                  <WorkspaceToggle
                     label={t("workspace.showShadows")}
                     description={workspace.fastMode ? t("workspace.offInFastMode") : undefined}
                     checked={workspace.showShadows && !workspace.fastMode}

@@ -74,6 +74,8 @@ Dva dela naj ležita ploskev ob ploskvi ali naj se končata poravnano? Izberi de
 
 ![Okno »Poravnaj ploskve«: del, ki se premakne, je izbran, naslednja je ploskev drugega dela, nato »Drugo proti drugemu« ali »Poravnano« in razmik, če želiš.](shot:mate-faces)
 
+**Luknje na eni osi:** {{ui:mate.mode.concentric}} namesto tega poravna okrogle ploskve: luknjo nad luknjo, čep v luknjo, vijak v njegovo prehodno luknjo. Izberi to, preden klikneš ploskve. Nato klikni okroglo notranjost luknje (ali zunanjost čepa) na delu, ki se premakne, in okroglo ploskev drugega dela; cela okrogla ploskev zasveti, ko kažeš nanjo. {{ui:mate.apply}} zavrti del po najkrajši poti, dokler osi nista vzporedni, in ga potisne počez na drugo os. Vzdolž osi ostane, kjer je bil, zato čep obdrži višino; potisni ga noter pozneje. Deluje tudi pri uvoženih mrežah, dokler je luknja iz ploskvic okoli ene osi.
+
 **Natančen kot med dvema ploskvama:** {{ui:editor.tool.mateFaces}} pusti ploskvi vzporedni; za kot med njima ni posebnega orodja, a do njega prideš tako. Najprej ploskvi združi z {{ui:editor.tool.mateFaces}}, da sta vzporedni. Nato nastavi središče vrtenja na rob, kjer se stikata ({{ui:editor.tool.rotationPivot}}, klikni rob ali oglišče) in v kartici {{ui:inspector.rotation}} dela vpiši kot, na primer 15 ali 30. Del se zavrti okoli tega središča. Osi kartice so osi plošče, zato to deluje, kadar rob poteka vzdolž X, Y ali Z.
 
 Podobno preprosta sta {{ui:editor.tool.dropToWorkplane}} ([[D]]), ki izbor odloži na delovno ravnino, in {{ui:editor.tool.centerOnWorkplane}}.

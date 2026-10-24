@@ -74,6 +74,8 @@ Két alkatrésznek lappal lapra kellene illeszkednie, vagy egy síkba kerülnie?
 
 ![A Lapok igazítása panel: a mozgó alkatrész ki van választva, következik a másik alkatrész egy lapja, aztán laptól lapig vagy egy síkba, és egy tetszőleges hézag.](shot:mate-faces)
 
+**Furatok egy tengelyen:** {{ui:mate.mode.concentric}} ehelyett kerek lapokat igazít: furatot furat fölé, csapot furatba, csavart a menet nélküli furatába. Válaszd ki, mielőtt a lapokra kattintasz. Aztán kattints a mozgó alkatrészen egy furat kerek belsejére (vagy egy csap külsejére), majd a másik alkatrész egy kerek lapjára; az egész kerek lap kivilágosodik, amíg rámutatsz. Az {{ui:mate.apply}} a legrövidebb úton elforgatja az alkatrészt, amíg a két tengely párhuzamos nem lesz, majd keresztben a másik tengelyre tolja. A tengely mentén ott marad, ahol volt, így egy csap megtartja a magasságát; utána told be. Importált hálókon is működik, ha a furat egy tengely körüli lapokból áll.
+
 **Pontos szög két lap között:** a {{ui:editor.tool.mateFaces}} párhuzamosan hagyja a lapokat; a köztük lévő szöghöz nincs külön eszköz, de így is célba érsz. Előbb hozd össze a lapokat a {{ui:editor.tool.mateFaces}} paranccsal, hogy párhuzamosak legyenek. Ezután tedd a forgatási pontot arra az élre, ahol találkoznak ({{ui:editor.tool.rotationPivot}}, kattints az élre vagy egy sarokra), és gépeld be a szöget, mondjuk 15-öt vagy 30-at, az alkatrész {{ui:inspector.rotation}} kártyáján. A forgatási pont körül fordul. A kártya tengelyei a tárgyasztal tengelyei, így ez akkor működik, ha az él X, Y vagy Z mentén fut.
 
 Ugyanilyen egyszerű a {{ui:editor.tool.dropToWorkplane}} ([[D]]), amely a munkasíkra ejti a kijelölést, és a {{ui:editor.tool.centerOnWorkplane}}.

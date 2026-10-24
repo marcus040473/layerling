@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BUILD_MISMATCH_EVENT } from "@/lib/buildStamp";
+import { releaseLeaveGuard } from "@/lib/leaveGuard";
 import {
   fetchVersionInfo,
   isNewBuild,
@@ -103,7 +104,10 @@ export function useNewVersionNotice() {
   /** Saves what is open, then loads the page again; the address still names the open design. */
   const reload = useCallback(() => {
     window.dispatchEvent(new Event(SAVE_NOW_EVENT));
-    window.setTimeout(() => window.location.reload(), 800);
+    window.setTimeout(() => {
+      releaseLeaveGuard();
+      window.location.reload();
+    }, 800);
   }, []);
 
   const visible = offer !== null && hiddenUntil <= Date.now();

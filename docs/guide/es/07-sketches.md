@@ -171,5 +171,6 @@ Las cuatro actúan solo sobre la imagen de plantilla, nunca sobre el boceto.
 | [[R]] | girar 45° el boceto cerrado |
 | [[L]] | bloquear o desbloquear el contorno seleccionado o la imagen de plantilla |
 | [[N]] | colocar una nota: el siguiente clic la pone en el boceto |
+| [[Mayús]]+[[N]] | mostrar u ocultar las notas |
 
 > **Consejo:** Dibuja solo los puntos que hagan falta. Un contorno con pocos puntos bien colocados da un cuerpo más suave que una maraña de muchos.

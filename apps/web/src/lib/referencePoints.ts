@@ -138,6 +138,32 @@ export function measurementMiddle(line: readonly ReferencePosition[]): Reference
 }
 
 /**
+ * The spots a dragged reference point snaps to on a body's box (#799): its 8 corners, the middles of its
+ * 12 edges and the centres of its 6 faces. `corners` are the box's corners as the box stands, turned or
+ * not, in the order x outermost, then y, then z (index = 4·x + 2·y + z, 0 the minus side).
+ */
+export function boxSnapSpots(corners: readonly ReferencePosition[]): ReferencePosition[] {
+  if (corners.length !== 8) return [];
+  const mean = (indexes: number[]): ReferencePosition => ({
+    x: indexes.reduce((sum, index) => sum + corners[index].x, 0) / indexes.length,
+    y: indexes.reduce((sum, index) => sum + corners[index].y, 0) / indexes.length,
+    z: indexes.reduce((sum, index) => sum + corners[index].z, 0) / indexes.length,
+  });
+  const spots: ReferencePosition[] = corners.map((corner) => ({ ...corner }));
+  // Two corners share an edge when their indexes differ in one bit.
+  for (let a = 0; a < 8; a += 1) {
+    for (const bit of [1, 2, 4]) {
+      if ((a & bit) === 0) spots.push(mean([a, a | bit]));
+    }
+  }
+  // A face holds the four corners with one bit fixed.
+  for (const bit of [1, 2, 4]) {
+    for (const side of [0, bit]) spots.push(mean([0, 1, 2, 3, 4, 5, 6, 7].filter((index) => (index & bit) === side)));
+  }
+  return spots;
+}
+
+/**
  * The reference point nearest to a pointer on the screen, within `reach` pixels; null if none is that close.
  * The tape measure snaps to it like to a measuring point (#334). `project` gives a point's place on the screen.
  */

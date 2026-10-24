@@ -27,3 +27,21 @@ export function workplaneCenteringOffset(bounds: WorkplanePlanarBounds): Workpla
     z: WORKPLANE_CENTER.z - (minZ + maxZ) / 2,
   };
 }
+
+type Direction = { x: number; y: number; z: number };
+
+/**
+ * On a workplane laid on a face (#805): the move in world coordinates that brings the middle of the
+ * selection onto the workplane's origin, the point picked with W. `bounds` are measured along the
+ * workplane's own x and z axes from that origin; the move runs only along those two axes, so the
+ * selection keeps its distance from the plane and a part standing on the face stays on it.
+ */
+export function faceWorkplaneCenteringShift(bounds: WorkplanePlanarBounds, xAxis: Direction, zAxis: Direction): Direction | null {
+  const offset = workplaneCenteringOffset(bounds);
+  if (!offset) return null;
+  return {
+    x: xAxis.x * offset.x + zAxis.x * offset.z,
+    y: xAxis.y * offset.x + zAxis.y * offset.z,
+    z: xAxis.z * offset.x + zAxis.z * offset.z,
+  };
+}

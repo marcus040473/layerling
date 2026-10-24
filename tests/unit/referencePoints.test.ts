@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanReferencePosition, measurementMiddle, nearestReferenceOnScreen, newReferencePositions, referencePointsForBox, unionReferenceBoxes } from "@/lib/referencePoints";
+import { boxSnapSpots, cleanReferencePosition, measurementMiddle, nearestReferenceOnScreen, newReferencePositions, referencePointsForBox, unionReferenceBoxes } from "@/lib/referencePoints";
 import { normalizeNotes, notesSignature, referencePoints } from "@/lib/workplaneNotes";
 
 const box = { minX: -20, maxX: 40, minY: 0, maxY: 8, minZ: 10, maxZ: 30 };
@@ -84,5 +84,26 @@ describe("the reference point under the tape measure's pointer (#334)", () => {
   it("takes none when the pointer is too far away, and none for no points", () => {
     expect(nearestReferenceOnScreen(points, project, { x: 25, y: 40 }, 14)).toBeNull();
     expect(nearestReferenceOnScreen([], project, { x: 0, y: 0 }, 14)).toBeNull();
+  });
+});
+
+describe("box snap spots (#799)", () => {
+  // The corners in the order the editor gives them: x outermost, then y, then z.
+  const corners = [0, 1].flatMap((x) => [0, 1].flatMap((y) => [0, 1].map((z) => ({ x: x * 20, y: y * 10, z: z * 40 }))));
+
+  it("gives the corners, the middles of the 12 edges and the centres of the 6 faces", () => {
+    const spots = boxSnapSpots(corners);
+
+    expect(spots).toHaveLength(26);
+    expect(spots).toContainEqual({ x: 20, y: 10, z: 40 });
+    expect(spots).toContainEqual({ x: 10, y: 0, z: 0 });
+    expect(spots).toContainEqual({ x: 20, y: 5, z: 40 });
+    expect(spots).toContainEqual({ x: 10, y: 10, z: 20 });
+    expect(spots).toContainEqual({ x: 10, y: 5, z: 0 });
+    expect(spots).toContainEqual({ x: 0, y: 5, z: 20 });
+  });
+
+  it("gives nothing for anything but a box", () => {
+    expect(boxSnapSpots(corners.slice(0, 4))).toEqual([]);
   });
 });

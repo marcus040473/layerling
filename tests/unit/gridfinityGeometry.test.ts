@@ -17,6 +17,7 @@ import {
   GRIDFINITY_LIP_HEIGHT,
   GRIDFINITY_OPEN_WALL_KEYS,
   GRIDFINITY_SCOOP_WALL_KEYS,
+  MAX_GRIDFINITY_LIP_CHAMFER,
   type GridfinityLabelCornerShape,
   type GridfinityLabelProfile,
   createGridfinityGeometry,
@@ -49,6 +50,7 @@ import {
   gridfinityLabelMaxWidth,
   gridfinityLabelledTriangles,
   gridfinityLabelPieces,
+  gridfinityLipChamfer,
   gridfinityListPatch,
   gridfinityOpenFits,
   gridfinityPadding,
@@ -63,6 +65,7 @@ import {
   gridfinityTriangles,
   gridfinityUnitCompartments,
   gridfinityUnits,
+  gridfinityWallProfile,
   normalizeGridfinityCompartmentLabels,
   normalizeGridfinityDividerPositions,
 } from "@/lib/gridfinityGeometry";
@@ -2386,5 +2389,110 @@ describe("gridfinity baseplate fitted to a drawer", () => {
     expect(fitted).toMatchObject({ depth: 260.1, gridfinityPaddingBack: 8.1, width: 291.6 });
     expect(gridfinityUnits(fitted)).toEqual({ x: 6, z: 6, y: 1 });
     expect(gridfinityDrawerSize(fitted)).toEqual({ width: 292.1, depth: 260.6 });
+  });
+});
+
+describe("gridfinity lip chamfer", () => {
+  // The edge tool's chamfer of c on the lip's top: c down the outer wall, c / sqrt 2 in and down the slope (0.1768 at 0.25).
+  const chamfered = (c: number) => [[0, 21 + GRIDFINITY_LIP_HEIGHT - c], [c * Math.SQRT1_2, 21 + GRIDFINITY_LIP_HEIGHT - c * Math.SQRT1_2]];
+
+  it("leaves the lip sharp unless a chamfer is set", () => {
+    const sharp = gridfinityTriangles(bin());
+    for (const value of [0, -0.3, Number.NaN, undefined]) expect(gridfinityTriangles(bin({ gridfinityLipChamfer: value })), `${value}`).toEqual(sharp);
+    expect(gridfinityWallProfile(gridfinityPlan(bin()))[1]).toEqual([0, 21 + GRIDFINITY_LIP_HEIGHT]);
+  });
+
+  it("takes a chamfer of up to 1 mm, on a bin with the lip only", () => {
+    expect(gridfinityLipChamfer(bin({ gridfinityLipChamfer: 0.25 }))).toBe(0.25);
+    expect(gridfinityLipChamfer(bin({ gridfinityLipChamfer: 2 }))).toBe(MAX_GRIDFINITY_LIP_CHAMFER);
+    expect(gridfinityLipChamfer(bin({ gridfinityLipChamfer: -1 }))).toBe(0);
+    expect(gridfinityLipChamfer(bin())).toBe(0);
+    expect(gridfinityLipChamfer(bin({ gridfinityLipChamfer: 0.123 }))).toBe(0.12);
+    expect(gridfinityLipChamfer(bin({ gridfinityLipChamfer: 1e-6 }))).toBe(0);
+    expect(gridfinityTriangles(bin({ gridfinityLipChamfer: 0.004 }))).toEqual(gridfinityTriangles(bin()));
+    expect(gridfinityLipChamfer(bin({ gridfinityLip: false, height: 21, gridfinityLipChamfer: 0.5 }))).toBe(0);
+    expect(gridfinityLipChamfer(plate({ gridfinityLipChamfer: 0.5 }))).toBe(0);
+    expect(gridfinityTriangles(plate({ gridfinityLipChamfer: 0.5 }))).toEqual(gridfinityTriangles(plate()));
+    expect(gridfinityTriangles(bin({ gridfinityLip: false, height: 21, gridfinityLipChamfer: 0.5 }))).toEqual(gridfinityTriangles(bin({ gridfinityLip: false, height: 21 })));
+  });
+
+  it("chamfers the lip's top as the edge tool does, and leaves the rest of the wall as it is", () => {
+    for (const c of [0.25, 1]) {
+      const sharp = gridfinityWallProfile(gridfinityPlan(bin()));
+      const wall = gridfinityWallProfile(gridfinityPlan(bin({ gridfinityLipChamfer: c })));
+      expect(wall.length).toBe(sharp.length + 1);
+      expect(wall[0]).toEqual(sharp[0]);
+      [0, 1].forEach((k) => wall[1 + k].forEach((n, i) => expect(n, `${c} ${k} ${i}`).toBeCloseTo(chamfered(c)[k][i], 9)));
+      expect(wall.slice(3)).toEqual(sharp.slice(2));
+    }
+    expect(chamfered(0.25)[1][0]).toBeCloseTo(0.1768, 4);
+    // The exact body is built from the sharp wall and has the chamfer cut afterwards.
+    expect(gridfinityWallProfile(gridfinityPlan(bin({ gridfinityLipChamfer: 0.5 })), 0, 0)).toEqual(gridfinityWallProfile(gridfinityPlan(bin()), 0));
+  });
+
+  it("takes off the ring under the chamfer, as calculated by hand", () => {
+    const plain = signedVolume(gridfinityTriangles(bin()));
+    for (const c of [0.25, 1]) {
+      // A triangle of c along the wall and c along the slope, c * c / (2 * sqrt 2), swept round the outline at its centroid, c / (3 * sqrt 2) in.
+      const inset = c / (3 * Math.SQRT2);
+      const length = 2 * (83.5 - 2 * inset + 41.5 - 2 * inset) - (8 - 2 * Math.PI) * (3.75 - inset);
+      const removed = (c * c) / (2 * Math.SQRT2) * length;
+      expect((plain - signedVolume(gridfinityTriangles(bin({ gridfinityLipChamfer: c })))) / removed, `${c}`).toBeCloseTo(1, 2);
+    }
+  });
+
+  it("draws every chamfered bin closed and in one piece, its top lowered by the chamfer", () => {
+    const front = { gridfinityOpenFront: true };
+    for (const fields of [
+      {},
+      front,
+      { gridfinityOpenLeft: true, gridfinityOpenBack: true },
+      { gridfinityHalfGrid: true, width: 20.5, depth: 41.5 },
+      { gridfinityMagnets: true, gridfinityScoopFront: true, gridfinityLabelBack: true },
+      { gridfinityCompartmentsX: 3, gridfinityCompartmentsZ: 2, gridfinityScoopFront: true },
+      { height: 7 + GRIDFINITY_LIP_HEIGHT },
+    ]) {
+      for (const c of [0.25, 1]) {
+        const triangles = gridfinityTriangles(bin({ ...fields, gridfinityLipChamfer: c }));
+        const label = `${JSON.stringify(fields)} ${c}`;
+        expect(edgeProblems(triangles), label).toBe(0);
+        expect(components(triangles), label).toBe(1);
+        const height = ((fields as { height?: number }).height ?? 21 + GRIDFINITY_LIP_HEIGHT) - c * Math.SQRT1_2;
+        expect(bounds(triangles).max[1], label).toBeCloseTo(height, 9);
+      }
+    }
+  });
+
+  it("keeps the chamfer through a saved project, the settings and the exact body, and refuses nonsense", async () => {
+    const settings = { gridfinityLipChamfer: 0.25 };
+    const shape = canonicalizeShape(binShape(settings));
+    expect(workplaneShapesEqual(shape, { ...shape, gridfinityLipChamfer: 0.3 })).toBe(false);
+    const save = (shapes: WorkplaneShape[]) => exportLylProject({
+      projectId: "chamfer",
+      projectName: "Chamfer",
+      createdAt: 1_700_000_000_000,
+      modifiedAt: 1_700_000_100_000,
+      shapes,
+      history: [editorHistoryEntry(shapes, [])],
+      historyIndex: 0,
+      assets: [],
+      workspace: DEFAULT_WORKPLANE_WORKSPACE,
+      snapGrid: DEFAULT_SNAP_GRID,
+      placementElevation: 0,
+    });
+    const [loaded] = (await importLylProject(await save([shape]))).shapes;
+    expect(workplaneShapesEqual(loaded, shape)).toBe(true);
+    expect(loaded).toMatchObject(settings);
+    expect(sceneShape(shape)).toMatchObject(settings);
+    expect(cadModifierGridfinityForShape(shape)).toMatchObject(settings);
+    expect(normalizeShapeCustomizations({ gridfinity: settings }, {})).toMatchObject({ gridfinity: settings });
+    expect(shapeDefaultsFromShape(shape)).toMatchObject(settings);
+    const asset = toolbarShapeAssets.find((entry) => entry.kind === "gridfinity")!;
+    expect(makeShapeFromAsset(asset, { x: 0, z: 0 }, settings)).toMatchObject(settings);
+    await expect(importLylProject(await save([{ ...shape, gridfinityLipChamfer: "small" } as unknown as WorkplaneShape]))).rejects.toThrow("gridfinityLipChamfer must be a finite number");
+    await expect(importLylProject(await save([{ ...shape, gridfinityLipChamfer: -1 }]))).rejects.toThrow("gridfinityLipChamfer is outside the supported range");
+    // The mesh that booleans and exports use has the chamfer.
+    const meshVolume = (s: WorkplaneShape) => { const { vertices, faces } = meshForShape(s); return signedVolume(faces.map((face) => face.map((i) => vertices[i]) as V[])); };
+    expect(meshVolume(canonicalizeShape(binShape({})))).toBeGreaterThan(meshVolume(shape) + 3);
   });
 });

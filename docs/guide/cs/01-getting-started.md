@@ -13,7 +13,7 @@ Otevřete [layerling.com](https://layerling.com/) a na úvodní stránce klikně
 
 Máte-li soubor, ve kterém chcete pokračovat, zvolte {{ui:dashboard.importGeometry}}. Otevřít lze projekty Layerlingu (`.lyl`) i soubory STL, OBJ, 3MF, STEP a SVG.
 
-Všechny projekty se později zobrazují na úvodní stránce s náhledem. Uchovávají se v úložišti prohlížeče a ukládají automaticky po každé změně, proto zde není tlačítko pro ukládání. Jak projekty zabalit do souboru a předat dál, vysvětluje kapitola [Soubory a ukládání](chapter:files-and-saving).
+Všechny projekty se později zobrazují na úvodní stránce s náhledem. Uchovávají se v úložišti prohlížeče a ukládají automaticky po každé změně, proto zde není tlačítko pro ukládání. Jak projekty zabalit do souboru a předat dál, vysvětluje kapitola [Soubory a ukládání](chapter:files-and-saving). Pokud chceš připomínku, zapni v nastavení (ozubené kolo na pásu) {{ui:workspace.confirmTabClose}}: prohlížeč se pak zeptá, než se karta s otevřeným návrhem zavře nebo obnoví.
 
 ## Přehled editoru
 

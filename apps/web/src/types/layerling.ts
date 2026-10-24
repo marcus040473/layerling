@@ -236,6 +236,8 @@ export type ShapeCustomization = {
   gridfinityOpenLeft?: boolean;
   /** Gridfinity bin: no wall and no stacking lip along the right. */
   gridfinityOpenRight?: boolean;
+  /** Gridfinity bin with the lip: a chamfer on the lip's top in mm, down the outer wall and down the slope, as the edge tool's; missing is none, sharp as the specification draws it, at most 1 (#780). */
+  gridfinityLipChamfer?: number;
   /** Gridfinity baseplate: a solid border at the plate's height along the back, in mm, outside the grid and inside the box; missing is none, at most 41 (#455). */
   gridfinityPaddingBack?: number;
   /** Gridfinity baseplate: the border along the front. */
@@ -390,6 +392,8 @@ export type WorkplaneWorkspaceSettings = {
   objectSnap: boolean;
   /** An STL leaves as a plain download each time, which the browser numbers (name (1).stl), instead of writing into one linked file (#731). */
   stlAsDownload: boolean;
+  /** The browser asks "Leave site?" when a design is open and the tab is closed or reloaded; off by default (#683 mail). */
+  confirmTabClose: boolean;
   dimensionsAlwaysVisible: boolean;
   /** A turned body shows its angles about X, Y and Z beside it while it is selected. */
   showRotationAngles: boolean;
@@ -862,6 +866,8 @@ export type WorkplaneShape = {
   gridfinityOpenLeft?: boolean;
   /** Gridfinity bin: no wall and no stacking lip along the right. */
   gridfinityOpenRight?: boolean;
+  /** Gridfinity bin with the lip: a chamfer on the lip's top in mm, down the outer wall and down the slope, as the edge tool's; missing is none, sharp as the specification draws it, at most 1 (#780). */
+  gridfinityLipChamfer?: number;
   /** Gridfinity baseplate: a solid border at the plate's height along the back, in mm, outside the grid and inside the box; missing is none, at most 41 (#455). */
   gridfinityPaddingBack?: number;
   /** Gridfinity baseplate: the border along the front. */

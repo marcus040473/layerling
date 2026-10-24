@@ -1,5 +1,6 @@
 import { t } from "@/lib/i18n";
-import { buildGroupedShapeFromSelection, groupedShape } from "@/lib/editorBooleans";
+import { groupedShape } from "@/lib/editorBooleans";
+import { buildGroupedShapeOffThread } from "@/lib/geometryWorker";
 import { cadShapeFromSketchProfile } from "@/lib/editorSketchCad";
 import { createLocalId } from "@/lib/localIds";
 import {
@@ -81,7 +82,7 @@ export async function qrCodeShape(settings: QrCodeSettings, width: number, trian
     z: 0,
     elevation: settings.plateThickness - depth,
   });
-  const result = await buildGroupedShapeFromSelection([plate, cut], triangleLimit);
+  const result = await buildGroupedShapeOffThread([plate, cut], triangleLimit);
   if (!result.group) throw new Error(t("qrCode.failed"));
   return canonicalizeShape({ ...result.group, id: createLocalId("qr-code"), name, color: QR_PLATE_COLOR, groupOperation: "group", qrCode: settings });
 }

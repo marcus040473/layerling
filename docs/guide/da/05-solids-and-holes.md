@@ -51,6 +51,8 @@ Nogle gange bør dele kun blive sammen uden at blive til én - et hvidt logo på
 
 {{ui:editor.tool.intersect}} beholder kun hvad to eller flere former har til fælles. Læg to overlappende former oven på hinanden, vælg begge og klik det. Det gør en cylinder og en kasse til et stykke med én rund og én lige side. En gruppe tæller som den ser ud, huller inkluderet. Hvis et hul også er valgt, er det der bliver tilbage hvad alle soliderne deler med alle hullerne.
 
+Ved siden af den viser {{ui:editor.tool.intersectPreview}} den fælles del, før du anvender den: de valgte former bliver gennemsigtige, og det de har til fælles tegnes i grønt. Vælg og flyt hver form for sig, så følger den grønne del med; {{ui:editor.tool.intersect}} anvender den, og [[Esc]] lukker forhåndsvisningen.
+
 ## Redigering af en gruppe
 
 Hvis en boring blev for lille, behøver du ikke opløse gruppen og bygge igen. Vælg gruppen og klik på {{ui:group.edit}} i dens indstillinger, mappeikonet i objektlisten, eller tryk [[E]]. Et dobbeltklik på gruppen gør det samme, som i Tinkercad, også på et bundt; vil du hellere ikke, så slå {{ui:workspace.doubleClickOpensGroup}} fra i indstillingerne. En del begynder først at flytte sig når markøren er trukket et par pixels, så et ustabilt klik eller dobbeltklik skubber ikke til den. Delene ligger nu hver for sig og du ændrer dem med alle værktøjer: gør et hul større, flyt en form, tilføj et hul.

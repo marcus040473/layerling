@@ -9,12 +9,13 @@ import { useLanguage } from "@/lib/useLanguage";
 import type { MateMode } from "@/lib/mateFaces";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
-const MATE_MODES: readonly MateMode[] = ["against", "flush"];
+const MATE_MODES: readonly MateMode[] = ["against", "flush", "concentric"];
 const MAX_GAP = 100;
 
 /**
  * "Align faces": a face of the selected body is brought into the plane of a
- * face of another body, face to face or side by side, with a gap if wanted.
+ * face of another body, face to face or side by side, with a gap if wanted;
+ * or a round face onto the axis of a round face of another body (#794).
  */
 export function MateFacesPanel({
   targetName,
@@ -55,7 +56,7 @@ export function MateFacesPanel({
 
       <div className="edge-modifier-target">
         <strong>{targetName}</strong>
-        <span role="status">{t(`mate.step.${step}`)}</span>
+        <span role="status">{t(mode === "concentric" ? `mate.stepRound.${step}` : `mate.step.${step}`)}</span>
       </div>
 
       <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("mate.mode")}>
@@ -76,16 +77,18 @@ export function MateFacesPanel({
         </div>
       </div>
 
-      <EdgeModifierSlider
-        label={t("mate.gap")}
-        value={gap}
-        min={0}
-        max={MAX_GAP}
-        step={0.1}
-        workspace={workspace}
-        length
-        onChange={onGapChange}
-      />
+      {mode === "concentric" ? null : (
+        <EdgeModifierSlider
+          label={t("mate.gap")}
+          value={gap}
+          min={0}
+          max={MAX_GAP}
+          step={0.1}
+          workspace={workspace}
+          length
+          onChange={onGapChange}
+        />
+      )}
 
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>

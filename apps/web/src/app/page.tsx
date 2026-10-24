@@ -972,7 +972,7 @@ export default function Home() {
   const projectsJsonRef = useRef("");
   const sharedPathRef = useRef("");
   // Left open on an iPad, which greys out files of types it does not know (#219).
-  const dashboardImportAccept = useFileAccept(`.lyl,.skf,.zip,.stl,.obj,.mtl,.3mf,.step,.stp,.svg,image/svg+xml,${PICTURE_FILE_ACCEPT}`);
+  const dashboardImportAccept = useFileAccept(`.lyl,.skf,.zip,.stl,.obj,.mtl,.3mf,.step,.stp,.svg,.dxf,image/svg+xml,${PICTURE_FILE_ACCEPT}`);
   const dashboardImportInputRef = useRef<HTMLInputElement | null>(null);
   const backupRestoreInputRef = useRef<HTMLInputElement | null>(null);
   const nextProjectRevisionRef = useRef(0);
@@ -2273,6 +2273,11 @@ export default function Home() {
       }
       const result = await importModelFiles(files, {
         onProgress: (index, total, file) => setDashboardNotice(t("notice.importing", { index: index + 1, total, name: file.name })),
+        // A DXF becomes sketch bodies of its outlines and loose holes (#774); the kernel that builds it loads only then.
+        sketchFromProfile: async (profile, height) => {
+          const [{ cadShapeFromSketchProfile }, { canonicalizeShape }] = await Promise.all([import("@/lib/editorSketchCad"), import("@/lib/workplaneShapes")]);
+          return canonicalizeShape(await cadShapeFromSketchProfile(profile, height));
+        },
       });
       if (!result) return;
       const { shapes: importedShapes, assets: importedAssets, importedFileNames, failures, notes } = result;
@@ -2317,7 +2322,7 @@ export default function Home() {
   const pickDashboardImport = async () => {
     if (lylFileAccessSupported()) {
       try {
-        const picked = await pickFilesToImport([".lyl", ".skf", ".zip", ".stl", ".obj", ".mtl", ".3mf", ".step", ".stp", ".svg", ".png", ".jpg", ".jpeg"]);
+        const picked = await pickFilesToImport([".lyl", ".skf", ".zip", ".stl", ".obj", ".mtl", ".3mf", ".step", ".stp", ".svg", ".dxf", ".png", ".jpg", ".jpeg"]);
         if (picked?.length) await importFilesFromDashboard(picked.map((entry) => entry.file), picked.length === 1 ? picked[0].handle : undefined);
         return;
       } catch {

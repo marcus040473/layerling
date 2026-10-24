@@ -170,5 +170,6 @@ Tutte e quattro le opzioni modificano solo l’immagine di riferimento, non lo s
 | [[R]] | ruota lo schizzo chiuso di 45° |
 | [[L]] | blocca o sblocca il contorno selezionato o l’immagine di riferimento |
 | [[N]] | inserisci una nota: il clic successivo la mette nello schizzo |
+| [[Shift]]+[[N]] | mostra o nascondi le note |
 
 > **Suggerimento:** usa meno punti possibile. Un contorno con pochi punti posizionati bene produce un corpo più liscio di un contorno intricato con moltissimi punti.

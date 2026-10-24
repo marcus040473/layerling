@@ -1,3 +1,4 @@
+import { weldOnGrid } from "@/lib/gridWeld";
 import { sectionAxisLetter, type SectionPlaneAxis } from "@/lib/sectionView";
 
 /**
@@ -52,16 +53,10 @@ const WELD_GRID = 1e-5;
 
 /** Gleiche Lagen zu einer Ecke zusammenfassen - Netze aus STL oder je Flaeche getrennten Ecken teilen sonst keine Kanten. */
 function weldMesh(mesh: SectionMesh) {
-  const index = new Map<string, number>();
-  const positions: Array<readonly [number, number, number]> = [];
-  const remap = mesh.vertices.map((vertex) => {
-    const key = vertex.map((value) => Math.round(value / WELD_GRID)).join(",");
-    const found = index.get(key);
-    if (found !== undefined) return found;
-    index.set(key, positions.length);
-    positions.push(vertex);
-    return positions.length - 1;
-  });
+  // Numbers, not a text key per corner (lib/gridWeld.ts): the same corners, in the same order.
+  const welded = weldOnGrid(mesh.vertices, WELD_GRID);
+  const remap = welded.ids;
+  const positions: Array<readonly [number, number, number]> = welded.first.map((index) => mesh.vertices[index]);
   const faces = mesh.faces
     .map(([a, b, c]) => [remap[a], remap[b], remap[c]] as const)
     .filter(([a, b, c]) => a !== b && b !== c && c !== a);

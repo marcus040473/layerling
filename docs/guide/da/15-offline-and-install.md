@@ -16,6 +16,8 @@ På startsiden vises et tip med {{ui:installHint.install}} hvis din browser kan 
 
 Du kan lukke tippet på startsiden med {{ui:installHint.dismiss}}. At starte den installerede app en anden gang i Chrome eller Edge bringer det åbne vindue foran i stedet for at åbne et nyt.
 
+På en computer registrerer en installeret layerling i Chrome eller Edge også sig som et program for `.lyl`-filer: et dobbeltklik på et design i filhåndteringen åbner det i layerling, og [[Ctrl]]+[[S]] gemmer tilbage i den fil. På Android virker det ikke, der tilbyder browseren ingen filtilknytning for installerede webapps; åbn et design med {{ui:dashboard.importGeometry}} på startsiden.
+
 ## Opdateringer
 
 Når en nyere version findes, viser layerling det på startsiden. Gennem {{ui:dashboard.updateBannerLink}} læser du hvad der er ændret. Versionsnummeret er nederst til højre. Efter at have genindlæst siden har du den nye version.

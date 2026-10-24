@@ -10,7 +10,7 @@ Skarpe kanter ser sjældent godt ud på en printet del, og de er heller ikke spe
 1. Vælg formen (eller gruppen).
 2. Klik på {{ui:editor.tool.fillet}} eller {{ui:editor.tool.chamfer}} i båndet, tryk [[B]] for rund eller [[Shift+B]] for fas, eller højreklik formen og vælg det fra menuen.
 3. Formens kanter lyser op. Klik dem der skal berøres. Endnu et klik tager en kant ud igen. Med [[Shift]] tilføjer eller fjerner du en enkelt kant.
-4. Sæt størrelsen og bekræft med {{ui:edge.apply}} eller [[Enter]]. Bagefter forbliver vinduet åbent på det nye legeme med samme størrelse, så den næste afrunding eller affasning kan følge med det samme; {{ui:edge.done}}, [[Esc]] eller krydset lukker det. Med [[Skift]] eller [[Ctrl]] føjer et klik på {{ui:edge.topEdges}}, {{ui:edge.bottomEdges}}, {{ui:edge.verticalEdges}} eller {{ui:edge.horizontalEdges}} disse kanter til de valgte i stedet for at erstatte dem.
+4. Sæt størrelsen og bekræft med {{ui:edge.apply}} eller [[Enter]]. Bagefter forbliver vinduet åbent på det nye legeme med samme størrelse, så den næste afrunding eller affasning kan følge med det samme; {{ui:edge.done}}, [[Esc]] eller krydset lukker det. Med [[Shift]] eller [[Ctrl]] føjer et klik på {{ui:edge.topEdges}}, {{ui:edge.bottomEdges}}, {{ui:edge.verticalEdges}} eller {{ui:edge.horizontalEdges}} disse kanter til de valgte i stedet for at erstatte dem.
 
 !["Rund kanter"-værktøjet: alle skarpe kanter er valgt, billedet viser forhåndsvisningen med 4 mm radius.](shot:fillet-preview)
 
@@ -22,7 +22,9 @@ I panelet finder du:
 
 - {{ui:edge.allSharpEdges}} vælger alle kanter på én gang, {{ui:edge.clear}} tømmer markeringen.
 - **{{ui:edge.radius}}** for runding. For fas sætter du {{ui:edge.distance}} eller {{ui:edge.angle}}.
+- {{ui:edge.variableRadius}} (kun for runding) lader radius ændre sig langs én kant: lille i den ene ende, større i den anden, jævnt imellem, som hvor en lige væg møder en skrå. Klik en enkelt kant, og sæt så {{ui:edge.radiusStart}} og {{ui:edge.radiusEnd}}. Hvilken ende der tæller som starten, følger af hvordan kanten blev bygget; kommer den større radius ud i den forkerte ende, vender {{ui:edge.swapEnds}} den om. Det virker på én kant ad gangen, så rund flere kanter efter hinanden. {{ui:edge.editAction}} tager begge værdier tilbage.
 - {{ui:edge.sharpThreshold}} bestemmer hvilke kanter der overhovedet tæller som skarpe. En værdi på 25° behandler kun klare knæk som kanter og lader flade overgange være.
+- {{ui:edge.verticalEdges}} vælger de kanter der står lige op, som hjørnerne af en kasse: én runding runder så alle de lodrette hjørner på én gang.
 - {{ui:edge.topEdges}} vælger kun kanterne langs den allerøverste top af formen. Det er den hurtige vej til en småkageudstikker: byg omridset i en skitse som en streg, fas så topkanterne. {{ui:edge.angle}} sætter hvor stejl faser er; den kan ikke nå længere end væggen er tyk.
 - {{ui:edge.bottomEdges}} vælger kun kanterne langs den allernederste bund af formen, modstykket til {{ui:edge.topEdges}}. Det er den hurtige vej til kun at afrunde eller affase foden på en del.
 - {{ui:edge.chamfillet}}, valgt øverst i affasningsvinduet ved siden af {{ui:editor.tool.chamfer}}, laver den printbare fod på en del: en affasning ved pladen, der går tangentielt over i en afrunding mod væggen, så de første lag ikke behøver støtte, og kanten alligevel ender blødt. {{ui:edge.distance}} er den højde, foden fylder, {{ui:edge.angle}} (15° til 75°) hvor stejl affasningen er ved pladen. Kanterne vælger du med {{ui:edge.bottomEdges}}.
@@ -72,6 +74,7 @@ Væggene vokser indad. Ydersiden forbliver som den er.
 ![Den samme kasse med kun forsiden åben: en slids til en skuffe.](shot:hollow-sides)
 
 For hver åben side har formen brug for en flad flade helt ude ved kanten på den side. Kugler og frie former kan derfor ikke udhules på denne måde. Hvis væggen er for tyk til formen, siger layerling det og beder om en tyndere.
+ En rundet kasse, hvis top- og bundkanter også er rundet, er et sådant tilfælde: væggen skal være tydeligt tyndere end den runding, eller sæt rundingen til 0 først.
 
 En form med en lomme - en blok med et hul der ikke går hele vejen igennem, lavet ved at gruppere en kasse med et hævet hul - kan også udhules, med toppen åben: væggene rundt om lommen udhules også, så en ring af hulrum bliver mellem ydervæggen og lommen, åben foroven, og et tyndt hulrum ligger under lommens bund.
 
@@ -80,3 +83,17 @@ En form med en lomme - en blok med et hul der ikke går hele vejen igennem, lave
 Hvis du ændrer størrelse på en udhulet form senere, udhuler layerling den igen med det samme ved den nye størrelse. Væggen forbliver så tyk som du valgte, runde former inkluderet. En cylinder du trækker længere den ene vej end den anden bliver til en ellipse.
 
 > **Tip:** Med en 0,4 mm dyse er 1,2 til 2 mm væg et godt udgangspunkt: tyndt nok til at spare materiale, tykt nok til en solid del.
+
+## Slet flader
+
+En runding i vejen, et hul på det forkerte sted, et buldug du ikke har brug for mere: {{ui:editor.tool.deleteFace}} tager det af formen igen, uden at formen bygges på ny.
+
+1. Vælg formen og klik på {{ui:editor.tool.deleteFace}}, eller højreklik formen og vælg det fra menuen.
+2. Klik hver flade af det der skal væk: fladerne af en runding, væggen i et hul, siden og toppen af et buldug. En valgt flade lyser op; endnu et klik tager den ud igen. Panelet tæller fladerne.
+3. Klik på {{ui:deleteFace.apply}} eller tryk [[Delete]]. [[Esc]] lukker værktøjet uden at ændre noget.
+
+Fladerne omkring de slettede vokser, indtil hullet er lukket. En kasse med rundede topkanter får sine skarpe kanter tilbage, et hul bliver fyldt, et buldug er væk. Formen bevarer sin eksakte form, så den kan faseres og rundes igen, og STEP-eksporten beholder dens sande flader. [[Ctrl]]+[[Z]] tager sletningen tilbage i ét skridt. Den står også under {{ui:edge.featureHistory}} sammen med runder og faser, hvor {{ui:edge.revertAction}} tager den tilbage; der er ingen {{ui:edge.editAction}} til den. På en gruppe er resultatet ét legeme, som ved en kantbehandling.
+
+Vælg alle fladerne af det der skal væk, og kun dem. Kan fladerne omkring dem ikke lukke hullet, siger layerling det, og intet ændres: en hovedside af en kasse har for eksempel ingen nabo, der kan tage dens plads. Sletter du kun bunden af en lomme, bliver den til et hul lige igennem, fordi lommens vægge løber videre på den anden side.
+
+{{ui:editor.tool.deleteFace}} kræver eksakte flader: det virker på dele importeret som STEP og på layerlings egne former. Det layerling gemmer som mesh har ingen: en importeret STL, OBJ eller 3MF, en delt, viklet eller forenklet form, eller en meget detaljeret form som et langt stykke tekst. Importer en del som STEP, hvis du kan. På en detaljeret importeret del kan nogle få flader være for meget for CAD-kernen: efter 45 sekunder stoppes sletningen, og intet ændres. En form der ændres i størrelse efter en kantbehandling, mens kantstørrelsen bevares, har ingen eksakte flader i den nye størrelse, indtil ændringen af størrelsen tages tilbage.

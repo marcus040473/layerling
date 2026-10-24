@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { taperedSlotOutline } from "@/lib/slotGeometry";
+import { weldOnGrid } from "@/lib/gridWeld";
 import type { WorkplaneShape } from "@/types/layerling";
 import type { CadModifierProfileLoop, CadModifierProfilePart, CadModifierProfileSegment, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierSpringPart, CadModifierSweepPiece, CadModifierThreadPart } from "@/lib/cadModifierTypes";
 import { profileArcPoint, profileLoopBounds, TWIST_SECTION_STEP, validateCadProfile } from "@/lib/cadProfileSolid";
@@ -1428,6 +1429,7 @@ export function cadModifierGridfinityForShape(shape: WorkplaneShape): CadModifie
     gridfinityOpenFront: shape.gridfinityOpenFront,
     gridfinityOpenLeft: shape.gridfinityOpenLeft,
     gridfinityOpenRight: shape.gridfinityOpenRight,
+    gridfinityLipChamfer: shape.gridfinityLipChamfer,
     gridfinityPaddingBack: shape.gridfinityPaddingBack,
     gridfinityPaddingFront: shape.gridfinityPaddingFront,
     gridfinityPaddingLeft: shape.gridfinityPaddingLeft,
@@ -1554,18 +1556,11 @@ export function closedMeshFaceOrientation(vertices: ReadonlyArray<readonly [numb
     extent = Math.max(extent, Math.abs(x), Math.abs(y), Math.abs(z));
   });
   const quantum = Math.max(1e-9, extent * 1e-7);
-  const welded = new Map<string, number>();
-  const ids = vertices.map(([x, y, z]) => {
-    const key = `${Math.round(x / quantum)},${Math.round(y / quantum)},${Math.round(z / quantum)}`;
-    let id = welded.get(key);
-    if (id === undefined) {
-      id = welded.size;
-      welded.set(key, id);
-    }
-    return id;
-  });
-  const edgeFaces = new Map<string, number[]>();
-  const edgeKey = (a: number, b: number) => (a < b ? `${a}:${b}` : `${b}:${a}`);
+  // Numbers, not text keys: the print estimate of a 300,000-triangle import spent over a second on them.
+  const { ids, count } = weldOnGrid(vertices, quantum);
+  const weldedCount = Math.max(1, count);
+  const edgeFaces = new Map<number, number[]>();
+  const edgeKey = (a: number, b: number) => (a < b ? a * weldedCount + b : b * weldedCount + a);
   faces.forEach((face, index) => {
     for (let corner = 0; corner < 3; corner += 1) {
       const key = edgeKey(ids[face[corner]], ids[face[(corner + 1) % 3]]);

@@ -63,9 +63,9 @@ Poznámka zachytí informace, které geometrie nevyjadřuje: „Šroub je o 0,3 
 - Když je její těleso smazáno nebo pod ní už není žádné viditelné těleso, poznámka zůstane, kde byla, na pracovní rovině.
 - Tažením za špendlík poznámku přesunete. Kliknutím na špendlík kartu sbalíte, zůstane jen malé číslo; dalším kliknutím ji zase otevřete. Kliknutím do textu ho upravíte.
 - [[Enter]] potvrdí text, [[Esc]] vrátí podobu před zahájením úpravy. [[Shift]]+[[Enter]] vloží nový řádek.
-- **V náčrtu** vložíte poznámku také pomocí {{ui:editor.tool.note}} (v sekci {{ui:editor.group.manage}}) nebo klávesy [[N]], kamkoli do náčrtu. Všechny poznámky náčrtu patří k jeho tělesu: ve 3D zobrazení na něm sedí, nahoře na tělese vytvořeném přes {{ui:sketch.extrude}} nebo {{ui:sketch.sweep}} a na nakresleném profilu tělesa vytvořeného přes {{ui:sketch.revolve}}, a pohybují se s ním. Když náčrt znovu otevřete, ukáže poznámky tělesa, i ty vložené ve 3D. V náčrtu vezme {{ui:sketch.undo}} poznámku zpět stejně jako čáru a {{ui:sketch.cancel}} zahodí, co jste na poznámkách změnili.
+- **V náčrtu** vložíte poznámku také pomocí {{ui:editor.tool.note}} (v sekci {{ui:editor.group.manage}}) nebo klávesy [[N]], kamkoli do náčrtu. Všechny poznámky náčrtu patří k jeho tělesu: ve 3D zobrazení na něm sedí, nahoře na tělese vytvořeném přes {{ui:sketch.extrude}} nebo {{ui:sketch.sweep}} a na nakresleném profilu tělesa vytvořeného přes {{ui:sketch.revolve}}, a pohybují se s ním. Když náčrt znovu otevřete, ukáže poznámky tělesa, i ty vložené ve 3D. V náčrtu vezme {{ui:sketch.undo}} poznámku zpět stejně jako čáru a {{ui:sketch.cancel}} zahodí, co jste na poznámkách změnili. [[Shift]]+[[N]] poznámky i zde zobrazí nebo skryje.
 
-Poznámky se ukládají v projektu, do exportu se nezahrnují a jejich viditelnost přepíná {{ui:visibility.notes}} (v {{ui:editor.visibilityOptions}}, šipce vedle ikony oka).
+Poznámky se ukládají v projektu, do exportu se nezahrnují a jejich viditelnost přepíná {{ui:visibility.notes}} (v {{ui:editor.visibilityOptions}}, šipce vedle ikony oka) nebo zkratka [[Shift]]+[[N]].
 
 ## Referenční body
 
@@ -74,7 +74,7 @@ Referenční bod je samostatná značka v prostoru, podobná rysce při práci v
 - Bod přesunete tažením nebo kliknutím otevřete souřadnice v nastavených jednotkách. Každou kartu lze přetáhnout za záhlaví samostatně; ostatní zůstanou na místě. Dvojklik ji vrátí a naposledy použitá karta se zobrazí vpředu. **Odstranit všechny** na kartě nebo v nabídce pravého tlačítka odstraní všechny body najednou. {{ui:common.delete}} odstraní jednotlivý bod.
 - Bod vytvoří i měřicí nástroj: {{ui:camera.tapeMarkMiddle}} pod hodnotou měření označí jeho střed, například střed kruhového otvoru. Měřit lze také od takového bodu: pásmo se k referenčním bodům přichytává stejně jako k rohům.
 - Při tažení se na body přichytávají hrany i středy tvarů, stejně jako na jiná tělesa při {{ui:workspace.objectSnap}}. Přichytává se i úhelník.
-- Body se ukládají do projektu, neexportují se a zobrazují či skrývají se společně s poznámkami přes {{ui:visibility.notes}}.
+- Body se ukládají do projektu, neexportují se a zobrazují či skrývají se společně s poznámkami přes {{ui:visibility.notes}} ([[Shift]]+[[N]]).
 - AI je může vytvářet, vypisovat a odstraňovat pomocí `layerling_add_reference_points`, `layerling_list_reference_points` a `layerling_remove_reference_points`.
 
 ## Referenční obrázky

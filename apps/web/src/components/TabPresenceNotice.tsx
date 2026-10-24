@@ -3,6 +3,7 @@
 import { RefreshCw, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { t } from "@/lib/i18n";
+import { releaseLeaveGuard } from "@/lib/leaveGuard";
 import { isTabPresenceMessage, TAB_PRESENCE_CHANNEL, tabPresenceState, type TabPeer, type TabPresenceMessage } from "@/lib/tabPresence";
 import { useLanguage } from "@/lib/useLanguage";
 
@@ -101,7 +102,10 @@ export function TabPresenceNotice({ version, projectId }: { version: string; pro
               : t("tabs.alreadyOpen")}
       </span>
       {newerVersion ? (
-        <button type="button" className="tab-presence-reload" onClick={() => window.location.reload()}>
+        <button type="button" className="tab-presence-reload" onClick={() => {
+            releaseLeaveGuard();
+            window.location.reload();
+          }}>
           <RefreshCw size={15} aria-hidden="true" />
           {t("tabs.reload")}
         </button>

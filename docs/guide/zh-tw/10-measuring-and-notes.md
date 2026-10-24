@@ -65,9 +65,9 @@ summary: 捲尺、標尺與角尺，到原點的距離，附著在零件上的�
 - 如果它依附的實體被刪除，或下方已經沒有可見的實體，備註會留在原處，也就是工作平面上。
 - 拖曳圖釘可移動備註。點擊圖釘會把卡片收起，只留下小數字；再點一次就會重新展開。點進文字即可編輯。
 - 輸入時，[[Enter]] 會儲存文字，[[Esc]] 會還原成你開始編輯前的內容；[[Shift]]+[[Enter]] 會換行。
-- **在草圖中**，{{ui:editor.tool.note}}（位於 {{ui:editor.group.manage}}）或 [[N]] 同樣可以放置備註，放在草圖上的任意位置。草圖的所有備註都屬於它的實體：在 3D 檢視中，它們位於實體上——用 {{ui:sketch.extrude}} 或 {{ui:sketch.sweep}} 產生的實體頂面上，以及用 {{ui:sketch.revolve}} 產生的實體所繪製的輪廓上——並隨實體一起移動。再次開啟草圖時，會顯示該實體的備註，包括在 3D 中放置的備註。在草圖中，{{ui:sketch.undo}} 會像復原線條一樣復原備註，{{ui:sketch.cancel}} 會捨棄你對備註所做的變更。
+- **在草圖中**，{{ui:editor.tool.note}}（位於 {{ui:editor.group.manage}}）或 [[N]] 同樣可以放置備註，放在草圖上的任意位置。草圖的所有備註都屬於它的實體：在 3D 檢視中，它們位於實體上——用 {{ui:sketch.extrude}} 或 {{ui:sketch.sweep}} 產生的實體頂面上，以及用 {{ui:sketch.revolve}} 產生的實體所繪製的輪廓上——並隨實體一起移動。再次開啟草圖時，會顯示該實體的備註，包括在 3D 中放置的備註。在草圖中，{{ui:sketch.undo}} 會像復原線條一樣復原備註，{{ui:sketch.cancel}} 會捨棄你對備註所做的變更。[[Shift]]+[[N]] 在這裡同樣可以顯示或隱藏備註。
 
-備註會儲存在設計中，不會出現在任何匯出裡，可用 {{ui:visibility.notes}} 顯示或隱藏（位於 {{ui:editor.visibilityOptions}}，即眼睛圖示旁的箭頭）。
+備註會儲存在設計中，不會出現在任何匯出裡，可用 {{ui:visibility.notes}} 顯示或隱藏（位於 {{ui:editor.visibilityOptions}}，即眼睛圖示旁的箭頭），也可按 [[Shift]]+[[N]]。
 
 ## 參考點
 
@@ -76,7 +76,7 @@ summary: 捲尺、標尺與角尺，到原點的距離，附著在零件上的�
 - 拖曳點可移動它，或點擊它查看座標並輸入新座標；座標會使用你設定的單位。如果卡片擋住了東西，可以抓住標題把它單獨拖開：其他卡片留在原處，雙擊標題即可歸位。你最後動過的卡片會排在其他卡片前面。卡片中的 **Delete all**，或右鍵選單（在實體上，或在 3D 檢視空白處）中的 **Delete all reference points**，會一次刪除所有點。{{ui:common.delete}} 會將它移除。
 - 捲尺也能標記點：{{ui:camera.tapeMarkMiddle}}，即量測下方的十字準星按鈕，會在量測中間放一個點，例如圓孔的中心。它也能從一個點開始量測：捲尺吸附參考點就像吸附角一樣。
 - 拖曳形狀時，它的邊與中心會吸附到點，就像吸附到其他形狀一樣（{{ui:workspace.objectSnap}}）。角尺也會吸附到點。
-- 點會儲存在設計中，不會出現在任何匯出裡，並與備註一起由 {{ui:visibility.notes}} 顯示或隱藏。
+- 點會儲存在設計中，不會出現在任何匯出裡，並與備註一起由 {{ui:visibility.notes}}（[[Shift]]+[[N]]）顯示或隱藏。
 - AI 可以用 `layerling_add_reference_points`、`layerling_list_reference_points` 和 `layerling_remove_reference_points` 標記、列出與移除它們。
 
 ## 參考圖片

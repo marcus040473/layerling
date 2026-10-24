@@ -13,7 +13,7 @@ Odpri [layerling.com](https://layerling.com/). Na začetni strani klikni {{ui:da
 
 Če že imaš datoteko, ki jo želiš urejati naprej, izberi {{ui:dashboard.importGeometry}}. To deluje z načrti programa layerling (`.lyl`) prav tako kot z datotekami STL, OBJ, 3MF, STEP ali SVG.
 
-Vsi tvoji načrti se pozneje pojavijo na začetni strani s sličico predogleda. Shranjeni so v pomnilniku brskalnika in se ob vsaki spremembi samodejno shranijo. Zato gumba za shranjevanje ni. Kako načrte spraviš v datoteko in jih deliš z drugimi, piše v poglavju [Datoteke in shranjevanje](chapter:datoteke-in-shranjevanje).
+Vsi tvoji načrti se pozneje pojavijo na začetni strani s sličico predogleda. Shranjeni so v pomnilniku brskalnika in se ob vsaki spremembi samodejno shranijo. Zato gumba za shranjevanje ni. Kako načrte spraviš v datoteko in jih deliš z drugimi, piše v poglavju [Datoteke in shranjevanje](chapter:datoteke-in-shranjevanje). Če želiš opomnik, v nastavitvah (zobnik v traku) vklopi {{ui:workspace.confirmTabClose}}: brskalnik potem vpraša, preden se zavihek z odprtim načrtom zapre ali osveži.
 
 ## Urejevalnik na kratko
 

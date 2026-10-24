@@ -101,6 +101,10 @@ import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityType,
  * are read from it less the padding. The outer cells' flat top and bottom reach
  * out to the padded outline, and a padded outer corner, whose rounding no longer
  * meets the cell's, is filled between the two.
+ *
+ * The lip's top can be chamfered (#780) as the edge tool would: the chamfer
+ * takes its size off the outer wall and off the slope a stacked bin's feet rest
+ * on. The bin keeps its height setting, and its top comes down by 0.71 times it.
  */
 
 export const GRIDFINITY_GRID = 42;
@@ -155,6 +159,8 @@ const FLOOR_SNAP = 0.05;
 export const DEFAULT_GRIDFINITY_DIVIDER_THICKNESS = 1.2;
 export const MIN_GRIDFINITY_DIVIDER_THICKNESS = 0.8;
 export const MAX_GRIDFINITY_DIVIDER_THICKNESS = 3;
+/** The largest chamfer on the lip's top: it takes the top 1 mm of the 2.69 mm slope a stacked bin's feet rest on. */
+export const MAX_GRIDFINITY_LIP_CHAMFER = 1;
 /** The narrowest compartment: the kernel's cut fails below about 5.6 mm and leaves slivers up to 5.65. */
 export const MIN_GRIDFINITY_COMPARTMENT = 6;
 /** The most compartments a grid unit of 42 mm takes each way. */
@@ -211,6 +217,7 @@ export type GridfinityShapeFields = Pick<WorkplaneShape, "width" | "height"> & {
   gridfinityOpenFront?: boolean;
   gridfinityOpenLeft?: boolean;
   gridfinityOpenRight?: boolean;
+  gridfinityLipChamfer?: number;
   gridfinityPaddingBack?: number;
   gridfinityPaddingFront?: number;
   gridfinityPaddingLeft?: number;
@@ -400,7 +407,9 @@ export function gridfinityPlan(shape: GridfinityShapeFields) {
   // A bin with a finger scoop has every inner floor edge rounded, and the scoop is the rounding made large on its wall.
   const scooped = scoopFits({ type, top, lip, floor }) && LABEL_WALLS.some((wall) => shape[GRIDFINITY_SCOOP_WALL_KEYS[wall]] === true && !open[wall]);
   const floorRounding = scooped ? SCOOP_FLOOR_ROUNDING : 0;
-  return { type, count, lip, magnets, halfGrid: pitch !== GRIDFINITY_GRID, pitch, size, cells, magnetHoles, top, floor, floorRounding, open, padding, centre };
+  // To 0.01 mm: a chamfer of a millionth of a millimetre left the exact body's cut with no solid.
+  const lipChamfer = lip ? Math.round(clampLabel(shape.gridfinityLipChamfer, 0, 0, MAX_GRIDFINITY_LIP_CHAMFER) * 100) / 100 : 0;
+  return { type, count, lip, magnets, halfGrid: pitch !== GRIDFINITY_GRID, pitch, size, cells, magnetHoles, top, floor, floorRounding, open, padding, centre, lipChamfer };
 }
 
 export type GridfinityPlan = ReturnType<typeof gridfinityPlan>;
@@ -430,6 +439,11 @@ export function gridfinityFloorMaxHeight(shape: GridfinityShapeFields) {
 /** The floor's height inside the bin as it is built, measured from the underside. */
 export function gridfinityFloorHeight(shape: GridfinityShapeFields) {
   return gridfinityPlan(shape).floor;
+}
+
+/** The chamfer on the lip's top as it is built (#780): none without the lip, at most 1 mm, to 0.01 mm. */
+export function gridfinityLipChamfer(shape: GridfinityShapeFields) {
+  return gridfinityPlan(shape).lipChamfer;
 }
 
 /** Whether the bin's floor can be raised at all: not in a bin of 1 height unit with the lip, whose support reaches the floor. */
@@ -1428,9 +1442,10 @@ export function gridfinityHasPieces(shape: GridfinityShapeFields) {
  * The bin's wall from the outside over the top to the floor inside, as insets
  * from the outline: up the outer wall, over the lip (or the flat top of a bin
  * without one), down the inside to the floor. The lip rests on a 45 degree
- * support that grows out of the wall below it.
+ * support that grows out of the wall below it. A chamfer on the lip's top
+ * takes `chamfer` off the outer wall and off the slope, as the edge tool does.
  */
-export function gridfinityWallProfile(plan: GridfinityPlan, floorRounding = plan.floorRounding): GridfinityStep[] {
+export function gridfinityWallProfile(plan: GridfinityPlan, floorRounding = plan.floorRounding, chamfer = plan.lipChamfer): GridfinityStep[] {
   const floor = plan.floor;
   const top = plan.top;
   // The wall down to the floor, with the floor's edge rounded along a quarter circle when there is a rounding.
@@ -1445,6 +1460,7 @@ export function gridfinityWallProfile(plan: GridfinityPlan, floorRounding = plan
   if (!plan.lip) return [[0, GRIDFINITY_FOOT_HEIGHT], [0, top], [GRIDFINITY_WALL, top], ...toFloor()];
   const profile: GridfinityStep[] = [[0, GRIDFINITY_FOOT_HEIGHT]];
   [...LIP].reverse().forEach(([inset, y]) => profile.push([inset, top + y]));
+  if (chamfer > 0) profile.splice(1, 1, [0, top + GRIDFINITY_LIP_HEIGHT - chamfer], [chamfer * Math.SQRT1_2, top + GRIDFINITY_LIP_HEIGHT - chamfer * Math.SQRT1_2]);
   const support = LIP[0][0] - GRIDFINITY_WALL;
   // A low bin has no straight wall inside: the support runs down to the floor.
   if (top - support > floor) profile.push([GRIDFINITY_WALL, top - support], ...toFloor());

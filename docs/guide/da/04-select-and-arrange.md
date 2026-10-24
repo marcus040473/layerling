@@ -6,6 +6,7 @@ summary: Vælge former, finde dem i objektlisten, justere, spejle, rotere, lægg
 ## Valg
 
 Et klik på en form vælger den. Med [[Shift]] tilføjer du flere eller tager dem væk igen. Så længe [[Shift]] holdes nede, og to eller flere former er valgt, tæller et lille tal under musemarkøren dem. Et klik på tom plads rydder markeringen, og det samme gør [[Esc]]. Træk en ramme på det tomme arbejdsplan for at vælge alt den rører; med [[Shift]] holdt tilføjer rammen hvad der ikke var valgt og tager det valgte væk. Og [[Ctrl]]+[[A]] vælger alle synlige former. Mens du trækker et legeme eller et håndtag på rammen, afbryder [[Esc]], så længe museknappen stadig holdes nede: Alt går tilbage til, som det var, og intet føjes til historikken.
+Hvis du hellere vil plukke én del ud af en klynge, slår du {{ui:workspace.frameByDirection}} til i indstillingerne (område {{ui:workspace.appearance}}): en ramme der trækkes til højre tager så kun hvad der ligger helt inde i den, en der trækkes til venstre stadig alt den rører, og dens linje er stiplet. Hold [[Alt]] mens du trækker for at vende rammen om for det ene træk, for eksempel for at tage hele legemer fra den side, hvor retningen ikke ville tillade det.
 
 Hvad der er i vejen skjuler du ({{ui:editor.tool.hideSelected}}, [[Ctrl]]+[[H]]). Skjulte former bliver i designet, de er bare ikke synlige og er ude af eksporten; eksportvinduet siger på forhånd hvor mange der er. [[Ctrl]]+[[Shift]]+[[H]] bringer dem alle tilbage. Hvad der skal blive låser du med hængelåsen øverst i indstillingerne eller med [[Ctrl]]+[[L]]. En låst form kan ikke flyttes, ændres størrelse på, vendes, omfarves eller slettes: dens håndtag bliver grå, der vises en hængelås ved siden af pilen øverst, og de værktøjer der ville ændre den er grået ud. At holde musen over et håndtag viser stadig dets størrelser, og en tast der ville ændre den siger "Objekt låst". Mens én låst form er i markeringen, ændres intet for de andre heller. Skjul, omdøb, kopier og duplikering virker stadig.
 
@@ -14,6 +15,7 @@ Et tal på knappen for gruppen {{ui:editor.group.visibility}} fortæller, hvor m
 ## Objektlisten
 
 Med mange dele er det let at miste overblikket i visningen. Objektlisten ({{ui:editor.tool.showOutliner}} eller [[Ctrl]]+[[Shift]]+[[O]]) viser alle former som en liste.
+Den bliver åben eller lukket, som du lod den være, for hvert design, indtil du lukker den; valget huskes i browseren.
 
 ![Objektlisten: gruppen "Gruppe" med to dele og en kugle ved siden af. Et mappeikon åbner gruppen.](shot:object-list)
 
@@ -74,9 +76,14 @@ To dele skal mødes flade mod flade, eller flugte? Vælg den del der skal flytte
 
 ![Juster flader-panelet: den del der flyttes vælges, en flade på den anden del kommer næst, så flade mod flade eller flugtende, og en valgfri afstand.](shot:mate-faces)
 
+**Huller på én akse:** {{ui:mate.mode.concentric}} retter i stedet runde flader ind: et hul over et hul, en tap i et hul, en skrue i sit gennemgangshul. Vælg det, før du klikker på fladerne. Klik så på den runde inderside af et hul (eller ydersiden af en tap) på den del, der skal flyttes, og på en rund flade på den anden del; hele den runde flade lyser op, mens du peger på den. {{ui:mate.apply}} drejer delen den korteste vej, til de to akser er parallelle, og skubber den på tværs over på den anden akse. Langs aksen bliver den, hvor den var, så en tap beholder sin højde; skub den ind bagefter. Det virker også på importerede mesh, så længe hullet består af facetter rundt om én akse.
+
+**En præcis vinkel mellem to flader:** {{ui:editor.tool.mateFaces}} efterlader fladerne parallelle; der er intet værktøj til en vinkel mellem dem, men sådan kommer du derhen. Først bringer du fladerne sammen med {{ui:editor.tool.mateFaces}}, så de er parallelle. Sæt så rotationspunktet på kanten hvor de mødes ({{ui:editor.tool.rotationPivot}}, klik på kanten eller et hjørne), og tast vinklen, 15 eller 30 for eksempel, i kortet {{ui:inspector.rotation}} på delen. Den drejer omkring det rotationspunkt. Kortets akser er pladens akser, så det virker når kanten løber langs X, Y eller Z.
+
 Lige så enkle er {{ui:editor.tool.dropToWorkplane}} ([[D]]), der lægger markeringen ned på arbejdsplanet, og {{ui:editor.tool.centerOnWorkplane}}.
 
 [[C]] tager markeringen op, ligesom Cruise i Tinkercad: den følger musemarkøren og lægger sig ned på fladen af en anden form du er over, også skrå. Et klik sætter den ned der, [[Esc]] lader den stå hvor den var. Dens underside hviler så på fladen, justeret med fladens kanter som en ny form ville være; den beholder sin egen drejning omkring sin op-akse. Flere dele rejser sammen og bevarer deres afstand. Over den tomme plade stiller [[C]] en skrå del oprejst på arbejdsplanet igen.
+Uden et tastatur har menuen ved et langt tryk {{ui:contextMenu.carry}} til det samme.
 
 ## Mønstre: række og cirkel
 
@@ -113,6 +120,24 @@ Hullerne er almindelige huller grupperet med formen, ligesom efter {{ui:editor.t
 
 En AI kan gøre det samme gennem MCP-broen med `layerling_perforate_face` (se kapitlet [AI med MCP](chapter:ai-with-mcp)).
 
+## Skub en flade ud eller ind
+
+Til en tykkere væg, et hævet stykke på en flade eller en lomme skåret ind i den arbejder {{ui:faceTool.title}} på én flad flade. Det virker også på en importeret STL, hvor der ingen skitse er at ændre. Vælg præcis én form og klik på {{ui:faceTool.title}} i {{ui:editor.group.modify}}-gruppen af værktøjsbjælken, ved siden af hulmønsteret. Du kan også højreklikke på formen, eller finde den med [[Ctrl]]+[[K]].
+
+1. Klik en flad flade af formen. Som med hulmønsteret tæller hele fladen omkring dit klik, ikke kun trekanten under markøren; en krum flade virker ikke.
+2. I vinduet:
+   - **{{ui:faceTool.direction}}:** vælg {{ui:faceTool.direction.out}} for materiale der står på fladen, eller {{ui:faceTool.direction.in}} for en lomme skåret ind i den. En lomme går ikke dybere end legemet bag fladen; på en udhulet form kan den stadig nå hulrummet.
+   - **{{ui:faceTool.inset}}:** hvor langt det nye omrids holder sig inde fra fladens kant. Ud ad gør 0 hele fladen, som gør en væg tykkere. Åbninger i fladen vokser med samme mål.
+   - **{{ui:faceTool.radius}}:** runder hvert hjørne af omridset, også de indre, så en skarp spids ender i en bue. Et hak der er smallere end det dobbelte af radius lukkes, og en del af fladen der er smallere end det dobbelte af inset og radius tilsammen udelades.
+   - **{{ui:faceTool.depth}}:** hvor langt den nye del står ud af fladen, eller hvor dybt lommen går.
+   - **{{ui:faceTool.separate}}:** med kontakten til er den nye del (eller hullet i en lomme) et legeme af sit eget ved siden af formen i stedet for en gruppe med den, så du kan ændre dens størrelse, flytte den eller bruge den til at skære med det samme.
+3. Resultatet vises med det samme som forhåndsvisning og følger hver værdi. {{ui:faceTool.repick}} vælger en anden flade, [[Esc]] lukker værktøjet.
+4. Kun {{ui:faceTool.apply}} laver det.
+
+Det værktøjet tilføjer, er et almindeligt skitselegeme, grupperet med formen med mindre end {{ui:faceTool.separate}} er slået til (så har {{ui:group.edit}} intet at åbne, og delen står frit): intet er bagt ind. {{ui:group.edit}} åbner gruppen, og {{ui:inspector.editSketch}} på den nye del viser det omrids, den følger. På toppen eller bunden af et rent skitselegeme – ét område, ikke grupperet, spejlet, spidst, snoet eller hældende, og uden streg, nøgleringshul, runding eller fas – er det legemets eget omrids, sat ind da det blev bygget, så dets linjer og buer forbliver nøjagtige, hvor CAD-kernen kan sætte dem ind, til kantværktøjerne og STEP-eksporten. Ændres størrelsen senere, beholder delen sit inset. På enhver anden flade, og på alle flader i et importeret mesh, følger omridset fladens trekanter, og en kurve består af korte lige stykker. Hele tingen er ét skridt for {{ui:editor.tool.undo}}. Vil du ændre inset eller radius senere, fortryd og kør værktøjet igen. Vil du runde topkanten bagefter, bruger du {{ui:editor.tool.fillet}} med {{ui:edge.topEdges}} på gruppen som sidste skridt: som enhver kantbehandling på en gruppe fører den gruppen sammen til ét legeme.
+
+En AI kan gøre det samme gennem MCP-broen med `layerling_push_face` (se kapitlet [AI med MCP](chapter:ai-with-mcp)).
+
 ## Ændre flere dele på én gang
 
 Med flere dele valgt viser egenskabspanelet til højre hvor mange der er og tilbyder hvad der gælder for dem alle sammen: {{ui:inspector.solid}} eller {{ui:inspector.hole}}, én farve for alle (et klik på {{ui:inspector.solid}} åbner farverne) og låsen. Med en blandet markering gør ét klik dem alle til solider eller alle til huller. Hvis nogen af delene er låst, kan kun låsen bruges. Størrelser ændres med håndtagene, med {{ui:scalePercent.title}} eller ved at taste et tal ind i en størrelsesetiket. Med flere dele er tallet hele markeringens størrelse: hver del vokser med den, mellemrummene mellem dem også, som når du trækker et håndtag. Solid og hul virker også med højreklik eller tasterne [[S]] og [[H]].
@@ -129,6 +154,7 @@ Med flere dele vælger du hvordan de vokser:
 - **{{ui:scalePercent.mode.each}}:** Hver del vokser hvor den står, og mellemrummene mellem dem forbliver de samme.
 
 Kun {{ui:scalePercent.apply}} ændrer designet, og ét skridt tilbage fortryder det. Med en låst del i markeringen åbner det ikke.
+Procentfeltet har fokus, når vinduet åbner, så fra tastaturet er det [[Ctrl]]+[[K]], procenten, [[Enter]]; [[Esc]] lukker vinduet.
 
 ## Fortryd
 

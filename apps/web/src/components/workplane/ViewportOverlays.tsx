@@ -11,7 +11,7 @@ import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeome
 import { type AppThemePalette, type ResolvedAppTheme } from "@/lib/appTheme";
 import { t } from "@/lib/i18n";
 import { displayToMillimeters, formatLengthMm, formatMeasurementNumber, lengthDisplayUnit, millimetersToDisplay, parseMeasurementInput } from "@/lib/measurementUnits";
-import { computeCornerRulerRelativeCoordinates, cornerRulerAxisModes, cornerRulerDimensionMatchesFromCorner, cornerRulerFlatRotation, cornerRulerTicks, pointAlongRuler, rulerDimensionMatch, spreadCornerRulerFields, worldAxisNameOfDirection, type CornerRulerAxis, type CornerRulerAxisModes, type CornerRulerFrame, type CornerRulerMode, type RulerDimensionField, type RulerDimensionMatch } from "@/lib/rulerDimensions";
+import { computeCornerRulerRelativeCoordinates, cornerRulerAxisModes, cornerRulerDimensionMatchesFromCorner, cornerRulerFlatRotation, cornerRulerTicks, pointAlongRuler, rulerDimensionMatch, rulerLiesFlat, spreadCornerRulerFields, worldAxisNameOfDirection, type CornerRulerAxis, type CornerRulerAxisModes, type CornerRulerFrame, type CornerRulerMode, type RulerDimensionField, type RulerDimensionMatch, type RulerPose } from "@/lib/rulerDimensions";
 import { type PlacementPoint, type PlacementWorkplane } from "@/lib/placementWorkplane";
 import { capturePointer } from "@/lib/pointerCapture";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
@@ -1075,11 +1075,27 @@ export type RulerDimensionOverlayItem = {
   labelY: number;
   handleX: number;
   handleY: number;
+  /** The handle that places a copy along the ruler; only on a ruler lying flat, where the copy lands on the plate. */
+  hasHandle: boolean;
 };
 
 export type RulerDimensionOverlayState = {
   items: RulerDimensionOverlayItem[];
 };
+
+/** Where a ruler body stands and which way it points, tipped or turned (#799). */
+export function rulerPoseOfShape(ruler: WorkplaneShape): RulerPose {
+  return {
+    x: ruler.x,
+    y: shapeCenter(ruler).y,
+    z: ruler.z,
+    rotation: ruler.rotation,
+    rotationX: ruler.rotationX,
+    rotationZ: ruler.rotationZ,
+    length: shapeWidth(ruler),
+    crossWidth: shapeDepth(ruler),
+  };
+}
 
 /**
  * Wer neben einem Lineal steht, bekommt seine Ausdehnung entlang dessen Achse
@@ -1099,12 +1115,14 @@ export function syncRulerDimensionOverlay(
     const rulers = shapes.filter((shape) => shape.kind === "ruler" && !shape.hidden);
     const topY = shapes.reduce((max, shape) => Math.max(max, (shape.elevation ?? 0) + shape.height), 0);
     rulers.forEach((ruler) => {
-      const rulerPose = { x: ruler.x, z: ruler.z, rotation: ruler.rotation, length: shapeWidth(ruler), crossWidth: shapeDepth(ruler) };
+      const rulerPose = rulerPoseOfShape(ruler);
+      const flat = rulerLiesFlat(ruler);
       const axisAcross = new THREE.Vector3(0, 0, 1).applyQuaternion(quaternionForShape(ruler));
       shapes.forEach((candidate) => {
         if (candidate.id === ruler.id || isNonSolidShape(candidate) || candidate.hidden) return;
         const match = rulerDimensionMatch(rulerPose, {
           x: candidate.x,
+          y: shapeCenter(candidate).y,
           z: candidate.z,
           rotation: candidate.rotation,
           rotationX: candidate.rotationX,
@@ -1117,7 +1135,10 @@ export function syncRulerDimensionOverlay(
         const acrossSign = match.acrossOffset >= 0 ? 1 : -1;
         const labelAcross = acrossSign * (rulerPose.crossWidth / 2 + 16);
         const labelAlong = pointAlongRuler(rulerPose, match.alongOffset);
-        const labelWorld = new THREE.Vector3(labelAlong.x + axisAcross.x * labelAcross, topY + 6, labelAlong.z + axisAcross.z * labelAcross);
+        // Flat, the numbers hover above everything so no body hides them; a tipped ruler shows them beside itself.
+        const labelWorld = flat
+          ? new THREE.Vector3(labelAlong.x + axisAcross.x * labelAcross, topY + 6, labelAlong.z + axisAcross.z * labelAcross)
+          : new THREE.Vector3(labelAlong.x, labelAlong.y, labelAlong.z).addScaledVector(axisAcross, labelAcross);
         const handleAt = pointAlongRuler(rulerPose, match.alongOffset + match.extentAlong / 2);
         const handleWorld = new THREE.Vector3(handleAt.x, topY + 6, handleAt.z);
         const labelScreen = projectToScreen(labelWorld, state);
@@ -1133,6 +1154,7 @@ export function syncRulerDimensionOverlay(
           labelY: labelScreen.y,
           handleX: handleScreen.x,
           handleY: handleScreen.y,
+          hasHandle: flat,
         });
       });
     });
@@ -1181,19 +1203,21 @@ export function RulerDimensionOverlay({
               {item.label}
             </span>
           )}
-          <button
-            type="button"
-            className="ruler-duplicate-handle"
-            aria-label={t("camera.duplicateAlongRuler")}
-            title={t("camera.duplicateAlongRuler")}
-            style={{ left: item.handleX, top: item.handleY }}
-            onPointerDown={(event) => onHandlePointerDown(event, item)}
-            onPointerMove={onHandlePointerMove}
-            onPointerUp={onHandlePointerUp}
-            onPointerCancel={onHandlePointerUp}
-          >
-            <Plus size={12} strokeWidth={3} aria-hidden="true" />
-          </button>
+          {item.hasHandle ? (
+            <button
+              type="button"
+              className="ruler-duplicate-handle"
+              aria-label={t("camera.duplicateAlongRuler")}
+              title={t("camera.duplicateAlongRuler")}
+              style={{ left: item.handleX, top: item.handleY }}
+              onPointerDown={(event) => onHandlePointerDown(event, item)}
+              onPointerMove={onHandlePointerMove}
+              onPointerUp={onHandlePointerUp}
+              onPointerCancel={onHandlePointerUp}
+            >
+              <Plus size={12} strokeWidth={3} aria-hidden="true" />
+            </button>
+          ) : null}
         </span>
       ))}
     </div>

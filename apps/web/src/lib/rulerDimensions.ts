@@ -5,7 +5,11 @@ import { quaternionForShape } from "@/lib/geometryRotation";
 export type RulerPose = {
   x: number;
   z: number;
+  /** Height of the ruler's middle; only matters once the ruler is tipped out of the plate (#799). */
+  y?: number;
   rotation: number;
+  rotationX?: number;
+  rotationZ?: number;
   /** Laenge - das ist am Lineal-Koerper das Feld `width`. */
   length: number;
   /** Kreuzbreite quer zur Laenge - am Lineal-Koerper das Feld `depth`. */
@@ -16,6 +20,8 @@ export type RulerPose = {
 export type RulerCandidatePose = {
   x: number;
   z: number;
+  /** Height of the body's middle; only matters for a tipped ruler. */
+  y?: number;
   rotation: number;
   rotationX?: number;
   rotationZ?: number;
@@ -46,10 +52,12 @@ const ALIGNMENT_TOLERANCE_DEGREES = 2;
 const ALIGNMENT_COS_TOLERANCE = Math.cos(THREE.MathUtils.degToRad(ALIGNMENT_TOLERANCE_DEGREES));
 
 /**
- * Ob und wie ein Koerper das Band eines Lineals kreuzt. Reine Projektions-
- * rechnung auf der Arbeitsebene (Hoehe/y spielt keine Rolle, ein Lineal liest
- * nur die Grundflaeche) - unabhaengig von Koerperart, damit sie fuer ein
- * Gewinde oder eine Gruppe genauso gilt wie fuer einen Quader.
+ * Ob und wie ein Koerper das Band eines Lineals kreuzt. Gemessen wird entlang
+ * der Achse des Lineals, wie es im Raum steht: flach auf der Platte die
+ * Grundflaeche (die Hoehe spielt keine Rolle), aufgestellt die Hoehe (#799).
+ * Quer zur Flaeche des Lineals zaehlt der Abstand nicht, so wie ein flaches
+ * Lineal auch einen Koerper ueber sich misst. Unabhaengig von der Koerperart,
+ * damit es fuer ein Gewinde oder eine Gruppe genauso gilt wie fuer einen Quader.
  */
 export function rulerDimensionMatch(ruler: RulerPose, candidate: RulerCandidatePose): RulerDimensionMatch | null {
   const rulerQuaternion = quaternionForShape(ruler);
@@ -66,7 +74,7 @@ export function rulerDimensionMatch(ruler: RulerPose, candidate: RulerCandidateP
   const extentAlongHalf = candidateAxes.reduce((sum, axis) => sum + Math.abs(axis.direction.dot(axisAlong)) * axis.half, 0);
   const extentAcrossHalf = candidateAxes.reduce((sum, axis) => sum + Math.abs(axis.direction.dot(axisAcross)) * axis.half, 0);
 
-  const relative = new THREE.Vector3(candidate.x - ruler.x, 0, candidate.z - ruler.z);
+  const relative = new THREE.Vector3(candidate.x - ruler.x, (candidate.y ?? 0) - (ruler.y ?? 0), candidate.z - ruler.z);
   const acrossOffset = relative.dot(axisAcross);
   if (Math.abs(acrossOffset) > ruler.crossWidth / 2 + extentAcrossHalf) {
     return null;
@@ -82,10 +90,19 @@ export function rulerDimensionMatch(ruler: RulerPose, candidate: RulerCandidateP
   };
 }
 
-/** Weltkoordinaten (x, z) eines Punkts, der auf der Lineal-Achse im Abstand `alongOffset` von dessen Mitte liegt. */
-export function pointAlongRuler(ruler: RulerPose, alongOffset: number): { x: number; z: number } {
+/** Weltkoordinaten eines Punkts, der auf der Lineal-Achse im Abstand `alongOffset` von dessen Mitte liegt. */
+export function pointAlongRuler(ruler: RulerPose, alongOffset: number): { x: number; y: number; z: number } {
   const axisAlong = new THREE.Vector3(1, 0, 0).applyQuaternion(quaternionForShape(ruler));
-  return { x: ruler.x + axisAlong.x * alongOffset, z: ruler.z + axisAlong.z * alongOffset };
+  return { x: ruler.x + axisAlong.x * alongOffset, y: (ruler.y ?? 0) + axisAlong.y * alongOffset, z: ruler.z + axisAlong.z * alongOffset };
+}
+
+/**
+ * Whether the ruler lies flat, its face up or down. Only then do its numbers sit over the plate and does its
+ * handle place a copy on it; a tipped ruler still measures along its own direction (#799).
+ */
+export function rulerLiesFlat(ruler: Pick<RulerPose, "rotation" | "rotationX" | "rotationZ">): boolean {
+  const normal = new THREE.Vector3(0, 1, 0).applyQuaternion(quaternionForShape(ruler));
+  return Math.abs(normal.y) >= 1 - 1e-6;
 }
 
 /** Lage und Armlaengen des Winkellineals, so wie es auf der Arbeitsebene steht. */

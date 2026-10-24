@@ -65,9 +65,9 @@ Notatka zapisuje to, czego geometria nie mówi: „Ta śruba jest o 0,3 mm za ci
 - Gdy jej bryła zostanie usunięta albo pod nią nie ma już widocznej bryły, notatka zostaje tam, gdzie stała, na płaszczyźnie roboczej.
 - Przeciągnięcie pinezki przesuwa notatkę. Kliknięcie pinezki zwija kartę, zostaje tylko mały numer; kolejne kliknięcie znów ją rozwija. Kliknięcie w tekst pozwala go edytować.
 - Podczas pisania [[Enter]] zachowuje tekst, a [[Esc]] przywraca go do stanu sprzed rozpoczęcia. [[Shift]]+[[Enter]] zaczyna nowy wiersz.
-- **W szkicu** notatkę umieszcza też {{ui:editor.tool.note}} (w sekcji {{ui:editor.group.manage}}) lub klawisz [[N]], w dowolnym miejscu szkicu. Wszystkie notatki szkicu należą do jego bryły: w widoku 3D siedzą na niej, na wierzchu bryły utworzonej przez {{ui:sketch.extrude}} lub {{ui:sketch.sweep}} i na narysowanym profilu bryły utworzonej przez {{ui:sketch.revolve}}, i przesuwają się razem z nią. Po ponownym otwarciu szkic pokazuje notatki bryły, także te umieszczone w 3D. W szkicu {{ui:sketch.undo}} cofa notatkę tak jak linię, a {{ui:sketch.cancel}} odrzuca zmiany w notatkach.
+- **W szkicu** notatkę umieszcza też {{ui:editor.tool.note}} (w sekcji {{ui:editor.group.manage}}) lub klawisz [[N]], w dowolnym miejscu szkicu. Wszystkie notatki szkicu należą do jego bryły: w widoku 3D siedzą na niej, na wierzchu bryły utworzonej przez {{ui:sketch.extrude}} lub {{ui:sketch.sweep}} i na narysowanym profilu bryły utworzonej przez {{ui:sketch.revolve}}, i przesuwają się razem z nią. Po ponownym otwarciu szkic pokazuje notatki bryły, także te umieszczone w 3D. W szkicu {{ui:sketch.undo}} cofa notatkę tak jak linię, a {{ui:sketch.cancel}} odrzuca zmiany w notatkach. [[Shift]]+[[N]] także tu pokazuje albo ukrywa notatki.
 
-Notatki zapisują się w projekcie, nie pojawiają się w żadnym eksporcie i można je pokazać albo ukryć przez {{ui:visibility.notes}} (w {{ui:editor.visibilityOptions}}, strzałce obok ikony oka).
+Notatki zapisują się w projekcie, nie pojawiają się w żadnym eksporcie i można je pokazać albo ukryć przez {{ui:visibility.notes}} (w {{ui:editor.visibilityOptions}}, strzałce obok ikony oka) albo skrótem [[Shift]]+[[N]].
 
 ## Punkty odniesienia
 
@@ -76,7 +76,7 @@ Punkt odniesienia to sam znak w przestrzeni, jak kreska ołówkiem albo punkt tr
 - Przeciągnij punkt, aby go przesunąć, albo kliknij go, aby zobaczyć jego współrzędne i wpisać nowe. Są w ustawionej jednostce. Każdą kartę można odsunąć za tytuł, jeśli coś zasłania, osobno: pozostałe zostają na miejscu, a dwukrotne kliknięcie tytułu odkłada ją z powrotem. Karta dotknięta ostatnio stoi przed pozostałymi. **Usuń wszystkie** w karcie albo **Usuń wszystkie punkty odniesienia** w menu prawego przycisku (na bryle albo na pustym miejscu widoku 3D) usuwa naraz wszystkie punkty. {{ui:common.delete}} usuwa punkt.
 - Narzędzie Zmierz też potrafi postawić punkt: {{ui:camera.tapeMarkMiddle}}, przycisk z celownikiem pod pomiarem, stawia go w jego środku, na przykład w środku okrągłego otworu. Mierzy też od punktu: przyciąga się do punktów odniesienia jak do narożników.
 - Gdy przeciągasz kształt, jego krawędzie i środek przyciągają się do punktu, tak jak do innych kształtów ({{ui:workspace.objectSnap}}). Kątownik też przyciąga się do punktów.
-- Punkty zapisują się w projekcie, nie pojawiają się w żadnym eksporcie i są pokazywane albo ukrywane razem z notatkami przez {{ui:visibility.notes}}.
+- Punkty zapisują się w projekcie, nie pojawiają się w żadnym eksporcie i są pokazywane albo ukrywane razem z notatkami przez {{ui:visibility.notes}} ([[Shift]]+[[N]]).
 - AI może je stawiać, wypisywać i usuwać poleceniami `layerling_add_reference_points`, `layerling_list_reference_points` i `layerling_remove_reference_points`.
 
 ## Obrazy referencyjne

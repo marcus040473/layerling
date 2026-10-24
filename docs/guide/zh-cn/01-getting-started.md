@@ -13,7 +13,7 @@ layerling 是一款直接在浏览器里运行的 3D 打印设计程序。你用
 
 如果你已经有文件想接着做，用 {{ui:dashboard.importGeometry}}。它支持 layerling 设计（`.lyl`），也支持 STL、OBJ、3MF、STEP 或 SVG 文件。
 
-你所有的设计随后都会出现在起始页上，并带有预览图。它们保存在浏览器的存储空间里，每次更改后自动保存，所以没有保存按钮。**layerling 不对保存在浏览器里的设计承担责任。** 浏览器可能出故障，浏览器更新也可能带来问题，所以要不时用起始页上的 {{ui:dashboard.backupAll}} 备份你的设计，或者把它们保存为文件。备份可以通过 {{ui:dashboard.restoreBackup}} 恢复。如何把设计打包成文件并转交他人，见[文件与保存](chapter:files-and-saving)。
+你所有的设计随后都会出现在起始页上，并带有预览图。它们保存在浏览器的存储空间里，每次更改后自动保存，所以没有保存按钮。**layerling 不对保存在浏览器里的设计承担责任。** 浏览器可能出故障，浏览器更新也可能带来问题，所以要不时用起始页上的 {{ui:dashboard.backupAll}} 备份你的设计，或者把它们保存为文件。备份可以通过 {{ui:dashboard.restoreBackup}} 恢复。如何把设计打包成文件并转交他人，见[文件与保存](chapter:files-and-saving)。 如果想要一个提醒，请在设置（功能区中的齿轮）里打开{{ui:workspace.confirmTabClose}}：之后在关闭或刷新带有已打开设计的标签页之前，浏览器会先询问。
 
 ## 编辑器一览
 

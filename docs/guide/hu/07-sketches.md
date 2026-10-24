@@ -154,5 +154,6 @@ Mind a négy csak a mintaképet érinti, a vázlatot soha.
 | [[R]] | a zárt vázlat elforgatása 45°-kal |
 | [[L]] | a mintakép zárolása vagy feloldása |
 | [[N]] | jegyzet elhelyezése: a következő kattintás a vázlatra teszi |
+| [[Shift]]+[[N]] | a jegyzetek megjelenítése vagy elrejtése |
 
 > **Tipp:** Annyi pontot rajzolj, amennyi feltétlenül kell. Néhány jól elhelyezett pontból álló körvonal simább testet ad, mint sok pont gubanca.

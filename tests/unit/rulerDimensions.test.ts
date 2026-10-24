@@ -17,6 +17,7 @@ import {
   rulerTicks,
   pointAlongRuler,
   rulerDimensionMatch,
+  rulerLiesFlat,
   type CornerRulerPose,
   type RulerCandidatePose,
   type RulerPose,
@@ -444,5 +445,43 @@ describe("spreadCornerRulerFields (#777)", () => {
     const [field] = spreadCornerRulerFields([{ x: 500, y: 400 }], [button]);
     const apart = Math.abs(field.x - button.x) >= button.halfWidth + CORNER_RULER_FIELD_SIZE.width / 2 || Math.abs(field.y - button.y) >= button.halfHeight + CORNER_RULER_FIELD_SIZE.height / 2;
     expect(apart).toBe(true);
+  });
+});
+
+describe("tipped ruler (#799)", () => {
+  // The case from the video: a 40 x 20 x 20 box, the ruler turned by 3 degrees and then stood up.
+  const box = candidate({ width: 40, depth: 20, height: 20, y: 10 });
+
+  it("stood up, it reads the height of the body, not its width along the old direction", () => {
+    const upright = ruler({ rotation: 3, rotationZ: 90, y: 75 });
+    const match = rulerDimensionMatch(upright, box);
+
+    expect(match?.extentAlong).toBeCloseTo(20, 6);
+    expect(match?.alignedField).toBe("height");
+    // The body's middle sits 65 mm below the ruler's middle, along the ruler.
+    expect(match?.alongOffset).toBeCloseTo(-65, 6);
+  });
+
+  it("lying flat it keeps reading along the plate, however high the body stands", () => {
+    const flat = rulerDimensionMatch(ruler({ rotation: 3, y: 2 }), { ...box, y: 50 });
+
+    // 40.99 as in the video: the box stands 3 degrees off the ruler, so the number is not one of its fields.
+    expect(flat?.extentAlong).toBeCloseTo(40 * Math.cos(Math.PI / 60) + 20 * Math.sin(Math.PI / 60), 6);
+    expect(flat?.alignedField).toBeNull();
+  });
+
+  it("knows when it lies flat", () => {
+    expect(rulerLiesFlat({ rotation: 30 })).toBe(true);
+    expect(rulerLiesFlat({ rotation: 0, rotationX: 180 })).toBe(true);
+    expect(rulerLiesFlat({ rotation: 0, rotationZ: 90 })).toBe(false);
+    expect(rulerLiesFlat({ rotation: 0, rotationX: 90 })).toBe(false);
+  });
+
+  it("finds points along a standing ruler in height", () => {
+    const point = pointAlongRuler(ruler({ rotationZ: 90, y: 75 }), 10);
+
+    expect(point.x).toBeCloseTo(0, 6);
+    expect(point.y).toBeCloseTo(85, 6);
+    expect(point.z).toBeCloseTo(0, 6);
   });
 });

@@ -167,5 +167,6 @@ Tous les quatre touchent uniquement à la référence, jamais au croquis.
 | [[R]] | faire pivoter l'esquisse fermée de 45° |
 | [[L]] | verrouiller ou déverrouiller l'image du modèle |
 | [[N]] | poser une note : le clic suivant la place sur l'esquisse |
+| [[Shift]]+[[N]] | afficher ou masquer les notes |
 
 > **Conseil :** Dessinez autant de points que nécessaire. Un contour avec quelques points bien placés donne un corps plus lisse qu’un enchevêtrement de plusieurs.

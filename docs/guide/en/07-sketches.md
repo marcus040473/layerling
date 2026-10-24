@@ -171,5 +171,6 @@ All four touch the reference only, never the sketch.
 | [[R]] | rotate the closed sketch by 45° |
 | [[L]] | lock or unlock the selected outline, or the template image |
 | [[N]] | place a note: the next click puts it on the sketch |
+| [[Shift]]+[[N]] | show or hide the notes |
 
 > **Tip:** Draw as few points as needed. An outline with a few well-placed points gives a smoother body than a tangle of many.

@@ -27,6 +27,10 @@ Claude Desktop læser ikke projektfiler. Indtast serveren i dens egen konfigurat
 
 Kopiér skillen fra `docs/skills/layerling-mcp-skill` ind i din Codex skills-mappe, indtast serveren i din Codex-konfiguration ved hjælp af `docs/mcp/codex-config.example.toml`, og genstart Codex.
 
+### Gemini & Antigravity
+
+Antigravity finder automatisk skillen i arbejdsområdet, som ligger i `.agents/skills/layerling-mcp-skill`. Til Gemini CLI kopierer du skillen fra `docs/skills/layerling-mcp-skill` ind i din globale skills-mappe (`~/.gemini/skills/`), tilføjer serveren til dine indstillinger med `docs/mcp/gemini-config.example.json`, og genstarter klienten.
+
 De detaljerede instruktioner for alle tre er i [README på GitHub](https://github.com/henmedia/layerling/blob/main/README.md#layerling-mcp-skill).
 
 ## En kopi på en NAS eller server

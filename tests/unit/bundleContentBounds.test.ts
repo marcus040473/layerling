@@ -17,7 +17,7 @@ describe("the size a bundle's content is stretched from (#152)", () => {
   });
 
   it("is measured exactly where the viewport stretches a group's content", () => {
-    const source = readFileSync(fileURLToPath(new URL("../../apps/web/src/components/WorkplaneViewport.tsx", import.meta.url)), "utf8");
+    const source = readFileSync(fileURLToPath(new URL("../../apps/web/src/components/workplane/viewportShapeObjects.ts", import.meta.url)), "utf8");
     expect(source).toContain("new THREE.Box3().setFromObject(content, true)");
     expect(source).not.toContain("new THREE.Box3().setFromObject(content);");
   });

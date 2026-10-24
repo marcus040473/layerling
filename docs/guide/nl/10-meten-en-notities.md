@@ -63,9 +63,9 @@ Een notitie legt vast wat de geometrie niet zegt: "Deze schroef zit 0,3 mm te kr
 - Wordt haar lichaam verwijderd, of ligt er geen zichtbaar lichaam meer onder, dan blijft de notitie staan waar ze stond, op het werkvlak.
 - Slepen aan de speld verplaatst de notitie. Een klik op de speld klapt de kaart in, alleen het kleine nummer blijft staan; nog een klik klapt hem weer open. Een klik in de tekst bewerkt hem.
 - Terwijl je schrijft, bewaart [[Enter]] de tekst en zet [[Esc]] hem terug zoals hij was voordat je begon; [[Shift]]+[[Enter]] begint een nieuwe regel.
-- **In een schets** zet {{ui:editor.tool.note}} (onder {{ui:editor.group.manage}}) of [[N]] ook een notitie, waar je maar wilt op de schets. Alle notities van een schets horen bij haar lichaam: in de 3D-weergave zitten ze erop, bovenop een lichaam gemaakt met {{ui:sketch.extrude}} of {{ui:sketch.sweep}} en op het getekende profiel van een lichaam gemaakt met {{ui:sketch.revolve}}, en ze bewegen mee. Open je de schets opnieuw, dan toont ze de notities van het lichaam, ook die in 3D zijn gezet. In de schets neemt {{ui:sketch.undo}} een notitie terug zoals een lijn, en {{ui:sketch.cancel}} verwerpt wat je aan de notities hebt veranderd.
+- **In een schets** zet {{ui:editor.tool.note}} (onder {{ui:editor.group.manage}}) of [[N]] ook een notitie, waar je maar wilt op de schets. Alle notities van een schets horen bij haar lichaam: in de 3D-weergave zitten ze erop, bovenop een lichaam gemaakt met {{ui:sketch.extrude}} of {{ui:sketch.sweep}} en op het getekende profiel van een lichaam gemaakt met {{ui:sketch.revolve}}, en ze bewegen mee. Open je de schets opnieuw, dan toont ze de notities van het lichaam, ook die in 3D zijn gezet. In de schets neemt {{ui:sketch.undo}} een notitie terug zoals een lijn, en {{ui:sketch.cancel}} verwerpt wat je aan de notities hebt veranderd. [[Shift]]+[[N]] toont of verbergt de notities ook hier.
 
-Notities worden in het ontwerp opgeslagen, komen in geen enkele export terecht en kun je tonen of verbergen met {{ui:visibility.notes}} (onder {{ui:editor.visibilityOptions}}, de pijl naast het oog-pictogram).
+Notities worden in het ontwerp opgeslagen, komen in geen enkele export terecht en kun je tonen of verbergen met {{ui:visibility.notes}} (onder {{ui:editor.visibilityOptions}}, de pijl naast het oog-pictogram) of met [[Shift]]+[[N]].
 
 ## Referentiepunten
 
@@ -74,7 +74,7 @@ Een referentiepunt is een kaal merkteken in de ruimte, zoals een potloodstreep o
 - Sleep een punt om het te verplaatsen, of klik erop om de coördinaten te zien en nieuwe te typen; ze gebruiken de eenheid die je hebt ingesteld. Elke kaart kun je aan zijn titel wegslepen als die iets bedekt, en wel afzonderlijk: de andere blijven waar ze zijn, en een dubbelklik op de titel zet hem terug. De kaart die je het laatst hebt aangeraakt, ligt voor de andere. **Alles verwijderen** in een kaart, of in het rechtsklikmenu, verwijdert alle punten in één keer. {{ui:common.delete}} verwijdert het punt.
 - Het meetlint kan ook een punt zetten: {{ui:camera.tapeMarkMiddle}}, het draadkruisknopje onder een meting, zet er een in het midden, bijvoorbeeld in het middelpunt van een rond gat. En het meet vanaf een punt: het meetlint klikt vast aan referentiepunten zoals aan hoeken.
 - Sleep je een vorm, dan klikken zijn randen en zijn midden vast aan een punt, zoals ze aan andere vormen vastklikken ({{ui:workspace.objectSnap}}). Ook de winkelhaak klikt vast aan punten.
-- Punten worden in het ontwerp opgeslagen, komen in geen enkele export terecht en worden samen met de notities getoond of verborgen met {{ui:visibility.notes}}.
+- Punten worden in het ontwerp opgeslagen, komen in geen enkele export terecht en worden samen met de notities getoond of verborgen met {{ui:visibility.notes}} ([[Shift]]+[[N]]).
 - Een AI kan ze markeren, opsommen en verwijderen met `layerling_add_reference_points`, `layerling_list_reference_points` en `layerling_remove_reference_points`.
 
 ## Referentieafbeeldingen

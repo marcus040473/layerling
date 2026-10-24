@@ -76,6 +76,7 @@ export const DEFAULT_WORKPLANE_WORKSPACE: WorkplaneWorkspaceSettings = {
   doubleClickOpensGroup: true,
   objectSnap: true,
   stlAsDownload: false,
+  confirmTabClose: false,
   dimensionsAlwaysVisible: true,
   showRotationAngles: true,
   zoomSpeed: 5,
@@ -412,6 +413,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.gridfinityOpenFront = typeof source.gridfinityOpenFront === "boolean" ? source.gridfinityOpenFront : fallbackEntry?.gridfinityOpenFront;
       entry.gridfinityOpenLeft = typeof source.gridfinityOpenLeft === "boolean" ? source.gridfinityOpenLeft : fallbackEntry?.gridfinityOpenLeft;
       entry.gridfinityOpenRight = typeof source.gridfinityOpenRight === "boolean" ? source.gridfinityOpenRight : fallbackEntry?.gridfinityOpenRight;
+      entry.gridfinityLipChamfer = optionalShapeNumber(source.gridfinityLipChamfer, fallbackEntry?.gridfinityLipChamfer, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingBack = optionalShapeNumber(source.gridfinityPaddingBack, fallbackEntry?.gridfinityPaddingBack, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingFront = optionalShapeNumber(source.gridfinityPaddingFront, fallbackEntry?.gridfinityPaddingFront, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingLeft = optionalShapeNumber(source.gridfinityPaddingLeft, fallbackEntry?.gridfinityPaddingLeft, 0, MAX_CUSTOM_SHAPE_DIMENSION);
@@ -717,6 +719,7 @@ export function normalizeWorkspaceSettings(value: unknown, fallback: WorkplaneWo
     doubleClickOpensGroup: booleanOrDefault(candidate.doubleClickOpensGroup, fallback.doubleClickOpensGroup),
     objectSnap: booleanOrDefault(candidate.objectSnap, fallback.objectSnap),
     stlAsDownload: booleanOrDefault(candidate.stlAsDownload, fallback.stlAsDownload),
+    confirmTabClose: booleanOrDefault(candidate.confirmTabClose, fallback.confirmTabClose),
     dimensionsAlwaysVisible: booleanOrDefault(candidate.dimensionsAlwaysVisible, fallback.dimensionsAlwaysVisible),
     showRotationAngles: booleanOrDefault(candidate.showRotationAngles, fallback.showRotationAngles),
     zoomSpeed: numberOrDefault(candidate.zoomSpeed, fallback.zoomSpeed),

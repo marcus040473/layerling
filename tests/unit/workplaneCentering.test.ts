@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WORKPLANE_CENTER, workplaneCenteringOffset, type WorkplanePlanarBounds } from "@/lib/workplaneCentering";
+import { WORKPLANE_CENTER, faceWorkplaneCenteringShift, workplaneCenteringOffset, type WorkplanePlanarBounds } from "@/lib/workplaneCentering";
 
 function bounds(minX: number, maxX: number, minZ: number, maxZ: number): WorkplanePlanarBounds {
   return { minX, maxX, minZ, maxZ };
@@ -46,5 +46,28 @@ describe("workplane centering offset", () => {
     expect(workplaneCenteringOffset(bounds(Number.NaN, 10, 0, 10))).toBeNull();
     expect(workplaneCenteringOffset(bounds(20, 10, 0, 10))).toBeNull();
     expect(workplaneCenteringOffset(bounds(0, 10, 20, 10))).toBeNull();
+  });
+});
+
+describe("centering on a workplane laid on a face (#805)", () => {
+  // The slope of a wedge: its x axis runs up the slope at 45 degrees, its z axis along the ridge.
+  const r = Math.SQRT1_2;
+  const xAxis = { x: r, y: r, z: 0 };
+  const zAxis = { x: 0, y: 0, z: 1 };
+
+  it("moves along the face only, onto the point picked as the workplane's origin", () => {
+    // Measured from that point: 4 to 16 up the slope, -2 to 8 along the ridge, so the middle is 10 and 3 away.
+    const shift = faceWorkplaneCenteringShift(bounds(4, 16, -2, 8), xAxis, zAxis);
+
+    expect(shift?.x).toBeCloseTo(-10 * r, 9);
+    expect(shift?.y).toBeCloseTo(-10 * r, 9);
+    expect(shift?.z).toBeCloseTo(-3, 9);
+    // Nothing along the face's normal: the part keeps standing on the slope.
+    const normal = { x: -r, y: r, z: 0 };
+    expect((shift?.x ?? 0) * normal.x + (shift?.y ?? 0) * normal.y + (shift?.z ?? 0) * normal.z).toBeCloseTo(0, 9);
+  });
+
+  it("does not move what cannot be measured", () => {
+    expect(faceWorkplaneCenteringShift(bounds(Number.NaN, 1, 0, 1), xAxis, zAxis)).toBeNull();
   });
 });

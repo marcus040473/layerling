@@ -100,8 +100,8 @@ layerling 站在 Tinkercad 之上、朝 Fusion 360 更近一步：操作方式�
 ### 文件
 
 - **自己的字体**——文字可以使用任何 TrueType、OpenType 或 WOFF 字体；在 Chrome 和 Edge 中还能使用电脑上安装的字体。设计只保留所用字母的轮廓，所以在哪里都能打开。阿拉伯文和希伯来文从右向左排列，阿拉伯文字母会连写。
-- **带上自己的模型**——导入 STL、OBJ、3MF、STEP 或 SVG，并在其基础上建模。SVG 会作为草图实体导入：可选区域、线条外侧或内侧的描边、去掉孔的剪影，或四周加宽的图形——一个文件就能做出饼干模具，或多色标志的分层。文字形状也有相同的填充模式，形状库还提供名牌：用彩色分层制作适合多色打印的文字，可选钥匙圈孔，字母边缘可倒圆或倒角；以及图标牌：用同样的彩色分层制作 SVG 图标，可设置数量，还能“放满一板”。彩色 OBJ——来自 layerling，或以带 `.mtl` 的 ZIP 形式来自 Tinkercad——以及彩色 3MF（包括切片软件项目），都会按每种颜色导入为一个实体；包含多个对象的 3MF 则按每个对象导入为一个实体。
-- **导出切片软件需要的格式**——STL、带名称和颜色的 3MF，或带颜色的 OBJ，可导出选中项或整个场景（隐藏部分不会包含），另有 STEP，方便设计继续进入完整 CAD 程序。PNG 可保存一张干净的视图图片，分辨率是两倍，还可以选择透明背景。
+- **带上自己的模型**——导入 STL、OBJ、3MF、STEP、SVG 或 DXF，并在其基础上建模。激光切割服务商或供应商发来的 DXF 零件轮廓会导入为一个实体，其中的孔各自成为独立的孔，圆弧和圆保持为真正的圆弧和圆。SVG 会作为草图实体导入：可选区域、线条外侧或内侧的描边、去掉孔的剪影，或四周加宽的图形——一个文件就能做出饼干模具，或多色标志的分层。文字形状也有相同的填充模式，形状库还提供名牌：用彩色分层制作适合多色打印的文字，可选钥匙圈孔，字母边缘可倒圆或倒角；以及图标牌：用同样的彩色分层制作 SVG 图标，可设置数量，还能“放满一板”。彩色 OBJ——来自 layerling，或以带 `.mtl` 的 ZIP 形式来自 Tinkercad——以及彩色 3MF（包括切片软件项目），都会按每种颜色导入为一个实体；包含多个对象的 3MF 则按每个对象导入为一个实体。
+- **导出切片软件需要的格式**——STL、带名称和颜色的 3MF，或带颜色的 OBJ，可导出选中项或整个场景（隐藏部分不会包含），另有 STEP，方便设计继续进入完整 CAD 程序；俯视图还可导出为 SVG，或导出为带真正圆弧和圆的 DXF，供激光切割使用。PNG 可保存一张干净的视图图片，分辨率是两倍，还可以选择透明背景。
 - **图纸导出**——选择一个零件，或清除选择以导出整个可见设计，然后选择 **导出 → 图纸 → PDF 或 SVG**。它会生成第一角投影布局的主视图、俯视图和右视图，放在带边框的工程图纸上，带分区编号和右下角标题栏，并标注总体尺寸、隐藏边，以及轴向对齐圆孔的直径/位置表格。视图按毫米 1:1 输出；图纸采用能容纳内容的最小 ISO 横向尺寸（也可以自定义更大尺寸）。打印时选择 **100% / 实际大小**。位置从每个视图左下角的总轮廓角点量起。孔表使用名义网格几何，不会自动标注斜孔/非圆孔、螺纹、深度或公差。投影引擎改编自 [Cadverix-3D](https://github.com/WC3D/Cadverix-3D) 的制图工作。
 - **更新提示**——在已发布的程序上，打开着的页面会自行发现新版本，并提示保存后重新加载，同时列出更新内容。
 - **为设计建立文件夹**——把起始页上的设计拖进文件夹（文件夹还能放进文件夹），或使用“移动到……”，从而整理它们；搜索会查遍所有文件夹，“全部备份”会把它们一并保存。
@@ -127,12 +127,11 @@ layerling 站在 Tinkercad 之上、朝 Fusion 360 更近一步：操作方式�
 由他人制作，不是本项目出品：
 
 <!-- videos:start -->
-- [I'm 100% In on Layerling - The Next Big Free CAD](https://youtu.be/IO7S-7bxS5o) – Printology（英语）。一位 Tinkercad 用户的首次试用：layerling 在哪些方面比 Tinkercad 做得更好、哪些地方仍需完善，以及现在是否值得切换过来。
-- [10 Things Layerling Can Do That Tinkercad Can't!](https://youtu.be/cx0OVHgUsJM) – Print N Repeat（英语）。该频道的第二个视频：layerling 能做而 Tinkercad 做不到的十件事。
+- [Layerling CAD Videos](https://www.youtube.com/playlist?list=PLc09BHr_6nn8) – Printology（英语）。一个关于 layerling 的播放列表，目前包含“I'm 100% In on Layerling - The Next Big Free CAD”和“Layerling Features That Blow Tinkercad Out Of The Water”。
+- [Print by Layer](https://www.youtube.com/playlist?list=PLejZBz4L7CGQ) – Print N Repeat（英语）。一个关于 layerling 的播放列表，目前包含“The EASIEST Way to Design Hinges in Layerling”和“The EASIEST Way to 3D Model Threads!”。
 - [Layerling la nueva herramienta gratuita de modelado 3D, más completo que Tinkercad](https://youtu.be/-EEt0RSINoY) – Fulcro 1900（西班牙语）。一条关于 layerling 的视频：这款新的免费 3D 建模工具比 Tinkercad 更完整。
-- [Layerling - Tussen Tinkercad en Fusion 360 in, en Helemaal Gratis!](https://youtu.be/X-UuvsfDI-s) – Werkplaats Marc（荷兰语）。面向 Tinkercad 用户的 layerling 初探：抽壳、圆角、孔阵列、带间隙的螺纹、自定义字体和打印机配置，并分别打印了有间隙和无间隙的螺栓来展示差异。
+- [Layerling](https://www.youtube.com/playlist?list=PLQuXPoMXTnRQ) – Werkplaats Marc（荷兰语）。一个关于 layerling 的播放列表，目前包含面向 Tinkercad 用户的初探（“Layerling - De Gratis Tussenstap van Tinkercad naar Fusion 360”）和草图教程：描摹照片、旋转和沿路径扫掠（“Schetsen Uitgelegd”）。
 - [Layerling](https://www.youtube.com/playlist?list=PLYqVFeqYBrPE) – TECHNOBENTO（英语）。一个关于 layerling 的播放列表，目前包含“A new way to sketch in Layerling”。
-- [The PERFECT FREE CAD Program Between Tinkercad and Fusion 360!](https://youtu.be/GIoG-IHPXyg) – Print N Repeat（英语）。一条关于 layerling 的视频：它是介于 Tinkercad 和 Fusion 360 之间的免费 CAD 程序。
 - [Layerling Tutorials](https://www.youtube.com/playlist?list=PLZ-ZWS0D1JIk) – HL ModTech（英语）。一位 Tinkercad 用户的播放列表，目前包含约 23 分钟的 layerling 概览（在浏览器中免费使用、对 Tinkercad 加以扩展的 CAD）、对其功能的深入介绍，以及关于打印螺纹的简短更新。
 - [Layerling – Playlist](https://www.youtube.com/playlist?list=PLCsBmX2kOGWs) – Making Layers（英语）。一个关于 layerling 的系列，目前包含“Tinkercad alternative / upgrade? Introducing Layerling!”——面向从 Tinkercad 转来的用户的概览，以及讲解草图工具的“Layerling Sketch Tools!”。
 - [Tinkercad Too Basic? Fusion 360 Too Much? Meet Layerling for 3D Printing](https://youtu.be/kzV7fQ3rXhw) – 3D Jesus | 3D Printing & Design（英语）。在完全没有手册的情况下首次试用 layerling：圆角与倒角、抽壳、螺纹、草图、旋转实体、阵列、导入和打印机配置。
@@ -525,7 +524,7 @@ environment:
 
 - 编辑器缺陷修复
 - 几何与布尔测试用例
-- 导入和导出的边界情况（STL、OBJ、3MF、STEP、SVG）
+- 导入和导出的边界情况（STL、OBJ、3MF、STEP、SVG、DXF）
 - 界面打磨
 - 文档截图和视频
 - 无障碍和性能改进

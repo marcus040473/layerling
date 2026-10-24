@@ -67,7 +67,7 @@ It is not a full CAD package: there is no parametric timeline and no assemblies.
 - **Pivot that stays** – set a pivot for one body and it stays with that body: it moves, turns and scales with it, is saved, and can be typed as X, Y and Z or dragged with the mouse, snapping to corners and edge midpoints - for hinges and joints.
 - **Light and shadows to taste** – shading contrast, shadow strength and softness, and the direction and height of the light, up to straight above as in Tinkercad, all in the settings. A "Tinkercad look" button sets colours, grid and light like there in one go, and the darker grid lines can come every centimetre in a colour of their own.
 - **Fast mode** – for slower computers: one switch in the settings turns off shadows, edge lines and the camera's inertia and draws the view at screen resolution; the camera's inertia can also be switched off on its own, so the view stops the moment you let go.
-- **Align faces and see the angles** – the Align faces tool brings a face of one part against a face of another, touching or flush, with an optional gap; a turned body shows its angles about X, Y and Z under the selection, and the Rotation card in its settings takes them as numbers.
+- **Align faces and see the angles** – the Align faces tool brings a face of one part against a face of another, touching or flush, with an optional gap, or puts a hole or pin on the axis of another hole; a turned body shows its angles about X, Y and Z under the selection, and the Rotation card in its settings takes them as numbers.
 - **Snap to other shapes** – while moving, a shape locks its edges or centre onto the edges and centres of the shapes around it, with a guide line, so parts sit flush without typing numbers. Alt during the drag pauses it; Shift keeps the move on one axis, and Alt held from the start drags a copy, as in Tinkercad.
 - **Set down on faces** – like Cruise in Tinkercad: a new shape lies down on the face under the pointer, sloped ones too, and C picks the selection up and sets it down on another face the same way.
 - **Reference points** – right-click a body to mark its centre, corners or edge middles with points that nothing prints and that dragged shapes snap to; drag a point or type its coordinates, and the marks are saved with the design. The tape measure can mark the middle of a measurement - the centre of a round hole, for one.
@@ -100,8 +100,8 @@ It is not a full CAD package: there is no parametric timeline and no assemblies.
 ### Files
 
 - **Fonts of your own** – use any TrueType, OpenType or WOFF font for text, or in Chrome and Edge a font installed on the computer. A design keeps only the outlines of the letters it uses, so it opens anywhere. Arabic and Hebrew run right to left, Arabic letters join up.
-- **Bring your own models** – import STL, OBJ, 3MF, STEP or SVG and build around it. An SVG comes in as a sketch body: an area, a stroke outside or inside its lines, a silhouette without its holes, or the drawing widened all round - together a cookie cutter from one file, or the layers of a multicolour logo. The Text shape has the same fill modes, and the shape library has a name tag: a text in coloured layers for a multicolour print, with an optional key ring hole and a rounded or chamfered edge on the letters, and an icon tag: an SVG icon in the same coloured layers, with a count and "as many as fit" to fill a plate. A coloured OBJ – from layerling, or from Tinkercad as a ZIP with its `.mtl` – or a coloured 3MF, slicer projects included, comes in as one body per colour, and a 3MF with several objects as one body per object.
-- **Export what your slicer wants** – STL, 3MF with names and colours, or OBJ with colours, for the selection or the whole scene (hidden parts stay out), plus STEP if the design should travel on into a full CAD program. PNG saves a clean picture of the view, at twice the resolution and with a transparent background if you like.
+- **Bring your own models** – import STL, OBJ, 3MF, STEP, SVG or DXF and build around it. A DXF part outline, as a laser cutting shop or a supplier sends it, comes in as a body with its holes as holes of their own, arcs and circles kept true. An SVG comes in as a sketch body: an area, a stroke outside or inside its lines, a silhouette without its holes, or the drawing widened all round - together a cookie cutter from one file, or the layers of a multicolour logo. The Text shape has the same fill modes, and the shape library has a name tag: a text in coloured layers for a multicolour print, with an optional key ring hole and a rounded or chamfered edge on the letters, and an icon tag: an SVG icon in the same coloured layers, with a count and "as many as fit" to fill a plate. A coloured OBJ – from layerling, or from Tinkercad as a ZIP with its `.mtl` – or a coloured 3MF, slicer projects included, comes in as one body per colour, and a 3MF with several objects as one body per object.
+- **Export what your slicer wants** – STL, 3MF with names and colours, or OBJ with colours, for the selection or the whole scene (hidden parts stay out), plus STEP if the design should travel on into a full CAD program, and the top view as SVG or as DXF with true arcs and circles for a laser cutter. PNG saves a clean picture of the view, at twice the resolution and with a transparent background if you like.
 - **Drawing export** – select a part, or clear the selection for the whole visible design, then choose **Export → Drawing → PDF or SVG**. Generates front, top and right-side views in first-angle layout on a bordered engineering sheet with zone numbers and a lower-right title block, with overall dimensions, hidden edges, and diameter/position tables for axis-aligned circular bores. Views are 1:1 in millimetres; the sheet uses the smallest fitting ISO landscape size (or a larger custom size). Print at **100% / actual size**. Positions are measured from each view's lower-left overall corner. Hole tables use nominal mesh geometry and do not automatically dimension angled/non-circular holes, threads, depths or tolerances. The projection engine is adapted from [Cadverix-3D](https://github.com/WC3D/Cadverix-3D)'s drawing work.
 - **Update notice** – on the published program an open page notices a new version by itself and offers to save and reload, listing what is new.
 - **Folders for your designs** – sort the designs on the start page into folders (and folders into folders) by dragging them or with "Move to …"; the search looks through all of them, and "Back up all" keeps them.
@@ -128,12 +128,11 @@ It is not a full CAD package: there is no parametric timeline and no assemblies.
 Made by others, not by this project:
 
 <!-- videos:start -->
-- [I'm 100% In on Layerling - The Next Big Free CAD](https://youtu.be/IO7S-7bxS5o) – Printology (English). A first test by a Tinkercad user: what layerling does better than Tinkercad, what still needs work, and whether to switch now.
-- [10 Things Layerling Can Do That Tinkercad Can't!](https://youtu.be/cx0OVHgUsJM) – Print N Repeat (English). A second video by this channel: ten things layerling can do that Tinkercad cannot.
+- [Layerling CAD Videos](https://www.youtube.com/playlist?list=PLc09BHr_6nn8) – Printology (English). A playlist about layerling, so far with “I'm 100% In on Layerling - The Next Big Free CAD” and “Layerling Features That Blow Tinkercad Out Of The Water”.
+- [Print by Layer](https://www.youtube.com/playlist?list=PLejZBz4L7CGQ) – Print N Repeat (English). A playlist about layerling, so far with “The EASIEST Way to Design Hinges in Layerling” and “The EASIEST Way to 3D Model Threads!”.
 - [Layerling la nueva herramienta gratuita de modelado 3D, más completo que Tinkercad](https://youtu.be/-EEt0RSINoY) – Fulcro 1900 (Spanish). A video about layerling as a new free 3D modelling tool that is more complete than Tinkercad.
-- [Layerling - Tussen Tinkercad en Fusion 360 in, en Helemaal Gratis!](https://youtu.be/X-UuvsfDI-s) – Werkplaats Marc (Dutch). A first look at layerling for Tinkercad users: hollowing, fillets, the hole pattern, threads with clearance, custom fonts and printer profiles, with a bolt printed with and without clearance to show the difference.
+- [Layerling](https://www.youtube.com/playlist?list=PLQuXPoMXTnRQ) – Werkplaats Marc (Dutch). A playlist about layerling, so far with a first look for Tinkercad users (“Layerling - De Gratis Tussenstap van Tinkercad naar Fusion 360”) and a tutorial on sketches: tracing a photo, revolve and sweep along a path (“Schetsen Uitgelegd”).
 - [Layerling](https://www.youtube.com/playlist?list=PLYqVFeqYBrPE) – TECHNOBENTO (English). A playlist about layerling, so far with “A new way to sketch in Layerling”.
-- [The PERFECT FREE CAD Program Between Tinkercad and Fusion 360!](https://youtu.be/GIoG-IHPXyg) – Print N Repeat (English). A video about layerling as a free CAD program between Tinkercad and Fusion 360.
 - [Layerling Tutorials](https://www.youtube.com/playlist?list=PLZ-ZWS0D1JIk) – HL ModTech (English). A playlist by a Tinkercad user, so far with a look at layerling of about 23 minutes (free, browser-based CAD that extends Tinkercad), a deeper dive into its features and a short update on printed threads.
 - [Layerling – Playlist](https://www.youtube.com/playlist?list=PLCsBmX2kOGWs) – Making Layers (English). A series about layerling, so far with "Tinkercad alternative / upgrade? Introducing Layerling!", an overview for people coming from Tinkercad, and "Layerling Sketch Tools!" on the sketch tools.
 - [Tinkercad Too Basic? Fusion 360 Too Much? Meet Layerling for 3D Printing](https://youtu.be/kzV7fQ3rXhw) – 3D Jesus | 3D Printing & Design (English). A first test of layerling without any manual: fillets and chamfers, hollowing, threads, sketches, revolved bodies, patterns, import and printer profiles.
@@ -312,6 +311,13 @@ and the short guide in the editor explains how to switch it on. The web server n
 
 The folder has **no login**: whoever can reach the page can read, write and delete what is in it. On a home network or in
 a workshop that is the point; on a publicly reachable site, protect it or leave it out.
+
+Nothing in the folder is meant to be opened by its address: layerling reads and writes it only through `store.php`.
+On Apache, `store.php` writes a `.htaccess` into the folder that refuses every direct request. Apache reads it only where
+`AllowOverride` lets it (Debian's default for `/var/www` is `None`, which ignores it), and nginx and other servers never
+do, so deny access to `store/` there yourself (in Apache: `<Directory /var/www/html/store> Require all denied </Directory>`,
+in nginx: `location /store/ { deny all; }`). `store.php` also checks every export it saves, so a file that could run in a
+browser is refused either way.
 
 One thing to remember when deploying: if you mirror the export with an option that removes anything extra – `rsync
 --delete`, `robocopy /MIR`, WinSCP `-delete` – exclude `store` explicitly, or every update will wipe the projects.
@@ -496,7 +502,7 @@ counts. Good places to start:
 
 - editor bug fixes
 - geometry and boolean test cases
-- import and export edge cases (STL, OBJ, 3MF, STEP, SVG)
+- import and export edge cases (STL, OBJ, 3MF, STEP, SVG, DXF)
 - UI polish
 - documentation screenshots and videos
 - accessibility and performance improvements

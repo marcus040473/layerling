@@ -202,6 +202,7 @@ import {
   MAX_GRIDFINITY_DIVIDER_THICKNESS,
   MAX_GRIDFINITY_DRAWER,
   MAX_GRIDFINITY_HEIGHT_UNITS,
+  MAX_GRIDFINITY_LIP_CHAMFER,
   MAX_GRIDFINITY_PADDING,
   MIN_GRIDFINITY_COMPARTMENT_LABEL_LENGTH,
   MIN_GRIDFINITY_COMPARTMENT_LABEL_MM,
@@ -236,6 +237,7 @@ import {
   gridfinityLabelMaxCornerSize,
   gridfinityLabelMaxWidth,
   gridfinityLabelWidth,
+  gridfinityLipChamfer,
   gridfinityMaxUnits,
   gridfinityOpenFits,
   gridfinityPaddingPatch,
@@ -455,7 +457,7 @@ const RELATIVE_SIZE_PROPERTY_IDS = new Set(["width", "height", "length", "diamet
 const ROTATION_PROPERTY_IDS = new Set(["rotateX", "rotateY", "rotateZ"]);
 
 function propertyUsesLengthUnit(key: string) {
-  return ["textLineWidth", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "sketchLineWidth", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "screwHoleShaft", "screwHoleHeadDepth", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityDividerThickness", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
+  return ["textLineWidth", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "sketchLineWidth", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "screwHoleShaft", "screwHoleHeadDepth", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityDividerThickness", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
 }
 
 /**
@@ -1228,6 +1230,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       properties.push(
         { id: "gridfinityUnitsY", label: t("prop.gridfinityUnitsY"), value: plan.count.y, min: MIN_GRIDFINITY_UNITS, max: MAX_GRIDFINITY_HEIGHT_UNITS, step: 1, onChange: (value) => apply({ y: Math.round(value) }) },
         { type: "toggle", id: "gridfinityLip", label: t("prop.gridfinityLip"), value: plan.lip, onChange: (value) => apply({ lip: value }) },
+        // The edge tool's chamfer on the lip's top, built in (#780).
+        ...(plan.lip ? [{ id: "gridfinityLipChamfer", label: t("prop.gridfinityLipChamfer"), value: gridfinityLipChamfer({ ...shape, depth }), min: 0, max: MAX_GRIDFINITY_LIP_CHAMFER, step: 0.05, hint: t("gridfinity.lipChamferHint"), onChange: (value: number) => onUpdate({ gridfinityLipChamfer: clamp(value, 0, MAX_GRIDFINITY_LIP_CHAMFER) }) }] : []),
         { type: "toggle", id: "gridfinityMagnets", label: t("prop.gridfinityMagnets"), value: plan.magnets, onChange: (value) => onUpdate({ gridfinityMagnets: value }) },
       );
     }
@@ -5175,15 +5179,12 @@ function RangeProperty({
   const numberInputRef = useRef<HTMLInputElement>(null);
   const keepSelectedRef = useRef(false);
   const wheelHandlerRef = useRef<((event: WheelEvent) => void) | null>(null);
-  wheelHandlerRef.current = (event: WheelEvent) => {
-    const input = numberInputRef.current;
-    const turn = wheelTurn(event);
-    if (!input || disabled || !editing || document.activeElement !== input || turn === 0) return;
-    event.preventDefault();
+  // Up and Down in the focused field do the same as the wheel: one step, Shift a larger one, Alt a finer one (#749, MartinShake).
+  const stepFieldValue = (direction: 1 | -1, modifiers: { shift: boolean; ctrl: boolean; alt: boolean }) => {
     const base = wheelBaseStep(controlMin, controlMax, controlStep, unit === "in");
     const parsed = parseMeasurementInput(draft);
     const current = Number.isFinite(parsed) ? parsed : controlValue;
-    const turned = wheelNextValue(current, turn < 0 ? 1 : -1, base, { shift: event.shiftKey, ctrl: event.ctrlKey, alt: event.altKey });
+    const turned = wheelNextValue(current, direction, base, modifiers);
     // The wheel stops at the field's lower limit, also for the figure shown: it went on below it, into negative sizes, which the body
     // then kept at the limit and the field showed again as 0.01 only when it was left (#576, prmod3d).
     const next = freePosition ? turned : Math.max(turned, controlMin);
@@ -5196,6 +5197,13 @@ function RangeProperty({
     // The whole value stays selected, so that typing after the wheel replaces it, as after the click (#226).
     // Every render until a key is typed puts the selection back, as the field's value is written again.
     keepSelectedRef.current = true;
+  };
+  wheelHandlerRef.current = (event: WheelEvent) => {
+    const input = numberInputRef.current;
+    const turn = wheelTurn(event);
+    if (!input || disabled || !editing || document.activeElement !== input || turn === 0) return;
+    event.preventDefault();
+    stepFieldValue(turn < 0 ? 1 : -1, { shift: event.shiftKey, ctrl: event.ctrlKey, alt: event.altKey });
   };
   useLayoutEffect(() => {
     const input = numberInputRef.current;
@@ -5254,6 +5262,9 @@ function RangeProperty({
               } else if (event.key === "Escape") {
                 setDraft(openingDraft());
                 setEditing(false);
+              } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && !disabled && editing && !event.metaKey) {
+                event.preventDefault();
+                stepFieldValue(event.key === "ArrowUp" ? 1 : -1, { shift: event.shiftKey, ctrl: event.ctrlKey, alt: event.altKey });
               }
             }}
           />

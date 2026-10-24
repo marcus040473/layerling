@@ -13,7 +13,7 @@ Open [layerling.com](https://layerling.com/). Klik op de startpagina op {{ui:das
 
 Heb je al een bestand waarmee je verder wilt, gebruik dan {{ui:dashboard.importGeometry}}. Dat werkt voor layerling-ontwerpen (`.lyl`) en ook voor STL-, OBJ-, 3MF-, STEP- en SVG-bestanden.
 
-Al je ontwerpen verschijnen later op de startpagina met een voorbeeldafbeelding. Ze worden bewaard in de opslag van je browser en na elke wijziging automatisch opgeslagen, dus er is geen knop om op te slaan. Hoe je ontwerpen in een bestand verpakt en doorgeeft, lees je in [Bestanden en opslaan](chapter:bestanden-en-opslaan).
+Al je ontwerpen verschijnen later op de startpagina met een voorbeeldafbeelding. Ze worden bewaard in de opslag van je browser en na elke wijziging automatisch opgeslagen, dus er is geen knop om op te slaan. Hoe je ontwerpen in een bestand verpakt en doorgeeft, lees je in [Bestanden en opslaan](chapter:bestanden-en-opslaan). Wil je een herinnering, zet dan {{ui:workspace.confirmTabClose}} aan in de instellingen (het tandwiel in het lint): de browser vraagt dan om bevestiging voordat een tabblad met een open ontwerp wordt gesloten of herladen.
 
 ## De editor in één oogopslag
 

@@ -89,7 +89,7 @@ describe("translation", () => {
   });
 
   it("leaves an unknown placeholder untouched instead of printing undefined", () => {
-    expect(translate("en", "notice.opened", {})).toBe("Opened {name}");
+    expect(translate("en", "notice.openedLocalProject", {})).toBe("Opened {name} as a new local design");
   });
 
   it("falls back to English when a catalogue misses a key", () => {

@@ -63,9 +63,9 @@ Egy jegyzet azt rögzíti, amit a geometria nem mond el: „Ez a csavar 0,3 mm-r
 - Ha a testét törlöd, vagy már nincs alatta látható test, a jegyzet ott marad, ahol volt, a munkasíkon.
 - A tűt húzva a jegyzet elmozdul. Egy kattintás a tűre összecsukja a kártyát, csak a kis szám marad; egy újabb kattintás újra kinyitja. A szövegbe kattintva szerkesztheted.
 - Írás közben az [[Enter]] megtartja a szöveget, az [[Esc]] visszaállítja olyanra, amilyen az írás megkezdése előtt volt; a [[Shift]]+[[Enter]] új sort kezd.
-- **Vázlatban** is elhelyez egy jegyzetet a {{ui:editor.tool.note}} (a {{ui:editor.group.manage}} alatt) vagy az [[N]], bárhol a vázlaton. A vázlat összes jegyzete a vázlat testéhez tartozik: a 3D nézetben rajta ülnek, a {{ui:sketch.extrude}} vagy {{ui:sketch.sweep}} művelettel készült test tetején és a {{ui:sketch.revolve}} művelettel készült test megrajzolt profilján, és vele együtt mozognak. Ha újra megnyitod a vázlatot, megmutatja a test jegyzeteit, a 3D-ben elhelyezetteket is. A vázlatban a {{ui:sketch.undo}} egy jegyzetet ugyanúgy visszavon, mint egy vonalat, a {{ui:sketch.cancel}} pedig elveti, amit a jegyzeteken módosítottál.
+- **Vázlatban** is elhelyez egy jegyzetet a {{ui:editor.tool.note}} (a {{ui:editor.group.manage}} alatt) vagy az [[N]], bárhol a vázlaton. A vázlat összes jegyzete a vázlat testéhez tartozik: a 3D nézetben rajta ülnek, a {{ui:sketch.extrude}} vagy {{ui:sketch.sweep}} művelettel készült test tetején és a {{ui:sketch.revolve}} művelettel készült test megrajzolt profilján, és vele együtt mozognak. Ha újra megnyitod a vázlatot, megmutatja a test jegyzeteit, a 3D-ben elhelyezetteket is. A vázlatban a {{ui:sketch.undo}} egy jegyzetet ugyanúgy visszavon, mint egy vonalat, a {{ui:sketch.cancel}} pedig elveti, amit a jegyzeteken módosítottál. A [[Shift]]+[[N]] itt is megjeleníti vagy elrejti a jegyzeteket.
 
-A jegyzetek a tervben mentődnek, egyik exportban sem jelennek meg, és a {{ui:visibility.notes}} (a {{ui:editor.visibilityOptions}} alatt, a szem ikon melletti nyílnál) kapcsolóval megjeleníthetők vagy elrejthetők.
+A jegyzetek a tervben mentődnek, egyik exportban sem jelennek meg, és a {{ui:visibility.notes}} (a {{ui:editor.visibilityOptions}} alatt, a szem ikon melletti nyílnál) kapcsolóval vagy a [[Shift]]+[[N]] billentyűkkel megjeleníthetők vagy elrejthetők.
 
 ## Referenciapontok
 
@@ -74,7 +74,7 @@ A referenciapont egy puszta jel a térben, mint egy ceruzajel vagy egy kijelöl�
 - Húzással mozgatsz egy pontot, vagy rákattintva megnézheted a koordinátáit, és újakat gépelhetsz be; a beállított mértékegységet használják. Minden kártya a címénél fogva elhúzható, ha eltakar valamit, önállóan: a többi a helyén marad, a címre dupla kattintás pedig visszateszi. Az utoljára megérintett kártya áll a többi előtt. Egy kártyán vagy a jobb gombos menüben a **Mind törlése** egyszerre minden pontot töröl. A {{ui:common.delete}} eltávolítja.
 - A mérőszalag is meg tud jelölni egy pontot: az {{ui:camera.tapeMarkMiddle}}, a mérés alatti célkereszt gomb a közepére tesz egyet, például egy kerek lyuk középpontjába. És egy ponttól is mér: a szalag úgy illeszkedik a referenciapontokhoz, mint a sarkokhoz.
 - Amikor egy alakzatot húzol, az élei és a közepe úgy illeszkednek egy ponthoz, ahogy más alakzatokhoz ({{ui:workspace.objectSnap}}). A derékszögvonalzó is illeszkedik a pontokhoz.
-- A pontok a tervben mentődnek, egyik exportban sem jelennek meg, és a jegyzetekkel együtt a {{ui:visibility.notes}} kapcsolóval jeleníthetők meg vagy rejthetők el.
+- A pontok a tervben mentődnek, egyik exportban sem jelennek meg, és a jegyzetekkel együtt a {{ui:visibility.notes}} ([[Shift]]+[[N]]) kapcsolóval jeleníthetők meg vagy rejthetők el.
 - Egy MI a `layerling_add_reference_points`, a `layerling_list_reference_points` és a `layerling_remove_reference_points` paranccsal jelölheti meg, sorolhatja fel és távolíthatja el őket.
 
 ## Mintaképek

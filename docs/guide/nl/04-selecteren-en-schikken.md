@@ -74,6 +74,8 @@ Moeten twee onderdelen vlak tegen vlak komen, of strak gelijk liggen? Selecteer 
 
 ![Het paneel Vlakken uitlijnen: het onderdeel dat beweegt is gekozen, een vlak van het andere onderdeel komt daarna, dan vlak tegen vlak of gelijk, en een optionele tussenruimte.](shot:mate-faces)
 
+**Gaten op één as:** {{ui:mate.mode.concentric}} lijnt in plaats daarvan ronde vlakken uit: een gat boven een gat, een pen in een gat, een schroef in zijn doorgaand gat. Kies het voordat je de vlakken aanklikt. Klik dan de ronde binnenkant van een gat (of de buitenkant van een pen) van het onderdeel dat beweegt, en een rond vlak van het andere onderdeel; het hele ronde vlak licht op terwijl je erop wijst. {{ui:mate.apply}} draait het onderdeel de kortste weg tot beide assen evenwijdig zijn en schuift het dwars op de andere as. Langs de as blijft het waar het was, dus een pen houdt zijn hoogte; duw hem er daarna in. Dit werkt ook bij geïmporteerde meshes, zolang het gat uit facetten rond één as bestaat.
+
 **Een exacte hoek tussen twee vlakken:** {{ui:editor.tool.mateFaces}} laat de vlakken evenwijdig; voor een hoek ertussen is er geen eigen gereedschap, maar zo kom je er. Breng eerst de vlakken samen met {{ui:editor.tool.mateFaces}}, zodat ze evenwijdig liggen. Zet dan het draaipunt op de rand waar ze elkaar ontmoeten ({{ui:editor.tool.rotationPivot}}, klik de rand of een hoek) en typ de hoek, bijvoorbeeld 15 of 30, in de kaart {{ui:inspector.rotation}} van het onderdeel. Het draait om dat draaipunt. De assen van de kaart zijn de assen van de plaat, dus dit werkt als de rand langs X, Y of Z loopt.
 
 Net zo eenvoudig zijn {{ui:editor.tool.dropToWorkplane}} ([[D]]), dat de selectie op het werkvlak laat zakken, en {{ui:editor.tool.centerOnWorkplane}}.

@@ -28,6 +28,8 @@ This is how you get:
 
 If several solids are in the group, they are joined. Two solids that touch become a single part.
 
+With large meshes, such as an imported STL with hundreds of thousands of triangles, the cut takes a few seconds. layerling then works in the background and shows "{{ui:status.computing}}"; meanwhile you can turn the view and use the interface. If you change the scene in that time, the result is dropped and layerling tells you so. The same goes for {{ui:editor.tool.split}}.
+
 You can treat a group like a shape: move, rotate, colour, group again. {{ui:editor.tool.ungroup}} ([[Ctrl]]+[[Shift]]+[[G]]) dissolves it and the individual parts are back.
 
 ### Making a group a hole

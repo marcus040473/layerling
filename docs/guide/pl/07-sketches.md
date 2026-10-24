@@ -171,5 +171,6 @@ Wszystkie cztery dotyczą tylko wzorca, nigdy szkicu.
 | [[R]] | obraca zamknięty szkic o 45° |
 | [[L]] | blokuje lub odblokowuje zaznaczony kontur albo obraz wzorcowy |
 | [[N]] | umieszcza notatkę: następne kliknięcie stawia ją na szkicu |
+| [[Shift]]+[[N]] | pokazuje albo ukrywa notatki |
 
 > **Wskazówka:** rysuj tylko tyle punktów, ile trzeba. Kontur z kilku dobrze postawionych punktów daje gładszą bryłę niż plątanina wielu.

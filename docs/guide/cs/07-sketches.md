@@ -167,5 +167,6 @@ Tyto volby mění pouze podklad, nikoli náčrt.
 | [[R]] | otočení uzavřeného náčrtu o 45° |
 | [[L]] | zamknutí nebo odemknutí podkladu |
 | [[N]] | vložení poznámky: další kliknutí ji umístí do náčrtu |
+| [[Shift]]+[[N]] | zobrazení nebo skrytí poznámek |
 
 > **Tip:** Používejte jen nezbytné body. Několik dobře umístěných bodů vytvoří hladší tvar než spletitý obrys s mnoha body.

@@ -171,5 +171,6 @@ Alle vier wirken nur auf die Vorlage, nie auf die Skizze.
 | [[R]] | geschlossene Skizze um 45° drehen |
 | [[L]] | gewählten Umriss oder das Vorlagenbild sperren oder entsperren |
 | [[N]] | Notiz setzen: Der nächste Klick setzt sie auf die Skizze |
+| [[Umschalt]]+[[N]] | Notizen ein- oder ausblenden |
 
 > **Tipp:** Zeichne so wenig Punkte wie nötig. Ein Umriss mit wenigen, sauber gesetzten Punkten ergibt einen glatteren Körper als ein Gewirr aus vielen.

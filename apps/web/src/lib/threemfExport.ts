@@ -1,4 +1,4 @@
-import { strToU8, zipSync } from "fflate";
+import { strToU8, zip, zipSync } from "fflate";
 import { layerlingToZUp, type MeshPoint } from "@/lib/meshCoordinates";
 import { weldMeshVertices } from "@/lib/objExport";
 
@@ -74,6 +74,27 @@ function coordinate(value: number) {
  * sees the geometry.
  */
 export function exportMeshesTo3mf(meshes: readonly ThreeMfExportMesh[], metadata: { title?: string } = {}): Uint8Array {
+  return zipSync(threeMfPackageFiles(meshes, metadata), THREE_MF_ZIP_OPTIONS);
+}
+
+/**
+ * The same file, packed by fflate's workers: for a 300,000-triangle export packing took 1.3 s of
+ * the page's main thread. Where those workers cannot start, it is packed here as before.
+ */
+export async function exportMeshesTo3mfAsync(meshes: readonly ThreeMfExportMesh[], metadata: { title?: string } = {}): Promise<Uint8Array> {
+  const files = threeMfPackageFiles(meshes, metadata);
+  try {
+    return await new Promise<Uint8Array>((resolve, reject) => {
+      zip(files, THREE_MF_ZIP_OPTIONS, (error, data) => (error ? reject(error) : resolve(data)));
+    });
+  } catch {
+    return zipSync(files, THREE_MF_ZIP_OPTIONS);
+  }
+}
+
+const THREE_MF_ZIP_OPTIONS = { level: 6 } as const;
+
+function threeMfPackageFiles(meshes: readonly ThreeMfExportMesh[], metadata: { title?: string }) {
   const colors = [...new Set(meshes.flatMap((mesh) => [displayColor(mesh.color), ...(mesh.faceColors ?? []).map(displayColor)]))];
   const objects: string[] = [];
   const items: string[] = [];
@@ -128,12 +149,9 @@ ${items.join("\n")}
 </model>
 `;
 
-  return zipSync(
-    {
-      "[Content_Types].xml": strToU8(CONTENT_TYPES),
-      "_rels/.rels": strToU8(ROOT_RELATIONSHIPS),
-      [MODEL_PATH]: strToU8(model),
-    },
-    { level: 6 },
-  );
+  return {
+    "[Content_Types].xml": strToU8(CONTENT_TYPES),
+    "_rels/.rels": strToU8(ROOT_RELATIONSHIPS),
+    [MODEL_PATH]: strToU8(model),
+  };
 }

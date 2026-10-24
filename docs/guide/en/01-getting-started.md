@@ -13,7 +13,7 @@ Open [layerling.com](https://layerling.com/). On the start page click {{ui:dashb
 
 If you already have a file to continue with, use {{ui:dashboard.importGeometry}}. That works for layerling designs (`.lyl`) as well as STL, OBJ, 3MF, STEP or SVG files.
 
-All your designs later appear on the start page with a preview picture. They are kept in your browser's storage and saved automatically after every change, so there is no save button. **layerling takes no responsibility for designs kept in the browser.** A browser can fail, or a browser update can cause problems, so back up your designs from time to time with {{ui:dashboard.backupAll}} on the start page, or save them as files. A backup comes back with {{ui:dashboard.restoreBackup}}. How to pack designs into a file and pass them on is covered in [Files and saving](chapter:files-and-saving).
+All your designs later appear on the start page with a preview picture. They are kept in your browser's storage and saved automatically after every change, so there is no save button. **layerling takes no responsibility for designs kept in the browser.** A browser can fail, or a browser update can cause problems, so back up your designs from time to time with {{ui:dashboard.backupAll}} on the start page, or save them as files. A backup comes back with {{ui:dashboard.restoreBackup}}. How to pack designs into a file and pass them on is covered in [Files and saving](chapter:files-and-saving). If you would like a reminder, switch on {{ui:workspace.confirmTabClose}} in the settings (the cogwheel in the ribbon): the browser then asks before a tab with an open design is closed or reloaded.
 
 ## The editor at a glance
 

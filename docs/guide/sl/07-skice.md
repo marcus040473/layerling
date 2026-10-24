@@ -169,5 +169,6 @@ Vsa štiri delujejo samo na predlogo, nikoli na skico.
 | [[R]] | zavrti sklenjeno skico za 45° |
 | [[L]] | zakleni ali odkleni sliko predloge |
 | [[N]] | postavi opombo: naslednji klik jo postavi na skico |
+| [[Shift]]+[[N]] | pokaži ali skrij opombe |
 
 > **Namig:** Nariši čim manj točk. Obris z malo, čisto postavljenimi točkami da bolj gladko telo kot kopica mnogih.

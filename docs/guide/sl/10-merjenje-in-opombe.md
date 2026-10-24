@@ -63,9 +63,9 @@ Opomba zabeleži, česar geometrija ne pove: »Tu je vijak 0,3 mm preozek«, »P
 - Če je njeno telo izbrisano ali pod njo ni več vidnega telesa, opomba ostane, kjer je stala, na delovni ravnini.
 - Vlečenje bucike premakne opombo. Klik na buciko kartico zloži, ostane le majhna številka; še en klik jo spet odpre. Klik v besedilo ga uredi.
 - Med pisanjem [[Enter]] obdrži besedilo, [[Esc]] ga vrne, kot je bilo pred začetkom, [[Shift]]+[[Enter]] pa začne novo vrstico.
-- **V skici** opombo postavi tudi {{ui:editor.tool.note}} (pod {{ui:editor.group.manage}}) ali tipka [[N]], kamor koli na skico. Vse opombe skice pripadajo njenemu telesu: v 3D pogledu sedijo na njem, na vrhu telesa, narejenega s funkcijo {{ui:sketch.extrude}} ali {{ui:sketch.sweep}}, in na narisanem profilu telesa, narejenega s funkcijo {{ui:sketch.revolve}}, in se premikajo z njim. Ko skico znova odpreš, pokaže opombe telesa, tudi tiste, postavljene v 3D. V skici {{ui:sketch.undo}} prekliče opombo tako kot črto, {{ui:sketch.cancel}} pa zavrže, kar si spremenil pri opombah.
+- **V skici** opombo postavi tudi {{ui:editor.tool.note}} (pod {{ui:editor.group.manage}}) ali tipka [[N]], kamor koli na skico. Vse opombe skice pripadajo njenemu telesu: v 3D pogledu sedijo na njem, na vrhu telesa, narejenega s funkcijo {{ui:sketch.extrude}} ali {{ui:sketch.sweep}}, in na narisanem profilu telesa, narejenega s funkcijo {{ui:sketch.revolve}}, in se premikajo z njim. Ko skico znova odpreš, pokaže opombe telesa, tudi tiste, postavljene v 3D. V skici {{ui:sketch.undo}} prekliče opombo tako kot črto, {{ui:sketch.cancel}} pa zavrže, kar si spremenil pri opombah. [[Shift]]+[[N]] tudi tukaj prikaže ali skrije opombe.
 
-Opombe se shranijo v načrtu, ne pojavijo se v nobenem izvozu in jih lahko prikažeš ali skriješ prek {{ui:visibility.notes}} (v {{ui:editor.visibilityOptions}}, puščici poleg ikone očesa).
+Opombe se shranijo v načrtu, ne pojavijo se v nobenem izvozu in jih lahko prikažeš ali skriješ prek {{ui:visibility.notes}} (v {{ui:editor.visibilityOptions}}, puščici poleg ikone očesa) ali s [[Shift]]+[[N]].
 
 ## Referenčne točke
 
@@ -74,7 +74,7 @@ Referenčna točka je zgolj oznaka v prostoru, kot svinčnikova črta ali točka
 - Povleci točko, da jo premakneš, ali jo klikni, da vidiš njene koordinate in vpišeš nove; veljajo v nastavljeni enoti. Vsako kartico lahko za naslov povlečeš stran, če kaj zakriva, samo zase: druge ostanejo, kjer so, dvoklik na naslov pa jo vrne nazaj. Kartica, katere si se nazadnje dotaknil, stoji pred drugimi. **Izbriši vse** v kartici ali v meniju z desnim klikom izbriše vse točke naenkrat. {{ui:common.delete}} jo odstrani.
 - Ko vlečeš obliko, se njeni robovi in sredina zaskočijo na točko, kot se zaskočijo na druge oblike ({{ui:workspace.objectSnap}}). Tudi kotno ravnilo se zaskoči na točke.
 - Tudi merilni trak lahko označi točko: {{ui:camera.tapeMarkMiddle}}, gumb s križcem pod meritvijo, jo postavi na njeno sredino, na primer v središče okrogle luknje. Od točke tudi meri: trak se zaskoči na referenčne točke kakor na oglišča.
-- Točke se shranijo v načrtu, ne pojavijo se v nobenem izvozu in se skupaj z opombami prikažejo ali skrijejo prek {{ui:visibility.notes}}.
+- Točke se shranijo v načrtu, ne pojavijo se v nobenem izvozu in se skupaj z opombami prikažejo ali skrijejo prek {{ui:visibility.notes}} ([[Shift]]+[[N]]).
 - Umetna inteligenca jih lahko postavi, našteje in odstrani z `layerling_add_reference_points`, `layerling_list_reference_points` in `layerling_remove_reference_points`.
 
 ## Referenčne slike

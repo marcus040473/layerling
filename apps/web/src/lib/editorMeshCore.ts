@@ -78,8 +78,15 @@ export function cleanModelDimension(value: number) {
   return Math.max(MIN_SHAPE_DIMENSION, Number(value.toFixed(MODEL_DIMENSION_PRECISION)));
 }
 
+// A worker has no page address to find manifold.js next to, so the page hands it over (lib/geometryWorker.ts).
+let manifoldAssetBaseOverride: string | null = null;
+
+export function setManifoldAssetBase(base: string) {
+  manifoldAssetBaseOverride = base;
+}
+
 export function getManifoldRuntime() {
-  const assetBase = typeof window === "undefined" ? "/" : new URL(".", window.location.href).href;
+  const assetBase = manifoldAssetBaseOverride ?? (typeof window === "undefined" ? "/" : new URL(".", window.location.href).href);
   const manifoldScriptUrl = new URL("manifold.js", assetBase).href;
   const runtimeModule = import(/* webpackIgnore: true */ manifoldScriptUrl).then((module) => (module as { default: typeof manifoldModule }).default);
   // Drop a rejected attempt so a transient failure (e.g. a network blip
@@ -522,6 +529,7 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         gridfinityOpenFront: shape.gridfinityOpenFront,
         gridfinityOpenLeft: shape.gridfinityOpenLeft,
         gridfinityOpenRight: shape.gridfinityOpenRight,
+        gridfinityLipChamfer: shape.gridfinityLipChamfer,
         gridfinityPaddingBack: shape.gridfinityPaddingBack,
         gridfinityPaddingFront: shape.gridfinityPaddingFront,
         gridfinityPaddingLeft: shape.gridfinityPaddingLeft,

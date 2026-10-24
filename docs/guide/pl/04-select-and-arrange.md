@@ -74,6 +74,8 @@ Dwie części mają się zetknąć ścianami albo stanąć na równo? Zaznacz cz
 
 ![Panel Wyrównaj ściany: część, która się przesuwa, jest wybrana, następna jest ściana drugiej części, potem ściana do ściany albo na równo i opcjonalna szczelina.](shot:mate-faces)
 
+**Otwory na jednej osi:** {{ui:mate.mode.concentric}} wyrównuje zamiast tego okrągłe ściany: otwór nad otworem, kołek w otworze, śrubę w jej otworze przelotowym. Wybierz tę opcję, zanim klikniesz ściany. Potem kliknij okrągłe wnętrze otworu (lub zewnętrzną stronę kołka) na części, która się przesuwa, i okrągłą ścianę drugiej części; cała okrągła ściana podświetla się pod wskaźnikiem. {{ui:mate.apply}} obraca część najkrótszą drogą, aż obie osie będą równoległe, i przesuwa ją w poprzek na drugą oś. Wzdłuż osi zostaje tam, gdzie była, więc kołek zachowuje wysokość; wsuń go potem. Działa to też na zaimportowanych siatkach, o ile otwór składa się ze ścianek wokół jednej osi.
+
 **Dokładny kąt między dwiema ścianami:** {{ui:editor.tool.mateFaces}} zostawia ściany równoległe. Nie ma osobnego narzędzia do kąta między nimi, ale da się to zrobić tak. Najpierw zetknij ściany przez {{ui:editor.tool.mateFaces}}, żeby były równoległe. Potem ustaw punkt obrotu na krawędzi, w której się stykają ({{ui:editor.tool.rotationPivot}}, kliknij krawędź albo narożnik), i wpisz kąt, na przykład 15 albo 30, w karcie {{ui:inspector.rotation}} części. Obróci się wokół tego punktu. Osie tej karty to osie płyty, więc działa to, gdy krawędź biegnie wzdłuż X, Y albo Z.
 
 Równie proste są {{ui:editor.tool.dropToWorkplane}} ([[D]]), który opuszcza zaznaczenie na płaszczyznę roboczą, i {{ui:editor.tool.centerOnWorkplane}}.

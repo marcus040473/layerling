@@ -5,6 +5,7 @@ import type { WorkplaneShape } from "@/types/layerling";
 import type { ThreeState } from "@/components/workplane/ViewportOverlays";
 import { outwardFaceNormal } from "@/lib/layFlat";
 import { planarFaceCentroid, type PivotPoint } from "@/lib/rotationPivot";
+import { roundFaceTriangles, type RoundFaceAxis } from "@/lib/roundFaceAxis";
 
 /**
  * Finding what is under the pointer in the 3D view: the ray from the camera
@@ -78,10 +79,16 @@ export function pickShapeAt(
     // A copy lies exactly on its original, so the ray meets both at the same distance and the one
     // that comes first in the list wins - the original, though the copy is the body that is selected.
     // Pressing on it then selected the original and moved that, and the copy chain was gone (#484).
+    const tiedHits = pickableHits.filter((entry) => entry.distance - hit.distance <= PICK_TIE_DISTANCE);
+    // A loose hole flush with a body's face (a hole the height of the plate it cuts, as a DXF brings them, #774)
+    // meets the ray where the body does: the press means the hole, which is all one sees there, even with the
+    // body selected - or the hole could not be picked to move or size it.
+    const holes = tiedHits.filter((entry) => shapes.find((candidate) => candidate.id === entry.object.userData.shapeId)?.hole);
+    const candidates = holes.length > 0 ? holes : tiedHits;
     const tied = preferIds.length > 0
-      ? pickableHits.find((entry) => entry.distance - hit.distance <= PICK_TIE_DISTANCE && preferIds.includes(entry.object.userData.shapeId as string))
+      ? candidates.find((entry) => preferIds.includes(entry.object.userData.shapeId as string))
       : undefined;
-    return (tied ?? hit).object.userData.shapeId as string;
+    return (tied ?? candidates[0]).object.userData.shapeId as string;
   }
 
   // A press that just misses still means the body next to it: a thin wall or
@@ -135,14 +142,10 @@ export function pickImagePoint(state: ThreeState, shapeId: string, clientX: numb
   return hit ? { x: hit.point.x, y: hit.point.y, z: hit.point.z } : null;
 }
 
-export type LayFlatPick = { shapeId: string; normal: { x: number; y: number; z: number }; point: { x: number; y: number; z: number } };
+export type LayFlatPick = { shapeId: string; normal: { x: number; y: number; z: number }; point: { x: number; y: number; z: number }; axis?: RoundFaceAxis | null };
 
-export function pickRotationPivot(state: ThreeState, clientX: number, clientY: number): PivotPoint | null {
-  aimPickRay(state, clientX, clientY, RENDER_LAYER_SHAPES);
-  const hit = firstShapeHit(state, { needsFace: true });
-  if (!hit || hit.faceIndex === undefined || hit.faceIndex === null) return null;
-
-  const mesh = hit.object as THREE.Mesh<THREE.BufferGeometry>;
+/** The mesh's triangles in world space, nine numbers per triangle, as the face searches take them. */
+export function worldTrianglePositions(mesh: THREE.Mesh<THREE.BufferGeometry>): Float64Array {
   mesh.updateWorldMatrix(true, false);
   const position = mesh.geometry.getAttribute("position");
   const index = mesh.geometry.getIndex();
@@ -155,7 +158,24 @@ export function pickRotationPivot(state: ThreeState, clientX: number, clientY: n
     positions[offset * 3 + 1] = corner.y;
     positions[offset * 3 + 2] = corner.z;
   }
+  return positions;
+}
+
+export function pickRotationPivot(state: ThreeState, clientX: number, clientY: number): PivotPoint | null {
+  aimPickRay(state, clientX, clientY, RENDER_LAYER_SHAPES);
+  const hit = firstShapeHit(state, { needsFace: true });
+  if (!hit || hit.faceIndex === undefined || hit.faceIndex === null) return null;
+  const positions = worldTrianglePositions(hit.object as THREE.Mesh<THREE.BufferGeometry>);
   return planarFaceCentroid(positions, hit.faceIndex) ?? { x: hit.point.x, y: hit.point.y, z: hit.point.z };
+}
+
+/** A face for "Align faces": as for Lay flat, and for a round face (a hole, a pin) its axis as well. */
+export function pickMateFace(state: ThreeState, clientX: number, clientY: number): LayFlatPick | null {
+  const pick = pickLayFlatFace(state, clientX, clientY);
+  const hit = firstShapeHit(state, { needsFace: true });
+  if (!pick || !hit || hit.faceIndex === undefined || hit.faceIndex === null) return pick;
+  const round = roundFaceTriangles(worldTrianglePositions(hit.object as THREE.Mesh<THREE.BufferGeometry>), hit.faceIndex);
+  return { ...pick, axis: round?.axis ?? null };
 }
 
 export function pickLayFlatFace(state: ThreeState, clientX: number, clientY: number): LayFlatPick | null {

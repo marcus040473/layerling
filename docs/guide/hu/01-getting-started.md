@@ -13,7 +13,7 @@ Nyisd meg a [layerling.com](https://layerling.com/) oldalt. A kezdőlapon kattin
 
 Ha már van egy fájlod, amellyel folytatnád, használd a {{ui:dashboard.importGeometry}} lehetőséget. Ez layerling tervekkel (`.lyl`) és STL, OBJ, 3MF, STEP vagy SVG fájlokkal is működik.
 
-A terveid később előnézeti képpel jelennek meg a kezdőlapon. A böngésződ tárolójában maradnak, és minden változtatás után automatikusan mentődnek, ezért nincs mentés gomb. Hogy hogyan csomagolhatsz terveket fájlba és adhatod tovább őket, azt a [Fájlok és mentés](chapter:files-and-saving) fejezet írja le.
+A terveid később előnézeti képpel jelennek meg a kezdőlapon. A böngésződ tárolójában maradnak, és minden változtatás után automatikusan mentődnek, ezért nincs mentés gomb. Hogy hogyan csomagolhatsz terveket fájlba és adhatod tovább őket, azt a [Fájlok és mentés](chapter:files-and-saving) fejezet írja le. Ha emlékeztetőt szeretnél, kapcsold be a beállításokban (a szalagon lévő fogaskerék) a {{ui:workspace.confirmTabClose}} opciót: a böngésző ilyenkor rákérdez, mielőtt egy nyitott tervet tartalmazó lapot bezárnál vagy újratöltenél.
 
 ## A szerkesztő egy pillantással
 

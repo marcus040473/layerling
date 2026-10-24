@@ -1,5 +1,162 @@
 [
   {
+    "version": "1.106.1",
+    "items": [
+      {
+        "title": {
+          "de": "Sicherer Speicherordner auf dem eigenen Server",
+          "en": "A safer store folder on your own server"
+        },
+        "body": {
+          "de": "Wer layerling selbst auf einem Webserver betreibt und den Ordner „store“ nutzt: store.php nimmt jetzt nur noch Exportdateien an, die wirklich das sind, was ihr Name sagt, und der Ordner wird nicht mehr direkt ausgeliefert. Ersetze store.php durch die neue Fassung. Auf layerling.com und im Docker-Image ändert sich nichts.",
+          "en": "If you run layerling on your own web server with a \"store\" folder: store.php now only accepts export files that really are what their name says, and the folder is no longer served directly. Replace store.php with the new one. Nothing changes on layerling.com or in the Docker image."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.106.0",
+    "items": [
+      {
+        "title": {
+          "de": "Flächen ausrichten: Löcher auf eine Achse",
+          "en": "Align faces: holes on one axis"
+        },
+        "body": {
+          "de": "„Flächen ausrichten“ kann jetzt auch „Gleiche Achse“: die runde Innenseite eines Lochs oder die Außenseite eines Zapfens anklicken, dann eine runde Fläche des anderen Teils, und das Teil steht genau auf deren Achse. Loch über Loch, Zapfen in Loch, auch bei importierten Netzen.",
+          "en": "Align faces now has \"Same axis\": click the round inside of a hole or the outside of a pin, then a round face of the other part, and the part lands right on its axis. Hole over hole, pin into hole, on imported meshes too."
+        }
+      },
+      {
+        "title": {
+          "de": "Notizen mit Umschalt+N ein- und ausblenden",
+          "en": "Show or hide notes with Shift+N"
+        },
+        "body": {
+          "de": "Umschalt+N blendet die Notizen und Bezugspunkte ein und aus, im 3D-Editor und in der Skizze, wie „Notizen und Punkte anzeigen“ im Sichtbarkeitsmenü. N allein setzt weiter eine Notiz.",
+          "en": "Shift+N shows or hides the notes and reference points, in the 3D editor and in a sketch, like \"Show notes and points\" in the Visibility menu. N alone still places a note."
+        }
+      },
+      {
+        "title": {
+          "de": "Bezugspunkte rasten beim Ziehen ein",
+          "en": "Reference points snap while you drag them"
+        },
+        "body": {
+          "de": "Ziehst du einen Bezugspunkt, rastet er an Ecken, Kanten- und Flächenmitten der Körper und an anderen Punkten ein. Mit gedrückter Alt-Taste bleibt er frei.",
+          "en": "Drag a reference point and it snaps to the corners, the middles of the edges and faces of bodies, and to other points. Hold Alt to let it go free."
+        }
+      },
+      {
+        "title": {
+          "de": "Das Lineal misst auch aufgestellt",
+          "en": "The ruler measures when stood up"
+        },
+        "body": {
+          "de": "Stellst du das Lineal auf oder kippst es, misst es entlang seiner eigenen Richtung: Senkrecht neben einem Körper zeigt es dessen Höhe, statt weiter über die Platte zu messen.",
+          "en": "Stand the ruler up or tip it and it measures along its own direction: upright beside a body it shows the body's height instead of measuring along the plate."
+        }
+      },
+      {
+        "title": {
+          "de": "Pfeiltasten ändern Zahlen",
+          "en": "The arrow keys change a number"
+        },
+        "body": {
+          "de": "In einem angeklickten Zahlenfeld der Eigenschaften ändern jetzt die Tasten Hoch und Runter den Wert um einen Schritt, mit Umschalt um einen größeren und mit Alt um einen feineren, wie es das Mausrad schon konnte. Bisher bewegten die Tasten nur den Textcursor.",
+          "en": "In a number field of the properties you have clicked, the Up and Down keys now change the value by one step, with Shift a larger step and with Alt a finer one, as the mouse wheel already did. Until now the keys only moved the text cursor."
+        }
+      },
+      {
+        "title": {
+          "de": "Fase am Gridfinity-Stapelrand",
+          "en": "A chamfer on the Gridfinity lip"
+        },
+        "body": {
+          "de": "Die scharfe Oberkante des Stapelrands lässt sich jetzt direkt am Gridfinity-Behälter fasen: Stell sie im Eigenschaften-Fenster unter „Fase am Stapelrand“ auf bis zu 1 mm ein. Das ist dieselbe Fase, die das Kantenwerkzeug macht, ohne dass du die Kanten auswählen musst.",
+          "en": "The sharp top of a Gridfinity bin's stacking lip can now be chamfered on the bin itself: set \"Lip chamfer\" in the Properties panel, up to 1 mm. It is the same chamfer the edge tool makes, without picking the edges."
+        }
+      },
+      {
+        "title": {
+          "de": "Zentrieren auf einer Fläche",
+          "en": "Centring on a face"
+        },
+        "body": {
+          "de": "Liegt die Arbeitsebene auf einer Fläche, zentriert „Auf der Arbeitsebene zentrieren“ jetzt auf den Punkt, den du mit W angeklickt hast, und schiebt nur entlang der Fläche. Bisher zentrierte es auf der Grundplatte, und ein Teil auf einer schrägen Fläche rutschte von ihr weg.",
+          "en": "With the workplane on a face, \"Center on workplane\" now centres on the point you picked with W and moves only along that face. Until now it centred on the base plate, and a part on a sloped face slid off it."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.105.0",
+    "items": [
+      {
+        "title": {
+          "de": "Vorschaubilder zeigen alle Körper, egal wie weit gezoomt",
+          "en": "Preview pictures show all bodies, however far you have zoomed"
+        },
+        "body": {
+          "de": "Das Vorschaubild eines Entwurfs in der Übersicht war ein verkleinerter Abzug des Editors: Wer nah herangezoomt hatte, bekam einen angeschnittenen Ausschnitt, wer weit herausgezoomt hatte, winzige Körper in der Ecke der Platte. Jetzt wird für das Bild kurz auf alle Körper eingepasst, aus der Richtung, aus der du schaust. Dein Bildschirm bleibt dabei, wie er ist.",
+          "en": "The preview picture of a design in the overview was a shrunken copy of the editor: with a close-up you got a cut-off detail, zoomed far out you got tiny bodies in the corner of the plate. For the picture the view is now briefly fitted to all bodies, from the side you are looking from. Your screen stays as it is."
+        }
+      },
+      {
+        "title": {
+          "de": "Entwürfe per Ziehen einfügen",
+          "en": "Drop designs to insert them"
+        },
+        "body": {
+          "de": "Legst du eine oder mehrere layerling-Dateien (.lyl) im Ablagefeld des Import-Fensters ab, kommen ihre Körper in den offenen Entwurf, wie bei „In diesen Entwurf einfügen“. Praktisch, wenn ein großer Tinkercad-Import in mehrere Dateien zerlegt ist.",
+          "en": "Drop one or more layerling files (.lyl) on the drop zone of the import window and their bodies are added to the open design, as with \"Insert into this design\". Handy when a large Tinkercad import comes in several files."
+        }
+      },
+      {
+        "title": {
+          "de": "DXF öffnen",
+          "en": "Open DXF files",
+          "hu": "DXF megnyitása"
+        },
+        "body": {
+          "de": "Eine DXF, etwa ein Teileumriss vom Laserschneid-Betrieb oder vom Lieferanten, kommt jetzt als Teile zum Weiterarbeiten herein: jeder Umriss ein Körper, jedes Loch darin ein eigenes Loch (ein rundes als Zylinder), das du im 3D-Editor verschiebst und in der Größe änderst. In Millimetern, Bögen und Kreise als echte Bögen. Text, Bemaßungen und nicht geschlossene Umrisse fallen weg, die Meldung sagt, wie viele.",
+          "en": "A DXF, such as a part outline from a laser cutting shop or a supplier, now comes in as parts to work on: every outline a body, every hole in it a hole of its own (a round one a cylinder) that you move and size in the 3D editor. In millimetres, its arcs and circles as true arcs. Text, dimensions and outlines that do not close are left out, and the message says how many.",
+          "hu": "Egy DXF, például egy lézervágó cégtől vagy beszállítótól kapott alkatrész-körvonal, mostantól szerkeszthető részekként érkezik: minden körvonalból test lesz, a benne lévő minden furatból külön furat (a kerekből henger), amelyet a 3D szerkesztőben mozgatsz és méretezel. Milliméterben, az ívek és körök valódi ívekként. A szöveg, a méretvonalak és a nem záródó körvonalak kimaradnak, és az üzenet megmondja, hány."
+        }
+      },
+      {
+        "title": {
+          "de": "Vor dem Schließen des Tabs nachfragen",
+          "en": "Ask before closing the tab"
+        },
+        "body": {
+          "de": "In den Einstellungen gibt es jetzt „Vor dem Schließen des Tabs nachfragen“, standardmäßig aus. Ist es an, fragt der Browser mit seiner eigenen Frage „Seite verlassen?“ nach, wenn du einen Tab mit offenem Entwurf schließt oder neu lädst. Deine Entwürfe sind nach jeder Änderung ohnehin gespeichert, die Frage ist nur eine Gedächtnisstütze, etwa gegen ein versehentliches Strg+W.",
+          "en": "The settings now have \"Ask before closing the tab\", off by default. When it is on, the browser asks its own question \"Leave site?\" if you close or reload a tab with an open design. Your designs are saved after every change anyway, so the question is only a reminder, say against a Ctrl+W by mistake."
+        }
+      },
+      {
+        "title": {
+          "de": "Kein Einfrieren mehr bei großen Netzen",
+          "en": "No more freezing with large meshes"
+        },
+        "body": {
+          "de": "Schneiden, Vereinen und Teilen großer importierter Netze, die Druckschätzung und das Vereinfachen rechnen jetzt im Hintergrund. Statt ein bis zwei Sekunden stillzustehen, bleibt layerling bedienbar, die Statuszeile zeigt „Wird berechnet … du kannst weiterarbeiten“. Auch OBJ-Import, 3MF-Export und das Öffnen von Entwürfen mit importierten Netzen halten dich weniger auf. Das Ergebnis ist genau dasselbe wie vorher.",
+          "en": "Cutting, merging and splitting large imported meshes, the print estimate and Simplify now work in the background. Instead of standing still for a second or two, layerling stays usable, and the status line says \"Calculating… you can keep working\". OBJ import, 3MF export and opening designs with imported meshes hold you up less too. The result is exactly the same as before."
+        }
+      },
+      {
+        "title": {
+          "de": "DXF-Export erkennt Kreise auf unruhigen Umrissen",
+          "en": "DXF export finds circles on uneven outlines"
+        },
+        "body": {
+          "de": "Ein Umriss, dessen Ecken ein paar Tausendstel Millimeter neben der Kurve liegen, etwa aus einer wieder eingelesenen DXF, kam im DXF-Export als viele kleine Bögen heraus. Jetzt wird daraus wieder ein Kreis, und gerade Kanten bleiben Linien.",
+          "en": "An outline whose corners sit a few thousandths of a millimetre off the curve, such as one from a DXF read back in, came out of the DXF export as many small arcs. It now becomes one circle again, and straight edges stay lines."
+        }
+      }
+    ]
+  },
+  {
     "version": "1.104.0",
     "items": [
       {

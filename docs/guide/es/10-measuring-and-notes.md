@@ -65,9 +65,9 @@ Una nota recoge lo que la geometría no dice: «Este tornillo va 0,3 mm demasiad
 - Si se elimina su cuerpo, o ya no queda ningún cuerpo visible debajo, la nota se queda donde estaba, sobre el plano de trabajo.
 - Arrastrar la chincheta mueve la nota. Un clic en la chincheta pliega la tarjeta y solo queda el número pequeño; otro clic la vuelve a abrir. Un clic en el texto lo edita.
 - Mientras escribes, [[Intro]] guarda el texto y [[Esc]] lo deja como estaba antes de empezar; [[Mayús]]+[[Intro]] empieza una línea nueva.
-- **En un boceto**, {{ui:editor.tool.note}} (en {{ui:editor.group.manage}}) o [[N]] también colocan una nota, en cualquier lugar del boceto. Todas las notas de un boceto pertenecen a su cuerpo: en la vista 3D se sitúan sobre él, encima de un cuerpo hecho con {{ui:sketch.extrude}} o {{ui:sketch.sweep}} y sobre el perfil dibujado de uno hecho con {{ui:sketch.revolve}}, y se mueven con él. Cuando vuelves a abrir el boceto, muestra las notas del cuerpo, también las colocadas en 3D. En el boceto, {{ui:sketch.undo}} deshace una nota como una línea, y {{ui:sketch.cancel}} descarta lo que hayas cambiado en las notas.
+- **En un boceto**, {{ui:editor.tool.note}} (en {{ui:editor.group.manage}}) o [[N]] también colocan una nota, en cualquier lugar del boceto. Todas las notas de un boceto pertenecen a su cuerpo: en la vista 3D se sitúan sobre él, encima de un cuerpo hecho con {{ui:sketch.extrude}} o {{ui:sketch.sweep}} y sobre el perfil dibujado de uno hecho con {{ui:sketch.revolve}}, y se mueven con él. Cuando vuelves a abrir el boceto, muestra las notas del cuerpo, también las colocadas en 3D. En el boceto, {{ui:sketch.undo}} deshace una nota como una línea, y {{ui:sketch.cancel}} descarta lo que hayas cambiado en las notas. [[Mayús]]+[[N]] también aquí muestra u oculta las notas.
 
-Las notas se guardan en el diseño, no aparecen en ninguna exportación y se pueden mostrar u ocultar con {{ui:visibility.notes}} (en {{ui:editor.visibilityOptions}}, la flecha junto al icono del ojo).
+Las notas se guardan en el diseño, no aparecen en ninguna exportación y se pueden mostrar u ocultar con {{ui:visibility.notes}} (en {{ui:editor.visibilityOptions}}, la flecha junto al icono del ojo) o con [[Mayús]]+[[N]].
 
 ## Puntos de referencia
 
@@ -76,7 +76,7 @@ Un punto de referencia es una simple marca en el espacio, como una raya de lápi
 - Arrastra un punto para moverlo, o haz clic en él para ver sus coordenadas y escribir otras; están en la unidad que tengas configurada. Si una tarjeta tapa algo, puedes apartarla arrastrándola por su título, y cada una por separado: las demás se quedan donde están, y un doble clic en el título la devuelve a su sitio. La última tarjeta que has tocado queda delante de las demás. **Eliminar todo** en una tarjeta, o **Eliminar todos los puntos de referencia** en el menú del clic derecho (de un cuerpo o de una zona vacía de la vista 3D), elimina todos los puntos a la vez. {{ui:common.delete}} quita ese punto.
 - La cinta métrica también puede marcar un punto: {{ui:camera.tapeMarkMiddle}}, el botón con el punto de mira que hay bajo una medida, pone uno en su centro, por ejemplo en el centro de un orificio redondo. Y mide desde un punto: la cinta se ajusta a los puntos de referencia igual que a los vértices.
 - Cuando arrastras una forma, sus aristas y su centro se ajustan a un punto igual que se ajustan a otras formas ({{ui:workspace.objectSnap}}). La escuadra también se ajusta a los puntos.
-- Los puntos se guardan en el diseño, no aparecen en ninguna exportación y se muestran u ocultan junto con las notas mediante {{ui:visibility.notes}}.
+- Los puntos se guardan en el diseño, no aparecen en ninguna exportación y se muestran u ocultan junto con las notas mediante {{ui:visibility.notes}} ([[Mayús]]+[[N]]).
 - Una IA puede marcarlos, listarlos y quitarlos con `layerling_add_reference_points`, `layerling_list_reference_points` y `layerling_remove_reference_points`.
 
 ## Imágenes de referencia

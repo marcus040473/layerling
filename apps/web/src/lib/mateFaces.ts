@@ -1,15 +1,20 @@
 import * as THREE from "three";
+import type { RoundFaceAxis } from "@/lib/roundFaceAxis";
 
 type Vec = { x: number; y: number; z: number };
 
-/** A face clicked for "Align faces": the body, its outward normal and a point on it, in world space. */
-export type FacePick = { shapeId: string; normal: Vec; point: Vec };
+/**
+ * A face clicked for "Align faces": the body, its outward normal and a point
+ * on it, in world space. A round face (a hole, a pin) also brings its axis.
+ */
+export type FacePick = { shapeId: string; normal: Vec; point: Vec; axis?: RoundFaceAxis | null };
 
 /**
  * How the moved face meets the other: "against" puts them face to face (back
- * to back, touching), "flush" lays them in one plane, side by side.
+ * to back, touching), "flush" lays them in one plane, side by side, and
+ * "concentric" puts two round faces on one axis (#794).
  */
-export type MateMode = "against" | "flush";
+export type MateMode = "against" | "flush" | "concentric";
 
 const vector = (value: Vec) => new THREE.Vector3(value.x, value.y, value.z);
 
@@ -43,5 +48,24 @@ export function mateMotion(source: Omit<FacePick, "shapeId">, target: Omit<FaceP
   const pivot = vector(source.point);
   const distance = vector(target.point).dot(targetNormal) + gap - pivot.dot(targetNormal);
   const translation = targetNormal.clone().multiplyScalar(distance);
+  return { rotation: turned ? rotation : null, pivot, translation };
+}
+
+/**
+ * Moves the body of `source` so its round face shares the axis of the round
+ * face of `target` - a hole over a hole, a pin into a hole: the shortest turn
+ * about the source axis's point that makes the axes parallel (either way
+ * round, so a body never flips over), then a slide straight across onto the
+ * target axis. The body keeps its depth along the axis.
+ */
+export function concentricMotion(source: Pick<RoundFaceAxis, "point" | "direction">, target: Pick<RoundFaceAxis, "point" | "direction">) {
+  const targetDirection = vector(target.direction).normalize();
+  const sourceDirection = vector(source.direction).normalize();
+  const wanted = sourceDirection.dot(targetDirection) < 0 ? targetDirection.clone().negate() : targetDirection;
+  const rotation = shortestTurn(sourceDirection, wanted);
+  const turned = Math.abs(rotation.w) < 1 - 1e-12;
+  const pivot = vector(source.point);
+  const offset = vector(target.point).sub(pivot);
+  const translation = offset.addScaledVector(targetDirection, -offset.dot(targetDirection));
   return { rotation: turned ? rotation : null, pivot, translation };
 }

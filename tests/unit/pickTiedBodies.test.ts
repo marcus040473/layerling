@@ -10,7 +10,7 @@ import type { WorkplaneShape } from "@/types/layerling";
  */
 
 function shape(id: string): WorkplaneShape {
-  return { id, name: "Box", kind: "box", color: "#d41721", x: 0, z: 0, size: 20, width: 20, depth: 20, height: 20, rotation: 0 } as WorkplaneShape;
+  return { id, name: "Box", kind: "box", color: "#d41721", x: 0, z: 0, size: 20, width: 20, depth: 20, height: 20, rotation: 0, ...(id.startsWith("hole") ? { hole: true } : {}) } as WorkplaneShape;
 }
 
 function scene(ids: string[], shift: Record<string, number> = {}) {
@@ -53,5 +53,17 @@ describe("a press on bodies that lie on one another (#484)", () => {
     // The selected body lies 5 mm behind the other one along the ray: the visible one is meant.
     const { state, shapes } = scene(["front", "selected"], { selected: -5 });
     expect(pickShapeAt(state, shapes, 200, 200, "mouse", ["selected"])).toBe("front");
+  });
+
+  it("takes a loose hole flush with the selected body's face, not the body (#774)", () => {
+    // A DXF's plate and its hole: both as high, so the ray meets them at the same distance.
+    const { state, shapes } = scene(["plate", "hole"]);
+    expect(pickShapeAt(state, shapes, 200, 200, "mouse", ["plate"])).toBe("hole");
+    expect(pickShapeAt(state, shapes, 200, 200)).toBe("hole");
+  });
+
+  it("still takes the selected one of two holes that lie on one another", () => {
+    const { state, shapes } = scene(["hole-original", "hole-copy"]);
+    expect(pickShapeAt(state, shapes, 200, 200, "mouse", ["hole-copy"])).toBe("hole-copy");
   });
 });

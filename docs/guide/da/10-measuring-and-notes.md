@@ -12,11 +12,14 @@ Målebåndet sidder for neden i kamerabjælken ved venstre kant ({{ui:camera.tap
 ![Målebåndet med dets knapper: tilføj mål, flyt målepunkter, fjern mål, hele kanter, slet alle mål.](shot:tape-menu)
 
 1. **{{ui:camera.addMeasurement}}:** Klik et punkt, træk til det næste og klik det. Afstanden er mærket.
+   På en modsat kant eller flade snapper det andet punkt ind i en ret vinkel til det første, når markøren kommer nær – eller hvor som helst på den kant eller flade, mens du holder [[Shift]]. Langs den samme flade eller på arbejdsplanet holder [[Shift]] målet lige langs hovedaksen.
 2. **{{ui:camera.moveMeasurement}}:** Tag fat i punkterne og flyt dem, tallet følger med.
 3. **{{ui:camera.deleteMeasurement}}:** Klik bagefter et mål for at fjerne det.
+   Mens **{{ui:camera.addMeasurement}}** er aktiv, sletter et klik på et målepunkt eller en mållinje, mens du holder [[Shift]] eller [[Ctrl]] ([[Cmd]] på en Mac), straks målet uden at skifte tilstand.
 4. **{{ui:camera.tapeWholeEdges}}:** Et klik på en kant måler hele den, længden af en cirkel for eksempel. Med denne slået fra sætter et klik et punkt på kanten i stedet, og det andet punkt kan være hvor som helst, så du kan måle diameteren eller enhver anden afstand. [[Alt]] bytter om for ét klik. På en cirkel snapper punktet overfor til når markøren kommer nær, og punkterne sidder på den sande cirkel, så diameteren kommer nøjagtig ud.
 5. **{{ui:camera.deleteAllMeasurements}}:** Fjerner hvert mål på én gang. Da det ikke kan fortrydes, spørger layerling først; uden mål er der intet at gøre.
 6. **{{ui:camera.tapeMarkMiddle}}:** Under tallet på hvert mål sidder en lille sigtekorn-knap. Den sætter et [referencepunkt](#referencepunkter) midt i målet: efter et klik på en rund kant, såsom kanten af et hul, i midten af den cirkel - også på et importeret mesh, hvor intet andet markerer midten af et hul - og for en diameter eller et hvilket som helst lige mål halvvejs langs det. En form du trækker snapper så til punktet med sit centrum. Et punkt der allerede er der laves ikke to gange.
+   Målebåndet snapper til et referencepunkt som til et hjørne, så du kan måle fra centrum af en cirkel eller fra midten af en linje: markér punktet, og klik så på det.
 
 [[Esc]] forlader måletilstand.
 
@@ -34,10 +37,13 @@ Vinkelmåleren ligger på arbejdsplanet. Ligger det på siden af en form, ligger
 - **Et kort klik på håndtaget** drejer den 90°.
 - **×** ved siden af fjerner den.
 - **Den lille knap til venstre for håndtaget** skifter hvad der måles fra: ydersiden af en form (endepunkt, et ikon med streger) eller dens midte (midtpunkt, et sigtekorn).
+  En lille kontakt af samme slags sidder ved siden af hvert grønt tal og sætter kun det tal: for en stående cylinder er det midten i de to arme og bunden i højden, for en liggende midten på tværs og en ende i længden. Når alle tre igen er enige, viser knappen ved håndtaget den fælles tilstand.
 
 Står der former ved en af armene, viser vinkelmåleren automatisk deres dimensioner. Det virker kun på grundpladen, ikke på siden af en form.
 
 Når du vælger en form, viser vinkelmåleren med grønt hvor langt den er fra hjørnet, langs begge arme og i højden. Klik et grønt tal for at taste en afstand, og formen flytter sig præcis derhen. Med flere former valgt tæller de som én: måleren måler deres fælles omrids, og en tastet værdi flytter dem alle sammen uden at ændre deres position i forhold til hinanden.
+
+De grønne tals hjælpelinjer løber langs det plan, vinkelmåleren ligger i, frem til punktet under eller ved siden af formen; højden har sin egen pil. Hvert tals kontakt sidder i tallets ramme. Armene og takkerne er linjer i rummet: en form foran dem skjuler dem, som en rigtig vinkelhage ville blive skjult. Det lille øje under håndtaget skifter det: med øjet gennemstreget skjuler former måleren (det er udgangspunktet); med øjet åbent bliver måleren liggende over alt. Tallene på armene falmer, hvor en form står foran dem.
 
 Med midtpunktet tæller de grønne tal til formens midte, også i højden. Sådan placerer du en kugle med dens centrum præcis 15 mm fra en kant, uden at trække radius fra. På en væg placerer du et hul 40 mm fra venstre og 190 mm fra toppen sådan: vælg hullet, skift til midtpunkt, tast 40 og 190. Højden der tæller udad fra væggen.
 
@@ -63,18 +69,20 @@ En note registrerer hvad geometrien ikke siger: "Denne skrue er 0,3 mm for stram
 - Hvis dens form slettes, eller der ikke længere er en synlig form under den, bliver noten stående, hvor den var, på arbejdsplanet.
 - Træk i nålen flytter noten. Et klik på nålen folder kortet sammen, så kun det lille tal bliver stående, og et klik mere åbner det igen. Et klik i teksten redigerer den.
 - Mens du skriver, bevarer [[Enter]] teksten og [[Esc]] sætter den tilbage til hvordan den var før du begyndte; [[Shift]]+[[Enter]] starter en ny linje.
-- **I en skitse** sætter {{ui:editor.tool.note}} (under {{ui:editor.group.manage}}) eller [[N]] også en note, hvor som helst på skitsen. Alle en skitses noter hører til dens form: i 3D-visningen sidder de på den, oven på en form lavet med {{ui:sketch.extrude}} eller {{ui:sketch.sweep}} og på den tegnede profil af en form lavet med {{ui:sketch.revolve}}, og de flytter sig med den. Når du åbner skitsen igen, viser den formens noter, også dem der er sat i 3D. I skitsen tager {{ui:sketch.undo}} en note tilbage ligesom en linje, og {{ui:sketch.cancel}} kasserer det, du har ændret i noterne.
+- **I en skitse** sætter {{ui:editor.tool.note}} (under {{ui:editor.group.manage}}) eller [[N]] også en note, hvor som helst på skitsen. Alle en skitses noter hører til dens form: i 3D-visningen sidder de på den, oven på en form lavet med {{ui:sketch.extrude}} eller {{ui:sketch.sweep}} og på den tegnede profil af en form lavet med {{ui:sketch.revolve}}, og de flytter sig med den. Når du åbner skitsen igen, viser den formens noter, også dem der er sat i 3D. I skitsen tager {{ui:sketch.undo}} en note tilbage ligesom en linje, og {{ui:sketch.cancel}} kasserer det, du har ændret i noterne. [[Shift]]+[[N]] viser eller skjuler noterne også her.
 
-Noter gemmes i designet, optræder i ingen eksport og kan vises eller skjules med {{ui:visibility.notes}} (under {{ui:editor.visibilityOptions}}, pilen ved siden af øje-ikonet).
+Noter gemmes i designet, optræder i ingen eksport og kan vises eller skjules med {{ui:visibility.notes}} (under {{ui:editor.visibilityOptions}}, pilen ved siden af øje-ikonet) eller med [[Shift]]+[[N]].
 
 ## Referencepunkter
 
 Et referencepunkt er et bart mærke i rummet, som en blyantsmarkering eller et layout-punkt i et værksted: det hører til ingen form, printes aldrig, og andre ting snapper til det. Højreklik en form og vælg {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} eller {{ui:contextMenu.markMidpoints}}: punkterne dukker op på formens øverste flade (af hele markeringen, hvis du valgte flere).
 
 - Træk et punkt for at flytte det, eller klik det for at se dets koordinater og taste nye; de bruger den enhed du har sat. Kortet kan trækkes væk i dets titellinje hvis det dækker noget, og et dobbeltklik på titellinjen sætter det tilbage. {{ui:common.delete}} fjerner det.
+  Hvert kort kan trækkes væk alene, så de andre kort bliver hvor de er. Det kort du rørte sidst ligger foran de andre. **Slet alle** i et kort, eller **Slet alle referencepunkter** i højreklikmenuen (på en form eller på et tomt sted i 3D-visningen), sletter alle punkter på én gang.
 - Målebåndet kan også markere et punkt: {{ui:camera.tapeMarkMiddle}}, sigtekorn-knappen under et mål, sætter et i dets midte, for eksempel i midten af et rundt hul.
+  Og det måler fra et punkt: båndet snapper til referencepunkter som til hjørner.
 - Når du trækker en form, snapper dens kanter og dens centrum til et punkt, ligesom de snapper til andre former ({{ui:workspace.objectSnap}}). Vinkelmåleren snapper også til punkter.
-- Punkter gemmes i designet, optræder i ingen eksport og vises eller skjules sammen med noterne af {{ui:visibility.notes}}.
+- Punkter gemmes i designet, optræder i ingen eksport og vises eller skjules sammen med noterne af {{ui:visibility.notes}} ([[Shift]]+[[N]]).
 - En AI kan markere, liste og fjerne dem med `layerling_add_reference_points`, `layerling_list_reference_points` og `layerling_remove_reference_points`.
 
 ## Referencebilleder

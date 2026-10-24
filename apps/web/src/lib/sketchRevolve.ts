@@ -53,11 +53,6 @@ export function normalizeSketchRevolveSettings(settings?: Partial<SketchRevolveS
   };
 }
 
-/** Whether these settings wind the profile up as a helix rather than turning it into rings. */
-export function sketchRevolveIsHelical(settings?: Partial<SketchRevolveSettings>) {
-  return (normalizeSketchRevolveSettings(settings).pitch ?? 0) > 0;
-}
-
 function orderedPaths(profile: SketchProfile): OrderedPath[] {
   const pointById = new Map(profile.points.map((point) => [point.id, point]));
   const adjacency = new Map<string, Array<{ pointId: string; segment: SketchSegment }>>();

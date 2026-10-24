@@ -61,6 +61,10 @@ import {
  * and the inside's cutter and the compartments' run out through it far enough
  * that their roundings, and the floor's, lie beyond the block; the shelves are
  * cut to an inside that reaches out to the outline there.
+ *
+ * A chamfer on the lip's top (#780) is cut once the inside is out and checked,
+ * by keeping what lies under its face, so everything before it is built and
+ * checked as on a sharp lip.
  */
 
 /** z up to y up: (x, y, z) -> (x, z, -y). */
@@ -128,8 +132,8 @@ function binSolid(cad: OcctKernel, plan: GridfinityPlan, scoops: GridfinityScoop
   const hx = plan.size.width / 2;
   const hz = plan.size.depth / 2;
   const cellHalf = plan.pitch / 2 - GRIDFINITY_CLEARANCE;
-  // The inside is built with a sharp floor edge; a rounding is filleted on it afterwards, with true arcs.
-  const wall = gridfinityWallProfile(plan, 0);
+  // The inside is built with a sharp floor edge; a rounding is filleted on it afterwards, with true arcs. The lip's top is sharp too, and a chamfer is cut on it afterwards.
+  const wall = gridfinityWallProfile(plan, 0, 0);
   const wallTop = wall[1][1];
   const feet = plan.cells.map((cell) => steppedSolid(cad, cell.x, cell.z, cellHalf, cellHalf, GRIDFINITY_BIN_RADIUS, GRIDFINITY_FOOT));
   const { open } = plan;
@@ -167,11 +171,26 @@ function binSolid(cad: OcctKernel, plan: GridfinityPlan, scoops: GridfinityScoop
     const plain = opened ? cad.getVolume(cad.cut(block, loft)) : cad.getVolume(block) - cad.getVolume(loft) + over;
     if (cad.getVolume(body) < plain + bound - PIECE_MISSED) throw new Error("The Gridfinity bin's dividers could not be cut");
   }
+  if (plan.lipChamfer > 0) body = oneSolid(cad, cad.common(body, lipChamferKeeper(cad, plan, hx, hz, wallTop)), "bin");
   if (plan.magnetHoles.length > 0) {
     const holes = plan.magnetHoles.map((hole) => cad.translate(cad.makeCylinder(GRIDFINITY_MAGNET_DIAMETER / 2, GRIDFINITY_MAGNET_DEPTH + PAST), hole.x, -hole.z, -PAST));
     body = oneSolid(cad, cad.cutAll(body, holes), "bin");
   }
   return body;
+}
+
+/**
+ * What stays of a bin under the chamfer on its lip's top: a ruled loft whose side is the chamfer's face, run on
+ * past the outer wall and the slope at both ends, and through an open side as the inside is.
+ */
+function lipChamferKeeper(cad: OcctKernel, plan: GridfinityPlan, hx: number, hz: number, wallTop: number) {
+  const size = plan.lipChamfer;
+  // The face rises 1 in 1 + sqrt 2 inwards (22.5 degrees), meeting the slope size / sqrt 2 in and down.
+  const run = 1 + Math.SQRT2;
+  const out = 1;
+  const steps: GridfinityStep[] = [[-out, -PAST], [-out, wallTop - size - out / run], [size * run, wallTop], [size * run, wallTop + PAST]];
+  const grown = gridfinityOpenGrown(hx, hz, plan.open, GRIDFINITY_OPEN_REACH);
+  return steppedSolid(cad, grown.x, grown.z, grown.hx, grown.hz, GRIDFINITY_BIN_RADIUS, steps);
 }
 
 /**

@@ -169,5 +169,6 @@ Alle vier raken alleen de referentie, nooit de schets.
 | [[R]] | gesloten schets 45° draaien |
 | [[L]] | sjabloonafbeelding vergrendelen of ontgrendelen |
 | [[N]] | notitie zetten: de volgende klik plaatst haar op de schets |
+| [[Shift]]+[[N]] | notities tonen of verbergen |
 
 > **Tip:** Teken zo weinig punten als nodig. Een omtrek met een paar goed geplaatste punten geeft een gladder lichaam dan een kluwen van veel punten.
