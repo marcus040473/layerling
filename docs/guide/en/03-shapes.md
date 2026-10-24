@@ -157,7 +157,7 @@ The result is a mesh like an imported model. Undo lays the shape flat again; for
 
 ## A surface texture
 
-Grooves, knurling, honeycomb or bumps on a body, for a better grip or for looks: open {{ui:inspector.surfaceTexture}} in the shape's settings.
+Grooves, knurling, honeycomb or bumps on a body, for a better grip or for looks: open {{ui:inspector.surfaceTexture}} in the shape's settings. The button {{ui:inspector.surfaceTexture}} in the {{ui:editor.group.modify}} group at the top does the same: it opens and closes the card for the selected body and stays lit while the card is open.
 
 1. Choose the {{ui:inspector.surfacePattern}}, its {{ui:inspector.surfaceSpacing}} and its {{ui:inspector.surfaceDepth}}. {{ui:inspector.surfaceDirection}} says whether it goes into the body or stands out of it.
 2. Under {{ui:inspector.surfaceProjection}}, take {{ui:surfaceTexture.cylinder}} for round bodies such as a cup, a knob or a handle. The pattern runs round the {{ui:inspector.surfaceAxis}}, and the spacing is rounded a little so that a whole number of grooves or cells goes round: the pattern closes without a seam. {{ui:surfaceTexture.allRound}} suits bodies that are not round, {{ui:surfaceTexture.flatProjection}} a lid or a plate seen from above.

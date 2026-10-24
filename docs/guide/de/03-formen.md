@@ -158,7 +158,7 @@ Das Ergebnis ist ein Netz wie ein importiertes Modell. Mit Rückgängig liegt di
 
 ## Eine Oberfläche aufbringen
 
-Rillen, Rändel, Waben oder Noppen auf einem Körper, für besseren Halt oder fürs Auge: Klappe in den Einstellungen der Form {{ui:inspector.surfaceTexture}} auf.
+Rillen, Rändel, Waben oder Noppen auf einem Körper, für besseren Halt oder fürs Auge: Klappe in den Einstellungen der Form {{ui:inspector.surfaceTexture}} auf. Dasselbe geht oben in der Gruppe {{ui:editor.group.modify}}: Der Knopf {{ui:inspector.surfaceTexture}} klappt die Karte für den gewählten Körper auf und wieder zu und leuchtet, solange sie offen ist.
 
 1. Wähle das {{ui:inspector.surfacePattern}}, seinen {{ui:inspector.surfaceSpacing}} und seine {{ui:inspector.surfaceDepth}}. Die {{ui:inspector.surfaceDirection}} sagt, ob es in den Körper hineingeht oder aus ihm heraussteht.
 2. Unter {{ui:inspector.surfaceProjection}} nimmst du {{ui:surfaceTexture.cylinder}} für runde Körper wie einen Becher, einen Drehknopf oder einen Griff. Das Muster läuft um die {{ui:inspector.surfaceAxis}}, und der Abstand wird ein wenig gerundet, damit eine ganze Zahl Rillen oder Zellen herumgeht: Das Muster schließt ohne Naht. {{ui:surfaceTexture.allRound}} passt für Körper, die nicht rund sind, {{ui:surfaceTexture.flatProjection}} für einen Deckel oder eine Platte, von oben gesehen.

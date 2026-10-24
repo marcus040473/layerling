@@ -148,7 +148,7 @@ Rezultat je mreža kot uvožen model. Z Razveljavi je oblika spet ravna; za drug
 
 ## Površinska tekstura
 
-Utori, narebričenje, satovje ali izbokline na telesu, za boljši oprijem ali za lepši videz: v nastavitvah oblike razprite {{ui:inspector.surfaceTexture}}.
+Utori, narebričenje, satovje ali izbokline na telesu, za boljši oprijem ali za lepši videz: v nastavitvah oblike razprite {{ui:inspector.surfaceTexture}}. Enako naredi gumb {{ui:inspector.surfaceTexture}} zgoraj v skupini {{ui:editor.group.modify}}: kartico za izbrano telo razpre in spet zapre ter sveti, dokler je odprta.
 
 1. Izberite {{ui:inspector.surfacePattern}}, njegov {{ui:inspector.surfaceSpacing}} in {{ui:inspector.surfaceDepth}}. {{ui:inspector.surfaceDirection}} pove, ali gre vzorec v telo ali iz njega izstopa.
 2. Pri {{ui:inspector.surfaceProjection}} vzemite {{ui:surfaceTexture.cylinder}} za okrogla telesa, kot so lonček, gumb ali ročaj. Vzorec teče okoli izbrane {{ui:inspector.surfaceAxis}}, razmik pa se nekoliko zaokroži, da gre naokoli celo število utorov ali celic: vzorec se sklene brez šiva. {{ui:surfaceTexture.allRound}} je primeren za telesa, ki niso okrogla, {{ui:surfaceTexture.flatProjection}} za pokrov ali ploščo, gledano od zgoraj.

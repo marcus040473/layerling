@@ -159,7 +159,7 @@ summary: Библиотека фигур, размеры числами и ма�
 
 ## Текстура поверхности
 
-Канавки, накатка, соты или пупырышки на теле — для лучшего хвата или для красоты: откройте {{ui:inspector.surfaceTexture}} в настройках фигуры.
+Канавки, накатка, соты или пупырышки на теле — для лучшего хвата или для красоты: откройте {{ui:inspector.surfaceTexture}} в настройках фигуры. То же делает кнопка {{ui:inspector.surfaceTexture}} вверху, в группе {{ui:editor.group.modify}}: она открывает и закрывает карточку для выбранного тела и подсвечена, пока карточка открыта.
 
 1. Выберите {{ui:inspector.surfacePattern}}, его {{ui:inspector.surfaceSpacing}} и {{ui:inspector.surfaceDepth}}. {{ui:inspector.surfaceDirection}} задаёт, уходит ли узор в тело или выступает из него.
 2. В пункте {{ui:inspector.surfaceProjection}} выберите {{ui:surfaceTexture.cylinder}} для круглых тел — чашки, ручки, рукоятки. Узор идёт вокруг выбранной {{ui:inspector.surfaceAxis}}, а шаг немного округляется, чтобы по окружности уложилось целое число канавок или ячеек: узор смыкается без шва. {{ui:surfaceTexture.allRound}} подходит для некруглых тел, {{ui:surfaceTexture.flatProjection}} — для крышки или пластины, если смотреть сверху.

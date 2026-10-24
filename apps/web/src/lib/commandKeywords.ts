@@ -35,6 +35,7 @@ export const COMMAND_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   chamfer: ["chamfer", "chamfillet", "bevel", "fase", "abschraegen", "abschrägen", "kante", "afschuinen", "rand"],
   fillet: ["fillet", "round", "radius", "verrunden", "abrunden", "runden", "kante", "afronden", "rand"],
   simplify: ["simplify", "decimate", "reduce", "fewer triangles", "optimize", "vereinfachen", "reduzieren", "dezimieren", "weniger dreiecke", "netz", "mesh", "optimieren"],
+  surfaceTexture: ["surface", "texture", "relief", "knurl", "knurling", "grip", "honeycomb", "bumps", "grooves", "cracks", "kintsugi", "oberfläche", "oberflaeche", "struktur", "muster", "rändel", "raendel", "waben", "noppen", "rillen", "risse", "griffig"],
   hollow: ["hollow", "shell", "aushoehlen", "aushöhlen", "wand", "wandstaerke", "wandstärke", "hohl"],
   deleteFace: ["delete face", "remove face", "defeature", "remove fillet", "fill hole", "close hole", "flaeche loeschen", "fläche löschen", "flaeche entfernen", "fläche entfernen", "rundung entfernen", "loch schliessen", "loch schließen"],
   carry: ["carry", "cruise", "set down", "place on face", "snap faces", "snap to face", "pick up", "auf fläche setzen", "auf flaeche setzen", "aufheben", "absetzen", "fläche", "flaeche"],

@@ -157,7 +157,7 @@ Výsledek je síť jako importovaný model. Zpět obnoví rovinnou podobu. Tvar 
 
 ## Povrchová textura
 
-Drážky, vroubkování, plástev nebo výstupky na tělese, pro lepší úchop nebo pro vzhled: v nastavení tvaru rozbalte {{ui:inspector.surfaceTexture}}.
+Drážky, vroubkování, plástev nebo výstupky na tělese, pro lepší úchop nebo pro vzhled: v nastavení tvaru rozbalte {{ui:inspector.surfaceTexture}}. Totéž umí tlačítko {{ui:inspector.surfaceTexture}} nahoře ve skupině {{ui:editor.group.modify}}: kartu pro vybrané těleso rozbalí i sbalí a svítí, dokud je otevřená.
 
 1. Zvolte {{ui:inspector.surfacePattern}}, jeho {{ui:inspector.surfaceSpacing}} a {{ui:inspector.surfaceDepth}}. {{ui:inspector.surfaceDirection}} určuje, zda vzor jde do tělesa, nebo z něj vystupuje.
 2. V položce {{ui:inspector.surfaceProjection}} zvolte {{ui:surfaceTexture.cylinder}} pro kulatá tělesa, jako je hrnek, knoflík nebo rukojeť. Vzor obíhá kolem zvolené {{ui:inspector.surfaceAxis}} a rozteč se mírně zaokrouhlí, aby se po obvodu vešel celý počet drážek nebo buněk: vzor se uzavře bez švu. {{ui:surfaceTexture.allRound}} se hodí pro tělesa, která nejsou kulatá, {{ui:surfaceTexture.flatProjection}} pro víčko nebo desku při pohledu shora.

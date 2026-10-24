@@ -119,6 +119,7 @@ export {
   ToolbarHollowIcon,
   ToolbarDeleteFaceIcon,
   ToolbarSimplifyIcon,
+  ToolbarSurfaceTextureIcon,
   ToolbarBundleIcon,
   ToolbarGroupIcon,
   ToolbarGuideIcon,

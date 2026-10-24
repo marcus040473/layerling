@@ -157,7 +157,7 @@ Het resultaat is een mesh, net als een geïmporteerd model. Ongedaan maken legt 
 
 ## Een oppervlaktestructuur aanbrengen
 
-Groeven, kartel, honingraat of noppen op een lichaam, voor meer grip of voor het oog: klap in de instellingen van de vorm {{ui:inspector.surfaceTexture}} open.
+Groeven, kartel, honingraat of noppen op een lichaam, voor meer grip of voor het oog: klap in de instellingen van de vorm {{ui:inspector.surfaceTexture}} open. Hetzelfde kan bovenin in de groep {{ui:editor.group.modify}}: de knop {{ui:inspector.surfaceTexture}} klapt de kaart voor het gekozen lichaam open en weer dicht en licht op zolang ze open is.
 
 1. Kies het {{ui:inspector.surfacePattern}}, de {{ui:inspector.surfaceSpacing}} en de {{ui:inspector.surfaceDepth}}. De {{ui:inspector.surfaceDirection}} zegt of het het lichaam in gaat of eruit steekt.
 2. Bij {{ui:inspector.surfaceProjection}} neem je {{ui:surfaceTexture.cylinder}} voor ronde lichamen zoals een beker, een knop of een handvat. Het patroon loopt rond de {{ui:inspector.surfaceAxis}}, en de afstand wordt een beetje afgerond zodat er een heel aantal groeven of cellen rondgaat: het patroon sluit zonder naad. {{ui:surfaceTexture.allRound}} past bij lichamen die niet rond zijn, {{ui:surfaceTexture.flatProjection}} bij een deksel of een plaat, van boven gezien.

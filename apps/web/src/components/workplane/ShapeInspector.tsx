@@ -2610,6 +2610,8 @@ export function ShapeInspector({
   onSurfaceTexture,
   onRemoveSurfaceTexture,
   onVaseAccessories,
+  surfaceTextureOpen,
+  onSurfaceTextureOpenChange,
   onLayerText,
   onTextTags,
   onFixKeyringTab,
@@ -2645,6 +2647,9 @@ export function ShapeInspector({
   onRemoveSurfaceTexture?: () => void;
   /** Lays this vase's accessories out beside it, ready to print. */
   onVaseAccessories?: () => void;
+  /** Whether the surface texture card is open, when the editor holds it (the toolbar opens it too). */
+  surfaceTextureOpen?: boolean;
+  onSurfaceTextureOpenChange?: (open: boolean) => void;
   /** Splits a text into layers, or builds a layered text again with new words, font or layers (#215). */
   onLayerText?: (patch: TextLayerPatch) => void;
   /** One tag like this text or stack per name, laid out in rows (#215). */
@@ -2877,6 +2882,10 @@ export function ShapeInspector({
   const { colors: recentColors, remember: rememberColor } = useRecentColors(SOLID_COLORS);
   const { colors: keptColors, toggle: toggleKeptColor } = useKeptColors();
   const [minimized, setMinimized] = useState(false);
+  // The surface texture card opened from the toolbar is shown, not left in a folded panel.
+  useEffect(() => {
+    if (surfaceTextureOpen) setMinimized(false);
+  }, [surfaceTextureOpen]);
   // Renaming here works like the pencil in the object list.
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -3132,6 +3141,8 @@ export function ShapeInspector({
           disabled={locked}
           onApply={onSurfaceTexture}
           onRemove={onRemoveSurfaceTexture}
+          open={surfaceTextureOpen}
+          onOpenChange={onSurfaceTextureOpenChange}
           onInteractionActiveChange={onInteractionActiveChange}
         />
       ) : null}
@@ -4307,12 +4318,14 @@ function CylinderWrapCard({
  * asked for, like wrapping: a step one takes, and undo takes it back. The card keeps its
  * settings through that undo, so the next try starts from the last one.
  */
-function SurfaceTextureCard({
+export function SurfaceTextureCard({
   shape,
   workspace,
   disabled,
   onApply,
   onRemove,
+  open: openProp,
+  onOpenChange,
   onInteractionActiveChange,
 }: {
   shape: WorkplaneShape;
@@ -4321,9 +4334,21 @@ function SurfaceTextureCard({
   onApply: (settings: SurfaceTextureSettings) => Promise<void> | void;
   /** Takes the texture off; given while the body keeps what was under it. */
   onRemove?: () => void;
+  /** Open or closed as the editor holds it, so the button under "Modify" shows and changes the same; else the card's own. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onInteractionActiveChange?: (active: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const open = openProp ?? ownOpen;
+  const setOpen = (next: boolean) => (onOpenChange ? onOpenChange(next) : setOwnOpen(next));
+  // Opened while it is on screen (from the toolbar, the panel scrolled elsewhere), the card comes into view.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(open);
+  useEffect(() => {
+    if (open && !wasOpen.current) cardRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    wasOpen.current = open;
+  }, [open]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [settings, setSettings] = useState(() => normalizeSurfaceTexture(shape.surfaceTexture ?? {}));
@@ -4368,13 +4393,13 @@ function SurfaceTextureCard({
     }
   };
   return (
-    <div className={`property-card ${open ? "" : "collapsed"}`}>
+    <div className={`property-card ${open ? "" : "collapsed"}`} ref={cardRef}>
       <button
         className="property-card-header"
         type="button"
         aria-expanded={open}
         aria-controls={`surface-texture-${shape.id}`}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => setOpen(!open)}
       >
         <span>{t("inspector.surfaceTexture")}</span>
         <ChevronUp className={open ? "" : "collapsed"} size={25} strokeWidth={2.8} />

@@ -402,6 +402,17 @@ export function ToolbarSimplifyIcon(props: IconProps) {
   );
 }
 
+/** A block with a relief of bumps on its top: a surface texture laid onto a body. */
+export function ToolbarSurfaceTextureIcon(props: IconProps) {
+  return (
+    <ToolbarVectorIcon {...props}>
+      <path d="M8 40V22c2.7-4.5 5.3-4.5 8 0s5.3 4.5 8 0 5.3-4.5 8 0 5.3 4.5 8 0v18Z" {...SOLID} />
+      <path d="M8 40V22c2.7-4.5 5.3-4.5 8 0s5.3 4.5 8 0 5.3-4.5 8 0 5.3 4.5 8 0v18Z" />
+      <path d="M8 31c2.7-4.5 5.3-4.5 8 0s5.3 4.5 8 0 5.3-4.5 8 0 5.3 4.5 8 0" strokeWidth="1.6" opacity="0.7" />
+    </ToolbarVectorIcon>
+  );
+}
+
 export function ToolbarSnapGridIcon(props: IconProps) {
   return (
     <ToolbarVectorIcon {...props}>

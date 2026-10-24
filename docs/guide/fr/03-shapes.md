@@ -144,7 +144,7 @@ Le résultat est un maillage semblable à un modèle importé. Une forme déjà 
 
 ## Une texture de surface
 
-Des rainures, un moletage, un nid d'abeille ou des picots sur un corps, pour une meilleure prise ou pour le plaisir des yeux : ouvrez {{ui:inspector.surfaceTexture}} dans les réglages de la forme.
+Des rainures, un moletage, un nid d'abeille ou des picots sur un corps, pour une meilleure prise ou pour le plaisir des yeux : ouvrez {{ui:inspector.surfaceTexture}} dans les réglages de la forme. Le bouton {{ui:inspector.surfaceTexture}} du groupe {{ui:editor.group.modify}}, en haut, fait de même : il ouvre et ferme la carte pour le corps sélectionné et reste allumé tant qu'elle est ouverte.
 
 1. Choisissez le {{ui:inspector.surfacePattern}}, son {{ui:inspector.surfaceSpacing}} et sa {{ui:inspector.surfaceDepth}}. Le {{ui:inspector.surfaceDirection}} indique s'il entre dans le corps ou en ressort.
 2. Sous {{ui:inspector.surfaceProjection}}, prenez {{ui:surfaceTexture.cylinder}} pour les corps ronds comme une tasse, un bouton ou une poignée. Le motif fait le tour de l'{{ui:inspector.surfaceAxis}}, et le pas est un peu arrondi pour qu'un nombre entier de rainures ou de cellules fasse le tour : le motif se referme sans jointure. {{ui:surfaceTexture.allRound}} convient aux corps qui ne sont pas ronds, {{ui:surfaceTexture.flatProjection}} à un couvercle ou une plaque vus de dessus.
