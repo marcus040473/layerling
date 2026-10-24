@@ -56,6 +56,8 @@ export const SURFACE_TEXTURE_GOLD = "#d4a72c";
 export const SURFACE_TEXTURE_LABELS: {
   pattern: Record<SurfaceTexturePattern, MessageKey>;
   profile: Record<SurfaceTextureProfile, MessageKey>;
+  /** The same profiles as the shape of a bump. */
+  bumpShape: Record<SurfaceTextureProfile, MessageKey>;
   direction: Record<SurfaceTextureDirection, MessageKey>;
   projection: Record<SurfaceTextureProjection, MessageKey>;
   projectionHint: Record<SurfaceTextureProjection, MessageKey>;
@@ -65,10 +67,11 @@ export const SURFACE_TEXTURE_LABELS: {
   crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
 } = {
   pattern: { grooves: "surfaceTexture.grooves", knurl: "surfaceTexture.knurl", honeycomb: "surfaceTexture.honeycomb", bumps: "surfaceTexture.bumps", cracks: "surfaceTexture.cracks", text: "surfaceTexture.text" },
-  profile: { round: "surfaceTexture.round", pointed: "surfaceTexture.pointed", flat: "surfaceTexture.flat" },
+  profile: { round: "surfaceTexture.round", pointed: "surfaceTexture.pointed", flat: "surfaceTexture.flat", dome: "surfaceTexture.dome" },
+  bumpShape: { dome: "surfaceTexture.bumpDome", pointed: "surfaceTexture.bumpCone", round: "surfaceTexture.bumpSoft", flat: "surfaceTexture.bumpFlat" },
   direction: { inward: "surfaceTexture.inward", outward: "surfaceTexture.outward", both: "surfaceTexture.both" },
-  projection: { cylinder: "surfaceTexture.cylinder", allRound: "surfaceTexture.allRound", flat: "surfaceTexture.flatProjection" },
-  projectionHint: { cylinder: "surfaceTexture.cylinderHint", allRound: "surfaceTexture.allRoundHint", flat: "surfaceTexture.flatHint" },
+  projection: { auto: "surfaceTexture.auto", cylinder: "surfaceTexture.cylinder", allRound: "surfaceTexture.allRound", flat: "surfaceTexture.flatProjection" },
+  projectionHint: { auto: "surfaceTexture.autoHint", cylinder: "surfaceTexture.cylinderHint", allRound: "surfaceTexture.allRoundHint", flat: "surfaceTexture.flatHint" },
   detail: { coarse: "surfaceTexture.coarse", medium: "surfaceTexture.medium", fine: "surfaceTexture.fine" },
   mask: { none: "surfaceTexture.maskNone", exclude: "surfaceTexture.maskExclude", only: "surfaceTexture.maskOnly" },
   crackStyle: { crack: "surfaceTexture.crackStyleCrack", lightning: "surfaceTexture.crackStyleLightning" },

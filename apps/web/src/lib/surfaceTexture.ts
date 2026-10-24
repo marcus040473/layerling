@@ -16,7 +16,8 @@
  * - Knurling: split finely across the grooves and coarsely along them.
  * - Honeycomb: cut along the cell borders, the corner lines and M levels of
  *   the joint profile, so the joints are straight instead of jagged.
- * - Bumps: refined evenly, then once more where the value jumps (the flanks).
+ * - Bumps: cut along spokes through every bump's middle and rings at the
+ *   levels of its profile (a half ball, a cone, a soft or a flat top).
  * - Cracks (kintsugi, see vase/crack.mjs): lines that grow across the surface,
  *   with kinks, branches and a tapering width; only the band round them is
  *   refined. Their notch can be filled by a body of its own (gold, a second
@@ -61,14 +62,16 @@ import { nearestSurfacePoint, unfoldSurface } from "@/lib/vase/unfold.mjs";
 export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cracks", "text"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
-export const SURFACE_TEXTURE_PROFILES = ["round", "pointed", "flat"] as const;
+/** round: a soft bell; pointed: a V (a cone on a bump); flat: a flat floor or top; dome: a half circle (half a ball on a bump). */
+export const SURFACE_TEXTURE_PROFILES = ["round", "pointed", "flat", "dome"] as const;
 export type SurfaceTextureProfile = (typeof SURFACE_TEXTURE_PROFILES)[number];
 /**
  * How the pattern comes onto the body. Cylinder: around an axis, closing at the seam. All round:
  * from three sides, blended by the normal (triplanar) - for bodies that are not round. Flat: seen
  * along the axis, like a stamp.
  */
-export const SURFACE_TEXTURE_PROJECTIONS = ["cylinder", "allRound", "flat"] as const;
+/** auto: around the axis on a round body, all round on an angular one (decided per body, see isRoundBody). */
+export const SURFACE_TEXTURE_PROJECTIONS = ["auto", "cylinder", "allRound", "flat"] as const;
 export type SurfaceTextureProjection = (typeof SURFACE_TEXTURE_PROJECTIONS)[number];
 export const SURFACE_TEXTURE_DIRECTIONS = ["inward", "outward", "both"] as const;
 export type SurfaceTextureDirection = (typeof SURFACE_TEXTURE_DIRECTIONS)[number];
@@ -173,7 +176,7 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   profile: "pointed",
   angle: 30,
   direction: "inward",
-  projection: "cylinder",
+  projection: "auto",
   axis: "z",
   bottomFree: 30,
   // Around a cylinder, grooves on a level face would become rays to the middle (the inside
@@ -251,7 +254,7 @@ const CHOICES = {
 /** Points per half crack width, by detail (as the vase tool). */
 const CRACK_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 1.5, medium: 2.5, fine: 4 };
 /** The crack module's names for profile, style and start. */
-const CRACK_PROFILE: Record<SurfaceTextureProfile, string> = { round: "rund", pointed: "v", flat: "flach" };
+const CRACK_PROFILE: Record<SurfaceTextureProfile, string> = { round: "rund", pointed: "v", flat: "flach", dome: "rund" };
 const CRACK_STYLE_NAMES: Record<SurfaceTextureCrackStyle, "riss" | "blitz"> = { crack: "riss", lightning: "blitz" };
 const CRACK_START_NAMES: Record<SurfaceTextureCrackStart, "oben" | "unten" | "aussen" | "frei"> = { top: "oben", bottom: "unten", rim: "aussen", anywhere: "frei" };
 /** Text: points per height of the text's box, by detail. */
@@ -310,6 +313,8 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
   if (out.zoneTo < out.zoneFrom) [out.zoneFrom, out.zoneTo] = [out.zoneTo, out.zoneFrom];
   out.crackCount = Math.round(out.crackCount);
   out.crackSeed = Math.round(out.crackSeed);
+  // Bumps without a profile of their own are half balls; the V a groove gets by default would make them cones.
+  if (out.pattern === "bumps" && source.profile === undefined) out.profile = "dome";
   out.masks = normalizeSurfaceTextureMasks(source.masks);
   out.textOutline = normalizeSurfaceTextOutline(source.textOutline);
   return out;
@@ -395,6 +400,7 @@ export function surfaceFalloff(t: number, profile: SurfaceTextureProfile) {
   if (t <= 0) return 1;
   if (profile === "pointed") return 1 - t;
   if (profile === "flat") return clamp((1 - t) / 0.25, 0, 1);
+  if (profile === "dome") return Math.sqrt(1 - t * t);
   return 0.5 * (1 + Math.cos(Math.PI * t));
 }
 
@@ -431,6 +437,8 @@ const HEX_NORMALS = [1, 0, 0.5, SQRT3 / 2, -0.5, SQRT3 / 2, -1, 0, -0.5, -SQRT3 
 
 /** Where the pattern lies on the body: axis, radius, and spacing after rounding (see makeLayout). */
 export type SurfaceTextureLayout = {
+  /** How the pattern lies on this body ("auto" decided). */
+  projection: Exclude<SurfaceTextureProjection, "auto">;
   /** Grooves: distance between two grooves across them. */
   period: number;
   /** Honeycomb and bumps: centre spacing. */
@@ -605,13 +613,14 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
   // Cracks lie on the surface itself, not in a projection.
   if (s.pattern === "cracks") return layout.crack ? crackValue(layout.crack, x, y, z, nx, ny, nz, CRACK_PROFILE[s.profile]) : 0;
   const pos = [x, y, z];
-  if (s.projection === "cylinder") {
+  const projection = s.projection === "auto" ? layout.projection : s.projection;
+  if (projection === "cylinder") {
     const ax = AXIS_INDEX[s.axis];
     const [i1, i2] = acrossAxes(s.axis);
     const theta = Math.atan2(pos[i2] - layout.center[1], pos[i1] - layout.center[0]);
     return patternValue(theta * layout.radius, pos[ax], s, layout);
   }
-  if (s.projection === "flat") {
+  if (projection === "flat") {
     const [i1, i2] = acrossAxes(s.axis);
     return patternValue(pos[i1], pos[i2], s, layout);
   }
@@ -702,7 +711,8 @@ function robustCircleCenter(x: number[], y: number[], w0: number[]): [number, nu
  * bottom and top) - the mean over all points also counted inner walls, bottoms and densely
  * meshed roundings. `skipVertex`: points that stay smooth anyway and do not count.
  */
-export function makeSurfaceTextureLayout(base: SurfaceBase, s: SurfaceTextureSettings, skipVertex: Uint8Array | null = null): SurfaceTextureLayout {
+export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextureSettings, skipVertex: Uint8Array | null = null): SurfaceTextureLayout {
+  const s: SurfaceTextureSettings = asked.projection === "auto" ? { ...asked, projection: isRoundBody(base, asked.axis) ? "cylinder" : "allRound" } : asked;
   const ax = AXIS_INDEX[s.axis];
   const [i1, i2] = acrossAxes(s.axis);
   const v = base.vertices;
@@ -776,7 +786,7 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, s: SurfaceTextureSet
     radius = count ? sum / count : 1;
     rMin = rMax = radius;
   }
-  const layout: SurfaceTextureLayout = { period: s.spacing, cell: s.spacing, around: null, angle: s.angle, center: [c1, c2], radius, rMin, rMax };
+  const layout: SurfaceTextureLayout = { projection: s.projection as SurfaceTextureLayout["projection"], period: s.spacing, cell: s.spacing, around: null, angle: s.angle, center: [c1, c2], radius, rMin, rMax };
   if (s.projection !== "cylinder") return layout;
   const C = 2 * Math.PI * radius;
   if (s.pattern === "grooves" || s.pattern === "knurl") {
@@ -799,9 +809,68 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, s: SurfaceTextureSet
   return layout;
 }
 
+/**
+ * Whether a body is round about `axis`: on its side faces the normal points away from the fitted axis at every corner of
+ * the triangle (a cylinder of 16 segments: 11 degrees off; an octagon 22, a hexagon 30, a cube's face 45 at its corners).
+ * Round when that holds within 25 degrees on three quarters of the side area. A body without side faces (a plate lying
+ * flat) is not round.
+ */
+export function isRoundBody(base: SurfaceBase, axis: SurfaceTextureAxis) {
+  const layout = makeSurfaceTextureLayout(base, { ...SURFACE_TEXTURE_DEFAULTS, projection: "cylinder", axis, outside: true, inside: true });
+  const [i1, i2] = acrossAxes(axis);
+  const [c1, c2] = layout.center;
+  const v = base.vertices, I = base.indices;
+  const cosLimit = Math.cos((25 * Math.PI) / 180);
+  let side = 0, round = 0;
+  for (let t = 0; t < I.length; t += 3) {
+    const [x, y, z] = faceCross(v, I[t], I[t + 1], I[t + 2]);
+    const l = Math.hypot(x, y, z);
+    if (l === 0) continue;
+    const n = [x / l, y / l, z / l];
+    const h = Math.hypot(n[i1], n[i2]);
+    if (h < 0.5) continue;
+    side += l;
+    let ok = true;
+    for (let k = 0; k < 3 && ok; k += 1) {
+      const p = I[t + k];
+      const dx = v[p * 3 + i1] - c1, dy = v[p * 3 + i2] - c2;
+      const r = Math.hypot(dx, dy);
+      // A corner on the axis (a cone's tip) says nothing.
+      if (r < 1e-6) continue;
+      if (Math.abs(n[i1] * dx + n[i2] * dy) / (h * r) < cosLimit) ok = false;
+    }
+    if (ok) round += l;
+  }
+  return side > 0 && round >= 0.75 * side;
+}
+
 /* ------------------------------------------------------------------ */
 /* Refining for the pattern                                            */
 /* ------------------------------------------------------------------ */
+
+/**
+ * All round: the input faces that look straight along an axis (|normal| within 2 degrees of it, like a box's sides),
+ * by axis (0, 1, 2) - there the pattern is that axis' flat projection alone and can be cut like a flat one. 255 for the
+ * rest and for faces that stay smooth; null when no face is straight.
+ */
+function straightFaces(base: SurfaceBase, smoothFace: Uint8Array) {
+  const v = base.vertices, I = base.indices;
+  const axisOf = new Uint8Array(I.length / 3).fill(255);
+  let any = false;
+  for (let t = 0; t < I.length; t += 3) {
+    if (smoothFace[t / 3]) continue;
+    const n = faceCross(v, I[t], I[t + 1], I[t + 2]);
+    const l = Math.hypot(n[0], n[1], n[2]);
+    if (l === 0) continue;
+    for (let k = 0; k < 3; k += 1) {
+      if (Math.abs(n[k]) / l >= 0.9994) {
+        axisOf[t / 3] = k;
+        any = true;
+      }
+    }
+  }
+  return any ? axisOf : null;
+}
 
 /** Grooves and knurling around a cylinder or flat are cut into strips along the grooves (see sliceStripes). */
 function stripesAreCut(s: SurfaceTextureSettings) {
@@ -810,15 +879,15 @@ function stripesAreCut(s: SurfaceTextureSettings) {
 
 /** Edge length at which the pattern is cleanly resolved. */
 function targetEdge(s: SurfaceTextureSettings) {
-  // Honeycomb that is cut along its joints (see sliceHoneycomb) gets its detail from the cuts: the
-  // grid only has to follow the body's roundness (a 1.2 mm chord on 30 mm radius: 0.006 mm).
-  if (honeycombIsCut(s)) return s.spacing / 2.5;
+  // Honeycomb and bumps that are cut (see sliceCells) get their detail from the cuts: the grid only
+  // has to follow the body's roundness (a 1.2 mm chord on 30 mm radius: 0.006 mm).
+  if (cellsAreCut(s)) return s.spacing / 2.5;
   const narrow = s.width < 0.35 ? 0.65 : 1;
   return (s.spacing / DETAIL_STEPS[s.detail]) * narrow;
 }
 
-function honeycombIsCut(s: SurfaceTextureSettings) {
-  return s.pattern === "honeycomb" && s.projection !== "allRound";
+function cellsAreCut(s: SurfaceTextureSettings) {
+  return CELL_PATTERNS.includes(s.pattern) && s.projection !== "allRound";
 }
 
 /**
@@ -874,6 +943,8 @@ function profileLevels(profile: SurfaceTextureProfile, steps: number) {
   if (profile === "pointed") return [1];
   if (profile === "flat") return [0.75, 1];
   const count = Math.max(1, Math.round(steps));
+  // A half circle is steep at its edge: the levels lie closer there (equal steps of the angle).
+  if (profile === "dome") return Array.from({ length: count }, (_, j) => Math.sin(((j + 1) / count) * (Math.PI / 2)));
   return Array.from({ length: count }, (_, j) => (j + 1) / count);
 }
 
@@ -926,10 +997,21 @@ function sliceKnurlCrease(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: 
 
 /** Cuts closer than this (mm) to a point fall onto it. */
 const SNAP = 0.05;
+/** The same for a bump's rim, which has to stay round (short edges there are pulled together afterwards). */
+const RIM_SNAP = 0.004;
+
+/** Bumps: points on a rim per radius, and rings inwards (fewer for a cone and a flat top, see sliceBumps). */
+const BUMP_RIM_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 1.6, medium: 2, fine: 3 };
+/** Points on a bump's outer ring at most (the rim keeps all of its own). */
+const BUMP_RING_POINTS: Record<SurfaceTextureDetail, number> = { coarse: 20, medium: 32, fine: 48 };
+const BUMP_RINGS: Record<SurfaceTextureDetail, number> = { coarse: 3, medium: 5, fine: 8 };
 
 /**
- * Honeycomb: cut instead of refining evenly - otherwise the triangles lie at any slant to the
- * joint and their edges look jagged (flat shaded in a slicer even more). In a cell the distance
+ * Honeycomb and bumps: cut instead of refining evenly - otherwise the triangles lie at any slant to
+ * the joint and their edges look jagged (flat shaded in a slicer even more). Bumps: after the cell
+ * borders (step 1 below), straight spokes through every bump's middle - there they meet, so the tip
+ * of a cone or a ball is a point of the mesh - and rings at the profile levels, each point exactly on
+ * its circle. Then every bump is a fan of facets round its middle, as round as its spokes. In a cell the distance
  * to the joint is the smallest of six distances that are linear in the unrolled surface (one per
  * side). So, in three steps:
  * 1. Cut at the cell borders (between two cell middles, the middle of the joint). Then every
@@ -941,7 +1023,7 @@ const SNAP = 0.05;
  *    the cut is the dear part). Every flank gets rows of points exactly on its contour lines.
  * `skipBase`: input triangles that surely stay smooth. Parents point at the input mesh.
  */
-function sliceHoneycomb(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, steps: number, maxTriangles: number, skipBase: Uint8Array): { mesh: SurfaceMesh; reduced: boolean } {
+function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, steps: number, maxTriangles: number, skipBase: Uint8Array): { mesh: SurfaceMesh; reduced: boolean; fixed?: Float32Array | null } {
   const ax = AXIS_INDEX[s.axis];
   const [i1, i2] = acrossAxes(s.axis);
   const cyl = s.projection === "cylinder";
@@ -1014,7 +1096,7 @@ function sliceHoneycomb(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Su
   // Cut edges where `cutT` gives a share t (0 to 1, else -1) - once per edge, the same for both triangles - then lay every
   // triangle anew (one, two or three cuts). `shift`: how far b lies off its own record in the unrolled surface (across the
   // seam). With three cuts the middle point goes where `meet` puts it (shares of the corners), else into the middle of the cuts.
-  const split = (cur: SurfaceMesh, cutT: CutAt, meet: Meet | null = null): SurfaceMesh => {
+  const split = (cur: SurfaceMesh, cutT: CutAt, meet: Meet | null = null, snap = SNAP): SurfaceMesh => {
     const v = cur.vertices, I = cur.indices, T = I.length / 3;
     const rec = recordsOf(v);
     const skip = skipOf(v, rec, I, cur.parents);
@@ -1028,9 +1110,9 @@ function sliceHoneycomb(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Su
       const ub = unwrap(ub0, ua);
       const t = cutT(rec, a, b, ua, va, ub, vb, ub - ub0);
       let id = -1;
-      // Closer than SNAP (mm) to an end: the end counts as on the line - no slivers, no short edges.
+      // Closer than `snap` (mm) to an end: the end counts as on the line - no slivers, no short edges.
       const len = Math.hypot(v[a * 3] - v[b * 3], v[a * 3 + 1] - v[b * 3 + 1], v[a * 3 + 2] - v[b * 3 + 2]);
-      if (t >= 0 && t * len > SNAP && (1 - t) * len > SNAP) {
+      if (t >= 0 && t * len > snap && (1 - t) * len > snap) {
         id = verts.length / 3;
         verts.push(v[a * 3] + t * (v[b * 3] - v[a * 3]), v[a * 3 + 1] + t * (v[b * 3 + 1] - v[a * 3 + 1]), v[a * 3 + 2] + t * (v[b * 3 + 2] - v[a * 3 + 2]));
       }
@@ -1119,6 +1201,303 @@ function sliceHoneycomb(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Su
     const wc = 1 - wa - wb;
     return wa > 0.01 && wb > 0.01 && wc > 0.01 ? [wa, wb, wc] : null;
   };
+  // Bumps after the borders. Every bump is cut out along its rim - each point exactly on the circle - and its inside laid
+  // anew: rings round a point in its middle at the levels of the profile, joined in even strips. The triangles that were
+  // inside only tell where on the body a new point lies. So the tip of a cone or a ball is a point of the mesh, and no
+  // sliver of the grid runs over the steep rim of a half ball. The new points carry their value (the rim 0, the middle 1).
+  function sliceBumps(start: SurfaceMesh): { mesh: SurfaceMesh; reduced: boolean; fixed: Float32Array | null } {
+    const own = new Float64Array(REC);
+    const middleOf = (rec: Float64Array, a: number, b: number, ua: number, va: number, ub: number, vb: number): [number, number] => {
+      if (rec[a * REC + 1] === rec[b * REC + 1]) return [rec[a * REC + 3], rec[a * REC + 4]];
+      describe((ua + ub) / 2, (va + vb) / 2, own, 0);
+      return [own[3], own[4]];
+    };
+    // The rim: where an edge crosses the circle, exactly (not where the distance would cross it in a straight line). An
+    // edge running through the circle with both ends outside is cut in the middle of its chord first, in a pass of its
+    // own; its halves then cross once each. (Both in one pass, a triangle could be cut on all three sides, and its middle
+    // point would land off the circle.)
+    const rim = (chords: boolean): CutAt => (rec, a, b, ua, va, ub, vb) => {
+      const [cx, cy] = middleOf(rec, a, b, ua, va, ub, vb);
+      const px = ua - cx, py = va - cy, dx = ub - ua, dy = vb - va;
+      const fa = px * px + py * py - hw * hw, fb = (px + dx) ** 2 + (py + dy) ** 2 - hw * hw;
+      const A = dx * dx + dy * dy, B = 2 * (px * dx + py * dy);
+      const disc = B * B - 4 * A * fa;
+      if (!(A > 0) || disc <= 0) return -1;
+      const root = Math.sqrt(disc);
+      const t1 = (-B - root) / (2 * A), t2 = (-B + root) / (2 * A);
+      let t: number;
+      if (!chords && (fa > 0) !== (fb > 0)) t = t1 >= 0 && t1 <= 1 ? t1 : t2;
+      else if (chords && fa > 0 && fb > 0 && t1 > 0 && t2 < 1) t = (t1 + t2) / 2;
+      else return -1;
+      return t > 0 && t < 1 ? t : -1;
+    };
+    // How many bumps (the cells the texturable triangles reach) and what they may cost: a rim of B points and rings
+    // of fewer points inwards make about 2 B (1 + sum of the levels) triangles.
+    const rec0 = recordsOf(start.vertices);
+    const skip0 = skipOf(start.vertices, rec0, start.indices, start.parents);
+    const cells = new Set<number>();
+    for (let f = 0; f < skip0.length; f += 1) if (!skip0[f]) cells.add(rec0[start.indices[f * 3] * REC + 1]);
+    const room = Math.max(0, maxTriangles - 2 * start.indices.length / 3);
+    const wanted = s.profile === "pointed" ? 1 : s.profile === "flat" ? 2 : steps;
+    let rings = wanted;
+    let rimEdge = hw / BUMP_RIM_STEPS[s.detail];
+    const cost = () => {
+      const levels = profileLevels(s.profile, rings);
+      return cells.size * 2 * ((2 * Math.PI * hw) / rimEdge) * (1 + levels.reduce((sum, t) => sum + t, 0) - 1) * 1.3;
+    };
+    while (cost() > room && rings > Math.min(2, wanted)) rings -= 1;
+    while (cost() > room && rimEdge < hw) rimEdge *= 1.4;
+    // 1. Finer near the rims, so a rim gets its points: edges whose middle lies near one, at most rimEdge long - only on
+    // faces a bump can be laid anew on (not smooth, not turned away from the projection). New points come from such
+    // edges, so they count as such too.
+    const n0 = start.vertices.length / 3;
+    const open = new Uint8Array(n0);
+    for (let f = 0; f < skip0.length; f += 1) {
+      if (skip0[f]) continue;
+      const a = start.indices[f * 3], b = start.indices[f * 3 + 1], c = start.indices[f * 3 + 2];
+      const n = faceCross(start.vertices, a, b, c);
+      const ox = (start.vertices[a * 3 + i1] + start.vertices[b * 3 + i1] + start.vertices[c * 3 + i1]) / 3 - c1;
+      const oy = (start.vertices[a * 3 + i2] + start.vertices[b * 3 + i2] + start.vertices[c * 3 + i2]) / 3 - c2;
+      const facing = cyl ? (n[i1] * ox + n[i2] * oy) / (Math.hypot(ox, oy) || 1) : n[ax];
+      if (Math.abs(facing) < 0.5 * Math.hypot(n[0], n[1], n[2])) continue;
+      open[a] = 1;
+      open[b] = 1;
+      open[c] = 1;
+    }
+    const nearRim = (verts: ArrayLike<number>, p: number, q: number) => {
+      const a = Math.min(p, q), b = Math.max(p, q);
+      if ((a < n0 && !open[a]) || (b < n0 && !open[b])) return false;
+      const [ua, va] = uvOf(verts, a);
+      const [ub0, vb] = uvOf(verts, b);
+      const ub = unwrap(ub0, ua);
+      const mu = (ua + ub) / 2, mv = (va + vb) / 2;
+      describe(mu, mv, own, 0);
+      return Math.abs(Math.hypot(mu - own[3], mv - own[4]) - hw) < 0.25 * hw;
+    };
+    const fine = subdivide(start, rimEdge, maxTriangles, null, null, nearRim);
+    let cur: SurfaceMesh = { vertices: fine.vertices, indices: fine.indices, parents: Uint32Array.from(fine.parents, (f) => start.parents[f]), limited: Boolean(fine.limited) };
+    // 2. The rims (chords first, see rim). Cut finely: a rim point snapped onto a grid line flattened the rim
+    // there, and the next ring inwards stuck out of it.
+    cur = split(cur, rim(true), null, RIM_SNAP);
+    cur = split(cur, rim(false), null, RIM_SNAP);
+    // 3. Every bump's inside anew.
+    const v = cur.vertices, I = cur.indices, T = I.length / 3;
+    const rec = recordsOf(v);
+    const skip = skipOf(v, rec, I, cur.parents);
+    // A rim point may lie this far off its circle (a point of the grid next to it, as good as on it); the ring inwards
+    // keeps more room than that.
+    const near = SURFACE_MIN_EDGE;
+    type Bump = { cx: number; cy: number; faces: number[]; bad: boolean; at: number[] };
+    // Triangles squeezed to a line face no way: they go to the bump on their side of the body afterwards.
+    const flat: [number, number][] = [];
+    const bumps = new Map<number, Bump>();
+    const uvAt = (i: number, ref: number): [number, number] => [unwrap(rec[i * REC + 5], ref), rec[i * REC + 6]];
+    for (let f = 0; f < T; f += 1) {
+      const a = I[f * 3], b = I[f * 3 + 1], c = I[f * 3 + 2];
+      const ref = rec[a * REC + 5];
+      const [ua, va] = uvAt(a, ref), [ub, vb] = uvAt(b, ref), [uc, vc] = uvAt(c, ref);
+      describe((ua + ub + uc) / 3, (va + vb + vc) / 3, own, 0);
+      let cx = own[3];
+      const cy = own[4];
+      if (Math.hypot((ua + ub + uc) / 3 - cx, (va + vb + vc) / 3 - cy) >= hw) continue;
+      // Around a cylinder a bump on the seam is one bump from both sides: named by its middle brought round to the front.
+      if (period) {
+        const front = cx - period * Math.round(cx / period);
+        if (front !== cx) {
+          describe(front, cy, own, 0);
+          cx = own[3];
+        }
+      }
+      // Two walls on the same place of the unrolled surface (a box's opposite sides, a cup's inner and outer wall) are
+      // told apart by the way they face.
+      const n = faceCross(v, a, b, c);
+      const size = Math.hypot(n[0], n[1], n[2]);
+      const ox = (v[a * 3 + i1] + v[b * 3 + i1] + v[c * 3 + i1]) / 3 - c1, oy = (v[a * 3 + i2] + v[b * 3 + i2] + v[c * 3 + i2]) / 3 - c2;
+      const facing = cyl ? (n[i1] * ox + n[i2] * oy) / (Math.hypot(ox, oy) || 1) : n[ax];
+      const longest = Math.max(...[[a, b], [b, c], [c, a]].map(([p, q]) => (v[p * 3] - v[q * 3]) ** 2 + (v[p * 3 + 1] - v[q * 3 + 1]) ** 2 + (v[p * 3 + 2] - v[q * 3 + 2]) ** 2));
+      if (size < 1e-6 * longest) {
+        flat.push([f, own[1]]);
+        continue;
+      }
+      const key = own[1] * 2 + (facing > 0 ? 1 : 0);
+      // A face turned away from the projection (the side of a cylinder seen flat from above) unrolls into a sliver: the
+      // bump there keeps its cut grid.
+      const steep = Math.abs(facing) < 0.5 * size;
+      let bump = bumps.get(key);
+      const at = [0, 1, 2].map((k) => (v[a * 3 + k] + v[b * 3 + k] + v[c * 3 + k]) / 3);
+      if (!bump) bumps.set(key, (bump = { cx, cy, faces: [], bad: false, at }));
+      // A bump reaching a face that stays smooth (or the axis) keeps its cut grid. A triangle between two rim points and one point just outside lies outside: only the rim's bulge puts its middle
+      // in. One reaching from well inside to outside was not cut - the bump keeps its grid.
+      const off = [[ua, va], [ub, vb], [uc, vc]].map(([u, w]) => Math.hypot(u - cx, w - cy) - hw);
+      if (skip[f] || steep || (Math.max(...off) > near && Math.min(...off) < -near)) bump.bad = true;
+      else if (Math.max(...off) <= near) bump.faces.push(f);
+    }
+    for (const [f, cell] of flat) {
+      // The bump of that cell on this side: the nearer of the two walls (a box's opposite sides share their cells).
+      const centre = [0, 1, 2].map((k) => (v[I[f * 3] * 3 + k] + v[I[f * 3 + 1] * 3 + k] + v[I[f * 3 + 2] * 3 + k]) / 3);
+      const options = [bumps.get(cell * 2), bumps.get(cell * 2 + 1)].filter((b): b is Bump => Boolean(b));
+      if (!options.length) continue;
+      const dist = (b: Bump) => Math.hypot(b.at[0] - centre[0], b.at[1] - centre[1], b.at[2] - centre[2]);
+      const bump = options.reduce((x, y) => (dist(y) < dist(x) ? y : x));
+      const [ua, va] = uvAt(I[f * 3], bump.cx), [ub, vb] = uvAt(I[f * 3 + 1], bump.cx), [uc, vc] = uvAt(I[f * 3 + 2], bump.cx);
+      const off = [[ua, va], [ub, vb], [uc, vc]].map(([u, w]) => Math.hypot(u - bump.cx, w - bump.cy) - hw);
+      if (skip[f] || (Math.max(...off) > near && Math.min(...off) < -near)) bump.bad = true;
+      else if (Math.max(...off) <= near) bump.faces.push(f);
+    }
+    const verts = Array.from(v);
+    const fixed: number[] = new Array(v.length / 3).fill(NaN);
+    const drop = new Uint8Array(T);
+    const out: number[] = [], outParents: number[] = [];
+    const levels = profileLevels(s.profile, rings).filter((t) => t < 1 - 1e-9);
+    for (const bump of bumps.values()) {
+      if (bump.bad || bump.faces.length < 3) continue;
+      const { cx, cy, faces } = bump;
+      // The rim as one closed loop of edges that only one of the bump's triangles has.
+      const edges = new Map<string, [number, number]>();
+      for (const f of faces) for (let k = 0; k < 3; k += 1) edges.set(`${I[f * 3 + k]},${I[f * 3 + ((k + 1) % 3)]}`, [I[f * 3 + k], I[f * 3 + ((k + 1) % 3)]]);
+      const next = new Map<number, number>();
+      let ok = true;
+      for (const [a, b] of edges.values()) {
+        if (edges.has(`${b},${a}`)) continue;
+        // Two rim edges from one point: the bump touches itself there (half on a face kept smooth) - it keeps its grid.
+        if (next.has(a)) ok = false;
+        next.set(a, b);
+      }
+      if (!ok || next.size < 6) continue;
+      const loop: number[] = [];
+      const first = next.keys().next().value as number;
+      for (let p = first; loop.length <= next.size; ) {
+        loop.push(p);
+        const q = next.get(p);
+        if (q === undefined) break;
+        p = q;
+        if (p === first) break;
+      }
+      if (loop.length !== next.size || next.get(loop[loop.length - 1]) !== first) continue;
+      const rimUv = loop.map((p) => uvAt(p, cx));
+      // A rim that leaves its circle runs over the body's edge (half a bump at the top or the bottom): it keeps its grid.
+      if (rimUv.some(([u, w]) => Math.abs(Math.hypot(u - cx, w - cy) - hw) > near)) continue;
+      // Which way round the loop runs in the unrolled surface; angles are counted that way.
+      let area = 0;
+      for (let k = 0; k < loop.length; k += 1) {
+        const [u0, w0] = rimUv[k], [u1, w1] = rimUv[(k + 1) % loop.length];
+        area += u0 * w1 - u1 * w0;
+      }
+      const dir = area > 0 ? 1 : -1;
+      const rimAngle: number[] = [];
+      for (let k = 0; k < loop.length; k += 1) {
+        let a = dir * Math.atan2(rimUv[k][1] - cy, rimUv[k][0] - cx);
+        // A point a hair behind the one before (snapped onto the rim) counts as level with it.
+        if (k > 0) {
+          while (a < rimAngle[k - 1] - 0.2) a += 2 * Math.PI;
+          a = Math.max(a, rimAngle[k - 1]);
+        }
+        rimAngle.push(a);
+      }
+      // Not around the middle once (a rim folded back): leave it as cut.
+      if (rimAngle[rimAngle.length - 1] - rimAngle[0] >= 2 * Math.PI) continue;
+      // Where on the body a point of the unrolled surface lies: in one of the old triangles (the one it lies in, or the
+      // nearest when it lies on a border). Its place there and the old triangle's own triangle of the body.
+      const corners = faces.map((f) => [I[f * 3], I[f * 3 + 1], I[f * 3 + 2]].map((p) => uvAt(p, cx)));
+      const find = (u: number, w: number): [number, number[]] => {
+        let best = 0, bestScore = -Infinity, bw: number[] = [1, 0, 0];
+        for (let k = 0; k < faces.length; k += 1) {
+          const [[u0, w0], [u1, w1], [u2, w2]] = corners[k];
+          const det = (w1 - w2) * (u0 - u2) + (u2 - u1) * (w0 - w2);
+          // A triangle squeezed to a line (where cuts met) holds no place: a point "in" it would land on the line.
+          const longest = Math.max((u1 - u0) ** 2 + (w1 - w0) ** 2, (u2 - u1) ** 2 + (w2 - w1) ** 2, (u0 - u2) ** 2 + (w0 - w2) ** 2);
+          if (Math.abs(det) < 1e-6 * longest) continue;
+          const l0 = ((w1 - w2) * (u - u2) + (u2 - u1) * (w - w2)) / det;
+          const l1 = ((w2 - w0) * (u - u2) + (u0 - u2) * (w - w2)) / det;
+          const l2 = 1 - l0 - l1;
+          const score = Math.min(l0, l1, l2);
+          if (score > bestScore) {
+            bestScore = score;
+            best = k;
+            bw = [l0, l1, l2].map((x) => Math.max(0, x));
+          }
+          if (score >= 0) break;
+        }
+        return [best, bw];
+      };
+      // The unrolled place of every point of the new bump, for the triangles' own old triangle below.
+      const uvOfPoint = new Map<number, [number, number]>();
+      loop.forEach((p, k) => uvOfPoint.set(p, rimUv[k]));
+      const place = (u: number, w: number): number => {
+        const [k, bw] = find(u, w);
+        const total = bw[0] + bw[1] + bw[2] || 1;
+        const f = faces[k];
+        const id = verts.length / 3;
+        for (let axis = 0; axis < 3; axis += 1) {
+          let x = 0;
+          for (let j = 0; j < 3; j += 1) x += (bw[j] / total) * v[I[f * 3 + j] * 3 + axis];
+          verts.push(x);
+        }
+        uvOfPoint.set(id, [u, w]);
+        return id;
+      };
+      // Rings inwards: as many points as keep their spacing, at least six; the first point at the angle of the rim's first.
+      const ringsIn = levels.slice().reverse().map((t) => {
+        const count = Math.max(6, Math.round(Math.min(loop.length, BUMP_RING_POINTS[s.detail]) * t));
+        const ids: number[] = [], angles: number[] = [];
+        for (let k = 0; k < count; k += 1) {
+          const a = rimAngle[0] + (2 * Math.PI * k) / count;
+          const real = dir * a;
+          ids.push(place(cx + t * hw * Math.cos(real), cy + t * hw * Math.sin(real)));
+          angles.push(a);
+          fixed.push(surfaceFalloff(t, s.profile));
+        }
+        return { ids, angles };
+      });
+      const middle = place(cx, cy);
+      fixed.push(1);
+      // A new triangle belongs to the triangle of the body its middle lies on: the direction each point moves along is
+      // interpolated over it (on a cylinder of 64 sides the neighbour's is 6 degrees off).
+      const tri = (a: number, b: number, c: number) => {
+        out.push(a, b, c);
+        const [ua, wa] = uvOfPoint.get(a)!, [ub, wb] = uvOfPoint.get(b)!, [uc, wc] = uvOfPoint.get(c)!;
+        outParents.push(cur.parents[faces[find((ua + ub + uc) / 3, (wa + wb + wc) / 3)[0]]]);
+      };
+      const zip = (O: number[], oa: number[], In: number[], ia: number[]) => {
+        const m = O.length, n = In.length;
+        const angO = (k: number) => oa[k % m] + 2 * Math.PI * Math.floor(k / m);
+        const angI = (k: number) => ia[k % n] + 2 * Math.PI * Math.floor(k / n);
+        let i = 0, j = 0;
+        while (i < m || j < n) {
+          if (j >= n || (i < m && angO(i + 1) <= angI(j + 1))) {
+            tri(O[i % m], O[(i + 1) % m], In[j % n]);
+            i += 1;
+          } else {
+            tri(O[i % m], In[(j + 1) % n], In[j % n]);
+            j += 1;
+          }
+        }
+      };
+      let outer = loop, outerAngles = rimAngle;
+      for (const ring of ringsIn) {
+        zip(outer, outerAngles, ring.ids, ring.angles);
+        outer = ring.ids;
+        outerAngles = ring.angles;
+      }
+      for (let k = 0; k < outer.length; k += 1) tri(outer[k], outer[(k + 1) % outer.length], middle);
+      for (const p of loop) fixed[p] = 0;
+      for (const f of faces) drop[f] = 1;
+    }
+    for (let f = 0; f < T; f += 1) {
+      if (drop[f]) continue;
+      out.push(I[f * 3], I[f * 3 + 1], I[f * 3 + 2]);
+      outParents.push(cur.parents[f]);
+    }
+    let result: SurfaceMesh = { vertices: Float64Array.from(verts), indices: Uint32Array.from(out), parents: Uint32Array.from(outParents) };
+    for (let pass = 0; pass < 12; pass += 1) {
+      const c = collapseShortEdges(result.vertices, result.indices, SURFACE_MIN_EDGE);
+      if (c.merged === 0 || !c.faces) break;
+      const parents = result.parents;
+      result = { vertices: result.vertices, indices: c.indices, parents: Uint32Array.from(c.faces, (f) => parents[f]) };
+    }
+    result.limited = Boolean(mesh.limited || cur.limited);
+    return { mesh: result, reduced: rings < wanted || rimEdge > hw / BUMP_RIM_STEPS[s.detail], fixed: Float32Array.from(fixed) };
+  }
   // 2. Corner lines: edges whose ends are nearest to different sides are cut exactly where both are equally far - in the
   // joint only. An end on the cell border may count to the neighbour cell; then (rarely) it is measured again in the cell
   // of the edge's middle.
@@ -1160,6 +1539,7 @@ function sliceHoneycomb(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Su
   };
   let cur = split(mesh, border, triple);
   cur = split(cur, border, triple);
+  if (s.pattern === "bumps") return sliceBumps(cur);
   cur = split(cur, kink);
   cur = split(cur, kink);
   // 3. Profile levels. Points just off a level count as on it (a fifth of the gap between levels, at most SNAP): otherwise
@@ -1226,7 +1606,7 @@ const FLANK_ROUNDS = 3;
  * the points still on a flank. Faces whose normal points along a cylinder's axis (top, bottom)
  * stay out: the pattern runs together into rays there and stays smooth anyway.
  */
-function refineFlanks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, fineEdge: number, maxTriangles: number): SurfaceMesh {
+function refineFlanks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, fineEdge: number, maxTriangles: number, skipBase: Uint8Array | null = null): SurfaceMesh {
   let cur = mesh;
   const fine2 = (fineEdge * 1.01) ** 2;
   const ax = AXIS_INDEX[s.axis];
@@ -1243,6 +1623,8 @@ function refineFlanks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
     const flags = new Uint8Array(n);
     let any = false;
     for (let t = 0; t < I.length; t += 3) {
+      // Faces cut already (all round on a straight face) are exact.
+      if (skipBase && skipBase[cur.parents[t / 3]]) continue;
       for (const [a, b] of [[I[t], I[t + 1]], [I[t + 1], I[t + 2]], [I[t + 2], I[t]]]) {
         const dx = v[a * 3] - v[b * 3], dy = v[a * 3 + 1] - v[b * 3 + 1], dz = v[a * 3 + 2] - v[b * 3 + 2];
         if (dx * dx + dy * dy + dz * dz <= fine2) continue;
@@ -1321,6 +1703,8 @@ type RefinedState = {
   slice: { smoothFace: Uint8Array } | null;
   /** Text: the value per point (0 smooth, 1 the full depth), the mesh cut along the letters' walls, and the points torn. */
   text?: { values: Float32Array; torn: number } | null;
+  /** Bumps laid anew: the value of their points (NaN: from the pattern), by point number; points added later have none. */
+  fixed?: Float32Array | null;
 };
 
 export type SurfaceTextureStats = {
@@ -1348,6 +1732,8 @@ export type SurfaceTextureStats = {
    * not agree (the text tears there, as a label would); null for the other patterns.
    */
   text: { placed: boolean; torn: number } | null;
+  /** How the pattern was laid on: what "auto" chose, or what was asked for. */
+  projection: Exclude<SurfaceTextureProjection, "auto">;
 };
 
 export type SurfaceTextureResult = {
@@ -1513,6 +1899,11 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
   function refined(s: SurfaceTextureSettings, layout: SurfaceTextureLayout, maxTriangles: number, scale: number): RefinedState {
     const slice = stripesAreCut(s);
     const smooth = smoothBaseVertices(s, layout);
+    // All round on straight faces (a box's sides): cut per axis as flat, the rest refined as before.
+    const striped = s.pattern === "grooves" || s.pattern === "knurl";
+    const straight = s.projection === "allRound" && (striped || CELL_PATTERNS.includes(s.pattern)) ? straightFaces(base, smooth.faces) : null;
+    const axisSettings = (k: number): SurfaceTextureSettings => ({ ...s, projection: "flat", axis: SURFACE_TEXTURE_AXES[k] });
+    const notOnAxis = (k: number) => Uint8Array.from(smooth.faces, (sm, f) => (sm || straight![f] !== k ? 1 : 0));
     let edge: number;
     // Grooves: the finest step across, for refining where the pattern fades in (see refineTransitions).
     let crossMax = 0;
@@ -1686,37 +2077,91 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       const start = baseMesh(base);
       // Honeycomb is cut along its joints afterwards and bumps get their flanks refined: they leave half the budget for that.
       const budget = Math.floor(maxTriangles / 2);
-      mesh = subdivide(start, edge, budget, smooth.points);
+      // Grooves on straight faces are cut, not refined: points only on such faces (or smooth ones) stay as they are.
+      let keep = smooth.points;
+      if (straight && striped) {
+        const other = new Uint8Array(smooth.points.length);
+        for (let f = 0; f < straight.length; f += 1) {
+          if (straight[f] !== 255 || smooth.faces[f]) continue;
+          for (let k = 0; k < 3; k += 1) other[base.indices[f * 3 + k]] = 1;
+        }
+        keep = Uint8Array.from(smooth.points, (sm, i) => (sm || !other[i] ? 1 : 0));
+      }
+      mesh = subdivide(start, edge, budget, keep);
       // Halving takes up to four times the triangles in one pass: when the budget stopped it half way, the grid would be
       // uneven and the pattern neither cut nor refined. Rather a little coarser all over.
       for (let tries = 0; mesh.limited && tries < 8; tries += 1) {
         edge *= 1.25;
         raised = true;
-        mesh = subdivide(start, edge, budget, smooth.points);
+        mesh = subdivide(start, edge, budget, keep);
       }
       // Carefully coarser but far under the budget: once more, finer.
       const goal = 0.6 * budget;
       if (raised && !mesh.limited && mesh.indices.length / 3 < 0.7 * goal) {
         const f = Math.sqrt(mesh.indices.length / 3 / goal);
-        const again = subdivide(start, edge * f, budget, smooth.points);
+        const again = subdivide(start, edge * f, budget, keep);
         if (!again.limited) {
           mesh = again;
           edge *= f;
         }
       }
     }
-    // Honeycomb (cylinder or flat): cut at cell borders and profile levels instead of refining the flanks. The preview
-    // with half as many levels: each level cuts along the whole joint.
+    // Honeycomb and bumps (cylinder or flat): cut at cell borders and profile levels instead of refining the flanks. The
+    // preview with half as many levels: each level cuts along the whole joint or round every bump.
     let cellSliced = false;
-    if (honeycombIsCut(s) && !mesh.limited) {
-      const steps = scale > 1 ? Math.ceil(CROSS_STEPS[s.detail] / 2) : CROSS_STEPS[s.detail];
-      const cut = sliceHoneycomb(mesh, s, layout, steps, maxTriangles, smooth.faces);
+    let fixed: Float32Array | null = null;
+    const cellSteps = () => {
+      const full = s.pattern === "bumps" ? BUMP_RINGS[s.detail] : CROSS_STEPS[s.detail];
+      return scale > 1 ? Math.ceil(full / 2) : full;
+    };
+    if (cellsAreCut(s) && !mesh.limited) {
+      const cut = sliceCells(mesh, s, layout, cellSteps(), maxTriangles, smooth.faces);
       if (cut.reduced) raised = true;
+      fixed = cut.fixed ?? null;
       mesh = { ...cut.mesh, limited: Boolean(mesh.limited || cut.mesh.indices.length / 3 > maxTriangles) };
       cellSliced = true;
     }
-    if (!slice && !cracks && !text && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles);
-    cache = { ...withNormals(key, mesh, edge, crossMax, raised || Boolean(mesh.limited), slice ? { smoothFace: smooth.faces } : null, s.edgeAngle), text: unrolledText };
+    // All round on straight faces: each axis' faces cut as flat ones. Points keep their numbers from cut to cut, so the
+    // bumps' values of one axis stay right after the next.
+    if (straight && !mesh.limited) {
+      for (let k = 0; k < 3; k += 1) {
+        if (!straight.includes(k)) continue;
+        const sk = axisSettings(k);
+        const skip = notOnAxis(k);
+        if (striped) {
+          crossMax = (layout.period * clamp(s.width, 0.2, 1)) / CROSS_STEPS[s.detail];
+          const F0 = stripeFields(mesh, sk, layout);
+          const I = mesh.indices;
+          const alongSliced = new Uint8Array(I.length / 3);
+          for (let t = 0; t < I.length; t += 3) {
+            if (skip[mesh.parents[t / 3]]) continue;
+            const a = I[t], b = I[t + 1], c = I[t + 2];
+            if (Math.max(Math.abs(F0.alongDiff(a, b)), Math.abs(F0.alongDiff(b, c)), Math.abs(F0.alongDiff(c, a))) > 6 * scale) alongSliced[t / 3] = 1;
+          }
+          mesh = sliceByField(mesh, F0.along, F0.alongDiff, 6 * scale, [0], alongSliced, F0.crossDiff);
+          const steps = CROSS_STEPS[s.detail] / 2;
+          mesh = sliceStripes(mesh, sk, layout, steps, skip);
+          if (s.pattern === "knurl") {
+            mesh = sliceStripes(mesh, sk, { ...layout, angle: -layout.angle }, steps, skip);
+            mesh = sliceKnurlCrease(mesh, sk, layout, skip);
+          }
+        } else {
+          const cut = sliceCells(mesh, sk, layout, cellSteps(), maxTriangles, skip);
+          if (cut.reduced) raised = true;
+          if (cut.fixed) {
+            const merged = new Float32Array(cut.fixed.length);
+            for (let i = 0; i < merged.length; i += 1) merged[i] = Number.isNaN(cut.fixed[i]) && fixed && i < fixed.length ? fixed[i] : cut.fixed[i];
+            fixed = merged;
+          }
+          mesh = cut.mesh;
+        }
+        mesh.limited = mesh.indices.length / 3 > maxTriangles;
+        if (mesh.limited) break;
+      }
+    }
+    const cutFaces = straight ? Uint8Array.from(straight, (k) => (k === 255 ? 0 : 1)) : null;
+    if (!slice && !cracks && !text && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles, cutFaces);
+    cache = { ...withNormals(key, mesh, edge, crossMax, raised || Boolean(mesh.limited), slice ? { smoothFace: smooth.faces } : null, s.edgeAngle), text: unrolledText, fixed };
     return cache;
   }
 
@@ -1759,11 +2204,17 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       fine = { ...split, parents: Uint32Array.from(split.parents, (f) => mesh.parents[f]) };
     }
     if (fine.indices.length === mesh.indices.length) return state;
-    return withNormals(state.key, fine, state.edge, state.crossMax, state.limited || Boolean(fine.limited), state.slice, s.edgeAngle);
+    // Splitting adds points behind the others: the bumps' values keep their numbers.
+    return { ...withNormals(state.key, fine, state.edge, state.crossMax, state.limited || Boolean(fine.limited), state.slice, s.edgeAngle), fixed: state.fixed };
   }
 
+  // Whether the body is round, per axis: asked once, not on every change of a setting.
+  const roundness = new Map<SurfaceTextureAxis, boolean>();
   function apply(input: unknown, options: SurfaceTextureOptions = {}): SurfaceTextureResult {
-    const s = normalizeSurfaceTexture(input);
+    const asked = normalizeSurfaceTexture(input);
+    if (asked.projection === "auto" && !roundness.has(asked.axis)) roundness.set(asked.axis, isRoundBody(base, asked.axis));
+    // "auto" decided for this body; everything below sees the choice.
+    const s: SurfaceTextureSettings = asked.projection === "auto" ? { ...asked, projection: roundness.get(asked.axis) ? "cylinder" : "allRound" } : asked;
     const preview = Boolean(options.preview);
     const maxTriangles = Math.max(1000, Math.round(options.maxTriangles ?? (preview ? SURFACE_TEXTURE_PREVIEW_TRIANGLES : SURFACE_TEXTURE_MAX_TRIANGLES)));
     const maskFree = maskTest(s.masks);
@@ -1844,6 +2295,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const notch = gold ? new Float64Array(n) : null;
     // Text: the values come from the unrolled plane, not from a projection.
     const textValue = s.pattern === "text" && state.text ? state.text.values : null;
+    const fixedValue = state.fixed ?? null;
     let lettered = 0;
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
@@ -1852,7 +2304,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       const wi = weights[i];
       if (wi > 0) {
         textured += used[i];
-        const value = textValue ? textValue[i] : surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
+        const known = fixedValue && i < fixedValue.length ? fixedValue[i] : NaN;
+        const value = textValue ? textValue[i] : !Number.isNaN(known) ? known : surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
         if (textValue && value > 0.5) lettered += used[i];
         d = wi * (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
         if (notch) notch[i] = wi * s.depth * value;
@@ -1903,6 +2356,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         removed: base.removed,
         cracks: layout.crack ? { lines: layout.crack.lines.length, length: layout.crack.length } : null,
         text: s.pattern === "text" ? { placed: lettered > 0, torn: state.text?.torn ?? 0 } : null,
+        projection: s.projection as Exclude<SurfaceTextureProjection, "auto">,
       },
       fill,
     };

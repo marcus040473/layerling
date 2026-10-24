@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Noppen als Halbkugel oder Kegel",
+      "en": "Bumps as half balls or cones"
+    },
+    "body": {
+      "de": "Unter „Form der Noppen“ wählst du Halbkugel, spitzen Kegel, weich gerundet oder oben abgeflacht – jede Noppe wird rund um ihre Mitte sauber neu vernetzt. Auf eckigen Körpern wie einem Würfel liegen Rändel, Rillen, Waben und Noppen jetzt sauber auf jeder Fläche; „Automatisch“ wählt die passende Projektion.",
+      "en": "Under \"Bump shape\" you choose a half ball, a pointed cone, softly rounded or flat on top - each bump is meshed afresh round its middle. On angular bodies like a cube, knurling, grooves, honeycomb and bumps now sit cleanly on every face; \"Automatic\" picks the fitting projection."
+    }
+  },
+  {
+    "title": {
       "de": "Oberfläche in der Werkzeugleiste",
       "en": "Surface texture in the toolbar"
     },

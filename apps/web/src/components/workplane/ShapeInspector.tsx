@@ -4318,6 +4318,9 @@ function CylinderWrapCard({
  * asked for, like wrapping: a step one takes, and undo takes it back. The card keeps its
  * settings through that undo, so the next try starts from the last one.
  */
+/** The shapes a bump can take, the half ball first. */
+const BUMP_SHAPES = ["dome", "pointed", "round", "flat"] as const;
+
 export function SurfaceTextureCard({
   shape,
   workspace,
@@ -4419,7 +4422,8 @@ export function SurfaceTextureCard({
                 value={settings.pattern}
                 options={options(SURFACE_TEXTURE_PATTERNS, (value) => t(SURFACE_TEXTURE_LABELS.pattern[value]))}
                 disabled={disabled || busy}
-                onChange={(value) => set({ pattern: value as SurfaceTextureSettings["pattern"] })}
+                // Bumps start as half balls: the V the grooves have by default would make them cones.
+                onChange={(value) => set({ pattern: value as SurfaceTextureSettings["pattern"], ...(value === "bumps" && settings.profile === "pointed" ? { profile: "dome" as const } : {}) })}
               />
               {cracks ? (
                 <>
@@ -4463,6 +4467,16 @@ export function SurfaceTextureCard({
               ) : (
                 range("surfaceSpacing", t("inspector.surfaceSpacing"), settings.spacing, [SURFACE_TEXTURE_LIMITS.spacing[0], 50], 0.1, (spacing) => set({ spacing }))
               )}
+              {settings.pattern === "bumps" ? (
+                <SelectProperty
+                  type="select"
+                  label={t("inspector.surfaceBumpShape")}
+                  value={settings.profile}
+                  options={options(BUMP_SHAPES, (value) => t(SURFACE_TEXTURE_LABELS.bumpShape[value]))}
+                  disabled={disabled || busy}
+                  onChange={(value) => set({ profile: value as SurfaceTextureSettings["profile"] })}
+                />
+              ) : null}
               {range("surfaceDepth", t("inspector.surfaceDepth"), settings.depth, SURFACE_TEXTURE_LIMITS.depth, 0.05, (depth) => set({ depth }))}
               <SelectProperty
                 type="select"
@@ -4519,14 +4533,16 @@ export function SurfaceTextureCard({
                   )}
                   {text ? null : (
                     <>
-                      <SelectProperty
-                        type="select"
-                        label={t("inspector.surfaceProfile")}
-                        value={settings.profile}
-                        options={options(SURFACE_TEXTURE_PROFILES, (value) => t(SURFACE_TEXTURE_LABELS.profile[value]))}
-                        disabled={disabled || busy}
-                        onChange={(value) => set({ profile: value as SurfaceTextureSettings["profile"] })}
-                      />
+                      {settings.pattern === "bumps" ? null : (
+                        <SelectProperty
+                          type="select"
+                          label={t("inspector.surfaceProfile")}
+                          value={settings.profile}
+                          options={options(SURFACE_TEXTURE_PROFILES, (value) => t(SURFACE_TEXTURE_LABELS.profile[value]))}
+                          disabled={disabled || busy}
+                          onChange={(value) => set({ profile: value as SurfaceTextureSettings["profile"] })}
+                        />
+                      )}
                       {striped ? range("surfaceAngle", t("inspector.surfaceAngle"), settings.angle, SURFACE_TEXTURE_LIMITS.angle, 1, (angle) => set({ angle })) : null}
                       <ToggleProperty label={t("inspector.surfaceOutside")} value={settings.outside} disabled={disabled || busy} onChange={(outside) => set({ outside })} />
                       <ToggleProperty label={t("inspector.surfaceInside")} value={settings.inside} disabled={disabled || busy} onChange={(inside) => set({ inside })} />

@@ -10310,7 +10310,7 @@ export function LayerlingEditor({
           [textured.id],
           t("status.surfaceTextured", { pattern: surfacePatternLabel(settings.pattern), triangles: formatTriangleCount(outcome.stats.triangles) }),
         );
-        const { triangles, around, spacing, limited, tooDeep, bedClamped, cracks, text } = outcome.stats;
+        const { triangles, around, spacing, limited, tooDeep, bedClamped, cracks, text, projection } = outcome.stats;
         const { masks: _planes, textOutline: _outline, ...shown } = settings;
         return {
           object: mcpShapeSummary(textured),
@@ -10318,7 +10318,7 @@ export function LayerlingEditor({
           changed: Boolean(under),
           settings: shown,
           masks: masks.length,
-          texture: { triangles, around, spacing, limited, tooDeep, bedClamped, ...(cracks ? { cracks } : {}), ...(text ? { text } : {}) },
+          texture: { triangles, projection, around, spacing, limited, tooDeep, bedClamped, ...(cracks ? { cracks } : {}), ...(text ? { text } : {}) },
         };
       }
 
