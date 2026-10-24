@@ -258,7 +258,7 @@ export function closeTJunctions(v: Float64Array, indices: Uint32Array, passes = 
       else {
         for (let x = c0[0]; x <= c1[0]; x += 1) for (let y = c0[1]; y <= c1[1]; y += 1) for (let z = c0[2]; z <= c1[2]; z += 1) {
           const list = grid.get(`${x},${y},${z}`);
-          if (list) candidates.push(...list);
+          if (list) for (const p of list) candidates.push(p);
         }
       }
       const pts: { t: number; p: number }[] = [];
@@ -1129,7 +1129,8 @@ export function fixCaps(vertices: ArrayLike<number>, indices: Uint32Array, maxAr
     if (add.length === 0) return I;
     const out: number[] = [];
     for (let t = 0; t < I.length; t += 3) if (!drop[t / 3]) out.push(I[t], I[t + 1], I[t + 2]);
-    out.push(...add);
+    // One by one, not out.push(...add): a large body has more than a call can take (a worker's stack is small).
+    for (const k of add) out.push(k);
     I = Uint32Array.from(out);
   }
   return I;
