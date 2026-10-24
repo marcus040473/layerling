@@ -1207,3 +1207,104 @@ export function interpolatedNormals(base: { vertices: Float64Array; indices: Uin
   }
   return out;
 }
+
+/** How far a point on a sharp edge may move, in depths (as SVG's miter limit): a thin fin would send it far out. */
+const MITER_LIMIT = 3;
+
+/**
+ * How far and where each point moves for a depth of 1: its direction (see interpolatedNormals), but on a sharp edge or
+ * corner of the input (faces bending by more than `creaseAngle` degrees) the point where the faces, each moved by 1
+ * along its own normal, meet. Moved along the mean of both sides by only 1, a point on a box's edge inside a letter
+ * went in by 0.7 on each face and sideways past its neighbours on either face, which lie closer to the edge than
+ * that: the floor folded over the edge. The meeting point solves m·n = 1 for each side's normal n (least squares
+ * for more than three sides).
+ */
+export function creaseMoves(base: { vertices: Float64Array; indices: Uint32Array }, mesh: SurfaceMesh, directions: Float64Array, creaseAngle: number) {
+  const bv = base.vertices, BI = base.indices;
+  const T0 = BI.length / 3;
+  const fn = new Float64Array(T0 * 3);
+  for (let f = 0; f < T0; f += 1) {
+    const [x, y, z] = faceCross(bv, BI[f * 3], BI[f * 3 + 1], BI[f * 3 + 2]);
+    const l = Math.hypot(x, y, z);
+    if (l > 0) {
+      fn[f * 3] = x / l;
+      fn[f * 3 + 1] = y / l;
+      fn[f * 3 + 2] = z / l;
+    }
+  }
+  const limit = Math.cos((creaseAngle * Math.PI) / 180);
+  const v = mesh.vertices, I = mesh.indices;
+  const n = v.length / 3;
+  const out = Float64Array.from(directions);
+  // Only points with input faces on both sides of a sharp edge: a first pass finds them cheaply.
+  const first = new Int32Array(n).fill(-1);
+  const sharp = new Uint8Array(n);
+  for (let t = 0; t < I.length; t += 1) {
+    const i = I[t], P = mesh.parents[(t - (t % 3)) / 3];
+    if (first[i] < 0) first[i] = P;
+    else if (first[i] !== P && !sharp[i]) {
+      const Q = first[i];
+      if (fn[P * 3] * fn[Q * 3] + fn[P * 3 + 1] * fn[Q * 3 + 1] + fn[P * 3 + 2] * fn[Q * 3 + 2] < limit) sharp[i] = 1;
+    }
+  }
+  // Their input faces, each once.
+  const faces = new Map<number, Set<number>>();
+  for (let t = 0; t < I.length; t += 1) {
+    const i = I[t];
+    if (!sharp[i]) continue;
+    let set = faces.get(i);
+    if (!set) faces.set(i, (set = new Set()));
+    set.add(mesh.parents[(t - (t % 3)) / 3]);
+  }
+  for (const [i, set] of faces) {
+    // Sides: the faces grouped by normal (within the crease angle of a group's first face), their normals summed.
+    const list: number[] = [];
+    for (const P of set) {
+      let k = 0;
+      for (; k < list.length; k += 4) {
+        const R = list[k];
+        if (fn[P * 3] * fn[R * 3] + fn[P * 3 + 1] * fn[R * 3 + 1] + fn[P * 3 + 2] * fn[R * 3 + 2] >= limit) break;
+      }
+      if (k >= list.length) list.push(P, 0, 0, 0);
+      list[k + 1] += fn[P * 3];
+      list[k + 2] += fn[P * 3 + 1];
+      list[k + 3] += fn[P * 3 + 2];
+    }
+    if (list.length < 8) continue;
+    // Least squares: (sum n nᵀ + eps) m = sum n, over each side's unit mean normal.
+    let a00 = 1e-9, a01 = 0, a02 = 0, a11 = 1e-9, a12 = 0, a22 = 1e-9, b0 = 0, b1 = 0, b2 = 0;
+    for (let k = 0; k < list.length; k += 4) {
+      const l = Math.hypot(list[k + 1], list[k + 2], list[k + 3]);
+      if (l === 0) continue;
+      const x = list[k + 1] / l, y = list[k + 2] / l, z = list[k + 3] / l;
+      a00 += x * x;
+      a01 += x * y;
+      a02 += x * z;
+      a11 += y * y;
+      a12 += y * z;
+      a22 += z * z;
+      b0 += x;
+      b1 += y;
+      b2 += z;
+    }
+    const c00 = a11 * a22 - a12 * a12, c01 = a02 * a12 - a01 * a22, c02 = a01 * a12 - a02 * a11;
+    const det = a00 * c00 + a01 * c01 + a02 * c02;
+    if (!(Math.abs(det) > 1e-18)) continue;
+    const c11 = a00 * a22 - a02 * a02, c12 = a01 * a02 - a00 * a12, c22 = a00 * a11 - a01 * a01;
+    let mx = (c00 * b0 + c01 * b1 + c02 * b2) / det;
+    let my = (c01 * b0 + c11 * b1 + c12 * b2) / det;
+    let mz = (c02 * b0 + c12 * b1 + c22 * b2) / det;
+    const ml = Math.hypot(mx, my, mz);
+    // Against the point's own direction: something odd (a sheet folded back on itself); keep the direction.
+    if (!(ml > 0) || mx * directions[i * 3] + my * directions[i * 3 + 1] + mz * directions[i * 3 + 2] <= 0) continue;
+    if (ml > MITER_LIMIT) {
+      mx *= MITER_LIMIT / ml;
+      my *= MITER_LIMIT / ml;
+      mz *= MITER_LIMIT / ml;
+    }
+    out[i * 3] = mx;
+    out[i * 3 + 1] = my;
+    out[i * 3 + 2] = mz;
+  }
+  return out;
+}

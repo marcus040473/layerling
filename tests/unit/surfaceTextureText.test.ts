@@ -116,6 +116,23 @@ describe("text stuck on", () => {
     expect(right).toBeGreaterThan(10);
   });
 
+  it("engraves over the edge of a box without folding: the floors of both faces meet in the corner", () => {
+    // The "O" right on the edge between the front and the right face.
+    const result = applySurfaceTexture(box(40, 40, 40), { ...TEXT, direction: "inward", textAround: 45, textOutline: [OI[0].map((value, k) => (k % 2 ? value : value + 3)), OI[1].map((value, k) => (k % 2 ? value : value + 3))] });
+    expectClosed(result);
+    // Points on the edge go in along both faces alike; in the letter as deep as each floor, 0.6 mm, and never further,
+    // or past their neighbours on either face, which lie closer to the edge (they went in by 0.42 mm on a slant).
+    let corner = 0;
+    const v = result.vertices;
+    for (let i = 0; i < v.length; i += 3) {
+      const dx = 20 - v[i], dz = 20 - v[i + 2];
+      if (Math.abs(dx - dz) > 1e-6 || dx < 0.01 || dx > 1) continue;
+      expect(dx).toBeLessThan(0.6 + 1e-6);
+      if (dx > 0.6 - 1e-6) corner += 1;
+    }
+    expect(corner).toBeGreaterThan(3);
+  });
+
   it("lies on top of a plate with the axis lying, readable from the front", () => {
     const result = applySurfaceTexture(box(60, 3, 40), { ...TEXT, axis: "y" });
     expect(result.stats.text?.placed).toBe(true);

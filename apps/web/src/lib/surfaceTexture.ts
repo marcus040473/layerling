@@ -46,6 +46,7 @@ import {
   fadeWeights,
   faceCross,
   fixCaps,
+  creaseMoves,
   interpolatedNormals,
   normalsAndCreases,
   prepareSurfaceBase,
@@ -1693,6 +1694,8 @@ type RefinedState = {
   normals: Float64Array;
   /** The direction each point moves along (see interpolatedNormals). */
   directions: Float64Array;
+  /** How far and where it moves for a depth of 1: the direction, on a sharp edge where the moved faces meet (see creaseMoves). */
+  moves: Float64Array;
   crease: Uint8Array;
   down: Float64Array;
   up: Float64Array;
@@ -1892,7 +1895,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
   function withNormals(key: string, mesh: SurfaceMesh, edge: number, crossMax: number, limited: boolean, slice: RefinedState["slice"], edgeAngle: number): RefinedState {
     const { normals, crease, down, up } = normalsAndCreases(mesh.vertices, mesh.indices, edgeAngle);
     const directions = interpolatedNormals(base, mesh, edgeAngle);
-    return { key, mesh, normals, directions, crease, down, up, adj: adjacency(mesh.vertices.length / 3, mesh.indices), edge, crossMax, limited, slice };
+    const moves = creaseMoves(base, mesh, directions, edgeAngle);
+    return { key, mesh, normals, directions, moves, crease, down, up, adj: adjacency(mesh.vertices.length / 3, mesh.indices), edge, crossMax, limited, slice };
   }
 
   /** Refine for the pattern (see the top of this file). `scale` > 1 makes a preview coarser. */
@@ -2282,7 +2286,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       if (state !== r) weights = weightsFor(state);
     }
 
-    const { mesh, directions } = state;
+    const { mesh, directions, moves } = state;
     const v = mesh.vertices;
     const n = v.length / 3;
     const out = new Float64Array(v.length);
@@ -2290,7 +2294,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const used = new Uint8Array(n);
     for (let t = 0; t < mesh.indices.length; t += 1) used[mesh.indices[t]] = 1;
     let textured = 0;
-    // Cracks with gold: how deep the notch is at each point; the points moved along `directions`.
+    // Cracks with gold: how deep the notch is at each point; the points moved along `moves`.
     const gold = s.pattern === "cracks" && s.crackGold && s.direction === "inward" && Boolean(layout.crack?.count);
     const notch = gold ? new Float64Array(n) : null;
     // Text: the values come from the unrolled plane, not from a projection.
@@ -2310,9 +2314,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         d = wi * (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
         if (notch) notch[i] = wi * s.depth * value;
       }
-      out[i * 3] = x + nx * d;
-      out[i * 3 + 1] = y + ny * d;
-      out[i * 3 + 2] = z + nz * d;
+      out[i * 3] = x + moves[i * 3] * d;
+      out[i * 3 + 1] = y + moves[i * 3 + 1] * d;
+      out[i * 3 + 2] = z + moves[i * 3 + 2] * d;
     }
     // With the bottom kept smooth, nothing belongs below the bed (the slicer would cut it off, or the first layer stick
     // badly). With a patterned bottom it sinks on purpose, as does a text put on the bottom itself.
@@ -2335,7 +2339,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     }
     if (capped) indices = dropFins(indices);
     // The gold: a closed body on the bottom of the notch, its top `crackRecess` mm below the surface.
-    const fillBody = notch ? crackFillBody(out, indices, notch, directions, s.crackRecess) : null;
+    const fillBody = notch ? crackFillBody(out, indices, notch, moves, s.crackRecess) : null;
     const fill = fillBody && fillBody.indices.length ? { vertices: screenToInsidePositions(fillBody.vertices), indices: fillBody.indices } : null;
     const inwardDepth = s.direction === "inward" ? s.depth : s.direction === "both" ? s.depth / 2 : 0;
     const smallest = Math.min(...base.size.filter((size) => size > 0));
