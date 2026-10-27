@@ -19,6 +19,7 @@ import {
   normalizeSurfaceTexture,
   surfaceTexturePositions,
   SURFACE_TEXTURE_MAX_MASK_PLANES,
+  type SurfaceTextureBarkType,
   type SurfaceTextureCrackStart,
   type SurfaceTextureCrackStyle,
   type SurfaceTextureDetail,
@@ -30,6 +31,8 @@ import {
   type SurfaceTextureProfile,
   type SurfaceTextureProjection,
   type SurfaceTextureSettings,
+  type SurfaceTextureWoodCut,
+  type SurfaceTextureWoodType,
   type SurfaceTextureStats,
   type SurfaceTextureTiling,
 } from "@/lib/surfaceTexture";
@@ -67,6 +70,11 @@ export const SURFACE_TEXTURE_LABELS: {
   mask: Record<SurfaceTextureMaskMode | "none", MessageKey>;
   crackStyle: Record<SurfaceTextureCrackStyle, MessageKey>;
   crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
+  barkType: Record<SurfaceTextureBarkType, MessageKey>;
+  barkTypeHint: Record<SurfaceTextureBarkType, MessageKey>;
+  woodType: Record<SurfaceTextureWoodType, MessageKey>;
+  woodCut: Record<SurfaceTextureWoodCut, MessageKey>;
+  woodCutHint: Record<SurfaceTextureWoodCut, MessageKey>;
   image: Record<SurfaceTextureImage, MessageKey>;
   tiling: Record<SurfaceTextureTiling, MessageKey>;
 } = {
@@ -79,6 +87,8 @@ export const SURFACE_TEXTURE_LABELS: {
     knit: "surfaceTexture.knit",
     rope: "surfaceTexture.rope",
     weave: "surfaceTexture.weave",
+    bark: "surfaceTexture.bark",
+    wood: "surfaceTexture.wood",
     grain: "surfaceTexture.grain",
     image: "surfaceTexture.image",
     cracks: "surfaceTexture.cracks",
@@ -93,6 +103,17 @@ export const SURFACE_TEXTURE_LABELS: {
   mask: { none: "surfaceTexture.maskNone", exclude: "surfaceTexture.maskExclude", only: "surfaceTexture.maskOnly" },
   crackStyle: { crack: "surfaceTexture.crackStyleCrack", lightning: "surfaceTexture.crackStyleLightning" },
   crackStart: { top: "surfaceTexture.crackStartTop", bottom: "surfaceTexture.crackStartBottom", rim: "surfaceTexture.crackStartRim", anywhere: "surfaceTexture.crackStartAnywhere" },
+  barkType: { oak: "surfaceTexture.barkOak", pine: "surfaceTexture.barkPine", spruce: "surfaceTexture.barkSpruce", birch: "surfaceTexture.barkBirch", beech: "surfaceTexture.barkBeech" },
+  barkTypeHint: {
+    oak: "surfaceTexture.barkOakHint",
+    pine: "surfaceTexture.barkPineHint",
+    spruce: "surfaceTexture.barkSpruceHint",
+    birch: "surfaceTexture.barkBirchHint",
+    beech: "surfaceTexture.barkBeechHint",
+  },
+  woodType: { oak: "surfaceTexture.woodOak", ash: "surfaceTexture.woodAsh", beech: "surfaceTexture.woodBeech", pine: "surfaceTexture.woodPine", walnut: "surfaceTexture.woodWalnut" },
+  woodCut: { log: "surfaceTexture.woodCutLog", flatSawn: "surfaceTexture.woodCutFlatSawn", quarterSawn: "surfaceTexture.woodCutQuarterSawn" },
+  woodCutHint: { log: "surfaceTexture.woodCutLogHint", flatSawn: "surfaceTexture.woodCutFlatSawnHint", quarterSawn: "surfaceTexture.woodCutQuarterSawnHint" },
   image: {
     topography: "surfaceTexture.imageTopography",
     wood: "surfaceTexture.imageWood",

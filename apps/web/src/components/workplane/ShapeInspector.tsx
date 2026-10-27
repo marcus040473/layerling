@@ -162,8 +162,9 @@ import { t, type MessageKey } from "@/lib/i18n";
 import { localizedError } from "@/lib/userErrors";
 import { displayShapeName, makeShapeFromAsset, renamedShapeName } from "@/lib/shapeCatalog";
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, surfaceTextureImageTile, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { SURFACE_TEXTURE_OWN_IMAGE_SIZE, surfaceTextureOwnImage } from "@/lib/surfaceTextureImages";
+import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
 import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, surfaceTextureEntry } from "@/lib/surfaceTextureShape";
 import { LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, type VaseSettings } from "@/lib/vaseSettings";
@@ -483,7 +484,7 @@ const RELATIVE_SIZE_PROPERTY_IDS = new Set(["width", "height", "length", "diamet
 const ROTATION_PROPERTY_IDS = new Set(["rotateX", "rotateY", "rotateZ"]);
 
 function propertyUsesLengthUnit(key: string) {
-  return ["textLineWidth", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "sketchLineWidth", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "screwHoleShaft", "screwHoleHeadDepth", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityWallThickness", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityCornerRadius", "gridfinityBinCornerRadius", "gridfinityDividerThickness", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "gridfinityOpeningCornerSize", "gridfinityOpeningDepthBack", "gridfinityOpeningDepthFront", "gridfinityOpeningDepthLeft", "gridfinityOpeningDepthRight", "gridfinityOpeningWidthBack", "gridfinityOpeningWidthFront", "gridfinityOpeningWidthLeft", "gridfinityOpeningWidthRight", "gridfinityOpeningDistanceBack", "gridfinityOpeningDistanceFront", "gridfinityOpeningDistanceLeft", "gridfinityOpeningDistanceRight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
+  return ["textLineWidth", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "sketchLineWidth", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "screwHoleShaft", "screwHoleHeadDepth", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityWallThickness", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityCornerRadius", "gridfinityBinCornerRadius", "gridfinityDividerThickness", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "gridfinityOpeningCornerSize", "gridfinityOpeningDepthBack", "gridfinityOpeningDepthFront", "gridfinityOpeningDepthLeft", "gridfinityOpeningDepthRight", "gridfinityOpeningWidthBack", "gridfinityOpeningWidthFront", "gridfinityOpeningWidthLeft", "gridfinityOpeningWidthRight", "gridfinityOpeningDistanceBack", "gridfinityOpeningDistanceFront", "gridfinityOpeningDistanceLeft", "gridfinityOpeningDistanceRight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "surfaceRingWidth", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
 }
 
 /**
@@ -4448,6 +4449,7 @@ const SURFACE_SPACING_LABEL: Partial<Record<SurfaceTexturePattern, MessageKey>> 
   knit: "inspector.surfaceSpacingKnit",
   rope: "inspector.surfaceSpacingRope",
   weave: "inspector.surfaceSpacingWeave",
+  bark: "inspector.surfaceSpacingBark",
   grain: "inspector.surfaceSpacingGrain",
   image: "inspector.surfaceSpacingImage",
 };
@@ -4465,10 +4467,13 @@ const SURFACE_COVERAGE_LABEL: Partial<Record<SurfaceTexturePattern, MessageKey>>
  */
 function surfaceSettingsForPattern(current: SurfaceTextureSettings, pattern: SurfaceTexturePattern): Partial<SurfaceTextureSettings> {
   const leaving = current.pattern === "bumps" ? null : SURFACE_TEXTURE_STARTERS[current.pattern];
-  const reset = leaving ? Object.fromEntries(Object.keys(leaving).map((key) => [key, SURFACE_TEXTURE_DEFAULTS[key as keyof SurfaceTextureSettings]])) : {};
+  // A bark brings its own size and depth: leaving it gives them back too.
+  const leavingKeys = [...Object.keys(leaving ?? {}), ...(current.pattern === "bark" ? ["spacing", "depth"] : [])];
+  const reset = Object.fromEntries(leavingKeys.map((key) => [key, SURFACE_TEXTURE_DEFAULTS[key as keyof SurfaceTextureSettings]]));
   const starter = pattern === "bumps" ? (current.profile === "pointed" ? { profile: "dome" as const } : {}) : SURFACE_TEXTURE_STARTERS[pattern] ?? {};
   const tile = pattern === "image" ? { spacing: surfaceTextureImageTile(current.image), tileHeight: 0 } : {};
-  return { ...reset, ...starter, ...tile, pattern };
+  const own = pattern === "bark" ? { spacing: BARK_STARTS[current.barkType].spacing, depth: BARK_STARTS[current.barkType].depth } : pattern === "wood" ? { ringWidth: WOOD_RINGS[current.woodType] } : {};
+  return { ...reset, ...starter, ...tile, ...own, pattern };
 }
 
 /** A picture file as one's own image for the texture: drawn small (SURFACE_TEXTURE_OWN_IMAGE_SIZE) and turned grey. */
@@ -4564,6 +4569,10 @@ export function SurfaceTextureCard({
   );
   const striped = settings.pattern === "grooves" || settings.pattern === "knurl";
   const cracks = settings.pattern === "cracks";
+  // Bark and wood: a tree and a wood of their own, and the annual rings on a log's ends.
+  const bark = settings.pattern === "bark";
+  const wood = settings.pattern === "wood";
+  const endRings = settings.topFree === 0 && settings.bottomFree === 0;
   // Grain lies in space: no projection, no axis. An image's grey values are its profile and width.
   const grain = settings.pattern === "grain";
   const image = settings.pattern === "image";
@@ -4694,14 +4703,64 @@ export function SurfaceTextureCard({
                       {imageError ? <p className="cylinder-wrap-hint">{imageError}</p> : null}
                     </>
                   ) : null}
-                  {range(
-                    "surfaceSpacing",
-                    t(SURFACE_SPACING_LABEL[settings.pattern] ?? "inspector.surfaceSpacing"),
-                    settings.spacing,
-                    [SURFACE_TEXTURE_LIMITS.spacing[0], image ? SURFACE_TEXTURE_LIMITS.spacing[1] : 50],
-                    0.1,
-                    (spacing) => set({ spacing }),
+                  {bark ? (
+                    <SelectProperty
+                      type="select"
+                      label={t("inspector.surfaceBarkType")}
+                      value={settings.barkType}
+                      options={options(SURFACE_TEXTURE_BARK_TYPES, (value) => t(SURFACE_TEXTURE_LABELS.barkType[value]))}
+                      hint={t(SURFACE_TEXTURE_LABELS.barkTypeHint[settings.barkType])}
+                      disabled={disabled || busy}
+                      onChange={(value) => {
+                        const barkType = value as SurfaceTextureSettings["barkType"];
+                        set({ barkType, spacing: BARK_STARTS[barkType].spacing, depth: BARK_STARTS[barkType].depth });
+                      }}
+                    />
+                  ) : null}
+                  {wood ? (
+                    <>
+                      <SelectProperty
+                        type="select"
+                        label={t("inspector.surfaceWoodType")}
+                        value={settings.woodType}
+                        options={options(SURFACE_TEXTURE_WOOD_TYPES, (value) => t(SURFACE_TEXTURE_LABELS.woodType[value]))}
+                        disabled={disabled || busy}
+                        onChange={(value) => {
+                          const woodType = value as SurfaceTextureSettings["woodType"];
+                          set({ woodType, ringWidth: WOOD_RINGS[woodType] });
+                        }}
+                      />
+                      <SelectProperty
+                        type="select"
+                        label={t("inspector.surfaceWoodCut")}
+                        value={settings.woodCut}
+                        options={options(SURFACE_TEXTURE_WOOD_CUTS, (value) => t(SURFACE_TEXTURE_LABELS.woodCut[value]))}
+                        hint={t(SURFACE_TEXTURE_LABELS.woodCutHint[settings.woodCut])}
+                        disabled={disabled || busy}
+                        onChange={(value) => set({ woodCut: value as SurfaceTextureSettings["woodCut"] })}
+                      />
+                    </>
+                  ) : (
+                    range(
+                      "surfaceSpacing",
+                      t(SURFACE_SPACING_LABEL[settings.pattern] ?? "inspector.surfaceSpacing"),
+                      settings.spacing,
+                      [SURFACE_TEXTURE_LIMITS.spacing[0], image ? SURFACE_TEXTURE_LIMITS.spacing[1] : 50],
+                      0.1,
+                      (spacing) => set({ spacing }),
+                    )
                   )}
+                  {bark || wood ? (
+                    <>
+                      <ToggleProperty
+                        label={t("inspector.surfaceEndRings")}
+                        value={endRings}
+                        disabled={disabled || busy}
+                        onChange={(on) => set({ topFree: on ? 0 : SURFACE_TEXTURE_DEFAULTS.topFree, bottomFree: on ? 0 : SURFACE_TEXTURE_DEFAULTS.bottomFree })}
+                      />
+                      {wood || endRings ? range("surfaceRingWidth", t("inspector.surfaceRingWidth"), settings.ringWidth, [SURFACE_TEXTURE_LIMITS.ringWidth[0], 10], 0.1, (ringWidth) => set({ ringWidth })) : null}
+                    </>
+                  ) : null}
                   {image ? (
                     <>
                       {range("surfaceTileHeight", t("inspector.surfaceTileHeight"), settings.tileHeight, SURFACE_TEXTURE_LIMITS.tileHeight, 0.5, (tileHeight) => set({ tileHeight }))}
@@ -4753,6 +4812,8 @@ export function SurfaceTextureCard({
                 </>
               ) : text ? null : grain ? (
                 <p className="cylinder-wrap-hint">{t("inspector.surfaceGrainHint")}</p>
+              ) : wood ? (
+                <p className="cylinder-wrap-hint">{t("inspector.surfaceWoodHint")}</p>
               ) : (
                 <SelectProperty
                   type="select"
@@ -4764,7 +4825,8 @@ export function SurfaceTextureCard({
                   onChange={(value) => set({ projection: value as SurfaceTextureSettings["projection"] })}
                 />
               )}
-              {!grain && (cracks || text || settings.projection !== "allRound") ? (
+              {/* A board's pith runs along its longest side: only a log asks for its axis. */}
+              {!grain && !(wood && settings.woodCut !== "log") && (cracks || text || wood || settings.projection !== "allRound") ? (
                 <SelectProperty
                   type="select"
                   label={t("inspector.surfaceAxis")}
@@ -4788,6 +4850,13 @@ export function SurfaceTextureCard({
                       {range("surfaceCrackSeed", t("inspector.surfaceCrackSeed"), settings.crackSeed, [0, 999], 1, (crackSeed) => set({ crackSeed }))}
                       <p className="cylinder-wrap-hint">{t("inspector.surfaceCrackSeedHint")}</p>
                     </>
+                  ) : bark || wood ? (
+                    <>
+                      {wood ? range("surfaceWoodKnots", t("inspector.surfaceWoodKnots"), settings.woodKnots, SURFACE_TEXTURE_LIMITS.woodKnots, 1, (woodKnots) => set({ woodKnots })) : null}
+                      {wood ? percent("surfaceWoodWobble", t("inspector.surfaceWoodWobble"), settings.woodWobble, (woodWobble) => set({ woodWobble })) : null}
+                      {range("surfaceSeed", t("inspector.surfaceSeed"), settings.seed, [1, 999], 1, (seed) => set({ seed }))}
+                      <p className="cylinder-wrap-hint">{t(wood ? "inspector.surfaceWoodSeedHint" : "inspector.surfaceBarkSeedHint")}</p>
+                    </>
                   ) : text || grain ? null : image ? (
                     <>
                       {range("surfaceImageTurn", t("inspector.surfaceImageTurn"), settings.imageTurn, SURFACE_TEXTURE_LIMITS.imageTurn, 1, (imageTurn) => set({ imageTurn }))}
@@ -4805,7 +4874,7 @@ export function SurfaceTextureCard({
                   )}
                   {text ? null : (
                     <>
-                      {settings.pattern === "bumps" || grain || image ? null : (
+                      {settings.pattern === "bumps" || grain || image || bark || wood ? null : (
                         <SelectProperty
                           type="select"
                           label={t("inspector.surfaceProfile")}
