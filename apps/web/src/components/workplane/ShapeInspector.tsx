@@ -4995,8 +4995,8 @@ export function SurfaceTextureCard({
                         <SelectProperty
                           type="select"
                           label={t("inspector.surfaceCapEdge")}
-                          value={!ringPattern && settings.capEdge === "over" ? "auto" : settings.capEdge}
-                          options={options(SURFACE_TEXTURE_CAP_EDGES.filter((value) => ringPattern || value !== "over"), (value) => t(SURFACE_TEXTURE_LABELS.capEdge[value]))}
+                          value={!ringPattern && (settings.capEdge === "over" || settings.capEdge === "fold") ? "auto" : settings.capEdge}
+                          options={options(SURFACE_TEXTURE_CAP_EDGES.filter((value) => ringPattern || (value !== "over" && value !== "fold")), (value) => t(SURFACE_TEXTURE_LABELS.capEdge[value]))}
                           hint={t("inspector.surfaceCapEdgeHint")}
                           disabled={disabled || busy}
                           onChange={(value) => set({ capEdge: value as SurfaceTextureSettings["capEdge"] })}

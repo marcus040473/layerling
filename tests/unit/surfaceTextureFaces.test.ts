@@ -247,7 +247,8 @@ describe("faces that stay smooth stay coarse", () => {
 
 describe("round tops in rings, and the direction on top and bottom", () => {
   it("lay grooves on a round top in rings round the middle, picked or not kept smooth", () => {
-    for (const settings of [{ faces: ["top"] }, { topFree: 0 }]) {
+    // With the mantle grooved too, the edge kept sharp: its slanted grooves would run on over the top (see capEdge).
+    for (const settings of [{ faces: ["top"] }, { topFree: 0, capEdge: "sharp" }]) {
       const result = applySurfaceTexture(cylinder(15, 30, 96, true), { pattern: "grooves", ...settings });
       expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
       const P = result.stats.spacing;

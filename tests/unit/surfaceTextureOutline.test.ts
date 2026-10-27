@@ -231,6 +231,65 @@ describe("the edge where the side meets a patterned top", () => {
     }
   }, 120_000);
 
+  it("run upright grooves on over the top as rays, to near the middle or folded over as a rim", () => {
+    const base = prepareSurfaceBase(insideToScreenPositions(box(40, 30, 40)));
+    const outline = prismOutline(base, 2, 0, 1, 30)!;
+    for (const [capEdge, capStyle] of [["over", "rings"], ["fold", "rows"]] as const) {
+      const s = { ...normalizeSurfaceTexture({ pattern: "grooves", angle: 0, topFree: 0, capStyle }), projection: "cylinder" as const };
+      const layout = makeSurfaceTextureLayout(base, s, null, outline);
+      layout.flatCaps = true;
+      layout.capEdge = capEdge;
+      layout.rims = [{ level: 30, sign: 1, radius: 0, reach: 1 }];
+      // Either side of the front edge the same groove: it goes on over the edge.
+      for (let x = -10; x <= 10; x += 0.37) {
+        const side = surfaceTextureValueAt(x, -20, 30 - 1e-6, 0, -1, 0, s, layout);
+        const top = surfaceTextureValueAt(x, -20 + 1e-6, 30, 0, 0, 1, s, layout);
+        expect(Math.abs(side - top), `${capEdge} at ${x}`).toBeLessThan(1e-3);
+      }
+      // A little way in, still grooves (drawing together towards the middle).
+      const P = layout.period;
+      const inside = Array.from({ length: 60 }, (_, k) => surfaceTextureValueAt(-10 + k / 3, -20 + 0.5 * P, 30, 0, 0, 1, s, layout));
+      expect(Math.max(...inside)).toBeGreaterThan(0.9);
+      expect(Math.min(...inside)).toBeLessThan(0.1);
+      const plain = { ...layout, capEdge: null };
+      if (capEdge === "over") {
+        // Towards the middle they fade out: it stays smooth there.
+        for (const [x, y] of [[0, 0], [3, -2], [-4, 5]]) expect(surfaceTextureValueAt(x, y, 30, 0, 0, 1, s, layout)).toBe(0);
+      } else {
+        // Inside the rim the top's own rows.
+        for (const [x, y] of [[0, 0], [3.3, -2.1], [-4.4, 5.5]]) expect(surfaceTextureValueAt(x, y, 30, 0, 0, 1, s, layout)).toBeCloseTo(surfaceTextureValueAt(x, y, 30, 0, 0, 1, s, plain), 9);
+      }
+    }
+  });
+
+  it("let the side's rows run over the whole top or fold over as a rim, whatever the top has of its own", () => {
+    const base = prepareSurfaceBase(insideToScreenPositions(box(40, 30, 40)));
+    const outline = prismOutline(base, 2, 0, 1, 30)!;
+    for (const capStyle of ["rows", "rings"] as const) {
+      const s = { ...normalizeSurfaceTexture({ pattern: "rope", spacing: 4, topFree: 0, capStyle }), projection: "cylinder" as const };
+      const layout = makeSurfaceTextureLayout(base, s, null, outline);
+      layout.flatCaps = true;
+      layout.rims = [{ level: 30, sign: 1, radius: 0, reach: 1 }];
+      const at = (capEdge: "over" | "fold" | null, x: number, y: number) => surfaceTextureValueAt(x, y, 30, 0, 0, 1, s, { ...layout, capEdge });
+      // Inside the rim folded over, the top's own pattern; run over, the side's rings all the way in.
+      const points = [[0.3, 0.7], [2.9, -3.1], [-5.3, 4.4], [6.1, 1.2]];
+      expect(points.every(([x, y]) => at("fold", x, y) === at(null, x, y)), capStyle).toBe(true);
+      const ringsIn = points.map(([x, y]) => at("over", x, y));
+      expect(ringsIn.some((v, k) => Math.abs(v - at(null, points[k][0], points[k][1])) > 0.05), capStyle).toBe(true);
+    }
+  });
+
+  it("keep upright and slanted grooves running over closed", () => {
+    for (const [soup, capStyle] of [[box(40, 30, 40), "rows"], [box(40, 30, 40), "rings"], [cylinder(20, 30, 96), "auto"]] as const) {
+      for (const angle of [0, 40]) {
+        for (const capEdge of ["over", "fold"]) {
+          const result = applySurfaceTexture(soup, { pattern: "grooves", angle, capStyle, capEdge, topFree: 0 }, { preview: true });
+          expect(surfaceMeshReport(result.indices, result.vertices.length / 3), `${capStyle} ${capEdge} ${angle}`).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+        }
+      }
+    }
+  }, 120_000);
+
   it("leave the edge sharp for a pattern that cannot run over, or when asked", () => {
     for (const settings of [{ pattern: "honeycomb" }, { pattern: "rope", capEdge: "sharp" }]) {
       const result = applySurfaceTexture(box(40, 30, 40), { ...settings, topFree: 0, depth: 1, direction: "outward" }, { preview: true });

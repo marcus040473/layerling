@@ -143,11 +143,13 @@ export type SurfaceTextureTiling = (typeof SURFACE_TEXTURE_TILINGS)[number];
 export const SURFACE_TEXTURE_CAP_STYLES = ["auto", "rows", "rings"] as const;
 export type SurfaceTextureCapStyle = (typeof SURFACE_TEXTURE_CAP_STYLES)[number];
 /**
- * Where a side round the axis meets a top or bottom with the pattern: sharp (each ends at the edge), over (the side's rows
- * bend round the edge and run on as rings inwards - grooves, rope and knitting), bead (a border in the pattern's style
- * runs round the edge, both end under it); auto: over where it can, else sharp.
+ * Where a side round the axis meets a top or bottom with the pattern: sharp (each ends at the edge), over (the side's
+ * pattern bends round the edge and takes the top - grooves, rope and knitting: rows as rings all over, upright or slanted
+ * grooves as rays almost to the middle), fold (the same in a band round the rim only, the top's own pattern inside),
+ * bead (a border in the pattern's style runs round the edge, both end under it); auto: over with rings on top, fold
+ * with rows, where it can - else sharp.
  */
-export const SURFACE_TEXTURE_CAP_EDGES = ["auto", "sharp", "over", "bead"] as const;
+export const SURFACE_TEXTURE_CAP_EDGES = ["auto", "sharp", "over", "fold", "bead"] as const;
 export type SurfaceTextureCapEdge = (typeof SURFACE_TEXTURE_CAP_EDGES)[number];
 
 export const SURFACE_TEXTURE_AXES = ["x", "y", "z"] as const;
@@ -1059,7 +1061,7 @@ export type SurfaceTextureLayout = {
    * Where a side meets a top or bottom with the pattern (set by the session, see SurfaceTextureSettings.capEdge): the
    * side's rows run over the edge, or a border runs round it - at these rims.
    */
-  capEdge?: "over" | "bead" | null;
+  capEdge?: "over" | "fold" | "bead" | null;
   rims?: SurfaceRim[];
 };
 
@@ -1270,18 +1272,64 @@ function rowPeriod(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
 /**
  * The side's rows run over the edge onto a top or bottom (capEdge "over"): there each point lies as far round the axis
  * as on the side, and as far "up" as the rim plus its depth in from it - the rows go on as rings, one after the other
- * (see ringValue; the side's rows lie along the axis from 0 as well). In rings all over, or (rows on top) in a band of one
- * to two rows, ending in a joint, the rows inside running under its last ring.
+ * (see ringValue; the side's rows lie along the axis from 0 as well). In rings all over, or (capEdge "fold") in a band
+ * of one to two rows, ending in a joint, the top's own pattern inside running under its last ring.
  */
 function overValue(a: number, b: number, h: number, rim: SurfaceRim, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   const ring = rimRing(a, b, rim, layout);
+  if (!levelGrooves(s, layout)) return rayValue(a, b, h, rim, ring, s, layout);
   const ringed = () => ringValue(h + rim.sign * ring.depth, ring.turn, (r) => ring.lengthAt(Math.max(0, rim.sign * (r - h))), s, layout);
-  if (ringsOnCaps(s, layout)) return ringed();
+  if (layout.capEdge === "over") return ringed();
   const P = rowPeriod(s, layout);
   const band = overBand(rim, P);
-  const rows = ring.depth > band - P / 2 ? patternValue(...turnOnFace(a, b, s, layout), s, layout, acrossAxes(s.axis)[0]) : 0;
-  return ring.depth < band ? Math.max(ringed(), rows) : rows;
+  const inner = ring.depth > band - P / 2 ? topValue(a, b, s, layout) : 0;
+  return ring.depth < band ? Math.max(ringed(), inner) : inner;
 }
+
+/** A top's or bottom's own pattern round the axis: in rings or in rows (see SurfaceTextureSettings.capStyle). */
+function topValue(a: number, b: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  return ringsOnCaps(s, layout) ? capRingValue(a, b, s, layout) : patternValue(...turnOnFace(a, b, s, layout), s, layout, acrossAxes(s.axis)[0]);
+}
+
+/** Grooves running level round the axis (or another ring pattern): their rows go on over a rim as rings. */
+function levelGrooves(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  return s.pattern !== "grooves" || Math.abs(layout.angle) > 89.5;
+}
+
+/**
+ * Upright or slanted grooves running over a rim (capEdge "over"): each goes on inwards from where it reaches the rim, as
+ * far round as there - upright ones as rays towards the middle, meeting at an angular top's diagonals as in a mitred
+ * frame, slanted ones turning on. Inwards they draw together with the shorter rings: running over (capEdge "over") they
+ * run in until they lie at RAY_SHARE of their spacing on the side and fade out there, the middle staying smooth; folded
+ * over (capEdge "fold") they run in a band of RAY_BAND spacings, fading out over its last half spacing as the top's own
+ * pattern inside fades in.
+ */
+function rayValue(a: number, b: number, h: number, rim: SurfaceRim, ring: ReturnType<typeof rimRing>, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  const length = ring.lengthAt(0);
+  const P = layout.period;
+  const rays = stripe(ring.turn * length, h + rim.sign * ring.depth, layout.angle, P, s);
+  const end = rayReach(rim, s, layout);
+  const fade = clamp((end - ring.depth) / (P / 2), 0, 1);
+  if (layout.capEdge === "over") return rays * fade;
+  // The pattern inside fades in where the rays fade out: neither ends at a wall.
+  const inner = ring.depth > end - P / 2 ? topValue(a, b, s, layout) * (1 - fade) : 0;
+  return Math.max(rays * fade, inner);
+}
+
+/** How far in from a rim upright or slanted grooves run (see rayValue). */
+function rayReach(rim: SurfaceRim, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  if (layout.capEdge !== "over") return RAY_BAND * layout.period;
+  // Where the ring is RAY_SHARE as long as the rim.
+  if (layout.outline) {
+    const loop = layout.outline.loops[layout.outline.main];
+    return ((1 - RAY_SHARE) * loop.length) / Math.max(loop.ringAll, 1e-9);
+  }
+  return (1 - RAY_SHARE) * rim.radius;
+}
+
+/** Grooves running in from a rim: as far as their spacing shrinks to this share, or in a band of this many spacings. */
+const RAY_SHARE = 0.4;
+const RAY_BAND = 2;
 
 /** How far the side's rows run in onto a top with rows (see overValue): to the first joint at least a row in. */
 function overBand(rim: SurfaceRim, P: number) {
@@ -1318,16 +1366,16 @@ function beadValue(c: number, along: number, length: number, s: SurfaceTextureSe
 
 /**
  * What happens at the rims of a top or bottom with the pattern round the axis (see SurfaceTextureSettings.capEdge): the
- * side's rows run over (ring patterns, round a circle or a single outline), a border, or nothing (null: sharp).
+ * side's pattern runs over or folds over (ring patterns, round a circle or a single outline; automatically over a top in
+ * rings, folded over one in rows), a border, or nothing (null: sharp).
  */
-function capEdgeMode(s: SurfaceTextureSettings, layout: SurfaceTextureLayout): "over" | "bead" | null {
+function capEdgeMode(s: SurfaceTextureSettings, layout: SurfaceTextureLayout): "over" | "fold" | "bead" | null {
   if (!layout.flatCaps || s.pattern === "text" || s.pattern === "cracks" || s.pattern === "grain" || s.pattern === "wood") return null;
-  // Grooves only when they run round the axis: slanted they would not go on as rings.
-  const rowsRound = s.pattern !== "grooves" || Math.abs(layout.angle) > 89.5;
-  const canRunOver = RING_PATTERNS.includes(s.pattern) && rowsRound && (!layout.outline || layout.outline.ringable);
+  const canRunOver = RING_PATTERNS.includes(s.pattern) && (!layout.outline || layout.outline.ringable);
   if (s.capEdge === "bead") return "bead";
-  if (s.capEdge === "over" || s.capEdge === "auto") return canRunOver ? "over" : null;
-  return null;
+  if (!canRunOver || s.capEdge === "sharp") return null;
+  if (s.capEdge === "auto") return ringsOnCaps(s, layout) ? "over" : "fold";
+  return s.capEdge;
 }
 
 /** The angle round the axis, radians: round a circle, or along an angular body's outline (see SurfaceTextureLayout.outline). */
@@ -1457,7 +1505,7 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
     let value: number;
     if (layout.flatCaps && Math.abs(nAx) > 0.8) {
       const rim = rimAt(layout, pos[ax], Math.sign(nAx));
-      if (rim && layout.capEdge === "over") return overValue(pos[i1], pos[i2], pos[ax], rim, s, layout);
+      if (rim && (layout.capEdge === "over" || layout.capEdge === "fold")) return overValue(pos[i1], pos[i2], pos[ax], rim, s, layout);
       value = ringsOnCaps(s, layout) ? capRingValue(pos[i1], pos[i2], s, layout) : patternValue(...turnOnFace(pos[i1], pos[i2], s, layout), s, layout, i1);
     } else value = patternValue(aroundAngle(layout, pos[i1], pos[i2]) * layout.radius, pos[ax], s, layout, -1);
     if (layout.capEdge !== "bead") return value;
@@ -1983,6 +2031,43 @@ function refineOutlineDistance(mesh: SurfaceMesh, outline: SurfaceOutline, i1: n
         if (l > length) [length, longest] = [l, k];
       }
       if (worst > tolerance && length > tolerance) marks.set(c[longest], c[(longest + 1) % 3], 1);
+    }
+    if (!marks.size) break;
+    const split = subdivide(cur, 0, maxTriangles, null, null, (_, a, b) => marks.has(a, b));
+    if (split.indices.length === I.length) break;
+    const before = cur;
+    cur = { vertices: split.vertices, indices: split.indices, parents: Uint32Array.from(split.parents, (f) => before.parents[f]), limited: Boolean(before.limited || split.limited) };
+  }
+  return cur;
+}
+
+/**
+ * Halve the triangles `inside` says until `field` (of the place across the axis) is about linear in each: a triangle whose
+ * field strays from a plane by more than `tolerance` at its middle or the middles of its edges gets its longest edge
+ * halved, round by round. A field that jumps by `wrap` (round the axis) is compared across the jump.
+ */
+function refineLinear(mesh: SurfaceMesh, field: (a: number, b: number) => number, wrap: number, i1: number, i2: number, inside: (f: number, corners: number[], m: SurfaceMesh) => boolean, tolerance: number, maxTriangles: number): SurfaceMesh {
+  let cur = mesh;
+  const diff = (from: number, to: number) => (wrap ? to - from - wrap * Math.round((to - from) / wrap) : to - from);
+  for (let round = 0; round < 40 && !cur.limited; round += 1) {
+    const v = cur.vertices, I = cur.indices;
+    const known = new Float64Array(v.length / 3).fill(NaN);
+    const at = (i: number) => (Number.isNaN(known[i]) ? (known[i] = field(v[i * 3 + i1], v[i * 3 + i2])) : known[i]);
+    const marks = new EdgeTable(1024);
+    for (let f = 0; f < I.length / 3; f += 1) {
+      const c = [I[f * 3], I[f * 3 + 1], I[f * 3 + 2]];
+      if (!inside(f, c, cur)) continue;
+      const x = c.map((i) => v[i * 3 + i1]), y = c.map((i) => v[i * 3 + i2]), d = c.map(at);
+      const d1 = diff(d[0], d[1]), d2 = diff(d[0], d[2]);
+      let worst = Math.abs(diff(d[0], field((x[0] + x[1] + x[2]) / 3, (y[0] + y[1] + y[2]) / 3)) - (d1 + d2) / 3);
+      let longest = -1, length = 0;
+      for (let k = 0; k < 3; k += 1) {
+        const j = (k + 1) % 3;
+        worst = Math.max(worst, Math.abs(diff(d[k], field((x[k] + x[j]) / 2, (y[k] + y[j]) / 2)) - diff(d[k], d[j]) / 2));
+        const l = Math.hypot(x[j] - x[k], y[j] - y[k]);
+        if (l > length) [length, longest] = [l, k];
+      }
+      if (worst > tolerance && length > SURFACE_MIN_EDGE * 4) marks.set(c[longest], c[(longest + 1) % 3], 1);
     }
     if (!marks.size) break;
     const split = subdivide(cur, 0, maxTriangles, null, null, (_, a, b) => marks.has(a, b));
@@ -3473,19 +3558,20 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
   }
 
   /**
-   * Tops and bottoms in rings (see ringValue) cut along them at `offsets` within `P`. Where the side's rows run over a rim
-   * (capEdge "over"), each top's or bottom's rings go on from the side's rows, which lie at those offsets along the axis:
-   * cut there - all over, or in the band of rings round a top with rows (see overValue).
+   * Tops and bottoms in rings (see ringValue) cut along them at `offsets` within `P`: their own rings where they show (not
+   * where the side's rows take the whole top). Where the side's rows run over a rim (capEdge "over" or "fold"), each top's
+   * or bottom's rings go on from the side's rows, which lie at those offsets along the axis: cut there too - all over, or
+   * in the band folded over (see overValue).
    */
   function capRingCuts(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, P: number, offsets: number[], skip: Uint8Array, maxTriangles: number, smoothFace: Uint8Array) {
-    const ringed = ringsOnCaps(s, layout);
-    if (layout.capEdge !== "over" || !layout.rims) return ringed ? sliceRings(mesh, s, layout, P, offsets, skip, maxTriangles) : mesh;
+    const over = layout.capEdge === "over", fold = layout.capEdge === "fold";
+    let out = !over && ringsOnCaps(s, layout) ? sliceRings(mesh, s, layout, P, offsets, skip, maxTriangles) : mesh;
+    if ((!over && !fold) || !layout.rims || out.limited) return out;
     const ax = AXIS_INDEX[s.axis];
     const mod = (x: number) => {
       const m = ((x % P) + P) % P;
       return m > P - 1e-9 * P ? 0 : m;
     };
-    let out = mesh;
     for (const rim of layout.rims) {
       const own = notOnRim(rim, smoothFace, ax);
       const sk = Uint8Array.from(skip, (k, f) => (k || own[f] ? 1 : 0));
@@ -3494,8 +3580,53 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       const field = layout.outline ? depths : depths.map((d) => mod(rim.radius - d));
       const unique = [...new Set(field.map((o) => Math.round(o * 1e9) / 1e9))].sort((a, b) => a - b);
       const band = overBand(rim, rowPeriod(s, layout)) + P / 2;
-      out = sliceRings(out, s, layout, P, unique, sk, maxTriangles, ringed ? null : layout.outline ? [0, band] : [rim.radius - band, rim.radius]);
+      out = sliceRings(out, s, layout, P, unique, sk, maxTriangles, over ? null : layout.outline ? [0, band] : [rim.radius - band, rim.radius]);
       if (out.limited) break;
+    }
+    return out;
+  }
+
+  /**
+   * Upright or slanted grooves running in from each rim (see rayValue) cut along them: the place across the grooves is
+   * not linear on the top (the rings shorten inwards), so the triangles where they run are halved until it nearly is,
+   * then cut at the profile's places (as sliceStripes), and along the rim's distance where they fade out.
+   */
+  function rayCuts(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, maxTriangles: number, smoothFace: Uint8Array, skip: Uint8Array) {
+    const ax = AXIS_INDEX[s.axis];
+    const [i1, i2] = acrossAxes(s.axis);
+    const P = layout.period;
+    const a = (layout.angle * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a);
+    const offsets = stripeOffsets(P, s, CROSS_STEPS[s.detail] / 2).map((o) => o / P);
+    let out = mesh;
+    for (const rim of layout.rims ?? []) {
+      const own = notOnRim(rim, smoothFace, ax);
+      const sk = Uint8Array.from(skip, (k, f) => (k || own[f] ? 1 : 0));
+      const length = rimRing(layout.center[0], layout.center[1], rim, layout).lengthAt(0);
+      const end = rayReach(rim, s, layout);
+      const across = (x: number, y: number) => {
+        const ring = rimRing(x, y, rim, layout);
+        return (ring.turn * length * ca - (rim.level + rim.sign * ring.depth) * sa) / P;
+      };
+      const depthAt = (x: number, y: number) => rimRing(x, y, rim, layout).depth;
+      const wrap = (length * ca) / P;
+      const inZone = (f: number, c: number[], m: SurfaceMesh) => !sk[m.parents[f]] && Math.min(...c.map((i) => depthAt(m.vertices[i * 3 + i1], m.vertices[i * 3 + i2]))) < end + P;
+      const fine = refineLinear(out, across, wrap, i1, i2, inZone, 0.03, maxTriangles);
+      const v = fine.vertices, I = fine.indices;
+      const X = new Float64Array(v.length / 3);
+      for (let i = 0; i < X.length; i += 1) X[i] = across(v[i * 3 + i1], v[i * 3 + i2]);
+      const sliced = Uint8Array.from({ length: I.length / 3 }, (_, f) => (inZone(f, [I[f * 3], I[f * 3 + 1], I[f * 3 + 2]], fine) ? 1 : 0));
+      const diff = (p: number, q: number) => {
+        const d = X[q] - X[p];
+        return wrap ? d - wrap * Math.round(d / wrap) : d;
+      };
+      out = soundOr(out, sliceByField(fine, X, diff, 1, offsets, sliced));
+      // Where they fade out.
+      const fade = layout.outline ? [end - P / 2, end] : [rim.radius - end, rim.radius - end + P / 2];
+      out = soundOr(out, sliceRings(out, s, layout, 1e6, fade.filter((r) => r > 0), sk, maxTriangles, layout.outline ? [0, end + P] : [rim.radius - end - P, rim.radius], P));
+      if (out.limited || out.indices.length / 3 > maxTriangles) {
+        out.limited = true;
+        break;
+      }
     }
     return out;
   }
@@ -3999,11 +4130,18 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         const skip = notOnAxis(k);
         // A top or bottom with grooves in rings, or the side's grooves running over its rim: cut in rings (with rows inside
         // a band of them, as rows first).
-        const ringed = striped && k === AXIS_INDEX[s.axis] && (ringsOnCaps(s, layout) || layout.capEdge === "over");
-        if (ringed && !ringsOnCaps(s, layout)) mesh = cutRows(mesh, sk, skip);
-        if (ringed) {
+        // A top or bottom: grooves in rows or rings of its own, and where the side's grooves run or fold over its rim,
+        // those - as rings when they run level, else as rays.
+        const onCap = striped && k === AXIS_INDEX[s.axis];
+        const runs = onCap && (layout.capEdge === "over" || layout.capEdge === "fold");
+        const rays = runs && !levelGrooves(s, layout);
+        if (onCap) {
           crossMax = (layout.period * clamp(s.width, 0.2, 1)) / CROSS_STEPS[s.detail];
-          mesh = capRingCuts(mesh, sk, layout, layout.period, stripeOffsets(layout.period, s, CROSS_STEPS[s.detail] / 2), skip, maxTriangles, smooth.faces);
+          if (layout.capEdge !== "over" && !ringsOnCaps(s, layout)) mesh = cutRows(mesh, sk, skip);
+          if (rays) {
+            if (layout.capEdge === "fold" && ringsOnCaps(s, layout)) mesh = sliceRings(mesh, sk, layout, layout.period, stripeOffsets(layout.period, s, CROSS_STEPS[s.detail] / 2), skip, maxTriangles);
+            mesh = rayCuts(mesh, s, layout, maxTriangles, smooth.faces, skip);
+          } else mesh = capRingCuts(mesh, sk, layout, layout.period, stripeOffsets(layout.period, s, CROSS_STEPS[s.detail] / 2), skip, maxTriangles, smooth.faces);
         } else if (striped) mesh = cutRows(mesh, sk, skip);
         else if (s.pattern === "bricks") {
           const cut = sliceBricks(mesh, sk, layout, cellSteps(), maxTriangles, skip);
