@@ -187,6 +187,8 @@ Mit einer älteren Version (1.109.0 und davor) gingen nur die ersten beiden Zeil
 
 Liegt kein Entwurf im Browser, lautet der Hinweis auf der Startseite „Deine Entwürfe liegen auf dem Server“ statt zur Sicherung des Browsers aufzurufen; die übernimmt das Backup des Projektordners ([Abschnitt 10](#10-datensicherung)). Seine Schaltfläche **„Sicherung wiederherstellen“** bleibt: Mit ihr werden Sicherungsdateien (ZIP aus „Alle sichern“) eingelesen, die früher in der reinen Browser-Version entstanden sind, direkt in den Serverordner.
 
+**Die Vorgabe für neue Entwürfe** („Als Vorgabe sichern“ in den Arbeitsbereich-Einstellungen) liegt seit der Version nach 1.113.0 ebenfalls im Projektordner, als `.settings/default.json`. Leert man den Browser-Speicher oder öffnet layerling in einem anderen Browser, holt die Startseite sie beim Laden zurück; neue Entwürfe beginnen wieder mit den eigenen Einstellungen. Es gibt eine Vorgabe für den ganzen Projektordner, die zuletzt gesicherte gilt. Das Backup des Projektordners nimmt sie mit.
+
 Die Schaltfläche **„Zurück zu den Entwürfen in diesem Browser“** in der Serveransicht führt nur zurück zur Startseite. Sie bedeutet nicht, dass dort Entwürfe im Browser liegen.
 
 **Immer dieselbe Adresse verwenden**, z. B. `http://localhost:3000`. OrbStack bietet zusätzlich eine Adresse wie `http://layerling.layerling-docker.orb.local` an. Jede Adresse hat ihren eigenen Browser-Speicher. Die Entwürfe auf dem Server sind unter beiden gleich, Browser-Entwürfe aber nur unter der Adresse sichtbar, unter der sie entstanden sind.

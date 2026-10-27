@@ -254,6 +254,8 @@ export async function GET(request: Request) {
     // `path` spielt dabei keine Rolle.
     const searchTerm = requestUrl.searchParams.get("search")?.trim();
     if (searchTerm) return await searchStore(root, searchTerm);
+    const settings = requestUrl.searchParams.get("settings");
+    if (settings) return await readSettings(root, settings);
     const requestedFile = requestUrl.searchParams.get("fileName");
     if (requestedFile) {
       const fileName = existingProjectFileName(requestedFile);
@@ -668,6 +670,63 @@ async function saveExportFile(root: string, folder: string, requestedName: strin
   }
 }
 
+/**
+ * The settings kept for every browser that uses this store: what "Make default" saved, so a new design starts with it even after the browser forgot it. One JSON file in
+ * a hidden folder - a listing skips names that begin with a dot - under a name the request picks from a
+ * fixed list, never from what it sent. The server only checks that it is a JSON object; the app makes
+ * sense of the values when it reads them, as it does with its own browser copy.
+ */
+const SETTINGS_DIR = ".settings";
+const SETTINGS_NAMES = ["default"];
+const MAX_SETTINGS_BYTES = 256 * 1024;
+
+function settingsPath(root: string, requested: string) {
+  if (!SETTINGS_NAMES.includes(requested)) throw new RequestFailure("Unknown settings", 400);
+  return path.join(root, SETTINGS_DIR, `${requested}.json`);
+}
+
+async function readSettings(root: string, requested: string) {
+  const filePath = settingsPath(root, requested);
+  const stat = await regularFileStat(filePath);
+  let settings: unknown = null;
+  if (stat) {
+    try {
+      settings = JSON.parse(await fs.readFile(filePath, "utf8"));
+    } catch {
+      settings = null;
+    }
+  }
+  return NextResponse.json(
+    { enabled: true, settings: settings && typeof settings === "object" && !Array.isArray(settings) ? settings : null },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}
+
+async function saveSettings(root: string, requested: string, request: Request) {
+  const filePath = settingsPath(root, requested);
+  const declaredLength = Number(request.headers.get("content-length") ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_SETTINGS_BYTES) throw new RequestFailure("The settings are too large", 413);
+  const text = await request.text();
+  if (text.length > MAX_SETTINGS_BYTES) throw new RequestFailure("The settings are too large", 413);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new RequestFailure("The settings are not JSON", 400);
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new RequestFailure("The settings are not JSON", 400);
+  const folder = path.dirname(filePath);
+  await fs.mkdir(folder, { recursive: true });
+  const temporaryPath = path.join(folder, `.${requested}.${randomUUID()}.tmp`);
+  try {
+    await fs.writeFile(temporaryPath, JSON.stringify(parsed), { flag: "wx" });
+    await fs.rename(temporaryPath, filePath);
+  } finally {
+    await fs.unlink(temporaryPath).catch(() => undefined);
+  }
+  return NextResponse.json({ saved: true }, { headers: { "Cache-Control": "no-store" } });
+}
+
 export async function DELETE(request: Request) {
   const root = sharedProjectsDirectory();
   if (!root) return NextResponse.json({ error: "Shared project storage is disabled" }, { status: 404 });
@@ -758,6 +817,8 @@ export async function POST(request: Request) {
     if (renameFileTo) return await renameProjectFile(root, folder, renameFileTo, request);
     const exportFile = requestUrl.searchParams.get("exportFile");
     if (exportFile) return await saveExportFile(root, folder, exportFile, request);
+    const settings = requestUrl.searchParams.get("settings");
+    if (settings) return await saveSettings(root, settings, request);
 
     const declaredLength = Number(request.headers.get("content-length") ?? 0);
     const multipartRequest = request.headers.get("content-type")?.toLowerCase().startsWith("multipart/form-data") ?? false;

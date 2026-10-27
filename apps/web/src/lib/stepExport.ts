@@ -9,7 +9,7 @@ import { springPartSolid } from "@/lib/springSolid";
 import { helicalGearPartSolid } from "@/lib/gearSolid";
 import { gridfinityPartSolid } from "@/lib/gridfinitySolid";
 import { profileExtrusionSolid } from "@/lib/cadProfileSolid";
-import { cadTransformRequiresGeneralTransform } from "@/lib/cadModifierRuntime";
+import { applyCadTransform } from "@/lib/cadModifierRuntime";
 import { hingeHasExactParts } from "@/lib/hingeGeometry";
 import { hingeWorldParts } from "@/lib/hingeParts";
 import { restoreGroupedChildren } from "@/lib/editorBooleans";
@@ -279,29 +279,9 @@ function buildBakedBody(brep: Brep, shape: WorkplaneShape): BuildOutcome {
   const stored = shape.cadBrep;
   if (!stored) return { skip: unsupportedReason() };
 
-  const restored = brep.fromBREP(stored);
-  if (!restored.ok) {
-    return { skip: `stored B-Rep failed to load: ${String(restored.error.message ?? restored.error)}` };
-  }
-  let body = restored.value as unknown as BrepSolid;
-
-  const transform = cadBrepTransformForShape(shape);
-  if (transform?.length === 12) {
-    // Die zwoelf Zahlen sind eine 3x4-Matrix zeilenweise; brepjs nimmt sie als
-    // 4x4 mit der Schlusszeile [0,0,0,1].
-    const placed = brep.applyMatrix(body, [
-      [transform[0]!, transform[1]!, transform[2]!, transform[3]!],
-      [transform[4]!, transform[5]!, transform[6]!, transform[7]!],
-      [transform[8]!, transform[9]!, transform[10]!, transform[11]!],
-      [0, 0, 0, 1],
-    ]);
-    if (!placed.ok) {
-      return { skip: `placing the stored B-Rep failed: ${String(placed.error.message ?? placed.error)}` };
-    }
-    body = placed.value as unknown as BrepSolid;
-  }
-
-  return { solid: body };
+  // Placed with the kernel as the CAD worker places it: brepjs' applyMatrix always takes the
+  // general transform, and a body that was only moved went out with every face a B-spline.
+  return buildPlacedBody(brep, { transform: cadBrepTransformForShape(shape) }, (kernel) => kernel.fromBREP(stored), "stored B-Rep");
 }
 
 /**
@@ -310,37 +290,19 @@ function buildBakedBody(brep: Brep, shape: WorkplaneShape): BuildOutcome {
  * hier in die Weltlage gestellt und als B-Rep an brepjs uebergeben.
  */
 function buildProfileBody(brep: Brep, shape: WorkplaneShape): BuildOutcome {
-  const kernel = occtKernel();
   // Round shapes go out round, as they always have, whatever their side count.
   const part = cadModifierProfileForShape(asDesignedRound(shape), { designedRound: true });
-  if (!kernel || !part) return { skip: unsupportedReason() };
-  try {
-    const local = profileExtrusionSolid(kernel, part);
-    // As the CAD worker places it: a stretched placement (an oval dome or
-    // cone) needs the general transform - transform() would scale evenly.
-    const placed = !part.transform ? local : cadTransformRequiresGeneralTransform(part.transform) ? kernel.generalTransform(local, part.transform) : kernel.transform(local, part.transform);
-    const text = kernel.toBREP(placed);
-    try {
-      if (placed !== local) kernel.release(local);
-      kernel.release(placed);
-    } catch {
-      // A released handle is no reason to lose the export.
-    }
-    const restored = brep.fromBREP(text);
-    if (!restored.ok) return { skip: `exact body failed to load: ${String(restored.error.message ?? restored.error)}` };
-    return { solid: restored.value as unknown as BrepSolid };
-  } catch (error) {
-    return { skip: `exact body could not be built: ${error instanceof Error ? error.message : String(error)}` };
-  }
+  // A stretched placement (an oval dome or cone) takes the general transform there.
+  return buildPlacedBody(brep, part, (kernel) => profileExtrusionSolid(kernel, part!));
 }
 
 /** A part's exact body in its own frame, placed and handed over as the CAD worker does. */
-function buildPlacedBody(brep: Brep, part: { transform?: number[] } | null, build: (kernel: OcctKernel) => ShapeHandle): BuildOutcome {
+function buildPlacedBody(brep: Brep, part: { transform?: number[] } | null, build: (kernel: OcctKernel) => ShapeHandle, what = "exact body"): BuildOutcome {
   const kernel = occtKernel();
   if (!kernel || !part) return { skip: unsupportedReason() };
   try {
     const local = build(kernel);
-    const placed = !part.transform ? local : cadTransformRequiresGeneralTransform(part.transform) ? kernel.generalTransform(local, part.transform) : kernel.transform(local, part.transform);
+    const placed = applyCadTransform(kernel, local, part.transform);
     const text = kernel.toBREP(placed);
     try {
       if (placed !== local) kernel.release(local);
@@ -349,10 +311,10 @@ function buildPlacedBody(brep: Brep, part: { transform?: number[] } | null, buil
       // A released handle is no reason to lose the export.
     }
     const restored = brep.fromBREP(text);
-    if (!restored.ok) return { skip: `exact body failed to load: ${String(restored.error.message ?? restored.error)}` };
+    if (!restored.ok) return { skip: `${what} failed to load: ${String(restored.error.message ?? restored.error)}` };
     return { solid: restored.value as unknown as BrepSolid };
   } catch (error) {
-    return { skip: `exact body could not be built: ${error instanceof Error ? error.message : String(error)}` };
+    return { skip: `${what} could not be built: ${error instanceof Error ? error.message : String(error)}` };
   }
 }
 

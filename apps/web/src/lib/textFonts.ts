@@ -77,6 +77,28 @@ export function withFallbackGlyphs(data: FontData, fallback: FontData): FontData
  */
 const BORROWS_FROM_SANS = new Set(["Multilanguage", "Stencil", "Rounded", "Script"]);
 
+/**
+ * Mistakes in the outlines of the built-in typefaces, mended where the typeface is loaded. The "f" of
+ * Rounded (optimer) leaves the end of its crossbar for a point 4 units above it and comes back
+ * (`l 425 669`), so its outline touches itself and, 40 mm wide, a triangle of 0.1 mm hangs there in a
+ * DXF or SVG export. The curve now ends at the crossbar's own edge.
+ */
+const GLYPH_REPAIRS: Record<string, Record<string, { from: string; to: string }>> = {
+  Rounded: { f: { from: "q 428 665 372 659 l 425 669 l 425 641", to: "q 425 665 372 659 l 425 641" } },
+};
+
+export function withGlyphRepairs(name: string, data: FontData): FontData {
+  const repairs = GLYPH_REPAIRS[name];
+  if (!repairs) return data;
+  const glyphs = { ...(data.glyphs as Record<string, GlyphData>) };
+  for (const [char, { from, to }] of Object.entries(repairs)) {
+    const glyph = glyphs[char];
+    // A glyph that is not what it was when the repair was written is left alone.
+    if (glyph?.o?.includes(from)) glyphs[char] = { ...glyph, o: glyph.o.replace(from, to) };
+  }
+  return { ...data, glyphs } as FontData;
+}
+
 export function loadTextFonts(): Promise<void> {
   if (loadedFonts) return Promise.resolve();
   fontsPromise ??= Promise.all(
@@ -85,6 +107,7 @@ export function loadTextFonts(): Promise<void> {
     .then((entries) => {
       const loader = new FontLoader();
       const parsed = new Map<FontData, Font>();
+      entries = entries.map(([name, data]) => [name, withGlyphRepairs(name, data)] as const);
       const sans = entries.find(([name]) => name === "Sans")?.[1];
       sansData = sans ?? null;
       // Filled once per typeface file, so Multilanguage and Stencil keep sharing one.

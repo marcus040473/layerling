@@ -76,6 +76,7 @@ import { exportLylProject, importLylProject, inspectLylProjectPackage, LYL_CREAT
 import { backupDesignAlreadyThere, backupEntryPaths, backupFileName, backupFolderPaths, backupThumbnailPath, unpackBackupFolders, isBackupFileName, createBackupWriter, unpackBackup, zipHoldsDesigns } from "@/lib/projectBackup";
 import { customShapesBackupEntries, restoreCustomShapesFromBackup } from "@/lib/myShapes";
 import { SHARED_PROJECTS_ENDPOINT } from "@/lib/sharedProjectsEndpoint";
+import { sendSavedWorkspaceDefaultsToServer, syncWorkspaceDefaultWithServer } from "@/lib/serverWorkspaceDefault";
 import { PICTURE_FILE_ACCEPT } from "@/lib/pictureIcon";
 import { designsToRecover, hiddenCopiesOf, isInlineThumbnail, LOST_DESIGNS_RECOVERED_KEY, orphanedProjectIds, projectListForLocalStorage, withStoredThumbnails, writeProjectList } from "@/lib/designListStorage";
 import { deleteDesignThumbnail, loadDesignThumbnails, saveDesignThumbnail } from "@/lib/designThumbnailStore";
@@ -254,18 +255,21 @@ function takeInterruptedBackup(): BackupProgress | null {
 const SERVER_ANSWER_WAIT_MS = 8000;
 
 /**
- * Two answers the start page waits for before it knows where a new design goes: the server's defaults and
- * the first look at its folder. `wait()` holds until each has come, or for SERVER_ANSWER_WAIT_MS at most.
+ * The answers the start page waits for before it knows where a new design goes and how it starts: the
+ * server's defaults, the first look at its folder and the "Make default" kept in its store. `wait()` holds
+ * until each has come, or for SERVER_ANSWER_WAIT_MS at most.
  */
 function serverAnswerGate() {
   let defaults = () => {};
   let listing = () => {};
+  let settings = () => {};
   const answered = Promise.all([
     new Promise<void>((resolve) => { defaults = resolve; }),
     new Promise<void>((resolve) => { listing = resolve; }),
+    new Promise<void>((resolve) => { settings = resolve; }),
   ]);
   const wait = () => Promise.race([answered, new Promise((resolve) => setTimeout(resolve, SERVER_ANSWER_WAIT_MS))]).then(() => undefined);
-  return { defaults: () => defaults(), listing: () => listing(), wait };
+  return { defaults: () => defaults(), listing: () => listing(), settings: () => settings(), wait };
 }
 /** So lang darf ein Entwurfsname werden - so lang kuerzt auch das Umbenennen. */
 const PROJECT_NAME_LIMIT = 80;
@@ -1174,6 +1178,8 @@ export default function Home() {
     } else {
       serverAnswer.defaults();
     }
+    // "Make default" kept in the server store comes back to a browser that forgot it.
+    void syncWorkspaceDefaultWithServer(window.localStorage).finally(serverAnswer.settings);
     setAppTheme(storedTheme, false);
     setThemePreference(storedTheme);
     const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -1236,6 +1242,9 @@ export default function Home() {
     }
     setMounted(true);
   }, [startEditorTransition]);
+
+  // And a default saved here goes to the store, for the other browsers.
+  useEffect(() => sendSavedWorkspaceDefaultsToServer(window.localStorage), []);
 
   useEffect(() => {
     return subscribeToAppTheme(() => {

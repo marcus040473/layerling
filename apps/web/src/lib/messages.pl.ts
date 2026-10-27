@@ -2149,6 +2149,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "gridfinity.paddingHint": "Pełne obrzeże poza siatką, aby podstawka wypełniła szufladę, która nie ma całkowitej liczby jednostek. Jego zmiana zachowuje jednostki i razem z nim zmienia rozmiar podstawki.",
   "prop.gridfinityCornerRadius": "Promień narożników",
   "gridfinity.cornerRadiusHint": "Promień czterech zewnętrznych narożników podstawki: 4 mm, tak jak rysuje je specyfikacja Gridfinity, aż do 0 dla prostych narożników, które pasują do narożników szuflady. Gniazda zachowują swoje zaokrąglenie, więc pojemniki pasują jak dotąd.",
+  "gridfinity.binCornerRadiusHint": "Promień zewnętrznych narożników pojemnika nad stopkami: 3,75 mm, tak jak rysuje je specyfikacja Gridfinity, aż do 0 dla prostych narożników, aby pojemniki stojące obok siebie w szufladzie zostawiały także tam, gdzie spotykają się cztery, tylko swoje szczeliny 0,5 mm. Stopki, wnętrze i skosy kołnierza piętrowania zachowują swoje zaokrąglenie, więc pojemnik pasuje do podstawki i piętruje się jak dotąd.",
   "prop.gridfinityDrawerWidth": "Szerokość szuflady",
   "prop.gridfinityDrawerDepth": "Głębokość szuflady",
   "gridfinity.drawerHint": "Wewnętrzny wymiar szuflady; podstawka wychodzi o 0,5 mm mniejsza. Szuflada większa niż 334,5 mm lub niż stół drukarki potrzebuje kilku podstawek.",

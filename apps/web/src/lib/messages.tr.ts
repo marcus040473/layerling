@@ -2097,6 +2097,7 @@ export const MESSAGES_TR: Partial<Record<MessageKey, string>> = {
   "gridfinity.paddingHint": "Izgaranın dışında dolu bir şerit; böylece taban plakası tam sayıda birim olmayan bir çekmeceyi doldurur. Değiştirmek birimleri korur ve plakanın boyutunu onunla birlikte değiştirir.",
   "prop.gridfinityCornerRadius": "Köşe yarıçapı",
   "gridfinity.cornerRadiusHint": "Plakanın dört dış köşesinin yarıçapı: Gridfinity şartnamesinin çizdiği gibi 4 mm, çekmecenin köşelerine oturan dik köşeler için 0'a kadar. Yuvalar yuvarlaklıklarını korur, bu yüzden kutular eskisi gibi oturur.",
+  "gridfinity.binCornerRadiusHint": "Kutunun ayaklarının üstündeki dış köşelerinin yarıçapı: Gridfinity şartnamesinin çizdiği gibi 3,75 mm, dik köşeler için 0'a kadar; böylece çekmecede yan yana duran kutular, dördünün buluştuğu yerde de yalnızca 0,5 mm'lik aralıklarını bırakır. Ayaklar, iç kısım ve istifleme kenarının eğimleri yuvarlaklıklarını korur, bu yüzden kutu plakaya eskisi gibi oturur ve istiflenir.",
   "prop.gridfinityDrawerWidth": "Çekmece genişliği",
   "prop.gridfinityDrawerDepth": "Çekmece derinliği",
   "gridfinity.drawerHint": "Çekmecenin iç ölçüsü; plaka 0,5 mm daha küçük olur. 334,5 mm'den ya da baskı tablasından büyük bir çekmeceye birkaç taban plakası gerekir.",

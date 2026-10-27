@@ -722,6 +722,7 @@ export const MESSAGES_PT_BR: Partial<Record<MessageKey, string>> = {
   "gridfinity.paddingHint": "Uma faixa maciça fora da grade, para que a base preencha uma gaveta que não mede um número inteiro de unidades. Mudá-la mantém as unidades e muda com ela o tamanho da base.",
   "prop.gridfinityCornerRadius": "Raio dos cantos",
   "gridfinity.cornerRadiusHint": "O raio dos quatro cantos externos da base: 4 mm como a especificação Gridfinity os desenha, até 0 para cantos retos que se ajustem aos cantos de uma gaveta. Os encaixes mantêm o arredondamento, então as caixas encaixam como antes.",
+  "gridfinity.binCornerRadiusHint": "O raio dos cantos externos da caixa acima dos pés: 3,75 mm como a especificação Gridfinity os desenha, até 0 para cantos retos, para que caixas lado a lado numa gaveta deixem só suas folgas de 0,5 mm também onde quatro se encontram. Os pés, o interior e as rampas da borda de empilhamento mantêm o arredondamento, então a caixa encaixa numa base e empilha como antes.",
   "prop.gridfinityDrawerWidth": "Largura da gaveta",
   "prop.gridfinityDrawerDepth": "Profundidade da gaveta",
   "gridfinity.drawerHint": "O interior da gaveta; a base sai 0,5 mm menor. Uma gaveta com mais de 334,5 mm, ou maior que a mesa de impressão, leva várias bases.",

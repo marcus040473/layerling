@@ -3,6 +3,7 @@ import {
   DEFAULT_HOLE_PATTERN,
   faceOutlineFromTriangles,
   HEXAGON_FLAT_RATIO,
+  HOLE_PATTERN_MANY_HOLES,
   holeFootprintPolygon,
   holePatternCenters,
   holePatternMinSpacing,
@@ -118,6 +119,20 @@ describe("hole pattern", () => {
     const result = holePatternCenters(rectangleOutline(0, 0, 400, 400), { ...round, size: 1, spacing: 2, margin: 0 });
     expect(result.tooMany).toBe(true);
     expect(result.centers).toHaveLength(0);
+  });
+
+  it("lets a pattern of more holes through once the warning was accepted (#941)", () => {
+    // 400 x 400 mm at spacing 8 is 50 x 50 = 2500 holes: over 400, under the raised limit.
+    const settings = { ...round, size: 2, spacing: 8, margin: 0 };
+    expect(holePatternCenters(rectangleOutline(0, 0, 400, 400), settings).tooMany).toBe(true);
+    const allowed = holePatternCenters(rectangleOutline(0, 0, 400, 400), { ...settings, allowMany: true });
+    expect(allowed.tooMany).toBe(false);
+    expect(allowed.centers.length).toBeGreaterThan(400);
+    expect(allowed.centers.length).toBeLessThanOrEqual(HOLE_PATTERN_MANY_HOLES);
+    // still ends somewhere
+    expect(holePatternCenters(rectangleOutline(0, 0, 400, 400), { ...round, size: 1, spacing: 2, margin: 0, allowMany: true }).tooMany).toBe(true);
+    expect(normalizeHolePattern({ ...settings, allowMany: true }).allowMany).toBe(true);
+    expect(normalizeHolePattern(settings).allowMany).toBeUndefined();
   });
 
   it("reads the outline of a face from its triangles", () => {

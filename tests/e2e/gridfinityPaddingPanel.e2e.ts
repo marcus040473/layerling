@@ -66,7 +66,8 @@ describe("a Gridfinity baseplate's padding in its settings", () => {
 
   it("has no padding or drawer rows on a bin, which keeps the setting", () => {
     const panel = mount({ gridfinityType: "bin", gridfinityPaddingRight: 14.2, gridfinityCornerRadius: 1.5 });
-    [...sides, "Drawer width", "Drawer depth", "Corner radius"].forEach((row) => expect(rowNamed(panel, row), row).toBeUndefined());
+    [...sides, "Drawer width", "Drawer depth"].forEach((row) => expect(rowNamed(panel, row), row).toBeUndefined());
+    expect(rowNamed(panel, "Corner radius")!.querySelector<HTMLInputElement>("input:not([type=range])")!.value).toContain("3.75");
   });
 
   it("writes the plate's size with a new padding, keeping its six units", () => {

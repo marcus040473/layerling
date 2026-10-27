@@ -21,9 +21,13 @@ export type HolePatternSettings = {
   margin: number;
   /** Depth of the holes in mm; null cuts through the whole body. */
   depth: number | null;
+  /** Set after the user was warned and chose to go on: the pattern may then hold up to `HOLE_PATTERN_MANY_HOLES` holes (#941). */
+  allowMany?: boolean;
 };
 
 export const HOLE_PATTERN_MAX_HOLES = 400;
+/** The limit once the warning was accepted: the cuts are made one by one, so it still ends somewhere. */
+export const HOLE_PATTERN_MANY_HOLES = 3000;
 export const HOLE_PATTERN_MIN_SIZE = 0.5;
 export const HOLE_PATTERN_MAX_SIZE = 200;
 export const HOLE_PATTERN_MAX_SPACING = 400;
@@ -365,7 +369,7 @@ export function holePatternCenters(outline: FaceOutline, settings: HolePatternSe
     }
   }
 
-  if (best.length > HOLE_PATTERN_MAX_HOLES) return { centers: [], tooMany: true, rows: 0 };
+  if (best.length > (settings.allowMany ? HOLE_PATTERN_MANY_HOLES : HOLE_PATTERN_MAX_HOLES)) return { centers: [], tooMany: true, rows: 0 };
   return { centers: best, tooMany: false, rows: bestRows };
 }
 
@@ -477,5 +481,6 @@ export function normalizeHolePattern(input: Partial<HolePatternSettings>): HoleP
     arrangement,
     margin: number(input.margin, base.margin, 0, HOLE_PATTERN_MAX_MARGIN),
     depth: typeof input.depth === "number" && Number.isFinite(input.depth) && input.depth > 0 ? Math.min(input.depth, 1000) : null,
+    ...(input.allowMany === true ? { allowMany: true } : {}),
   };
 }

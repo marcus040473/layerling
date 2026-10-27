@@ -361,6 +361,40 @@ describe("STEP export round-trip (real OCCT kernel)", () => {
     expect(near(await reimportVolume(blob), expected, 0.001)).toBe(true);
   });
 
+  it("keeps the planes and cylinders of an edited body that was moved and turned, and still exports a stretched one", async () => {
+    const { occtKernel } = await import("@/lib/brepKernel");
+    const kernel = occtKernel()!;
+    // The stored body of an edited part, as the CAD worker bakes it: a 20 x 10 x 30 block (Y up),
+    // standing on y = 0 and centred on x and z, with a round hole through it along z.
+    const block = kernel.translate(kernel.makeBox(20, 10, 30), -10, 0, -15);
+    const bore = kernel.translate(kernel.makeCylinder(3, 30), 0, 5, -15);
+    const stored = kernel.toBREP(kernel.cut(block, bore));
+    const frame = { x: 0, z: 0, elevation: 0, width: 20, depth: 30, height: 10 };
+    const edited = (overrides: Partial<WorkplaneShape>) => shape({ kind: "mesh", name: "Edited", width: 20, depth: 30, height: 10, cadBrep: stored, cadBrepFrame: frame, ...overrides });
+    const surfaces = async (blob: Blob) => {
+      const imported = kernel.importStep(await blob.text());
+      return new Set(kernel.getSubShapes(imported, "face").map((face) => kernel.surfaceType(face)));
+    };
+    const volume = 20 * 10 * 30 - PI * 3 * 3 * 30;
+
+    // Moved, lifted and turned: still the planes and the cylinder it was, not B-splines.
+    const moved = await exportShapesToStep([edited({ x: 25, z: -10, elevation: 3, rotation: 30 })]);
+    expect(moved.skipped).toEqual([]);
+    expect([...await surfaces(moved.blob)].sort()).toEqual(["cylinder", "plane"]);
+    expect(near(await reimportVolume(moved.blob), volume, 1e-4)).toBe(true);
+
+    // Mirrored, the rigid placement has a negative scale; the body must not come out inside out.
+    const mirrored = await exportShapesToStep([edited({ x: 25, mirrorX: true })]);
+    expect(mirrored.skipped).toEqual([]);
+    expect([...await surfaces(mirrored.blob)].sort()).toEqual(["cylinder", "plane"]);
+    expect(near(await reimportVolume(mirrored.blob), volume, 1e-4)).toBe(true);
+
+    // Stretched to twice its width: only the general transform can do that, and it still goes out.
+    const stretched = await exportShapesToStep([edited({ width: 40, size: 40 })]);
+    expect(stretched.skipped).toEqual([]);
+    expect(near(await reimportVolume(stretched.blob), volume * 2, 1e-3)).toBe(true);
+  });
+
   it("throws when there is nothing exact to export", async () => {
     await expect(exportShapesToStep([shape({ kind: "pyramid", name: "Pyramid" })])).rejects.toThrow(/No exportable B-Rep solids/i);
   });

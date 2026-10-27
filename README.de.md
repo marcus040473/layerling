@@ -310,6 +310,12 @@ Eigene Formen, die auf dem Server abgelegt werden, kommen in einen Ordner `Custo
 auf der Startseite, und eine Form darin lässt sich wie ein Entwurf öffnen und speichern. Weder die Node-Route noch
 `store.php` brauchen dafür etwas Zusätzliches.
 
+Was du in den Arbeitsbereich-Einstellungen mit „Als Vorgabe sichern“ festlegst, liegt ebenfalls im Speicher, als
+`.settings/default.json` (ein versteckter Ordner, den die Startseite nicht zeigt). Ein Browser, der seine eigene Vorgabe
+verloren hat, weil sein Speicher geleert wurde oder weil es ein anderer Browser ist, holt sie sich beim Laden der Startseite,
+und neue Entwürfe beginnen wieder damit. Es gibt eine Vorgabe für den ganzen Speicher; die zuletzt gesicherte gilt, egal aus
+welchem Browser. Wer die Datei löscht, hat wieder die Vorgabe des jeweiligen Browsers.
+
 Wer eine gemeinsame Datei öffnet, erhält eine private lokale Arbeitskopie. Beim Zurückspeichern wird zuerst der Stand auf
 dem Server geprüft; hat jemand anderes die Datei inzwischen geändert, verweigert layerling das Überschreiben und bittet
 darum, neu zu laden oder unter anderem Namen zu speichern. Das ist gemeinsame Dateiablage, kein gleichzeitiges Bearbeiten.

@@ -22,6 +22,8 @@ import {
   type GridfinityLabelCornerShape,
   type GridfinityLabelProfile,
   createGridfinityGeometry,
+  gridfinityBinCornerFits,
+  gridfinityBinCornerRadius,
   gridfinityCompartmentCount,
   gridfinityCompartmentCountPatch,
   gridfinityCompartmentCornerSize,
@@ -2443,6 +2445,166 @@ describe("gridfinity baseplate corner radius", { timeout: 60_000 }, () => {
     const meshVolume = (s: WorkplaneShape) => { const { vertices, faces } = meshForShape(s); return signedVolume(faces.map((face) => face.map((i) => vertices[i]) as V[])); };
     const plain = canonicalizeShape(binShape({ gridfinityType: "baseplate", width: 84, depth: 42, height: 5 }));
     expect(meshVolume(shape) - meshVolume(plain)).toBeCloseTo(4 * 5 * (cornerOff(4) - cornerOff(1.5)), 4);
+  });
+});
+
+describe("gridfinity bin corner radius", { timeout: 120_000 }, () => {
+  let runtime: ManifoldToplevel;
+  beforeAll(async () => {
+    runtime = await manifoldModule();
+    runtime.setup();
+  });
+  /** What the mesh's rounding of radius r takes off a square corner: the square less the fan of its eight steps. */
+  const cornerOff = (r: number) => r * r * (1 - 4 * Math.sin(Math.PI / 16));
+  const tray = { gridfinityType: "tray" as const, width: 80, depth: 40, height: 20 };
+  const one = { width: 41.5, depth: 41.5 };
+  const key = (v: V) => v.map((n) => n.toFixed(6)).join();
+
+  it("is the bin it was at 3.75 mm, within 0.05 mm under it, or unset, and a baseplate or a tray ignores it", () => {
+    expect(gridfinityBinCornerRadius(bin())).toBe(3.75);
+    for (const value of [3.75, 3.71, 3.749]) expect(gridfinityTriangles(bin({ gridfinityBinCornerRadius: value })), `${value}`).toStrictEqual(gridfinityTriangles(bin()));
+    expect(gridfinityPlan(bin({ gridfinityBinCornerRadius: 3.72 }))).toStrictEqual(gridfinityPlan(bin()));
+    expect(gridfinityTriangles(plate({ gridfinityBinCornerRadius: 0 }))).toStrictEqual(gridfinityTriangles(plate()));
+    expect(gridfinityPlan(plate({ gridfinityBinCornerRadius: 0 }))).toStrictEqual(gridfinityPlan(plate()));
+    expect(gridfinityTriangles({ ...tray, gridfinityBinCornerRadius: 0 })).toStrictEqual(gridfinityTriangles(tray));
+    expect(gridfinityPlan(plate({ gridfinityCornerRadius: 2 })).wallRadius).toBe(2);
+    // The baseplate's own field still leaves a bin as it is, and the bin's leaves the inside its 3.75 mm.
+    expect(gridfinityTriangles(bin({ gridfinityCornerRadius: 0 }))).toStrictEqual(gridfinityTriangles(bin()));
+    expect(gridfinityPlan(bin({ gridfinityBinCornerRadius: 0 })).cornerRadius).toBe(3.75);
+  });
+
+  it("keeps the radius from 0 to 3.75 mm, to 0.01 mm, and builds one within 0.05 mm under 3.75 as 3.75", () => {
+    for (const [value, built] of [[2.346, 2.35], [0, 0], [0.004, 0], [-1, 0], [7, 3.75], [Number.NaN, 3.75], ["wide", 3.75], [3.69, 3.69], [3.7, 3.75], [3.71, 3.75], [3.74, 3.75]] as const) {
+      expect(gridfinityBinCornerRadius(bin({ gridfinityBinCornerRadius: value })), `${value}`).toBe(built);
+    }
+  });
+
+  it("is offered on a bin with a closed corner, not where every corner is square on an open side, nor on a baseplate or a tray", () => {
+    expect(gridfinityBinCornerFits(bin())).toBe(true);
+    expect(gridfinityBinCornerFits(bin({ gridfinityOpenBack: true }))).toBe(true);
+    expect(gridfinityBinCornerFits(bin({ gridfinityOpenBack: true, gridfinityOpenLeft: true }))).toBe(true);
+    expect(gridfinityBinCornerFits(bin({ gridfinityOpenBack: true, gridfinityOpenFront: true }))).toBe(false);
+    expect(gridfinityBinCornerFits(bin({ gridfinityOpenLeft: true, gridfinityOpenRight: true }))).toBe(false);
+    expect(gridfinityBinCornerFits(bin({ gridfinityOpenBack: true, gridfinityOpenLeft: true, gridfinityOpenRight: true }))).toBe(false);
+    // A side opened only partly keeps its corners.
+    expect(gridfinityBinCornerFits(bin({ gridfinityOpenBack: true, gridfinityOpenFront: true, gridfinityOpenings: [{ side: "front", width: 20, depth: 10 }] }))).toBe(true);
+    expect(gridfinityBinCornerFits(plate())).toBe(false);
+    expect(gridfinityBinCornerFits(tray)).toBe(false);
+  });
+
+  it("is closed, wound outwards and one piece at any radius, with every setting a bin can have", () => {
+    const solidOf = (triangles: V[][]) => {
+      const vertProperties = new Float32Array(triangles.flat(2));
+      const triVerts = new Uint32Array(triangles.flatMap((_, i) => [3 * i, 3 * i + 1, 3 * i + 2]));
+      const mesh = new runtime.Mesh({ numProp: 3, vertProperties, triVerts, tolerance: 1e-4 });
+      mesh.merge();
+      return new runtime.Manifold(mesh);
+    };
+    const settings: Array<Record<string, unknown>> = [
+      {},
+      one,
+      { gridfinityLip: false, height: 21 },
+      { gridfinityLipChamfer: 1 },
+      { gridfinityOpenBack: true },
+      { gridfinityOpenBack: true, gridfinityOpenLeft: true },
+      { gridfinityOpenFront: true, gridfinityOpenings: [{ side: "front", width: 20, depth: 10 }] },
+      { gridfinityOpenFront: true, gridfinityOpenings: [{ side: "front", width: 30, depth: 24 }] },
+      { ...one, gridfinityWallThickness: 20.5 },
+      { gridfinityHalfGrid: true, width: 41.5, depth: 20.5 },
+      { gridfinityWallThickness: 2.6 },
+      { gridfinityWallThickness: 2.6, gridfinityLipChamfer: 0.5 },
+      { ...square, gridfinityCompartmentsX: 2, gridfinityCompartmentsZ: 2, gridfinityScoopFront: true, gridfinityLabelBack: true },
+      { gridfinityMagnets: true },
+    ];
+    for (const fields of settings) {
+      for (const r of [0, 0.5, 2, 3.69]) {
+        const shape = bin({ ...fields, gridfinityBinCornerRadius: r });
+        const context = JSON.stringify({ fields, r });
+        const triangles = gridfinityTriangles(shape);
+        expect(edgeProblems(triangles), context).toBe(0);
+        expect(components(triangles), context).toBe(1);
+        const solid = solidOf(gridfinityLabelledTriangles(runtime, shape));
+        expect(solid.status(), context).toBe("NoError");
+        expect(solid.volume(), context).toBeGreaterThan(0);
+        solid.delete();
+      }
+    }
+  });
+
+  it("adds the wall above the band over what the smaller rounding no longer takes off, at each closed corner", () => {
+    // [fields, the top of the outer wall, closed corners]: the band ends 0.5 mm over the feet's 4.75 mm.
+    const cases: Array<[Record<string, unknown>, number, number]> = [
+      [{}, 25.4, 4],
+      [one, 25.4, 4],
+      [{ gridfinityLipChamfer: 1 }, 24.4, 4],
+      [{ gridfinityLip: false, height: 21 }, 21, 4],
+      [{ gridfinityOpenBack: true }, 25.4, 2],
+      [{ gridfinityOpenBack: true, gridfinityOpenLeft: true }, 25.4, 1],
+    ];
+    for (const [fields, wallTop, corners] of cases) {
+      const base = signedVolume(gridfinityTriangles(bin(fields)));
+      for (const r of [0, 1.5, 3.69]) {
+        expect(signedVolume(gridfinityTriangles(bin({ ...fields, gridfinityBinCornerRadius: r }))) - base, JSON.stringify({ fields, r })).toBeCloseTo(corners * (cornerOff(3.75) - cornerOff(r)) * (wallTop - 5.25), 6);
+      }
+    }
+    // A 1 x 1 x 3 bin with the lip, square: 4 x 14.0625 x 0.219639 x 20.15 = 248.95 mm³ more.
+    expect(signedVolume(gridfinityTriangles(bin({ ...one, gridfinityBinCornerRadius: 0 }))) - signedVolume(gridfinityTriangles(bin(one)))).toBeCloseTo(248.95, 2);
+  });
+
+  it("keeps the outline's 3.75 mm rounding up to 0.5 mm over the feet, and squares the wall from there up to the land", () => {
+    const within = (v: V) => Math.hypot(Math.max(0, Math.abs(v[0]) - 17), Math.max(0, Math.abs(v[2]) - 17)) <= 3.75 + 1e-9;
+    const corner = (v: V) => Math.abs(Math.abs(v[0]) - 20.75) < 1e-9 && Math.abs(Math.abs(v[2]) - 20.75) < 1e-9;
+    for (const [fields, land] of [[{}, 25.4], [{ gridfinityLipChamfer: 1 }, 24.4], [{ gridfinityLip: false, height: 21 }, 21]] as const) {
+      const square = gridfinityTriangles(bin({ ...one, ...fields, gridfinityBinCornerRadius: 0 })).flat();
+      expect(square.filter((v) => v[1] < 5.25 - 1e-9 && !within(v)), JSON.stringify(fields)).toHaveLength(0);
+      const corners = square.filter(corner);
+      expect(Math.min(...corners.map((v) => v[1]))).toBeCloseTo(5.25, 9);
+      expect(Math.max(...corners.map((v) => v[1]))).toBeCloseTo(land, 9);
+      expect(new Set(corners.map((v) => `${Math.sign(v[0])}${Math.sign(v[2])}`)).size).toBe(4);
+    }
+  });
+
+  it("keeps every point the bin had: the feet, the lip a stacked bin's feet rest on, and the inside", () => {
+    for (const fields of [{}, { gridfinityLipChamfer: 0.5 }, { gridfinityOpenBack: true }, { gridfinityLip: false, height: 21 }, { gridfinityWallThickness: 2.6 }]) {
+      const kept = new Set(gridfinityTriangles(bin({ ...fields, gridfinityBinCornerRadius: 0 })).flat().map(key));
+      expect(gridfinityTriangles(bin(fields)).flat().filter((v) => !kept.has(key(v))), JSON.stringify(fields)).toHaveLength(0);
+    }
+  });
+
+  it("keeps the radius through a saved project, the settings and the exact body, and refuses nonsense", async () => {
+    const settings = { gridfinityBinCornerRadius: 1.5 };
+    const shape = canonicalizeShape({ ...binShape({}), ...settings });
+    expect(shape).toMatchObject(settings);
+    expect(workplaneShapesEqual(shape, { ...shape, gridfinityBinCornerRadius: 2 })).toBe(false);
+    expect(shapeGeometrySignature(shape)).not.toBe(shapeGeometrySignature({ ...shape, gridfinityBinCornerRadius: 2 }));
+    const save = (shapes: WorkplaneShape[]) => exportLylProject({
+      projectId: "bin-corner",
+      projectName: "Bin corner",
+      createdAt: 1_700_000_000_000,
+      modifiedAt: 1_700_000_100_000,
+      shapes,
+      history: [editorHistoryEntry(shapes, [])],
+      historyIndex: 0,
+      assets: [],
+      workspace: DEFAULT_WORKPLANE_WORKSPACE,
+      snapGrid: DEFAULT_SNAP_GRID,
+      placementElevation: 0,
+    });
+    const [loaded] = (await importLylProject(await save([shape]))).shapes;
+    expect(workplaneShapesEqual(loaded, shape)).toBe(true);
+    expect(loaded).toMatchObject(settings);
+    expect(sceneShape(shape)).toMatchObject(settings);
+    expect(cadModifierGridfinityForShape(shape)).toMatchObject(settings);
+    expect(normalizeShapeCustomizations({ gridfinity: settings }, {})).toMatchObject({ gridfinity: settings });
+    expect(shapeDefaultsFromShape(shape)).toMatchObject(settings);
+    expect(mcpShapeSummary(shape).settings).toMatchObject(settings);
+    const asset = toolbarShapeAssets.find((entry) => entry.kind === "gridfinity")!;
+    expect(makeShapeFromAsset(asset, { x: 0, z: 0 }, settings)).toMatchObject(settings);
+    await expect(importLylProject(await save([{ ...shape, gridfinityBinCornerRadius: "square" } as unknown as WorkplaneShape]))).rejects.toThrow("gridfinityBinCornerRadius must be a finite number");
+    await expect(importLylProject(await save([{ ...shape, gridfinityBinCornerRadius: -1 }]))).rejects.toThrow("gridfinityBinCornerRadius is outside the supported range");
+    // The mesh that booleans and exports use has the smaller corners above the band.
+    const meshVolume = (s: WorkplaneShape) => { const { vertices, faces } = meshForShape(s); return signedVolume(faces.map((face) => face.map((i) => vertices[i]) as V[])); };
+    expect(meshVolume(shape) - meshVolume(canonicalizeShape(binShape({})))).toBeCloseTo(4 * (cornerOff(3.75) - cornerOff(1.5)) * (25.4 - 5.25), 3);
   });
 });
 

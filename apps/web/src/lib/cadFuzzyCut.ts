@@ -20,3 +20,20 @@ export function fuzzyCut(cad: OcctKernel, body: ShapeHandle, hole: ShapeHandle):
   }
   return cad.cut(body, hole);
 }
+
+/**
+ * A cut body with its faces merged (simplify, then unifySameDomain). That tidying can turn a valid
+ * cut into an invalid body: a tapped hole whose chamfer is as long as its pitch (M6, 1 mm, the
+ * defaults of a threaded hole) came out of it with a broken shell, and the group could then not be
+ * filleted at all ("The grouped body could not be repaired", #938). When it does, the cut as it
+ * was is kept.
+ */
+export function tidiedIfValid(cad: OcctKernel, cut: ShapeHandle, isValid: (cad: OcctKernel, shape: ShapeHandle) => boolean = (kernel, shape) => kernel.isValid(shape)) {
+  try {
+    const tidied = cad.unifySameDomain(cad.simplify(cut));
+    if (isValid(cad, tidied) || !isValid(cad, cut)) return tidied;
+  } catch {
+    // The tidying itself failed; the cut stands.
+  }
+  return cut;
+}

@@ -125,6 +125,16 @@ import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityOpeni
  * and no magnet holes, standing on y = 0. Its walls, floor, compartments,
  * scoops, shelves and open sides are built as a bin's, and its dividers and
  * shelves run up to the top, as nothing stacks on it.
+ *
+ * A bin's outer corners can be rounded less than the specification's 3.75 mm,
+ * down to square (#856), so bins side by side in a drawer leave only their
+ * 0.5 mm gaps where four of them meet. Only the outer wall above the feet takes
+ * it: the feet, the inside and the slopes of the lip a stacked bin's feet rest
+ * on keep their rounding, and 3.75 mm stays on the wall's first 0.5 mm over the
+ * feet, so on a bin within one socket, which sits down on the slopes, the square
+ * corners start 0.25 mm over the plate's top. In each corner the wall is filled
+ * out between the two roundings, flat at the band's top and at the wall's top,
+ * where it meets the lip or its chamfer.
  */
 
 export const GRIDFINITY_GRID = 42;
@@ -187,8 +197,10 @@ export const MIN_GRIDFINITY_SCOOP_RADIUS = 3.5;
 export const MIN_GRIDFINITY_FLOOR_HEIGHT = GRIDFINITY_FOOT_HEIGHT + GRIDFINITY_FLOOR;
 /** A floor this close under the highest the bin takes is raised onto it, so no sliver of wall is left between them. */
 const FLOOR_SNAP = 0.05;
-/** A baseplate's corner radius this close under the sockets' 4 mm is built as 4 (#856), so no sliver of flat face under 0.05 mm wide is left between the two roundings. */
+/** A baseplate's corner radius this close under the sockets' 4 mm is built as 4 (#856), so no sliver of flat face under 0.05 mm wide is left between the two roundings; likewise a bin's within 0.05 mm under 3.75. */
 const CORNER_SNAP = 0.05;
+/** How far over the feet's top a bin's outer wall keeps the feet's 3.75 mm corners before it takes its own (#856), so on a bin within one socket its corners rounded less start 0.25 mm over the plate's top. */
+export const GRIDFINITY_BIN_CORNER_BAND = 0.5;
 export const DEFAULT_GRIDFINITY_DIVIDER_THICKNESS = 1.2;
 export const MIN_GRIDFINITY_DIVIDER_THICKNESS = 0.8;
 export const MAX_GRIDFINITY_DIVIDER_THICKNESS = 3;
@@ -274,6 +286,7 @@ export type GridfinityShapeFields = Pick<WorkplaneShape, "width" | "height"> & {
   gridfinityPaddingLeft?: number;
   gridfinityPaddingRight?: number;
   gridfinityCornerRadius?: number;
+  gridfinityBinCornerRadius?: number;
   gridfinityCompartmentsX?: number;
   gridfinityCompartmentsZ?: number;
   gridfinityDividerThickness?: number;
@@ -525,7 +538,10 @@ export function gridfinityPlan(shape: GridfinityShapeFields) {
   // The baseplate's outer corners (#856), to 0.01 mm; within CORNER_SNAP of 4 they are built as 4. A bin's and a tray's stay 3.75.
   const setRadius = Math.round(clampLabel(shape.gridfinityCornerRadius, GRIDFINITY_BASEPLATE_RADIUS, 0, GRIDFINITY_BASEPLATE_RADIUS) * 100) / 100;
   const cornerRadius = type !== "baseplate" ? GRIDFINITY_BIN_RADIUS : GRIDFINITY_BASEPLATE_RADIUS - setRadius < CORNER_SNAP ? GRIDFINITY_BASEPLATE_RADIUS : setRadius;
-  return { type, count, lip, magnets, halfGrid: pitch !== GRIDFINITY_GRID, pitch, size, cells, magnetHoles, top, base, dividerTop, floor, floorRounding, open, switched, notches, openingCorner, openingCornerSize, padding, centre, cornerRadius, lipChamfer, wallThickness, innerRadius, solid, reach: gridfinityOpenReach(wallThickness) };
+  // A bin's outer wall above the feet (#856), to 0.01 mm; within CORNER_SNAP of 3.75 it is built as 3.75. Anything else's wall is its outline.
+  const setWallRadius = Math.round(clampLabel(shape.gridfinityBinCornerRadius, GRIDFINITY_BIN_RADIUS, 0, GRIDFINITY_BIN_RADIUS) * 100) / 100;
+  const wallRadius = type !== "bin" || GRIDFINITY_BIN_RADIUS - setWallRadius < CORNER_SNAP ? cornerRadius : setWallRadius;
+  return { type, count, lip, magnets, halfGrid: pitch !== GRIDFINITY_GRID, pitch, size, cells, magnetHoles, top, base, dividerTop, floor, floorRounding, open, switched, notches, openingCorner, openingCornerSize, padding, centre, cornerRadius, wallRadius, lipChamfer, wallThickness, innerRadius, solid, reach: gridfinityOpenReach(wallThickness) };
 }
 
 /** A notch cut out of a side's wall, partly open (#455): from and to along the side (x across, z deep), its bottom's height. */
@@ -656,6 +672,17 @@ export function gridfinityLipChamfer(shape: GridfinityShapeFields) {
 /** The radius of a baseplate's outer corners as it is built (#856): 4 mm unless it is set, from 0 (square) to 4, to 0.01 mm, and 4 within CORNER_SNAP of it. */
 export function gridfinityCornerRadius(shape: GridfinityShapeFields) {
   return gridfinityPlan(shape).cornerRadius;
+}
+
+/** The radius of a bin's outer corners above its feet as it is built (#856): 3.75 mm unless it is set, from 0 (square), to 0.01 mm, and 3.75 within CORNER_SNAP of it. */
+export function gridfinityBinCornerRadius(shape: GridfinityShapeFields) {
+  return gridfinityPlan(shape).wallRadius;
+}
+
+/** Whether a bin has an outer corner to round (#856): not where every corner is square on an open side, nor on a baseplate or a tray. */
+export function gridfinityBinCornerFits(shape: GridfinityShapeFields) {
+  const plan = gridfinityPlan(shape);
+  return plan.type === "bin" && Object.values(gridfinityOpenCorners(plan.open)).some((square) => !square);
 }
 
 /** The lowest floor the bin takes: 5.95 mm on its feet, 1.2 mm in a tray (#837). */
@@ -2226,10 +2253,10 @@ export function gridfinityTriangles(shape: GridfinityShapeFields) {
    * rounded less (#856), where the corner of the cell's rounded square no
    * longer meets the body's: the flat face from where the square's sides meet
    * the cell's box, along the body's outline round its corner, and back round
-   * the square's arc.
+   * the square's arc. Also a bin's wall above its band (#856), against the
+   * wall's outline (`body`).
    */
-  const paddedCorner = (arc: LoopPoint[], from: { x: number; z: number }, to: { x: number; z: number }, y: number, up: 1 | -1) => {
-    const body = outline(0);
+  const paddedCorner = (arc: LoopPoint[], from: { x: number; z: number }, to: { x: number; z: number }, y: number, up: 1 | -1, body = outline(0)) => {
     const same = (p: { x: number; z: number }, q: { x: number; z: number }) => Math.abs(p.x - q.x) < 1e-9 && Math.abs(p.z - q.z) < 1e-9;
     const start = body.findIndex((p) => same(p, from));
     const stop = body.findIndex((p) => same(p, to));
@@ -2262,6 +2289,30 @@ export function gridfinityTriangles(shape: GridfinityShapeFields) {
   const breaksZ = plan.type === "tray" ? [] : breaks(count.z, plan.centre.z);
   const outline = (inset: number) => roundedLoop(0, 0, size.width / 2, size.depth / 2, plan.cornerRadius, inset, breaksX, breaksZ);
   const openOutline = (inset: number) => roundedLoop(0, 0, size.width / 2, size.depth / 2, plan.cornerRadius, inset, breaksX, breaksZ, plan.open);
+  // A bin's outer wall above the band over its feet, rounded less (#856); it keeps the outline's points along the sides.
+  const wallOutline = (inset: number) => roundedLoop(0, 0, size.width / 2, size.depth / 2, plan.wallRadius, inset, breaksX, breaksZ, plan.open);
+  const cornered = plan.wallRadius !== plan.cornerRadius;
+  const bandTop = plan.base + GRIDFINITY_BIN_CORNER_BAND;
+  /** Each closed corner's flat face between the outline's rounding and the wall's above the band, at height y. */
+  const wallCorners = (y: number, up: 1 | -1) => {
+    const loop = openOutline(0);
+    const body = wallOutline(0);
+    const rounded = (p: LoopPoint) => Math.abs(p.nx) > 1e-9 && Math.abs(p.nz) > 1e-9;
+    loop.forEach((p, k) => {
+      if (rounded(p) || !rounded(loop[(k + 1) % loop.length])) return;
+      let end = (k + 1) % loop.length;
+      while (rounded(loop[end])) end = (end + 1) % loop.length;
+      const arc = end > k ? loop.slice(k, end + 1) : [...loop.slice(k), ...loop.slice(0, end + 1)];
+      paddedCorner(arc, p, loop[end], y, up, body);
+    });
+  };
+  /** A bin's wall swept from its foot to the floor: up the band, the outer wall above it and the rest on the outline. */
+  const sweepWall = (loop: (inset: number) => LoopPoint[], wallLoop: (inset: number) => LoopPoint[], wall: GridfinityStep[], wrap = true) => {
+    if (!cornered) return sweep(loop, wall, 1, wrap);
+    sweep(loop, [wall[0], [0, bandTop]], 1, wrap);
+    sweep(wallLoop, [[0, bandTop], wall[1]], 1, wrap);
+    sweep(loop, wall.slice(1), 1, wrap);
+  };
   const cellOf = (cell: (typeof cells)[number], inset: number) => roundedLoop(cell.x, cell.z, cellHalf, cellHalf, radius, inset);
   // A cell's box, cut back to the body's outline at the edge; edge() says whether a side is the body's own.
   const cellBox = (cell: (typeof cells)[number]): Box => ({
@@ -2291,13 +2342,14 @@ export function gridfinityTriangles(shape: GridfinityShapeFields) {
       return runs;
     };
     const runs = runsOf(openOutline(0)).length;
-    for (let n = 0; n < runs; n += 1) sweep((inset) => runsOf(openOutline(inset))[n], wall, 1, false);
+    for (let n = 0; n < runs; n += 1) sweepWall((inset) => runsOf(openOutline(inset))[n], (inset) => runsOf(wallOutline(inset))[n], wall, false);
     const [floorInset, floorY] = wall[wall.length - 1];
     const along = (inset: number, side: GridfinityWall) => openOutline(inset).filter((p) => p.wall === side);
     LABEL_WALLS.filter((side) => plan.open[side]).forEach((side) => {
       // From the foot's top along the open side, up the end of the wall beside it, over the top and down to the floor,
       // back along the floor's edge and down the other wall's end; straight up where the side beside it is open too.
-      const end = (k: 0 | 1) => (plan.open[LABEL_SIDE_WALLS[side][k]] ? [] : wall.map(([inset, y]) => {
+      const steps: GridfinityStep[] = cornered ? [wall[0], [0, bandTop], ...wall.slice(1)] : wall;
+      const end = (k: 0 | 1) => (plan.open[LABEL_SIDE_WALLS[side][k]] ? [] : steps.map(([inset, y]) => {
         const points = along(inset, side);
         return at(points[k === 0 ? 0 : points.length - 1], y);
       }));
@@ -2317,7 +2369,11 @@ export function gridfinityTriangles(shape: GridfinityShapeFields) {
     const wall = gridfinityWallProfile(plan);
     const opened = LABEL_WALLS.some((side) => plan.open[side]);
     if (opened) openBin(wall);
-    else sweep(outline, wall, 1);
+    else sweepWall(outline, wallOutline, wall);
+    if (cornered) {
+      wallCorners(bandTop, -1);
+      wallCorners(wall[1][1], 1);
+    }
     const [floorInset, floorY] = wall[wall.length - 1];
     // A floor rounded as far as the inner corners' radius has corners of no radius, whose points coincide.
     if (!opened) cap(distinctPoints(outline(floorInset)), [], floorY, 1);

@@ -169,11 +169,11 @@ import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_TILINGS, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { normalizeSurfaceTextureOwnImage, SURFACE_TEXTURE_OWN_IMAGE_SIZE } from "@/lib/surfaceTextureImages";
-import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
-import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
 import { SURFACE_TEXT_FONTS, surfaceTextOutline } from "@/lib/surfaceTextOutline";
 import { useInspectorCard } from "@/lib/inspectorCards";
 import { canChangeSurfaceTexture, canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, sceneWithSurfaceBody, shapeUnderSurfaceTexture, surfaceTextureEntry, surfaceTextureGoldShape, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
+import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
+import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
 import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierFaces, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierKind, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierQuality, CadModifierSpringPart, CadModifierThreadPart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
@@ -6697,11 +6697,14 @@ export function LayerlingEditor({
       // gebrochenen Schraubenkopf fuehrt. Ein exakt gebautes Gewinde zaehlt
       // hier nicht mit, die Absage gilt dann einem anderen Teil.
       const istGewinde = partInputs.some((part) => part.mesh && part.shape.kind === "thread");
-      setNotice(t(istGewinde ? "status.threadTooDense" : "status.meshTooDense", {
-        triangles: formatTriangleCount(triangleCount),
-        limit: formatTriangleCount(CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT),
-      }), true);
-      return;
+      const denseCounts = { triangles: formatTriangleCount(triangleCount), limit: formatTriangleCount(CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT) };
+      // The limit is where the measurements turn (it can take minutes beyond it), not a wall: whoever
+      // knows their machine may go on after a clear warning (#941). A thread has a better way, so it stays refused.
+      const goOn = !istGewinde && typeof window !== "undefined" && window.confirm(t("status.meshDenseAsk", denseCounts));
+      if (!goOn) {
+        setNotice(t(istGewinde ? "status.threadTooDense" : "status.meshTooDense", denseCounts), true);
+        return;
+      }
     }
     const amount = Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(1, shapeWidth(selectedShape) / 6, shapeDepth(selectedShape) / 6, selectedShape.height / 6));
     cadModifierBaseShapeRef.current = selectedShape;
@@ -9022,6 +9025,22 @@ export function LayerlingEditor({
     commitShapes(sceneWithSurfaceBody(shapesRef.current, current.id, textured, gold), [textured.id], message);
   }, [commitShapes, selectedShape, selectedShapes.length]);
 
+  /** Takes the texture off the selected body: the body under it comes back, where the textured one stands. */
+  const removeSelectedSurfaceTexture = useCallback(() => {
+    if (selectedShapes.length !== 1 || !selectedShape) return;
+    if (selectedShape.locked) {
+      setNotice(t("status.objectLocked"));
+      return;
+    }
+    const under = shapeUnderSurfaceTexture(selectedShape);
+    if (!under) {
+      setNotice(t("status.alreadyTextured"));
+      return;
+    }
+    const pattern = surfacePatternLabel(selectedShape.surfaceTexture?.pattern ?? "knurl");
+    commitShapes(sceneWithSurfaceBody(shapesRef.current, selectedShape.id, under, null), [under.id], t("status.surfaceRemoved", { pattern }));
+  }, [commitShapes, selectedShape, selectedShapes.length]);
+
   /**
    * A vase's accessories (legs to plug in, a stand, a saucer, an insert, a lid), laid out beside it ready to
    * print; the ones laid out for it before give way, so changed settings come out new. Returns the new parts
@@ -9038,22 +9057,6 @@ export function LayerlingEditor({
     commitShapes(shapes, parts.map((part) => part.id), [t("status.vaseAccessoriesMade", { count: parts.length }), missingText].filter(Boolean).join(" "));
     return { parts, missing };
   }, [commitShapes]);
-
-  /** Takes the texture off the selected body: the body under it comes back, where the textured one stands. */
-  const removeSelectedSurfaceTexture = useCallback(() => {
-    if (selectedShapes.length !== 1 || !selectedShape) return;
-    if (selectedShape.locked) {
-      setNotice(t("status.objectLocked"));
-      return;
-    }
-    const under = shapeUnderSurfaceTexture(selectedShape);
-    if (!under) {
-      setNotice(t("status.alreadyTextured"));
-      return;
-    }
-    const pattern = surfacePatternLabel(selectedShape.surfaceTexture?.pattern ?? "knurl");
-    commitShapes(sceneWithSurfaceBody(shapesRef.current, selectedShape.id, under, null), [under.id], t("status.surfaceRemoved", { pattern }));
-  }, [commitShapes, selectedShape, selectedShapes.length]);
 
   /** The selected name tag as its panel shows it: words, font and layers read from its layers as they stand (#215). */
   const selectedNameTag = useMemo(
@@ -11617,8 +11620,8 @@ export function LayerlingEditor({
     closeHistoryView,
     openHistoryView,
     runCustomShapeMcp,
-    layOutVaseAccessories,
     updateProjectAttachments,
+    layOutVaseAccessories,
   ]);
 
   useEffect(() => {

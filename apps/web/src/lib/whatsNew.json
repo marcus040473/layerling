@@ -1,5 +1,50 @@
 [
   {
+    "version": "1.114.0",
+    "items": [
+      {
+        "title": {
+          "de": "Deine Vorgabe bleibt auf dem Server",
+          "en": "Your default stays on the server"
+        },
+        "body": {
+          "de": "Läuft layerling mit einem Serverordner, etwa in Docker, landet „Als Vorgabe sichern“ jetzt auch dort. Leerst du den Browser-Speicher oder öffnest layerling in einem anderen Browser, beginnen neue Entwürfe trotzdem mit deinen eigenen Einstellungen.",
+          "en": "When layerling runs with a server folder, for example in Docker, \"Make default\" now saves there too. Clear the browser storage or open layerling in another browser, and new designs still start with your own settings."
+        }
+      },
+      {
+        "title": {
+          "de": "Eckenradius für Gridfinity-Behälter",
+          "en": "Corner radius for Gridfinity bins"
+        },
+        "body": {
+          "de": "Die äußeren Ecken eines Gridfinity-Behälters müssen nicht mehr mit 3,75 mm gerundet sein: Stell im Eigenschaften-Fenster „Eckenradius“ ein, bis 0 für rechtwinklige Ecken, damit dort, wo vier Behälter in einer Schublade zusammentreffen, nur die Spalten von 0,5 mm zwischen ihnen bleiben. Die Füße und das Innere bleiben, wie sie sind, die Behälter passen also und lassen sich stapeln wie bisher.",
+          "en": "A Gridfinity bin's outer corners no longer have to be rounded by 3.75 mm: set \"Corner radius\" in the Properties panel, down to 0 for square corners, so where four bins meet in a drawer only the 0.5 mm gaps between them are left. The feet and the inside stay as they are, so bins fit and stack as before."
+        }
+      },
+      {
+        "title": {
+          "de": "Oberflächenstruktur für jeden Körper",
+          "en": "Surface texture for any body"
+        },
+        "body": {
+          "de": "Neu im Bereich „Ändern“: Lege ein Relief auf jeden Körper, für besseren Griff oder fürs Aussehen. Zwölf Muster stehen bereit, darunter Rillen, Rändelung, Waben, Noppen, Strickmuster, ein eigenes Bild als Höhenkarte, Risse mit Gold (Kintsugi) und aufgesetzter Text. Rund um die Achse bei runden Körpern, rundherum bei eckigen; du kannst es später ändern oder wieder entfernen.",
+          "en": "New in the Modify area: lay a relief onto any body, for grip or for looks. Twelve patterns are ready, among them grooves, knurling, honeycomb, bumps, knitting, your own picture as a height map, cracks with gold (kintsugi) and text stuck on. Laid around the axis on round bodies, all round on angular ones; you can change or remove it later."
+        }
+      },
+      {
+        "title": {
+          "de": "Vase: eine eigene Form für Vasen, Töpfe und Lampenschirme",
+          "en": "Vase: a shape of its own for vases, pots and lampshades"
+        },
+        "body": {
+          "de": "Die neue Form „Vase“ in der Formenbibliothek: Höhe und größter Durchmesser sind ihre Maße, alles andere liegt auf Karten, die auch nach dem Speichern änderbar bleiben. Körperform, Querschnitt, Drehung, Muster, Abflusslöcher, offene Wand, Lampenschirm, Füße, Untersetzer, Einsätze und Deckel; massiv für den Vasenmodus des Slicers oder hohl mit Wand und Boden, dazu eine Dichtheitsprüfung.",
+          "en": "The new shape \"Vase\" in the shape library: its height and widest diameter are its measures, everything else sits on cards that stay editable after saving. Body form, cross-section, twist, patterns, drain holes, an open wall, a lampshade, legs, saucer, inserts and lids; solid for the slicer's vase mode or hollow with wall and bottom, plus a watertight check."
+        }
+      }
+    ]
+  },
+  {
     "version": "1.113.0",
     "items": [
       {

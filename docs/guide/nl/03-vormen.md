@@ -184,7 +184,7 @@ De {{ui:shape.vase}} is een eigen lichaam voor vazen, potten en lampenkappen. De
 - {{ui:prop.vaseProfile}}: fles, buikig, schaal met hals, ton, cilinder of trechter. Hoogte en grootste diameter zijn de maten van de vorm zelf: trek aan de handgrepen of typ {{ui:prop.vaseDiameter}} en {{ui:prop.height}}.
 - {{ui:prop.vaseSection}}: een cirkel, een veelhoek met afgeronde hoeken of een golf (zacht, spits, bogen of lamellen). {{ui:prop.vaseTwist}} draait hem over de hoogte, {{ui:prop.vaseSway}} laat hem heen en weer slingeren.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} is voor de vaasmodus van de slicer (ook „spiraliseren”): de slicer print één wand als spiraal en laat deksel en vulling weg, daarom is het lichaam massief getekend. {{ui:vase.bodyHollow}} geeft een echte wand en bodem voor een gewone print.
-- {{ui:prop.vaseEffect}}: een nieuwe vaas is glad. Te kiezen zijn groeven, strepen, Voronoi-cellen of facetten (low poly) aan de buitenkant, desgewenst alleen in een deel van de hoogte; ze horen bij de vaas en blijven ermee aanpasbaar. Meer – kartels, honingraat, noppen, barsten, tekst – komt met {{ui:inspector.surfaceTexture}} op de afgewerkte vaas.
+- {{ui:prop.vaseEffect}}: een nieuwe vaas is glad. Te kiezen zijn groeven, strepen, Voronoi-cellen of facetten (low poly) aan de buitenkant, desgewenst alleen in een deel van de hoogte; ze horen bij de vaas en blijven ermee aanpasbaar.
 
 {{ui:prop.vaseSection2}} laat de doorsnede over de hoogte zacht overgaan in een tweede, bijvoorbeeld van een cirkel onder naar een zeshoek boven.
 
@@ -196,4 +196,4 @@ Op de kaart {{ui:inspector.vaseParts}} krijgt de vaas haar toebehoren. {{ui:prop
 
 De kaart {{ui:inspector.vasePrint}} zegt wat de vaas bij het printen nodig heeft: het gewicht in het gekozen {{ui:prop.vaseMaterial}} en de lengte filament – bij een massieve vaas berekend voor de vaasmodus van de slicer, met één lijn langs de wand. Daaronder staan aanwijzingen voor het printen: een overhang van meer dan 45° met zijn hoogte, een te dunne wand, wat een deksel, een lamp of poten nodig hebben, en de slicerinstellingen voor ribben en een dubbele wand.
 
-{{ui:prop.vaseQuality}} bepaalt hoe fijn de vaas in driehoeken wordt verdeeld: fijner ziet er gladder uit, maar maakt de editor bij grote vazen trager. Voor meer reliëf erbovenop werkt ook een {{ui:inspector.surfaceTexture}} op een vaas; die is dan een mesh tot je de structuur weer verwijdert.
+{{ui:prop.vaseQuality}} bepaalt hoe fijn de vaas in driehoeken wordt verdeeld: fijner ziet er gladder uit, maar maakt de editor bij grote vazen trager.

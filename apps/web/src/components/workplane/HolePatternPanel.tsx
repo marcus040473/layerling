@@ -7,6 +7,7 @@ import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import {
+  HOLE_PATTERN_MANY_HOLES,
   HOLE_PATTERN_MAX_HOLES,
   HOLE_PATTERN_MAX_MARGIN,
   HOLE_PATTERN_MAX_SIZE,
@@ -71,7 +72,7 @@ export function HolePatternPanel({
   const status = !ready
     ? t("holePattern.step.pick")
     : tooMany
-      ? t("holePattern.tooMany", { limit: HOLE_PATTERN_MAX_HOLES })
+      ? t("holePattern.tooMany", { limit: settings.allowMany ? HOLE_PATTERN_MANY_HOLES : HOLE_PATTERN_MAX_HOLES })
       : holeCount === 0
         ? t("holePattern.none")
         : t(holeCount === 1 ? "holePattern.count.one" : "holePattern.count.many", { count: holeCount });
@@ -215,6 +216,21 @@ export function HolePatternPanel({
           length
           onChange={(value) => onChange({ depth: value })}
         />
+      ) : null}
+
+      {ready && tooMany && !settings.allowMany ? (
+        <div className="edge-modifier-field">
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => {
+              // A clear warning first: far more holes make the cuts slow and the page can freeze (#941).
+              if (window.confirm(t("holePattern.allowManyAsk", { limit: HOLE_PATTERN_MAX_HOLES, many: HOLE_PATTERN_MANY_HOLES }))) onChange({ allowMany: true });
+            }}
+          >
+            {t("holePattern.allowMany")}
+          </button>
+        </div>
       ) : null}
 
       <div className="edge-modifier-footer">

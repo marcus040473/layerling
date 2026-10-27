@@ -745,6 +745,90 @@ describe("exact Gridfinity baseplates with a corner radius", () => {
   });
 });
 
+describe("exact Gridfinity bins with a corner radius", () => {
+  /** One valid solid with the mesh's volume and box, and no edge under 0.01 mm. */
+  const expectBuilt = (part: CadModifierGridfinityPart, tolerance = 0.002) => {
+    const context = JSON.stringify(part);
+    const solid = gridfinityPartSolid(cad, part);
+    expect(cad.isValid(solid), context).toBe(true);
+    expect(cad.isSolid(solid) ? 1 : cad.getSubShapes(solid, "solid").length, context).toBe(1);
+    const exact = Math.abs(cad.getVolume(solid));
+    expect(Math.abs(exact - meshVolume(part)) / exact, context).toBeLessThan(tolerance);
+    const box = cad.getBoundingBox(solid);
+    const { min, max } = meshBounds(part);
+    [box.xmin - min[0], box.ymin - min[1], box.zmin - min[2], box.xmax - max[0], box.ymax - max[1], box.zmax - max[2]].forEach((d) => expect(Math.abs(d), context).toBeLessThan(0.01));
+    expect(cad.getSubShapes(solid, "edge").filter((edge) => cad.getLength(edge) > 1e-9 && cad.getLength(edge) < 0.01), context).toHaveLength(0);
+    return solid;
+  };
+  const one = { width: 41.5, depth: 41.5 };
+
+  it("builds a bin with any corner radius as one valid solid with the mesh's volume and box", () => {
+    for (const extra of [
+      {},
+      one,
+      { gridfinityLipChamfer: 1 },
+      { ...one, gridfinityLipChamfer: 0.5 },
+      { gridfinityLip: false, height: 21 },
+      { gridfinityOpenBack: true },
+      { gridfinityOpenBack: true, gridfinityOpenLeft: true },
+      { gridfinityOpenFront: true, gridfinityOpenings: [{ side: "front" as const, width: 20, depth: 10 }] },
+      { width: 83.5, depth: 83.5, gridfinityCompartmentsX: 2, gridfinityCompartmentsZ: 2, gridfinityScoopFront: true },
+      { gridfinityHalfGrid: true, width: 41.5, depth: 20.5 },
+      { gridfinityWallThickness: 2.6, gridfinityLipChamfer: 0.5 },
+      { ...one, gridfinityWallThickness: 20.5 },
+      { gridfinityMagnets: true },
+    ]) {
+      for (const r of [0, 2, 3.69]) expectBuilt(bin({ ...extra, gridfinityBinCornerRadius: r }));
+    }
+  });
+
+  it("adds (1 - pi/4) of the corner's square at each of a 1 x 1 x 3 bin's corners, from 0.5 mm over the feet to the lip's top", () => {
+    const volume = (r?: number) => Math.abs(cad.getVolume(gridfinityPartSolid(cad, bin({ ...one, gridfinityBinCornerRadius: r }))));
+    // 4 x 3.75² x (1 - pi/4) x (25.4 - 5.25) = 243.24 mm³.
+    expect(volume(0) - volume()).toBeCloseTo(4 * 3.75 ** 2 * (1 - Math.PI / 4) * 20.15, 2);
+    expect(volume(0) - volume()).toBeCloseTo(243.24, 1);
+    expect(volume(2) - volume()).toBeCloseTo(4 * (3.75 ** 2 - 4) * (1 - Math.PI / 4) * 20.15, 2);
+  });
+
+  it("keeps a square corner whole under the lip's chamfer, as the mesh does", () => {
+    // Square corners add the same to the exact body as to the mesh up to the chamfer's foot; the mesh's
+    // corners are drawn in segments, so the two gains are a little apart.
+    for (const extra of [{ ...one, gridfinityLipChamfer: 0.5 }, { gridfinityLipChamfer: 1 }]) {
+      const exact = (r?: number) => Math.abs(cad.getVolume(gridfinityPartSolid(cad, bin({ ...extra, gridfinityBinCornerRadius: r }))));
+      const mesh = (r?: number) => meshVolume(bin({ ...extra, gridfinityBinCornerRadius: r }));
+      const gain = mesh(0) - mesh();
+      expect(Math.abs(exact(0) - exact() - gain) / gain, JSON.stringify(extra)).toBeLessThan(0.05);
+    }
+  });
+
+  it("seats a square-cornered bin within one socket down on its slopes, 0.25 mm clear of the plate's top", () => {
+    const square = gridfinityPartSolid(cad, plate({ width: 84, depth: 84 }));
+    const seated = cad.translate(gridfinityPartSolid(cad, bin({ ...one, gridfinityBinCornerRadius: 0 })), -21, 0, -21);
+    expect(overlap(seated, square)).toBeLessThan(0.01);
+    expect(overlap(cad.translate(seated, 0, -0.3, 0), square)).toBeGreaterThan(1);
+    // What the 0.5 mm band keeps clear: square from the feet's top, the outline would stand 0.25 mm into the plate's top
+    // over the posts at that cell's corners, about 1.8 mm³.
+    const squareFromFeet = cad.translate(cad.makeBox(41.5, 0.25, 41.5), -21 - 20.75, 4.75, -21 - 20.75);
+    expect(overlap(squareFromFeet, square)).toBeGreaterThan(1.5);
+    // A half-grid bin of 2 x 2 cells stands within one socket too.
+    const half = cad.translate(gridfinityPartSolid(cad, bin({ ...one, gridfinityHalfGrid: true, gridfinityBinCornerRadius: 0 })), -21, 0, -21);
+    expect(overlap(half, square)).toBeLessThan(0.01);
+  });
+
+  it("seats a square-cornered bin of two units on the ridges, 0.25 mm up, as before", () => {
+    const seated = cad.translate(gridfinityPartSolid(cad, bin({ gridfinityBinCornerRadius: 0 })), 0, 0.25, 0);
+    expect(overlap(seated, gridfinityPartSolid(cad, plate()))).toBeLessThan(0.01);
+  });
+
+  it("stacks square-cornered and rounded bins on one another in every order", () => {
+    const of = (r?: number) => gridfinityPartSolid(cad, bin({ ...one, gridfinityBinCornerRadius: r }));
+    // The bin above stands with its underside on the lip's top: 21 - 0.35 mm up.
+    for (const [lower, upper] of [[0, 0], [undefined, 0], [0, undefined], [2, 0]] as const) {
+      expect(overlap(of(lower), cad.translate(of(upper), 0, 21 - 0.35, 0)), `${lower} under ${upper}`).toBeLessThan(0.01);
+    }
+  });
+});
+
 describe("exact Gridfinity bins with a set wall", () => {
   /** One valid solid with the mesh's volume and box. */
   const expectBuilt = (part: CadModifierGridfinityPart, tolerance = 0.002) => {

@@ -428,6 +428,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.gridfinityPaddingLeft = optionalShapeNumber(source.gridfinityPaddingLeft, fallbackEntry?.gridfinityPaddingLeft, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingRight = optionalShapeNumber(source.gridfinityPaddingRight, fallbackEntry?.gridfinityPaddingRight, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityCornerRadius = optionalShapeNumber(source.gridfinityCornerRadius, fallbackEntry?.gridfinityCornerRadius, 0, MAX_CUSTOM_SHAPE_DIMENSION);
+      entry.gridfinityBinCornerRadius = optionalShapeNumber(source.gridfinityBinCornerRadius, fallbackEntry?.gridfinityBinCornerRadius, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityCompartmentsX = optionalShapeNumber(source.gridfinityCompartmentsX, fallbackEntry?.gridfinityCompartmentsX, 1, MAX_CUSTOM_SHAPE_DIMENSION, true);
       entry.gridfinityCompartmentsZ = optionalShapeNumber(source.gridfinityCompartmentsZ, fallbackEntry?.gridfinityCompartmentsZ, 1, MAX_CUSTOM_SHAPE_DIMENSION, true);
       entry.gridfinityDividerThickness = optionalShapeNumber(source.gridfinityDividerThickness, fallbackEntry?.gridfinityDividerThickness, 0, MAX_CUSTOM_SHAPE_DIMENSION);
@@ -772,6 +773,8 @@ export function workspaceHydrationSyncDecision(pendingFingerprint: string | null
  * design fell back to the built-in settings, shadows and zoom speed included.
  */
 export const WORKSPACE_DEFAULT_STORAGE_KEY = "layerling.workspaceDefault.global";
+/** Fired on the window when this browser's default has just been saved. */
+export const WORKSPACE_DEFAULT_SAVED_EVENT = "layerling:workspace-default-saved";
 
 function browserStorage(): Storage | null {
   try {
@@ -886,6 +889,8 @@ export function saveWorkspaceDefault(
       workspace: normalizeWorkspaceSettings(workspace),
       snap: normalizeSnapGrid(snap, DEFAULT_SNAP_GRID),
     }));
+    // The server store keeps a copy for every browser (serverWorkspaceDefault.ts).
+    if (typeof window !== "undefined" && storage === browserStorage()) window.dispatchEvent(new Event(WORKSPACE_DEFAULT_SAVED_EVENT));
     return true;
   } catch {
     return false;

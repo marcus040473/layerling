@@ -234,6 +234,7 @@ export function tapeShapeTopologyKey(shape: WorkplaneShape): string {
     gridfinityPaddingLeft: shape.gridfinityPaddingLeft,
     gridfinityPaddingRight: shape.gridfinityPaddingRight,
     gridfinityCornerRadius: shape.gridfinityCornerRadius,
+    gridfinityBinCornerRadius: shape.gridfinityBinCornerRadius,
     gridfinityCompartmentsX: shape.gridfinityCompartmentsX,
     gridfinityCompartmentsZ: shape.gridfinityCompartmentsZ,
     gridfinityDividerThickness: shape.gridfinityDividerThickness,
@@ -555,6 +556,7 @@ export function shapeGeometrySignature(shape: WorkplaneShape): string {
     gridfinityPaddingLeft: shape.gridfinityPaddingLeft,
     gridfinityPaddingRight: shape.gridfinityPaddingRight,
     gridfinityCornerRadius: shape.gridfinityCornerRadius,
+    gridfinityBinCornerRadius: shape.gridfinityBinCornerRadius,
     gridfinityCompartmentsX: shape.gridfinityCompartmentsX,
     gridfinityCompartmentsZ: shape.gridfinityCompartmentsZ,
     gridfinityDividerThickness: shape.gridfinityDividerThickness,
@@ -643,7 +645,10 @@ export function selectionFrameForShapes(
   // user-picked plane - the always-present default (no plane ever chosen)
   // must not force a single rotated shape's resize/rotate handles onto world
   // axes, or a tilted cylinder distorts when dragged.
-  const useWorkplane = Boolean(workplane) && !placementWorkplaneIsBase(workplane!);
+  // A shape's handles write their sizes to its own width, depth and height, so a workplane that stands across
+  // its up axis (on a side face) must not give them its axes: the sizes would land on the wrong dimensions (#933).
+  const useWorkplane = Boolean(workplane) && !placementWorkplaneIsBase(workplane!)
+    && (!singleShape || Math.abs(new THREE.Vector3(0, 1, 0).applyQuaternion(quaternionForShape(singleShape)).dot(new THREE.Vector3(workplane!.normal.x, workplane!.normal.y, workplane!.normal.z).normalize())) > 0.999);
   const quaternion = useWorkplane
     ? placementWorkplaneQuaternion(workplane!)
     : singleShape ? quaternionForShape(singleShape) : new THREE.Quaternion();
@@ -1633,6 +1638,7 @@ export function createShapeObject(
         gridfinityPaddingLeft: shape.gridfinityPaddingLeft,
         gridfinityPaddingRight: shape.gridfinityPaddingRight,
         gridfinityCornerRadius: shape.gridfinityCornerRadius,
+        gridfinityBinCornerRadius: shape.gridfinityBinCornerRadius,
         gridfinityCompartmentsX: shape.gridfinityCompartmentsX,
         gridfinityCompartmentsZ: shape.gridfinityCompartmentsZ,
         gridfinityDividerThickness: shape.gridfinityDividerThickness,

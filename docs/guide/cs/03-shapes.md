@@ -184,7 +184,7 @@ Výsledek je síť jako importovaný model a ponechává si těleso, na kterém 
 - {{ui:prop.vaseProfile}}: láhev, baňatá, mísa s hrdlem, sud, válec nebo trychtýř. Výška a největší průměr jsou rozměry samotného tvaru: táhněte za úchyty nebo zadejte {{ui:prop.vaseDiameter}} a {{ui:prop.height}}.
 - {{ui:prop.vaseSection}}: kruh, mnohoúhelník se zaoblenými rohy nebo vlna (měkká, špičatá, oblouky nebo lamely). {{ui:prop.vaseTwist}} ho po výšce stáčí, {{ui:prop.vaseSway}} ho nechá kývat sem a tam.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} je pro režim vázy ve sliceru (také „spiralizace“): slicer tiskne jednu stěnu ve spirále a vynechá víko i výplň, proto je těleso kreslené plné. {{ui:vase.bodyHollow}} dává skutečnou stěnu a dno pro běžný tisk.
-- {{ui:prop.vaseEffect}}: nová váza je hladká. Na výběr jsou drážky, pruhy, Voronoiovy buňky nebo fazety (low poly) zvenku, podle přání jen v části výšky; patří k váze a zůstávají s ní upravitelné. Další – vroubkování, plástev, výstupky, praskliny, text – se přidají na hotovou vázu přes {{ui:inspector.surfaceTexture}}.
+- {{ui:prop.vaseEffect}}: nová váza je hladká. Na výběr jsou drážky, pruhy, Voronoiovy buňky nebo fazety (low poly) zvenku, podle přání jen v části výšky; patří k váze a zůstávají s ní upravitelné.
 
 {{ui:prop.vaseSection2}} nechá průřez po výšce plynule přejít ve druhý, například z kruhu dole do šestiúhelníku nahoře.
 
@@ -196,4 +196,4 @@ Na kartě {{ui:inspector.vaseParts}} dostane váza své příslušenství. {{ui:
 
 Karta {{ui:inspector.vasePrint}} říká, co váza potřebuje k tisku: hmotnost ve zvoleném materiálu ({{ui:prop.vaseMaterial}}) a délku filamentu – u plné vázy spočtenou pro režim vázy ve sliceru, s jednou linkou podél stěny. Pod tím jsou poznámky k tisku: převis přes 45° i s výškou, příliš tenká stěna, co potřebuje víko, lampa nebo nohy, a nastavení sliceru pro žebra a dvojitou stěnu.
 
-{{ui:prop.vaseQuality}} určuje, jak jemně se váza rozdělí na trojúhelníky: jemnější vypadá hladší, ale u velkých váz zpomaluje editor. Pro další reliéf navrch funguje na váze i {{ui:inspector.surfaceTexture}}; váza je pak síť, dokud texturu zase neodeberete.
+{{ui:prop.vaseQuality}} určuje, jak jemně se váza rozdělí na trojúhelníky: jemnější vypadá hladší, ale u velkých váz zpomaluje editor.

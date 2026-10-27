@@ -7686,7 +7686,8 @@ html[data-theme="dark"] .touch-multi-select {
 }
 
 .tape-overlay.move-mode .tape-point:active {
-  cursor: grabbing;
+  /* The hand would hide the point it moves; while dragging the crosshair shows where it lands (#943). */
+  cursor: crosshair;
   fill: #f6f1e8;
   filter: drop-shadow(0 0 4px rgba(129, 67, 0, 0.4));
 }

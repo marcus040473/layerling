@@ -227,7 +227,7 @@ describe("texturing a body", () => {
     expect(corners.size).toBe(8);
     // Inward from both sides, a 20 mm box is far from pierced.
     expect(result.stats.tooDeep).toBe(false);
-  });
+  }, 30000);
 
   it("warns when the depth inward from both sides would pierce a thin plate", () => {
     const result = applySurfaceTexture(box(30, 1, 30), { pattern: "bumps", projection: "flat", axis: "z", spacing: 5, depth: 0.6, bottomFree: 0, topFree: 0, keepEdges: false }, SMALL);

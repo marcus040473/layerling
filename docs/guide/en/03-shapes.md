@@ -184,7 +184,7 @@ The {{ui:shape.vase}} is a body of its own for vases, pots and lampshades. Its m
 - {{ui:prop.vaseProfile}}: bottle, bellied, bowl with neck, barrel, cylinder or funnel. The height and the widest diameter are the shape's own measures: drag the handles, or type {{ui:prop.vaseDiameter}} and {{ui:prop.height}}.
 - {{ui:prop.vaseSection}}: a circle, a polygon with rounded corners or a wave (soft, pointed, arches or fins). {{ui:prop.vaseTwist}} turns it up the height, {{ui:prop.vaseSway}} lets it swing back and forth.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} is for the slicer's vase mode (also called spiralize): the slicer prints one wall in a spiral and leaves out the top and the infill, so the body is drawn solid. {{ui:vase.bodyHollow}} gives a real wall and bottom for a normal print.
-- {{ui:prop.vaseEffect}}: a new vase is plain. To choose from are grooves, stripes, Voronoi cells or facets (low poly) on the outside, in a band of the height if you like; they belong to the vase and stay editable with it. More - knurling, honeycomb, bumps, cracks, text - go onto the finished vase with {{ui:inspector.surfaceTexture}}.
+- {{ui:prop.vaseEffect}}: a new vase is plain. To choose from are grooves, stripes, Voronoi cells or facets (low poly) on the outside, in a band of the height if you like; they belong to the vase and stay editable with it.
 
 {{ui:prop.vaseSection2}} blends the cross-section into a second one up the height, say from a circle at the bottom to a hexagon at the top.
 
@@ -196,4 +196,4 @@ On the card {{ui:inspector.vaseParts}} the vase gets its accessories. {{ui:prop.
 
 The card {{ui:inspector.vasePrint}} tells what the vase takes to print: its weight in the chosen {{ui:prop.vaseMaterial}} and the length of filament – for a solid vase worked out for the slicer's vase mode, one line along the wall. Below are notes on printing it: an overhang of more than 45° and where it is, a wall that is too thin, what a lid, a lamp or legs need, and the slicer settings for ribs and a double wall.
 
-{{ui:prop.vaseQuality}} sets how finely the vase is divided into triangles: finer looks smoother, but makes the editor slower with large vases. For more relief on top, a {{ui:inspector.surfaceTexture}} works on a vase too; the vase is then a mesh until you remove the texture again.
+{{ui:prop.vaseQuality}} sets how finely the vase is divided into triangles: finer looks smoother, but makes the editor slower with large vases.

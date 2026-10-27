@@ -185,7 +185,7 @@ Die {{ui:shape.vase}} ist ein eigener Körper für Vasen, Töpfe und Lampenschir
 - {{ui:prop.vaseProfile}}: Flasche, bauchig, Schale mit Hals, Fass, Zylinder oder Trichter. Höhe und größter Durchmesser sind die Maße der Form selbst: Zieh an den Anfassern oder tippe {{ui:prop.vaseDiameter}} und {{ui:prop.height}} ein.
 - {{ui:prop.vaseSection}}: ein Kreis, ein Vieleck mit gerundeten Ecken oder eine Welle (weich, spitz, Bögen oder Lamellen). {{ui:prop.vaseTwist}} dreht ihn über die Höhe, {{ui:prop.vaseSway}} lässt ihn hin und her schwingen.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} ist für den Vasenmodus im Slicer (auch „Spiralisieren“): Der Slicer druckt eine Wand als Spirale und lässt Deckel und Füllung weg, deshalb ist der Körper voll gezeichnet. {{ui:vase.bodyHollow}} gibt eine echte Wand und einen echten Boden für einen normalen Druck.
-- {{ui:prop.vaseEffect}}: Eine neue Vase ist glatt. Zur Wahl stehen Rillen, Streifen, Voronoi-Zellen oder Facetten (Low Poly) außen, auf Wunsch nur in einem Höhenbereich; sie gehören zur Vase und bleiben mit ihr änderbar. Weitere – Rändel, Waben, Noppen, Risse, Schrift – kommen über {{ui:inspector.surfaceTexture}} auf die fertige Vase.
+- {{ui:prop.vaseEffect}}: Eine neue Vase ist glatt. Zur Wahl stehen Rillen, Streifen, Voronoi-Zellen oder Facetten (Low Poly) außen, auf Wunsch nur in einem Höhenbereich; sie gehören zur Vase und bleiben mit ihr änderbar.
 
 {{ui:prop.vaseSection2}} lässt den Querschnitt über die Höhe weich in einen zweiten übergehen, etwa von einem Kreis unten zu einem Sechseck oben.
 
@@ -197,4 +197,4 @@ Auf der Karte {{ui:inspector.vaseParts}} bekommt die Vase ihr Zubehör. {{ui:pro
 
 Die Karte {{ui:inspector.vasePrint}} sagt, was die Vase im Druck braucht: das Gewicht im gewählten {{ui:prop.vaseMaterial}} und die Länge Filament – bei einer vollen Vase für den Slicer-Vasenmodus gerechnet, mit einer Linie entlang der Wand. Darunter stehen Hinweise zum Druck: ein Überhang über 45° mit seiner Höhe, eine zu dünne Wand, was ein Deckel, eine Lampe oder Beine brauchen, und die Slicer-Einstellungen für Rippen und Doppelwand.
 
-{{ui:prop.vaseQuality}} legt fest, wie fein die Vase in Dreiecke geteilt wird: Feiner sieht glatter aus, macht den Editor bei großen Vasen aber langsamer. Für mehr Relief darüber geht auch eine {{ui:inspector.surfaceTexture}} auf eine Vase; sie ist dann ein Netz, bis du die Oberfläche wieder entfernst.
+{{ui:prop.vaseQuality}} legt fest, wie fein die Vase in Dreiecke geteilt wird: Feiner sieht glatter aus, macht den Editor bei großen Vasen aber langsamer.

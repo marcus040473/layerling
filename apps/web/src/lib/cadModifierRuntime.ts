@@ -1,6 +1,7 @@
 import { t } from "@/lib/i18n";
 import { localizedError } from "@/lib/userErrors";
 import type { CadModifierDeflection, CadModifierEdge, CadModifierQuality } from "@/lib/cadModifierTypes";
+import type { OcctKernel, ShapeHandle } from "occt-wasm";
 
 const occtRuntimeVersion = process.env.NEXT_PUBLIC_OCCT_RUNTIME_VERSION;
 /** Where scripts/copy-occt-wasm.mjs stages the kernel: one folder per kernel version. */
@@ -119,6 +120,29 @@ export function cadTransformRequiresGeneralTransform(transform: number[]) {
     Math.abs(xLengthSquared - zLengthSquared) > tolerance ||
     Math.abs(yLengthSquared - zLengthSquared) > tolerance
   );
+}
+
+function isIdentityCadTransform(transform: number[]) {
+  const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+  return transform.every((value, index) => Math.abs(value - identity[index]) < 1e-9);
+}
+
+/**
+ * Places a body by its 3x4 transform. A move, a turn or an even scale stays a rigid transform and
+ * keeps planes and cylinders what they are; only a stretch needs the general transform, which turns
+ * every face into a B-spline - slower, less exact, and offsets and fillets fail on it. The CAD
+ * worker and the STEP export place bodies the same way through this.
+ */
+export function applyCadTransform(cad: OcctKernel, shape: ShapeHandle, transform: number[] | undefined) {
+  if (transform?.length !== 12 || !transform.every(Number.isFinite) || isIdentityCadTransform(transform)) return shape;
+  if (cadTransformRequiresGeneralTransform(transform)) {
+    return cad.generalTransform(shape, transform);
+  }
+  try {
+    return cad.transform(shape, transform);
+  } catch {
+    return cad.generalTransform(shape, transform);
+  }
 }
 
 /**

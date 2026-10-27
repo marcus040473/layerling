@@ -187,6 +187,8 @@ With an older version (1.109.0 and before) only the first two rows went to the s
 
 With no designs in the browser, the notice on the start page reads "Your designs are kept on the server" instead of asking for a backup of the browser; the backup of the projects folder takes care of them ([section 10](#10-backup)). Its **"Restore backup"** button stays: it reads in backup files (ZIP from "Back up all") made earlier with the browser-only version, straight into the server folder.
 
+**The default for new designs** ("Make default" in the workspace settings) is kept in the projects folder too since the version after 1.113.0, as `.settings/default.json`. When the browser storage is cleared, or layerling is opened in another browser, the start page brings it back when it loads, and new designs start with your own settings again. There is one default for the whole projects folder; the last one saved wins. The backup of the projects folder takes it along.
+
 The **"Back to designs in this browser"** button in the server view only leads back to the start page. It does not mean that there are designs in the browser.
 
 **Always use the same address**, e.g. `http://localhost:3000`. OrbStack also offers an address such as `http://layerling.layerling-docker.orb.local`. Every address has its own browser storage. Designs on the server are the same under both, but browser designs are only visible under the address where they were created.

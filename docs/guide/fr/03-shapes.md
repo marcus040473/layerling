@@ -171,7 +171,7 @@ Le {{ui:shape.vase}} est un corps à part pour les vases, pots et abat-jour. Ses
 - {{ui:prop.vaseProfile}} : bouteille, ventru, coupe à col, tonneau, cylindre ou entonnoir. La hauteur et le plus grand diamètre sont les mesures de la forme elle-même : tirez les poignées ou saisissez {{ui:prop.vaseDiameter}} et {{ui:prop.height}}.
 - {{ui:prop.vaseSection}} : un cercle, un polygone aux coins arrondis ou une vague (douce, pointue, arcs ou lamelles). {{ui:prop.vaseTwist}} la fait tourner sur la hauteur, {{ui:prop.vaseSway}} la fait osciller d'un côté à l'autre.
 - {{ui:prop.vaseBody}} : {{ui:vase.bodySolid}} sert au mode vase du trancheur (aussi « spiraliser ») : le trancheur imprime une seule paroi en spirale, sans dessus ni remplissage, c'est pourquoi le corps est dessiné plein. {{ui:vase.bodyHollow}} donne une vraie paroi et un vrai fond pour une impression normale.
-- {{ui:prop.vaseEffect}} : un nouveau vase est lisse. Au choix : rainures, bandes, cellules de Voronoi ou facettes (low poly) à l'extérieur, au besoin sur une partie de la hauteur seulement ; ils font partie du vase et restent modifiables avec lui. D'autres – moletage, nid d'abeille, picots, fissures, texte – se posent sur le vase fini avec {{ui:inspector.surfaceTexture}}.
+- {{ui:prop.vaseEffect}} : un nouveau vase est lisse. Au choix : rainures, bandes, cellules de Voronoi ou facettes (low poly) à l'extérieur, au besoin sur une partie de la hauteur seulement ; ils font partie du vase et restent modifiables avec lui.
 
 {{ui:prop.vaseSection2}} fait passer la section peu à peu à une seconde sur la hauteur, par exemple d'un cercle en bas à un hexagone en haut.
 
@@ -183,4 +183,4 @@ La carte {{ui:inspector.vaseParts}} donne au vase ses accessoires. Les {{ui:prop
 
 La carte {{ui:inspector.vasePrint}} indique ce que l'impression du vase demande : son poids dans la {{ui:prop.vaseMaterial}} choisie et la longueur de filament – pour un vase plein, calculé pour le mode vase du trancheur, avec une ligne le long de la paroi. En dessous figurent des remarques sur l'impression : un surplomb de plus de 45° et sa hauteur, une paroi trop fine, ce qu'il faut pour un couvercle, une lampe ou des pieds, et les réglages du trancheur pour les nervures et la double paroi.
 
-{{ui:prop.vaseQuality}} règle la finesse du découpage en triangles : plus fin paraît plus lisse, mais ralentit l'éditeur pour les grands vases. Pour plus de relief par-dessus, une {{ui:inspector.surfaceTexture}} fonctionne aussi sur un vase ; il devient alors un maillage jusqu'à ce que vous retiriez la texture.
+{{ui:prop.vaseQuality}} règle la finesse du découpage en triangles : plus fin paraît plus lisse, mais ralentit l'éditeur pour les grands vases.

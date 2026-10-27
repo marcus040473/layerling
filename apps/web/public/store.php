@@ -650,6 +650,30 @@ function handle_download(string $root, string $folder, string $requested): void
     exit;
 }
 
+/**
+ * What PHP's upload error code means, in words the person at the server can act on (#588): a limit
+ * says which setting to raise and what it stands at, instead of "did not arrive completely".
+ */
+function upload_error_message(int $code, string $what): string
+{
+    switch ($code) {
+        case UPLOAD_ERR_INI_SIZE:
+            return $what . ' is larger than upload_max_filesize allows here (' . ini_get('upload_max_filesize') . '). Raise upload_max_filesize and post_max_size (now ' . ini_get('post_max_size') . ') in php.ini.';
+        case UPLOAD_ERR_FORM_SIZE:
+            return $what . ' is larger than the form allows.';
+        case UPLOAD_ERR_PARTIAL:
+            return $what . ' arrived only in part. Try again; if it keeps failing, check max_execution_time and max_input_time in php.ini.';
+        case UPLOAD_ERR_NO_FILE:
+            return $what . ' did not arrive.';
+        case UPLOAD_ERR_NO_TMP_DIR:
+            return 'The server has no temporary folder for uploads (upload_tmp_dir in php.ini).';
+        case UPLOAD_ERR_CANT_WRITE:
+            return 'The server could not write ' . $what . ' to disk. Check the free space and the rights of its temporary folder.';
+        default:
+            return $what . ' could not be received (PHP upload error ' . $code . ').';
+    }
+}
+
 function handle_save(string $root, string $folder): void
 {
     if (!same_origin()) {
@@ -660,13 +684,14 @@ function handle_save(string $root, string $folder): void
     // then $_FILES is empty for a reason that has nothing to do with the file.
     $declaredLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
     if ($declaredLength > 0 && empty($_FILES) && empty($_POST) && file_get_contents('php://input') === '') {
-        fail('The upload was larger than this server accepts. Raise post_max_size and upload_max_filesize in php.ini.', 413);
+        fail('The upload was larger than this server accepts (post_max_size is ' . ini_get('post_max_size') . '). Raise post_max_size and upload_max_filesize in php.ini.', 413);
     }
 
     $thumbnailBytes = null;
     if (isset($_FILES['project'])) {
         if ($_FILES['project']['error'] !== UPLOAD_ERR_OK) {
-            fail('The project upload did not arrive completely', 400);
+            $code = (int) $_FILES['project']['error'];
+            fail(upload_error_message($code, 'The project'), in_array($code, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) ? 413 : 400);
         }
         $bytes = (string) file_get_contents($_FILES['project']['tmp_name']);
         if (!isset($_FILES['thumbnail']) || $_FILES['thumbnail']['error'] !== UPLOAD_ERR_OK) {
@@ -837,7 +862,7 @@ function handle_save_export(string $root, string $folder, string $requested): vo
     $declaredLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
     $bytes = (string) file_get_contents('php://input');
     if ($declaredLength > 0 && $bytes === '') {
-        fail('The upload was larger than this server accepts. Raise post_max_size in php.ini.', 413);
+        fail('The upload was larger than this server accepts (post_max_size is ' . ini_get('post_max_size') . '). Raise post_max_size in php.ini.', 413);
     }
     if ($bytes === '') {
         fail('The file was empty', 400);
@@ -870,6 +895,67 @@ function handle_save_export(string $root, string $folder, string $requested): vo
         ['file' => ['fileName' => $fileName, 'path' => folder_key($root, $folder), 'size' => $savedStat === null ? strlen($bytes) : $savedStat['size']]],
         $exists ? 200 : 201
     );
+}
+
+/**
+ * The settings kept for every browser that uses this store: what "Make default" saved, so a new
+ * design starts with it even after the browser forgot it. One JSON file in a hidden folder - a
+ * listing skips names that begin with a dot - under a name taken from a fixed list, never from the
+ * request. Only checked to be a JSON object; the app makes sense of the values, as in route.ts.
+ */
+const SETTINGS_DIRECTORY = '.settings';
+const SETTINGS_NAMES = ['default'];
+const MAX_SETTINGS_BYTES = 256 * 1024;
+
+function settings_path(string $root, string $requested): string
+{
+    if (!in_array($requested, SETTINGS_NAMES, true)) {
+        fail('Unknown settings', 400);
+    }
+    return $root . DIRECTORY_SEPARATOR . SETTINGS_DIRECTORY . DIRECTORY_SEPARATOR . $requested . '.json';
+}
+
+function handle_read_settings(string $root, string $requested): void
+{
+    $filePath = settings_path($root, $requested);
+    $settings = null;
+    if (regular_file_stat($filePath) !== null) {
+        $decoded = json_decode((string) file_get_contents($filePath));
+        if ($decoded instanceof stdClass) {
+            $settings = $decoded;
+        }
+    }
+    send_json(['enabled' => true, 'settings' => $settings]);
+}
+
+function handle_save_settings(string $root, string $requested): void
+{
+    if (!same_origin()) {
+        fail('Shared projects only accept same-origin saves', 403);
+    }
+    $filePath = settings_path($root, $requested);
+    $text = (string) file_get_contents('php://input');
+    if (strlen($text) > MAX_SETTINGS_BYTES) {
+        fail('The settings are too large', 413);
+    }
+    $decoded = json_decode($text);
+    if (!($decoded instanceof stdClass)) {
+        fail('The settings are not JSON', 400);
+    }
+    $folder = dirname($filePath);
+    if (!is_dir($folder) && !@mkdir($folder, 0775, true) && !is_dir($folder)) {
+        fail('The store folder is not writable by the web server', 500);
+    }
+    $temporaryPath = $folder . DIRECTORY_SEPARATOR . '.' . $requested . '.' . bin2hex(random_bytes(8)) . '.tmp';
+    cleanup_later($temporaryPath);
+    if (file_put_contents($temporaryPath, json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) === false) {
+        fail('The store folder is not writable by the web server', 500);
+    }
+    if (!@rename($temporaryPath, $filePath)) {
+        fail('The settings could not be moved into place', 500);
+    }
+    cleanup_now($temporaryPath);
+    send_json(['saved' => true]);
 }
 
 /**
@@ -1196,6 +1282,10 @@ switch ($method) {
         if ($search !== '') {
             search_store($root, $search);
         }
+        $settings = $_GET['settings'] ?? null;
+        if ($settings !== null && $settings !== '') {
+            handle_read_settings($root, (string) $settings);
+        }
         $requested = $_GET['fileName'] ?? null;
         if ($requested !== null && $requested !== '') {
             handle_download($root, $folder, (string) $requested);
@@ -1227,6 +1317,10 @@ switch ($method) {
         $exportFile = $_GET['exportFile'] ?? null;
         if ($exportFile !== null && $exportFile !== '') {
             handle_save_export($root, $folder, (string) $exportFile);
+        }
+        $settings = $_GET['settings'] ?? null;
+        if ($settings !== null && $settings !== '') {
+            handle_save_settings($root, (string) $settings);
         }
         handle_save($root, $folder);
         break;

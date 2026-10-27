@@ -3,6 +3,7 @@ import type { CadModifierGridfinityPart } from "@/lib/cadModifierTypes";
 import {
   GRIDFINITY_BASEPLATE_HEIGHT,
   GRIDFINITY_BASEPLATE_RADIUS,
+  GRIDFINITY_BIN_CORNER_BAND,
   GRIDFINITY_BIN_RADIUS,
   GRIDFINITY_CLEARANCE,
   GRIDFINITY_DIVIDER_CUTTER_OVERLAP,
@@ -157,7 +158,11 @@ function binSolid(cad: OcctKernel, plan: GridfinityPlan, scoops: GridfinityScoop
   // The corners touching an open side are square from the feet up, so the floor runs flat out to the edge there too.
   const square = gridfinityOpenCorners(open);
   const opened = Object.values(square).some(Boolean);
-  const walls = prism(cad, hx, hz, GRIDFINITY_BIN_RADIUS, plan.base, wallTop, 0, 0, square);
+  // Corners rounded less (#856) start 0.5 mm over the feet, on the feet's rounding; joined into one face along the sides.
+  const bandTop = plan.base + GRIDFINITY_BIN_CORNER_BAND;
+  const walls = plan.wallRadius !== GRIDFINITY_BIN_RADIUS
+    ? cad.unifySameDomain(oneSolid(cad, cad.fuse(prism(cad, hx, hz, GRIDFINITY_BIN_RADIUS, plan.base, bandTop, 0, 0, square), prism(cad, hx, hz, plan.wallRadius, bandTop, wallTop, 0, 0, square)), "bin"))
+    : prism(cad, hx, hz, GRIDFINITY_BIN_RADIUS, plan.base, wallTop, 0, 0, square);
   let body = feet.length > 0 ? oneSolid(cad, cad.fuseAll([...feet, walls]), "bin") : walls;
   // The inside, from the floor up: the wall's inner steps in rising order, then out past the top.
   const inside: GridfinityStep[] = wall.slice(2).reverse();
@@ -245,7 +250,10 @@ function lipChamferKeeper(cad: OcctKernel, plan: GridfinityPlan, hx: number, hz:
   const out = 1;
   const steps: GridfinityStep[] = [[-out, -PAST], [-out, wallTop - size - out / run], [size * run, wallTop], [size * run, wallTop + PAST]];
   const grown = gridfinityOpenGrown(hx, hz, plan.open, plan.reach);
-  return steppedSolid(cad, grown.x, grown.z, grown.hx, grown.hz, GRIDFINITY_BIN_RADIUS, steps);
+  const keeper = steppedSolid(cad, grown.x, grown.z, grown.hx, grown.hz, GRIDFINITY_BIN_RADIUS, steps);
+  // Corners rounded less (#856) reach past the loft: everything under the chamfer's foot on the outer wall stays.
+  if (plan.wallRadius === GRIDFINITY_BIN_RADIUS) return keeper;
+  return oneSolid(cad, cad.fuse(keeper, cad.makeBoxFromCorners({ x: -hx - 1, y: -hz - 1, z: -PAST }, { x: hx + 1, y: hz + 1, z: wallTop - size })), "chamfer keeper");
 }
 
 /**
