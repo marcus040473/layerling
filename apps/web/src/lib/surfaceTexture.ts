@@ -535,6 +535,8 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
  * at, and bricks three times as long as a course is high, with the joints' flat floor sunk in as mortar.
  */
 export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Partial<SurfaceTextureSettings>>> = {
+  // Grooves upright, along the axis; knurling keeps its slant (its two families cross at it).
+  grooves: { angle: 0 },
   bumps: { profile: "dome" },
   cells: { spacing: 9, depth: 0.8, width: 0.22, profile: "round" },
   bricks: { spacing: 12, depth: 0.6, profile: "flat" },
