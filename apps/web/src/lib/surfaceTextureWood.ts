@@ -101,21 +101,26 @@ function smooth(e0: number, e1: number, x: number) {
 
 /**
  * Cells of irregular shape stretched `stretch` times along v: one point per grid cell of `cell` mm (`cell` × `cell` ×
- * `stretch` in the plane), round a cylinder repeating after `around` cells. The distance from (u, v) to the nearest
- * border in mm (the borders found in the stretched plane, measured in the true one), the nearest point and its key.
+ * `stretch` in the plane), round a cylinder repeating after `around` cells. Each column of cells is shifted along v by
+ * a share of its own, so the cells' upper and lower borders do not line up round the body in rows. The distance from
+ * (u, v) to the nearest border in mm (the borders found in the stretched plane, measured in the true one), how much
+ * that border runs across (0 along v, 1 across it), the nearest point and its key.
  */
 function stretchedCells(u: number, v: number, cell: number, stretch: number, around: number | null, seed: number) {
   const w = v / stretch;
-  const ci = Math.floor(u / cell), cj = Math.floor(w / cell);
+  const ci = Math.floor(u / cell);
   const pts: number[] = [];
   const keys: number[] = [];
   let best = Infinity, k1 = 0;
-  for (let dj = -2; dj <= 2; dj += 1) {
-    for (let di = -2; di <= 2; di += 1) {
-      const i = ci + di, j = cj + dj;
-      const wi = around ? ((i % around) + around) % around : i;
+  for (let di = -2; di <= 2; di += 1) {
+    const i = ci + di;
+    const wi = around ? ((i % around) + around) % around : i;
+    const shift = hash(wi, 0, 3, seed);
+    const cj = Math.floor(w / cell - shift);
+    for (let dj = -2; dj <= 2; dj += 1) {
+      const j = cj + dj;
       const px = (i + 0.1 + 0.8 * hash(wi, j, 1, seed)) * cell;
-      const py = (j + 0.1 + 0.8 * hash(wi, j, 2, seed)) * cell;
+      const py = (j + shift + 0.1 + 0.8 * hash(wi, j, 2, seed)) * cell;
       const d = (px - u) ** 2 + (py - w) ** 2;
       if (d < best) {
         best = d;
@@ -126,7 +131,7 @@ function stretchedCells(u: number, v: number, cell: number, stretch: number, aro
     }
   }
   const sx = pts[k1 * 2], sy = pts[k1 * 2 + 1];
-  let edge = Infinity;
+  let edge = Infinity, across = 0;
   for (let k = 0; k < keys.length; k += 1) {
     if (k === k1) continue;
     const bx = pts[k * 2], by = pts[k * 2 + 1];
@@ -134,10 +139,14 @@ function stretchedCells(u: number, v: number, cell: number, stretch: number, aro
     const nx = (bx - sx) / len, ny = (by - sy) / len;
     // Distance to the bisector in the stretched plane, then in the true one (the normal shrinks along v).
     const ds = ((bx - u) ** 2 + (by - w) ** 2 - (sx - u) ** 2 - (sy - w) ** 2) / (2 * len);
-    const d = ds / Math.hypot(nx, ny / stretch);
-    if (d < edge) edge = d;
+    const scale = Math.hypot(nx, ny / stretch);
+    const d = ds / scale;
+    if (d < edge) {
+      edge = d;
+      across = Math.abs(ny / stretch) / scale;
+    }
   }
-  return { edge, u: sx, v: sy * stretch, key: keys[k1] };
+  return { edge, across, u: sx, v: sy * stretch, key: keys[k1] };
 }
 
 /** A furrow `half` mm wide either side of a border: 1 in its middle, a soft bowl (cosine) to its edges. */
@@ -166,8 +175,9 @@ export function barkValue(kind: BarkKind, u: number, v: number, cell: number, ar
       const big = stretchedCells(wu, wv, cell, 3.5, around, seed);
       const small = stretchedCells(wu, wv, cell / 2, 1.6, around ? around * 2 : null, seed + 101);
       const rough = fbm2(u, v, 0.35 * cell, 1.2 * cell, period, seed + 7);
-      // Rounded ridges: deepest at a border, highest in the middle of a cell.
-      const ridge = (1 - smooth(0, 0.48 * cell, big.edge)) ** 1.4;
+      // Rounded ridges: deepest at a border, highest in the middle of a cell. The furrows run along the trunk; where a
+      // ridge ends, across it, the break is narrow and shallow.
+      const ridge = (1 - smooth(0, 0.48 * cell * (1 - 0.7 * big.across), big.edge)) ** 1.4 * (1 - 0.45 * big.across);
       return Math.min(1, softMax(softMax(ridge, 0.45 * furrow(small.edge, 0.12 * cell), 0.15), 0.1 + 0.2 * rough, 0.15));
     }
     case "pine": {

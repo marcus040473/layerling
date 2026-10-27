@@ -68,14 +68,14 @@ function ringsAlong(value: (t: number) => number, length: number, half = 0.5, st
 
 describe("bark and wood settings", () => {
   it("start each bark at its own size and depth, and show the rings on a log's ends", () => {
-    expect(normalizeSurfaceTexture({ pattern: "bark" })).toMatchObject({ barkType: "oak", spacing: 8, depth: 1.5, topFree: 0, bottomFree: 0 });
+    expect(normalizeSurfaceTexture({ pattern: "bark" })).toMatchObject({ barkType: "oak", spacing: 8, depth: 1.5, topFree: 0, bottomFree: 0, keepEdges: false });
     expect(normalizeSurfaceTexture({ pattern: "bark", barkType: "birch" })).toMatchObject({ spacing: 10, depth: 0.6 });
     expect(normalizeSurfaceTexture({ pattern: "bark", barkType: "beech", spacing: 20, depth: 0.3 })).toMatchObject({ spacing: 20, depth: 0.3 });
     expect(normalizeSurfaceTexture({ pattern: "bark", barkType: "elm" })).toMatchObject({ barkType: "oak" });
   });
 
   it("start each wood at its own ring width, and keep the rest within limits", () => {
-    expect(normalizeSurfaceTexture({ pattern: "wood" })).toMatchObject({ woodType: "oak", woodCut: "log", ringWidth: 3, depth: 0.8, topFree: 0, bottomFree: 0, woodKnots: 0, woodWobble: 0.5 });
+    expect(normalizeSurfaceTexture({ pattern: "wood" })).toMatchObject({ woodType: "oak", woodCut: "log", ringWidth: 3, depth: 0.8, topFree: 0, bottomFree: 0, keepEdges: false, woodKnots: 0, woodWobble: 0.5 });
     expect(normalizeSurfaceTexture({ pattern: "wood", woodType: "pine" })).toMatchObject({ ringWidth: 4 });
     expect(normalizeSurfaceTexture({ pattern: "wood", woodType: "teak", woodCut: "rotary", woodKnots: 30.6, woodWobble: -1, ringWidth: 0 })).toMatchObject({ woodType: "oak", woodCut: "log", woodKnots: 12, woodWobble: 0, ringWidth: 0.3 });
   });
@@ -104,12 +104,26 @@ describe("bark", () => {
     for (let r = 0; r < 14; r += 0.1) expect(top(r)).toBeLessThanOrEqual(0.4 + 1e-9);
   });
 
-  it("lays a closed bark onto a log", () => {
+  it("lays a closed bark onto a log, right up to its edges", () => {
     for (const barkType of ["oak", "birch"]) {
       const result = applySurfaceTexture(cylinder(10, 16), { pattern: "bark", barkType, detail: "coarse" });
       expectClosed(result);
       expect(result.stats.around).toBeGreaterThan(0);
     }
+    // No smooth rim at the top standing out round the bark like a column's: next to the edge, no point of the side stays
+    // at the log's full radius (kept smooth, about one in eleven did).
+    const oak = applySurfaceTexture(cylinder(10, 16), { pattern: "bark", barkType: "oak", detail: "coarse" });
+    const v = oak.vertices;
+    let rim = 0, full = 0;
+    for (const i of new Set(oak.indices)) {
+      const r = Math.hypot(v[i * 3], v[i * 3 + 2]), y = v[i * 3 + 1];
+      if (y > 15 && r > 8.4) {
+        rim += 1;
+        if (r > 9.97) full += 1;
+      }
+    }
+    expect(rim).toBeGreaterThan(50);
+    expect(full).toBe(0);
   }, 30000);
 });
 
