@@ -290,14 +290,21 @@ export function outlineAngle(outline: SurfaceOutline, a: number, b: number) {
  * A point of a top inside a single convex outline (see SurfaceOutline.ringable) in rings following the outline inwards:
  * how far in it lies (`depth`, mm), how far round its ring (`turn`, 0 to 1), and the length of the ring at a given depth.
  * Each ring is the outline moved in, its corners staying on the corners' bisectors, so `turn` runs on without a jump
- * where the nearest side changes.
+ * where the nearest side changes. Near another loop (a hole), the same round that one. Also the nearest point on the
+ * outline (`foot`) and the outward normal of its side there (`normal`).
  */
 export function outlineRing(outline: SurfaceOutline, a: number, b: number) {
   const near = nearestOnOutline(outline, a, b);
-  const loop = outline.loops[outline.main];
+  const loop = outline.loops[near.loop];
   const depth = near.distance;
   const lengthAt = (d: number) => Math.max(loop.length - d * loop.ringAll, 1e-6);
   const along = loop.cum[near.seg] + near.at - depth * (loop.ringBefore[near.seg] + Math.tan(loop.turn[near.seg] / 2));
   const turn = along / lengthAt(depth);
-  return { depth, turn: turn - Math.floor(turn), lengthAt };
+  const n = loop.points.length / 2, k = near.seg, j = (k + 1) % n;
+  const dx = loop.points[j * 2] - loop.points[k * 2], dy = loop.points[j * 2 + 1] - loop.points[k * 2 + 1];
+  const len = Math.hypot(dx, dy) || 1;
+  const foot: [number, number] = [loop.points[k * 2] + (dx * near.at) / len, loop.points[k * 2 + 1] + (dy * near.at) / len];
+  // Away from the body's material: towards the foot (a hole's loop runs counterclockwise too, its normal would point in).
+  const normal: [number, number] = depth > 1e-9 ? [(foot[0] - a) / depth, (foot[1] - b) / depth] : [dy / len, -dx / len];
+  return { depth, turn: turn - Math.floor(turn), lengthAt, foot, normal };
 }

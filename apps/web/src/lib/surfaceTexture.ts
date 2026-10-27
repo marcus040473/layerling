@@ -142,6 +142,13 @@ export type SurfaceTextureTiling = (typeof SURFACE_TEXTURE_TILINGS)[number];
 /** Grooves, rope and knitting on a top or bottom round the axis: in rows (turned by faceTurn) or in rings following the outline; auto: rings on a round body, rows on an angular one. */
 export const SURFACE_TEXTURE_CAP_STYLES = ["auto", "rows", "rings"] as const;
 export type SurfaceTextureCapStyle = (typeof SURFACE_TEXTURE_CAP_STYLES)[number];
+/**
+ * Where a side round the axis meets a top or bottom with the pattern: sharp (each ends at the edge), over (the side's rows
+ * bend round the edge and run on as rings inwards - grooves, rope and knitting), bead (a border in the pattern's style
+ * runs round the edge, both end under it); auto: over where it can, else sharp.
+ */
+export const SURFACE_TEXTURE_CAP_EDGES = ["auto", "sharp", "over", "bead"] as const;
+export type SurfaceTextureCapEdge = (typeof SURFACE_TEXTURE_CAP_EDGES)[number];
 
 export const SURFACE_TEXTURE_AXES = ["x", "y", "z"] as const;
 export type SurfaceTextureAxis = (typeof SURFACE_TEXTURE_AXES)[number];
@@ -194,6 +201,7 @@ export type SurfaceTextureSettings = {
    */
   faceTurn: number;
   capStyle: SurfaceTextureCapStyle;
+  capEdge: SurfaceTextureCapEdge;
   direction: SurfaceTextureDirection;
   projection: SurfaceTextureProjection;
   axis: SurfaceTextureAxis;
@@ -299,6 +307,7 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   angle: 30,
   faceTurn: 0,
   capStyle: "auto",
+  capEdge: "auto",
   direction: "inward",
   projection: "auto",
   axis: "z",
@@ -410,6 +419,7 @@ const CHOICES = {
   image: SURFACE_TEXTURE_IMAGES,
   imageTiling: SURFACE_TEXTURE_TILINGS,
   capStyle: SURFACE_TEXTURE_CAP_STYLES,
+  capEdge: SURFACE_TEXTURE_CAP_EDGES,
 } as const;
 
 /** Points per half crack width, by detail. */
@@ -1043,7 +1053,19 @@ export type SurfaceTextureLayout = {
    * round a circle - no seam at the corners. `radius` is then its length over 2π.
    */
   outline?: SurfaceOutline | null;
+  /**
+   * Where a side meets a top or bottom with the pattern (set by the session, see SurfaceTextureSettings.capEdge): the
+   * side's rows run over the edge, or a border runs round it - at these rims.
+   */
+  capEdge?: "over" | "bead" | null;
+  rims?: SurfaceRim[];
 };
+
+/**
+ * The edge round a top (`sign` 1) or bottom (-1) with the pattern: its place along the axis, round a round body its
+ * radius there, and how far either side of it the pattern bends round it (see edgeRounding).
+ */
+export type SurfaceRim = { level: number; sign: 1 | -1; radius: number; reach: number };
 
 /**
  * A text stuck on: the anchor on the surface (the middle of the text's box), the box (mm), the window round it (half
@@ -1214,6 +1236,98 @@ function ringsOnCaps(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   return s.capStyle !== "rows";
 }
 
+/** The rim of the top or bottom a point at `h` along the axis lies on (`sign`: which way its face looks), if it has one. */
+function rimAt(layout: SurfaceTextureLayout, h: number, sign: number) {
+  if (!layout.capEdge || !layout.rims) return null;
+  for (const rim of layout.rims) if (rim.sign === sign && Math.abs(rim.level - h) <= RIM_LEVEL) return rim;
+  return null;
+}
+
+/** A point on a top or bottom this close to its rim's level (mm) lies on it. */
+const RIM_LEVEL = 1e-3;
+
+/**
+ * A point of a top or bottom in rings from its rim inwards: how far in (`depth`), how far round (`turn`, 0 to 1), the
+ * length of the ring at a depth, and the outward direction to the rim (across the axis). Following the outline, or round
+ * a circle of the rim's radius.
+ */
+function rimRing(a: number, b: number, rim: SurfaceRim, layout: SurfaceTextureLayout) {
+  if (layout.outline) return outlineRing(layout.outline, a, b);
+  const du = a - layout.center[0], dv = b - layout.center[1];
+  const r = Math.hypot(du, dv);
+  const turn = Math.atan2(dv, du) / (2 * Math.PI);
+  const normal: [number, number] = r > 1e-9 ? [du / r, dv / r] : [1, 0];
+  return { depth: Math.max(0, rim.radius - r), turn: turn - Math.floor(turn), lengthAt: (d: number) => 2 * Math.PI * Math.max(rim.radius - d, 1e-6), normal };
+}
+
+/** The distance between two rows of a ring pattern: rope's rings, knitting's rows, grooves. */
+function rowPeriod(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  return s.pattern === "rope" ? s.spacing : s.pattern === "knit" ? 0.75 * layout.cell : layout.period;
+}
+
+/**
+ * The side's rows run over the edge onto a top or bottom (capEdge "over"): there each point lies as far round the axis
+ * as on the side, and as far "up" as the rim plus its depth in from it - the rows go on as rings, one after the other
+ * (see ringValue; the side's rows lie along the axis from 0 as well). In rings all over, or (rows on top) in a band of one
+ * to two rows, ending in a joint, the rows inside running under its last ring.
+ */
+function overValue(a: number, b: number, h: number, rim: SurfaceRim, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  const ring = rimRing(a, b, rim, layout);
+  const ringed = () => ringValue(h + rim.sign * ring.depth, ring.turn, (r) => ring.lengthAt(Math.max(0, rim.sign * (r - h))), s, layout);
+  if (ringsOnCaps(s, layout)) return ringed();
+  const P = rowPeriod(s, layout);
+  const band = overBand(rim, P);
+  const rows = ring.depth > band - P / 2 ? patternValue(...turnOnFace(a, b, s, layout), s, layout, acrossAxes(s.axis)[0]) : 0;
+  return ring.depth < band ? Math.max(ringed(), rows) : rows;
+}
+
+/** How far the side's rows run in onto a top with rows (see overValue): to the first joint at least a row in. */
+function overBand(rim: SurfaceRim, P: number) {
+  return rim.sign > 0 ? Math.ceil((rim.level + P) / P - 1e-9) * P - rim.level : rim.level - Math.floor((rim.level - P) / P + 1e-9) * P;
+}
+
+/** Half the width of the border round a rim (capEdge "bead"), mm: rope's cord thicker than its rings, a stitch's width. */
+function beadHalf(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  if (s.pattern === "rope") return 0.75 * s.spacing;
+  if (s.pattern === "knit") return layout.cell / 2;
+  return Math.max(0.5, s.spacing / 2);
+}
+
+/**
+ * The border round a rim (capEdge "bead"), 0 to 1: `c` across it (mm from the edge, the side's way along the axis
+ * negative), `along` round it (mm) of `length` all round. Rope: a cord with its strands; knitting: a chain of stitches
+ * lying along the edge, as cast off; the rest a round bead with the pattern's profile.
+ */
+function beadValue(c: number, along: number, length: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  const half = beadHalf(s, layout);
+  if (Math.abs(c) >= half) return 0;
+  if (s.pattern === "rope") {
+    const cord = { ...s, spacing: 2 * half };
+    const strands = Math.max(1, Math.round(length / (1.5 * layout.cell)));
+    return rope(along, c + half, length / strands, cord);
+  }
+  if (s.pattern === "knit") {
+    const H = 0.75 * layout.cell;
+    const rows = Math.max(1, Math.round(length / H));
+    return knit(c + half, (along * rows * H) / length, layout.cell, s);
+  }
+  return yarn((c / half) ** 2, s.profile);
+}
+
+/**
+ * What happens at the rims of a top or bottom with the pattern round the axis (see SurfaceTextureSettings.capEdge): the
+ * side's rows run over (ring patterns, round a circle or a single outline), a border, or nothing (null: sharp).
+ */
+function capEdgeMode(s: SurfaceTextureSettings, layout: SurfaceTextureLayout): "over" | "bead" | null {
+  if (!layout.flatCaps || s.pattern === "text" || s.pattern === "cracks" || s.pattern === "grain" || s.pattern === "wood") return null;
+  // Grooves only when they run round the axis: slanted they would not go on as rings.
+  const rowsRound = s.pattern !== "grooves" || Math.abs(layout.angle) > 89.5;
+  const canRunOver = RING_PATTERNS.includes(s.pattern) && rowsRound && (!layout.outline || layout.outline.ringable);
+  if (s.capEdge === "bead") return "bead";
+  if (s.capEdge === "over" || s.capEdge === "auto") return canRunOver ? "over" : null;
+  return null;
+}
+
 /** The angle round the axis, radians: round a circle, or along an angular body's outline (see SurfaceTextureLayout.outline). */
 function aroundAngle(layout: SurfaceTextureLayout, a: number, b: number) {
   return layout.outline ? outlineAngle(layout.outline, a, b) : Math.atan2(b - layout.center[1], a - layout.center[0]);
@@ -1262,6 +1376,65 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
 /** The rings on the ends of a log with bark lie this much as deep as the bark. */
 const BARK_END_DEPTH = 0.4;
 
+/**
+ * The border round a rim at a point (capEdge "bead", see beadValue), 0 where there is none: on a top or bottom (`nAx`,
+ * its normal along the axis, more than 0.8) from its rim in, on a side from the rim above or below. With it, how much of
+ * the pattern stays there: none under the border's middle, all from just beyond its foot on - the pattern ends under it
+ * (taken the higher of the two, the side's rows hid the cord's strands at the edge).
+ */
+export function surfaceTextureBeadAt(x: number, y: number, z: number, nAx: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout): [number, number] {
+  if (layout.capEdge !== "bead" || !layout.rims) return [0, 1];
+  const pos = [x, y, z];
+  const ax = AXIS_INDEX[s.axis];
+  const [i1, i2] = acrossAxes(s.axis);
+  const half = beadHalf(s, layout);
+  const keep = (c: number) => {
+    const t = clamp((Math.abs(c) / half - BEAD_KEEP[0]) / (BEAD_KEEP[1] - BEAD_KEEP[0]), 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+  if (layout.flatCaps && Math.abs(nAx) > 0.8) {
+    const rim = rimAt(layout, pos[ax], Math.sign(nAx));
+    if (!rim) return [0, 1];
+    const ring = rimRing(pos[i1], pos[i2], rim, layout);
+    if (ring.depth >= BEAD_KEEP[1] * half) return [0, 1];
+    const length = ring.lengthAt(0);
+    return [beadValue(rim.sign * ring.depth, ring.turn * length, length, s, layout), keep(ring.depth)];
+  }
+  const length = 2 * Math.PI * layout.radius;
+  const turn = aroundAngle(layout, pos[i1], pos[i2]) / (2 * Math.PI);
+  let bead = 0, kept = 1;
+  for (const rim of layout.rims) {
+    const c = pos[ax] - rim.level;
+    if (Math.abs(c) >= BEAD_KEEP[1] * half) continue;
+    bead = Math.max(bead, beadValue(c, (turn - Math.floor(turn)) * length, length, s, layout));
+    kept = Math.min(kept, keep(c));
+  }
+  return [bead, kept];
+}
+
+/** How many edges are not shared by exactly two triangles. */
+function badEdges(indices: Uint32Array) {
+  const count = new Map<number, number>();
+  for (let t = 0; t < indices.length; t += 3) {
+    for (let k = 0; k < 3; k += 1) {
+      const a = indices[t + k], b = indices[t + ((k + 1) % 3)];
+      const key = Math.min(a, b) * 67108864 + Math.max(a, b);
+      count.set(key, (count.get(key) ?? 0) + 1);
+    }
+  }
+  let bad = 0;
+  for (const n of count.values()) if (n !== 2) bad += 1;
+  return bad;
+}
+
+/** The pattern's value with a border over it (see surfaceTextureBeadAt). */
+function beadOver(value: number, [bead, keep]: [number, number]) {
+  return Math.max(value * keep, bead);
+}
+
+/** Under a border round a rim the pattern fades out between these shares of its half width (see surfaceTextureBeadAt). */
+const BEAD_KEEP = [0.5, 1.15];
+
 /** Pattern value 0 to 1 at a point with its normal. */
 export function surfaceTextureValueAt(x: number, y: number, z: number, nx: number, ny: number, nz: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   // Cracks lie on the surface itself, not in a projection.
@@ -1278,12 +1451,15 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
   if (projection === "cylinder") {
     const ax = AXIS_INDEX[s.axis];
     const [i1, i2] = acrossAxes(s.axis);
-    if (layout.flatCaps && Math.abs([nx, ny, nz][ax]) > 0.8) {
-      if (ringsOnCaps(s, layout)) return capRingValue(pos[i1], pos[i2], s, layout);
-      return patternValue(...turnOnFace(pos[i1], pos[i2], s, layout), s, layout, i1);
-    }
-    const theta = aroundAngle(layout, pos[i1], pos[i2]);
-    return patternValue(theta * layout.radius, pos[ax], s, layout, -1);
+    const nAx = [nx, ny, nz][ax];
+    let value: number;
+    if (layout.flatCaps && Math.abs(nAx) > 0.8) {
+      const rim = rimAt(layout, pos[ax], Math.sign(nAx));
+      if (rim && layout.capEdge === "over") return overValue(pos[i1], pos[i2], pos[ax], rim, s, layout);
+      value = ringsOnCaps(s, layout) ? capRingValue(pos[i1], pos[i2], s, layout) : patternValue(...turnOnFace(pos[i1], pos[i2], s, layout), s, layout, i1);
+    } else value = patternValue(aroundAngle(layout, pos[i1], pos[i2]) * layout.radius, pos[ax], s, layout, -1);
+    if (layout.capEdge !== "bead") return value;
+    return beadOver(value, surfaceTextureBeadAt(x, y, z, nAx, s, layout));
   }
   if (projection === "flat") {
     const [i1, i2] = acrossAxes(s.axis);
@@ -1821,17 +1997,18 @@ function refineOutlineDistance(mesh: SurfaceMesh, outline: SurfaceOutline, i1: n
  * not linear along an edge - a chord across the middle has the same distance at both ends - so edges where it strays from
  * a straight line by more than RING_STRAY of P are halved first (only on the faces cut: not `skip`). Following an outline
  * it is the distance to the outline, linear but for edges reaching from one side's nearest to another's: those are halved.
- * The cuts are straight chords between the edges.
+ * The cuts are straight chords between the edges. With `band` (from - to of the field) only triangles reaching into it
+ * are cut; `scale` (the spacing's stead for the tolerance and the shaping, when P is no spacing) - see beadCuts.
  */
-function sliceRings(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, P: number, offsets: number[], skip: Uint8Array, maxTriangles: number): SurfaceMesh {
+function sliceRings(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, P: number, offsets: number[], skip: Uint8Array, maxTriangles: number, band: [number, number] | null = null, scale = P): SurfaceMesh {
   const ax = AXIS_INDEX[s.axis];
   const [i1, i2] = acrossAxes(s.axis);
   const [c1, c2] = layout.center;
   const outline = layout.outline ?? null;
-  const tolerance = RING_STRAY * P;
+  const tolerance = RING_STRAY * scale;
   // Long strips across the top (as CAD gives it) made into well-shaped triangles about a spacing long first.
   const free = Uint8Array.from(skip, (k) => (k ? 0 : 1));
-  const shaped = hasNeedles(mesh, free) ? refinePlanar(mesh, free, P, maxTriangles) : mesh;
+  const shaped = !band && hasNeedles(mesh, free) ? refinePlanar(mesh, free, scale, maxTriangles) : mesh;
   const n0 = shaped.vertices.length / 3;
   const onFace = new Uint8Array(n0);
   for (let f = 0; f < shaped.indices.length / 3; f += 1) {
@@ -1851,7 +2028,7 @@ function sliceRings(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
     return ra + t * (rb - ra) - Math.hypot(pu + t * du, pv + t * dv) > tolerance;
   };
   let fine: SurfaceMesh;
-  if (outline) fine = refineOutlineDistance(shaped, outline, i1, i2, skip, OUTLINE_STRAY * P, maxTriangles);
+  if (outline) fine = refineOutlineDistance(shaped, outline, i1, i2, skip, OUTLINE_STRAY * scale, maxTriangles);
   else {
     const split = subdivide(shaped, tolerance, maxTriangles, null, null, strays);
     fine = { vertices: split.vertices, indices: split.indices, parents: Uint32Array.from(split.parents, (f) => shaped.parents[f]), limited: Boolean(shaped.limited || split.limited) };
@@ -1859,7 +2036,13 @@ function sliceRings(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
   const v = fine.vertices;
   const r = new Float64Array(v.length / 3);
   for (let i = 0; i < r.length; i += 1) r[i] = outline ? nearestOnOutline(outline, v[i * 3 + i1], v[i * 3 + i2]).distance : Math.hypot(v[i * 3 + i1] - c1, v[i * 3 + i2] - c2);
-  const sliced = Uint8Array.from({ length: fine.indices.length / 3 }, (_, f) => (skip[fine.parents[f]] ? 0 : 1));
+  const I = fine.indices;
+  const sliced = Uint8Array.from({ length: I.length / 3 }, (_, f) => {
+    if (skip[fine.parents[f]]) return 0;
+    if (!band) return 1;
+    const a = r[I[f * 3]], b = r[I[f * 3 + 1]], c = r[I[f * 3 + 2]];
+    return Math.max(a, b, c) >= band[0] && Math.min(a, b, c) <= band[1] ? 1 : 0;
+  });
   const cut = sliceByField(fine, r, (i, j) => r[j] - r[i], P, offsets, sliced);
   return { ...cut, limited: Boolean(fine.limited || cut.indices.length / 3 > maxTriangles) };
 }
@@ -3091,17 +3274,20 @@ export function toggleSurfaceTexturePickedFace(pick: SurfaceTextureFacePick, fac
 }
 
 /**
- * A pattern standing out of an angular body laid along its outline bends round each sharp convex corner between its sides
- * (see SurfaceOutline.corners) in an arc, as a rope round a box's edge would, instead of meeting in a sharp mitre: the
- * points of either side within `reach` of the corner spread over their side's half of an arc of the point's own height
- * round the corner line, so the arc's flank comes from points on the faces (a point at the corner goes out along the
- * bisector). Gives a function that places point i (moved `d` > 0) into `out` and says whether it did: only points on side
- * faces (`side`) near a corner.
+ * A pattern standing out of the body bends round its convex edges in an arc, as a rope round a box's edge would, instead
+ * of meeting in a sharp mitre: round the sharp corners between an angular body's sides (see SurfaceOutline.corners) and,
+ * where the side's rows run over a rim or a border runs round it (see SurfaceTextureLayout.capEdge), round the rims. The
+ * points of either face within `reach` of an edge spread over their face's half of an arc of the point's own height
+ * round the edge, so the arc's flank comes from points on the faces (a point on the edge goes out along the bisector);
+ * where two edges meet (a box's corner) the arcs make a round corner. The way out is the faces' normals added up, each
+ * edge's other face weighted so the way turns evenly along the arc. Gives a function that places point i (moved `d` > 0)
+ * into `out` and says whether it did: only points on side faces near an edge, or on a top or bottom near its rim.
  */
-function cornerRounding(outline: SurfaceOutline, s: SurfaceTextureSettings, side: Uint8Array) {
+function edgeRounding(layout: SurfaceTextureLayout, s: SurfaceTextureSettings, kinds: Uint8Array, directions: Float64Array) {
   const ax = AXIS_INDEX[s.axis];
   const [i1, i2] = acrossAxes(s.axis);
-  const corners = outline.corners.map((c) => {
+  const rims = layout.capEdge ? (layout.rims ?? []) : [];
+  const corners = (layout.outline?.corners ?? []).map((c) => {
     const cos = clamp(c.before[0] * c.after[0] + c.before[1] * c.after[1], -1, 1);
     const angle = Math.acos(cos), sin = Math.sin(angle);
     return {
@@ -3110,47 +3296,113 @@ function cornerRounding(outline: SurfaceOutline, s: SurfaceTextureSettings, side
       // Where a side runs away from the corner, across the axis: the incoming side backwards, the outgoing one forwards.
       awayBefore: [c.before[1], -c.before[0]],
       awayAfter: [-c.after[1], c.after[0]],
-      // Towards the other side's normal, perpendicular to one's own (see the arc below).
+      // Towards the other side's normal, perpendicular to one's own (along the face to the corner).
       towardAfter: [(c.after[0] - cos * c.before[0]) / sin, (c.after[1] - cos * c.before[1]) / sin],
       towardBefore: [(c.before[0] - cos * c.after[0]) / sin, (c.before[1] - cos * c.after[1]) / sin],
       reach: Math.min(c.reach, Math.max(1, s.depth)),
     };
   });
+  /**
+   * A point `t` from an edge whose faces' normals stand `angle` apart: half the arc on this side, stretched over `reach`.
+   * How far the way out leans to the other face (`lean`: the other normal's weight) and how far from the edge the point's
+   * foot stays on its face (0 on the arc).
+   */
+  const bend = (t: number, reach: number, angle: number, d: number) => {
+    const half = (d * angle) / 2;
+    const sigma = (t * (reach + half)) / reach;
+    const theta = Math.max(0, angle / 2 - sigma / d);
+    return { lean: Math.sin(theta) / Math.sin(angle - theta), foot: Math.max(0, sigma - half) };
+  };
+  const rimOf = (h: number, sign: number) => rims.find((rim) => rim.sign === sign && Math.abs(rim.level - h) <= RIM_LEVEL);
   return (i: number, x: number, y: number, z: number, d: number, out: Float64Array) => {
-    if (!side[i]) return false;
+    const kind = kinds[i];
+    // Without rims, only points on the sides alone (as before a top or bottom had a say).
+    if (!(kind === 1 || (rims.length && (kind === 3 || kind === 2)))) return false;
     const p = [x, y, z];
-    for (const c of corners) {
-      const qx = p[i1] - c.at[0], qy = p[i2] - c.at[1];
-      let t = -1, own: number[] = [], toward: number[] = [];
-      for (const [normal, away, other] of [[c.before, c.awayBefore, c.towardAfter], [c.after, c.awayAfter, c.towardBefore]]) {
-        if (Math.abs(qx * normal[0] + qy * normal[1]) > 1e-4) continue;
-        const along = qx * away[0] + qy * away[1];
-        if (along < -1e-6 || along > c.reach) continue;
-        t = Math.max(0, along);
+    const way = [0, 0, 0];
+    const foot = p.slice();
+    let bent = false;
+    if (kind & 1) {
+      // A corner between two sides.
+      let own: number[] | null = null;
+      for (const c of corners) {
+        const qx = p[i1] - c.at[0], qy = p[i2] - c.at[1];
+        let t = -1, normal: number[] = [], toward: number[] = [], other: number[] = [];
+        for (const [n0, away, to, n1] of [[c.before, c.awayBefore, c.towardAfter, c.after], [c.after, c.awayAfter, c.towardBefore, c.before]]) {
+          if (Math.abs(qx * n0[0] + qy * n0[1]) > 1e-4) continue;
+          const along = qx * away[0] + qy * away[1];
+          if (along < -1e-6 || along > c.reach) continue;
+          t = Math.max(0, along);
+          [normal, toward, other] = [n0, to, n1];
+          break;
+        }
+        if (t < 0) continue;
+        const b = bend(t, c.reach, c.angle, d);
         own = normal;
-        toward = other;
+        way[i1] += normal[0] + b.lean * other[0];
+        way[i2] += normal[1] + b.lean * other[1];
+        foot[i1] += (t - b.foot) * toward[0];
+        foot[i2] += (t - b.foot) * toward[1];
+        bent = true;
         break;
       }
-      if (t < 0) continue;
-      // The corner line at this height, and the place on the bent side: half the arc on this side, stretched over `reach`.
-      const half = (d * c.angle) / 2;
-      const sigma = (t * (c.reach + half)) / c.reach;
-      const corner = [p[i1] + t * toward[0], p[i2] + t * toward[1]];
-      let o1: number, o2: number;
-      if (sigma < half) {
-        const phi = c.angle / 2 - sigma / d;
-        o1 = corner[0] + d * (Math.cos(phi) * own[0] + Math.sin(phi) * toward[0]);
-        o2 = corner[1] + d * (Math.cos(phi) * own[1] + Math.sin(phi) * toward[1]);
-      } else {
-        o1 = corner[0] + d * own[0] - (sigma - half) * toward[0];
-        o2 = corner[1] + d * own[1] - (sigma - half) * toward[1];
+      // A rim above or below.
+      let rimmed = false;
+      for (const rim of rims) {
+        const t = rim.sign * (rim.level - p[ax]);
+        if (t < -RIM_LEVEL || t >= rim.reach) continue;
+        const b = bend(Math.max(0, t), rim.reach, Math.PI / 2, d);
+        way[ax] += rim.sign * b.lean;
+        foot[ax] = rim.level - rim.sign * b.foot;
+        rimmed = true;
+        break;
       }
-      out[i * 3 + i1] = o1;
-      out[i * 3 + i2] = o2;
-      out[i * 3 + ax] = p[ax];
-      return true;
+      if (!bent && !rimmed) return false;
+      if (!own) {
+        // Not at a corner: the side's own way out, across the axis.
+        const h1 = directions[i * 3 + i1], h2 = directions[i * 3 + i2], l = Math.hypot(h1, h2);
+        if (l < 1e-6) return false;
+        way[i1] += h1 / l;
+        way[i2] += h2 / l;
+      }
+    } else {
+      // A top or bottom near its rim: its own normal, and the side's (or two sides' at a corner) leaning in.
+      const sign = directions[i * 3 + ax] > 0 ? 1 : -1;
+      const rim = rimOf(p[ax], sign);
+      if (!rim) return false;
+      let cornered = false;
+      for (const c of corners) {
+        const tb = (c.at[0] - p[i1]) * c.before[0] + (c.at[1] - p[i2]) * c.before[1];
+        const ta = (c.at[0] - p[i1]) * c.after[0] + (c.at[1] - p[i2]) * c.after[1];
+        const reach = Math.min(rim.reach, c.reach);
+        if (tb < -1e-6 || ta < -1e-6 || tb >= reach || ta >= reach) continue;
+        const bb = bend(Math.max(0, tb), reach, Math.PI / 2, d), ba = bend(Math.max(0, ta), reach, Math.PI / 2, d);
+        way[i1] = bb.lean * c.before[0] + ba.lean * c.after[0];
+        way[i2] = bb.lean * c.before[1] + ba.lean * c.after[1];
+        // The foot: as far from either side's line as is left of its arc.
+        const det = c.before[0] * c.after[1] - c.before[1] * c.after[0];
+        if (Math.abs(det) < 1e-9) return false;
+        const ox = (bb.foot * c.after[1] - ba.foot * c.before[1]) / det, oy = (c.before[0] * ba.foot - c.after[0] * bb.foot) / det;
+        foot[i1] = c.at[0] - ox;
+        foot[i2] = c.at[1] - oy;
+        cornered = true;
+        break;
+      }
+      if (!cornered) {
+        const ring = rimRing(p[i1], p[i2], rim, layout);
+        if (ring.depth >= rim.reach) return false;
+        const b = bend(ring.depth, rim.reach, Math.PI / 2, d);
+        way[i1] = b.lean * ring.normal[0];
+        way[i2] = b.lean * ring.normal[1];
+        foot[i1] += (ring.depth - b.foot) * ring.normal[0];
+        foot[i2] += (ring.depth - b.foot) * ring.normal[1];
+      }
+      way[ax] += sign;
     }
-    return false;
+    const l = Math.hypot(way[0], way[1], way[2]);
+    if (l < 1e-9) return false;
+    for (let k = 0; k < 3; k += 1) out[i * 3 + k] = foot[k] + (d * way[k]) / l;
+    return true;
   };
 }
 
@@ -3174,29 +3426,124 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     return chosen;
   }
   let fadeCache: { key: string; state: RefinedState } | null = null;
-  // Per input triangle whether it is a side face round the axis (normal across it), by axis.
-  const sideFaces = new Map<number, Uint8Array>();
-  /** Points of the mesh lying on side faces round the axis only (not on a top or bottom too). */
-  function sidePointsFor(mesh: SurfaceMesh, ax: number) {
-    let side = sideFaces.get(ax);
-    if (!side) {
-      const v = base.vertices, I = base.indices;
-      side = new Uint8Array(I.length / 3);
-      for (let f = 0; f < side.length; f += 1) {
-        const n = faceCross(v, I[f * 3], I[f * 3 + 1], I[f * 3 + 2]);
-        side[f] = Math.abs(n[ax]) < 0.1 * Math.hypot(n[0], n[1], n[2]) ? 1 : 0;
-      }
-      sideFaces.set(ax, side);
-    }
-    const out = new Uint8Array(mesh.vertices.length / 3).fill(1);
+  // Per input triangle what kind of face it is round the axis (see pointKindsFor), by axis.
+  const faceKinds = new Map<number, Uint8Array>();
+  /**
+   * Per point of the mesh the kinds of faces it lies on round the axis, as bits: 1 a side (normal across the axis), 2 a
+   * top or bottom (normal along it), 4 any other. A point on a side only is 1, one on a rim between side and top 3.
+   */
+  function pointKindsFor(mesh: SurfaceMesh, ax: number) {
+    const kinds = baseFaceKinds(ax);
+    const out = new Uint8Array(mesh.vertices.length / 3);
     const I = mesh.indices;
     for (let t = 0; t < I.length / 3; t += 1) {
-      if (side[mesh.parents[t]]) continue;
-      out[I[t * 3]] = 0;
-      out[I[t * 3 + 1]] = 0;
-      out[I[t * 3 + 2]] = 0;
+      const k = kinds[mesh.parents[t]];
+      out[I[t * 3]] |= k;
+      out[I[t * 3 + 1]] |= k;
+      out[I[t * 3 + 2]] |= k;
     }
     return out;
+  }
+  /** Per input triangle its kind round the axis (see pointKindsFor). */
+  function baseFaceKinds(ax: number) {
+    let kinds = faceKinds.get(ax);
+    if (!kinds) {
+      const v = base.vertices, I = base.indices;
+      kinds = new Uint8Array(I.length / 3);
+      for (let f = 0; f < kinds.length; f += 1) {
+        const n = faceCross(v, I[f * 3], I[f * 3 + 1], I[f * 3 + 2]);
+        const l = Math.hypot(n[0], n[1], n[2]);
+        kinds[f] = Math.abs(n[ax]) < 0.1 * l ? 1 : Math.abs(n[ax]) > 0.99 * l ? 2 : 4;
+      }
+      faceKinds.set(ax, kinds);
+    }
+    return kinds;
+  }
+
+  /** Per input triangle whether it is not one of `rim`'s top or bottom with the pattern: what cuts there skip. */
+  function notOnRim(rim: SurfaceRim, smoothFace: Uint8Array, ax: number) {
+    const v = base.vertices, I = base.indices;
+    const kinds = baseFaceKinds(ax);
+    return Uint8Array.from({ length: I.length / 3 }, (_, f) => {
+      if (smoothFace[f] || kinds[f] !== 2 || faceCross(v, I[f * 3], I[f * 3 + 1], I[f * 3 + 2])[ax] * rim.sign <= 0) return 1;
+      return [0, 1, 2].every((k) => Math.abs(v[I[f * 3 + k] * 3 + ax] - rim.level) <= RIM_LEVEL) ? 0 : 1;
+    });
+  }
+
+  /**
+   * Tops and bottoms in rings (see ringValue) cut along them at `offsets` within `P`. Where the side's rows run over a rim
+   * (capEdge "over"), each top's or bottom's rings go on from the side's rows, which lie at those offsets along the axis:
+   * cut there - all over, or in the band of rings round a top with rows (see overValue).
+   */
+  function capRingCuts(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, P: number, offsets: number[], skip: Uint8Array, maxTriangles: number, smoothFace: Uint8Array) {
+    const ringed = ringsOnCaps(s, layout);
+    if (layout.capEdge !== "over" || !layout.rims) return ringed ? sliceRings(mesh, s, layout, P, offsets, skip, maxTriangles) : mesh;
+    const ax = AXIS_INDEX[s.axis];
+    const mod = (x: number) => {
+      const m = ((x % P) + P) % P;
+      return m > P - 1e-9 * P ? 0 : m;
+    };
+    let out = mesh;
+    for (const rim of layout.rims) {
+      const own = notOnRim(rim, smoothFace, ax);
+      const sk = Uint8Array.from(skip, (k, f) => (k || own[f] ? 1 : 0));
+      // A row at o along the axis lies on the top at a depth of sign × (o - level), round a circle at the radius less that.
+      const depths = offsets.map((o) => mod(rim.sign * (o - rim.level)));
+      const field = layout.outline ? depths : depths.map((d) => mod(rim.radius - d));
+      const unique = [...new Set(field.map((o) => Math.round(o * 1e9) / 1e9))].sort((a, b) => a - b);
+      const band = overBand(rim, rowPeriod(s, layout)) + P / 2;
+      out = sliceRings(out, s, layout, P, unique, sk, maxTriangles, ringed ? null : layout.outline ? [0, band] : [rim.radius - band, rim.radius]);
+      if (out.limited) break;
+    }
+    return out;
+  }
+
+  /**
+   * The cut mesh, or the one before when cutting left an edge open or shared by more than two triangles: slivers left
+   * by cutting bumps' rims (three corners on a line) came out folded when cut again along the border.
+   */
+  function soundOr(before: SurfaceMesh, after: SurfaceMesh) {
+    return badEdges(after.indices) > badEdges(before.indices) ? before : after;
+  }
+
+  /**
+   * A border round the rims (capEdge "bead", see beadValue): cut along lines of equal distance to each rim at the places
+   * of its round cross-section, closer to its foot where it is steep - on the sides along the axis, on the top or bottom
+   * in rings (see sliceRings).
+   */
+  function beadCuts(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, maxTriangles: number, smoothFace: Uint8Array) {
+    const ax = AXIS_INDEX[s.axis];
+    const half = beadHalf(s, layout);
+    const steps = Math.max(2, Math.round(CROSS_STEPS[s.detail] / 2));
+    // The cross-section, and where the pattern under it has faded in again.
+    const levels = [...Array.from({ length: steps }, (_, j) => half * Math.sin(((j + 1) / steps) * (Math.PI / 2))), BEAD_KEEP[1] * half];
+    const reach = BEAD_KEEP[1] * half;
+    const kinds = baseFaceKinds(ax);
+    let out = mesh;
+    for (const rim of layout.rims ?? []) {
+      const v = out.vertices, I = out.indices;
+      const F = new Float64Array(v.length / 3);
+      for (let i = 0; i < F.length; i += 1) F[i] = rim.sign * (rim.level - v[i * 3 + ax]);
+      const sliced = Uint8Array.from({ length: I.length / 3 }, (_, f) => {
+        const parent = out.parents[f];
+        if (smoothFace[parent] || kinds[parent] !== 1) return 0;
+        const a = F[I[f * 3]], b = F[I[f * 3 + 1]], c = F[I[f * 3 + 2]];
+        return Math.max(a, b, c) > 0 && Math.min(a, b, c) < reach ? 1 : 0;
+      });
+      out = soundOr(out, sliceByField(out, F, (i, j) => F[j] - F[i], 1e6, levels, sliced));
+      const field = layout.outline ? levels : levels.map((t) => rim.radius - t).filter((r) => r > 0).sort((a, b) => a - b);
+      const band: [number, number] = layout.outline ? [0, reach] : [rim.radius - reach, rim.radius];
+      out = soundOr(out, sliceRings(out, s, layout, 1e6, field, notOnRim(rim, smoothFace, ax), maxTriangles, band, half));
+      if (out.indices.length / 3 > maxTriangles) {
+        out.limited = true;
+        break;
+      }
+    }
+    return out;
+  }
+  /** Points of the mesh lying on side faces round the axis only (not on a top or bottom too). */
+  function sidePointsFor(mesh: SurfaceMesh, ax: number) {
+    return pointKindsFor(mesh, ax).map((k) => (k === 1 ? 1 : 0));
   }
   let crackIndex: CrackSurfaceIndex | null = null;
   let crackCache: { key: string; net: CrackNetwork } | null = null;
@@ -3321,6 +3668,38 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     return { points, faces };
   }
 
+  /**
+   * The rims of the top and bottom that get the pattern, round the side's ends (see SurfaceRim): flat faces across the
+   * axis at the body's ends, not kept smooth - and only when a side gets it too. Their pattern bends round the edge as
+   * far as its depth, at least 1 mm, at most half the body's height.
+   */
+  function capRims(s: SurfaceTextureSettings, layout: SurfaceTextureLayout): SurfaceRim[] {
+    const ax = AXIS_INDEX[s.axis];
+    const [i1, i2] = acrossAxes(s.axis);
+    const v = base.vertices, I = base.indices;
+    const chosen = chosenFaces(s);
+    const smooth = chosen ? null : smoothBaseVertices(s, layout).faces;
+    const reach = Math.min(Math.max(1, s.depth), base.size[ax] / 2);
+    const rims: SurfaceRim[] = [];
+    const kinds = baseFaceKinds(ax);
+    if (!kinds.some((k, f) => k === 1 && (chosen ? chosen[f] : !smooth![f]))) return rims;
+    for (const sign of [1, -1] as const) {
+      const level = sign > 0 ? base.max[ax] : base.min[ax];
+      let radius = 0, found = false;
+      for (let f = 0; f < I.length / 3; f += 1) {
+        if (chosen ? !chosen[f] : smooth![f]) continue;
+        const n = faceCross(v, I[f * 3], I[f * 3 + 1], I[f * 3 + 2]);
+        if (n[ax] * sign < 0.99 * Math.hypot(n[0], n[1], n[2])) continue;
+        const corners = [I[f * 3], I[f * 3 + 1], I[f * 3 + 2]];
+        if (corners.some((i) => Math.abs(v[i * 3 + ax] - level) > RIM_LEVEL)) continue;
+        found = true;
+        for (const i of corners) radius = Math.max(radius, Math.hypot(v[i * 3 + i1] - layout.center[0], v[i * 3 + i2] - layout.center[1]));
+      }
+      if (found) rims.push({ level, sign, radius, reach });
+    }
+    return rims;
+  }
+
   /** Area (mm²) of the input triangles that can get the pattern (a point not surely smooth). */
   function texturableArea(smooth: Uint8Array) {
     const I = base.indices;
@@ -3386,7 +3765,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       ? JSON.stringify([s.pattern, crackCache?.key ?? null])
       : text
         ? JSON.stringify([s.pattern, layout.text ? [layout.text.point, layout.text.face] : null, s.axis, s.textTurn, outlineKey(s.textOutline)])
-        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center, s.faceTurn, Boolean(layout.flatCaps), patternExtras(s, layout)]);
+        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center, s.faceTurn, Boolean(layout.flatCaps), s.capStyle, layout.capEdge ?? null, layout.rims ?? null, patternExtras(s, layout)]);
     const key = `${edge.toFixed(5)}|${smoothKey}|${JSON.stringify(s.faces)}|${maxTriangles}|${s.edgeAngle}|${s.detail}|${scale}|${layoutKey}`;
     if (cache?.key === key) return cache;
     let mesh: SurfaceMesh;
@@ -3532,7 +3911,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       const capFree = caps && !straight ? Uint8Array.from(caps, (k) => (k === 255 ? 0 : 1)) : null;
       let start = capFree && hasNeedles(baseMesh(base), capFree) ? refinePlanar(baseMesh(base), capFree, edge, budget) : baseMesh(base);
       // Rope in rings: cut along the joints between them, or the notch frayed over the grid.
-      if (caps && s.pattern === "rope" && ringsOnCaps(s, layout)) start = sliceRings(start, s, layout, s.spacing, [0], Uint8Array.from(caps, (k) => (k === 255 ? 1 : 0)), budget);
+      if (caps && s.pattern === "rope") start = capRingCuts(start, s, layout, s.spacing, [0], Uint8Array.from(caps, (k) => (k === 255 ? 1 : 0)), budget, smooth.faces);
       // Grooves and bricks on straight faces are cut, not refined: points only on such faces (or smooth ones) stay as they are.
       let keep = smooth.points;
       if (straight && (striped || s.pattern === "bricks")) {
@@ -3590,34 +3969,41 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // All round on straight faces: each axis' faces cut as flat ones. Points keep their numbers from cut to cut, so the
     // bumps' values of one axis stay right after the next.
     let straightCut = false;
+    /** Grooves and knurling on one axis' straight faces: cut along them coarsely, then across at the profile's places. */
+    const cutRows = (from: SurfaceMesh, sk: SurfaceTextureSettings, skip: Uint8Array) => {
+      crossMax = (layout.period * clamp(s.width, 0.2, 1)) / CROSS_STEPS[s.detail];
+      const F0 = stripeFields(from, sk, layout);
+      const I = from.indices;
+      const alongSliced = new Uint8Array(I.length / 3);
+      for (let t = 0; t < I.length; t += 3) {
+        if (skip[from.parents[t / 3]]) continue;
+        const a = I[t], b = I[t + 1], c = I[t + 2];
+        if (Math.max(Math.abs(F0.alongDiff(a, b)), Math.abs(F0.alongDiff(b, c)), Math.abs(F0.alongDiff(c, a))) > 6 * scale) alongSliced[t / 3] = 1;
+      }
+      let cut: SurfaceMesh = sliceByField(from, F0.along, F0.alongDiff, 6 * scale, [0], alongSliced, F0.crossDiff);
+      const steps = CROSS_STEPS[s.detail] / 2;
+      cut = sliceStripes(cut, sk, layout, steps, skip);
+      if (s.pattern === "knurl") {
+        cut = sliceStripes(cut, sk, { ...layout, angle: -layout.angle }, steps, skip, layout);
+        cut = sliceKnurlCrease(cut, sk, layout, skip);
+      }
+      return cut;
+    };
     if (straight && !mesh.limited) {
       straightCut = true;
       for (let k = 0; k < 3; k += 1) {
         if (!straight.includes(k)) continue;
         const sk = axisSettings(k);
         const skip = notOnAxis(k);
-        if (striped && ringsOnCaps(s, layout)) {
-          // A round top or bottom: grooves in rings.
+        // A top or bottom with grooves in rings, or the side's grooves running over its rim: cut in rings (with rows inside
+        // a band of them, as rows first).
+        const ringed = striped && k === AXIS_INDEX[s.axis] && (ringsOnCaps(s, layout) || layout.capEdge === "over");
+        if (ringed && !ringsOnCaps(s, layout)) mesh = cutRows(mesh, sk, skip);
+        if (ringed) {
           crossMax = (layout.period * clamp(s.width, 0.2, 1)) / CROSS_STEPS[s.detail];
-          mesh = sliceRings(mesh, sk, layout, layout.period, stripeOffsets(layout.period, s, CROSS_STEPS[s.detail] / 2), skip, maxTriangles);
-        } else if (striped) {
-          crossMax = (layout.period * clamp(s.width, 0.2, 1)) / CROSS_STEPS[s.detail];
-          const F0 = stripeFields(mesh, sk, layout);
-          const I = mesh.indices;
-          const alongSliced = new Uint8Array(I.length / 3);
-          for (let t = 0; t < I.length; t += 3) {
-            if (skip[mesh.parents[t / 3]]) continue;
-            const a = I[t], b = I[t + 1], c = I[t + 2];
-            if (Math.max(Math.abs(F0.alongDiff(a, b)), Math.abs(F0.alongDiff(b, c)), Math.abs(F0.alongDiff(c, a))) > 6 * scale) alongSliced[t / 3] = 1;
-          }
-          mesh = sliceByField(mesh, F0.along, F0.alongDiff, 6 * scale, [0], alongSliced, F0.crossDiff);
-          const steps = CROSS_STEPS[s.detail] / 2;
-          mesh = sliceStripes(mesh, sk, layout, steps, skip);
-          if (s.pattern === "knurl") {
-            mesh = sliceStripes(mesh, sk, { ...layout, angle: -layout.angle }, steps, skip, layout);
-            mesh = sliceKnurlCrease(mesh, sk, layout, skip);
-          }
-        } else if (s.pattern === "bricks") {
+          mesh = capRingCuts(mesh, sk, layout, layout.period, stripeOffsets(layout.period, s, CROSS_STEPS[s.detail] / 2), skip, maxTriangles, smooth.faces);
+        } else if (striped) mesh = cutRows(mesh, sk, skip);
+        else if (s.pattern === "bricks") {
           const cut = sliceBricks(mesh, sk, layout, cellSteps(), maxTriangles, skip);
           if (cut.reduced) raised = true;
           mesh = cut.mesh;
@@ -3635,6 +4021,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         if (mesh.limited) break;
       }
     }
+    // A border round the rims: cut along it (see beadCuts).
+    if (layout.capEdge === "bead" && !mesh.limited && !cracks && !text) mesh = beadCuts(mesh, s, layout, maxTriangles, smooth.faces);
     // Not refined at the flanks: faces cut exactly already, and faces that stay smooth (the top of a box: its grid only
     // went finer and finer along the pattern's lines, and no point there moves).
     const cutFaces = straight ? Uint8Array.from(straight, (k, f) => (k === 255 && !smooth.faces[f] ? 0 : 1)) : smooth.faces;
@@ -3880,6 +4268,13 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         });
       }
     }
+    if (layout.flatCaps) {
+      layout.capEdge = capEdgeMode(s, layout);
+      if (layout.capEdge) {
+        layout.rims = capRims(s, layout);
+        if (!layout.rims.length) layout.capEdge = null;
+      }
+    }
     if (s.pattern === "cracks") layout.crack = crackLines(s, layout, maskFree);
     if (s.pattern === "text") layout.text = textPlacement(s, layout);
     const r = refined(s, layout, maxTriangles, preview ? 1.5 : 1);
@@ -3916,7 +4311,10 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       // Along an angular body's outline the pattern runs round the edges between its sides (see SurfaceTextureLayout.outline):
       // those are not kept smooth.
       const wrapped = layout.outline ? sidePoints(mesh) : null;
-      const kept = (i: number) => s.keepEdges && crease[i] === 1 && !(wrapped && wrapped[i]);
+      // Where the side's rows run over a rim, or a border runs round it (see SurfaceTextureSettings.capEdge), neither.
+      const kinds = layout.capEdge ? pointKindsFor(mesh, AXIS_INDEX[s.axis]) : null;
+      const overRim = (i: number) => Boolean(kinds && kinds[i] === 3 && layout.rims!.some((rim) => Math.abs(v[i * 3 + AXIS_INDEX[s.axis]] - rim.level) <= RIM_LEVEL));
+      const kept = (i: number) => s.keepEdges && crease[i] === 1 && !(wrapped && wrapped[i]) && !overRim(i);
       const w0 = new Uint8Array(n);
       for (let i = 0; i < n; i += 1) {
         const z = v[i * 3 + 2];
@@ -4033,7 +4431,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const coarse = passes > 0 && state.limited && state.edge > 1.5 * targetEdge(s);
     const smoothedValue = passes ? smoothedValues(state, s, layout, passes, coarse ? LIMITED_BLUR * state.edge : 0) : null;
     let lettered = 0;
-    const roundCorner = layout.outline && layout.outline.corners.length ? cornerRounding(layout.outline, s, sidePoints(mesh)) : null;
+    const roundCorner = (layout.outline && layout.outline.corners.length) || layout.capEdge ? edgeRounding(layout, s, pointKindsFor(mesh, AXIS_INDEX[s.axis]), directions) : null;
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
       const nx = directions[i * 3], ny = directions[i * 3 + 1], nz = directions[i * 3 + 2];
@@ -4042,7 +4440,14 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       if (wi > 0) {
         textured += used[i];
         const known = fixedValue && i < fixedValue.length ? fixedValue[i] : NaN;
-        const value = textValue ? textValue[i] : smoothedValue ? smoothedValue[i] : !Number.isNaN(known) ? known : surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
+        // Values known from cutting (cells, bumps) are the pattern's alone: a border round a rim goes over them.
+        const value = textValue
+          ? textValue[i]
+          : smoothedValue
+            ? smoothedValue[i]
+            : !Number.isNaN(known)
+              ? layout.capEdge === "bead" ? beadOver(known, surfaceTextureBeadAt(x, y, z, [nx, ny, nz][AXIS_INDEX[s.axis]], s, layout)) : known
+              : surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
         if (textValue && value > 0.5) lettered += used[i];
         d = wi * (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
         if (notch) notch[i] = wi * s.depth * value;

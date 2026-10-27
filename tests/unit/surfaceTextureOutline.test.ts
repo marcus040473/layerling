@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySurfaceTexture, insideToScreenPositions, surfaceFalloff } from "@/lib/surfaceTexture";
+import { applySurfaceTexture, insideToScreenPositions, makeSurfaceTextureLayout, normalizeSurfaceTexture, surfaceFalloff, surfaceTextureValueAt } from "@/lib/surfaceTexture";
 import { prepareSurfaceBase, surfaceMeshReport } from "@/lib/surfaceTextureMesh";
 import { nearestOnOutline, outlineAngle, outlineRing, prismOutline } from "@/lib/surfaceTextureOutline";
 
@@ -149,5 +149,93 @@ describe("a pattern laid round an angular body", () => {
     expect(result.stats.projection).toBe("cylinder");
     expect(surfaceMeshReport(result.indices, result.vertices.length / 3)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
     expect(usedPoints(result).filter(([, y]) => y > 30.5).length).toBeGreaterThan(1000);
+  }, 120_000);
+});
+
+/** A cylinder standing on the plate, inside frame, top and bottom fans round the middle. */
+function cylinder(radius: number, height: number, sides: number): number[] {
+  return prism(radius, height, sides);
+}
+
+describe("the edge where the side meets a patterned top", () => {
+  it("run the side's rope rows round a box's top edge in an arc and on as rings", () => {
+    const depth = 1.5;
+    const result = applySurfaceTexture(box(40, 30, 40), { pattern: "rope", spacing: 4, depth, topFree: 0, capStyle: "rings", capEdge: "over" });
+    expect(surfaceMeshReport(result.indices, result.vertices.length / 3)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+    // Beyond both the side and the top (a box's front edge, away from the corners): on an arc round the edge, not a mitre.
+    let beyond = 0;
+    for (const [x, y, z] of usedPoints(result)) {
+      if (Math.abs(x) > 12 || z < 20 || y < 30) continue;
+      beyond += 1;
+      expect(Math.hypot(z - 20, y - 30)).toBeLessThan(depth + 0.02);
+    }
+    expect(beyond).toBeGreaterThan(50);
+  }, 120_000);
+
+  it("go on from the side's rows to the top's rings without a jump", () => {
+    const base = prepareSurfaceBase(insideToScreenPositions(box(40, 30, 40)));
+    const outline = prismOutline(base, 2, 0, 1, 30)!;
+    const s = { ...normalizeSurfaceTexture({ pattern: "rope", spacing: 4, depth: 1.5, topFree: 0, capStyle: "rings" }), projection: "cylinder" as const };
+    const layout = makeSurfaceTextureLayout(base, s, null, outline);
+    layout.flatCaps = true;
+    layout.capEdge = "over";
+    layout.rims = [{ level: 30, sign: 1, radius: 0, reach: 1.5 }];
+    // Screen frame: the front face at y = -20, the top at z = 30.
+    for (let x = -10; x <= 10; x += 0.7) {
+      const side = surfaceTextureValueAt(x, -20, 30 - 1e-6, 0, -1, 0, s, layout);
+      const top = surfaceTextureValueAt(x, -20 + 1e-6, 30, 0, 0, 1, s, layout);
+      expect(Math.abs(side - top)).toBeLessThan(1e-3);
+    }
+    // A row on the side two spacings below the rim is a ring two spacings in on the top.
+    for (let x = -10; x <= 10; x += 0.7) {
+      const side = surfaceTextureValueAt(x, -20, 30 - 2 * 4 + 0.6, 0, -1, 0, s, layout);
+      const top = surfaceTextureValueAt(x, -20 + 2 * 4 - 0.6, 30, 0, 0, 1, s, layout);
+      // Not the same strands (the inner ring is shorter), but the same place across the row.
+      expect(Math.abs(side - top)).toBeLessThan(0.75);
+    }
+  });
+
+  it("lay a cord round the rim, the side's and the top's pattern ending under it", () => {
+    const base = prepareSurfaceBase(insideToScreenPositions(box(40, 30, 40)));
+    const outline = prismOutline(base, 2, 0, 1, 30)!;
+    const s = { ...normalizeSurfaceTexture({ pattern: "rope", spacing: 4, depth: 1.5, topFree: 0, capEdge: "bead" }), projection: "cylinder" as const };
+    const layout = makeSurfaceTextureLayout(base, s, null, outline);
+    layout.flatCaps = true;
+    layout.capEdge = "bead";
+    layout.rims = [{ level: 30, sign: 1, radius: 0, reach: 1.5 }];
+    // Along the edge: the cord's strands, high and low; the same just either side of the edge.
+    const along: number[] = [];
+    for (let x = -10; x <= 10; x += 0.25) {
+      const side = surfaceTextureValueAt(x, -20, 30 - 1e-6, 0, -1, 0, s, layout);
+      const top = surfaceTextureValueAt(x, -20 + 1e-6, 30, 0, 0, 1, s, layout);
+      expect(Math.abs(side - top)).toBeLessThan(1e-3);
+      along.push(side);
+    }
+    expect(Math.max(...along)).toBeGreaterThan(0.95);
+    expect(Math.min(...along)).toBeLessThan(0.6);
+    // Under the cord's middle the side's rows are gone: a row centred right under it does not show.
+    const plain = { ...layout, capEdge: null };
+    const under = [0, 1, 2, 3].map((k) => surfaceTextureValueAt(-10 + k, -20, 30 - 0.5, 0, -1, 0, s, layout));
+    const rows = [0, 1, 2, 3].map((k) => surfaceTextureValueAt(-10 + k, -20, 30 - 0.5, 0, -1, 0, s, plain));
+    expect(under).not.toEqual(rows);
+    // Far from the rim nothing changes.
+    expect(surfaceTextureValueAt(3, -20, 15, 0, -1, 0, s, layout)).toBeCloseTo(surfaceTextureValueAt(3, -20, 15, 0, -1, 0, s, plain), 9);
+  });
+
+  it("keep a cord round a box's top and a round top closed", () => {
+    for (const soup of [box(40, 30, 40), cylinder(20, 30, 96)]) {
+      const result = applySurfaceTexture(soup, { pattern: "rope", spacing: 4, depth: 1.5, topFree: 0, capEdge: "bead" }, { preview: true });
+      expect(surfaceMeshReport(result.indices, result.vertices.length / 3)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+      // The cord stands out over the edge itself.
+      expect(usedPoints(result).some(([x, y, z]) => y > 30.5 && Math.hypot(x, z) > 20)).toBe(true);
+    }
+  }, 120_000);
+
+  it("leave the edge sharp for a pattern that cannot run over, or when asked", () => {
+    for (const settings of [{ pattern: "honeycomb" }, { pattern: "rope", capEdge: "sharp" }]) {
+      const result = applySurfaceTexture(box(40, 30, 40), { ...settings, topFree: 0, depth: 1, direction: "outward" }, { preview: true });
+      // The edge itself stays where it was: no point beyond both the side and the top.
+      expect(usedPoints(result).some(([x, y, z]) => Math.abs(x) < 15 && z > 20.01 && y > 30.01)).toBe(false);
+    }
   }, 120_000);
 });
