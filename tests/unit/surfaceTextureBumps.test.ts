@@ -101,7 +101,8 @@ describe("bumps under a tight triangle budget", () => {
   // A 40 mm box away from the middle with room for few triangles: the bumps' rims get few points (see sliceBumps).
   const w = 40, at = [-25.8, -12.6];
   const moved = (positions: number[]) => positions.map((value, i) => value + (i % 3 === 0 ? at[0] : i % 3 === 2 ? at[1] : 0));
-  const result = applySurfaceTexture(moved(box(w)), { pattern: "bumps" }, { maxTriangles: 80_000 });
+  // Each face on its own (all round), as the missed bumps were found there.
+  const result = applySurfaceTexture(moved(box(w)), { pattern: "bumps", projection: "allRound" }, { maxTriangles: 80_000 });
   // The four sides: the axis across them, where they lie, which way they face.
   const sides = [[0, at[0] + w / 2, 1], [0, at[0] - w / 2, -1], [2, at[1] + w / 2, 1], [2, at[1] - w / 2, -1]] as const;
 
