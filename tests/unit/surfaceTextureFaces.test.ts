@@ -306,6 +306,26 @@ describe("round tops in rings, and the direction on top and bottom", () => {
     }
   });
 
+  it("let a pattern standing out run out gently towards the edge, without a step", () => {
+    // Over the fade of 1 mm, rope 3 mm high broke off at the edge in a step; now it runs out over 1.3 times its height.
+    for (const [name, input, onTop] of [
+      ["box", box(40, 30, 40), (x: number, z: number) => 20 - Math.max(Math.abs(x), Math.abs(z))],
+      ["cylinder", cylinder(20, 30, 96, true), (x: number, z: number) => 20 - Math.hypot(x, z)],
+    ] as const) {
+      const result = applySurfaceTexture(input, { pattern: "rope", faces: ["top"] });
+      expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+      let highest = 0;
+      for (const [x, y, z] of usedPoints(result)) {
+        if (y < 29.9) continue;
+        const edge = onTop(x, z);
+        // Within 1 mm of the edge at most a sixth of the height (smoothstep over 3.9 mm), further in the full rope.
+        if (edge < 1) expect(y - 30, `${name} at ${edge.toFixed(2)} mm from the edge`).toBeLessThan(0.55);
+        highest = Math.max(highest, y - 30);
+      }
+      expect(highest, name).toBeGreaterThan(2.9);
+    }
+  }, 120_000);
+
   it("run rope on a box's top along the front edge, and turned along the side edge", () => {
     /** How much the top's height changes from row to row of 1 mm across `axis` (0: x, 2: z), averaged along it. */
     const rowSpread = (result: Result, axis: 0 | 2) => {
