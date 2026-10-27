@@ -208,14 +208,18 @@ describe("picked faces", () => {
 
 describe("faces that stay smooth stay coarse", () => {
   it("keep the smooth top and bottom of a box with bumps at a few triangles", () => {
-    const result = applySurfaceTexture(box(40, 40, 40), { pattern: "bumps" });
-    expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
-    let flat = 0;
-    for (let t = 0; t < result.indices.length; t += 3) {
-      const ys = [0, 1, 2].map((k) => result.vertices[result.indices[t + k] * 3 + 1]);
-      if (ys.every((y) => Math.abs(y - 40) < 1e-9) || ys.every((y) => Math.abs(y) < 1e-9)) flat += 1;
+    // Each face on its own, bumps near the border are left off whole; along the outline they run up to the rims, whose
+    // points the top and bottom take in.
+    for (const [projection, most] of [["allRound", 200], ["auto", 1000]] as const) {
+      const result = applySurfaceTexture(box(40, 40, 40), { pattern: "bumps", projection });
+      expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+      let flat = 0;
+      for (let t = 0; t < result.indices.length; t += 3) {
+        const ys = [0, 1, 2].map((k) => result.vertices[result.indices[t + k] * 3 + 1]);
+        if (ys.every((y) => Math.abs(y - 40) < 1e-9) || ys.every((y) => Math.abs(y) < 1e-9)) flat += 1;
+      }
+      expect(flat, projection).toBeLessThan(most);
     }
-    expect(flat).toBeLessThan(200);
   }, 60_000);
 
   it("merge points inside flat pieces and along straight creases, without moving any", () => {
@@ -306,23 +310,39 @@ describe("round tops in rings, and the direction on top and bottom", () => {
     }
   });
 
-  it("let a pattern standing out run out gently towards the edge, without a step", () => {
-    // Over the fade of 1 mm, rope 3 mm high broke off at the edge in a step; now it runs out over 1.3 times its height.
+  it("run a pattern standing out right up to the edge, over a finely refined run-out", () => {
+    // Rope 3 mm high came down over a few long triangles at the edge, frayed; it runs out over the fade (1 mm) up to the
+    // edge, which stays where it was.
     for (const [name, input, onTop] of [
       ["box", box(40, 30, 40), (x: number, z: number) => 20 - Math.max(Math.abs(x), Math.abs(z))],
       ["cylinder", cylinder(20, 30, 96, true), (x: number, z: number) => 20 - Math.hypot(x, z)],
     ] as const) {
       const result = applySurfaceTexture(input, { pattern: "rope", faces: ["top"] });
       expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
-      let highest = 0;
+      const v = result.vertices, I = result.indices;
+      let nearEdge = 0;
       for (const [x, y, z] of usedPoints(result)) {
         if (y < 29.9) continue;
         const edge = onTop(x, z);
-        // Within 1 mm of the edge at most a sixth of the height (smoothstep over 3.9 mm), further in the full rope.
-        if (edge < 1) expect(y - 30, `${name} at ${edge.toFixed(2)} mm from the edge`).toBeLessThan(0.55);
-        highest = Math.max(highest, y - 30);
+        if (edge < 0.02) expect(y - 30, `${name} on the edge`).toBeLessThan(0.05);
+        // Just past the run-out the rope stands high (round a cylinder its rings lie as they fall at the rim).
+        if (edge > 1 && edge < 2) nearEdge = Math.max(nearEdge, y - 30);
       }
-      expect(highest, name).toBeGreaterThan(2.9);
+      expect(nearEdge, name).toBeGreaterThan(2);
+      // In the run-out the triangles are about a quarter of the fade across (the grid elsewhere: 0.8 mm).
+      let inRunOut = 0;
+      for (let t = 0; t < I.length; t += 3) {
+        const p = [0, 1, 2].map((k) => [v[I[t + k] * 3], v[I[t + k] * 3 + 1], v[I[t + k] * 3 + 2]]);
+        if (p.some(([, y]) => y < 29.9)) continue;
+        const middle = onTop((p[0][0] + p[1][0] + p[2][0]) / 3, (p[0][2] + p[1][2] + p[2][2]) / 3);
+        if (middle < 0.1 || middle > 0.9) continue;
+        inRunOut += 1;
+        for (let k = 0; k < 3; k += 1) {
+          const [a, b] = [p[k], p[(k + 1) % 3]];
+          expect(Math.hypot(a[0] - b[0], a[2] - b[2]), name).toBeLessThan(0.4);
+        }
+      }
+      expect(inRunOut, name).toBeGreaterThan(500);
     }
   }, 120_000);
 

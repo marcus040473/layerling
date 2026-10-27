@@ -154,10 +154,16 @@ describe("laid on as the body asks", () => {
     expect(round(prism(10, 20, 6))).toBe(false);
   });
 
-  it("chooses around the axis on a cylinder and all round on a cube when left to itself", () => {
+  it("chooses around the axis on a cylinder and a cube (along its outline), all round on a body that is no prism", () => {
     expect(applySurfaceTexture(prism(10, 20, 64), { pattern: "grooves" }).stats.projection).toBe("cylinder");
-    expect(applySurfaceTexture(box(20), { pattern: "grooves" }).stats.projection).toBe("allRound");
-    expect(applySurfaceTexture(box(20), { pattern: "grooves", projection: "cylinder" }).stats.projection).toBe("cylinder");
+    expect(applySurfaceTexture(box(20), { pattern: "grooves" }).stats.projection).toBe("cylinder");
+    expect(applySurfaceTexture(box(20), { pattern: "grooves", projection: "allRound" }).stats.projection).toBe("allRound");
+    // A pyramid's sides lean: no outline to run along.
+    const tip = [0, 20, 0], corners = [[-10, 0, -10], [10, 0, -10], [10, 0, 10], [-10, 0, 10]];
+    const pyramid: number[] = [];
+    for (let k = 0; k < 4; k += 1) pyramid.push(...corners[k], ...tip, ...corners[(k + 1) % 4]);
+    pyramid.push(...corners[0], ...corners[1], ...corners[2], ...corners[0], ...corners[2], ...corners[3]);
+    expect(applySurfaceTexture(pyramid, { pattern: "grooves" }).stats.projection).toBe("allRound");
   }, 60_000);
 
   it("cuts every pattern on a cube's flat sides and stays closed", () => {

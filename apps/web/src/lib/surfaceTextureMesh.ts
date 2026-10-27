@@ -727,6 +727,24 @@ export function flipPlanar(mesh: SurfaceMesh, free: Uint8Array, rounds = 12): Su
 }
 
 /**
+ * Whether any triangle `free` marks is a needle: longer than `ratio` times its height over the longest edge (a round top
+ * that CAD gives in long strips across). Others need no refining in their plane (see refinePlanar): its rim's points
+ * would only turn the side faces next to it into fans.
+ */
+export function hasNeedles(mesh: SurfaceMesh, free: Uint8Array, ratio = 8) {
+  const v = mesh.vertices, I = mesh.indices;
+  for (let f = 0; f < I.length / 3; f += 1) {
+    if (!free[mesh.parents[f]]) continue;
+    const a = I[f * 3], b = I[f * 3 + 1], c = I[f * 3 + 2];
+    const area2 = Math.hypot(...faceCross(v, a, b, c));
+    let longest = 0;
+    for (const [p, q] of [[a, b], [b, c], [c, a]]) longest = Math.max(longest, Math.hypot(v[p * 3] - v[q * 3], v[p * 3 + 1] - v[q * 3 + 1], v[p * 3 + 2] - v[q * 3 + 2]));
+    if (area2 > 0 && longest * longest > ratio * area2) return true;
+  }
+  return false;
+}
+
+/**
  * Refine the triangles that `free` marks (by their parent), each lying in a plane like a round top, to edges of at most
  * `maxEdge`: halving and flipping (see flipPlanar) by turns. Halving alone keeps a triangle's shape - a round top that
  * CAD gives in long strips across came out in thousands of slivers per strip, and a pattern frayed along them.
