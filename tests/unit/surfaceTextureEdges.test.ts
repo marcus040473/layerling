@@ -67,7 +67,8 @@ describe("patterns on the flat sides of a box end at a border", () => {
       const want = s.depth * surfaceTextureValueAt(10, -c[2], c[1], 1, 0, 0, s, layout);
       if (Math.abs(10 - c[0] - want) > 0.05) bent += 1;
     }
-    expect(checked).toBeGreaterThan(500);
+    // The diamonds' flat flanks are merged into few triangles each (see mergeFlatPoints).
+    expect(checked).toBeGreaterThan(200);
     expect(bent).toBe(0);
   }, 60_000);
 

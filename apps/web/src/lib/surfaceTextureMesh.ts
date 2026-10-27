@@ -1169,6 +1169,129 @@ export function dropFins(indices: Uint32Array) {
   return Uint32Array.from(out);
 }
 
+/** Triangles round a point lie in one plane when their normals differ by less than this (about 0.001 degrees). */
+const FLAT_COS = 1 - 1e-10;
+/** A triangle made by merging flat points stays at least this high over its longest edge, mm. */
+const FLAT_MIN_HEIGHT = 0.01;
+
+/**
+ * Points in the middle of a flat piece (every triangle round them in one plane: a face kept smooth, the flat between
+ * bumps) pulled into a neighbour, nearest first, and points on a straight crease between two flat pieces (the facets of
+ * a cylinder's mantle) along the crease - as long as every triangle stays in its plane, does not turn over and does not
+ * get lower than FLAT_MIN_HEIGHT. No point moves, so the shape stays exactly as it was, with far fewer triangles where
+ * nothing happens. A closed mesh stays closed (link condition as in collapseShortEdges). The point list stays as it
+ * is; unused points do no harm.
+ */
+export function mergeFlatPoints(vertices: ArrayLike<number>, indices: Uint32Array) {
+  const n = vertices.length / 3;
+  const T = indices.length / 3;
+  const tris = Uint32Array.from(indices);
+  const alive = new Uint8Array(T).fill(1);
+  const stars: number[][] = Array.from({ length: n }, () => []);
+  for (let t = 0; t < T; t += 1) for (let k = 0; k < 3; k += 1) stars[tris[t * 3 + k]].push(t);
+  const has = (t: number, p: number) => tris[t * 3] === p || tris[t * 3 + 1] === p || tris[t * 3 + 2] === p;
+  const dist2 = (a: number, b: number) =>
+    (vertices[a * 3] - vertices[b * 3]) ** 2 + (vertices[a * 3 + 1] - vertices[b * 3 + 1]) ** 2 + (vertices[a * 3 + 2] - vertices[b * 3 + 2]) ** 2;
+  let merged = 0;
+  for (let pass = 0; pass < 4; pass += 1) {
+    let changed = 0;
+    for (let v = 0; v < n; v += 1) {
+      const star = stars[v].filter((t) => alive[t]);
+      stars[v] = star;
+      if (star.length < 3) continue;
+      // The planes round the point: one (inside a flat piece) or two meeting along a straight line through it (a crease
+      // between two flat pieces, as between a cylinder's facets). Triangles within FLAT_COS of a plane's normal lie in it.
+      const planes: number[] = [];
+      const planeOf = new Map<number, number>();
+      let flat = true;
+      for (const t of star) {
+        const [x, y, z] = faceCross(vertices, tris[t * 3], tris[t * 3 + 1], tris[t * 3 + 2]);
+        const l = Math.hypot(x, y, z);
+        if (l === 0) {
+          flat = false;
+          break;
+        }
+        let k = 0;
+        while (k < planes.length / 3 && (planes[k * 3] * x + planes[k * 3 + 1] * y + planes[k * 3 + 2] * z) / l < FLAT_COS) k += 1;
+        if (k === planes.length / 3) planes.push(x / l, y / l, z / l);
+        planeOf.set(t, k);
+      }
+      if (!flat || planes.length > 6) continue;
+      const ring = new Set<number>();
+      for (const t of star) for (let k = 0; k < 3; k += 1) ring.add(tris[t * 3 + k]);
+      ring.delete(v);
+      // On a crease the point may only go along it, to one of its two neighbours on the line.
+      let candidates = [...ring];
+      if (planes.length === 6) {
+        candidates = candidates.filter((x) => {
+          const sides = star.filter((t) => has(t, x)).map((t) => planeOf.get(t));
+          return sides.length === 2 && sides[0] !== sides[1];
+        });
+        if (candidates.length !== 2) continue;
+      }
+      const order = candidates.sort((a, b) => dist2(v, a) - dist2(v, b));
+      for (const u of order) {
+        // Inside the piece the edge has two triangles, and the points both ends see are just their tips.
+        let atEdge = 0;
+        for (const t of star) if (has(t, u)) atEdge += 1;
+        if (atEdge !== 2) continue;
+        let common = 0;
+        const seen = new Set<number>();
+        for (const t of stars[u]) {
+          if (!alive[t]) continue;
+          for (let k = 0; k < 3; k += 1) {
+            const x = tris[t * 3 + k];
+            if (x === u || x === v || seen.has(x)) continue;
+            seen.add(x);
+            if (ring.has(x)) common += 1;
+          }
+        }
+        if (common !== 2) continue;
+        // Every triangle keeps to its plane and its side, and does not get too low.
+        let ok = true;
+        for (const t of star) {
+          if (has(t, u)) continue;
+          const ids = [0, 1, 2].map((k) => (tris[t * 3 + k] === v ? u : tris[t * 3 + k]));
+          const [x, y, z] = faceCross(vertices, ids[0], ids[1], ids[2]);
+          const longest = Math.max(dist2(ids[0], ids[1]), dist2(ids[1], ids[2]), dist2(ids[2], ids[0]));
+          const k = planeOf.get(t)! * 3;
+          const l = Math.hypot(x, y, z);
+          if (l < FLAT_MIN_HEIGHT * Math.sqrt(longest) || (planes[k] * x + planes[k + 1] * y + planes[k + 2] * z) / l < FLAT_COS) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) continue;
+        for (const t of star) {
+          if (has(t, u)) {
+            alive[t] = 0;
+            continue;
+          }
+          for (let k = 0; k < 3; k += 1) if (tris[t * 3 + k] === v) tris[t * 3 + k] = u;
+          stars[u].push(t);
+        }
+        stars[v] = [];
+        changed += 1;
+        break;
+      }
+    }
+    merged += changed;
+    if (changed === 0) break;
+  }
+  if (merged === 0) return { indices, merged };
+  let k = 0;
+  for (let t = 0; t < T; t += 1) k += alive[t];
+  const out = new Uint32Array(k * 3);
+  k = 0;
+  for (let t = 0; t < T; t += 1) {
+    if (!alive[t]) continue;
+    out[k++] = tris[t * 3];
+    out[k++] = tris[t * 3 + 1];
+    out[k++] = tris[t * 3 + 2];
+  }
+  return { indices: out, merged };
+}
+
 const FOLD_COS = Math.cos((75 * Math.PI) / 180);
 
 /**

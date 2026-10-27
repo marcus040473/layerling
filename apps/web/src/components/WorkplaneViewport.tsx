@@ -1,5 +1,5 @@
 "use client";
-import type { SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import type { SurfaceTextureFace, SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { markEscapeHandled } from "@/lib/escapeHandled";
 import { ArrowDownToLine, Check, ChevronLeft, ChevronRight, Crosshair, Cuboid, Download, Eye, EyeOff, FlipHorizontal, GripVertical, Home, Layers, Minus, MousePointer2, PanelsTopLeft, PictureInPicture2, Plus, Rotate3d, RotateCcw, Ruler, RulerDimensionLine, Slice, Spline, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type DragEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode, type SetStateAction, type WheelEvent as ReactWheelEvent } from "react";
@@ -199,6 +199,9 @@ type WorkplaneViewportProps = {
   /** Whether the surface texture card is open; the toolbar opens and closes it too. */
   surfaceTextureOpen?: boolean;
   onSurfaceTextureOpenChange?: (open: boolean) => void;
+  surfaceFacePicking?: boolean;
+  surfacePickedFaces?: SurfaceTextureFace[] | null;
+  onSurfaceFacePick?: (faces: SurfaceTextureFace[] | null, edgeAngle: number) => void;
   /** Lays the selected vase's accessories out beside it. */
   onVaseAccessories?: () => void;
   onLayerText?: (patch: TextLayerPatch) => void;
@@ -1375,6 +1378,9 @@ export function WorkplaneViewport({
   onRemoveSurfaceTexture,
   surfaceTextureOpen,
   onSurfaceTextureOpenChange,
+  surfaceFacePicking,
+  surfacePickedFaces,
+  onSurfaceFacePick,
   onVaseAccessories,
   onLayerText,
   onTextTags,
@@ -7925,6 +7931,9 @@ export function WorkplaneViewport({
           onRemoveSurfaceTexture={onRemoveSurfaceTexture}
           surfaceTextureOpen={surfaceTextureOpen}
           onSurfaceTextureOpenChange={onSurfaceTextureOpenChange}
+          surfaceFacePicking={surfaceFacePicking}
+          surfacePickedFaces={surfacePickedFaces}
+          onSurfaceFacePick={onSurfaceFacePick}
           onVaseAccessories={onVaseAccessories}
           onLayerText={onLayerText}
           onTextTags={onTextTags}
