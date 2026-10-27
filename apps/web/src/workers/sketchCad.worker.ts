@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-import { OcctKernel, type ShapeHandle } from "occt-wasm";
+import { OcctKernel, type OcctModuleFactory, type ShapeHandle } from "occt-wasm";
 import { CAD_MODIFIER_RUNTIME_BASE } from "@/lib/cadModifierRuntime";
 import { sketchCadDeflection } from "@/lib/sketchCadDeflection";
 import { cadSketchRegions } from "@/lib/sketchCadProfile";
@@ -24,13 +24,10 @@ function kernel() {
   // poisoning sketch-to-3D for the rest of the session - same fix as
   // brepKernel.ts's loadBrepWithOcct.
   kernelPromise ??= import(/* webpackIgnore: true */ moduleUrl)
-    .then((imported: { default: (options?: { locateFile?: (path: string) => string }) => Promise<unknown> }) => imported.default({
-      locateFile: (path) => path.endsWith(".wasm") ? `${CAD_MODIFIER_RUNTIME_BASE}/occt-wasm.wasm` : path,
+    .then((imported: { default: OcctModuleFactory }) => OcctKernel.init({
+      createModule: imported.default,
+      wasm: `${CAD_MODIFIER_RUNTIME_BASE}/occt-wasm.wasm`,
     }))
-    .then((module) => {
-      const KernelConstructor = OcctKernel as unknown as new (rawModule: unknown) => OcctKernel;
-      return new KernelConstructor(module);
-    })
     .catch((error) => {
       kernelPromise = null;
       throw error;

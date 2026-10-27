@@ -71,6 +71,8 @@ export const DXF_SKETCH_COLOR = "#0098c7";
 export const MAX_DXF_SKETCH_SEGMENTS = 2500;
 /** Ends closer than this, in mm, are taken for one point when the pieces are joined. */
 export const DXF_JOIN_TOLERANCE = 0.01;
+/** A straight piece shorter than this, in mm, is no piece: the CAD kernel cannot make an edge of it. */
+const DXF_MIN_PIECE = 1e-6;
 
 /** $INSUNITS: millimetres per unit and the unit's name. 0 is "unitless". */
 const UNITS: Record<number, [number, string]> = {
@@ -515,25 +517,36 @@ function joinRuns(runs: Piece[][], tolerance: number) {
       grid.set(`${cx},${cy}`, list);
     }
   });
+  // Of the runs that go on from here, the nearest: where several ends meet within the tolerance (two outlines
+  // touching at a corner, a QR code's modules), the one that really goes on starts exactly here.
   const nextAt = (tail: DxfImportPoint) => {
     const [cx, cy] = cell(tail);
+    let best: { run: number; atEnd: boolean } | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
     for (let dx = -1; dx <= 1; dx += 1) {
       for (let dy = -1; dy <= 1; dy += 1) {
         for (const candidate of grid.get(`${cx + dx},${cy + dy}`) ?? []) {
           if (used[candidate.run]) continue;
           const run = unique[candidate.run];
           const point = candidate.atEnd ? run[run.length - 1].end : run[0].start;
-          if (distance(point, tail) <= tolerance) return candidate;
+          const gap = distance(point, tail);
+          if (gap <= tolerance && gap < bestDistance) {
+            best = candidate;
+            bestDistance = gap;
+          }
         }
       }
     }
-    return null;
+    return best;
   };
   for (let index = 0; index < unique.length; index += 1) {
     if (used[index]) continue;
     used[index] = true;
     const chain = unique[index].slice();
-    let closed = distance(chain[0].start, chain[chain.length - 1].end) <= tolerance;
+    // A chain closes where it comes back to its start - but not while all of it still lies within the tolerance
+    // of its start: a few tiny pieces in a row would close on themselves and take nothing round.
+    const closes = () => distance(chain[0].start, chain[chain.length - 1].end) <= tolerance && ringExtent(chain) > 2 * tolerance;
+    let closed = closes();
     while (!closed) {
       const tail = chain[chain.length - 1].end;
       const found = nextAt(tail);
@@ -542,7 +555,7 @@ function joinRuns(runs: Piece[][], tolerance: number) {
       const next = found.atEnd ? unique[found.run].slice().reverse().map(reversed) : unique[found.run].slice();
       next[0] = { ...next[0], start: tail };
       chain.push(...next);
-      closed = distance(chain[0].start, chain[chain.length - 1].end) <= tolerance;
+      closed = closes();
     }
     if (closed) {
       chain[chain.length - 1] = { ...chain[chain.length - 1], end: chain[0].start };
@@ -552,6 +565,14 @@ function joinRuns(runs: Piece[][], tolerance: number) {
     }
   }
   return { loops, open: left };
+}
+
+/** How far a ring reaches: the diagonal of the box round its ends and handles. */
+function ringExtent(ring: readonly Piece[]) {
+  const points = ring.flatMap((piece) => [piece.start, piece.end, ...(piece.c1 ? [piece.c1] : []), ...(piece.c2 ? [piece.c2] : [])]);
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  return Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
 }
 
 /** A ring needs three pieces to be a closed sketch outline: halve the longest until it has them. */
@@ -623,12 +644,22 @@ export function sketchProfileFromDxf(text: string): DxfImportResult {
   const tolerance = DXF_JOIN_TOLERANCE;
   const clean = (run: Piece[]) => run.filter((piece) => distance(piece.start, piece.end) > 1e-9 || Boolean(piece.c1));
   const joined = joinRuns(out.open.map(clean).filter((run) => run.length > 0), tolerance);
-  const rings = [...out.loops.map(clean), ...joined.loops].filter((ring) => ring.length > 0).map((ring) => {
-    // Each piece starts exactly where the one before ends, the last ends at the first's start.
+  // Each piece starts exactly where the one before ends, the last ends at the first's start.
+  const chain = (ring: Piece[]) => {
     for (let index = 1; index < ring.length; index += 1) ring[index] = { ...ring[index], start: ring[index - 1].end };
     ring[ring.length - 1] = { ...ring[ring.length - 1], end: ring[0].start };
-    return atLeastThree(ring);
-  });
+    return ring;
+  };
+  const rings = [...out.loops.map(clean), ...joined.loops].filter((ring) => ring.length > 0).map((ring) => {
+    // A straight piece shorter than the join tolerance (a QR code's 0.008 mm steps) can end up with no length at
+    // all once its ends are joined: the CAD kernel cannot make an edge of it, and the whole import failed. It goes.
+    const kept = chain(ring).filter((piece) => Boolean(piece.c1) || distance(piece.start, piece.end) > DXF_MIN_PIECE);
+    return kept.length > 0 && kept.length < ring.length ? chain(kept) : ring;
+  })
+    // A run of pieces all within the join tolerance of each other (a few 0.005 mm lines between two arcs) closes on
+    // itself as a ring of no size, which the CAD kernel takes for broken topology: it is no outline, and goes.
+    .filter((ring) => ringExtent(ring) > 2 * tolerance)
+    .map(atLeastThree);
   const total = rings.reduce((sum, ring) => sum + ring.length, 0);
   if (rings.length === 0) throw new DxfImportError("empty", "The DXF holds no closed outline");
   if (total > MAX_DXF_SKETCH_SEGMENTS) throw new DxfImportError("tooComplex", "The DXF has too many lines and curves for a sketch");

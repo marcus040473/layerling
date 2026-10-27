@@ -67,11 +67,14 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_ungroup_objects` | dissout les groupes |
 | `layerling_boolean_cut` | coupe les solides avec des trous |
 | `layerling_intersect_objects` | ne garde que ce que les objets ont en commun (Intersection) |
+| `layerling_hull_objects` | enveloppe les objets dans un seul corps convexe, comme sous film rétractable (Enveloppe) |
 | `layerling_separate_parts` | sépare une forme en ses parties détachées, un corps d'esquisse en un corps par contour |
 | `layerling_split_objects` | coupe des solides ou des trous en deux avec un rabot |
 | `layerling_list_edges` | répertorie les véritables bords CAO d'un objet |
 | `layerling_apply_edge_treatment` | chanfreins ou congés arêtes choisies |
 | `layerling_hollow_object` | creuse un corps avec une paroi plane |
+| `layerling_cut_out` | découpe un solide dans un autre pour qu'ils s'ajustent : la pièce reste, une copie agrandie du jeu est soustraite de l'autre corps |
+| `layerling_offset_object` | décale toutes les faces d'un corps pour le jeu d'un ajustement : l'agrandit ou le réduit, ou ajoute la copie agrandie comme trou |
 | `layerling_list_faces` | répertorie les faces d'un corps exact |
 | `layerling_delete_faces` | supprime des faces et referme le vide |
 | `layerling_array_objects` | se multiplie en ligne ou sur un cercle |
@@ -96,7 +99,8 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_delete_custom_shape` | supprime une forme personnalisée ; les corps insérés restent |
 | `layerling_show_workplane` | cache et affiche la plaque avec sa grille, pour une photo du dessous par exemple (uniquement la vue) |
 | `layerling_set_section_view` | coupe la vue ouverte le long d'un plan pour regarder à l'intérieur (seulement la vue, rien n'est coupé) |
-| `layerling_saved_view` | enregistre la vue actuelle sous la touche 7, 8, 9 ou 0 et y revient, comme Maj+touche et la touche (seulement la vue) |
+| `layerling_measurements` | affiche ou masque les mesures du ruban à mesurer et les liste avec leurs longueurs |
+| `layerling_saved_view` | enregistre la vue actuelle sous la touche 7, 8, 9 ou 0 et y revient, comme Maj+touche et la touche (seulement la vue); règle aussi la vue de départ des nouveaux designs |
 | `layerling_clear_history` | supprime définitivement chaque étape d'annulation, comme le fait le bouton "Supprimer l'historique" de la vue Historique ; besoins `confirm: true` |
 | `layerling_set_history_view` | revient sur un état antérieur du projet, comme la vue Historique (la conception réelle reste intacte ; les outils de changement attendent qu'il soit fermé) |
 | `layerling_restore_from_history` | ramène des objets (aussi des pièces dans des groupes) d'un état antérieur dans la conception, sous forme de copies, comme « Ramener dans la conception » de la vue Historique - une étape que l'annulation reprend |
@@ -104,6 +108,11 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_export_drawing` | réalise le dessin d'atelier de l'export "2D": trois vues au 1:1 sur une feuille ISO avec les dimensions hors tout et un tableau des alésages ronds, en texte SVG ou PDF |
 | `layerling_export_mesh` | écrit le fichier de la fenêtre d'export en STL, 3MF, OBJ, SVG (vue de dessus, empreinte ou arêtes visibles) ou DXF pour la découpe laser, à partir des mêmes corps ; vers un chemin de cet ordinateur ou en base64 |
 | `layerling_save_project` | enregistre toute la conception modifiable comme fichier .lyl à un chemin de l'ordinateur où tourne le serveur MCP, sans boîte de dialogue ; un fichier existant n'est remplacé qu'avec `overwrite`, l'écriture passe par un fichier temporaire, et la cible de Ctrl+S dans l'éditeur reste inchangée |
+| `layerling_list_attachments` | liste les fichiers joints au modèle (nom, type, taille), comme le panneau Pièces jointes les montre |
+| `layerling_get_attachment` | lit un fichier joint, ses octets en base64, comme Télécharger dans le panneau |
+| `layerling_add_attachment` | joint un fichier donné en base64, avec les contrôles du panneau ; un nom déjà joint n'est remplacé qu'avec `replace` |
+| `layerling_rename_attachment` | renomme un fichier joint ; son contenu reste |
+| `layerling_remove_attachment` | retire un fichier joint définitivement ; demande `confirm: true` |
 | `layerling_set_workplane` | place le plan de travail sur un côté d'un corps ou à l'arrière de la plaque de base, et le cache ou l'affiche |
 | `layerling_capture_image` | prend une photo de la vue : de face, de dessus, de côté, en diagonale depuis un coin et plus encore |
 

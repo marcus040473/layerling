@@ -14,6 +14,7 @@ Egérrel:
 | húzás középső gombbal | a nézet mozgatása |
 | egérgörgő | nagyítás és kicsinyítés |
 | [[Ctrl]] / [[Cmd]] nyomva tartása és húzás bal gombbal | szintén a nézetet mozgatja |
+| dupla kattintás a munkasík egy üres pontjára vagy a tárgyasztal mellé | úgy mozgatja a nézetet, hogy az a pont középre kerüljön; a nézet ezután körülötte forog |
 
 Hogy a görgő milyen gyorsan nagyít, azt a beállításokban a {{ui:workspace.appearance}} alatt a {{ui:workspace.zoomSpeed}} adja meg: egy csúszka 1-től 14-ig, kezdetben 5-ön; 10 fölött csak a görgő gyorsul.
 
@@ -80,7 +81,7 @@ Ha ehelyett az üres tárgyasztalra kattintasz, a munkasík laposan oda kerül, 
 
 Egy lapon a munkasík origója egyébként a rácshoz illeszkedik. Ha a lap egyik sarka közelébe kattintasz, pontosan arra a sarokra kerül. Egy él közelében az élre fekszik, és a rács hozzá igazodik; így szándékosan választhatod meg a rács szögét. Sarok vagy él nélkül egy fekvő lapon a rács a testtel párhuzamosan fut, így egy elforgatott dobozon vele együtt el van forgatva.
 
-Egy kattintás a tárgyasztal mellé vagy az [[Esc]] visszateszi a munkasíkot az alaplapra. Még gyorsabb a {{ui:camera.resetWorkplane}}: a lefelé mutató nyilas gomb a kamerasávon a szem alatt van, amíg a munkasík egy lapon fekszik. A [[Shift]]+[[W]] közvetlenül az épp kijelölt lapra teszi. Ha kattintás közben a [[Shift]] billentyűt nyomva tartod, a sík a másik irányba néz.
+Egy kattintás a tárgyasztal mellé vagy az [[Esc]] visszateszi a munkasíkot az alaplapra. Még gyorsabb a {{ui:camera.resetWorkplane}}: a lefelé mutató nyilas gomb a kamerasávon a szem alatt van, amíg a munkasík egy lapon fekszik. A [[Shift]]+[[W]] közvetlenül az épp kijelölt lapra teszi. Az [[Alt]]+[[W]] bármikor visszateszi az alaplapra, akár van kijelölés, akár nincs. Ha kattintás közben a [[Shift]] billentyűt nyomva tartod, a sík a másik irányba néz.
 
 Amíg a munkasík egy lapon van, a {{ui:camera.placeWorkplane}} mellett megjelenik egy szem. Elrejti a munkasíkot anélkül, hogy eldobná, hogy tisztán lásd a tervet: az új alakzatok továbbra is arra a lapra kerülnek, és a forgatás is körülötte történik. A szemre kattintva újra megjelenik, és egy új munkasík megadása is megjeleníti.
 

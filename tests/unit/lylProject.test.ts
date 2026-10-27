@@ -10,6 +10,7 @@ import {
   inspectLylProjectPackage,
   LYL_FORMAT_VERSION,
   LYL_LIMITS,
+  LYL_NEWEST_READABLE_FORMAT_VERSION,
   LYL_SCHEMA_ID,
   type LylProjectDocumentV1,
   type LylProjectExportInput,
@@ -632,7 +633,7 @@ describe("layerling .lyl project packages", () => {
   it("rejects unsupported future versions before restoring any state", async () => {
     const exported = await exportLylProject(input([shape("box")]));
     const future = mutateProject(exported, (document) => {
-      (document as { formatVersion: number }).formatVersion = LYL_FORMAT_VERSION + 1;
+      (document as { formatVersion: number }).formatVersion = LYL_NEWEST_READABLE_FORMAT_VERSION + 1;
     });
 
     await expect(importLylProject(future)).rejects.toThrow("requires a newer layerling version");

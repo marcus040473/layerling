@@ -7,7 +7,7 @@ summary: Ophøjede eller graverede bogstaver i syv skrifter eller en af dine egn
 
 Vælg {{ui:shape.text}} i formbiblioteket og placér den. I feltet {{ui:prop.text}} til højre skriver du hvad den skal sige. Indstillingerne nedenunder:
 
-- **{{ui:prop.font}}:** Syv skrifter er tilgængelige: Multilanguage, Sans, Serif, Script, Monospace, Rounded og Stencil (bogstaver lavet af lige linjer). Ny tekst starter i Sans. Accenterede bogstaver som ä, ö, ü, é og €-tegnet er i hver skrift. Dine egne fonte kommer øverst, se [Dine egne fonte](#dine-egne-fonte) nedenunder.
+- **{{ui:prop.font}}:** Otte skrifter er tilgængelige: Multilanguage, Sans, Serif, Script, Monospace, Rounded, Stencil (bogstaver lavet af lige linjer) og Japanese (Zen Maru Gothic). Ny tekst starter i Sans. Accenterede bogstaver som ä, ö, ü, é og €-tegnet er i hver skrift, og det samme gælder kana, de almindelige kanji og mange af de sjældnere i navne som 澤, 槇 og 檜: et japansk navn virker i hver skrift og på et navneskilt. De japanske bogstaver hentes, første gang en tekst skal bruge dem (de sjældne kanji i en anden fil, kun når en tekst har sådan et), så en sådan tekst viser spørgsmålstegn et øjeblik. De bliver gemt på computeren bagefter, så japansk også virker offline derfra. Dine egne fonte kommer øverst, se [Dine egne fonte](#dine-egne-fonte) nedenunder.
 - **{{ui:nameTag.letterSize}}:** Hvor store bogstaverne er, set fra oven; {{ui:prop.height}} sætter hvor tykke de er.
 - **{{ui:prop.height}}:** Hvor langt bogstaverne stikker ud fra overfladen.
 - **{{ui:prop.bevel}}:** Rund bogstavkanterne så de ser blødere ud. Med {{ui:prop.segments}} bestemmer du i hvor mange trin.

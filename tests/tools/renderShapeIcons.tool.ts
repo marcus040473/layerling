@@ -9,6 +9,7 @@ import { createSpringGeometry } from "@/lib/springGeometry";
 import { createStarGeometry } from "@/lib/starGeometry";
 import { createHeartGeometry } from "@/lib/heartGeometry";
 import { createCrescentGeometry } from "@/lib/crescentGeometry";
+import { createParaboloidGeometry } from "@/lib/roundBodyGeometry";
 import { createSlotGeometry } from "@/lib/slotGeometry";
 import { createDovetailGeometry } from "@/lib/dovetailGeometry";
 import { createHingeGeometry } from "@/lib/hingeGeometry";
@@ -404,6 +405,14 @@ describe("palette icons", () => {
         height: 16,
         sides: 32,
       }),
+    });
+    render({
+      name: "apps/web/public/assets/editor/shape-icons-gray/paraboloid.png",
+      height: 22,
+      lay: false,
+      azimuth: 35,
+      elevation: 28,
+      build: () => createParaboloidGeometry(24, 22, 24, 32),
     });
     render({
       // Steiler von oben, damit das Trapez als Schwalbenschwanz zu lesen ist.

@@ -13,7 +13,8 @@ Mit der Maus:
 | rechte Maustaste kurz klicken | auf einem Körper ein Menü mit den häufigsten Befehlen: duplizieren, Aussparung oder Körper, gruppieren, ausblenden, sperren, löschen und mehr; auf leerer Fläche Einfügen und Alle auswählen |
 | mittlere Maustaste ziehen | die Ansicht verschieben |
 | Mausrad | hinein- und herauszoomen |
-| [[Strg]] / [[Cmd]] halten und mit links ziehen | ebenfalls verschieben (auf dem Trackpad eines MacBooks: [[Cmd]] halten, drücken und ziehen) |
+| [[Strg]] / [[Cmd]] halten und mit links ziehen | ebenfalls verschieben (auf dem Trackpad eines MacBooks: [[Cmd]] halten, drücken und ziehen); auf dem Mac dreht Control statt Cmd die Ansicht, denn Control-Klick ist dort der Rechtsklick |
+| Doppelklick auf eine leere Stelle der Arbeitsebene oder neben die Platte | verschiebt die Ansicht, bis diese Stelle in der Mitte liegt; die Ansicht dreht sich dann um sie |
 
 Wie schnell das Mausrad zoomt, stellst du in den Einstellungen unter {{ui:workspace.appearance}} mit {{ui:workspace.zoomSpeed}} ein: ein Regler von 1 bis 14, zu Beginn 5. Er gilt nur für Mausrad und Trackpad: die Knöpfe und die Tasten [[+]] und [[−]] zoomen immer in denselben kleinen Schritten. Eine Raste des Mausrads zoomt in jedem Browser gleich stark, ein Trackpad zoomt danach, wie weit du streichst.
 
@@ -82,7 +83,7 @@ Klickst du dabei auf die freie Platte, liegt die Arbeitsebene flach an der Stell
 
 Auf einer Fläche rastet der Ursprung der Arbeitsebene sonst am Raster ein. Klickst du nahe an eine Ecke der Fläche, sitzt er genau auf dieser Ecke. Nahe an einer Kante liegt er auf der Kante, und das Raster richtet sich nach ihr aus; so wählst du den Winkel des Rasters bewusst. Ohne Ecke oder Kante läuft das Raster auf einer liegenden Fläche parallel zum Körper, bei einem gedrehten Quader also mit ihm gedreht.
 
-Ein Klick neben die Platte oder [[Esc]] holt die Arbeitsebene zurück auf die Grundplatte. Schneller geht es mit {{ui:camera.resetWorkplane}}: Der Knopf mit dem Pfeil nach unten steht in der Kameraleiste unter dem Auge, solange die Ebene auf einer Fläche liegt. Mit [[Umschalt]]+[[W]] legst du sie direkt auf die gerade ausgewählte Fläche. Hältst du beim Klicken [[Umschalt]] gedrückt, zeigt die Ebene in die andere Richtung.
+Ein Klick neben die Platte oder [[Esc]] holt die Arbeitsebene zurück auf die Grundplatte. Schneller geht es mit {{ui:camera.resetWorkplane}}: Der Knopf mit dem Pfeil nach unten steht in der Kameraleiste unter dem Auge, solange die Ebene auf einer Fläche liegt. Mit [[Umschalt]]+[[W]] legst du sie direkt auf die gerade ausgewählte Fläche. [[Alt]]+[[W]] legt sie jederzeit zurück auf die Grundplatte, ob etwas ausgewählt ist oder nicht. Hältst du beim Klicken [[Umschalt]] gedrückt, zeigt die Ebene in die andere Richtung.
 
 Solange die Arbeitsebene auf einer Fläche liegt, erscheint neben {{ui:camera.placeWorkplane}} ein Auge. Es blendet die Ebene aus, ohne sie aufzuheben, damit du freie Sicht auf den Entwurf hast: Neue Formen landen weiter auf dieser Fläche, und gedreht wird weiter um sie. Ein Klick auf das Auge blendet sie wieder ein, ebenso das Setzen einer neuen Arbeitsebene.
 
@@ -94,7 +95,7 @@ Das Gitter zeigt die Größe der Platte. Unten rechts steht das **Raster**: Vers
 
 ### Das Einstellungsfenster
 
-Das Zahnrad im Menüband ({{ui:editor.workspaceSettings}}) öffnet die Einstellungen. Links liegen fünf Bereiche: {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} und {{ui:workspace.history}}. Eine Änderung gilt sofort. {{ui:workspace.makeDefault}} unten sichert die aktuellen Einstellungen als Vorgabe, sodass ein neues Design mit ihnen beginnt. Eine geöffnete Datei bringt ihre eigenen Einstellungen mit; {{ui:workspace.useMyDefault}} daneben legt deine gesicherten Farben, das Raster und das Übrige auf den offenen Entwurf und lässt die Größe der Platte, den Drucker und die Einheiten unberührt. {{ui:workspace.close}} oben rechts schließt das Fenster. Dieser Teil geht die Einstellungen eine nach der anderen durch.
+Das Zahnrad im Menüband ({{ui:editor.workspaceSettings}}) öffnet die Einstellungen. Links liegen fünf Bereiche: {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} und {{ui:workspace.history}}. Eine Änderung gilt sofort. {{ui:workspace.makeDefault}} unten sichert die aktuellen Einstellungen als Vorgabe, sodass ein neues Design mit ihnen beginnt. Eine geöffnete Datei bringt ihre eigenen Einstellungen mit; {{ui:workspace.useMyDefault}} daneben legt deine gesicherten Farben, das Raster und das Übrige auf den offenen Entwurf und lässt die Einheiten unberührt. Steht in deiner Vorgabe ein Drucker, kommt er mit seiner Plattengröße mit; sonst behält der Entwurf seine Platte und seinen Drucker. {{ui:workspace.close}} oben rechts schließt das Fenster. Dieser Teil geht die Einstellungen eine nach der anderen durch.
 
 ### Darstellung: Thema, Leiste und Ansichtswürfel
 
@@ -134,7 +135,7 @@ Die Skizzenansicht hat eigene Farben: {{ui:workspace.sketchBackground}} für das
 
 ### Darstellung: Licht und Schatten
 
-{{ui:workspace.showShadows}} schaltet die Schlagschatten ein und aus. Zwei Regler bestimmen, wie die Körper beleuchtet sind. {{ui:workspace.shadowStrength}} sagt, wie dunkel die Schlagschatten sind, und {{ui:workspace.shadeContrast}} schiebt Licht vom gleichmäßigen Umgebungslicht zum Hauptlicht: Richtung „kräftig“ werden die Schattenseiten dunkler und die Schatten besser sichtbar, Richtung „weich“ wird alles flacher. Am oberen Ende wird der Kontrast sehr kräftig, sodass Schattenseiten und Schatten richtig dunkel werden. {{ui:workspace.shadowSoftness}} macht die Ränder der Schatten weich statt scharf. {{ui:workspace.lightAzimuth}} dreht das Hauptlicht um die Platte (0° von vorn, 90° von rechts), und {{ui:workspace.lightElevation}} hebt es an, bei 90° steht es wie bei Tinkercad senkrecht über der Platte, und die Schatten fallen genau unter die Körper. {{ui:workspace.softLighting}} holt das meiste Licht aus deiner Blickrichtung, es dreht mit der Ansicht: Keine Fläche bleibt dunkel, und eine nach oben gerichtete Fläche einer dunklen Farbe wird nicht mehr weiß überstrahlt. Das Hauptlicht bleibt schwach für die Schatten, und der Kontrastregler wirkt weiter. {{ui:workspace.lightReset}} stellt alles zurück.
+{{ui:workspace.showShadows}} schaltet die Schlagschatten ein und aus. Zwei Regler bestimmen, wie die Körper beleuchtet sind. {{ui:workspace.shadowStrength}} sagt, wie dunkel die Schlagschatten sind, und {{ui:workspace.shadeContrast}} schiebt Licht vom gleichmäßigen Umgebungslicht zum Hauptlicht: Richtung „kräftig“ werden die Schattenseiten dunkler und die Schatten besser sichtbar, Richtung „weich“ wird alles flacher. Am oberen Ende wird der Kontrast sehr kräftig, sodass Schattenseiten und Schatten richtig dunkel werden. {{ui:workspace.shadowSoftness}} macht die Ränder der Schatten weich statt scharf. {{ui:workspace.lightAzimuth}} dreht das Hauptlicht um die Platte (0° von vorn, 90° von rechts), und {{ui:workspace.lightElevation}} hebt es an, bei 90° steht es wie bei Tinkercad senkrecht über der Platte, und die Schatten fallen genau unter die Körper. {{ui:workspace.softLighting}} holt das meiste Licht aus deiner Blickrichtung, es dreht mit der Ansicht: Keine Fläche bleibt dunkel, und eine nach oben gerichtete Fläche einer dunklen Farbe wird nicht mehr weiß überstrahlt. Das Hauptlicht bleibt schwach für die Schatten, und der Kontrastregler wirkt weiter. Zeigt sich bei tief stehendem Licht doch noch ein heller Fleck, hebe {{ui:workspace.lightElevation}} auf 90°: Dann sieht es aus wie bei Tinkercad. {{ui:workspace.lightReset}} stellt alles zurück.
 
 ### Darstellung: Maße auf der Arbeitsebene
 
@@ -146,13 +147,15 @@ Die Skizzenansicht hat eigene Farben: {{ui:workspace.sketchBackground}} für das
 
 {{ui:workspace.frameByDirection}}: Ein nach rechts gezogener Rahmen nimmt nur, was ganz in ihm liegt, ein nach links gezogener alles, was er berührt (gestrichelt gezeichnet), wie in SketchUp.
 
-{{ui:workspace.doubleClickOpensSketch}} bestimmt, ob ein Doppelklick auf eine extrudierte Skizze die Skizze wieder öffnet, wie in Tinkercad, und {{ui:workspace.doubleClickOpensGroup}}, ob ein Doppelklick auf eine Gruppe oder ein Bündel sie zum Bearbeiten öffnet.
+{{ui:workspace.doubleClickOpensSketch}} bestimmt, ob ein Doppelklick auf eine extrudierte Skizze die Skizze wieder öffnet, wie in Tinkercad, und {{ui:workspace.doubleClickOpensGroup}}, ob ein Doppelklick auf eine Gruppe oder ein Bündel sie zum Bearbeiten öffnet. {{ui:workspace.doubleClickCentersView}} bestimmt, ob ein Doppelklick auf eine leere Stelle der Arbeitsebene die Ansicht dorthin verschiebt.
 
 {{ui:workspace.objectSnap}} lässt die Kanten und die Mitte einer Form beim Ziehen an anderen Formen einrasten; das Rastermenü unten rechts hat denselben Schalter. {{ui:workspace.cruise}} lässt eine neue Form am Mauszeiger hängen und auf der Fläche darunter landen, wie Cruise in Tinkercad; ausgeschaltet erscheint eine neue Form in der Mitte der Platte. Mehr unter [Auswählen und Anordnen](chapter:auswaehlen-und-anordnen).
 
 ### Darstellung: die Ansicht
 
 {{ui:workspace.startInPerspective}}: Der Editor öffnet dann in der perspektivischen Ansicht, nicht in der flachen.
+
+{{ui:workspace.startView}} legt den Blickwinkel fest, in dem ein neuer Entwurf öffnet und zu dem {{ui:camera.home}} zurückkehrt. Dreh und zoome die Ansicht, wie du sie magst, und klicke dann {{ui:workspace.startViewUseCurrent}}; {{ui:workspace.startViewStandard}} bringt den gewohnten Blick von vorne rechts zurück. Das gilt für alle Entwürfe in diesem Browser. Ein Entwurf, den du wieder öffnest, öffnet weiter so, wie du ihn verlassen hast.
 
 {{ui:workspace.zoomSpeed}} ist ein Regler von langsam bis schnell: wie schnell Rad und Trackpad zoomen; die Zoomknöpfe und -tasten behalten ihre eigenen kleinen Schritte. {{ui:workspace.cameraInertia}}: Lässt du die Maus nach dem Drehen los, dreht die Ansicht noch kurz weiter und bremst sanft ab. Ausgeschaltet bleibt sie sofort stehen, wie in Tinkercad und Fusion 360.
 

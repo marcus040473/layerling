@@ -39,6 +39,8 @@ export type RulerDimensionMatch = {
   acrossOffset: number;
   /** Die volle Ausdehnung des Koerpers entlang der Lineal-Achse (mm). */
   extentAlong: number;
+  /** Its full extent across the ruler, in the ruler's face (mm). */
+  extentAcross: number;
   /**
    * Welches eigene Feld des Koerpers dieser Ausdehnung entspricht - nur gesetzt,
    * wenn eine seiner drei Achsen (innerhalb der Toleranz) parallel zur
@@ -86,6 +88,7 @@ export function rulerDimensionMatch(ruler: RulerPose, candidate: RulerCandidateP
     alongOffset: relative.dot(axisAlong),
     acrossOffset,
     extentAlong: extentAlongHalf * 2,
+    extentAcross: extentAcrossHalf * 2,
     alignedField: aligned?.field ?? null,
   };
 }
@@ -174,8 +177,34 @@ export function cornerRulerDimensionMatchesFromCorner(
 ): { armX: RulerDimensionMatch | null; armZ: RulerDimensionMatch | null } {
   const armX = rulerDimensionMatch({ x: corner.x, z: corner.z, rotation, length: armLengthX, crossWidth: armWidth }, candidate);
   const armZ = rulerDimensionMatch({ x: corner.x, z: corner.z, rotation: rotation + 90, length: armLengthZ, crossWidth: armWidth }, candidate);
-  return { armX, armZ };
+  // Only a body at an arm counts: beside it within its length and on the side the other arm points to, or across it.
+  // One that only touches the corner from outside the square, or lies behind it on an arm's extension, kept its
+  // numbers on screen as if it stood at the arm (#831).
+  // The arms as they are drawn: the first along the rotation's x, the second along its z (frame.zAxis). The second
+  // arm's match is taken a quarter turn on, so its own "along" runs against the drawn arm.
+  const quaternion = quaternionForShape({ rotation });
+  const armXDirection = new THREE.Vector3(1, 0, 0).applyQuaternion(quaternion);
+  const armZDirection = new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion);
+  const zQuaternion = quaternionForShape({ rotation: rotation + 90 });
+  const zMatchAlong = new THREE.Vector3(1, 0, 0).applyQuaternion(zQuaternion);
+  const zMatchAcross = new THREE.Vector3(0, 0, 1).applyQuaternion(zQuaternion);
+  const atArm = (match: RulerDimensionMatch | null, length: number, alongSign: number, inward: number) => {
+    if (!match) return null;
+    const along = alongSign * match.alongOffset;
+    const overlapsArm = along + match.extentAlong / 2 > CORNER_RULER_SIDE_TOLERANCE
+      && along - match.extentAlong / 2 < length - CORNER_RULER_SIDE_TOLERANCE;
+    const reachesInside = inward * match.acrossOffset + match.extentAcross / 2 > CORNER_RULER_SIDE_TOLERANCE;
+    return overlapsArm && reachesInside ? match : null;
+  };
+  return {
+    // The first arm's across is the second arm's direction: inside is its positive side.
+    armX: atArm(armX, armLengthX, 1, 1),
+    armZ: atArm(armZ, armLengthZ, Math.sign(zMatchAlong.dot(armZDirection)) || 1, Math.sign(zMatchAcross.dot(armXDirection)) || 1),
+  };
 }
+
+/** How far a body must reach past an arm's line or end (mm) to count as standing at it, not just touching it from outside. */
+const CORNER_RULER_SIDE_TOLERANCE = 0.01;
 
 /**
  * Teilstriche fuer einen Arm des Winkellineal-Werkzeugs, einer je Millimeter -

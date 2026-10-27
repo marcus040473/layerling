@@ -275,27 +275,99 @@ export function textFillClosedGeometry(runtime: ManifoldToplevel, shape: Workpla
   try {
     const region = textBodyRegion(runtime, keep as Keep, shape);
     if (!region) return null;
-    const solid = keep(region.extrude(Math.max(1e-3, shape.height)));
-    if (solid.status() !== "NoError" || solid.numTri() < 1) return null;
-    const mesh = solid.getMesh();
-    const stride = mesh.numProp;
-    const positions: number[] = [];
-    // Manifold's x/y plane is the text's x/z plane and its z the height: x, y and z are swapped, which turns
-    // the faces over, so the triangles are written the other way round.
-    for (let index = 0; index < mesh.vertProperties.length; index += stride) {
-      positions.push(mesh.vertProperties[index], mesh.vertProperties[index + 2], mesh.vertProperties[index + 1]);
+    return extrudedRegionGeometry(keep, region, shape.height);
+  } catch {
+    return null;
+  } finally {
+    new Set(made).forEach((item) => item.delete());
+  }
+}
+
+/** A region of the text's x/z plane as one closed body from the floor to `height`, extruded by the 2D kernel. */
+function extrudedRegionGeometry(keep: <T extends { delete: () => void }>(item: T) => T, region: CrossSection, height: number): THREE.BufferGeometry | null {
+  const solid = keep(region.extrude(Math.max(1e-3, height)));
+  if (solid.status() !== "NoError" || solid.numTri() < 1) return null;
+  const mesh = solid.getMesh();
+  const stride = mesh.numProp;
+  const positions: number[] = [];
+  // Manifold's x/y plane is the text's x/z plane and its z the height: x, y and z are swapped, which turns
+  // the faces over, so the triangles are written the other way round.
+  for (let index = 0; index < mesh.vertProperties.length; index += stride) {
+    positions.push(mesh.vertProperties[index], mesh.vertProperties[index + 2], mesh.vertProperties[index + 1]);
+  }
+  const indices: number[] = [];
+  for (let index = 0; index + 2 < mesh.triVerts.length; index += 3) {
+    indices.push(mesh.triVerts[index], mesh.triVerts[index + 2], mesh.triVerts[index + 1]);
+  }
+  const indexed = new THREE.BufferGeometry();
+  indexed.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  indexed.setIndex(indices);
+  const geometry = toCreasedNormals(indexed, THREE.MathUtils.degToRad(12));
+  indexed.dispose();
+  geometry.computeBoundingBox();
+  return geometry;
+}
+
+/** Whether the kernel takes the triangles of a geometry as a closed solid. */
+function geometryIsSolid(runtime: ManifoldToplevel, geometry: THREE.BufferGeometry): boolean {
+  const position = geometry.getAttribute("position");
+  const index = geometry.getIndex();
+  const count = index ? index.count : position.count;
+  const vertProperties = new Float32Array(position.count * 3);
+  for (let vertex = 0; vertex < position.count; vertex += 1) {
+    vertProperties[vertex * 3] = position.getX(vertex);
+    vertProperties[vertex * 3 + 1] = position.getY(vertex);
+    vertProperties[vertex * 3 + 2] = position.getZ(vertex);
+  }
+  const triVerts = new Uint32Array(count);
+  for (let corner = 0; corner < count; corner += 1) triVerts[corner] = index ? index.getX(corner) : corner;
+  const mesh = new runtime.Mesh({ numProp: 3, vertProperties, triVerts, tolerance: 0.0001 });
+  try {
+    mesh.merge();
+    const solid = runtime.Manifold.ofMesh(mesh);
+    try {
+      return solid.status() === "NoError" && solid.volume() > 0;
+    } finally {
+      solid.delete();
     }
-    const indices: number[] = [];
-    for (let index = 0; index + 2 < mesh.triVerts.length; index += 3) {
-      indices.push(mesh.triVerts[index], mesh.triVerts[index + 2], mesh.triVerts[index + 1]);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The text as the union of its letters, extruded by the 2D kernel: one closed body whatever the font's outlines do. Some letters
+ * are drawn by outlines that touch or cross themselves - the "#" of most fonts, the "f" of Rounded - and the plain mesh built
+ * from them is refused by the 3D kernel as "Not manifold" (#916). Null for curved text, for a text with a bevel (the region
+ * cannot carry it) and when the kernel makes nothing of it, and, with `onlyIfOverlapping`, when no letters overlap: strokes that
+ * cross make solids that overlap, which the kernel takes but a slice of the mesh (the DXF footprint) leaves open.
+ */
+export function textJoinedGeometry(runtime: ManifoldToplevel, shape: WorkplaneShape, onlyIfOverlapping = false): THREE.BufferGeometry | null {
+  if (shape.kind !== "text" || shape.textCurved || (shape.bevel ?? 0) > 0 || shape.height <= 0) return null;
+  const made: { delete: () => void }[] = [];
+  const keep = <T extends { delete: () => void }>(item: T): T => {
+    made.push(item);
+    return item;
+  };
+  try {
+    const glyphs = textGlyphShapes(shape);
+    if (!glyphs) return null;
+    const letters = glyphs.glyphs.map(({ glyph, map }) => {
+      const sampled = glyph.extractPoints(glyphs.curveSegments);
+      const rings = [sampled.shape, ...sampled.holes]
+        .map((ring) => ring.map((point) => map(point)))
+        .map((ring) => ring.map((point) => [point.x, point.z] as [number, number]))
+        .filter((ring) => ring.length >= 3);
+      return rings.length ? keep(new runtime.CrossSection(rings, "EvenOdd")) : null;
+    }).filter((letter): letter is CrossSection => Boolean(letter));
+    if (!letters.length) return null;
+    const joined = keep(runtime.CrossSection.union(letters));
+    if (onlyIfOverlapping) {
+      // Letters that only touch share an edge and no area; strokes that cross make the parts add up to more than the whole.
+      const separate = letters.reduce((sum, letter) => sum + letter.area(), 0);
+      if (separate - joined.area() <= 1e-4 * Math.max(joined.area(), 1e-9)) return null;
     }
-    const indexed = new THREE.BufferGeometry();
-    indexed.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    indexed.setIndex(indices);
-    const geometry = toCreasedNormals(indexed, THREE.MathUtils.degToRad(12));
-    indexed.dispose();
-    geometry.computeBoundingBox();
-    return geometry;
+    return extrudedRegionGeometry(keep, keep(joined.simplify(1e-6)), shape.height);
   } catch {
     return null;
   } finally {
@@ -309,7 +381,16 @@ export function textFillClosedGeometry(runtime: ManifoldToplevel, shape: Workpla
  * it; the viewport draws the text again once it is there (manifoldRevision in its cache key).
  */
 export function textDisplayGeometry(shape: WorkplaneShape): THREE.BufferGeometry {
-  if (!textHasFill(shape) && !textHasEdge(shape)) return createTextGeometry(shape);
+  if (!textHasFill(shape) && !textHasEdge(shape)) {
+    const plain = createTextGeometry(shape);
+    // A text whose letters the 3D kernel refuses (the "#", #916) is built from the union of its letters instead, once the kernel is there.
+    const kernel = loadedManifoldRuntime();
+    if (!kernel || shape.textCurved || (shape.bevel ?? 0) > 0) return plain;
+    const joined = textJoinedGeometry(kernel, shape, geometryIsSolid(kernel, plain));
+    if (!joined) return plain;
+    plain.dispose();
+    return joined;
+  }
   const runtime = loadedManifoldRuntime();
   if (!runtime) {
     requestManifoldRuntime();

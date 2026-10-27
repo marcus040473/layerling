@@ -51,6 +51,10 @@ Včasih naj deli samo ostanejo skupaj, ne da bi postali eno – na primer bel lo
 
 {{ui:editor.tool.intersect}} obdrži samo to, kar imata dve ali več teles skupnega. Položi dve prekrivajoči se obliki drugo čez drugo, označi obe in klikni nanj. Tako na primer iz valja in kvadra nastane kos z okroglo in ravno stranjo. Skupina pri tem šteje tako, kot izgleda, torej z izvrtinami. Če je označena tudi luknja, ostane to, kar imajo vsa telesa skupnega z vsemi luknjami.
 
+## Izrezovanje enega telesa iz drugega
+
+Pri delih, ki morajo ustrezati drug drugemu, gred v puši ali vijak v ohišju, naredite en del in ga izrežete iz drugega. Izberite obe telesi in kliknite {{ui:editor.tool.cutOut}} v območju {{ui:editor.group.combine}} ali kliknite z desno tipko in ga izberite tam. Plošča navede del, ki ostane, in telo, ki dobi votlino; layerling vzame manjše telo za del, {{ui:cutOut.swap}} pa ju zamenja. {{ui:cutOut.clearance}} naredi votlino okoli dela toliko večjo: 0 ustreza natančno, 0,2 mm je običajna zračnost za natisnjeno ujemanje. {{ui:cutOut.apply}} izreže kopijo dela iz drugega telesa in pusti sam del tam, kjer je. Rezultat je skupina: {{ui:editor.tool.ungroup}} rez spet razstavi. Zračnost zahteva, da je del natančno telo, kot pri orodju {{ui:editor.tool.offset}}, ki se uporablja za to.
+
 ## Urejanje skupine
 
 Če je izvrtina ratala premajhna, skupine ni treba razdružiti in zgraditi znova. Izberi skupino in v njenih nastavitvah klikni {{ui:group.edit}}, v seznamu objektov ikono mape, ali pritisni [[E]]. Dvoklik na skupino naredi isto, kot v Tinkercadu, tudi pri svežnju; kdor tega ne mara, izklopi {{ui:workspace.doubleClickOpensGroup}} v nastavitvah. Del se sicer premakne šele, ko je kazalec potegnjen nekaj pikslov daleč, tako da nespretni klik ali dvoklik nič ne premakne. Deli zdaj ležijo posamezno in jih spreminjaš z vsemi orodji: luknjo povečaš, telo premakneš, luknjo dodaš.

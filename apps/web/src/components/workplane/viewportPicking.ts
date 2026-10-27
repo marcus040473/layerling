@@ -4,7 +4,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import type { WorkplaneShape } from "@/types/layerling";
 import type { ThreeState } from "@/components/workplane/ViewportOverlays";
 import { outwardFaceNormal } from "@/lib/layFlat";
-import { planarFaceCentroid, type PivotPoint } from "@/lib/rotationPivot";
+import { planarFaceCentroid, planarFaceTriangles, type PivotPoint } from "@/lib/rotationPivot";
 import { roundFaceTriangles, type RoundFaceAxis } from "@/lib/roundFaceAxis";
 
 /**
@@ -50,6 +50,32 @@ export function pointerRayFor(state: PickRayState, clientX: number, clientY: num
  * cut away by the section view does not, and neither do image plates or
  * previews. A press that just misses still finds the body next to it.
  */
+/** Whether a ray hit picks a body: its surface, in front of the section plane, and not a locked reference image or a preview. */
+function pickableShapeHit(state: ThreeState, shapes: readonly WorkplaneShape[]) {
+  return (entry: THREE.Intersection) => {
+    // Only surfaces pick a body. Its edge lines count as hit within 1.15 mm of the ray, so
+    // through a slot narrower than about 3 mm the rim always won over the body behind it (#193).
+    if (!(entry.object instanceof THREE.Mesh)) return false;
+    if (state.sectionPlane && state.sectionPlane.distanceToPoint(entry.point) < -0.001) return false;
+    const shapeId = entry.object.userData.shapeId;
+    if (typeof shapeId !== "string") return false;
+    const shape = shapes.find((candidate) => candidate.id === shapeId);
+    // A reference image (#680) is picked where no body lies over it, unless it is locked: then clicks go through to the plate.
+    return shape ? !(shape.imagePlate && shape.locked) && !shape.previewOnly : false;
+  };
+}
+
+/** Every body the ray under the pointer passes through, front to back, each once: what "Select other" lists (#804). */
+export function shapesUnderPointer(state: ThreeState, shapes: readonly WorkplaneShape[], clientX: number, clientY: number) {
+  aimPickRay(state, clientX, clientY, RENDER_LAYER_SHAPES);
+  const ids: string[] = [];
+  for (const entry of state.raycaster.intersectObjects(state.shapeLayer.children, true).filter(pickableShapeHit(state, shapes))) {
+    const id = entry.object.userData.shapeId as string;
+    if (!ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
 export function pickShapeAt(
   state: ThreeState,
   shapes: readonly WorkplaneShape[],
@@ -62,17 +88,7 @@ export function pickShapeAt(
   const tolerance = pointerType === "touch" ? PICK_TOLERANCE_PIXELS_TOUCH : PICK_TOLERANCE_PIXELS;
   const rect = aimPickRay(state, clientX, clientY, RENDER_LAYER_SHAPES);
 
-  const pickable = (entry: THREE.Intersection) => {
-    // Only surfaces pick a body. Its edge lines count as hit within 1.15 mm of the ray, so
-    // through a slot narrower than about 3 mm the rim always won over the body behind it (#193).
-    if (!(entry.object instanceof THREE.Mesh)) return false;
-    if (state.sectionPlane && state.sectionPlane.distanceToPoint(entry.point) < -0.001) return false;
-    const shapeId = entry.object.userData.shapeId;
-    if (typeof shapeId !== "string") return false;
-    const shape = shapes.find((candidate) => candidate.id === shapeId);
-    // A reference image (#680) is picked where no body lies over it, unless it is locked: then clicks go through to the plate.
-    return shape ? !(shape.imagePlate && shape.locked) && !shape.previewOnly : false;
-  };
+  const pickable = pickableShapeHit(state, shapes);
   const pickableHits = state.raycaster.intersectObjects(state.shapeLayer.children, true).filter(pickable);
   const hit = pickableHits[0];
   if (hit) {
@@ -161,12 +177,32 @@ export function worldTrianglePositions(mesh: THREE.Mesh<THREE.BufferGeometry>): 
   return positions;
 }
 
-export function pickRotationPivot(state: ThreeState, clientX: number, clientY: number): PivotPoint | null {
+/** The middle of the face a pivot click hit, as drawn, and the face itself, for a group whose face is read from its parts joined. */
+export function pickRotationPivot(state: ThreeState, clientX: number, clientY: number): { point: PivotPoint; face: LayFlatPick | null } | null {
+  aimPickRay(state, clientX, clientY, RENDER_LAYER_SHAPES);
+  const hit = firstShapeHit(state, { needsFace: true });
+  if (!hit || hit.faceIndex === undefined || hit.faceIndex === null) return null;
+  const faceIndex = hit.faceIndex;
+  const mesh = hit.object as THREE.Mesh<THREE.BufferGeometry>;
+  const positions = worldTrianglePositions(mesh);
+  const corner = (offset: number) => new THREE.Vector3().fromArray(positions, (faceIndex * 3 + offset) * 3);
+  const normal = outwardFaceNormal(corner(0), corner(1), corner(2), state.raycaster.ray.direction);
+  const point = { x: hit.point.x, y: hit.point.y, z: hit.point.z };
+  return { point: planarFaceCentroid(positions, faceIndex) ?? point, face: normal ? { shapeId: mesh.userData.shapeId as string, normal, point } : null };
+}
+
+/**
+ * The middle of the flat face under the pointer, for a reference point on it (#881): the centre of the area of every
+ * triangle in that plane joined to the one hit. A curved surface is no face with a middle, so a lone facet gives null.
+ */
+export function pickFaceCentre(state: ThreeState, clientX: number, clientY: number): PivotPoint | null {
   aimPickRay(state, clientX, clientY, RENDER_LAYER_SHAPES);
   const hit = firstShapeHit(state, { needsFace: true });
   if (!hit || hit.faceIndex === undefined || hit.faceIndex === null) return null;
   const positions = worldTrianglePositions(hit.object as THREE.Mesh<THREE.BufferGeometry>);
-  return planarFaceCentroid(positions, hit.faceIndex) ?? { x: hit.point.x, y: hit.point.y, z: hit.point.z };
+  const face = planarFaceTriangles(positions, hit.faceIndex);
+  if (!face || face.triangles.length < 2) return null;
+  return planarFaceCentroid(positions, hit.faceIndex);
 }
 
 /** A face for "Align faces": as for Lay flat, and for a round face (a hole, a pin) its axis as well. */

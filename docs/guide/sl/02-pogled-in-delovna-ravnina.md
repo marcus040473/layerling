@@ -14,6 +14,7 @@ Z miško:
 | vlečenje s srednjim gumbom | premikanje pogleda |
 | kolesce miške | približevanje in oddaljevanje |
 | drži [[Ctrl]] / [[Cmd]] in vleci z levim gumbom | prav tako premikanje |
+| dvojni klik na prazno mesto delovne ravnine ali ob ploščo | premakne pogled, da je to mesto na sredini; pogled se nato vrti okoli njega |
 
 Hitrost zumiranja s kolescem nastaviš z {{ui:workspace.zoomSpeed}} v nastavitvah, pod {{ui:workspace.appearance}}: drsnik od 1 do 14, na začetku 5; nad 10 se pospeši le kolešček.
 
@@ -80,7 +81,7 @@ Nove oblike se ravnajo po delovni ravnini. Na začetku je to osnovna plošča z 
 
 Na ploskvi se izhodišče delovne ravnine sicer zaskoči na mrežo. Če klikneš blizu oglišča ploskve, sedi natanko na tem ogliščku. Blizu roba leži na robu, mreža pa se uskladi z njim; tako zavestno izbereš kot mreže. Brez oglišča ali roba mreža na ležeči ploskvi teče vzporedno s telesom, pri zavrtenem kvadru torej zavrtena z njim.
 
-Klik ob ploščo ali [[Esc]] vrne delovno ravnino na osnovno ploščo. Hitreje gre z {{ui:camera.resetWorkplane}}: gumb s puščico navzdol je v vrstici kamere pod očesom, dokler ravnina leži na ploskvi. S [[Shift]]+[[W]] jo položiš neposredno na trenutno izbrano ploskev. Če pri kliku držiš [[Shift]], ravnina kaže v drugo smer.
+Klik ob ploščo ali [[Esc]] vrne delovno ravnino na osnovno ploščo. Hitreje gre z {{ui:camera.resetWorkplane}}: gumb s puščico navzdol je v vrstici kamere pod očesom, dokler ravnina leži na ploskvi. S [[Shift]]+[[W]] jo položiš neposredno na trenutno izbrano ploskev. [[Alt]]+[[W]] jo kadar koli vrne na osnovno ploščo, ne glede na to, ali je kaj izbrano. Če pri kliku držiš [[Shift]], ravnina kaže v drugo smer.
 
 Dokler delovna ravnina leži na ploskvi, se ob {{ui:camera.placeWorkplane}} pokaže oko. Skrije ravnino, ne da bi jo odstranilo, da imaš prost pogled na načrt: nove oblike še naprej pristanejo na tej ploskvi, vrti pa se še naprej okoli nje. Klik na oko jo spet prikaže, prav tako postavitev nove delovne ravnine.
 

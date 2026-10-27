@@ -7,6 +7,7 @@ summary: Video su layerling realizzati da altri.
 
 Questi video non fanno parte del progetto. I link aprono YouTube in una nuova scheda; non viene caricato nulla finché non fai clic.
 
+- [I Tried Layerling After Tinkercad… Is It REALLY Better?](https://youtu.be/5DpOxdoNwqs) – Maker Mates Studio 3D Printing (inglese). Chi arriva da Tinkercad prova layerling e mette a confronto i due.
 - [Layerling CAD Videos](https://www.youtube.com/playlist?list=PLc09BHr_6nn8) – Printology (inglese). Una playlist su layerling, che per ora include «I'm 100% In on Layerling - The Next Big Free CAD» e «Layerling Features That Blow Tinkercad Out Of The Water».
 - [Print by Layer](https://www.youtube.com/playlist?list=PLejZBz4L7CGQ) – Print N Repeat (inglese). Una playlist su layerling, che per ora include «The EASIEST Way to Design Hinges in Layerling» e «The EASIEST Way to 3D Model Threads!».
 - [Layerling la nueva herramienta gratuita de modelado 3D, más completo que Tinkercad](https://youtu.be/-EEt0RSINoY) – Fulcro 1900 (spagnolo). Un video su layerling, il nuovo strumento gratuito di modellazione 3D, descritto come più completo di Tinkercad.

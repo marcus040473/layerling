@@ -18,11 +18,11 @@ export function createLocalId(prefix: string) {
  * suffix a previous grouping or ungrouping added is dropped first, so opening
  * and closing a group again and again does not grow the id each time.
  */
-export function derivedLocalId(sourceId: string, role: "group-child" | "ungroup") {
+export function derivedLocalId(sourceId: string, role: "group-child" | "ungroup" | "bore") {
   return createLocalId(`${localIdBase(sourceId)}-${role}`);
 }
 
 /** The id an object had before any grouping or ungrouping gave it a derived one. */
 export function localIdBase(id: string) {
-  return id.split(/-(?:group-child|ungroup)-/)[0] || id;
+  return id.split(/-(?:group-child|ungroup|bore)-/)[0] || id;
 }

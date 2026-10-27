@@ -6,7 +6,7 @@ import { Check, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
-import { ARRAY_MAX_COUNT, ARRAY_MIN_COUNT, type ArrayMode, type ArraySettings } from "@/lib/shapeArray";
+import { ARRAY_MAX_COUNT, ARRAY_MIN_COUNT, arrayGroupsCopies, type ArrayMode, type ArraySettings } from "@/lib/shapeArray";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
 const ARRAY_MODES: readonly ArrayMode[] = ["row", "circle"];
@@ -81,6 +81,11 @@ export function ArrayPanel({
           ))}
         </div>
       </div>
+
+      <label className="edge-modifier-check">
+        <input type="checkbox" checked={arrayGroupsCopies(settings)} onChange={(event) => onChange({ groupCopies: event.currentTarget.checked })} />
+        <span>{t("array.groupCopies")}</span>
+      </label>
 
       <EdgeModifierSlider
         label={t("array.count")}

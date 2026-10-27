@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { circleStepDegrees, clampArrayCount, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing } from "@/lib/shapeArray";
+import { ARRAY_AUTO_GROUP_ABOVE, arrayGroupsCopies, circleStepDegrees, clampArrayCount, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing } from "@/lib/shapeArray";
 
 describe("shape arrays", () => {
+  it("groups the pieces by itself above five, until the person chooses", () => {
+    expect(ARRAY_AUTO_GROUP_ABOVE).toBe(5);
+    expect(arrayGroupsCopies({ count: 4 })).toBe(false);
+    expect(arrayGroupsCopies({ count: 5 })).toBe(false);
+    expect(arrayGroupsCopies({ count: 6 })).toBe(true);
+    // A choice stays, whatever the count does afterwards.
+    expect(arrayGroupsCopies({ count: 35, groupCopies: false })).toBe(false);
+    expect(arrayGroupsCopies({ count: 3, groupCopies: true })).toBe(true);
+  });
+
   it("keeps the count between two pieces and a hundred", () => {
     expect(clampArrayCount(1)).toBe(2);
     expect(clampArrayCount(7.4)).toBe(7);

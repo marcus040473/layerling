@@ -36,13 +36,13 @@ Le carré d'encadrement repose sur le plan de travail. Si cela se trouve sur le 
 - **Le ×** à côté le supprime.
 - **Le petit bouton à gauche de la poignée** change ce qui est mesuré à partir de : l'extérieur d'un corps (point final, une icône avec des lignes) ou son milieu (point médian, un réticule).
 
-Si des corps se tiennent près de l'un des bras, le carré d'encadrement affiche automatiquement leurs dimensions. Cela fonctionne uniquement sur la plaque de base, pas sur le côté d'une carrosserie.
+Si des corps se tiennent près de l'un des bras, le carré d'encadrement affiche automatiquement leurs dimensions. Cela fonctionne uniquement sur la plaque de base, pas sur le côté d'une carrosserie. Le bouton à la flèche sous la poignée de l'équerre le désactive, de sorte que seuls les corps sélectionnés montrent leurs dimensions ; il est enregistré avec le design.
 
 Lorsque vous sélectionnez un corps, le carré d'encadrement indique en vert sa distance par rapport au coin, le long des deux bras et en hauteur. Cliquez sur un nombre vert pour saisir une distance et le corps se déplace exactement à cet endroit. Avec plusieurs corps sélectionnés, ils comptent pour un : la règle mesure leur contour commun et une valeur saisie les déplace tous ensemble sans changer leurs positions les uns par rapport aux autres.
 
 Au milieu, les chiffres verts comptent jusqu'au milieu du corps, également en hauteur. De cette façon, vous placez une sphère avec son centre exactement à 15 mm d'un bord, sans soustraire le rayon. Sur un mur vous placez un trou à 40 mm de la gauche et 190 mm du haut comme ceci : sélectionnez le trou, passez au milieu, tapez 40 et 190. La hauteur y compte vers l'extérieur du mur.
 
-Le ruban à mesurer et l'équerre de cadrage restent là où ils se trouvent pendant que vous dessinez et revenez à la vue 3D. Ils ne sont pas enregistrés avec le design ni dans l'historique, et ils disparaissent lorsque vous rechargez la page.
+Le ruban à mesurer et l'équerre de cadrage restent là où ils se trouvent pendant que vous dessinez et revenez à la vue 3D. Aucun des deux n'entre dans l'historique. L'équerre de cadrage est enregistrée avec le design, tout comme les mesures du ruban à mesurer, dans le navigateur et dans le fichier .lyl : elles sont de nouveau là quand vous ouvrez le design. Le bouton en forme d'œil parmi les boutons du ruban masque toutes les mesures et les réaffiche ; le fait qu'elles soient masquées est aussi enregistré, et ajouter, déplacer ou supprimer une mesure les réaffiche d'abord.
 
 ## Distances jusqu'à l'origine et en déplacement
 
@@ -70,7 +70,7 @@ Les notes sont enregistrées dans la conception, n'apparaissent dans aucune expo
 
 ## Points de référence
 
-Un point de référence est une marque nue dans l'espace, comme une marque de crayon ou un point de tracé dans un atelier : il n'appartient à personne, n'est jamais imprimé et d'autres choses s'y accrochent. Faites un clic droit sur un corps et choisissez {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} ou {{ui:contextMenu.markMidpoints}} : les points apparaissent sur la face supérieure du corps (de toute la sélection, si vous en avez sélectionné plusieurs).
+Un point de référence est une marque nue dans l'espace, comme une marque de crayon ou un point de tracé dans un atelier : il n'appartient à personne, n'est jamais imprimé et d'autres choses s'y accrochent. Faites un clic droit sur un corps et choisissez {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} ou {{ui:contextMenu.markMidpoints}} : les points apparaissent sur la face supérieure du corps (de toute la sélection, si vous en avez sélectionné plusieurs). {{ui:contextMenu.markFaceCenter}} place à la place un point au milieu de la face plane sur laquelle vous avez fait un clic droit, sur un côté ou une extrémité par exemple.
 
 - Le ruban à mesurer peut également marquer un point : {{ui:camera.tapeMarkMiddle}}, le bouton en réticule sous une mesure, en place un en son milieu, par exemple au centre d'un trou rond.
 - Faites glisser un point pour le déplacer, ou cliquez dessus pour voir ses coordonnées et en saisir de nouvelles ; ils utilisent l'unité que vous avez définie. Chaque carte peut être déplacée par son titre si elle recouvre quelque chose, individuellement : les autres restent là où elles sont, et un double-clic sur le titre la remet en place. La carte que vous avez touchée en dernier se trouve devant les autres. **Tout supprimer** dans une carte, ou dans le menu contextuel du clic droit, supprime tous les points en une seule fois. {{ui:common.delete}} le supprime.

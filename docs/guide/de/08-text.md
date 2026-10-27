@@ -22,6 +22,8 @@ Auch die Kanten einer Schrift lassen sich fasen oder verrunden, gerade oder gebo
 
 ## Eigene Schriften
 
+Die Liste unter {{ui:prop.font}} zeigt jede Schrift in ihren eigenen Buchstaben, mit den Wörtern deines Textes, sodass du vor dem Wählen siehst, wie sie aussehen wird. Dasselbe gilt für die Schriften im Fenster darunter; die vom Rechner aufgelisteten Schriften zeigen ihren Namen in ihren eigenen Buchstaben. In der Liste gehen die Pfeiltasten und [[Enter]], und ein Buchstabe springt zur nächsten Schrift, die damit beginnt.
+
 Neben den acht mitgelieferten Schriften kannst du jede eigene Schrift nehmen: eine Schriftdatei von deinem Rechner oder, in Chrome und Edge, eine Schrift, die auf deinem Computer installiert ist. Wähle dazu unter {{ui:prop.font}} ganz unten {{ui:font.manage}}. Es öffnet sich das Fenster {{ui:font.title}}.
 
 - **{{ui:font.addFile}}** nimmt eine TrueType-Datei (`.ttf`), eine OpenType-Datei (`.otf`) oder eine WOFF-Datei (`.woff`). Du kannst die Datei auch einfach in das Fenster ziehen.

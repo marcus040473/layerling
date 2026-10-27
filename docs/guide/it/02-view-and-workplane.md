@@ -14,6 +14,7 @@ Con il mouse:
 | trascini con il tasto centrale | sposti la vista |
 | rotellina del mouse | avvicina o allontana la vista |
 | tieni premuto [[Ctrl]] e trascini con il tasto sinistro | sposti la vista anche così |
+| doppio clic su un punto vuoto del piano di lavoro o accanto alla piastra | sposti la vista finché quel punto è al centro; poi la vista ruota attorno a esso |
 
 La velocità dello zoom con la rotellina si imposta con {{ui:workspace.zoomSpeed}} nelle impostazioni, sotto {{ui:workspace.appearance}}: è un cursore da 1 a 14, impostato inizialmente su 5; sopra 10 aumenta la velocità solo della rotellina. Un singolo scatto della rotellina ingrandisce allo stesso modo in tutti i browser; con il trackpad lo zoom dipende da quanto fai scorrere le dita.
 
@@ -81,7 +82,7 @@ Fai invece clic sulla piastra vuota e il piano di lavoro si dispone in orizzonta
 
 Su una faccia, di norma l’origine del piano di lavoro si aggancia alla griglia. Fai clic vicino a un angolo della faccia per posizionarla esattamente lì; vicino a uno spigolo, il piano si dispone sullo spigolo e la griglia si allinea a esso. In questo modo puoi scegliere intenzionalmente l’angolazione della griglia. Se non c’è un angolo o uno spigolo vicino, la griglia sul piano appoggiato alla faccia resta parallela al corpo: se la scatola è ruotata, anche la griglia ruota con essa.
 
-Fai clic accanto alla piastra o premi [[Esc]] per riportare il piano di lavoro sulla piastra di base. Ancora più rapido è {{ui:camera.resetWorkplane}}: il pulsante con la freccia verso il basso si trova nella barra della telecamera, sotto l’occhio, quando il piano di lavoro è appoggiato a una faccia. [[Shift]]+[[W]] lo posiziona direttamente sulla faccia selezionata. Se tieni premuto [[Shift]] mentre fai clic, il piano è rivolto nella direzione opposta.
+Fai clic accanto alla piastra o premi [[Esc]] per riportare il piano di lavoro sulla piastra di base. Ancora più rapido è {{ui:camera.resetWorkplane}}: il pulsante con la freccia verso il basso si trova nella barra della telecamera, sotto l’occhio, quando il piano di lavoro è appoggiato a una faccia. [[Shift]]+[[W]] lo posiziona direttamente sulla faccia selezionata. [[Alt]]+[[W]] lo riporta sulla piastra di base in qualsiasi momento, che ci sia una selezione o no. Se tieni premuto [[Shift]] mentre fai clic, il piano è rivolto nella direzione opposta.
 
 Quando il piano di lavoro è posizionato su una faccia, accanto a {{ui:camera.placeWorkplane}} appare un occhio. Puoi nascondere il piano di lavoro senza rimuoverlo, per osservare meglio il progetto: le nuove forme continueranno a essere posizionate su quella faccia e la rotazione continuerà a farle ruotare attorno a essa. Fai clic sull’occhio per mostrarlo di nuovo; anche impostare un nuovo piano di lavoro lo rende visibile.
 
@@ -145,7 +146,7 @@ Con {{ui:workspace.selectBeforeMoving}} devi prima selezionare un corpo e solo u
 
 Con {{ui:workspace.frameByDirection}}, trascinando un riquadro verso destra selezioni solo gli oggetti che vi rientrano completamente; trascinandolo verso sinistra selezioni tutto ciò che tocca, come indicato dal contorno tratteggiato. Funziona come in SketchUp.
 
-{{ui:workspace.doubleClickOpensSketch}} decide se un doppio clic su uno schizzo estruso lo riapre per modificarlo, come in Tinkercad; {{ui:workspace.doubleClickOpensGroup}} decide se un doppio clic su un gruppo o un insieme lo apre per la modifica.
+{{ui:workspace.doubleClickOpensSketch}} decide se un doppio clic su uno schizzo estruso lo riapre per modificarlo, come in Tinkercad; {{ui:workspace.doubleClickOpensGroup}} decide se un doppio clic su un gruppo o un insieme lo apre per la modifica. {{ui:workspace.doubleClickCentersView}} decide se un doppio clic su un punto vuoto del piano di lavoro sposta lì la vista.
 
 {{ui:workspace.objectSnap}} permette agli spigoli e al centro di una forma di agganciarsi ad altre forme durante il trascinamento; lo stesso interruttore si trova nel menu della griglia in basso a destra. {{ui:workspace.cruise}} fa sì che una nuova forma segua il puntatore e si appoggi alla faccia sottostante, come la funzione Cruise di Tinkercad; se è disattivato, la nuova forma compare al centro della piastra. Altre informazioni in [Selezionare e disporre](chapter:select-and-arrange).
 

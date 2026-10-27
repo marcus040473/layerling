@@ -5,6 +5,7 @@ import { VIEW_CUBE_POLE_EPSILON } from "@/lib/viewCubeDrag";
  * A click on the view cube turns the camera from where it stands to the clicked face, edge or
  * corner instead of jumping there. The turn runs on the orbit sphere around the pivot: the
  * radius stays, the angles take the shortest way, and the eye eases out into the new view.
+ * A double click on the workplane slides the pivot to the spot the same way, the angle kept.
  */
 export const VIEW_CUBE_TURN_MS = 320;
 
@@ -13,12 +14,23 @@ export function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export type CameraTurn = {
+/** A turn around the pivot: a click on the view cube. */
+export type ViewTurn = {
   from: THREE.Spherical;
   to: THREE.Spherical;
   startedAt: number;
   duration: number;
 };
+
+/** A slide of the pivot with the camera alongside: a double click on the workplane centres the view there. */
+export type PivotSlide = {
+  pivotFrom: THREE.Vector3;
+  pivotTo: THREE.Vector3;
+  startedAt: number;
+  duration: number;
+};
+
+export type CameraTurn = ViewTurn | PivotSlide;
 
 /** Ease-out cubic: quick at the first click, gentle as the view settles. */
 export function turnEase(progress: number): number {
@@ -31,7 +43,7 @@ export function turnEase(progress: number): number {
  * azimuth takes the shorter way round, so a click never swings the long way (and never
  * through the pivot, as a straight line between two positions would).
  */
-export function cameraTurn(fromOffset: THREE.Vector3, toOffset: THREE.Vector3, startedAt: number, duration = VIEW_CUBE_TURN_MS): CameraTurn {
+export function cameraTurn(fromOffset: THREE.Vector3, toOffset: THREE.Vector3, startedAt: number, duration = VIEW_CUBE_TURN_MS): ViewTurn {
   const from = new THREE.Spherical().setFromVector3(fromOffset);
   const to = new THREE.Spherical().setFromVector3(toOffset);
   to.radius = from.radius;
@@ -47,7 +59,7 @@ export function cameraTurn(fromOffset: THREE.Vector3, toOffset: THREE.Vector3, s
  * The camera offset at `now`, and whether the turn has arrived. The ends are exact, so a
  * turn that is cut short by a drag never leaves the camera between two views.
  */
-export function cameraTurnOffset(turn: CameraTurn, now: number): { offset: THREE.Vector3; done: boolean } {
+export function cameraTurnOffset(turn: ViewTurn, now: number): { offset: THREE.Vector3; done: boolean } {
   const progress = THREE.MathUtils.clamp((now - turn.startedAt) / turn.duration, 0, 1);
   const eased = turnEase(progress);
   const spherical = new THREE.Spherical(
@@ -56,4 +68,16 @@ export function cameraTurnOffset(turn: CameraTurn, now: number): { offset: THREE
     THREE.MathUtils.lerp(turn.from.theta, turn.to.theta, eased),
   ).makeSafe();
   return { offset: new THREE.Vector3().setFromSpherical(spherical), done: progress >= 1 };
+}
+
+/** The slide of the pivot from where it is to a new spot, eased out like a turn. */
+export function pivotSlide(from: THREE.Vector3, to: THREE.Vector3, startedAt: number, duration = VIEW_CUBE_TURN_MS): PivotSlide {
+  return { pivotFrom: from.clone(), pivotTo: to.clone(), startedAt, duration: Math.max(1, duration) };
+}
+
+/** The pivot at `now`, and whether the slide has arrived; the ends are exact. */
+export function pivotSlidePoint(slide: PivotSlide, now: number): { pivot: THREE.Vector3; done: boolean } {
+  const progress = THREE.MathUtils.clamp((now - slide.startedAt) / slide.duration, 0, 1);
+  if (progress >= 1) return { pivot: slide.pivotTo.clone(), done: true };
+  return { pivot: slide.pivotFrom.clone().lerp(slide.pivotTo, turnEase(progress)), done: false };
 }

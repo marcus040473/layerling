@@ -12,17 +12,22 @@ import { liftHandleScreenPoint } from "@/components/workplane/transformOverlayTy
 import { dimensionMarkScreenPush, isPointInsideTransformBounds, rotateHandleArrow, rotationPlaneDirectionSign, transformBoundsIntersectClipVolume, transformOverlayScreenPoint, type DimensionMark, type RotationAxis, type RotationPlaneView, type TransformOverlayState } from "@/components/workplane/TransformOverlay";
 import { cuboidCorners, pointAlongAxes } from "@/lib/alignFrame";
 import type { AlignAxis, AlignHandleStatus, AlignTarget, MeasurementAccuracy, WorkplaneShape } from "@/types/layerling";
-import { planarFaceTriangles } from "@/lib/rotationPivot";
+import { outwardFaceNormal } from "@/lib/layFlat";
+import { JOINED_FACE_REACH, nearestFaceTriangle, planarFaceTriangles } from "@/lib/rotationPivot";
 import { roundFaceTriangles } from "@/lib/roundFaceAxis";
 import { isReferenceImage, referenceImageFacingAxis } from "@/lib/referenceImage";
 import { aimPickRay, firstShapeHit, RENDER_LAYER_SHAPES } from "@/components/workplane/viewportPicking";
 import { type ThreeState, type RotationHandleSide, type RotationHandleSides, syncTransformGuideWorldLines, formatMeasure, findShapeObject, disposeChildren } from "@/components/workplane/ViewportOverlays";
-import { MIN_SHAPE_SIZE, RENDER_LAYER_PREVIEWS, clamp, selectionFrameForShapes } from "./viewportShapeObjects";
+import { MIN_SHAPE_SIZE, RENDER_LAYER_PREVIEWS, clamp, selectionFrameForShapes, shapeResourceId } from "./viewportShapeObjects";
 
 /** World-space offset from the height handle to the lift handle, as a fraction of selection height. */
 export const LIFT_HANDLE_HEIGHT_OFFSET_FRACTION = 0.30;
 /** The lift arrow stands this far over a tall body at most, so it does not fly away from it. */
 export const LIFT_HANDLE_MAX_OFFSET = 12;
+/** How far the line of alignment handles stands beside the selection, in mm. It used to grow with the
+ *  selection (16 % of its largest side), which put it 15 mm and more away from a larger body; it stays
+ *  close now, as in Tinkercad. Handles that land on one spot are still pushed apart on the screen. */
+export const ALIGN_HANDLE_OFFSET = 3;
 
 /** How far the lift arrow stands over the face it belongs to; the overlay and the drag plane both use this. */
 export function liftHandleOffset(liftHeight: number) {
@@ -568,7 +573,8 @@ export function syncTransformOverlay(
         return Math.hypot(moved.x - origin.x, moved.y - origin.y) / step;
       }),
     );
-    const mid = base.clone().addScaledVector(direction, 22 / screenPerWorld);
+    // Far enough out to clear the dimension labels, and big enough to hit without touching one (#898).
+    const mid = base.clone().addScaledVector(direction, 38 / screenPerWorld);
     const arrow = rotateHandleArrow(
       (point) => {
         const screen = project(new THREE.Vector3(point.x, point.y, point.z));
@@ -577,7 +583,7 @@ export function syncTransformOverlay(
       mid,
       direction,
       axisVector,
-      (26 / screenPerWorld) * 0.6,
+      (36 / screenPerWorld) * 0.6,
     );
     return { key, className, x: arrow.x, y: arrow.y, arc: arrow.arc, heads: arrow.heads };
   };
@@ -729,7 +735,7 @@ export function syncAlignOverlay(
   const worldCenterX = (worldMinX + worldMaxX) / 2;
   const worldCenterY = (worldMinY + worldMaxY) / 2;
   const worldCenterZ = (worldMinZ + worldMaxZ) / 2;
-  const offset = Math.max(8, Math.max(worldMaxX - worldMinX, worldMaxY - worldMinY, worldMaxZ - worldMinZ) * 0.16);
+  const offset = ALIGN_HANDLE_OFFSET;
   const statusByKey = new Map(statuses.map((status) => [`${status.axis}:${status.target}`, status]));
 
   // The three handles of an axis, minimum, middle and maximum, stand on one line. Where they land close
@@ -916,7 +922,8 @@ export function syncMirrorOverlay(
 /**
  * While "Lay flat" waits for a click, shows the face the click would turn
  * down: the flat face under the pointer, if it belongs to the selection. The
- * face is looked up again only when the pointer moves onto another triangle.
+ * face is looked up again only when the pointer moves onto another triangle,
+ * or when `joined` comes: a group's parts joined, whose face is lit in place of the part's.
  */
 export function syncLayFlatHover(
   state: ThreeState | null,
@@ -925,6 +932,7 @@ export function syncLayFlatHover(
   clientX: number | null,
   clientY: number | null,
   round = false,
+  joined: ArrayLike<number> | null = null,
 ) {
   if (!state) return;
   let layer = state.layFlatHoverLayer;
@@ -940,6 +948,7 @@ export function syncLayFlatHover(
     if (layer.userData.key === undefined) return;
     disposeChildren(layer);
     layer.userData.key = undefined;
+    layer.userData.joinedLit = undefined;
     layer.visible = false;
     state.needsRender = true;
   };
@@ -956,7 +965,7 @@ export function syncLayFlatHover(
     return;
   }
 
-  const key = `${mesh.uuid}:${hit.faceIndex}:${theme}:${round}`;
+  const key = `${mesh.uuid}:${hit.faceIndex}:${theme}:${round}:${shapeResourceId(joined)}`;
   if (layer.userData.key === key) return;
 
   mesh.updateWorldMatrix(true, false);
@@ -968,8 +977,24 @@ export function syncLayFlatHover(
     corner.fromBufferAttribute(position, index ? index.getX(offset) : offset).applyMatrix4(mesh.matrixWorld);
   let triangles: number[] = [hit.faceIndex];
   let positions: ArrayLike<number>;
-  // A very dense mesh is too slow to search on every move: show the one facet.
-  if (cornerCount <= 600000) {
+  // With a group's parts joined, the face runs on across them; where the joined body has no face there, the part's is lit.
+  let joinedTriangle = -1;
+  if (joined && !round && joined.length / 3 <= 600000) {
+    const faceIndex = hit.faceIndex;
+    const [a, b, c] = [0, 1, 2].map((offset) => worldCorner(faceIndex * 3 + offset).clone());
+    const normal = outwardFaceNormal(a, b, c, state.raycaster.ray.direction);
+    // Still on the joined face already lit: the whole body need not be searched again.
+    const lit = layer.userData.joinedLit as { joined: ArrayLike<number>; theme: string; vertices: Float32Array } | undefined;
+    if (normal && lit?.joined === joined && lit.theme === theme && nearestFaceTriangle(lit.vertices, hit.point, normal, JOINED_FACE_REACH) >= 0) {
+      layer.userData.key = key;
+      return;
+    }
+    if (normal) joinedTriangle = nearestFaceTriangle(joined, hit.point, normal, JOINED_FACE_REACH);
+  }
+  if (joined && joinedTriangle >= 0) {
+    positions = joined;
+    triangles = planarFaceTriangles(joined, joinedTriangle)?.triangles ?? [joinedTriangle];
+  } else if (cornerCount <= 600000) {
     const world = new Float64Array(cornerCount * 3);
     for (let offset = 0; offset < cornerCount; offset += 1) {
       worldCorner(offset);
@@ -980,6 +1005,7 @@ export function syncLayFlatHover(
     positions = world;
     triangles = (round ? roundFaceTriangles(world, hit.faceIndex) : planarFaceTriangles(world, hit.faceIndex))?.triangles ?? triangles;
   } else {
+    // A very dense mesh is too slow to search on every move: show the one facet.
     const world = new Float64Array(9);
     for (let offset = 0; offset < 3; offset += 1) {
       worldCorner(hit.faceIndex * 3 + offset);
@@ -1016,6 +1042,7 @@ export function syncLayFlatHover(
   disposeChildren(layer);
   layer.add(highlight);
   layer.userData.key = key;
+  layer.userData.joinedLit = joined && joinedTriangle >= 0 ? { joined, theme, vertices } : undefined;
   layer.visible = true;
   state.needsRender = true;
 }

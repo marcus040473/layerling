@@ -14,6 +14,7 @@ Myszą:
 | przeciągasz środkowym przyciskiem | przesuwasz widok |
 | kręcisz kółkiem myszy | przybliżasz i oddalasz |
 | trzymasz [[Ctrl]] / [[Cmd]] i przeciągasz lewym przyciskiem | też przesuwasz widok (na touchpadzie MacBooka: przytrzymaj [[Cmd]], dociśnij i przeciągnij) |
+| klikasz dwukrotnie puste miejsce płaszczyzny roboczej albo obok płyty | przesuwasz widok tak, że to miejsce jest na środku; potem widok obraca się wokół niego |
 
 Szybkość przybliżania kółkiem ustawia {{ui:workspace.zoomSpeed}} w ustawieniach, w sekcji {{ui:workspace.appearance}}: suwak od 1 do 14, na początek 5. Ustawia on tylko kółko i touchpad: przyciski oraz klawisze [[+]] i [[−]] zawsze przybliżają tymi samymi małymi krokami. Jeden ząbek kółka myszy przybliża tak samo w każdej przeglądarce, a touchpad przybliża zależnie od tego, jak daleko przesuniesz palce.
 
@@ -82,7 +83,7 @@ Jeśli zamiast tego klikniesz pustą płytę, płaszczyzna robocza położy się
 
 Na ścianie początek płaszczyzny roboczej przyciąga się zwykle do siatki. Kliknij blisko narożnika ściany, a usiądzie dokładnie na tym narożniku. Blisko krawędzi położy się na krawędzi, a siatka ustawi się wzdłuż niej. Tak celowo wybierasz kąt siatki. Bez narożnika i krawędzi siatka na leżącej ścianie biegnie równolegle do bryły, więc na obróconym prostopadłościanie jest obrócona razem z nim.
 
-Kliknięcie obok płyty albo [[Esc]] przywraca płaszczyznę roboczą na płytę bazową. Jeszcze szybciej działa {{ui:camera.resetWorkplane}}: przycisk ze strzałką w dół na pasku kamery pod okiem, widoczny, dopóki płaszczyzna robocza leży na ścianie. [[Shift]]+[[W]] kładzie ją od razu na zaznaczonej ścianie. Jeśli podczas klikania przytrzymasz [[Shift]], płaszczyzna będzie zwrócona w przeciwną stronę.
+Kliknięcie obok płyty albo [[Esc]] przywraca płaszczyznę roboczą na płytę bazową. Jeszcze szybciej działa {{ui:camera.resetWorkplane}}: przycisk ze strzałką w dół na pasku kamery pod okiem, widoczny, dopóki płaszczyzna robocza leży na ścianie. [[Shift]]+[[W]] kładzie ją od razu na zaznaczonej ścianie. [[Alt]]+[[W]] w każdej chwili przywraca ją na płytę bazową, niezależnie od tego, czy coś jest zaznaczone. Jeśli podczas klikania przytrzymasz [[Shift]], płaszczyzna będzie zwrócona w przeciwną stronę.
 
 Dopóki płaszczyzna robocza leży na ścianie, obok {{ui:camera.placeWorkplane}} pojawia się oko. Ukrywa ono płaszczyznę roboczą, nie zdejmując jej, żeby projekt był lepiej widoczny: nowe kształty dalej trafiają na tę ścianę, a obracanie dalej odbywa się wokół niej. Kliknięcie oka pokazuje ją z powrotem, podobnie jak położenie nowej płaszczyzny roboczej.
 
@@ -146,7 +147,7 @@ Widok szkicu ma własne kolory: {{ui:workspace.sketchBackground}} dla okna wokó
 
 {{ui:workspace.frameByDirection}}: ramka przeciągnięta w prawo zaznacza tylko to, co leży w niej w całości, a przeciągnięta w lewo wszystko, czego dotyka (rysowana przerywaną linią), jak w SketchUpie.
 
-{{ui:workspace.doubleClickOpensSketch}} decyduje, czy dwukrotne kliknięcie wyciągniętego szkicu otwiera go ponownie, jak w Tinkercadzie, a {{ui:workspace.doubleClickOpensGroup}}, czy dwukrotne kliknięcie grupy albo zestawu otwiera je do edycji.
+{{ui:workspace.doubleClickOpensSketch}} decyduje, czy dwukrotne kliknięcie wyciągniętego szkicu otwiera go ponownie, jak w Tinkercadzie, a {{ui:workspace.doubleClickOpensGroup}}, czy dwukrotne kliknięcie grupy albo zestawu otwiera je do edycji. {{ui:workspace.doubleClickCentersView}} decyduje, czy dwukrotne kliknięcie pustego miejsca płaszczyzny roboczej przesuwa tam widok.
 
 {{ui:workspace.objectSnap}} sprawia, że krawędzie i środek kształtu przyciągają się podczas przeciągania do innych kształtów. Menu siatki w prawym dolnym rogu ma ten sam przełącznik. {{ui:workspace.cruise}} sprawia, że nowy kształt wisi na wskaźniku myszy i ląduje na ścianie pod nim, jak Cruise w Tinkercadzie. Po wyłączeniu nowy kształt pojawia się na środku płyty. Więcej w rozdziale [Zaznaczanie i rozmieszczanie](chapter:select-and-arrange).
 

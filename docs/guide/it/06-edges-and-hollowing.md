@@ -83,6 +83,18 @@ Se in seguito ridimensioni un corpo svuotato, layerling lo svuota di nuovo subit
 
 > **Suggerimento:** con un ugello da 0,4 mm, uno spessore tra 1,2 e 2 mm è un buon punto di partenza: abbastanza sottile da risparmiare materiale e abbastanza spesso da creare un pezzo robusto.
 
+## Offset dei corpi
+
+Ogni faccia di un corpo può essere spostata della stessa distanza, verso l'esterno o l'interno. È ciò che serve a un accoppiamento, a un coperchio o a un incastro a scatto: un gioco di 0,1-0,3 mm tutto intorno mentre i dettagli restano dove sono, cosa che il ridimensionamento non dà.
+
+1. Seleziona un corpo e clicca su {{ui:editor.tool.offset}}, oppure fai clic destro sul corpo e sceglilo lì.
+2. Scegli {{ui:offset.grow}} o {{ui:offset.shrink}} e imposta la {{ui:offset.distance}}.
+3. Gli {{ui:offset.edges}} decidono gli angoli esterni: arrotondato mantiene tonda la superficie, netto lascia proseguire le facce finché non si incontrano.
+4. Spunta {{ui:offset.copy}} per tenere il pezzo com'è e ottenere il corpo ingrandito come copia che è già un vuoto. Raggruppa quel vuoto con il pezzo da accoppiare e taglia esattamente il gioco scelto.
+5. Clicca su {{ui:offset.apply}}.
+
+Senza la spunta viene spostato il corpo stesso. Diventa un corpo esatto fisso, come dopo uno smusso: l'elenco in alto nel pannello annulla l'offset e {{ui:edge.editAction}} riapre lo strumento con la distanza precedente. Si possono spostare solo corpi CAD esatti - scatole, cilindri e le altre forme, i loro gruppi, parti STEP importate. Un corpo che è solo una maglia di triangoli, come molte importazioni STL, spesso non può. Una distanza troppo grande per il corpo, ad esempio una riduzione oltre la parete più sottile, viene rifiutata.
+
 ## Eliminare facce
 
 Un raccordo che intralcia, un foro nel posto sbagliato o una sporgenza che non serve più: {{ui:editor.tool.deleteFace}} rimuove queste parti dal corpo senza ricostruirlo da zero.

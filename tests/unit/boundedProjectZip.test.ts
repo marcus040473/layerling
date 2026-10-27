@@ -28,6 +28,23 @@ describe("bounded project ZIP", () => {
     expectSameFiles(files, original);
   });
 
+  it("stores the entries it is told to as they are, and compresses the rest", async () => {
+    const photo = new Uint8Array(200_000);
+    for (let offset = 0; offset < photo.length; offset++) photo[offset] = (offset * 7919) % 256;
+    const files = { "assets/attachment/a.jpg": photo, "project.json": strToU8("x".repeat(200_000)) };
+    const zipped = await boundedProjectZip(files, 6, new Set(["assets/attachment/a.jpg"]));
+    expectSameFiles(unzipSync(zipped), { "assets/attachment/a.jpg": photo.slice(), "project.json": strToU8("x".repeat(200_000)) });
+    // The compression method of each entry, from the archive's central directory: 0 stored, 8 deflate.
+    const view = new DataView(zipped.buffer, zipped.byteOffset, zipped.byteLength);
+    const methods: Record<string, number> = {};
+    for (let offset = 0; offset + 46 <= zipped.length; offset++) {
+      if (view.getUint32(offset, true) !== 0x02014b50) continue;
+      const nameLength = view.getUint16(offset + 28, true);
+      methods[Buffer.from(zipped.subarray(offset + 46, offset + 46 + nameLength)).toString()] = view.getUint16(offset + 10, true);
+    }
+    expect(methods).toEqual({ "assets/attachment/a.jpg": 0, "project.json": 8 });
+  });
+
   it("writes a valid empty archive", async () => {
     expect(unzipSync(await boundedProjectZip({}))).toEqual({});
   });

@@ -332,6 +332,9 @@ export function cadModifierUserErrorMessage(rawError: string | null | undefined)
   ) {
     return t("shell.errorTooThick");
   }
+  if (rawError.includes("This body cannot be grown or shrunk by this distance")) {
+    return t("offset.errorFailed");
+  }
   if (rawError.includes("This body cannot be hollowed with any wall thickness")) {
     return t("shell.errorCannotHollow");
   }

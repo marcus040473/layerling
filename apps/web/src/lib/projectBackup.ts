@@ -1,4 +1,4 @@
-import { unzipSync, zipSync } from "fflate";
+import { Zip, ZipPassThrough, unzipSync, zipSync } from "fflate";
 
 /*
  * "Back up all designs": every design of this browser as its own .lyl file,
@@ -117,6 +117,44 @@ export function packBackup(entries: BackupEntry[], modified = new Date()): Uint8
   const files: Record<string, [Uint8Array, { level: 0; mtime: Date }]> = {};
   for (const entry of entries) files[entry.name] = [entry.bytes, { level: 0, mtime: modified }];
   return zipSync(files);
+}
+
+/**
+ * A backup written entry by entry (#887). packBackup holds every design and then the whole ZIP once
+ * more in one block, so a browser with 23 large designs ran out of memory and Safari reloaded the
+ * page without a word. Here each entry goes into the file as it comes, and what is written so far
+ * is handed to a Blob after each one, which the browser may keep outside the page's memory; the
+ * design's own bytes can go as soon as add() returns. The ZIP is the same as packBackup's: stored,
+ * not compressed (a .lyl is compressed already), read back by unpackBackup.
+ */
+export function createBackupWriter(modified = new Date()) {
+  let written: Blob = new Blob([]);
+  let pending: Uint8Array[] = [];
+  let failure: Error | null = null;
+  const zip = new Zip((error, chunk) => {
+    if (error) failure = error;
+    else pending.push(chunk);
+  });
+  const settle = () => {
+    if (failure) throw failure;
+    if (!pending.length) return;
+    written = new Blob([written, ...(pending as BlobPart[])]);
+    pending = [];
+  };
+  return {
+    add(name: string, bytes: Uint8Array) {
+      const file = new ZipPassThrough(name);
+      file.mtime = modified;
+      zip.add(file);
+      file.push(bytes, true);
+      settle();
+    },
+    finish(type = "application/zip") {
+      zip.end();
+      settle();
+      return new Blob([written], { type });
+    },
+  };
 }
 
 /**

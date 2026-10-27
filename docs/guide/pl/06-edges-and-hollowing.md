@@ -83,6 +83,18 @@ Jeśli później zmienisz rozmiar wydrążonej bryły, layerling od razu wydrą�
 
 > **Wskazówka:** przy dyszy 0,4 mm dobrym początkiem jest ścianka od 1,2 do 2 mm: wystarczająco cienka, żeby oszczędzić materiał, i wystarczająco gruba na solidną część.
 
+## Odsuwanie brył
+
+Każdą ścianę bryły można przesunąć o tę samą odległość na zewnątrz lub do środka. Tego potrzebuje pasowanie, pokrywka lub połączenie zatrzaskowe: luz 0,1-0,3 mm dookoła, podczas gdy detale zostają na miejscu, czego skalowanie nie daje.
+
+1. Zaznacz jedną bryłę i kliknij {{ui:editor.tool.offset}} albo kliknij bryłę prawym przyciskiem i wybierz to tam.
+2. Wybierz {{ui:offset.grow}} lub {{ui:offset.shrink}} i ustaw {{ui:offset.distance}}.
+3. {{ui:offset.edges}} decydują o zewnętrznych narożach: zaokrąglone utrzymuje odsuniętą powierzchnię okrągłą, ostre pozwala ścianom biec dalej, aż się spotkają.
+4. Zaznacz {{ui:offset.copy}}, aby zachować część bez zmian, a powiększoną bryłę dostać jako kopię, która już jest otworem. Zgrupuj ten otwór z częścią współpracującą, a wytnie dokładnie wybrany luz.
+5. Kliknij {{ui:offset.apply}}.
+
+Bez zaznaczenia odsunięta zostaje sama bryła. Staje się stałą, dokładną bryłą, jak po fazie: lista u góry panelu cofa odsunięcie, a {{ui:edge.editAction}} otwiera narzędzie ponownie ze starą odległością. Odsunąć można tylko dokładne bryły CAD - prostopadłościany, walce i inne kształty, ich grupy, importowane części STEP. Bryła będąca tylko siatką trójkątów, jak wiele importów STL, często nie daje się odsunąć. Odległość zbyt duża dla bryły, na przykład zmniejszenie poza najcieńszą ścianę, zostaje odrzucona.
+
 ## Usuwanie ścian
 
 Zaokrąglenie, które przeszkadza, otwór w złym miejscu, występ, którego już nie potrzebujesz: {{ui:editor.tool.deleteFace}} usuwa to z bryły, bez budowania bryły od nowa.

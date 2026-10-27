@@ -83,6 +83,18 @@ Si más adelante cambias el tamaño de un cuerpo vaciado, layerling lo vuelve a 
 
 > **Consejo:** Con una boquilla de 0,4 mm, una pared de 1,2 a 2 mm es un buen punto de partida: lo bastante fina para ahorrar material y lo bastante gruesa para que la pieza sea resistente.
 
+## Desfasar cuerpos
+
+Cada cara de un cuerpo puede moverse la misma distancia, hacia fuera o hacia dentro. Eso necesita un ajuste, una tapa o una unión a presión: una holgura de 0,1 a 0,3 mm alrededor mientras los detalles quedan donde están, algo que el escalado no da.
+
+1. Selecciona un cuerpo y haz clic en {{ui:editor.tool.offset}}, o haz clic derecho en el cuerpo y elígelo ahí.
+2. Elige {{ui:offset.grow}} o {{ui:offset.shrink}} y fija la {{ui:offset.distance}}.
+3. Los {{ui:offset.edges}} deciden las esquinas exteriores: redondeado mantiene redonda la superficie desfasada, afilado deja que las caras sigan hasta encontrarse.
+4. Marca {{ui:offset.copy}} para conservar la pieza tal cual y obtener el cuerpo agrandado como una copia que ya es un hueco. Agrupa ese hueco con la pieza que encaja y corta exactamente la holgura elegida.
+5. Haz clic en {{ui:offset.apply}}.
+
+Sin la marca se desfasa el propio cuerpo. Pasa a ser un cuerpo exacto fijo, como tras un chaflán: la lista de arriba del panel deshace el desfase, y {{ui:edge.editAction}} abre de nuevo la herramienta con la distancia anterior. Solo se pueden desfasar cuerpos CAD exactos - cajas, cilindros y las demás formas, sus grupos, piezas STEP importadas. Un cuerpo que es solo una malla de triángulos, como muchas importaciones STL, a menudo no se puede. Una distancia demasiado grande para el cuerpo, por ejemplo reducir más allá de su pared más fina, se rechaza.
+
 ## Eliminar caras
 
 Un redondeo que estorba, un orificio en el sitio equivocado, un saliente que ya no necesitas: {{ui:editor.tool.deleteFace}} lo quita del cuerpo sin tener que volver a construirlo.

@@ -28,6 +28,8 @@ Sådan får du:
 
 Hvis der er flere solider i gruppen, samles de. To solider der rører hinanden bliver til én del.
 
+Med store meshes, som et importeret STL med hundredvis af tusinde trekanter, tager skæringen nogle få sekunder. layerling arbejder så i baggrunden og viser "{{ui:status.computing}}"; imens kan du dreje visningen og bruge grænsefladen. Ændrer du scenen i den tid, kasseres resultatet, og layerling siger det. Det samme gælder {{ui:editor.tool.split}}.
+
 Du kan behandle en gruppe som en form: flytte, rotere, farve, gruppere igen. {{ui:editor.tool.ungroup}} ([[Ctrl]]+[[Shift]]+[[G]]) opløser den og de enkelte dele er tilbage.
 
 ### Gøre en gruppe til et hul
@@ -41,17 +43,23 @@ En hel gruppe kan også være en solid eller et hul. En simpel regel gælder:
 
 Nogle gange bør dele kun blive sammen uden at blive til én - et hvidt logo på en sort plade til et flerfarvet print for eksempel. Det er det {{ui:editor.tool.bundle}} ([[Ctrl]]+[[B]]) er til, som i Tinkercad. Et bundt flytter, drejer og skalerer som en form, men intet flettes:
 
-- Hver del beholder sin farve og forbliver en solid eller et hul.
-- Huller skærer intet.
+- Hver del beholder sin farve og forbliver en solid eller et hul. Bundtets indstillinger har de samme kort som en gruppes: {{ui:inspector.solid}} og {{ui:inspector.hole}} for hele bundtet (de bevarer delenes farver), {{ui:inspector.transparent}} ([[T]]) og {{ui:inspector.multicolor}} ([[Shift]]+[[M]]); med Multicolor slået fra vises og eksporteres bundtet i én farve. {{ui:inspector.separateParts}} tager bundtet ad, som [[Ctrl]]+[[Shift]]+[[G]] gør.
+- Huller skærer intet. Når du grupperer bundtet med andre dele, skærer dets huller de dele, men stadig ikke bundtets egne solider, som i Tinkercad. Så kan en tap med sit hul ved siden af for eksempel bruges igen og igen som et bundt.
 - I en STL-, 3MF- eller OBJ-eksport er hver del sin egen form; i 3MF og OBJ med sin farve.
 
-{{ui:editor.tool.ungroup}} ([[Ctrl]]+[[Shift]]+[[G]]) skiller et bundt ad igen, [[E]] åbner det for redigering som en gruppe. Fas, rund og udhuling virker ikke på et bundt, fordi det ikke er én form: gruppér det til det, eller arbejd på dets dele én ad gangen. Skal et hul i bundtet alligevel skære, så gruppér bundtet (Ctrl+G).
+{{ui:editor.tool.ungroup}} ([[Ctrl]]+[[Shift]]+[[G]]) skiller et bundt ad igen, [[E]] åbner det for redigering som en gruppe. Fas, rund og udhuling virker ikke på et bundt, fordi det ikke er én form: gruppér det til det, eller arbejd på dets dele én ad gangen. Skal et hul i bundtet alligevel skære bundtets egne solider, så skil bundtet ad og gruppér dets dele ([[Ctrl]]+[[G]]).
 
 ## Fælles
 
-{{ui:editor.tool.intersect}} beholder kun hvad to eller flere former har til fælles. Læg to overlappende former oven på hinanden, vælg begge og klik det. Det gør en cylinder og en kasse til et stykke med én rund og én lige side. En gruppe tæller som den ser ud, huller inkluderet. Hvis et hul også er valgt, er det der bliver tilbage hvad alle soliderne deler med alle hullerne.
+{{ui:editor.tool.intersect}} beholder kun hvad to eller flere former har til fælles. Læg to overlappende former oven på hinanden, vælg begge og klik det. Det gør en cylinder og en kasse til et stykke med én rund og én lige side. En gruppe tæller som den ser ud, huller inkluderet. Hvis et hul også er valgt, er det der bliver tilbage hvad alle soliderne deler med alle hullerne. Hvis formerne ikke har noget til fælles, ændres der intet, og en besked siger det.
 
 Ved siden af den viser {{ui:editor.tool.intersectPreview}} den fælles del, før du anvender den: de valgte former bliver gennemsigtige, og det de har til fælles tegnes i grønt. Vælg og flyt hver form for sig, så følger den grønne del med; {{ui:editor.tool.intersect}} anvender den, og [[Esc]] lukker forhåndsvisningen.
+
+{{ui:editor.tool.hull}} pakker de valgte former ind i ét konvekst legeme, som var de krympefolieret: det mindste legeme uden buler, der rummer dem alle. En halvkugle på en cylinder bliver en kuppel uden trin, fire cylindre i hjørnerne bliver en kasse med rundede hjørner, to kugler en kapsel. Huller i markeringen skæres ud af hylsteret bagefter. Delene bliver i hylsteret: {{ui:group.edit}} åbner det som en gruppe, og flytter du en del derhen og lukker, bygges hylsteret igen. Hylsteret er et net, så runde former viser facetter, og kantværktøjerne virker på det som på ethvert net.
+
+## Skær et legeme ud af et andet
+
+Til dele, der skal passe sammen, en aksel i en muffe eller en bolt i et hus, laver du den ene del og skærer den ud af den anden. Vælg de to legemer og klik på {{ui:editor.tool.cutOut}} i området {{ui:editor.group.combine}}, eller højreklik og vælg det der. Panelet nævner delen, der bliver, og legemet, der får hulrummet; layerling tager det mindste som delen, og {{ui:cutOut.swap}} vender det om. {{ui:cutOut.clearance}} gør hulrummet så meget større end delen hele vejen rundt: 0 passer præcist, 0,2 mm er et almindeligt spillerum til en printet pasning. {{ui:cutOut.apply}} skærer en kopi af delen ud af det andet legeme og lader delen selv blive, hvor den er. Resultatet er en gruppe: {{ui:editor.tool.ungroup}} tager snittet fra hinanden igen. Et spillerum kræver, at delen er et eksakt legeme, som ved værktøjet {{ui:editor.tool.offset}}, der bruges til det.
 
 ## Redigering af en gruppe
 
@@ -69,7 +77,7 @@ En bemærkning: fas og rund du har lagt på **hele** gruppen mistes ved genopbyg
 
 ## Deling
 
-{{ui:editor.tool.split}} i {{ui:editor.group.modify}}-området skærer markeringen over i to med et plan - en del der er for stor til printlejet for eksempel, eller en du vil se indersiden af. Vælg en eller flere solider eller huller og klik det. Et gennemsigtigt plan viser præcis hvor snittet vil gå; intet ændres før du anvender det.
+{{ui:editor.tool.split}} i {{ui:editor.group.modify}}-området skærer markeringen over i to med et plan - en del der er for stor til printlejet for eksempel, eller en du vil se indersiden af. Vælg en eller flere solider eller huller og klik det. Et gennemsigtigt plan viser præcis hvor snittet vil gå, og en hvid linje markerer det på formerne selv, der hvor planet møder dem; intet ændres før du anvender det.
 
 - {{ui:split.orientation}}: **X** laver et lodret snit mellem venstre og højre, **Y** mellem for og bag, **Z** et vandret snit mellem top og bund. Akserne er navngivet som på Positionskortet, med Z op; Z er der planet starter.
 - {{ui:split.workplane}}: {{ui:split.workplaneParallel}} lægger planet parallelt med arbejdsplanet, {{ui:split.workplaneAcrossX}} og {{ui:split.workplaneAcrossY}} stiller det vinkelret på det, på tværs af dets X- eller Y-retning. Skærer arbejdsplanets origo markeringen, går planet gennem det, ellers gennem midten. Så lægger du arbejdsplanet på en skrå flade med [[W]] og skærer præcis der, uden at dreje på drejeskyderne.
@@ -81,8 +89,10 @@ En bemærkning: fas og rund du har lagt på **hele** gruppen mistes ved genopbyg
 
 Halvdelene er almindelige meshes: indstillinger som en cylinders sider eller en teksts bogstaver er væk, så sæt dem først. [[Ctrl]]+[[Z]] bringer originalen tilbage i ét skridt. Låste og skjulte objekter kan ikke deles.
 
+Et importeret mesh skal have en lukket overflade for at blive delt, grupperet eller skåret. Har det åbninger, som øjnene på en figur der er ladt åbne, eller en revne i et scan, lukker layerling dem først med et fladt låg og siger hvor mange den lukkede. Den lukker små åbninger og flade åbninger af enhver størrelse; en stor åbning hvis kant bøjer, overlader den til dig, og beskeden siger det. Luk den i det program modellen kommer fra, eller med et mesh-reparationsværktøj, og importer den igen.
+
 ## Adskil dele
 
-Hvis en form består af flere separate stykker, for eksempel tekst lavet af enkelte bogstaver, splitter {{ui:inspector.separateParts}} den i uafhængige former.
+Hvis en form består af flere separate stykker, for eksempel tekst lavet af enkelte bogstaver, splitter {{ui:inspector.separateParts}} den i uafhængige former. Posten findes også i den menu du får ved at højreklikke på formen.
 
 > **Tip:** Lav altid huller lidt længere end den del de skal gå igennem. Hvis hullet ender præcis flugtende med fladen, bliver der nogle gange en tynd hinde tilbage. En millimeters overshoot sikrer.

@@ -36,7 +36,7 @@ La squadra poggia sul piano di lavoro. Se questo si trova sul lato di un corpo, 
 - **Fai clic sulla ×** accanto alla maniglia per rimuoverla.
 - **Il pulsante piccolo a sinistra della maniglia** cambia il riferimento della misura: il bordo esterno del corpo (estremità, icona con linee) oppure il suo centro (punto medio, mirino). Un pulsante dello stesso tipo accanto a ciascun numero verde imposta il riferimento solo per quella misura: per un cilindro verticale, il centro sui due bracci e il fondo per l’altezza; per un cilindro coricato, il centro in larghezza e un’estremità in lunghezza. Quando tutte e tre le misure usano lo stesso riferimento, il pulsante sulla maniglia mostra la modalità comune.
 
-Se i corpi sono posizionati accanto a uno dei bracci, la squadra ne mostra automaticamente le dimensioni. Funziona solo sulla piastra di base, non sul lato di un corpo.
+Se i corpi sono posizionati accanto a uno dei bracci, la squadra ne mostra automaticamente le dimensioni. Funziona solo sulla piastra di base, non sul lato di un corpo. Il pulsante con la freccia sotto la maniglia della squadra lo disattiva, così solo i corpi selezionati mostrano le misure; viene salvato con il progetto.
 
 Quando selezioni un corpo, la squadra mostra in verde quanto dista dall’angolo, lungo entrambi i bracci e in altezza. Fai clic su un numero verde e digita una distanza per spostare il corpo esattamente lì. Se selezioni più corpi, vengono considerati come un unico insieme: la squadra ne misura il profilo complessivo e un valore digitato li sposta tutti insieme, mantenendo invariata la distanza reciproca.
 
@@ -44,7 +44,7 @@ Le linee guida dei valori verdi seguono il pavimento, cioè il piano su cui pogg
 
 Usando il punto medio, i numeri verdi misurano fino al centro del corpo, anche in altezza. Puoi così posizionare una sfera con il centro esattamente a 15 mm da uno spigolo, senza sottrarne il raggio. Per mettere un foro su una parete a 40 mm da sinistra e 190 mm dall’alto, seleziona il foro, imposta il riferimento al punto medio e digita 40 e 190. In questo caso l’altezza si misura verso l’esterno della parete.
 
-Il metro a nastro e la squadra restano al loro posto mentre lavori nello schizzo e ricompaiono quando torni alla vista 3D. Non vengono salvati con il progetto, non entrano nella cronologia e scompaiono quando ricarichi la pagina.
+Il metro a nastro e la squadra restano al loro posto mentre lavori nello schizzo e ricompaiono quando torni alla vista 3D. Nessuno dei due entra nella cronologia. La squadra viene salvata con il progetto, e così le misurazioni del metro a nastro, nel browser e nel file .lyl: quando apri il progetto sono di nuovo al loro posto. Il pulsante con l’occhio tra i pulsanti del metro a nastro nasconde tutte le misurazioni e le mostra di nuovo; viene salvato anche se sono nascoste, e aggiungere, spostare o eliminare una misurazione le mostra prima.
 
 ## Distanze dall’origine e durante lo spostamento
 
@@ -84,7 +84,7 @@ Un’immagine di riferimento è una fotografia da usare per allineare le parti: 
 
 ## Punti di riferimento
 
-Un punto di riferimento è un semplice segno nello spazio, come una tacca fatta a matita o un punto di tracciatura in officina: non appartiene a un corpo, non viene mai stampato e permette agli altri oggetti di agganciarsi. Fai clic destro su un corpo e scegli {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} o {{ui:contextMenu.markMidpoints}}: i punti vengono posizionati sulla faccia superiore del corpo o, se hai selezionato più corpi, dell’intera selezione.
+Un punto di riferimento è un semplice segno nello spazio, come una tacca fatta a matita o un punto di tracciatura in officina: non appartiene a un corpo, non viene mai stampato e permette agli altri oggetti di agganciarsi. Fai clic destro su un corpo e scegli {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} o {{ui:contextMenu.markMidpoints}}: i punti vengono posizionati sulla faccia superiore del corpo o, se hai selezionato più corpi, dell’intera selezione. {{ui:contextMenu.markFaceCenter}} mette invece un punto al centro della faccia piana su cui hai fatto clic destro, per esempio su un lato o su un’estremità.
 
 - Trascina un punto per spostarlo oppure fai clic per visualizzarne le coordinate e digitarne di nuove; viene usata l’unità selezionata. Puoi spostare ogni scheda trascinandone la barra del titolo, senza influenzare le altre. Un doppio clic sulla barra la riporta al suo posto. L’ultima scheda toccata appare sopra le altre. **Elimina tutto** in una scheda o **Elimina tutti i punti di riferimento** nel menu che si apre facendo clic destro (su un corpo o in uno spazio vuoto della vista 3D) rimuove tutti i punti in una volta. {{ui:common.delete}} elimina il punto selezionato.
 - Anche il metro a nastro può creare un punto: {{ui:camera.tapeMarkMiddle}}, il pulsante con il mirino sotto una misura, lo posiziona al centro; per esempio, al centro di un foro rotondo. Puoi anche misurare a partire da un punto: il metro si aggancia ai punti di riferimento come agli angoli.

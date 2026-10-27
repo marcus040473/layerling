@@ -53,6 +53,7 @@ function edgeHistoryLabel(option: EdgeHistoryOption) {
     ? `${Number(option.amount.toFixed(2))}–${Number(option.endAmount.toFixed(2))}`
     : String(Number(option.amount.toFixed(2)));
   if (option.kind === "shell") return t("edge.revertShell", { size });
+  if (option.kind === "offset") return t("edge.revertOffset", { size });
   if (option.kind === "surfaceTexture") return t("edge.revertSurfaceTexture", { size });
   if (option.kind === "deleteFace") {
     return option.faceCount === 1 ? t("edge.revertDeleteFaceOne") : t("edge.revertDeleteFaceMany", { count: option.faceCount ?? 0 });

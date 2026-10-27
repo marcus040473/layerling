@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { setLanguage } from "@/lib/i18n";
-import { displayShapeName, renamedShapeName } from "@/lib/shapeCatalog";
+import { displayShapeName, hasOwnShapeName, renamedShapeName } from "@/lib/shapeCatalog";
 
 describe("displayShapeName", () => {
   afterEach(() => setLanguage("en", false));
@@ -53,5 +53,25 @@ describe("renamedShapeName", () => {
     const shape = { name: "Lid", kind: "box" as const };
     expect(renamedShapeName(shape, "   ")).toBe("");
     expect(displayShapeName({ ...shape, name: "" })).toBe("Box");
+  });
+});
+
+// The export window suggests the name of a single body only when somebody gave it one (forum, 26.10.2026).
+describe("hasOwnShapeName", () => {
+  afterEach(() => setLanguage("en", false));
+
+  it("tells a typed name from one the editor handed out", () => {
+    expect(hasOwnShapeName({ name: "Lid", kind: "box" })).toBe(true);
+    expect(hasOwnShapeName({ name: "Box", kind: "cylinder" })).toBe(true);
+    expect(hasOwnShapeName({ name: "Box", kind: "box" })).toBe(false);
+    expect(hasOwnShapeName({ name: "Group", kind: "mesh" })).toBe(false);
+    expect(hasOwnShapeName({ name: "Hull", kind: "mesh" })).toBe(false);
+    expect(hasOwnShapeName({ name: "  ", kind: "box" })).toBe(false);
+  });
+
+  it("does not take a confirmed translated name for a typed one", () => {
+    setLanguage("de", false);
+    expect(hasOwnShapeName({ name: "Quader", kind: "box" })).toBe(false);
+    expect(hasOwnShapeName({ name: "Deckel", kind: "box" })).toBe(true);
   });
 });

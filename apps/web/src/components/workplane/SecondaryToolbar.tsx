@@ -12,7 +12,7 @@ import { useLanguage } from "@/lib/useLanguage";
 import { useSimpleMode } from "@/lib/useSimpleMode";
 import { simpleModeKeepsShape, simpleModeKeepsTool } from "@/lib/simpleMode";
 import { normalizePolygonSides, normalizeStarInnerPercent, SKETCH_POLYGON_MAX_SIDES, SKETCH_POLYGON_MIN_SIDES, SKETCH_STAR_MAX_INNER_PERCENT, SKETCH_STAR_MIN_INNER_PERCENT } from "@/lib/sketchPrimitives";
-import { SketchBoltCircleIcon, SketchEllipseIcon, SketchHalfCircleIcon, SketchPieSliceIcon, ToolbarAlignIcon, ToolbarCenterOnWorkplaneIcon, ToolbarChamferIcon, ToolbarCaretDownIcon, ToolbarCopyIcon, ToolbarDuplicateIcon, ToolbarDropToWorkplaneIcon, ToolbarBundleIcon, ToolbarGroupIcon, ToolbarGuideIcon, ToolbarHideSelectedIcon, ToolbarHomeIcon, ToolbarImportIcon, ToolbarIntersectionIcon, ToolbarIntersectPreviewIcon, ToolbarKeyboardIcon, ToolbarFilletIcon, ToolbarHistoryIcon, ToolbarHollowIcon, ToolbarDeleteFaceIcon, ToolbarSimplifyIcon, ToolbarSurfaceTextureIcon, ToolbarMirrorIcon, ToolbarRotationPivotIcon, ToolbarPatternIcon, ToolbarHolePatternIcon, ToolbarFaceToolIcon, ToolbarConstructionLineIcon, ToolbarMiddleLineIcon, ToolbarLayFlatIcon, ToolbarMateFacesIcon, ToolbarNoteIcon, ToolbarSplitIcon, ToolbarPasteIcon, ToolbarRedoIcon, ToolbarSnapGridIcon, ToolbarSettingsIcon, ToolbarShapeAddIcon, ToolbarTrashIcon, ToolbarUngroupIcon, ToolbarUndoIcon, ToolbarVectorExportIcon } from "../icons";
+import { SketchBoltCircleIcon, SketchEllipseIcon, SketchHalfCircleIcon, SketchPieSliceIcon, ToolbarAlignIcon, ToolbarAttachmentsIcon, ToolbarCenterOnWorkplaneIcon, ToolbarChamferIcon, ToolbarCaretDownIcon, ToolbarCopyIcon, ToolbarDuplicateIcon, ToolbarDropToWorkplaneIcon, ToolbarBundleIcon, ToolbarGroupIcon, ToolbarGuideIcon, ToolbarHideSelectedIcon, ToolbarHomeIcon, ToolbarImportIcon, ToolbarIntersectionIcon, ToolbarIntersectPreviewIcon, ToolbarHullIcon, ToolbarKeyboardIcon, ToolbarFilletIcon, ToolbarHistoryIcon, ToolbarHollowIcon, ToolbarOffsetIcon, ToolbarCutOutIcon, ToolbarDeleteFaceIcon, ToolbarSimplifyIcon, ToolbarSurfaceTextureIcon, ToolbarMirrorIcon, ToolbarRotationPivotIcon, ToolbarPatternIcon, ToolbarHolePatternIcon, ToolbarFaceToolIcon, ToolbarConstructionLineIcon, ToolbarMiddleLineIcon, ToolbarLayFlatIcon, ToolbarMateFacesIcon, ToolbarNoteIcon, ToolbarSplitIcon, ToolbarPasteIcon, ToolbarRedoIcon, ToolbarSnapGridIcon, ToolbarSettingsIcon, ToolbarShapeAddIcon, ToolbarTrashIcon, ToolbarUngroupIcon, ToolbarUndoIcon, ToolbarVectorExportIcon } from "../icons";
 import { type SketchPrimitive, type SketchTool } from "../SketchWorkspace";
 import { CommandPalette, type PaletteCommand } from "./CommandPalette";
 import { COMMAND_KEYWORDS, COMMAND_SHORTCUTS, SHAPE_KEYWORDS } from "@/lib/commandKeywords";
@@ -153,6 +153,7 @@ export function SecondaryToolbar({
   edgeModifierKind,
   canGroup,
   canIntersect,
+  canHull,
   canRedo,
   canUngroup,
   canUndo,
@@ -219,11 +220,17 @@ export function SecondaryToolbar({
   onGroup,
   onBundle,
   onIntersect,
+  onHull,
   onIntersectPreview,
   intersectPreviewActive,
   onFillet,
   onHollow,
   hollowActive,
+  onOffset,
+  offsetActive,
+  onCutOut,
+  canCutOut,
+  cutOutActive,
   onDeleteFace,
   deleteFaceActive,
   canSimplify,
@@ -257,6 +264,7 @@ export function SecondaryToolbar({
   noteMode,
   notesVisible,
   noteCount,
+  attachmentCount,
   onNoteTool,
   onToggleNotes,
   overhangsVisible,
@@ -281,6 +289,7 @@ export function SecondaryToolbar({
   edgeModifierKind: CadModifierKind | null;
   canGroup: boolean;
   canIntersect: boolean;
+  canHull: boolean;
   canRedo: boolean;
   canUngroup: boolean;
   canUndo: boolean;
@@ -347,11 +356,17 @@ export function SecondaryToolbar({
   onGroup: () => void;
   onBundle: () => void;
   onIntersect: () => void;
+  onHull: () => void;
   onIntersectPreview: () => void;
   intersectPreviewActive: boolean;
   onFillet: () => void;
   onHollow: () => void;
   hollowActive: boolean;
+  onOffset: () => void;
+  offsetActive: boolean;
+  onCutOut: () => void;
+  canCutOut: boolean;
+  cutOutActive: boolean;
   onDeleteFace: () => void;
   deleteFaceActive: boolean;
   canSimplify: boolean;
@@ -387,6 +402,8 @@ export function SecondaryToolbar({
   noteMode: boolean;
   notesVisible: boolean;
   noteCount: number;
+  /** How many files are kept with the design; the clip shows a dot while there are any (#820). */
+  attachmentCount: number;
   onNoteTool: () => void;
   onToggleNotes: () => void;
   overhangsVisible: boolean;
@@ -401,6 +418,8 @@ export function SecondaryToolbar({
   onSelectObject: (id: string) => void;
 }) {
   const [shapesOpen, setShapesOpen] = useState(false);
+  // The name of the clip button: with the number of files once there are some, so a screen reader hears what the dot shows.
+  const attachmentsLabel = attachmentCount > 0 ? t("editor.attachmentsCount", { count: attachmentCount }) : t("editor.attachments");
   // The Shapes panel kept open while shapes are placed one after the other (#433); remembered in this browser.
   const [geometryShapesPinned, setGeometryShapesPinned] = useState(false);
   // The sketch's panel has its own pin, its own place and its own size (#577).
@@ -643,6 +662,8 @@ export function SecondaryToolbar({
     { id: "bundle", label: t("editor.tool.bundle"), icon: ToolbarBundleIcon, action: onBundle, enabled: canGroup },
     { id: "ungroup", label: t("editor.tool.ungroup"), icon: ToolbarUngroupIcon, action: onUngroup, enabled: canUngroup },
     { id: "intersect", label: t("editor.tool.intersect"), icon: ToolbarIntersectionIcon, action: onIntersect, enabled: canIntersect || intersectPreviewActive },
+    { id: "cutOut", label: t("editor.tool.cutOut"), icon: ToolbarCutOutIcon, action: onCutOut, enabled: canCutOut || cutOutActive, active: cutOutActive },
+    { id: "hull", label: t("editor.tool.hull"), icon: ToolbarHullIcon, action: onHull, enabled: canHull },
     { id: "intersect-preview", label: t("editor.tool.intersectPreview"), icon: ToolbarIntersectPreviewIcon, action: onIntersectPreview, enabled: canIntersect || intersectPreviewActive, active: intersectPreviewActive },
   ];
   const modifyTools = [
@@ -655,6 +676,7 @@ export function SecondaryToolbar({
     { id: "chamfer", label: t("editor.tool.chamfer"), icon: ToolbarChamferIcon, action: onChamfer, enabled: canEdgeModify, active: edgeModifierKind === "chamfer" || edgeModifierKind === "chamfillet" },
     { id: "fillet", label: t("editor.tool.fillet"), icon: ToolbarFilletIcon, action: onFillet, enabled: canEdgeModify, active: edgeModifierKind === "fillet" },
     { id: "hollow", label: t("editor.tool.hollow"), icon: ToolbarHollowIcon, action: onHollow, enabled: canEdgeModify, active: hollowActive },
+    { id: "offset", label: t("editor.tool.offset"), icon: ToolbarOffsetIcon, action: onOffset, enabled: canEdgeModify, active: offsetActive },
     { id: "deleteFace", label: t("editor.tool.deleteFace"), icon: ToolbarDeleteFaceIcon, action: onDeleteFace, enabled: canEdgeModify, active: deleteFaceActive },
     { id: "simplify", label: t("editor.tool.simplify"), icon: ToolbarSimplifyIcon, action: onSimplify, enabled: canSimplify, active: simplifyActive },
     { id: "surfaceTexture", label: t("inspector.surfaceTexture"), icon: ToolbarSurfaceTextureIcon, action: onSurfaceTextureTool, enabled: canSurfaceTexture, active: surfaceTextureActive },
@@ -765,7 +787,7 @@ export function SecondaryToolbar({
           { icon, keywords: [primitive] },
         )),
         plain("sketch-select", t("sketch.select"), selectGroup, true, () => onSketchTool("select"), { icon: SKETCH_PALETTE_ICONS.select, active: sketchTool === "select" }),
-        plain("sketch-image", t("sketch.addImage"), selectGroup, sketchTool === "select", onSketchImage, { icon: SKETCH_PALETTE_ICONS.image }),
+        plain("sketch-image", t("sketch.addImage"), selectGroup, true, onSketchImage, { icon: SKETCH_PALETTE_ICONS.image }),
         plain("sketch-refine", t("sketch.refine"), selectGroup, true, () => onSketchTool("refine"), { icon: SKETCH_PALETTE_ICONS.refine, active: sketchTool === "refine" }),
         plain("sketch-chamfer", t("sketch.chamferCorner"), selectGroup, Boolean(canFilletSketchPoint), () => onSketchCornerDialog?.(sketchCornerDialog === "chamfer" ? null : "chamfer"), { icon: ToolbarChamferIcon, active: sketchCornerDialog === "chamfer" }),
         plain("sketch-fillet", t("sketch.filletCorner"), selectGroup, Boolean(canFilletSketchPoint), () => onSketchCornerDialog?.(sketchCornerDialog === "fillet" ? null : "fillet"), { icon: ToolbarFilletIcon, active: sketchCornerDialog === "fillet" }),
@@ -813,6 +835,7 @@ export function SecondaryToolbar({
       plain("note", t("editor.tool.note"), manageGroup, true, onNoteTool, { icon: ToolbarNoteIcon, active: noteMode }),
       plain("import", t("editor.import"), manageGroup, true, () => onTopPanel("import"), { icon: ToolbarImportIcon }),
       plain("export", t("editor.export"), manageGroup, true, () => onTopPanel("export"), { icon: ToolbarVectorExportIcon }),
+      plain("attachments", t("editor.attachments"), manageGroup, true, () => onTopPanel("attachments"), { icon: ToolbarAttachmentsIcon, keywords: ["attachment", "file", "notes", "instructions", "readme", "anhang", "datei"] }),
       plain("settings", t("editor.workspaceSettings"), manageGroup, true, () => window.dispatchEvent(new Event("layerling:open-workspace-settings")), { icon: ToolbarSettingsIcon }),
       plain("mode-sketch", t("palette.switchSketch"), t("palette.group.mode"), true, () => selectToolbarMode("sketch")),
       ...helpCommands,
@@ -1090,6 +1113,16 @@ export function SecondaryToolbar({
           <button className="action-icon-button" aria-label={t("editor.export")} title={`${t("editor.export")} (${COMMAND_SHORTCUTS.export})`} onClick={() => onTopPanel("export")}>
             <ToolbarVectorExportIcon />
           </button>
+          {/* The dot says there is something attached without opening the panel, as the badge on the visibility button says there is something hidden. */}
+          <button
+            className={`action-icon-button ${attachmentCount > 0 ? "has-attachments" : ""}`}
+            aria-label={attachmentsLabel}
+            title={attachmentsLabel}
+            onClick={() => onTopPanel("attachments")}
+          >
+            <ToolbarAttachmentsIcon />
+            {attachmentCount > 0 ? <span className="attachments-indicator" aria-hidden="true" /> : null}
+          </button>
           <button className="action-icon-button" aria-label={t("editor.workspaceSettings")} title={t("editor.workspaceSettings")} onClick={() => window.dispatchEvent(new Event("layerling:open-workspace-settings"))}>
             <ToolbarSettingsIcon />
           </button>
@@ -1219,12 +1252,11 @@ export function SecondaryToolbar({
                       <SketchReferenceIcon name="select" />
                     </button>
                     <button
-                      className={`toolbar-icon sketch-tool-icon ${sketchTool === "select" ? "" : "disabled"}`}
+                      className="toolbar-icon sketch-tool-icon"
                       type="button"
                       aria-label={t("sketch.addImage")}
-                      title={sketchTool === "select" ? t("sketch.addImageReady") : t("sketch.addImageBlocked")}
+                      title={t("sketch.addImageReady")}
                       onClick={onSketchImage}
-                      disabled={sketchTool !== "select"}
                     >
                       <SketchReferenceIcon name="image" />
                     </button>

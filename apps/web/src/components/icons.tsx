@@ -92,6 +92,17 @@ export function ToolbarIntersectionIcon(props: IconProps) {
   );
 }
 
+// Hull (#863): two parts of different sizes, wrapped in one outline that touches both.
+export function ToolbarHullIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 48 48" aria-hidden="true" className="toolbar-vector-art-icon" {...props}>
+      <path d="M13.4 19.2L29.4 11.1A12 12 0 1 1 29.4 34.9L13.4 30.8A6 6 0 0 1 13.4 19.2Z" fill="currentColor" opacity="0.22" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
+      <circle cx="14" cy="25" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2.5" />
+      <circle cx="32" cy="23" r="12" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="3 2.5" />
+    </svg>
+  );
+}
+
 // The class gives it the same disabled dimming as the rest of the ribbon; the
 // bare theme colour alone left it looking live on the dark grounds.
 export function ToolbarIntersectPreviewIcon({ className, ...props }: IconProps) {
@@ -108,6 +119,7 @@ export {
   SketchEllipseIcon,
   SketchHalfCircleIcon,
   SketchPieSliceIcon,
+  ToolbarAttachmentsIcon,
   ToolbarCenterOnWorkplaneIcon,
   ToolbarChamferIcon,
   ToolbarCopyIcon,
@@ -117,6 +129,8 @@ export {
   ToolbarFilletIcon,
   ToolbarHistoryIcon,
   ToolbarHollowIcon,
+  ToolbarOffsetIcon,
+  ToolbarCutOutIcon,
   ToolbarDeleteFaceIcon,
   ToolbarSimplifyIcon,
   ToolbarSurfaceTextureIcon,

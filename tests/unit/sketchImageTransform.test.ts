@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calibrateImage, cropImage, imageCorners, imageHandlePositions, imageRotateHandle, imageToLocal, imageToWorld, normalizeImageCrop, normalizeImageRotation, resizeImage, rotateImage, uncropImage, imageCropViewBox, imageAngleTo } from "@/lib/sketchImageTransform";
+import { calibrateImage, cropImage, imageCorners, imageHandlePositions, imageToLocal, imageToWorld, normalizeImageCrop, normalizeImageRotation, resizeImage, rotateImage, uncropImage, imageCropViewBox, imageAngleTo } from "@/lib/sketchImageTransform";
 import type { SketchImage } from "@/types/layerling";
 
 // #216: the reference image turned, cropped, calibrated and centred.
@@ -38,8 +38,6 @@ describe("sketch image transform (#216)", () => {
     expect(resized.depth).toBeCloseTo(20, 6);
     // The west edge stayed where it was: the centre moved up by half the growth.
     close(resized, { x: 10, z: -10 });
-    // The turning handle sits beyond the top edge, in the picture's own up direction.
-    close(imageRotateHandle(turned, 4), { x: 10 - 14, z: -5 });
   });
 
   it("follows the pointer round the centre when turning, snapping with Shift", () => {

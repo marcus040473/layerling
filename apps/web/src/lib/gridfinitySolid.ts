@@ -7,7 +7,6 @@ import {
   GRIDFINITY_CLEARANCE,
   GRIDFINITY_DIVIDER_CUTTER_OVERLAP,
   GRIDFINITY_FOOT,
-  GRIDFINITY_FOOT_HEIGHT,
   GRIDFINITY_GRID,
   GRIDFINITY_LEDGE_INSET,
   GRIDFINITY_MAGNET_DEPTH,
@@ -17,6 +16,8 @@ import {
   type GridfinityLabelCornerShape,
   type GridfinityLabelPieces,
   type GridfinityLabelProfile,
+  type GridfinityNotch,
+  type GridfinityOpeningInside,
   type GridfinityPlan,
   type GridfinityScoopPieces,
   type GridfinityStep,
@@ -29,6 +30,11 @@ import {
   gridfinityLabelProfileEnds,
   gridfinityOpenCorners,
   gridfinityOpenGrown,
+  gridfinityOpeningFloorCut,
+  gridfinityOpeningFrame,
+  gridfinityOpeningInside,
+  gridfinityOpeningOutline,
+  gridfinityOpeningSection,
   gridfinityPlan,
   gridfinityScoopPieces,
   gridfinityScoopPoint,
@@ -69,6 +75,10 @@ import {
  * loft cannot step across: below it the inside is a prism of the wall's inset,
  * run up into the loft over the ledge so their faces do not meet, and the
  * floor's rounding, the scoops and the compartments are cut on the prism.
+ *
+ * A tray (#837) is a bin with no feet under it: the block stands on y = 0 and
+ * is cut the same way. Its dividers run up to its top, and the box above their
+ * cutter is what joins the compartments to a notch cut into the wall.
  */
 
 /** z up to y up: (x, y, z) -> (x, z, -y). */
@@ -147,7 +157,8 @@ function binSolid(cad: OcctKernel, plan: GridfinityPlan, scoops: GridfinityScoop
   // The corners touching an open side are square from the feet up, so the floor runs flat out to the edge there too.
   const square = gridfinityOpenCorners(open);
   const opened = Object.values(square).some(Boolean);
-  let body = oneSolid(cad, cad.fuseAll([...feet, prism(cad, hx, hz, GRIDFINITY_BIN_RADIUS, GRIDFINITY_FOOT_HEIGHT, wallTop, 0, 0, square)]), "bin");
+  const walls = prism(cad, hx, hz, GRIDFINITY_BIN_RADIUS, plan.base, wallTop, 0, 0, square);
+  let body = feet.length > 0 ? oneSolid(cad, cad.fuseAll([...feet, walls]), "bin") : walls;
   // The inside, from the floor up: the wall's inner steps in rising order, then out past the top.
   const inside: GridfinityStep[] = wall.slice(2).reverse();
   if (plan.lip) inside.push([0, wallTop], [0, wallTop + PAST]);
@@ -174,18 +185,30 @@ function binSolid(cad: OcctKernel, plan: GridfinityPlan, scoops: GridfinityScoop
   }
   if (scoops) cutter = scoopedCutter(cad, cutter, scoops);
   if (upper) cutter = oneSolid(cad, cad.fuse(cutter, upper), "bin's inside");
+  // A side opened partly has its notch cut with the inside, in the one cut (#455).
+  const opening = gridfinityOpeningInside(plan, compartments);
+  const notches = plan.notches.map((notch) => notchSolid(cad, plan, notch, opening));
+  // Where the kernel cannot fuse them, as when a finger scoop ends on the floor under a notch's rounded corner, the
+  // notches are cut after the inside instead.
+  let apart: ShapeHandle[] = [];
+  if (notches.length > 0) {
+    const fused = cad.fuseAll([cutter, ...notches]);
+    const solids = cad.isSolid(fused) ? [fused] : cad.getSubShapes(fused, "solid");
+    if (solids.length === 1) cutter = solids[0];
+    else apart = notches;
+  }
   // The whole inside without the compartments, the floor's rounding or the scoops, for the dividers' check.
   const loft = upper ? oneSolid(cad, cad.fuse(below, upper), "bin's inside") : below;
   const block = body;
   // A bin without the lip whose floor is raised to the top is one solid block, with no inside to cut.
-  if (plan.floor < wallTop) body = oneSolid(cad, cad.cut(body, cutter), "bin");
+  if (plan.floor < wallTop) body = oneSolid(cad, apart.length > 0 ? cad.cutAll(cad.cut(body, cutter), apart) : cad.cut(body, cutter), "bin");
   // Checked before the magnet holes, which take volume the bound does not count; the loft's PAST over the top cuts nothing.
   if (compartments) {
     const [inset] = inside[inside.length - 1];
     const over = (4 * (hx - inset) * (hz - inset) - (4 - Math.PI) * Math.max(0, GRIDFINITY_BIN_RADIUS - inset) ** 2) * PAST;
-    const bound = gridfinityDividerBound(plan, compartments) + gridfinityCompartmentFloorBound(plan, compartments);
-    // Through an open side the inside runs on past the block, so what it would leave is measured by cutting it.
-    const plain = opened ? cad.getVolume(cad.cut(block, loft)) : cad.getVolume(block) - cad.getVolume(loft) + over;
+    const bound = gridfinityDividerBound(plan, compartments) + gridfinityCompartmentFloorBound(plan, compartments) - gridfinityOpeningFloorCut(plan, compartments);
+    // Through an open side the inside runs on past the block, and a notch takes the wall, so what they would leave is measured by cutting it.
+    const plain = notches.length > 0 ? cad.getVolume(cad.cut(block, cad.fuseAll([loft, ...notches]))) : opened ? cad.getVolume(cad.cut(block, loft)) : cad.getVolume(block) - cad.getVolume(loft) + over;
     if (cad.getVolume(body) < plain + bound - PIECE_MISSED) throw new Error("The Gridfinity bin's dividers could not be cut");
   }
   if (plan.lipChamfer > 0) body = oneSolid(cad, cad.common(body, lipChamferKeeper(cad, plan, hx, hz, wallTop)), "bin");
@@ -194,6 +217,21 @@ function binSolid(cad: OcctKernel, plan: GridfinityPlan, scoops: GridfinityScoop
     body = oneSolid(cad, cad.cutAll(body, holes), "bin");
   }
   return body;
+}
+
+/** A notch's section (#455) run along it, in the kernel's frame: x as the shape's, y as its -z, z up. */
+function notchSolid(cad: OcctKernel, plan: GridfinityPlan, notch: GridfinityNotch, inside: GridfinityOpeningInside) {
+  const outline = gridfinityOpeningOutline(plan, notch, inside);
+  const cut = outline ? outline.notch : notch;
+  const { origin, inward, along, length } = gridfinityOpeningFrame(plan, cut);
+  const points = gridfinityOpeningSection(plan, cut, inside.rounding).map(([u, y]) => ({ x: origin.x + u * inward.x, y: -(origin.z + u * inward.z), z: y }));
+  const section = cad.extrude(polygonFace(cad, points), along.x * length, -along.z * length, 0);
+  if (!outline) return section;
+  // Its rounded or chamfered corners: the outline seen from outside the wall, with true arcs, run across the wall.
+  const [u0, u1] = outline.across;
+  const at = ([t, y]: [number, number]) => ({ x: origin.x + u1 * inward.x + t * along.x, y: -(origin.z + u1 * inward.z + t * along.z), z: y });
+  const edges = outline.segments.map(({ from, to, middle }) => (middle ? cad.makeArcEdge(at(from), at(middle), at(to)) : cad.makeLineEdge(at(from), at(to))));
+  return oneSolid(cad, cad.common(section, cad.extrude(cad.makeFace(cad.makeWire(edges)), -inward.x * (u1 - u0), inward.z * (u1 - u0), 0)), "notch");
 }
 
 /**
@@ -243,7 +281,7 @@ function compartmentCutter(cad: OcctKernel, loft: ShapeHandle, pieces: Gridfinit
 
 function baseplateSolid(cad: OcctKernel, plan: GridfinityPlan) {
   const half = GRIDFINITY_GRID / 2;
-  const slab = prism(cad, plan.size.width / 2, plan.size.depth / 2, GRIDFINITY_BASEPLATE_RADIUS, 0, GRIDFINITY_BASEPLATE_HEIGHT);
+  const slab = prism(cad, plan.size.width / 2, plan.size.depth / 2, plan.cornerRadius, 0, GRIDFINITY_BASEPLATE_HEIGHT);
   const last = GRIDFINITY_SOCKET[GRIDFINITY_SOCKET.length - 1];
   const steps: GridfinityStep[] = [[GRIDFINITY_SOCKET[0][0], -PAST], ...GRIDFINITY_SOCKET, [last[0], last[1] + PAST]];
   const sockets = plan.cells.map((cell) => steppedSolid(cad, cell.x, cell.z, half, half, GRIDFINITY_BASEPLATE_RADIUS, steps));
@@ -330,7 +368,8 @@ export function gridfinityPartSolid(cad: OcctKernel, part: CadModifierGridfinity
   const scoopPieces = gridfinityScoopPieces(part);
   const compartments = gridfinityCompartmentPieces(part);
   // A bin with dividers has its scoops in its compartments.
-  const solid = plan.type === "bin" ? binSolid(cad, plan, compartments ? null : scoopPieces, compartments) : baseplateSolid(cad, plan);
+  // A tray (#837) is built as a bin, standing on y = 0.
+  const solid = plan.type === "baseplate" ? baseplateSolid(cad, plan) : binSolid(cad, plan, compartments ? null : scoopPieces, compartments);
   if (!cad.isValid(solid) || !(cad.getVolume(solid) > 0)) throw new Error("The Gridfinity body is not a valid solid");
   const standing = cad.transform(solid, Z_TO_Y_UP);
   if (compartments) return labelledCompartments(cad, standing, compartments);

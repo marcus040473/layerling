@@ -1,0 +1,29 @@
+# Eigene Compose-Datei für layerling. Das Original-Repo bleibt unverändert.
+# Version wird ausschließlich über LL_IMAGE_TAG in .env gesteuert (gepinnt, kein :latest).
+services:
+  layerling:
+    image: ghcr.io/henmedia/layerling:${LL_IMAGE_TAG:?LL_IMAGE_TAG fehlt in .env}
+    container_name: layerling
+    restart: unless-stopped
+    ports:
+      # Nur lokal erreichbar. Für VPN/LAN LL_BIND in .env bewusst ändern.
+      - "${LL_BIND:-127.0.0.1}:${LL_PORT:-3000}:3000"
+    # Linux: Projektordner muss für UID 999 beschreibbar sein (chown 999:999) oder eigene UID setzen.
+    # macOS (OrbStack, Docker Desktop): nicht nötig.
+    # user: "${LL_UID}:${LL_GID}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+      NEXT_TELEMETRY_DISABLED: "1"
+      LAYERLING_SHARED_PROJECTS_DIR: "/shared-projects"
+      LAYERLING_NEW_DESIGNS_ON_SERVER: "always"
+    volumes:
+      - "${LL_PROJECTS_DIR:?LL_PROJECTS_DIR fehlt in .env}:/shared-projects"
+      - layerling-thumbnails:/app/.codex/project-thumbnails
+
+volumes:
+  layerling-thumbnails:

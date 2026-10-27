@@ -1,20 +1,20 @@
 /**
- * Foto als Vorlage: den Gegenstand (eine Vase, ein Topf) im Foto finden und seinen Umriss als Koerperform
- * nehmen - in echten Massen, die man vorher eingibt. Ohne Browser nutzbar (Tests): `img` ist
- * { width, height, data } mit RGBA-Bytes wie ImageData.
+ * A photo as a template: find the object (a vase, a pot) in the photo and take its outline as the body
+ * form - in real dimensions, entered beforehand. Usable without a browser (tests): `img` is
+ * { width, height, data } with RGBA bytes like ImageData.
  *
- * Gefunden wird so: Hintergrund = Farbe am Bildrand (Median); was deutlich davon abweicht, gehoert zum
- * Gegenstand (Schwelle nach Otsu, mindestens ein fester Abstand gegen Rauschen); es zaehlt der groesste
- * zusammenhaengende Bereich - Kruemel, Staub und Flecken am Rand nicht. Ist der Rand selbst unruhig
- * (Zimmer, Regal), gibt es keinen klaren Hintergrund: dann `ok: false` mit Grund. Rand und Boden, schraeg
- * von oben als Ellipse gesehen, zaehlen nicht zur Hoehe.
+ * How it is found: background = the colour at the image border (median); whatever differs clearly from it
+ * belongs to the object (Otsu threshold, at least a fixed distance against noise); the largest connected
+ * region counts - crumbs, dust and spots at the edge do not. If the border itself is busy
+ * (a room, a shelf), there is no clear background: then `ok: false` with a reason. Rim and base, seen
+ * at an angle from above as an ellipse, do not count towards the height.
  */
 import { profileFromSamples } from './svg-import.mjs'
 
-/** Groesste Seite des Rasters, auf dem gesucht wird (schneller, Rauschen mittelt sich). */
+/** Longest side of the grid the search runs on (faster, and noise averages out). */
 const GRID = 360
 
-/** Bild auf hoechstens GRID Bildpunkte je Seite mitteln: { w, h, rgb (Float32, 3 je Punkt), f (Faktor) }. */
+/** Average the image down to at most GRID pixels per side: { w, h, rgb (Float32, 3 per point), f (factor) }. */
 function downsample(img) {
   const f = Math.max(1, Math.max(img.width, img.height) / GRID)
   const w = Math.max(1, Math.round(img.width / f)), h = Math.max(1, Math.round(img.height / f))
@@ -25,7 +25,7 @@ function downsample(img) {
     for (let x = 0; x < img.width; x++) {
       const gx = Math.min(w - 1, Math.floor(x / f))
       const k = (y * img.width + x) * 4, g = gy * w + gx
-      // Durchsichtige Bildpunkte (PNG) gelten als weiss.
+      // Transparent pixels (PNG) count as white.
       const a = img.data[k + 3] / 255
       rgb[g * 3] += img.data[k] * a + 255 * (1 - a)
       rgb[g * 3 + 1] += img.data[k + 1] * a + 255 * (1 - a)
@@ -42,7 +42,7 @@ const median = (list) => {
   return s.length ? s[s.length >> 1] : 0
 }
 
-/** Schwelle nach Otsu ueber Werte 0..max (256 Stufen). */
+/** Otsu threshold over values 0..max (256 levels). */
 function otsu(values, max) {
   const hist = new Float64Array(256)
   for (const v of values) hist[Math.min(255, Math.floor((v / max) * 255))]++
@@ -62,15 +62,15 @@ function otsu(values, max) {
 }
 
 /**
- * Gegenstand im Foto finden. Liefert { ok, box: { x0, y0, x1, y1 } in Bildpunkten des Fotos (y nach unten;
- * oben und unten die Mitten von Rand- und Bodenellipse), rows: je Zeile des Rasters von oben [links, rechts]
- * oder null, top/bottom: erste und letzte Zeile des Koerpers, grid: { w, h, f, fy }, notes }.
+ * Find the object in the photo. Returns { ok, box: { x0, y0, x1, y1 } in the photo's pixels (y down;
+ * top and bottom are the centres of the rim and base ellipses), rows: per grid row from the top [left, right]
+ * or null, top/bottom: first and last row of the body, grid: { w, h, f, fy }, notes }.
  */
 export function findObject(img) {
   if (!img || !(img.width > 2) || !(img.height > 2) || !img.data) return { ok: false, notes: ['Kein Bild.'] }
   const g = downsample(img)
   const { w, h, rgb } = g
-  // Hintergrund: Median der Randpunkte, je Farbkanal.
+  // Background: median of the border points, per colour channel.
   const border = []
   for (let x = 0; x < w; x++) border.push(x, (h - 1) * w + x)
   for (let y = 1; y < h - 1; y++) border.push(y * w, y * w + w - 1)
@@ -78,13 +78,13 @@ export function findObject(img) {
   const dist = new Float32Array(w * h)
   for (let p = 0; p < w * h; p++) dist[p] = Math.hypot(rgb[p * 3] - bg[0], rgb[p * 3 + 1] - bg[1], rgb[p * 3 + 2] - bg[2])
   const MIN = 28
-  // Unruhiger Rand: viele Randpunkte weichen deutlich vom Median ab - dann gibt es keinen klaren Hintergrund.
+  // Busy border: many border points differ clearly from the median - then there is no clear background.
   const busy = border.filter((p) => dist[p] > 2 * MIN).length / border.length
   if (busy > 0.35) return { ok: false, notes: ['Der Hintergrund ist unruhig (am Bildrand keine einheitliche Farbe) – der Gegenstand lässt sich nicht sicher finden. Am besten vor einer hellen, einfarbigen Wand fotografieren; sonst „Kalibrieren“.'] }
   const T = Math.max(MIN, otsu(dist, 442))
   const fg = new Uint8Array(w * h)
   for (let p = 0; p < w * h; p++) fg[p] = dist[p] > T ? 1 : 0
-  // Groesster zusammenhaengender Bereich (4er-Nachbarschaft).
+  // Largest connected region (4-neighbourhood).
   const label = new Int32Array(w * h).fill(-1)
   let bestLabel = -1, bestSize = 0
   const stack = []
@@ -105,7 +105,7 @@ export function findObject(img) {
     n++
   }
   if (bestLabel < 0 || bestSize < 0.01 * w * h) return { ok: false, notes: ['Im Foto hebt sich nichts deutlich vom Hintergrund ab.'] }
-  // Je Zeile linker und rechter Rand des Bereichs.
+  // Per row, the left and right edge of the region.
   const rows = []
   let y0 = h, y1 = -1, x0 = w, x1 = -1
   for (let y = 0; y < h; y++) {
@@ -117,15 +117,15 @@ export function findObject(img) {
   const notes = []
   if (x1 - x0 >= w - 2 && y1 - y0 >= h - 2) return { ok: false, notes: ['Der gefundene Bereich füllt das ganze Foto – der Gegenstand hebt sich nicht vom Hintergrund ab.'] }
   if (x0 === 0 || x1 === w - 1 || y0 === 0) notes.push('Der Gegenstand reicht bis an den Bildrand – vielleicht ist er angeschnitten.')
-  // Perspektive: Leicht von oben fotografiert, erscheinen Rand und Boden als Ellipsen - die aeussersten Zeilen
-  // werden schlagartig schmaler (mehr als 8 % je Zeile; ein echter Fuss laeuft flacher aus). Sie zaehlen nicht
-  // zur Hoehe: Rand und Boden liegen in der Mitte ihrer Ellipse, dort, wo die volle Breite erreicht ist.
+  // Perspective: photographed slightly from above, rim and base appear as ellipses - the outermost rows
+  // get abruptly narrower (more than 8 % per row; a real foot tapers off more gently). They do not count
+  // towards the height: rim and base lie in the middle of their ellipse, where the full width is reached.
   const width = (y) => (rows[y] ? rows[y][1] - rows[y][0] + 1 : 0)
   const capMax = Math.max(1, Math.round(0.05 * (y1 - y0 + 1)))
   let top = y0, bottom = y1
   while (top < y0 + capMax && width(top) < 0.92 * width(top + 1)) top++
   while (bottom > y1 - capMax && width(bottom) < 0.92 * width(bottom - 1)) bottom--
-  // Zur Mitte hin flacht die Ellipse ab: nach dem steilen Stueck weiter, solange es noch merklich breiter wird.
+  // Towards its middle the ellipse flattens out: after the steep part, go on while it still gets noticeably wider.
   if (top > y0) while (top < y0 + capMax && width(top) < 0.98 * width(top + 1)) top++
   if (bottom < y1) while (bottom > y1 - capMax && width(bottom) < 0.98 * width(bottom - 1)) bottom--
   if (top > y0 + 1 || bottom < y1 - 1) notes.push('Rand und Boden erscheinen als Ellipse (leicht von oben fotografiert) – gemessen wird zwischen ihren Mitten.')
@@ -134,10 +134,10 @@ export function findObject(img) {
 }
 
 /**
- * Umriss eines gefundenen Gegenstands als Koerperform: je Zeile die halbe Breite (Mitte je Zeile - falls er
- * schief steht), geglaettet und auf wenige Punkte vereinfacht. `height`, `diameter`: echte Masse in mm
- * (Durchmesser = breiteste Stelle); ohne Durchmesser gilt der Massstab der Hoehe auch quer.
- * Liefert { ok, profilePoints, height, diameter, notes } wie der SVG-Import.
+ * Outline of a found object as a body form: per row half the width (the middle taken per row - in case
+ * it stands askew), smoothed and simplified to a few points. `height`, `diameter`: real dimensions in mm
+ * (diameter = the widest point); without a diameter, the height's scale applies across as well.
+ * Returns { ok, profilePoints, height, diameter, notes } like the SVG import.
  */
 export function photoProfile(found, { height, diameter = null, tolerance = null } = {}) {
   if (!found?.ok) return { ok: false, notes: found?.notes ?? ['Kein Gegenstand gefunden.'] }
@@ -145,7 +145,7 @@ export function photoProfile(found, { height, diameter = null, tolerance = null 
   const { rows, grid, top, bottom } = found
   const n = bottom - top + 1
   if (n < 8) return { ok: false, notes: ['Der Gegenstand ist im Foto zu klein für einen Umriss.'] }
-  // Halbe Breite je Zeile in Bildpunkten des Fotos; Luecken (eine Zeile ohne Treffer) ueberbrueckt.
+  // Half the width per row in the photo's pixels; gaps (a row without a hit) are bridged.
   const half = []
   for (let y = top; y <= bottom; y++) half.push(rows[y] ? ((rows[y][1] - rows[y][0] + 1) * grid.f) / 2 : null)
   for (let k = 0; k < n; k++) {
@@ -154,14 +154,14 @@ export function photoProfile(found, { height, diameter = null, tolerance = null 
     while (b < n && half[b] === null) b++
     half[k] = a >= 0 && b < n ? (half[a] + half[b]) / 2 : a >= 0 ? half[a] : half[b]
   }
-  // Glaetten: gleitender Median ueber 5 Zeilen (Kanten bleiben), dann Mittel ueber 3.
+  // Smooth: a running median over 5 rows (edges stay), then a mean over 3.
   const med = half.map((_, k) => median(half.slice(Math.max(0, k - 2), k + 3)))
   const smooth = med.map((_, k) => (med[Math.max(0, k - 1)] + med[k] + med[Math.min(n - 1, k + 1)]) / 3)
   const pxH = n * grid.fy
   const sy = height / pxH
   const widest = Math.max(...smooth) * 2
   const sx = diameter > 0 ? diameter / widest : sy
-  // Von unten nach oben: t = 0 am Fuss.
+  // From bottom to top: t = 0 at the foot.
   const ts = [], rs = []
   for (let k = n - 1; k >= 0; k--) {
     ts.push((n - 1 - k) / (n - 1))
@@ -177,9 +177,9 @@ export function photoProfile(found, { height, diameter = null, tolerance = null 
 }
 
 /**
- * Lage des Fotos hinter der Zeichnung (mm, y nach oben), damit der gefundene Gegenstand `height` hoch und
- * `diameter` breit ist (quer notfalls gestreckt), mittig auf der Achse, mit dem Fuss auf dem Bett:
- * { x0, y0, w, h } wie das Foto in der Zeichenflaeche liegt.
+ * Placement of the photo behind the drawing (mm, y up), so that the found object is `height` high and
+ * `diameter` wide (stretched across if need be), centred on the axis, with its foot on the bed:
+ * { x0, y0, w, h } as the photo lies in the drawing area.
  */
 export function photoPlacement(img, box, { height, diameter = null }) {
   const sy = height / (box.y1 - box.y0)

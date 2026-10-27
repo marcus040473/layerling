@@ -41,7 +41,7 @@ Pokud se tělesa posouvají, protože se jich dotknou děti nebo spěchající r
 - **Nainstalujte jako aplikaci.** V Safari klepněte na ikonu sdílení a zvolte „Přidat na plochu“. Aplikace se otevře ve vlastním okně bez adresního řádku a funguje i bez připojení, viz [Offline a instalace](chapter:offline-and-install).
 - **Vaše projekty jsou v prohlížeči.** Nemáte účet a nic se nenahrává. Safari má vlastní pravidlo proti sledování: smaže, co si web uložil, pokud jste ho sedm dní nenavštívili v Safari. Webová aplikace na ploše je z tohoto pravidla vyňata, jak ho popisuje WebKit. To je další důvod používat aplikaci z plochy a zálohovat důležitou práci: {{ui:dashboard.backupAll}} na úvodní stránce sbalí všechny projekty do jednoho souboru.
 - **Soubory.** Safari nechá stránku zapisovat do souboru jen přes stažení, proto {{ui:editor.export}} uloží soubor do Stažených v aplikaci Soubory a [[Ctrl]]+[[S]] na klávesnici ho stáhne znovu; viz [Soubory a ukládání](chapter:files-and-saving).
-- **Klávesnice není potřeba.** Každý nástroj má tlačítko na pásu karet a číselné pole otevře klávesnici na obrazovce. Klávesnice u iPadu přidá [klávesové zkratky](chapter:shortcuts).
+- **Klávesnice není potřeba.** Každý nástroj má tlačítko na pásu karet a číselné pole otevře klávesnici na obrazovce. Klávesnice u iPadu přidá [klávesové zkratky](chapter:shortcuts). Políčko s hodnotou vedle tělesa otevře své číselné pole až druhým klepnutím: první ho jen označí, takže prst, který na něj omylem dopadne, nevyvolá klávesnici.
 
 ## Dílny s dětmi
 

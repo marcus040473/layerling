@@ -36,7 +36,7 @@ La escuadra se apoya en el plano de trabajo. Si este está sobre el lateral de u
 - **La ×** que hay al lado la quita.
 - **El botoncito a la izquierda del tirador** cambia desde dónde se mide: desde el exterior de un cuerpo (extremo, un icono con líneas) o desde su centro (punto medio, un punto de mira). Junto a cada número verde hay un pequeño interruptor del mismo tipo que solo cambia ese número: en un cilindro de pie, el centro en los dos brazos y la base en la altura; en uno tumbado, el centro a lo ancho y un extremo a lo largo. Cuando los tres vuelven a coincidir, el botón del tirador muestra el modo común.
 
-Si hay cuerpos junto a uno de los brazos, la escuadra muestra sus medidas automáticamente. Esto solo funciona en la placa base, no en el lateral de un cuerpo.
+Si hay cuerpos junto a uno de los brazos, la escuadra muestra sus medidas automáticamente. Esto solo funciona en la placa base, no en el lateral de un cuerpo. El botón con la flecha bajo el asa de la escuadra lo desactiva, de modo que solo los cuerpos seleccionados muestran sus medidas; se guarda con el diseño.
 
 Cuando seleccionas un cuerpo, la escuadra muestra en verde a qué distancia está de la esquina, a lo largo de los dos brazos y en altura. Haz clic en un número verde para escribir una distancia, y el cuerpo se desplaza exactamente ahí. Con varios cuerpos seleccionados, cuentan como uno solo: se mide su contorno común, y un valor escrito los mueve todos juntos sin cambiar su posición relativa.
 
@@ -44,7 +44,7 @@ Las líneas guía de los números verdes van por el suelo, el plano en el que es
 
 Con el punto medio, los números verdes cuentan hasta el centro del cuerpo, también en altura. Así colocas una esfera con su centro exactamente a 15 mm de una arista sin tener que restar el radio. En una pared, colocas así un orificio a 40 mm de la izquierda y a 190 mm de arriba: selecciona el orificio, cambia a punto medio y escribe 40 y 190. Ahí la altura se cuenta desde la pared hacia fuera.
 
-Tanto la cinta métrica como la escuadra se quedan donde están mientras dibujas un boceto y vuelves a la vista 3D. No se guardan con el diseño ni en el historial, y desaparecen al recargar la página.
+Tanto la cinta métrica como la escuadra se quedan donde están mientras dibujas un boceto y vuelves a la vista 3D. Ninguna de las dos entra en el historial. La escuadra se guarda con el diseño, y también las mediciones de la cinta métrica, en el navegador y en el archivo .lyl: vuelven a estar ahí al abrir el diseño. El botón del ojo entre los botones de la cinta métrica oculta todas las mediciones y las vuelve a mostrar; también se guarda si están ocultas, y al añadir, mover o borrar una medición se muestran primero.
 
 ## Distancias al origen y al mover
 
@@ -72,7 +72,7 @@ Las notas se guardan en el diseño, no aparecen en ninguna exportación y se pue
 
 ## Puntos de referencia
 
-Un punto de referencia es una simple marca en el espacio, como una raya de lápiz o un punto de trazado en un taller: no pertenece a ningún cuerpo, nunca se imprime y otras cosas se ajustan a él. Haz clic derecho en un cuerpo y elige {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} o {{ui:contextMenu.markMidpoints}}: los puntos aparecen en la cara superior del cuerpo (de toda la selección, si has seleccionado varios).
+Un punto de referencia es una simple marca en el espacio, como una raya de lápiz o un punto de trazado en un taller: no pertenece a ningún cuerpo, nunca se imprime y otras cosas se ajustan a él. Haz clic derecho en un cuerpo y elige {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} o {{ui:contextMenu.markMidpoints}}: los puntos aparecen en la cara superior del cuerpo (de toda la selección, si has seleccionado varios). {{ui:contextMenu.markFaceCenter}} pone en cambio uno en el centro de la cara plana sobre la que hiciste clic derecho, en un lateral o en un extremo, por ejemplo.
 
 - Arrastra un punto para moverlo, o haz clic en él para ver sus coordenadas y escribir otras; están en la unidad que tengas configurada. Si una tarjeta tapa algo, puedes apartarla arrastrándola por su título, y cada una por separado: las demás se quedan donde están, y un doble clic en el título la devuelve a su sitio. La última tarjeta que has tocado queda delante de las demás. **Eliminar todo** en una tarjeta, o **Eliminar todos los puntos de referencia** en el menú del clic derecho (de un cuerpo o de una zona vacía de la vista 3D), elimina todos los puntos a la vez. {{ui:common.delete}} quita ese punto.
 - La cinta métrica también puede marcar un punto: {{ui:camera.tapeMarkMiddle}}, el botón con el punto de mira que hay bajo una medida, pone uno en su centro, por ejemplo en el centro de un orificio redondo. Y mide desde un punto: la cinta se ajusta a los puntos de referencia igual que a los vértices.

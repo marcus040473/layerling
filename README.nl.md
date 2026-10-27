@@ -21,7 +21,7 @@
     <a href="#layerling-mcp-skill"><img alt="Door AI te besturen" src="https://img.shields.io/badge/AI--drivable-MCP%20server-16c0d4"></a>
   </p>
 
-  <p><a href="README.md">English</a> · <a href="README.de.md">Deutsch</a> · <strong>Nederlands</strong> · <a href="README.zh-cn.md">简体中文</a> · <a href="README.zh-tw.md">繁體中文</a></p>
+  <p><a href="README.md">English</a> · <a href="README.de.md">Deutsch</a> · <strong>Nederlands</strong> · <a href="README.ar.md">العربية</a> · <a href="README.zh-cn.md">简体中文</a> · <a href="README.zh-tw.md">繁體中文</a></p>
 </div>
 
 <p align="center">
@@ -126,6 +126,7 @@ Het is geen volledig CAD-pakket: er is geen parametrische tijdlijn en er zijn ge
 Gemaakt door anderen, niet door dit project:
 
 <!-- videos:start -->
+- [I Tried Layerling After Tinkercad… Is It REALLY Better?](https://youtu.be/5DpOxdoNwqs) – Maker Mates Studio 3D Printing (Engels). Iemand die van Tinkercad komt, probeert layerling uit en vergelijkt de twee.
 - [Layerling CAD Videos](https://www.youtube.com/playlist?list=PLc09BHr_6nn8) – Printology (Engels). Een afspeellijst over layerling, tot nu toe met ‘I'm 100% In on Layerling - The Next Big Free CAD’ en ‘Layerling Features That Blow Tinkercad Out Of The Water’.
 - [Print by Layer](https://www.youtube.com/playlist?list=PLejZBz4L7CGQ) – Print N Repeat (Engels). Een afspeellijst over layerling, tot nu toe met ‘The EASIEST Way to Design Hinges in Layerling’ en ‘The EASIEST Way to 3D Model Threads!’.
 - [Layerling la nueva herramienta gratuita de modelado 3D, más completo que Tinkercad](https://youtu.be/-EEt0RSINoY) – Fulcro 1900 (Spaans). Een video over layerling als nieuw, gratis 3D-modelleerprogramma dat completer is dan Tinkercad.

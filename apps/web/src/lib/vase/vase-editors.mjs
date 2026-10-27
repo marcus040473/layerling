@@ -1,22 +1,22 @@
 /**
- * Zeichenflaechen fuer Vasen, beide in Millimetern: Draufsicht (Querschnitt an der breitesten
- * Stelle, Grundstueck + Symmetrie) und Seitenansicht (Koerperform, rechte Seite, links
- * gespiegelt). Raster in mm, Zoomen (Rad, zwei Finger, Knoepfe), Verschieben (Hintergrund
- * ziehen), Einpassen, Einrasten auf 1 mm. Der gewaehlte Punkt hat Zahlenfelder (Lage und
- * Winkel) und eine Anfasser-Linie, mit der man den Winkel der Kurve zieht.
+ * Drawing boards for vases, both in millimetres: top view (cross-section at the widest place,
+ * base piece + symmetry) and side view (body form, right side, mirrored on the left). Grid in
+ * mm, zooming (wheel, two fingers, buttons), panning (drag the background), fitting, snapping
+ * to 1 mm. The selected point has number fields (position and angle) and a handle line that
+ * drags the angle of the curve.
  *
  *   sectionEditor({ get, set }) / profileEditor({ get, set }) / twistEditor({ get, set }) -> { el, render, fit }
  *
- * Die Drehkurve (twistEditor) zeigt waagerecht den Winkel in Grad, senkrecht die Hoehe in mm.
+ * The twist curve (twistEditor) shows the angle in degrees across and the height in mm upwards.
  *
- * `get()` liefert die aktuellen Vasen-Einstellungen, `set(patch, { draft })` uebernimmt eine
- * Aenderung (`draft`: waehrend des Ziehens, grob vorschauen). `render()` nach jeder Aenderung.
- * Zieht man einen Punkt ueber den breitesten bzw. obersten hinaus, aendern sich Durchmesser
- * bzw. Hoehe mit - die Zeichnung zeigt immer die echten Masse.
+ * `get()` returns the current vase settings, `set(patch, { draft })` takes a change (`draft`:
+ * while dragging, a rough preview). `render()` after every change. Dragging a point beyond the
+ * widest or the topmost one changes the diameter or the height with it - the drawing always
+ * shows the real measures.
  *
- * Fassung fuer Layerling (aus dem Vasen-Werkzeug uebernommen): Alle Texte kommen ueber `tr(key, params)`
- * (Schluessel vaseDraw.*), Hinweise der Import-Module ueber `note(text)`, Zahlen im Format von `locale`;
- * ein Netz liest `readMesh(name, bytes)` (Dreiecke, Z nach oben) mit Layerlings eigenem Import.
+ * Version for Layerling (taken over from the vase tool): all texts come through `tr(key, params)`
+ * (keys vaseDraw.*), notes from the import modules through `note(text)`, numbers in the format of
+ * `locale`; a mesh is read by `readMesh(name, bytes)` (triangles, Z up) with Layerling's own import.
  */
 import {
   DRAW_PRESETS, DRAW_PROFILE, LIMITS, MAX_DRAW_POINTS, MAX_TWIST_ANGLE, PROFILES, PROFILE_CORNER, PROFILE_HANDLE,
@@ -27,12 +27,12 @@ import { meshToProfile } from './vase-import.mjs'
 import { findObject, photoPlacement, photoProfile } from './vase-photo.mjs'
 
 const SVG = 'http://www.w3.org/2000/svg'
-/** Hoechstzahl der Punkte einer Koerperform und einer Drehkurve (wie im Kern). */
+/** The most points a body form and a twist curve can have (as in the core). */
 const MAX_PROFILE_POINTS = 40
 const MAX_POINTS_TWIST = 40
 const STEPS = [0.5, 1, 2, 5, 10, 20, 50, 100]
 const MAJOR = { 0.5: 5, 1: 10, 2: 10, 5: 50, 10: 50, 20: 100, 50: 250, 100: 500 }
-/** Raster in Grad (Drehkurve): kleine und grosse Teilung. */
+/** Grid in degrees (twist curve): minor and major divisions. */
 const DEG_STEPS = [1, 5, 15, 45, 90, 180]
 const DEG_MAJOR = { 1: 15, 5: 45, 15: 90, 45: 180, 90: 360, 180: 720 }
 
@@ -44,10 +44,10 @@ function svgEl(name, attrs = {}, parent) {
 }
 const pathOf = (pts, closed) => pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(3)} ${y.toFixed(3)}`).join('') + (closed ? 'Z' : '')
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
-/** Zahlenformat der Sprache, die die Zeichenflaechen gerade zeigen (setzt jede Zeichenflaeche beim Anlegen). */
+/** Number format of the language the drawing boards show right now (every drawing board sets it when it is created). */
 let numberLocale = 'de-DE'
 const nf = (v, digits = 1) => v.toLocaleString(numberLocale, { minimumFractionDigits: 0, maximumFractionDigits: digits })
-/** Zahl aus einem Textfeld: Komma oder Punkt, Leerzeichen egal. */
+/** A number from a text field: comma or point, spaces do not matter. */
 const parseNum = (raw) => {
   const s = String(raw).trim().replace(/\s/g, '')
   const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s)
@@ -99,8 +99,8 @@ function injectStyle() {
 }
 
 /**
- * Gemeinsamer Unterbau: Ansicht in mm (y nach oben), Raster, Zoomen, Verschieben, Punkte
- * waehlen und ziehen, Anfasser ziehen, Zahlenfelder. `api` kennt die Punkte einer Ansicht.
+ * The shared base: view in mm (y up), grid, zooming, panning, selecting and dragging points,
+ * dragging handles, number fields. `api` knows the points of one view.
  */
 function drawingBoard(api) {
   injectStyle()
@@ -111,13 +111,13 @@ function drawingBoard(api) {
   wrap.className = 'vz-board'
   const svg = svgEl('svg', { role: 'img', 'aria-label': api.ariaLabel, tabindex: '0' })
   const world = svgEl('g', { transform: 'scale(1,-1)' }, svg)
-  // Referenzfoto (nur mit api.photo): hinter dem Raster, halb durchsichtig.
+  // Reference photo (only with api.photo): behind the grid, half transparent.
   const photoG = svgEl('g', {}, world)
   const gridG = svgEl('g', {}, world)
   const shapeG = svgEl('g', {}, world)
   const knobG = svgEl('g', {}, world)
   const calibG = svgEl('g', {}, world)
-  const labelG = svgEl('g', {}, svg) // Beschriftung ungespiegelt
+  const labelG = svgEl('g', {}, svg) // labels not mirrored
   const zoom = document.createElement('div')
   zoom.className = 'vz-zoom'
   const readonly = document.createElement('div')
@@ -149,7 +149,7 @@ function drawingBoard(api) {
     return b
   }
 
-  // Ansicht: linke untere Ecke (x0, y0) und Breite w in mm; die Hoehe folgt dem Seitenverhaeltnis.
+  // View: lower left corner (x0, y0) and width w in mm; the height follows the aspect ratio.
   let view = null
   let snap = false
   let selected = null
@@ -187,7 +187,7 @@ function drawingBoard(api) {
     const pt = new DOMPoint(event.clientX, event.clientY).matrixTransform(m.inverse())
     return [pt.x, pt.y]
   }
-  // Waagerecht kann die Ansicht eine eigene Einheit haben (Drehkurve: Grad); `xScale` = mm je Einheit.
+  // Across, the view can have a unit of its own (twist curve: degrees); `xScale` = mm per unit.
   const xScale = () => (api.xScale ? api.xScale() : 1)
   const snapped = ([x, y]) => (snap ? [Math.round(x / xScale()) * xScale(), Math.round(y)] : [x, y])
 
@@ -199,7 +199,7 @@ function drawingBoard(api) {
   snapBtn.setAttribute('aria-pressed', 'false')
   snapBtn.style.minWidth = '44px'
 
-  // Art des gewaehlten Punkts und Werkzeuge.
+  // Kind of the selected point, and tools.
   const kindBtns = {}
   for (const [kind, text, title] of [['rund', tr('vaseDraw.round'), tr('vaseDraw.roundTitle')], ['anfasser', tr('vaseDraw.handle'), tr('vaseDraw.handleTitle')], ['ecke', tr('vaseDraw.corner'), tr('vaseDraw.cornerTitle')]]) {
     kindBtns[kind] = button(pointRow, text, title, () => {
@@ -217,8 +217,8 @@ function drawingBoard(api) {
     selected = null
   })
   button(editRow, tr('vaseDraw.reset'), tr('vaseDraw.resetTitle'), () => { selected = null; api.reset(); fit() })
-  // SVG aus einem Zeichenprogramm uebernehmen (Inkscape, Illustrator, Affinity ...). Geht auch,
-  // solange die Form aus Einstellungen kommt - das Einlesen schaltet auf „gezeichnet“.
+  // Take an SVG from a drawing program (Inkscape, Illustrator, Affinity ...). Works also while
+  // the shape comes from settings - reading it in switches to `gezeichnet` (drawn).
   let svgBtn = null
   if (api.importSvg) {
     const file = document.createElement('input')
@@ -239,7 +239,7 @@ function drawingBoard(api) {
     editRow.append(file)
     svgBtn = button(editRow, tr('vaseDraw.loadSvg'), api.svgTitle, () => file.click())
   }
-  // Netz (STL, 3MF, OBJ) einer Vorbild-Vase: Koerperform abnehmen (vase-import.mjs).
+  // Mesh (STL, 3MF, OBJ) of a model vase: take its body form (vase-import.mjs).
   let meshBtn = null
   if (api.importMesh) {
     const file = document.createElement('input')
@@ -265,18 +265,18 @@ function drawingBoard(api) {
   }
 
   /*
-   * Referenzfoto (Seitenansicht): Foto einer Vase hinterlegen und die Koerperform nachzeichnen. Vorher (oder
-   * danach) die echten Masse des Gegenstands eingeben - Hoehe und Breite an der breitesten Stelle. Beim Laden
-   * wird der Gegenstand im Foto gesucht (vase-photo.mjs) und das Foto so gelegt, dass er genau so hoch und
-   * breit ist, mittig auf der Achse, mit dem Fuss auf dem Bett; die Vase nimmt die Masse an. „Umriss
-   * uebernehmen“ macht aus seinem Umriss die Koerperform. Findet sich nichts Klares: so hoch wie die Vase,
-   * mittig, und „Kalibrieren“ (zwei Punkte, echter Abstand). Nur in dieser Sitzung (Fotos sind gross).
+   * Reference photo (side view): put a photo of a vase behind the drawing and trace the body form. Before (or
+   * after), enter the real measures of the object - height and width at the widest place. On loading, the object
+   * is searched for in the photo (vase-photo.mjs) and the photo is laid so that the object is exactly that tall
+   * and wide, centred on the axis, with its foot on the bed; the vase takes on the measures. "Take outline"
+   * turns its outline into the body form. If nothing clear is found: as tall as the vase, centred, and
+   * "Calibrate" (two points, real distance). Only in this session (photos are large).
    */
   let photo = null
   let calib = null // null | { points: [[x, y], ...] }
-  let found = null // Gegenstand im (verkleinerten) Foto, siehe findObject
-  let photoPx = null // { width, height } des verkleinerten Fotos
-  // Masse des Gegenstands: vorbelegt mit der Vase, bis man sie selbst eingibt.
+  let found = null // the object in the (scaled-down) photo, see findObject
+  let photoPx = null // { width, height } of the scaled-down photo
+  // Measures of the object: filled in from the vase until one enters them oneself.
   const sizeField = (label, key, title) => {
     const wrapS = document.createElement('label')
     wrapS.className = 'vz-num'
@@ -291,7 +291,7 @@ function drawingBoard(api) {
   }
   const sizeH = sizeField(tr('vaseDraw.objectHeight'), 'height', tr('vaseDraw.objectHeightTitle'))
   const sizeD = sizeField(tr('vaseDraw.objectWidth'), 'diameter', tr('vaseDraw.objectWidthTitle'))
-  /** Eingegebene Masse (sonst die der Vase), in den Grenzen der Vase. */
+  /** The entered measures (otherwise the vase's), within the vase's limits. */
   const objectSize = () => {
     const v = api.photoSize()
     const h = sizeH.edited ? parseNum(sizeH.input.value) : null
@@ -304,7 +304,7 @@ function drawingBoard(api) {
     if (!sizeH.edited && document.activeElement !== sizeH.input) sizeH.input.value = nf(v.height, 1)
     if (!sizeD.edited && document.activeElement !== sizeD.input) sizeD.input.value = nf(v.diameter, 1)
   }
-  /** Foto auf den gefundenen Gegenstand legen und der Vase die Masse geben. */
+  /** Lays the photo onto the found object and gives the vase its measures. */
   function placeFound() {
     if (!photo || !found?.ok) return
     const size = objectSize()
@@ -354,7 +354,7 @@ function drawingBoard(api) {
     photoG.replaceChildren()
     calibG.replaceChildren()
     if (photo) {
-      // Das Bild selbst gespiegelt, damit es in der gespiegelten Welt (y nach oben) aufrecht steht.
+      // The image itself mirrored, so that it stands upright in the mirrored world (y up).
       svgEl('image', { href: photo.href, x: photo.x0, y: -(photo.y0 + photo.h), width: photo.w, height: photo.h, transform: 'scale(1,-1)', opacity: photo.opacity, preserveAspectRatio: 'none' }, photoG)
     }
     if (calib) {
@@ -383,7 +383,7 @@ function drawingBoard(api) {
         const w = (h * img.naturalWidth) / Math.max(1, img.naturalHeight)
         photo = { href, x0: -w / 2, y0: 0, w, h, opacity: Number(opacity.value) }
         calib = null
-        // Gegenstand suchen - auf hoechstens 1200 Bildpunkte verkleinert (genau genug, schnell).
+        // Search for the object - scaled down to at most 1200 pixels (precise enough, fast).
         found = null
         try {
           const s = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight))
@@ -434,7 +434,7 @@ function drawingBoard(api) {
       const d = Math.hypot(bx - ax, by - ay)
       if (!(real > 0) || !(d > 0)) { photoHint(tr('vaseDraw.distanceInvalid')); return }
       const f = real / d
-      // Lage von A im Foto (Anteil), dann skalieren und A auf (0, 0) legen.
+      // Position of A in the photo (as a fraction), then scale and put A at (0, 0).
       const u = (ax - photo.x0) / photo.w, v = (ay - photo.y0) / photo.h
       photo.w *= f
       photo.h *= f
@@ -460,7 +460,7 @@ function drawingBoard(api) {
     })
     photoState()
   }
-  /** Klick ohne Ziehen beim Kalibrieren: Punkt merken. */
+  /** A click without dragging while calibrating: remember the point. */
   function calibClick(event) {
     if (!calib || !photo || calib.points.length >= 2) return false
     calib.points.push(mmOf(event))
@@ -476,7 +476,7 @@ function drawingBoard(api) {
     return true
   }
 
-  // Zahlenfelder: Lage (zwei Werte) und Winkel; Eingabe mit Komma oder Punkt.
+  // Number fields: position (two values) and angle; input with comma or point.
   const field = (label, unit, onSet) => {
     const wrapF = document.createElement('label')
     wrapF.className = 'vz-num'
@@ -501,14 +501,14 @@ function drawingBoard(api) {
   const fB = field(lb, ub, (n) => api.setCoord(selected, 1, n))
   const fAngle = field(lc, '°', (n) => api.setAngle(selected, n))
 
-  /* ---------- Zeichnen ---------- */
+  /* ---------- Drawing ---------- */
   function drawGrid() {
     gridG.replaceChildren()
     labelG.replaceChildren()
     const ppm = pxPerMm()
     const step = STEPS.find((s) => s * ppm >= 9) ?? 100
     const major = MAJOR[step]
-    // Waagerecht in der eigenen Einheit (mm oder Grad).
+    // Across in the view's own unit (mm or degrees).
     const xs = xScale()
     const degrees = Boolean(api.xScale)
     const stepX = degrees ? DEG_STEPS.find((s) => s * xs * ppm >= 9) ?? 180 : step
@@ -527,7 +527,7 @@ function drawingBoard(api) {
     }
     svgEl('path', { class: 'vz-g-minor', d: minor }, gridG)
     svgEl('path', { class: 'vz-g-major', d: majorD }, gridG)
-    // Beschriftung der Hauptlinien in mm, am unteren und linken Rand.
+    // Labels of the major lines in mm, along the bottom and the left edge.
     const font = 11 / ppm
     for (let v = Math.ceil(view.x0 / xs / majorX) * majorX; v * xs <= x1; v += majorX) {
       svgEl('text', { class: 'vz-g-label', x: v * xs + 3 / ppm, y: -(view.y0 + 4 / ppm), 'font-size': font }, labelG).textContent = `${nf(Math.abs(v) < 1e-9 ? 0 : v, 0)}${degrees ? '°' : ''}`
@@ -550,13 +550,13 @@ function drawingBoard(api) {
     const ctx = { ppm, labelG, shapeG, svgEl }
     api.drawShape(shapeG, ctx)
     const ro = api.readonly?.()
-    // Beim Kalibrieren liegt der Fuss oft dort, wo der Hinweis „ergibt sich aus den Einstellungen“ steht.
+    // While calibrating, the foot often lies where the note "comes from the settings" is shown.
     readonly.hidden = !ro || Boolean(calib)
     if (ro) readonly.replaceChildren(...ro)
     const pts = api.pointsMm()
     if (selected !== null && selected >= pts.length) selected = null
     if (ro) selected = null
-    // Doppelklick auf die Linie: Punkt einfuegen.
+    // Double-click on the line: insert a point.
     const curve = api.editCurve?.()
     if (curve && !ro) {
       const hitPath = svgEl('path', { class: 'vz-curve-hit', d: pathOf(curve, false) }, shapeG)
@@ -582,7 +582,7 @@ function drawingBoard(api) {
         })
       })
     }
-    // Anfasser am gewaehlten Punkt: Linie mit zwei Enden, beide ziehbar.
+    // Handle at the selected point: a line with two ends, both draggable.
     if (selected !== null && !ro) {
       const t = api.tangentMm(selected, ppm)
       if (t) {
@@ -601,7 +601,7 @@ function drawingBoard(api) {
         }
       }
     }
-    // Felder und Knoepfe nach Auswahl.
+    // Fields and buttons according to the selection.
     const sel = selected !== null ? pts[selected] : null
     for (const [kind, b] of Object.entries(kindBtns)) {
       b.disabled = !sel || (kind === 'ecke' && sel.noCorner)
@@ -622,7 +622,7 @@ function drawingBoard(api) {
     editRow.querySelectorAll('button').forEach((b) => { if (b !== addBtn && b !== delBtn && b !== svgBtn && b !== meshBtn) b.disabled = Boolean(ro) })
   }
 
-  /* ---------- Eingaben ---------- */
+  /* ---------- Input ---------- */
   svg.addEventListener('pointerdown', (event) => {
     pointers.set(event.pointerId, [event.clientX, event.clientY])
     if (drag) return
@@ -669,8 +669,8 @@ function drawingBoard(api) {
       render()
     }
     if (was.kind === 'point' || was.kind === 'tangent') {
-      api.finish() // fein nachrechnen
-      // Ist die Form ueber den Ausschnitt hinausgewachsen (Durchmesser, Hoehe), Ansicht nachfuehren.
+      api.finish() // recompute finely
+      // If the shape has grown beyond the view (diameter, height), let the view follow.
       const [bx0, by0, bx1, by1] = api.bounds()
       if (bx0 < view.x0 || by0 < view.y0 || bx1 > view.x0 + view.w || by1 > view.y0 + view.h) fit()
     }
@@ -702,20 +702,20 @@ function drawingBoard(api) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Draufsicht: Querschnitt                                             */
+/* Top view: cross-section                                             */
 /* ------------------------------------------------------------------ */
 
-/** Querschnitt zeichnen: ein Grundstueck in mm, die Symmetrie macht daraus den Umriss. */
+/** Drawing the cross-section: one base piece in mm; the symmetry makes the outline from it. */
 export function sectionEditor({ get, set, notify, tr = (key) => key, note = (text) => text, locale, readMesh }) {
   if (locale) numberLocale = locale
   const R = () => get().diameter / 2
-  // Gezeichnet wird auch, wenn nur der Querschnitt oben (Uebergang) gezeichnet ist.
+  // Drawn also when only the upper cross-section (transition) is drawn.
   const drawn = () => get().section === 'gezeichnet' || get().section2 === 'gezeichnet'
-  /** Zeichnen setzt den unteren Querschnitt auf „gezeichnet“ - ausser der obere ist es schon. */
+  /** Drawing sets the lower cross-section to `gezeichnet` (drawn) - unless the upper one already is. */
   const drawnPatch = () => (get().section2 === 'gezeichnet' ? {} : { section: 'gezeichnet' })
   const base = () => (get().drawPoints ?? DRAW_PRESETS[get().drawSymmetry]).map((pt) => ({ ...pt }))
   const sym = () => get().drawSymmetry
-  /** Punkt auf einer Spiegelachse: i = 0 bei Haelfte/Viertel (x = 0), letzter bei Haelfte (x = 0) bzw. Viertel (y = 0). */
+  /** Point on a mirror axis: i = 0 for half/quarter (x = 0), the last one for half (x = 0) or quarter (y = 0). */
   const axisOf = (pts, i) => {
     const last = i === pts.length - 1
     if (sym() === 'halb' && (i === 0 || last)) return 'y'
@@ -723,14 +723,14 @@ export function sectionEditor({ get, set, notify, tr = (key) => key, note = (tex
     if (sym() === 'viertel' && last) return 'x'
     return null
   }
-  /** Automatische Tangente eines Grundpunkts (wie die Kurve sie rechnet), in Einheiten des Radius. */
+  /** Automatic tangent of a base point (as the curve computes it), in units of the radius. */
   const autoTangent = (pts, i) => {
     const all = drawnSectionPoints({ ...get(), drawPoints: pts.map(({ x, y, corner }) => ({ x, y, corner })) })
     const n = all.length
     const a = all[(i - 1 + n) % n], b = all[(i + 1) % n]
     return [(b.x - a.x) / 2, (b.y - a.y) / 2]
   }
-  /** Uebernehmen; der Umriss wird so skaliert, dass sein groesster Radius 1 ist - der Durchmesser waechst mit. */
+  /** Commits; the outline is scaled so that its largest radius is 1 - the diameter grows with it. */
   function commit(pts, draft) {
     const outline = sectionOutline({ ...get(), section: 'gezeichnet', drawPoints: pts })
     const M = Math.max(...outline.map(([x, y]) => Math.hypot(x, y)))
@@ -783,7 +783,7 @@ export function sectionEditor({ get, set, notify, tr = (key) => key, note = (tex
       const r = R()
       svgEl('circle', { class: 'vz-axis', r }, g)
       const s = sym()
-      // Querschnitt-Uebergang: der andere (nicht gezeichnete) Querschnitt blass dahinter.
+      // Cross-section transition: the other (not drawn) cross-section faintly behind.
       const v = get()
       if (v.section2 !== 'keiner') {
         const other = v.section === 'gezeichnet' ? secondSectionParams(v) : v.section2 === 'gezeichnet' ? v : secondSectionParams(v)
@@ -822,14 +822,14 @@ export function sectionEditor({ get, set, notify, tr = (key) => key, note = (tex
       }
       svgEl('circle', { cx: 0, cy: 0, r: 1.2, fill: 'currentColor', opacity: 0.35 }, g)
     },
-    /** Kurve des Grundstuecks (die Punkte, die man zieht) in mm - fuer Doppelklick und Hervorhebung. */
+    /** Curve of the base piece (the points one drags) in mm - for double-click and highlighting. */
     editCurve() {
       if (!drawn()) return null
       const r = R()
       const pts = base()
       const all = drawnSectionPoints({ ...get(), drawPoints: pts })
       const outline = sectionOutline({ ...get(), section: 'gezeichnet', drawPoints: pts }, 16)
-      // Der Umriss hat 16 Stuetzstellen je Abschnitt; das Grundstueck sind die ersten Abschnitte.
+      // The outline has 16 samples per section; the base piece spans the first sections.
       const segs = sym() === 'frei' ? all.length : pts.length - 1
       return outline.slice(0, segs * 16 + 1).map(([x, y]) => [x * r, y * r])
     },
@@ -863,7 +863,7 @@ export function sectionEditor({ get, set, notify, tr = (key) => key, note = (tex
       const pt = pts[i]
       if (!pt || pt.corner) return null
       let [tx, ty] = pt.tx !== undefined ? [pt.tx, pt.ty] : autoTangent(pts, i)
-      // Wie ein Bezier-Griff: ein Drittel der Tangente; mindestens 28 px lang, damit man ihn greift.
+      // Like a Bezier handle: a third of the tangent; at least 28 px long, so that one can grab it.
       let gx = (tx / 3) * R(), gy = (ty / 3) * R()
       const len = Math.hypot(gx, gy)
       const min = 28 / ppm
@@ -877,7 +877,7 @@ export function sectionEditor({ get, set, notify, tr = (key) => key, note = (tex
       const axis = axisOf(pts, i)
       if (axis === 'y') gy = 0
       if (axis === 'x') gx = 0
-      // Gezogener Anfasser: auf beiden Seiten dieselbe Tangente (eine eigene davor faellt weg).
+      // Dragged handle: the same tangent on both sides (a separate one before the point is dropped).
       const { ix, iy, ...rest } = pt
       pts[i] = { ...rest, corner: false, tx: clamp(3 * gx, -4, 4), ty: clamp(3 * gy, -4, 4) }
       commit(pts, draft)
@@ -938,7 +938,7 @@ export function sectionEditor({ get, set, notify, tr = (key) => key, note = (tex
       if (pts.length >= MAX_DRAW_POINTS) return null
       const [ux, uy] = toUnit(mm)
       const curve = this.editCurve().map(([x, y]) => [x / R(), y / R()])
-      // Naechste Stelle auf der Kurve; ihr Abschnitt (16 Stuetzstellen je Abschnitt) bestimmt, wo der Punkt hinkommt.
+      // Nearest place on the curve; its section (16 samples per section) decides where the point goes.
       let best = 0, bestD = Infinity
       curve.forEach(([x, y], k) => { const d = (x - ux) ** 2 + (y - uy) ** 2; if (d < bestD) { bestD = d; best = k } })
       const seg = Math.min(Math.floor(best / 16), sym() === 'frei' ? pts.length - 1 : pts.length - 2)
@@ -964,14 +964,14 @@ export function sectionEditor({ get, set, notify, tr = (key) => key, note = (tex
 }
 
 /* ------------------------------------------------------------------ */
-/* Seitenansicht: Koerperform                                          */
+/* Side view: body form                                                */
 /* ------------------------------------------------------------------ */
 
-/** Koerperform zeichnen: rechte Seite in mm (Radius, Hoehe), links gespiegelt; Drehachse bei x = 0. */
+/** Drawing the body form: right side in mm (radius, height), mirrored on the left; axis of rotation at x = 0. */
 export function profileEditor({ get, set, notify, tr = (key) => key, note = (text) => text, locale, readMesh }) {
   if (locale) numberLocale = locale
   const drawn = () => get().profile === 'gezeichnet'
-  /** Punkte normiert [Hoehe 0..1, Radius 0..1, Art?, Steigung?] - gezeichnet oder aus der Vorlage. */
+  /** Normalised points [height 0..1, radius 0..1, kind?, slope?] - drawn or from the preset. */
   const normPts = () => {
     const v = get()
     const src = drawn() ? (v.profilePoints ?? DRAW_PROFILE) : (PROFILES[v.profile]?.points ?? DRAW_PROFILE)
@@ -982,12 +982,12 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
     const maxR = Math.max(...pts.map((pt) => pt[1]))
     return { H: get().height, R: get().diameter / 2, maxR }
   }
-  /** Normiert -> mm: x = Radius, y = Hoehe. Steigung in mm: Radius je Hoehe. */
+  /** Normalised -> mm: x = radius, y = height. Slope in mm: radius per height. */
   const toMm = (pt) => {
     const { H, R, maxR } = scale()
     return { x: (pt[1] * R) / maxR, y: pt[0] * H, kind: pt[2] === PROFILE_CORNER ? 'ecke' : pt[2] === PROFILE_HANDLE ? 'anfasser' : 'rund', slope: pt[2] === PROFILE_HANDLE ? (pt[3] * R) / maxR / H : null }
   }
-  /** Steigung (mm/mm) der Kurve im Punkt i, wie sie gezeichnet wird. */
+  /** Slope (mm/mm) of the curve at point i, as it is drawn. */
   const slopeAt = (i) => {
     const pts = normPts()
     const mm = pts.map(toMm)
@@ -1000,8 +1000,8 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
     return ((f(b) - f(a)) / (b - a)) * (R / maxR) / H
   }
   /**
-   * Uebernehmen aus mm: Hoehe = oberster Punkt, Durchmesser = breitester Punkt; alles andere
-   * normiert. So aendern Ziehen nach oben bzw. aussen Hoehe bzw. Durchmesser.
+   * Commits from mm: height = the topmost point, diameter = the widest point; everything else
+   * normalised. So dragging up or outwards changes the height or the diameter.
    */
   function commit(mmPts, draft) {
     const H = clamp(mmPts[mmPts.length - 1].y, ...LIMITS.height)
@@ -1016,7 +1016,7 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
     set({ profile: 'gezeichnet', profilePoints, height: H, diameter: 2 * maxR }, { draft })
   }
   const current = () => normPts().map(toMm)
-  /** Eingelesene Koerperform uebernehmen (SVG oder Netz): Punkte, dazu Hoehe und Durchmesser, wenn sie passen. */
+  /** Takes an imported body form (SVG or mesh): the points, plus height and diameter if they fit. */
   function takeProfile(r, source) {
     if (!r.ok) return tr('vaseDraw.profileNotTaken', { notes: r.notes.map(note).join(' ') })
     const patch = { profile: 'gezeichnet', profilePoints: r.profilePoints }
@@ -1035,7 +1035,7 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
     note,
     ariaLabel: tr('vaseDraw.profileAria'),
     photo: true,
-    // Foto: Masse der Vase als Vorgabe fuer den Gegenstand; eingegebene Masse uebernimmt die Vase.
+    // Photo: the vase's measures as the default for the object; measures entered are taken on by the vase.
     photoSize: () => ({ height: get().height, diameter: get().diameter }),
     photoFit({ height, diameter }) {
       if (Math.abs(height - get().height) > 1e-6 || Math.abs(diameter - get().diameter) > 1e-6) set({ height: Math.round(height * 10) / 10, diameter: Math.round(diameter * 10) / 10 })
@@ -1048,7 +1048,7 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
       return takeProfile(svgToProfile(text), 'svg')
     },
     meshTitle: tr('vaseDraw.profileMeshTitle'),
-    // Ohne Leser (readMesh) kein Knopf dafuer.
+    // Without a reader (readMesh), no button for it.
     importMesh: readMesh ? async (name, bytes) => takeProfile(meshToProfile(await readMesh(name, bytes)), name) : undefined,
     hint: tr('vaseDraw.profileHint'),
     fieldLabels: [tr('vaseDraw.radius'), tr('vaseDraw.height'), tr('vaseDraw.angle')],
@@ -1062,7 +1062,7 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
       const outline = [...right, ...right.slice().reverse().map(([x, y]) => [-x, y])]
       svgEl('path', { class: 'vz-shape', d: pathOf(outline, true) }, g)
       svgEl('path', { class: 'vz-edit', d: pathOf(right, false) }, g)
-      // Drehachse und Druckbett.
+      // Axis of rotation and print bed.
       svgEl('line', { class: 'vz-axis', x1: 0, y1: -H * 0.03, x2: 0, y2: H * 1.03 }, g)
       svgEl('line', { class: 'vz-axis', x1: -scale().R * 1.3, y1: 0, x2: scale().R * 1.3, y2: 0 }, g)
       const t = svgEl('text', { class: 'vz-axis-label', x: 4 / ctx.ppm, y: -(H * 1.03 - 4 / ctx.ppm), 'font-size': 10 / ctx.ppm }, ctx.labelG)
@@ -1077,7 +1077,7 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
       return out
     },
     pointsMm() {
-      // Der unterste Punkt bleibt auf dem Druckbett (Hoehe fest).
+      // The lowest point stays on the print bed (height fixed).
       return current().map((p, i) => ({ ...p, lockB: i === 0 }))
     },
     coord: (pt, k) => (k === 0 ? pt.x : pt.y),
@@ -1099,7 +1099,7 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
       const pts = current()
       if (!pts[i] || pts[i].kind === 'ecke') return null
       const s = slopeAt(i)
-      // Richtung (Radius, Hoehe) = (s, 1), am Bildschirm 40 px lang.
+      // Direction (radius, height) = (s, 1), 40 px long on screen.
       const len = Math.hypot(s, 1)
       const L = 40 / ppm
       return [(s / len) * L, (1 / len) * L]
@@ -1108,7 +1108,7 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
       const pts = current()
       const p = pts[i]
       let dx = (x - p.x) * sign, dy = (y - p.y) * sign
-      // Nie ueberhaengend: die Linie zeigt immer nach oben (hoechstens fast waagerecht).
+      // Never overhanging: the line always points up (at most nearly horizontal).
       if (dy < 0) { dx = -dx; dy = -dy }
       dy = Math.max(dy, Math.abs(dx) / 40)
       pts[i] = { ...p, kind: 'anfasser', slope: dx / dy }
@@ -1165,24 +1165,24 @@ export function profileEditor({ get, set, notify, tr = (key) => key, note = (tex
 }
 
 /* ------------------------------------------------------------------ */
-/* Drehkurve: Winkel je Hoehe                                          */
+/* Twist curve: angle per height                                       */
 /* ------------------------------------------------------------------ */
 
 /**
- * Drehung des Querschnitts als Kurve zeichnen: waagerecht der Winkel (Grad), senkrecht die Hoehe
- * (mm). Unten und oben je ein Punkt; dazwischen frei. Solange die Drehung gleichmaessig ist
- * (Regler), zeigt die Flaeche sie nur an - „Als Kurve zeichnen“ uebernimmt sie als Punkte.
+ * Drawing the twist of the cross-section as a curve: the angle (degrees) across, the height (mm)
+ * upwards. One point at the bottom and one at the top; free in between. While the twist is even
+ * (sliders), the board only shows it - "Draw as a curve" takes it over as points.
  */
 export function twistEditor({ get, set, notify, tr = (key) => key, note = (text) => text, locale, readMesh }) {
   if (locale) numberLocale = locale
   const curve = () => get().twistMode === 'kurve'
   const H = () => get().height
-  // 180 Grad so breit wie die Vase hoch ist halb - Pendeln von wenigen Grad bleibt sichtbar.
+  // 180 degrees as wide as the vase is tall - a sway of a few degrees stays visible.
   const xs = () => H() / 180
   const normPts = () => (get().twistPoints ?? twistPointsFrom(get())).map((pt) => [...pt])
   const toMm = (pt) => ({ x: pt[1] * xs(), y: pt[0] * H(), kind: pt[2] === PROFILE_CORNER ? 'ecke' : pt[2] === PROFILE_HANDLE ? 'anfasser' : 'rund', slope: pt[2] === PROFILE_HANDLE ? pt[3] : null })
   const current = () => normPts().map(toMm)
-  /** Steigung im Punkt i in Grad je ganzer Hoehe, wie die Kurve sie rechnet. */
+  /** Slope at point i in degrees per whole height, as the curve computes it. */
   const slopeAt = (i) => {
     const pts = normPts()
     if (pts[i][2] === PROFILE_HANDLE) return pts[i][3]
@@ -1227,7 +1227,7 @@ export function twistEditor({ get, set, notify, tr = (key) => key, note = (text)
     },
     drawShape(g, ctx) {
       const h = H()
-      // Nulllinie (keine Drehung), Druckbett und Rand.
+      // Zero line (no twist), print bed and rim.
       svgEl('line', { class: 'vz-axis', x1: 0, y1: -h * 0.03, x2: 0, y2: h * 1.03 }, g)
       svgEl('line', { class: 'vz-axis', x1: -400 * xs(), y1: 0, x2: 400 * xs(), y2: 0 }, g)
       svgEl('line', { class: 'vz-axis', x1: -400 * xs(), y1: h, x2: 400 * xs(), y2: h }, g)
@@ -1263,7 +1263,7 @@ export function twistEditor({ get, set, notify, tr = (key) => key, note = (text)
     tangentMm(i, ppm) {
       const pts = current()
       if (!pts[i] || pts[i].kind === 'ecke') return null
-      // Steigung Grad je Hoehe -> mm waagerecht je mm Hoehe.
+      // Slope in degrees per height -> mm across per mm of height.
       const s = (slopeAt(i) * xs()) / H()
       const len = Math.hypot(s, 1)
       const L = 40 / ppm

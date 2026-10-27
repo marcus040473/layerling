@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import manifoldModule from "manifold-3d";
 import type { WorkplaneShape } from "@/types/layerling";
-import { buildGroupedShapeFromSelection, exportSolidVolume, splitShapeByPlane } from "@/lib/editorBooleans";
+import { buildGroupedShapeFromSelection, exportSolidVolume, faceReadPositions, groupedShape, splitShapeByPlane } from "@/lib/editorBooleans";
+import { meshDataPositions, meshForShape } from "@/lib/editorMeshCore";
 import { simplifyTrianglePositions } from "@/lib/meshSimplify";
 import { packValue, unpackValue } from "@/lib/geometryTransfer";
 import { rememberManifoldRuntime } from "@/lib/manifoldHandle";
@@ -170,6 +171,21 @@ describe("geometry worker transfer", () => {
     const transferredEstimate = await viaTransfer({ source }, (args: { source: WorkplaneShape[] }) => exportSolidVolume(args.source));
     expect(estimate.volumeMm3).toBeGreaterThan(0);
     expectSame(estimate, transferredEstimate, new Set());
+  });
+
+  it("joins a group's parts for the face readers the same way as on the page", async () => {
+    // Two overlapping 64-sided cylinders: joined, they come to fewer triangles than the two as drawn.
+    const cylinder = (id: string, x: number, z: number) => ({ id, name: "Cylinder", kind: "cylinder", color: "#cf101b", x, z, elevation: 0, rotation: 0, width: 20, depth: 20, size: 20, height: 20, sides: 64 }) as WorkplaneShape;
+    const shape = groupedShape([cylinder("a", -3.5, -4), cylinder("b", 3.5, 4)])!;
+    const direct = await faceReadPositions(shape);
+    const transferred = await viaTransfer({ shape }, (args: { shape: WorkplaneShape }) => faceReadPositions(args.shape));
+    expect(direct.length).toBeLessThan(meshDataPositions(meshForShape(shape)).length);
+    expectSame(direct, transferred, new Set());
+  });
+
+  it("reads a body that is not joined corner by corner, as it is drawn", async () => {
+    const box = { id: "box", name: "Box", kind: "box", color: "#cf101b", x: 2, z: -3, elevation: 1, rotation: 30, width: 20, depth: 10, height: 6 } as WorkplaneShape;
+    expect(Array.from(await faceReadPositions(box))).toEqual(meshDataPositions(meshForShape(box)));
   });
 
   it("splits a mesh the same way as on the page", async () => {

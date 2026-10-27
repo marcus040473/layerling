@@ -22,11 +22,11 @@
  *   irregular shape; another seed, another arrangement.
  * - Knitting, rope, basket weave, grain and an image (a grey height map, see
  *   surfaceTextureImages.ts): refined evenly, finer where the value jumps.
- * - Cracks (kintsugi, see vase/crack.mjs): lines that grow across the surface,
+ * - Cracks (kintsugi, see surfaceTextureCracks.ts): lines that grow across the surface,
  *   with kinks, branches and a tapering width; only the band round them is
  *   refined. Their notch can be filled by a body of its own (gold, a second
  *   filament), its top a little below the surface.
- * - Text, stuck on (see vase/unfold.mjs): the surface round an anchor is rolled
+ * - Text, stuck on (see surfaceTextureUnfold.ts): the surface round an anchor is rolled
  *   out like a label pressed on, and the letters' outlines are laid onto it -
  *   engraved or raised, along a vase's belly or over a box's edge. Only the
  *   window round the text is refined, and the mesh is cut along both sides of
@@ -63,8 +63,8 @@ import {
   type SurfaceBase,
   type SurfaceMesh,
 } from "@/lib/surfaceTextureMesh";
-import { crackEdgeNear, crackFillBody, crackNetwork, crackValue, surfaceIndex, type CrackNetwork, type CrackSurfaceIndex } from "@/lib/vase/crack.mjs";
-import { nearestSurfacePoint, unfoldSurface } from "@/lib/vase/unfold.mjs";
+import { crackEdgeNear, crackFillBody, crackNetwork, crackValue, surfaceIndex, type CrackNetwork, type CrackSurfaceIndex } from "@/lib/surfaceTextureCracks";
+import { nearestSurfacePoint, unfoldSurface } from "@/lib/surfaceTextureUnfold";
 import {
   blurGreyImage,
   normalizeSurfaceTextureOwnImage,
@@ -306,12 +306,8 @@ const CHOICES = {
   imageTiling: SURFACE_TEXTURE_TILINGS,
 } as const;
 
-/** Points per half crack width, by detail (as the vase tool). */
+/** Points per half crack width, by detail. */
 const CRACK_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 1.5, medium: 2.5, fine: 4 };
-/** The crack module's names for profile, style and start. */
-const CRACK_PROFILE: Record<SurfaceTextureProfile, string> = { round: "rund", pointed: "v", flat: "flach", dome: "rund" };
-const CRACK_STYLE_NAMES: Record<SurfaceTextureCrackStyle, "riss" | "blitz"> = { crack: "riss", lightning: "blitz" };
-const CRACK_START_NAMES: Record<SurfaceTextureCrackStart, "oben" | "unten" | "aussen" | "frei"> = { top: "oben", bottom: "unten", rim: "aussen", anywhere: "frei" };
 /** Text: points per height of the text's box, by detail. */
 const TEXT_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 16, medium: 28, fine: 45 };
 /** Settings that are free words rather than a choice, and how long they may be. */
@@ -950,7 +946,7 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
 /** Pattern value 0 to 1 at a point with its normal. */
 export function surfaceTextureValueAt(x: number, y: number, z: number, nx: number, ny: number, nz: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   // Cracks lie on the surface itself, not in a projection.
-  if (s.pattern === "cracks") return layout.crack ? crackValue(layout.crack, x, y, z, nx, ny, nz, CRACK_PROFILE[s.profile]) : 0;
+  if (s.pattern === "cracks") return layout.crack ? crackValue(layout.crack, x, y, z, nx, ny, nz, s.profile) : 0;
   // Grain is noise in space: no projection.
   if (s.pattern === "grain") return grain(x, y, z, s.spacing, s.seed);
   const pos = [x, y, z];
@@ -2187,7 +2183,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
   let crackCache: { key: string; net: CrackNetwork } | null = null;
 
   /**
-   * The cracks' lines on the body (see vase/crack.mjs). A crack grows only over faces that can get the pattern:
+   * The cracks' lines on the body (see surfaceTextureCracks.ts). A crack grows only over faces that can get the pattern:
    * not over the bottom or the top kept smooth, a wall switched off, outside the height band or in a mask.
    */
   function crackLines(s: SurfaceTextureSettings, layout: SurfaceTextureLayout, maskFree: ((x: number, y: number, z: number) => boolean) | null) {
@@ -2216,15 +2212,14 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     let maxRadius = 0;
     for (let i = 0; i < v.length; i += 3) maxRadius = Math.max(maxRadius, Math.hypot(v[i + i1] - layout.center[0], v[i + i2] - layout.center[1]));
     const settings = {
-      crackStyle: CRACK_STYLE_NAMES[s.crackStyle],
-      crackStart: CRACK_START_NAMES[s.crackStart],
-      crackCount: s.crackCount,
-      crackLength: s.crackLength,
-      crackWidth: s.crackWidth,
-      crackBranch: s.crackBranch,
-      crackJag: s.crackJag,
-      crackRough: s.crackRough,
-      crackPaths: [],
+      style: s.crackStyle,
+      start: s.crackStart,
+      count: s.crackCount,
+      length: s.crackLength,
+      width: s.crackWidth,
+      branch: s.crackBranch,
+      jag: s.crackJag,
+      rough: s.crackRough,
       seed: s.crackSeed,
     };
     const net = crackNetwork(base, settings, { index: crackIndex, axis: ax, center: layout.center, lo: base.min[ax], hi: base.max[ax], maxRadius: maxRadius || 1, allowed });
@@ -2259,7 +2254,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
   }
 
   /**
-   * Unroll the surface round a text's anchor, only in its window (see vase/unfold.mjs). The face under the anchor is
+   * Unroll the surface round a text's anchor, only in its window (see surfaceTextureUnfold.ts). The face under the anchor is
    * looked for anew in a refined mesh: its triangles are numbered differently.
    */
   function unrolled(mesh: { vertices: Float64Array; indices: Uint32Array }, place: SurfaceTextPlacement, s: SurfaceTextureSettings, face = -1) {

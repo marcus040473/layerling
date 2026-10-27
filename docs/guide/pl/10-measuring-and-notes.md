@@ -36,7 +36,7 @@ Kątownik leży na płaszczyźnie roboczej. Jeśli ta leży na boku bryły, kąt
 - **×** obok go usuwa.
 - **Mały przycisk na lewo od uchwytu** przełącza, od czego się mierzy: od zewnętrznej strony bryły (punkt końcowy, ikona z liniami) albo od jej środka (punkt środkowy, celownik). Mały przełącznik tego samego rodzaju stoi przy każdej zielonej liczbie i ustawia tylko tę jedną liczbę: dla stojącego walca środek w obu ramionach i spód w wysokości, dla leżącego środek w poprzek i koniec wzdłuż. Gdy wszystkie trzy znów się zgadzają, przycisk przy uchwycie pokazuje wspólny tryb.
 
-Jeśli przy jednym z ramion stoją bryły, kątownik automatycznie pokazuje ich wymiary. Działa to tylko na płycie bazowej, a nie na boku bryły.
+Jeśli przy jednym z ramion stoją bryły, kątownik automatycznie pokazuje ich wymiary. Działa to tylko na płycie bazowej, a nie na boku bryły. Przycisk ze strzałką pod uchwytem kątownika to wyłącza, więc wymiary pokazują tylko zaznaczone bryły; zapisuje się razem z projektem.
 
 Gdy zaznaczysz bryłę, kątownik pokazuje na zielono, jak daleko jest ona od narożnika, wzdłuż obu ramion i w wysokości. Kliknij zieloną liczbę, aby wpisać odległość, a bryła przesunie się dokładnie tam. Gdy zaznaczonych jest kilka brył, liczą się jako jedna: kątownik mierzy ich wspólny obrys, a wpisana wartość przesuwa je wszystkie razem, nie zmieniając ich położenia względem siebie.
 
@@ -44,7 +44,7 @@ Linie pomocnicze zielonych liczb biegną po podłodze, czyli w płaszczyźnie, w
 
 Przy punkcie środkowym zielone liczby liczą do środka bryły, także w wysokości. Tak ustawisz kulę środkiem dokładnie 15 mm od krawędzi, bez odejmowania promienia. Na ściance otwór 40 mm od lewej i 190 mm od góry ustawisz tak: zaznacz otwór, przełącz na punkt środkowy, wpisz 40 i 190. Wysokość liczy się tam od ścianki na zewnątrz.
 
-Zarówno narzędzie Zmierz, jak i kątownik zostają tam, gdzie są, gdy szkicujesz i wracasz do widoku 3D. Nie są zapisywane z projektem ani w historii i znikają po przeładowaniu strony.
+Zarówno narzędzie Zmierz, jak i kątownik zostają tam, gdzie są, gdy szkicujesz i wracasz do widoku 3D. Żadne z nich nie trafia do historii. Kątownik jest zapisywany z projektem, tak samo jak pomiary narzędzia Zmierz, w przeglądarce i w pliku .lyl: po otwarciu projektu znowu tam są. Przycisk z okiem wśród przycisków narzędzia Zmierz ukrywa wszystkie pomiary i znowu je pokazuje; zapisywane jest też to, czy są ukryte, a dodanie, przesunięcie lub usunięcie pomiaru najpierw je pokazuje.
 
 ## Odległości od początku układu i podczas przesuwania
 
@@ -72,7 +72,7 @@ Notatki zapisują się w projekcie, nie pojawiają się w żadnym eksporcie i mo
 
 ## Punkty odniesienia
 
-Punkt odniesienia to sam znak w przestrzeni, jak kreska ołówkiem albo punkt trasowania w warsztacie: nie należy do żadnej bryły, nigdy nie jest drukowany, a inne rzeczy się do niego przyciągają. Kliknij bryłę prawym przyciskiem i wybierz {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} albo {{ui:contextMenu.markMidpoints}}: punkty pojawią się na górnej ścianie bryły (całego zaznaczenia, jeśli zaznaczyłeś kilka).
+Punkt odniesienia to sam znak w przestrzeni, jak kreska ołówkiem albo punkt trasowania w warsztacie: nie należy do żadnej bryły, nigdy nie jest drukowany, a inne rzeczy się do niego przyciągają. Kliknij bryłę prawym przyciskiem i wybierz {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} albo {{ui:contextMenu.markMidpoints}}: punkty pojawią się na górnej ścianie bryły (całego zaznaczenia, jeśli zaznaczyłeś kilka). {{ui:contextMenu.markFaceCenter}} ustawia natomiast punkt na środku płaskiej ściany, na którą kliknięto prawym przyciskiem, na przykład z boku lub na końcu.
 
 - Przeciągnij punkt, aby go przesunąć, albo kliknij go, aby zobaczyć jego współrzędne i wpisać nowe. Są w ustawionej jednostce. Każdą kartę można odsunąć za tytuł, jeśli coś zasłania, osobno: pozostałe zostają na miejscu, a dwukrotne kliknięcie tytułu odkłada ją z powrotem. Karta dotknięta ostatnio stoi przed pozostałymi. **Usuń wszystkie** w karcie albo **Usuń wszystkie punkty odniesienia** w menu prawego przycisku (na bryle albo na pustym miejscu widoku 3D) usuwa naraz wszystkie punkty. {{ui:common.delete}} usuwa punkt.
 - Narzędzie Zmierz też potrafi postawić punkt: {{ui:camera.tapeMarkMiddle}}, przycisk z celownikiem pod pomiarem, stawia go w jego środku, na przykład w środku okrągłego otworu. Mierzy też od punktu: przyciąga się do punktów odniesienia jak do narożników.

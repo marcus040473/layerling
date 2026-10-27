@@ -1,17 +1,17 @@
 /**
- * Kleine Netz-Werkzeuge fuer Boeden und Zubehoer: Vieleck mit Loechern triangulieren
- * (Ohrenschnitt), zwei Ringe um den Ursprung verbinden (Reissverschluss), Kreise.
- * Alles rechnet mit Punkten [x, y] in einer Ebene; die Aufrufer setzen die Hoehe.
+ * Small mesh tools for bottoms and accessories: triangulating a polygon with holes
+ * (ear clipping), joining two rings round the origin (zipper), circles.
+ * Everything works with points [x, y] in a plane; the callers set the height.
  */
 
-/** Doppelte Flaeche eines Vielecks (positiv = gegen den Uhrzeigersinn). */
+/** Twice the area of a polygon (positive = counter-clockwise). */
 export function signedArea2(pts) {
   let a = 0
   for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j][0] - pts[i][0]) * (pts[j][1] + pts[i][1])
   return a
 }
 
-/** Kreis mit n Punkten, gegen den Uhrzeigersinn (oder im Uhrzeigersinn mit `cw`). */
+/** Circle of n points, counter-clockwise (or clockwise with `cw`). */
 export function circle(cx, cy, r, n, cw = false, phase = 0) {
   const out = []
   for (let k = 0; k < n; k++) {
@@ -24,16 +24,16 @@ export function circle(cx, cy, r, n, cw = false, phase = 0) {
 const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
 
 function inTriangle(p, a, b, c) {
-  // Echt innen oder auf dem Rand (ohne die Ecken selbst).
+  // Strictly inside or on an edge (not the corners themselves).
   const d1 = cross(a, b, p), d2 = cross(b, c, p), d3 = cross(c, a, p)
   return d1 >= 0 && d2 >= 0 && d3 >= 0
 }
 
 /**
- * Vieleck mit Loechern triangulieren. `outer` gegen den Uhrzeigersinn, `holes` je im
- * Uhrzeigersinn (die Funktion dreht falsch herum gegebene um). Liefert Dreiecke als
- * Indizes in die Punktliste [...outer, ...holes[0], ...holes[1], ...] - gegen den
- * Uhrzeigersinn. Fuer kleine Vielecke gedacht (einige hundert Punkte).
+ * Triangulates a polygon with holes. `outer` counter-clockwise, each of `holes` clockwise
+ * (the function reverses any given the wrong way round). Returns triangles as indices into
+ * the point list [...outer, ...holes[0], ...holes[1], ...] - counter-clockwise. Meant for
+ * small polygons (a few hundred points).
  */
 export function triangulate(outer, holes = []) {
   const pts = []
@@ -46,21 +46,21 @@ export function triangulate(outer, holes = []) {
   }
   let poly = ring(outer, true)
   const holeRings = holes.map((h) => ring(h, false))
-  // Loecher nacheinander einbinden, das am weitesten rechts liegende zuerst.
+  // Bring the holes in one after another, the rightmost first.
   holeRings.sort((a, b) => Math.max(...b.map((i) => pts[i][0])) - Math.max(...a.map((i) => pts[i][0])))
   for (const hole of holeRings) poly = bridge(poly, hole, pts)
   const triangles = earClip(poly, pts)
-  // Vollstaendig: ein Vieleck mit n Punkten und h Loechern ergibt n + 2h - 2 Dreiecke.
+  // Complete: a polygon with n points and h holes gives n + 2h - 2 triangles.
   const complete = triangles.length === pts.length + 2 * holeRings.length - 2
   return { points: pts, triangles, complete }
 }
 
-/** Loch ueber eine Bruecke vom rechtesten Lochpunkt zu einem sichtbaren Randpunkt einfuegen. */
+/** Inserts a hole by a bridge from its rightmost point to a visible point of the border. */
 function bridge(poly, hole, pts) {
   let hi = 0
   for (let k = 1; k < hole.length; k++) if (pts[hole[k]][0] > pts[hole[hi]][0]) hi = k
   const M = pts[hole[hi]]
-  // Strahl nach rechts: naechste geschnittene Kante.
+  // Ray to the right: the nearest edge it crosses.
   let best = Infinity, bestEdge = -1, bestX = 0
   for (let k = 0; k < poly.length; k++) {
     const a = pts[poly[k]], b = pts[poly[(k + 1) % poly.length]]
@@ -72,7 +72,7 @@ function bridge(poly, hole, pts) {
   const ea = poly[bestEdge], eb = poly[(bestEdge + 1) % poly.length]
   let P = pts[ea][0] > pts[eb][0] ? bestEdge : (bestEdge + 1) % poly.length
   const I = [bestX, M[1]]
-  // Liegen Randpunkte im Dreieck M-I-P, den mit dem kleinsten Winkel zum Strahl nehmen.
+  // If border points lie in the triangle M-I-P, take the one with the smallest angle to the ray.
   const tri = [M, I, pts[poly[P]]]
   const ccwTri = cross(tri[0], tri[1], tri[2]) >= 0 ? tri : [tri[0], tri[2], tri[1]]
   let bestAngle = Infinity
@@ -83,8 +83,8 @@ function bridge(poly, hole, pts) {
     const ang = Math.abs(Math.atan2(q[1] - M[1], q[0] - M[0]))
     if (ang < bestAngle) { bestAngle = ang; P = k }
   }
-  // Kommt der Punkt mehrfach vor (Ende einer frueheren Bruecke), die Stelle nehmen, in deren
-  // Winkel die neue Bruecke liegt - sonst kreuzte sie die alte.
+  // If the point occurs more than once (the end of an earlier bridge), take the occurrence whose
+  // angle holds the new bridge - otherwise it would cross the old one.
   const target = poly[P]
   const sightOk = (k) => {
     const a = pts[poly[k]], prv = pts[poly[(k - 1 + poly.length) % poly.length]], nxt = pts[poly[(k + 1) % poly.length]]
@@ -99,7 +99,7 @@ function bridge(poly, hole, pts) {
 }
 
 function earClip(poly, pts) {
-  // Doppelt verkettete Liste; nur einspringende Ecken koennen in einem Ohr liegen - nur sie pruefen.
+  // Doubly linked list; only reflex corners can lie inside an ear - so only they are checked.
   const n = poly.length
   const prev = new Int32Array(n), next = new Int32Array(n), alive = new Uint8Array(n).fill(1)
   for (let k = 0; k < n; k++) { prev[k] = (k - 1 + n) % n; next[k] = (k + 1) % n }
@@ -134,9 +134,9 @@ function earClip(poly, pts) {
   while (left > 3 && sinceClip <= left) {
     const ka = prev[k], kc = next[k]
     if (poly[ka] === poly[kc]) {
-      // Spitze einer Bruecke (a-b-a): b hat alle Dreiecke, ohne Dreieck entfernen. Punkte, die nur
-      // auf einer Geraden liegen, bleiben - an ihnen haengen andere Flaechen (Lochwand), sonst
-      // entstuende ein Spalt.
+      // Tip of a bridge (a-b-a): b has all its triangles; remove it without a triangle. Points that
+      // merely lie on a straight line stay - other faces (the hole wall) hang on them, otherwise a
+      // gap would open.
       remove(k); left--; k = kc; sinceClip = 0
       continue
     }
@@ -156,14 +156,14 @@ function earClip(poly, pts) {
 }
 
 /**
- * Zwei Ringe um den Ursprung verbinden (beide sternfoermig, `inner` liegt ganz innerhalb von
- * `outer`, beide gegen den Uhrzeigersinn, Winkel steigend ab beliebigem Start). Liefert Dreiecke
- * aus Indizes: `inner[i]`, `outer[j]` sind Indizes in `coords` (Punkte [x, y]). Die Dreiecke
- * sind gegen den Uhrzeigersinn (Normale nach +z, wenn man von oben schaut).
+ * Joins two rings round the origin (both star-shaped, `inner` wholly inside `outer`, both
+ * counter-clockwise, angles rising from any start). Returns triangles of indices: `inner[i]`,
+ * `outer[j]` are indices into `coords` (points [x, y]). The triangles are counter-clockwise
+ * (normal towards +z, seen from above).
  */
 export function zipRings(inner, outer, coords) {
   const ang = (i) => Math.atan2(coords[i][1], coords[i][0])
-  // Beide Ringe ab dem Punkt mit dem kleinsten Winkel >= -pi auslegen, Winkel aufsteigend entrollt.
+  // Lay out both rings from the point with the smallest angle >= -pi, angles unrolled in rising order.
   const unroll = (ring) => {
     let s = 0
     for (let k = 1; k < ring.length; k++) if (ang(ring[k]) < ang(ring[s])) s = k
@@ -201,10 +201,10 @@ export function zipRings(inner, outer, coords) {
 const LOOP_POINTS = 20
 
 /**
- * Flaeche mit Loechern in einer Ebene: Rand `ring` (Indizes, sternfoermig um die Achse),
- * Loecher { cx, cy, r, z } (z: Hoehe des Lochrands, fuer Gefaelle). Innen ein kleiner Ring
- * (96 Punkte) mit den Loechern per Ohrenschnitt, aussen ein Reissverschluss zum Rand.
- * `down`: Normale nach unten. Liefert je Loch die Indizes seines Rands (gegen den Uhrzeigersinn).
+ * Flat face with holes in a plane: border `ring` (indices, star-shaped round the axis),
+ * holes { cx, cy, r, z } (z: height of the hole's rim, for a slope). Inside, the border shrunk
+ * towards the centre, with the holes, by ear clipping; a strip joins it to the border.
+ * `down`: normal pointing down. Returns, per hole, the indices of its rim (counter-clockwise).
  */
 export function capWithHoles(ring, z, holes, down, verts, tris, addVertex) {
   const xy = (i) => [verts[i * 3], verts[i * 3 + 1]]
@@ -217,11 +217,11 @@ export function capWithHoles(ring, z, holes, down, verts, tris, addVertex) {
     }
     return []
   }
-  // Innerer Ring = Rand, zur Mitte hin verkleinert: Ein um die Mitte sternfoermiger Rand bleibt
-  // dabei ganz innen, und die beiden Ringe verbindet ein einfacher Streifen. Der Faktor ist so
-  // gross, dass alle Loecher in den inneren Ring passen.
+  // Inner ring = the border, shrunk towards the centre: a border that is star-shaped round the
+  // centre stays wholly inside, and a simple strip joins the two rings. The factor is large
+  // enough for all holes to fit into the inner ring.
   const radiusAt = (a) => {
-    // Schnitt des Strahls unter Winkel a mit dem Rand.
+    // Where the ray at angle a crosses the border.
     const dx = Math.cos(a), dy = Math.sin(a)
     let best = Infinity
     for (let j = 0; j < ring.length; j++) {
@@ -237,8 +237,8 @@ export function capWithHoles(ring, z, holes, down, verts, tris, addVertex) {
   }
   let f = 0.5
   for (const h of holes) {
-    // Der Rand des Lochs, ringsum dicht gemessen: Der Rand kann sich zwischen zwei Messstellen
-    // naeher an das Loch heranwinden (Ecken, Rippen).
+    // The hole's rim, measured densely all round: between two samples the border can wind
+    // closer to the hole (corners, ribs).
     for (let k = 0; k < 48; k++) {
       const a = (2 * Math.PI * k) / 48
       const px = h.cx + (h.r + 0.3) * Math.cos(a), py = h.cy + (h.r + 0.3) * Math.sin(a)
@@ -252,14 +252,14 @@ export function capWithHoles(ring, z, holes, down, verts, tris, addVertex) {
     if (down) { tris.push(kRing[j], ring[k], ring[j]); tris.push(kRing[j], kRing[k], ring[k]) }
     else { tris.push(kRing[j], ring[j], ring[k]); tris.push(kRing[j], ring[k], kRing[k]) }
   }
-  // Lochraender leicht gedreht: Kein Lochpunkt liegt dann genau auf der Hoehe eines anderen Punkts,
-  // das haelt den Ohrenschnitt von Sonderfaellen fern.
+  // Hole rims turned slightly: then no hole point lies exactly level with another point, which
+  // keeps the ear clipping clear of special cases.
   const loops = holes.map((h, k) => circle(h.cx, h.cy, h.r, LOOP_POINTS, false, 0.1234 + 0.377 * k).map(([x, y]) => addVertex(x, y, h.z ?? z)))
   let t = triangulate(kRing.map(xy), loops.map((l) => l.map(xy)))
   let rim = kRing
   if (!t.complete) {
-    // Ein Loch ragt ueber den inneren Ring: ohne ihn direkt im Rand triangulieren (langsamer, aber
-    // genau). Der Streifen zum inneren Ring faellt dann weg.
+    // A hole reaches past the inner ring: triangulate directly within the border, without it
+    // (slower, but exact). The strip to the inner ring is then dropped.
     tris.length -= ring.length * 6
     t = triangulate(ring.map(xy), loops.map((l) => l.map(xy)))
     rim = ring
@@ -273,7 +273,7 @@ export function capWithHoles(ring, z, holes, down, verts, tris, addVertex) {
   return loops
 }
 
-/** Wand eines Lochs zwischen zwei gleichen Lochraendern (unten `a`, oben `b`); Normale zur Lochmitte. */
+/** Wall of a hole between two matching hole rims (`a` below, `b` above); normal towards the hole's centre. */
 export function holeWall(a, b, tris) {
   for (let k = 0; k < a.length; k++) {
     const k1 = (k + 1) % a.length
@@ -282,16 +282,16 @@ export function holeWall(a, b, tris) {
   }
 }
 
-/** Decke eines blinden Lochs (Normale nach unten, in das Loch hinein). */
+/** Ceiling of a blind hole (normal pointing down, into the hole). */
 export function holeCeiling(loop, h, z, tris, addVertex) {
   const c = addVertex(h.cx, h.cy, z)
   for (let k = 0; k < loop.length; k++) tris.push(c, loop[(k + 1) % loop.length], loop[k])
 }
 
 /**
- * Baukasten fuer geschlossene Netze: Punkte und Dreiecke sammeln, Ringe um die z-Achse,
- * Waende zwischen Ringen, Raender, Flaechen mit Loechern, Drehkoerper, Quader.
- * Konvention: Dreiecke gegen den Uhrzeigersinn von aussen gesehen (Normale nach aussen).
+ * Kit for closed meshes: collecting points and triangles, rings round the z axis,
+ * walls between rings, rims, flat faces with holes, lathed bodies, boxes.
+ * Convention: triangles counter-clockwise seen from outside (normal pointing out).
  */
 export class MeshBuilder {
   constructor() {
@@ -303,7 +303,7 @@ export class MeshBuilder {
     }
   }
 
-  /** Ring mit n Punkten: Radius r(theta), Hoehe z(theta) (Zahl oder Funktion), Winkel ab `phase`. */
+  /** Ring of n points: radius r(theta), height z(theta) (number or function), angles from `phase`. */
   ring(n, r, z, phase = 0) {
     const row = new Array(n)
     for (let j = 0; j < n; j++) {
@@ -315,7 +315,7 @@ export class MeshBuilder {
     return row
   }
 
-  /** Wand durch Ringe (von unten nach oben). `inward`: Normale zur Achse hin (Innenwand). */
+  /** Wall through rings (from bottom to top). `inward`: normal towards the axis (inner wall). */
   wall(rows, inward = false) {
     const n = rows[0].length
     for (let i = 0; i < rows.length - 1; i++) {
@@ -328,7 +328,7 @@ export class MeshBuilder {
     }
   }
 
-  /** Streifen zwischen zwei gleich langen Ringen: Rand oben (`up`) oder unten. Aussen = `outer`. */
+  /** Strip between two rings of equal length: a rim on top (`up`) or at the bottom. Outside = `outer`. */
   band(outer, inner, up) {
     const n = outer.length
     for (let j = 0; j < n; j++) {
@@ -338,20 +338,20 @@ export class MeshBuilder {
     }
   }
 
-  /** Ebene Flaeche ueber einem Ring (sternfoermig um die Achse), mit Loechern; gibt Lochraender zurueck. */
+  /** Flat face over a ring (star-shaped round the axis), with holes; returns the hole rims. */
   cap(ring, z, holes = [], down = false) {
     return capWithHoles(ring, z, holes, down, this.verts, this.tris, this.addVertex)
   }
 
-  /** Durchgehende Loecher: Wand zwischen den Lochraendern unten und oben. */
+  /** Through holes: wall between the hole rims below and above. */
   holeWalls(lower, upper) {
     lower.forEach((loop, k) => holeWall(loop, upper[k], this.tris))
   }
 
   /**
-   * Drehkoerper: geschlossenes Profil [[r, z], ...] gegen den Uhrzeigersinn (r nach rechts, z nach
-   * oben) um die z-Achse, n Teile. Punkte mit r = 0 werden ein einzelner Punkt auf der Achse.
-   * `transform(x, y, z)` verschiebt/schert jeden Punkt (z. B. Spreizung eines Beins).
+   * Lathed body: a closed profile [[r, z], ...], counter-clockwise (r to the right, z up), turned
+   * round the z axis in n segments. Points with r = 0 become a single point on the axis.
+   * `transform(x, y, z)` moves/shears every point (e.g. the splay of a leg).
    */
   lathe(profile, n, { phase = 0, transform = null } = {}) {
     const rings = profile.map(([r, z]) => {
@@ -367,7 +367,7 @@ export class MeshBuilder {
       }
       return { row }
     })
-    // Profil gegen den Uhrzeigersinn: Abschnitt i -> i+1 ist eine Flaeche mit Normale nach aussen.
+    // Profile counter-clockwise: section i -> i+1 is a face with its normal pointing out.
     for (let i = 0; i < rings.length; i++) {
       const A = rings[i], B = rings[(i + 1) % rings.length]
       for (let j = 0; j < n; j++) {
@@ -379,7 +379,7 @@ export class MeshBuilder {
     }
   }
 
-  /** Quader (Mitte cx, cy, z von z0 bis z1, Breite w quer, Laenge l laengs), um `angle` gedreht. */
+  /** Box (centre cx, cy, z from z0 to z1, width w across, length l along), turned by `angle`. */
   box(cx, cy, z0, z1, l, w, angle = 0) {
     const c = Math.cos(angle), s = Math.sin(angle)
     const pt = (u, v, z) => this.addVertex(cx + u * c - v * s, cy + u * s + v * c, z)
@@ -390,7 +390,7 @@ export class MeshBuilder {
     this.wall([lo, hi])
   }
 
-  /** Netz { vertices, indices } (Float64Array, Uint32Array). */
+  /** Mesh { vertices, indices } (Float64Array, Uint32Array). */
   mesh() {
     return { vertices: Float64Array.from(this.verts), indices: Uint32Array.from(this.tris) }
   }

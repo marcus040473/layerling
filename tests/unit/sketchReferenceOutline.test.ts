@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { importedMeshFootprint, shapeMeshFootprint } from "@/components/SketchWorkspace";
 import { sketchReferenceShapeOnWorkplane } from "@/lib/editorSketchCad";
+import { meshForShape } from "@/lib/editorMeshCore";
 import type { WorkplaneShape } from "@/types/layerling";
 
 // #596: a body under a sketch is drawn with its real outline, not as the rectangle of its width and depth.
@@ -60,6 +61,23 @@ describe("the outline of a body under a sketch (#596)", () => {
     // Both parts are in it: the plate reaches 20 from the middle, the hexagon's corners stay within 6.5.
     expect(Math.max(...points.map(([x]) => Math.abs(x)))).toBeGreaterThan(19);
     expect(points.some(([x, z]) => Math.hypot(x, z) < 6.5)).toBe(true);
+  });
+
+  it("counts the triangle limit per part of a group, so fine parts keep their outline (#834)", () => {
+    // Two bolts side by side in one group, as a knurl with a bolt in the report: each is under the limit, both together over it.
+    // A group's parts stand relative to the group.
+    const bolt = (id: string, x: number) => shape({ id, kind: "thread", x, z: 0, width: 10, depth: 10, height: 25 });
+    const parts = [bolt("left", -8), bolt("right", 8)];
+    const triangles = parts.map((part) => meshForShape(part).faces.length);
+    expect(Math.max(...triangles)).toBeLessThanOrEqual(20000);
+    expect(triangles[0] + triangles[1]).toBeGreaterThan(20000);
+    const group = shape({ kind: "mesh", x: 25, z: 0, width: 26, depth: 10, height: 25, groupedShapes: parts });
+    const points = corners(shapeMeshFootprint(group)?.outlineD ?? null);
+    // Two round outlines, not the group's box with its corners at (25 ± 13, ± 5).
+    expect(points.length).toBeGreaterThan(40);
+    expect(points.some(([x, z]) => Math.abs(Math.abs(x - 25) - 13) < 0.3 && Math.abs(Math.abs(z) - 5) < 0.3)).toBe(false);
+    expect(points.some(([x]) => x < 25)).toBe(true);
+    expect(points.some(([x]) => x > 25)).toBe(true);
   });
 
   it("shows each part of a group on a side face, also the part behind the plane (#778)", () => {

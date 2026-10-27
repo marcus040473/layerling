@@ -13,7 +13,8 @@ With the mouse:
 | click the right button | on a body, a menu with the most used commands: duplicate, hole or solid, group, hide, lock, delete and more; on empty space Paste and Select all |
 | drag with the middle button | move the view |
 | mouse wheel | zoom in and out |
-| hold [[Ctrl]] / [[Cmd]] and drag with the left button | also moves the view (on a MacBook trackpad: hold [[Cmd]], press and drag) |
+| hold [[Ctrl]] / [[Cmd]] and drag with the left button | also moves the view (on a MacBook trackpad: hold [[Cmd]], press and drag); on a Mac, holding Control instead turns the view, as Control-click is the Mac's right click |
+| double-click on empty workplane or beside the plate | moves the view so that the spot comes to the middle; the view then turns around it |
 
 How fast the wheel zooms is set with {{ui:workspace.zoomSpeed}} in the settings, under {{ui:workspace.appearance}}: a slider from 1 to 14, 5 to begin with. It sets the wheel and the trackpad only: the buttons and the keys [[+]] and [[−]] always zoom in the same small steps. One notch of a mouse wheel zooms alike in every browser, a trackpad zooms with how far you stroke.
 
@@ -82,7 +83,7 @@ Click on the empty plate instead, and the workplane lies flat at the spot you cl
 
 On a face the origin of the workplane otherwise snaps to the grid. Click close to a corner of the face and it sits exactly on that corner. Close to an edge it lies on the edge, and the grid lines up with it; that is how you choose the angle of the grid on purpose. Without a corner or an edge, the grid on a lying face runs parallel to the body, so on a turned box it is turned with it.
 
-A click beside the plate or [[Esc]] returns the workplane to the base plate. Quicker still is {{ui:camera.resetWorkplane}}: the button with the downward arrow sits in the camera bar below the eye while the workplane lies on a face. [[Shift]]+[[W]] puts it directly on the currently selected face. If you hold [[Shift]] while clicking, the plane points the other way.
+A click beside the plate or [[Esc]] returns the workplane to the base plate. Quicker still is {{ui:camera.resetWorkplane}}: the button with the downward arrow sits in the camera bar below the eye while the workplane lies on a face. [[Shift]]+[[W]] puts it directly on the currently selected face. [[Alt]]+[[W]] puts it back on the base plate at any time, whether something is selected or not. If you hold [[Shift]] while clicking, the plane points the other way.
 
 While a workplane sits on a face, an eye appears next to {{ui:camera.placeWorkplane}}. It hides the workplane without dropping it, for a clear look at the design: new shapes still land on that face, and rotating still turns about it. A click on the eye shows it again, and so does setting a new workplane.
 
@@ -94,7 +95,7 @@ The grid shows the size of the plate. At the bottom right is the **snap step**: 
 
 ### The settings window
 
-The cogwheel in the ribbon ({{ui:editor.workspaceSettings}}) opens the settings. On the left are five areas: {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} and {{ui:workspace.history}}. A change counts at once. {{ui:workspace.makeDefault}} at the bottom saves the current settings as the default, so that a new design starts with them. A file you open brings its own settings; {{ui:workspace.useMyDefault}} next to it puts your saved colours, grid and the rest on the open design, keeping the size of its plate, the printer and the units. {{ui:workspace.close}} at the top right closes the window. This part goes through the settings one by one.
+The cogwheel in the ribbon ({{ui:editor.workspaceSettings}}) opens the settings. On the left are five areas: {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} and {{ui:workspace.history}}. A change counts at once. {{ui:workspace.makeDefault}} at the bottom saves the current settings as the default, so that a new design starts with them. A file you open brings its own settings; {{ui:workspace.useMyDefault}} next to it puts your saved colours, grid and the rest on the open design, keeping its units. If your default has a printer, that printer comes along with its plate size; without one the design keeps its plate and printer. {{ui:workspace.close}} at the top right closes the window. This part goes through the settings one by one.
 
 ### Appearance: theme, toolbar and view cube
 
@@ -134,7 +135,7 @@ The sketch view has its own colours: {{ui:workspace.sketchBackground}} for the w
 
 ### Appearance: light and shadows
 
-{{ui:workspace.showShadows}} switches the cast shadows on and off. Two sliders set how the bodies are lit. {{ui:workspace.shadowStrength}} says how dark the cast shadows are, and {{ui:workspace.shadeContrast}} moves light from the even ambient light to the main light: towards "punchy" the shaded sides get darker and the shadows show more, towards "soft" everything gets flatter. At the top end the contrast gets very strong, so shaded sides and shadows turn really dark. {{ui:workspace.shadowSoftness}} makes the edges of the shadows soft instead of crisp. {{ui:workspace.lightAzimuth}} turns the main light round the plate (0° from the front, 90° from the right), and {{ui:workspace.lightElevation}} lifts it; at 90° it stands straight above the plate as in Tinkercad, and the shadows fall right under the bodies. {{ui:workspace.softLighting}} brings most of the light from where you look, turning with the view: no face is left dark, and a face of a dark colour that points up is no longer burnt out to white. The main light stays a little for the shadows, and the contrast slider still works. {{ui:workspace.lightReset}} puts everything back.
+{{ui:workspace.showShadows}} switches the cast shadows on and off. Two sliders set how the bodies are lit. {{ui:workspace.shadowStrength}} says how dark the cast shadows are, and {{ui:workspace.shadeContrast}} moves light from the even ambient light to the main light: towards "punchy" the shaded sides get darker and the shadows show more, towards "soft" everything gets flatter. At the top end the contrast gets very strong, so shaded sides and shadows turn really dark. {{ui:workspace.shadowSoftness}} makes the edges of the shadows soft instead of crisp. {{ui:workspace.lightAzimuth}} turns the main light round the plate (0° from the front, 90° from the right), and {{ui:workspace.lightElevation}} lifts it; at 90° it stands straight above the plate as in Tinkercad, and the shadows fall right under the bodies. {{ui:workspace.softLighting}} brings most of the light from where you look, turning with the view: no face is left dark, and a face of a dark colour that points up is no longer burnt out to white. The main light stays a little for the shadows, and the contrast slider still works. If a bright reflection still shows with the light set low, lift {{ui:workspace.lightElevation}} to 90°: it then looks like Tinkercad. {{ui:workspace.lightReset}} puts everything back.
 
 ### Appearance: measures on the workplane
 
@@ -146,13 +147,15 @@ The sketch view has its own colours: {{ui:workspace.sketchBackground}} for the w
 
 {{ui:workspace.frameByDirection}}: a frame dragged to the right selects only what lies completely inside it, one dragged to the left everything it touches (drawn dashed), as in SketchUp.
 
-{{ui:workspace.doubleClickOpensSketch}} decides whether a double click on an extruded sketch opens the sketch again, as in Tinkercad, and {{ui:workspace.doubleClickOpensGroup}} whether a double click on a group or a bundle opens it for editing.
+{{ui:workspace.doubleClickOpensSketch}} decides whether a double click on an extruded sketch opens the sketch again, as in Tinkercad, and {{ui:workspace.doubleClickOpensGroup}} whether a double click on a group or a bundle opens it for editing. {{ui:workspace.doubleClickCentersView}} decides whether a double click on empty workplane moves the view to that spot.
 
 {{ui:workspace.objectSnap}} lets the edges and the centre of a shape snap to other shapes while you drag it; the grid menu at the bottom right has the same switch. {{ui:workspace.cruise}} makes a new shape hang on the mouse pointer and land on the face under it, like Cruise in Tinkercad; switched off, a new shape appears in the middle of the plate. More in [Selecting and arranging](chapter:select-and-arrange).
 
 ### Appearance: the view
 
 {{ui:workspace.startInPerspective}}: the editor then opens in the perspective view, not in the flat one.
+
+{{ui:workspace.startView}} sets the angle a new design opens in and {{ui:camera.home}} goes back to. Turn and zoom the view the way you like it, then click {{ui:workspace.startViewUseCurrent}}; {{ui:workspace.startViewStandard}} brings back the usual view from the front right. It holds for every design in this browser. A design you open again still opens the way you left it.
 
 {{ui:workspace.zoomSpeed}} is a slider from slow to fast: how fast the wheel and the trackpad zoom; the zoom buttons and keys keep their own small steps. {{ui:workspace.cameraInertia}}: after you let go of the mouse the view turns on for a moment and slows down gently. Switched off, it stops at once, as in Tinkercad and Fusion 360.
 

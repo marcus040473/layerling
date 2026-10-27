@@ -25,6 +25,8 @@ En form der stikker ud over kanten af printpladen markeres. En besked fortæller
 
 Advarslen stopper dig ikke fra at arbejde videre. Det er et tip så du ikke først opdager i sliceren at delen er for stor. En del der er for stor kan ofte deles: skær den over med {{ui:editor.tool.split}} og print begge halvdele hver for sig.
 
+Har du med vilje parkeret dele ved siden af pladen, så klik på det lille kryds i beskeden. Advarslen forsvinder så for netop de former. Når en af dem igen passerer, og du flytter den ud senere, eller en anden form stikker ud, kommer beskeden tilbage. Skjulte former tæller aldrig med, så det virker også at skjule de parkerede dele.
+
 ## Læg delen rigtigt
 
 Hvordan en del ligger på pladen bestemmer dens styrke og udseende. To værktøjer i området {{ui:editor.group.arrange}} hjælper:

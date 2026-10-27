@@ -43,7 +43,7 @@ Jeśli bryły się przesuwają, gdy dotykają ich dzieci albo pośpieszne ręce,
 - **Zainstaluj go jako aplikację.** W Safari stuknij ikonę Udostępnij i wybierz „Do ekranu początkowego”. Aplikacja otwiera się we własnym oknie bez paska adresu i działa bez połączenia, zobacz [Offline i instalacja](chapter:offline-and-install).
 - **Twoje projekty mieszkają w przeglądarce.** Nie ma konta i nic nie jest wysyłane. Safari ma własną zasadę przeciw śledzeniu: usuwa to, co strona zapisała, po siedmiu dniach, w których jej nie odwiedzałeś w Safari. Aplikacja internetowa dodana do ekranu początkowego jest z tej zasady wyłączona, jak opisuje to WebKit. To jeszcze jeden powód, żeby używać aplikacji z ekranu początkowego i robić kopie zapasowe ważnej pracy: {{ui:dashboard.backupAll}} na stronie startowej pakuje wszystkie projekty do jednego pliku.
 - **Pliki.** Safari pozwala stronie zapisywać do pliku tylko przez pobieranie, więc {{ui:editor.export}} kładzie plik do folderu Pobrane w aplikacji Pliki, a [[Ctrl]]+[[S]] na klawiaturze pobiera go ponownie. Zobacz [Pliki i zapis](chapter:files-and-saving).
-- **Klawiatura nie jest potrzebna.** Każde narzędzie ma przycisk na wstążce, a pole liczbowe otwiera klawiaturę ekranową. Klawiatura podłączona do iPada dodaje [skróty klawiszowe](chapter:shortcuts).
+- **Klawiatura nie jest potrzebna.** Każde narzędzie ma przycisk na wstążce, a pole liczbowe otwiera klawiaturę ekranową. Klawiatura podłączona do iPada dodaje [skróty klawiszowe](chapter:shortcuts). Pole wartości obok bryły otwiera swoje pole liczbowe dopiero drugim stuknięciem: pierwsze tylko je zaznacza, więc palec, który tam przypadkiem trafi, nie wywoła klawiatury.
 
 ## Warsztaty z dziećmi
 

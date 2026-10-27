@@ -1,6 +1,6 @@
-import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityType, ShellEdges, ShellOpenings } from "@/types/layerling";
+import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityOpening, GridfinityType, ShellEdges, ShellOpenings } from "@/types/layerling";
 
-export type CadModifierKind = "chamfer" | "chamfillet" | "fillet" | "shell" | "deleteFace";
+export type CadModifierKind = "chamfer" | "chamfillet" | "fillet" | "shell" | "deleteFace" | "offset";
 
 export type CadModifierEdge = {
   id: number;
@@ -318,12 +318,16 @@ export type CadModifierGridfinityPart = {
   gridfinityPaddingFront?: number;
   gridfinityPaddingLeft?: number;
   gridfinityPaddingRight?: number;
+  gridfinityCornerRadius?: number;
   gridfinityCompartmentsX?: number;
   gridfinityCompartmentsZ?: number;
   gridfinityDividerThickness?: number;
   gridfinityDividerPositionsX?: number[];
   gridfinityDividerPositionsZ?: number[];
   gridfinityCompartmentLabels?: GridfinityCompartmentLabel[];
+  gridfinityOpenings?: GridfinityOpening[];
+  gridfinityOpeningCorner?: GridfinityLabelCorner;
+  gridfinityOpeningCornerSize?: number;
   transform?: number[];
   expected?: { bounds: number[]; volume: number };
 };
@@ -401,6 +405,8 @@ export type CadModifierWorkerRequest =
       // Only for "shell": which faces stay open; `amount` is the wall thickness.
       shellOpenings?: ShellOpenings;
       shellEdges?: ShellEdges;
+      // Only for "offset" (#919): `amount` is the distance, moved inward when this is set.
+      offsetShrink?: boolean;
       // Only for "deleteFace": the faces to delete, as the prepare numbered them.
       faceIds?: number[];
       // The finest deflection the shape's edge-treatment history has needed

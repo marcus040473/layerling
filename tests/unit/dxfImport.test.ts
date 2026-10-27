@@ -151,6 +151,42 @@ describe("DXF import (#774): a part outline as a sketch", () => {
     expect(parts.solids.map((solid) => solid.segments.length).sort()).toEqual([4, 8]);
   });
 
+  it("drops a step shorter than the join tolerance instead of failing on it (a QR code's 0.008 mm steps)", () => {
+    // Two QR modules touching at a corner, as layerling's own DXF export writes them: their outline steps 0.008 mm
+    // round the corner where they meet. Once the ends are joined, those steps had no length left, and the CAD
+    // kernel cannot build an edge of no length, so the whole import failed.
+    const lines: Array<[[number, number], [number, number]]> = [
+      [[1.56, 2.34], [0.78, 2.34]], [[0.78, 2.34], [0.78, 0.787796]], [[0.78, 0.787796], [0.772198, 0.787796]],
+      [[0.772198, 0.787796], [0.772198, 0.779998]], [[0.772198, 0.779998], [0, 0.779998]], [[0, 0.779998], [0, 0]],
+      [[0, 0], [0.78, 0]], [[0.78, 0], [0.78, 0.772194]], [[0.78, 0.772194], [0.7878, 0.772194]],
+      [[0.7878, 0.772194], [0.7878, 0.779998]], [[0.7878, 0.779998], [1.56, 0.779998]], [[1.56, 0.779998], [1.56, 2.34]],
+    ];
+    const entities = lines.map(([a, b]) => `0\nLINE\n8\n0\n10\n${a[0]}\n20\n${a[1]}\n11\n${b[0]}\n21\n${b[1]}\n`).join("");
+    const result = sketchProfileFromDxf(`0\nSECTION\n2\nENTITIES\n${entities}0\nENDSEC\n0\nEOF\n`);
+    const byId = new Map(result.profile.points.map((point) => [point.id, point]));
+    const lengths = result.profile.segments.map((segment) => {
+      const a = byId.get(segment.startId)!;
+      const b = byId.get(segment.endId)!;
+      return Math.hypot(a.x - b.x, a.z - b.z);
+    });
+    expect(lengths.length).toBeGreaterThan(0);
+    expect(Math.min(...lengths)).toBeGreaterThan(1e-6);
+    expect(result.width).toBeCloseTo(1.56, 3);
+  });
+
+  it("does not make an outline of a few pieces shorter than the join tolerance between two curves", () => {
+    // A square whose top side ends in three 0.005 mm lines, as an exported curve can: they are within the join
+    // tolerance of each other, so a ring started at them closed on itself with no size, and the import failed.
+    const line = (a: [number, number], b: [number, number]) => `0\nLINE\n8\n0\n10\n${a[0]}\n20\n${a[1]}\n11\n${b[0]}\n21\n${b[1]}\n`;
+    const entities = [
+      line([0.005, 10], [0.01, 10.002]), line([0.01, 10.002], [0.015, 10.001]), line([0.015, 10.001], [0.02, 10]),
+      line([0.02, 10], [10, 10]), line([10, 10], [10, 0]), line([10, 0], [0, 0]), line([0, 0], [0, 10]), line([0, 10], [0.005, 10]),
+    ].join("");
+    const result = sketchProfileFromDxf(`0\nSECTION\n2\nENTITIES\n${entities}0\nENDSEC\n0\nEOF\n`);
+    expect(result.outlines).toBe(1);
+    expect(result.width).toBeCloseTo(10, 2);
+  });
+
   it("says why a file cannot be read", () => {
     expect(() => sketchProfileFromDxf("AutoCAD Binary DXF\r\n\u001a\u0000")).toThrow(DxfImportError);
     expect(() => sketchProfileFromDxf("  0\nSECTION\n  2\nENTITIES\n  0\nTEXT\n  1\nhello\n  0\nENDSEC\n  0\nEOF\n")).toThrow(/no closed outline/);

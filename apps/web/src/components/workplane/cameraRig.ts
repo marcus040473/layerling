@@ -2,12 +2,13 @@ import * as THREE from "three";
 import type { ThreeState } from "@/components/workplane/ViewportOverlays";
 import { orthographicFramingZoom, perspectiveFramingDistance } from "@/lib/cameraFraming";
 import { orbitOffsetByDrag, viewCubeAngles, viewFaceDirection, type ViewCubeFace } from "@/lib/viewCubeDrag";
-import { cameraTurn, cameraTurnOffset, prefersReducedMotion, type CameraTurn } from "@/lib/viewCubeTransition";
+import { cameraTurn, cameraTurnOffset, pivotSlide, pivotSlidePoint, prefersReducedMotion, type CameraTurn } from "@/lib/viewCubeTransition";
+import { readStartView, type DesignView } from "@/lib/designView";
 import { zoomDistanceScale } from "@/lib/workplaneSettings";
 
 /**
  * The camera of a 3D view and the moves it makes: home, a face of the view cube, a zoom step,
- * framing the selection, the switch between the normal and the flat view. The 3D view and the
+ * framing the selection, a slide to a spot, the switch between the normal and the flat view. The 3D view and the
  * second view's window each have a camera of their own and share these.
  */
 
@@ -74,22 +75,49 @@ export function fitCameraDepthRange(camera: THREE.Camera, target: THREE.Vector3)
   camera.updateProjectionMatrix();
 }
 
+/**
+ * The view as it is now, to start new designs in and to go Home to (#853). It is kept as the normal
+ * camera would show it: the flat view's zoom becomes the distance that shows as much, so the start
+ * view looks the same whichever projection the editor starts in.
+ */
+export function startViewOf(state: CameraRig): DesignView {
+  const target = state.controls.target.clone();
+  const offset = state.camera.position.clone().sub(target);
+  const direction = offset.lengthSq() > 0 ? offset.normalize() : CAMERA_HOME.clone().sub(CAMERA_TARGET).normalize();
+  const distance = state.camera instanceof THREE.OrthographicCamera
+    ? (state.camera.top - state.camera.bottom) / 2 / Math.max(state.camera.zoom, 1e-6) / Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2))
+    : state.camera.position.distanceTo(target);
+  const position = target.clone().add(direction.multiplyScalar(clamp(distance, CAMERA_MIN_DISTANCE, CAMERA_MAX_DISTANCE)));
+  return {
+    orthographic: false,
+    position: position.toArray() as [number, number, number],
+    target: target.toArray() as [number, number, number],
+    up: state.camera.up.toArray() as [number, number, number],
+    zoom: 1,
+  };
+}
+
+/** Home: the start view the user chose (#853), else the standard one. */
 export function resetCamera(state: CameraRig) {
   state.cameraTurn = null;
   state.focusReach = null;
-  state.camera.up.set(0, 1, 0);
-  state.camera.position.copy(CAMERA_HOME);
-  state.controls.target.copy(CAMERA_TARGET);
+  const start = readStartView();
+  const home = start ? new THREE.Vector3().fromArray(start.position) : CAMERA_HOME;
+  const target = start ? new THREE.Vector3().fromArray(start.target) : CAMERA_TARGET;
+  if (start) state.camera.up.fromArray(start.up);
+  else state.camera.up.set(0, 1, 0);
+  state.camera.position.copy(home);
+  state.controls.target.copy(target);
   if (state.camera instanceof THREE.OrthographicCamera) {
     state.camera.zoom = 1;
-    const distance = CAMERA_HOME.distanceTo(CAMERA_TARGET);
+    const distance = home.distanceTo(target);
     const halfHeight = distance * Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2));
     const canvas = state.renderer.domElement;
     updateOrthographicFrustum(state.camera, canvas.clientWidth / Math.max(1, canvas.clientHeight), halfHeight);
   } else {
     state.camera.zoom = 1;
   }
-  state.camera.lookAt(CAMERA_TARGET);
+  state.camera.lookAt(target);
   state.camera.updateProjectionMatrix();
   state.controls.update();
 }
@@ -198,10 +226,35 @@ export function setCameraToViewDirection(state: CameraRig, direction: THREE.Vect
   state.needsRender = true;
 }
 
-/** One frame of the view cube turn, before OrbitControls orients the camera. */
+/** Slides the view so that a point comes to the middle of the screen and becomes the pivot, from the same angle and distance. */
+export function panCameraTo(state: CameraRig, point: THREE.Vector3, animate = true) {
+  // constrainCamera holds the pivot on the plate; a spot beside it may be centred too, as with
+  // "Center view" (#352), until the house button takes the allowance back.
+  state.focusReach = (state.focusReach?.clone() ?? new THREE.Box3()).expandByPoint(point);
+  if (animate && !prefersReducedMotion()) {
+    state.cameraTurn = pivotSlide(state.controls.target, point, performance.now());
+    state.needsRender = true;
+    return;
+  }
+  state.cameraTurn = null;
+  state.camera.position.add(point.clone().sub(state.controls.target));
+  state.controls.target.copy(point);
+  state.controls.update();
+  state.needsRender = true;
+}
+
+/** One frame of the view cube turn or the slide of the pivot, before OrbitControls orients the camera. */
 export function stepCameraTurn(state: CameraRig, now: number): boolean {
   const turn = state.cameraTurn;
   if (!turn) return false;
+  if ("pivotTo" in turn) {
+    // The camera moves as far as the pivot, so the angle and the distance stay exactly as they were.
+    const { pivot, done } = pivotSlidePoint(turn, now);
+    state.camera.position.add(pivot.clone().sub(state.controls.target));
+    state.controls.target.copy(pivot);
+    if (done) state.cameraTurn = null;
+    return true;
+  }
   const { offset, done } = cameraTurnOffset(turn, now);
   state.camera.up.set(0, 1, 0);
   state.camera.position.copy(state.controls.target).add(offset);

@@ -14,6 +14,7 @@ Met de muis:
 | slepen met de middelste knop | de weergave verschuiven |
 | scrollwiel | in- en uitzoomen |
 | [[Ctrl]] / [[Cmd]] ingedrukt houden en slepen met de linkerknop | verschuift ook de weergave |
+| dubbelklik op een lege plek van het werkvlak of naast de plaat | verschuift de weergave tot die plek in het midden ligt; de weergave draait daarna om die plek |
 
 Hoe snel het muiswiel zoomt, stel je in bij de instellingen onder {{ui:workspace.appearance}} met {{ui:workspace.zoomSpeed}}: een schuifregelaar van 1 tot 14, eerst 5; boven 10 wordt alleen het wiel sneller.
 
@@ -80,7 +81,7 @@ Klik je in plaats daarvan op de lege plaat, dan ligt het werkvlak plat op de ple
 
 Op een vlak klikt de oorsprong van het werkvlak verder vast aan het raster. Klik dicht bij een hoek van het vlak en hij zit precies op die hoek. Dicht bij een rand ligt hij op de rand en lijnt het raster ermee uit; zo kies je bewust de hoek van het raster. Zonder hoek of rand loopt het raster op een liggend vlak evenwijdig aan het lichaam, dus op een gedraaide kubus is het mee gedraaid.
 
-Een klik naast de plaat of [[Esc]] zet het werkvlak terug op de grondplaat. Nog sneller is {{ui:camera.resetWorkplane}}: de knop met het pijltje omlaag staat in de camerabalk onder het oog, zolang het werkvlak op een vlak ligt. [[Shift]]+[[W]] legt het direct op het geselecteerde vlak. Houd je [[Shift]] ingedrukt tijdens het klikken, dan wijst het vlak de andere kant op.
+Een klik naast de plaat of [[Esc]] zet het werkvlak terug op de grondplaat. Nog sneller is {{ui:camera.resetWorkplane}}: de knop met het pijltje omlaag staat in de camerabalk onder het oog, zolang het werkvlak op een vlak ligt. [[Shift]]+[[W]] legt het direct op het geselecteerde vlak. [[Alt]]+[[W]] zet het altijd terug op de grondplaat, of er nu iets geselecteerd is of niet. Houd je [[Shift]] ingedrukt tijdens het klikken, dan wijst het vlak de andere kant op.
 
 Zolang een werkvlak op een vlak ligt, verschijnt er een oog naast {{ui:camera.placeWorkplane}}. Dat verbergt het werkvlak zonder het los te laten, voor een vrij zicht op het ontwerp: nieuwe vormen komen nog steeds op dat vlak terecht, en draaien gebeurt nog steeds daaromheen. Een klik op het oog toont het weer, en een nieuw werkvlak neerleggen ook.
 

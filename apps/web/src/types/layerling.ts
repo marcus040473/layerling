@@ -13,6 +13,7 @@ export type ShapeKind =
   | "text"
   | "roundRoof"
   | "halfSphere"
+  | "paraboloid"
   | "torus"
   | "tube"
   | "bentTube"
@@ -73,6 +74,20 @@ export type ProjectAsset = {
   name: string;
   mediaType: string;
   sourceFormat: ProjectAssetSourceFormat;
+  bytes: Uint8Array;
+  byteLength: number;
+  sha256: string;
+};
+
+/**
+ * A file kept with a design - its instructions, a parts list - and saved, shared and backed up
+ * with it (#820). Not part of the undo history. `mediaType` comes from the content check of
+ * `projectAttachments.ts`, never from the browser.
+ */
+export type ProjectAttachment = {
+  id: string;
+  name: string;
+  mediaType: string;
   bytes: Uint8Array;
   byteLength: number;
   sha256: string;
@@ -162,6 +177,14 @@ export type ShapeCustomization = {
   honeycombFrameWidth?: number;
   /** Hinge: how many knuckles share the axis, odd so the pin's part holds both ends. */
   hingeKnuckles?: number;
+  /** Tube or ring: its bore counts as a hole when the shape is grouped, and cuts what it is grouped with - a wall of another tube in a T-junction (#892). */
+  tubeBoreHole?: boolean;
+  /** Hinge: the knuckles are at most this wide in mm and their number follows; left out, the count of `hingeKnuckles` stands (#907). */
+  hingeKnuckleWidth?: number;
+  /** Hinge, cone style: the diameter of the cones at their root in mm; left out, the largest that fits (#907). */
+  hingeConeSize?: number;
+  /** Hinge: "pin" (default) or "cone": cones on every other knuckle that nest into the others, printing without bridges (#907). */
+  hingeStyle?: "pin" | "pinless" | "cone";
   /** Hinge: diameter of the pin in mm; the other part's bore is wider by the clearance. */
   hingePinDiameter?: number;
   /** Hinge: thickness of the two leaves in mm. */
@@ -172,7 +195,7 @@ export type ShapeCustomization = {
   hingePinless?: boolean;
   /** Hinge: the second leaf folded up about the pin, in degrees; 0 lies flat, 180 is closed. */
   hingeAngle?: number;
-  /** Gridfinity: a bin or the baseplate it stands in; the size counts grid units of 42 mm (height units of 7 mm). */
+  /** Gridfinity: a bin or the baseplate it stands in, whose size counts grid units of 42 mm (height units of 7 mm), or a tray of any size in mm (#837). */
   gridfinityType?: GridfinityType;
   /** Gridfinity bin: the stacking lip on top of the wall; missing means on. */
   gridfinityLip?: boolean;
@@ -228,7 +251,7 @@ export type ShapeCustomization = {
   gridfinityScoopRadius?: number;
   /** Gridfinity bin: the floor's height inside in mm, measured from the underside; missing is 5.95, and at the highest the bin is solid up to the lip's support, or to the top without the lip. */
   gridfinityFloorHeight?: number;
-  /** Gridfinity bin: no wall and no stacking lip along the back above the floor; the walls beside it run out to the outline (#682). */
+  /** Gridfinity bin: no wall and no stacking lip along the back above the floor; the walls beside it run out to the outline (#682). Opened only partly with gridfinityOpenings (#455). */
   gridfinityOpenBack?: boolean;
   /** Gridfinity bin: no wall and no stacking lip along the front. */
   gridfinityOpenFront?: boolean;
@@ -240,6 +263,10 @@ export type ShapeCustomization = {
   gridfinityLipChamfer?: number;
   /** Gridfinity bin: the wall's thickness in mm, set in from an outline that never changes; missing is 0.95, at least 0.8, at most where the walls meet, which builds the bin solid (#455). */
   gridfinityWallThickness?: number;
+  /** Gridfinity bin: the corners of its partly open sides' notches, seen from outside the wall, rounded or chamfered; missing is rounded (#455). */
+  gridfinityOpeningCorner?: GridfinityLabelCorner;
+  /** Gridfinity bin: the size of that rounding or chamfer in mm; missing, 0 or under 0.5 leaves them square. */
+  gridfinityOpeningCornerSize?: number;
   /** Gridfinity baseplate: a solid border at the plate's height along the back, in mm, outside the grid and inside the box; missing is none, at most 41 (#455). */
   gridfinityPaddingBack?: number;
   /** Gridfinity baseplate: the border along the front. */
@@ -248,6 +275,8 @@ export type ShapeCustomization = {
   gridfinityPaddingLeft?: number;
   /** Gridfinity baseplate: the border along the right. */
   gridfinityPaddingRight?: number;
+  /** Gridfinity baseplate: the radius of its four outer corners in mm; missing is the specification's 4, at least 0 (square), at most 4; the sockets keep theirs (#856). */
+  gridfinityCornerRadius?: number;
   /** Gridfinity bin: compartments across, a whole number; missing is 1, a bin without dividers (#554). */
   gridfinityCompartmentsX?: number;
   /** Gridfinity bin: compartments deep, a whole number; missing is 1. */
@@ -389,9 +418,13 @@ export type WorkplaneWorkspaceSettings = {
   selectBeforeMove: boolean;
   /** The selection frame takes only what it encloses when dragged to the right, what it touches when dragged to the left (#430). */
   frameByDirection: boolean;
+  /** Pasted parts are set in the middle of the workplane and dropped onto it, instead of where they came from (#876). */
+  pasteCentered: boolean;
   /** A double click on a sketch body opens its sketch; on a group or bundle, opens it for editing (#150). */
   doubleClickOpensSketch: boolean;
   doubleClickOpensGroup: boolean;
+  /** A double click on empty workplane slides the view so that the spot comes to the middle. */
+  doubleClickCentersView: boolean;
   /** Moving a shape snaps its edges and centre to other shapes, with guide lines. */
   objectSnap: boolean;
   /** An STL leaves as a plain download each time, which the browser numbers (name (1).stl), instead of writing into one linked file (#731). */
@@ -539,8 +572,8 @@ export type SketchOperation = "extrude" | "revolve" | "sweep";
 export type GearType = "spur" | "helical" | "herringbone" | "bevel" | "internal" | "rack";
 export type GearProfile = "involute" | "round" | "simple";
 
-/** A Gridfinity bin, or the baseplate bins stand in. */
-export type GridfinityType = "bin" | "baseplate";
+/** A Gridfinity bin, the baseplate bins stand in, or a tray of any size with a flat bottom (#837). */
+export type GridfinityType = "bin" | "baseplate" | "tray";
 /** How a label shelf's corners are finished where it meets a wall or another shelf. */
 export type GridfinityLabelCorner = "round" | "chamfer";
 /**
@@ -557,6 +590,20 @@ export type GridfinityCompartmentLabel = {
   length?: number;
   align?: "start" | "middle" | "end";
   width?: number;
+};
+
+/**
+ * A Gridfinity bin's side switched open, opened only partly (#455): a notch from the lip's top down `depth` mm, `width`
+ * mm wide, at its place along the side's straight part: `align` start (towards -x on a back or front side, towards -z on
+ * a left or right one), middle or end, and `distance` mm from that end; a missing value is the full depth, the full
+ * wall, the middle or 0. At the full depth and the full wall the side is open as before.
+ */
+export type GridfinityOpening = {
+  side: "back" | "front" | "left" | "right";
+  depth?: number;
+  width?: number;
+  align?: "start" | "middle" | "end";
+  distance?: number;
 };
 
 /** Was aus dem Gewinde wird: Stange, Schraube, Mutter oder das Loch dafuer. */
@@ -601,10 +648,10 @@ export type ShellEdges = "round" | "sharp";
 
 export type EdgeTreatmentFeature = {
   /**
-   * "shell" hollows the body: `amount` is then the wall thickness. "deleteFace" deletes faces and closes the gap (#451).
+   * "shell" hollows the body: `amount` is then the wall thickness. "deleteFace" deletes faces and closes the gap (#451). "offset" moves every face by `amount` (#919).
    * "surfaceTexture" lays a relief onto the body: `amount` is its depth, and the entry keeps the body under it.
    */
-  kind: "fillet" | "chamfer" | "chamfillet" | "shell" | "deleteFace" | "surfaceTexture";
+  kind: "fillet" | "chamfer" | "chamfillet" | "shell" | "deleteFace" | "offset" | "surfaceTexture";
   amount: number;
   edgeCount: number;
   /** The edges picked, as the tool numbered them on the body before this treatment: "Edit" picks them again (#227). */
@@ -613,8 +660,10 @@ export type EdgeTreatmentFeature = {
   /** Only for a fillet of one edge (#687): the radius at the edge's end, `amount` the one at its start. */
   endAmount?: number;
   openings?: ShellOpenings;
-  /** Only for "shell"; missing means "round". */
+  /** Only for "shell" and "offset"; missing means "round". */
   shellEdges?: ShellEdges;
+  /** Only for "offset": the faces moved inward, the body shrunk; missing means grown. */
+  offsetShrink?: boolean;
   /** Only for "deleteFace": the faces deleted, as the tool numbered them on the body before. */
   faceIds?: number[];
   faceCount?: number;
@@ -796,6 +845,14 @@ export type WorkplaneShape = {
   honeycombFrameWidth?: number;
   /** Hinge: how many knuckles share the axis, odd so the pin's part holds both ends. */
   hingeKnuckles?: number;
+  /** Tube or ring: its bore counts as a hole when the shape is grouped, and cuts what it is grouped with - a wall of another tube in a T-junction (#892). */
+  tubeBoreHole?: boolean;
+  /** Hinge: the knuckles are at most this wide in mm and their number follows; left out, the count of `hingeKnuckles` stands (#907). */
+  hingeKnuckleWidth?: number;
+  /** Hinge, cone style: the diameter of the cones at their root in mm; left out, the largest that fits (#907). */
+  hingeConeSize?: number;
+  /** Hinge: "pin" (default) or "cone": cones on every other knuckle that nest into the others, printing without bridges (#907). */
+  hingeStyle?: "pin" | "pinless" | "cone";
   /** Hinge: diameter of the pin in mm; the other part's bore is wider by the clearance. */
   hingePinDiameter?: number;
   /** Hinge: thickness of the two leaves in mm. */
@@ -806,7 +863,7 @@ export type WorkplaneShape = {
   hingePinless?: boolean;
   /** Hinge: the second leaf folded up about the pin, in degrees; 0 lies flat, 180 is closed. */
   hingeAngle?: number;
-  /** Gridfinity: a bin or the baseplate it stands in; the size counts grid units of 42 mm (height units of 7 mm). */
+  /** Gridfinity: a bin or the baseplate it stands in, whose size counts grid units of 42 mm (height units of 7 mm), or a tray of any size in mm (#837). */
   gridfinityType?: GridfinityType;
   /** Gridfinity bin: the stacking lip on top of the wall; missing means on. */
   gridfinityLip?: boolean;
@@ -862,7 +919,7 @@ export type WorkplaneShape = {
   gridfinityScoopRadius?: number;
   /** Gridfinity bin: the floor's height inside in mm, measured from the underside; missing is 5.95, and at the highest the bin is solid up to the lip's support, or to the top without the lip. */
   gridfinityFloorHeight?: number;
-  /** Gridfinity bin: no wall and no stacking lip along the back above the floor; the walls beside it run out to the outline (#682). */
+  /** Gridfinity bin: no wall and no stacking lip along the back above the floor; the walls beside it run out to the outline (#682). Opened only partly with gridfinityOpenings (#455). */
   gridfinityOpenBack?: boolean;
   /** Gridfinity bin: no wall and no stacking lip along the front. */
   gridfinityOpenFront?: boolean;
@@ -882,6 +939,8 @@ export type WorkplaneShape = {
   gridfinityPaddingLeft?: number;
   /** Gridfinity baseplate: the border along the right. */
   gridfinityPaddingRight?: number;
+  /** Gridfinity baseplate: the radius of its four outer corners in mm; missing is the specification's 4, at least 0 (square), at most 4; the sockets keep theirs (#856). */
+  gridfinityCornerRadius?: number;
   /** Gridfinity bin: compartments across, a whole number; missing is 1, a bin without dividers (#554). */
   gridfinityCompartmentsX?: number;
   /** Gridfinity bin: compartments deep, a whole number; missing is 1. */
@@ -894,6 +953,12 @@ export type WorkplaneShape = {
   gridfinityDividerPositionsZ?: number[];
   /** Gridfinity bin with dividers: the compartments' labels, one for each compartment that has one. */
   gridfinityCompartmentLabels?: GridfinityCompartmentLabel[];
+  /** Gridfinity bin: how far each side switched open is opened (#455), one entry a side; missing is the whole side. */
+  gridfinityOpenings?: GridfinityOpening[];
+  /** Gridfinity bin: the corners of its partly open sides' notches, seen from outside the wall, rounded or chamfered; missing is rounded (#455). */
+  gridfinityOpeningCorner?: GridfinityLabelCorner;
+  /** Gridfinity bin: the size of that rounding or chamfer in mm; missing, 0 or under 0.5 leaves them square. */
+  gridfinityOpeningCornerSize?: number;
   /** Knurling: grooves straight along the axis, or crossed into diamonds. */
   knurlPattern?: "straight" | "diamond" | "round";
   /** Knurling: number of grooves around the grip. */
@@ -1100,7 +1165,7 @@ export type WorkplaneShape = {
    * them together: no cutting, every part keeps its colour and goes out as
    * its own body.
    */
-  groupOperation?: "group" | "intersection" | "bundle";
+  groupOperation?: "group" | "intersection" | "hull" | "bundle";
   /**
    * The point this body turns about, kept with the body: a fraction of its
    * width, height and depth from its centre, in its own frame, so it moves,

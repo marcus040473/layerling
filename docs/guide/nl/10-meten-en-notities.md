@@ -36,13 +36,13 @@ De winkelhaak ligt op het werkvlak. Ligt dat op de zijkant van een lichaam, dan 
 - **Het ×** ernaast verwijdert hem.
 - **Het knopje links van de greep** wisselt waarvandaan gemeten wordt: de buitenkant van een lichaam (eindpunt, een icoon met lijnen) of het midden ervan (middelpunt, een vizierkruis). Naast elk groen getal zit zo'n klein schakelaartje dat alleen dat getal omzet: bij een staande cilinder het midden in de twee armen en de onderkant in de hoogte, bij een liggende het midden dwars en een uiteinde in de lengte. Komen alle drie weer overeen, dan toont het knopje bij de greep de gemeenschappelijke stand.
 
-Staan er lichamen bij een van de armen, dan toont de winkelhaak automatisch hun afmetingen. Dat werkt alleen op de bodemplaat, niet op de zijkant van een lichaam.
+Staan er lichamen bij een van de armen, dan toont de winkelhaak automatisch hun afmetingen. Dat werkt alleen op de bodemplaat, niet op de zijkant van een lichaam. De knop met de pijl onder de greep van de winkelhaak schakelt dat uit, zodat alleen de geselecteerde lichamen hun afmetingen tonen; hij wordt met het ontwerp opgeslagen.
 
 Selecteer je een lichaam, dan toont de winkelhaak in het groen hoe ver het van de hoek af staat, langs beide armen en in de hoogte. Klik op een groen getal om een afstand te typen, en het lichaam schuift precies daarheen. Met meerdere lichamen geselecteerd tellen ze als één: de winkelhaak meet hun gezamenlijke omtrek, en een getypte waarde verplaatst ze allemaal samen zonder hun onderlinge posities te veranderen.
 
 Met het middelpunt tellen de groene getallen tot het midden van het lichaam, ook in de hoogte. Zo plaats je een bol met zijn middelpunt precies 15 mm van een rand, zonder de straal ervan af te trekken. Op een wand plaats je een gat op 40 mm van links en 190 mm van boven zo: selecteer het gat, schakel naar middelpunt, typ 40 en 190. De hoogte telt daar vanaf de wand naar buiten.
 
-Zowel het meetlint als de winkelhaak blijven staan terwijl je schetst en terugkeert naar de 3D-weergave. Ze worden niet met het ontwerp opgeslagen en niet in de geschiedenis, en ze verdwijnen als je de pagina herlaadt.
+Zowel het meetlint als de winkelhaak blijven staan terwijl je schetst en terugkeert naar de 3D-weergave. Geen van beide komt in de geschiedenis. De winkelhaak wordt met het ontwerp opgeslagen, en de metingen van het meetlint ook, in de browser en in het .lyl-bestand: als je het ontwerp opent, zijn ze er weer. De oogknop tussen de knoppen van het meetlint verbergt alle metingen en toont ze weer; of ze verborgen zijn, wordt ook bewaard, en wie een meting zet, verplaatst of verwijdert, ziet ze eerst weer.
 
 ## Afstanden tot de oorsprong en tijdens het verplaatsen
 
@@ -70,7 +70,7 @@ Notities worden in het ontwerp opgeslagen, komen in geen enkele export terecht e
 
 ## Referentiepunten
 
-Een referentiepunt is een kaal merkteken in de ruimte, zoals een potloodstreep of een aftekenpunt in een werkplaats: het hoort bij geen enkel lichaam, wordt nooit geprint, en andere dingen klikken eraan vast. Klik met rechts op een lichaam en kies {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} of {{ui:contextMenu.markMidpoints}}: de punten verschijnen op het bovenvlak van het lichaam (van de hele selectie, als je er meerdere hebt geselecteerd).
+Een referentiepunt is een kaal merkteken in de ruimte, zoals een potloodstreep of een aftekenpunt in een werkplaats: het hoort bij geen enkel lichaam, wordt nooit geprint, en andere dingen klikken eraan vast. Klik met rechts op een lichaam en kies {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} of {{ui:contextMenu.markMidpoints}}: de punten verschijnen op het bovenvlak van het lichaam (van de hele selectie, als je er meerdere hebt geselecteerd). {{ui:contextMenu.markFaceCenter}} zet er in plaats daarvan een in het midden van het vlakke vlak waarop je rechtsklikte, bijvoorbeeld aan een zijkant of een uiteinde.
 
 - Sleep een punt om het te verplaatsen, of klik erop om de coördinaten te zien en nieuwe te typen; ze gebruiken de eenheid die je hebt ingesteld. Elke kaart kun je aan zijn titel wegslepen als die iets bedekt, en wel afzonderlijk: de andere blijven waar ze zijn, en een dubbelklik op de titel zet hem terug. De kaart die je het laatst hebt aangeraakt, ligt voor de andere. **Alles verwijderen** in een kaart, of in het rechtsklikmenu, verwijdert alle punten in één keer. {{ui:common.delete}} verwijdert het punt.
 - Het meetlint kan ook een punt zetten: {{ui:camera.tapeMarkMiddle}}, het draadkruisknopje onder een meting, zet er een in het midden, bijvoorbeeld in het middelpunt van een rond gat. En het meet vanaf een punt: het meetlint klikt vast aan referentiepunten zoals aan hoeken.

@@ -2,7 +2,7 @@
 import { t } from "@/lib/i18n";
 import { isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
 import { cloneSketchProfile } from "@/lib/sketchSmoothHandles";
-import { canonicalizeShape, cleanNearZero } from "@/lib/workplaneShapes";
+import { canonicalizeShape, cleanNearZero, shapeDepth, shapeWidth } from "@/lib/workplaneShapes";
 import { SKETCH_CAD_DEFLECTION } from "@/lib/cadModifierRuntime";
 import { createLocalId } from "@/lib/localIds";
 import { revolveProfileFitsAxis } from "@/lib/cadSketchRevolve";
@@ -61,22 +61,40 @@ function ensureSketchCadWorker() {
   return worker;
 }
 
+/** How long the kernel may take for a sketch; a sweep runs a profile along a whole path and gets longer (#884). */
+const SKETCH_CAD_TIMEOUT_MS = 30_000;
+const SKETCH_SWEEP_TIMEOUT_MS = 120_000;
+
+/**
+ * One build on the sketch worker. When it takes too long the worker is stopped, not left to finish: it
+ * worked on in the background, and the next try waited behind it and timed out as well (#884). Every
+ * build still waiting on it is answered with the same message; the next one starts a fresh worker.
+ */
+function requestSketchCad(message: Record<string, unknown>, timeoutMs = SKETCH_CAD_TIMEOUT_MS) {
+  const worker = ensureSketchCadWorker();
+  const requestId = ++sketchCadRequestId;
+  return new Promise<SketchCadBuildResponse>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      const error = new Error(t("sketch.cadTimedOut"));
+      sketchCadPending.forEach((pending) => {
+        window.clearTimeout(pending.timer);
+        pending.reject(error);
+      });
+      sketchCadPending.clear();
+      worker.terminate();
+      if (sketchCadWorker === worker) sketchCadWorker = null;
+    }, timeoutMs);
+    sketchCadPending.set(requestId, { resolve, reject, timer });
+    worker.postMessage({ ...message, requestId });
+  });
+}
+
 export async function cadShapeFromSketchProfile(profile: SketchProfile, height: number, existing?: WorkplaneShape | null) {
   const safeHeight = Math.max(MIN_SHAPE_DIMENSION, height);
   // A silhouette leaves its holes out first, so its outer line runs round the outside only (#197).
   const buildProfile = profile.silhouette ? silhouetteSketchProfile(profile) : profile;
-  const buildOnWorker = (build: SketchProfile, stroke?: SketchStroke, inset?: SketchInset) => {
-    const worker = ensureSketchCadWorker();
-    const requestId = ++sketchCadRequestId;
-    return new Promise<SketchCadBuildResponse>((resolve, reject) => {
-      const timer = window.setTimeout(() => {
-        sketchCadPending.delete(requestId);
-        reject(new Error("OpenCascade timed out while building the sketch"));
-      }, 30_000);
-      sketchCadPending.set(requestId, { resolve, reject, timer });
-      worker.postMessage({ type: "build", requestId, profile: cloneSketchProfile(build), height: safeHeight, ...(stroke ? { stroke } : {}), ...(inset ? { inset } : {}) });
-    });
-  };
+  const buildOnWorker = (build: SketchProfile, stroke?: SketchStroke, inset?: SketchInset) =>
+    requestSketchCad({ type: "build", profile: cloneSketchProfile(build), height: safeHeight, ...(stroke ? { stroke } : {}), ...(inset ? { inset } : {}) });
   let response: SketchCadBuildResponse;
   // A key ring hole (#391): the outline the sketch fills with its ear and its hole is worked out here and built as an area.
   const withKeyring = profile.keyring ? keyringSketchProfile(await getManifoldRuntime(), profile) : null;
@@ -154,16 +172,7 @@ export async function cadShapeFromSketchSweep(profile: SketchProfile, existing?:
   if ("problem" in planned) {
     throw new Error(t(planned.problem === "no-profile" ? "sketch.sweepNoProfile" : planned.problem === "no-path" ? "sketch.sweepNoPath" : "sketch.sweepManyPaths"));
   }
-  const worker = ensureSketchCadWorker();
-  const requestId = ++sketchCadRequestId;
-  const response = await new Promise<SketchCadBuildResponse>((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      sketchCadPending.delete(requestId);
-      reject(new Error("OpenCascade timed out while building the sketch"));
-    }, 30_000);
-    sketchCadPending.set(requestId, { resolve, reject, timer });
-    worker.postMessage({ type: "build", requestId, profile: cloneSketchProfile(profile), height: MIN_SHAPE_DIMENSION, sweep: true });
-  });
+  const response = await requestSketchCad({ type: "build", profile: cloneSketchProfile(profile), height: MIN_SHAPE_DIMENSION, sweep: true }, SKETCH_SWEEP_TIMEOUT_MS);
   if (response.type === "error") throw new Error(t("sketch.sweepFailed"));
   const source = canonicalizeShape({
     ...(existing ?? {
@@ -218,21 +227,11 @@ async function cadShapeFromSketchRevolve(
   // A helix has no exact body yet; the mesh revolve winds it.
   if (!revolveProfileFitsAxis(profile) || settings.pitch) return null;
   try {
-    const worker = ensureSketchCadWorker();
-    const requestId = ++sketchCadRequestId;
-    const response = await new Promise<SketchCadBuildResponse>((resolve, reject) => {
-      const timer = window.setTimeout(() => {
-        sketchCadPending.delete(requestId);
-        reject(new Error("OpenCascade timed out while building the sketch"));
-      }, 30_000);
-      sketchCadPending.set(requestId, { resolve, reject, timer });
-      worker.postMessage({
-        type: "build",
-        requestId,
-        profile: cloneSketchProfile(profile),
-        height: MIN_SHAPE_DIMENSION,
-        revolve: { startAngle: settings.startAngle, sweepAngle: settings.sweepAngle },
-      });
+    const response = await requestSketchCad({
+      type: "build",
+      profile: cloneSketchProfile(profile),
+      height: MIN_SHAPE_DIMENSION,
+      revolve: { startAngle: settings.startAngle, sweepAngle: settings.sweepAngle },
     });
     if (response.type === "error") return null;
     const source = canonicalizeShape({
@@ -343,27 +342,39 @@ export function shapeFromCadMesh(
     maxZ = Math.max(maxZ, positions[index + 2]);
   }
   if (![minX, minY, minZ, maxX, maxY, maxZ].every(Number.isFinite)) return null;
-  const centerX = (minX + maxX) / 2;
-  const centerZ = (minZ + maxZ) / 2;
+  const meshCenterX = (minX + maxX) / 2;
+  const meshCenterZ = (minZ + maxZ) / 2;
   const rawWidth = Math.max(MIN_SHAPE_DIMENSION, maxX - minX);
   const rawHeight = Math.max(MIN_SHAPE_DIMENSION, maxY - minY);
   const rawDepth = Math.max(MIN_SHAPE_DIMENSION, maxZ - minZ);
+  // The kernel's mesh is the exact body cut into facets, so a round side measures a few hundredths short of the body:
+  // a 38.7 mm cylinder hollowed showed 38.69, and typing 38.7 again stretched the body before it into an ellipse that
+  // drifted further with every try (Jürgen Keller, 25.10.2026). A size or place within the facets' reach of what the
+  // body had before is the body's own, so it keeps it; the mesh is stretched by that hair to meet the true surface.
+  const near = Math.min(0.1, Math.max(0.02, 2 * (deflection?.linear ?? source.cadMeshDeflection?.linear ?? 0)));
+  const unturned = !source.rotation && !source.rotationX && !source.rotationZ;
+  const exact = (measured: number, before: number | undefined) => (
+    unturned && typeof before === "number" && Number.isFinite(before) && Math.abs(measured - before) <= near ? before : measured
+  );
+  const centerX = exact(meshCenterX, source.x);
+  const centerZ = exact(meshCenterZ, source.z);
+  const bottom = exact(minY, source.elevation ?? 0);
   const flattenedPositions: number[] = [];
   const flattenedNormals: number[] = [];
   for (let index = 0; index < indices.length; index += 1) {
     const vertex = indices[index] * 3;
-    flattenedPositions.push(positions[vertex] - centerX, positions[vertex + 1] - minY, positions[vertex + 2] - centerZ);
+    flattenedPositions.push(positions[vertex] - centerX, positions[vertex + 1] - bottom, positions[vertex + 2] - centerZ);
     if (normals.length >= vertex + 3) flattenedNormals.push(normals[vertex], normals[vertex + 1], normals[vertex + 2]);
   }
-  const width = cleanModelDimension(rawWidth);
-  const height = cleanModelDimension(rawHeight);
-  const depth = cleanModelDimension(rawDepth);
+  const width = cleanModelDimension(exact(rawWidth, shapeWidth(source)));
+  const height = cleanModelDimension(exact(rawHeight, source.height));
+  const depth = cleanModelDimension(exact(rawDepth, shapeDepth(source)));
   return canonicalizeShape({
     ...source,
     kind: "mesh",
     x: cleanNearZero(centerX, 0.0005),
     z: cleanNearZero(centerZ, 0.0005),
-    elevation: cleanNearZero(minY, 0.0005),
+    elevation: cleanNearZero(bottom, 0.0005),
     width,
     depth,
     height,
@@ -403,7 +414,7 @@ export function shapeFromCadMesh(
     cadBrepFrame: {
       x: cleanNearZero(centerX, 0.0005),
       z: cleanNearZero(centerZ, 0.0005),
-      elevation: cleanNearZero(minY, 0.0005),
+      elevation: cleanNearZero(bottom, 0.0005),
       width,
       depth,
       height,
@@ -438,13 +449,24 @@ export function shapeFromCadMesh(
  * A body as the sketch shows it on a workplane. With `seen` (a workplane on a face) the sketch shows each part as it is seen
  * from the plane, not only the face on it (#778): a plane set on a facet of a round body stands a little askew, and the face
  * "on the plane" was then a thin strip of one end, with the parts behind it left out.
+ *
+ * `mirrorAbout`: the sketch of a mirrored body is shown as it was drawn, not mirrored, so the bodies around it are mirrored
+ * to match, about the place of the body's middle in the sketch's own coordinates (#896).
  */
-export function sketchReferenceShapeOnWorkplane(shape: WorkplaneShape, workplane: PlacementWorkplane, seen = false): WorkplaneShape {
+export type SketchMirrorAbout = { x?: number; z?: number };
+
+export function sketchReferenceShapeOnWorkplane(shape: WorkplaneShape, workplane: PlacementWorkplane, seen = false, mirrorAbout?: SketchMirrorAbout): WorkplaneShape {
   const mesh = meshForShape(shape);
   const projectedVertices = mesh.vertices.map(([x, y, z]) => {
     const local = placementWorkplaneCoordinates(workplane, { x, y, z });
-    return { x: local.x, y: -local.y, z: local.z };
+    return {
+      x: mirrorAbout?.x !== undefined ? 2 * mirrorAbout.x - local.x : local.x,
+      y: -local.y,
+      z: mirrorAbout?.z !== undefined ? 2 * mirrorAbout.z - local.z : local.z,
+    };
   });
+  // One mirror turns the triangles inside out; two do not.
+  const reversed = (mirrorAbout?.x !== undefined) !== (mirrorAbout?.z !== undefined);
   // A loop, not Math.min(...list): a large imported mesh has more points than a call takes
   // arguments, and the spread overflowed the stack when the design was opened (#190).
   let minX = Number.POSITIVE_INFINITY;
@@ -464,7 +486,7 @@ export function sketchReferenceShapeOnWorkplane(shape: WorkplaneShape, workplane
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
   const centerZ = (minZ + maxZ) / 2;
-  const triangle = ([a, b, c]: number[]) => [a, b, c].flatMap((index) => {
+  const triangle = ([a, b, c]: number[]) => (reversed ? [a, c, b] : [a, b, c]).flatMap((index) => {
     const vertex = projectedVertices[index];
     return [vertex.x - centerX, vertex.y - centerY, vertex.z - centerZ];
   });

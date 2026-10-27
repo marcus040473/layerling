@@ -10,7 +10,14 @@ export type ShapeContextMenuItem = {
   danger?: boolean;
   /** Draws a line above the item. */
   separated?: boolean;
-  onSelect: () => void;
+  /** The menu stays open after the click, for an item that shows other items in its place. */
+  keepOpen?: boolean;
+  /** A colour dot before the label: the body a row of "Select other" stands for (#804). */
+  color?: string;
+  /** The pointer or the focus is on the item (true) or has left it (false). */
+  onHover?: (active: boolean) => void;
+  /** `shift`: Shift was held, to add to the selection. */
+  onSelect: (modifiers: { shift: boolean }) => void;
 };
 
 const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -29,6 +36,8 @@ export function ShapeContextMenu({ x, y, label, items, onClose }: {
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: x, top: y });
+  // Another set of items (the list of "Select other") is placed and focused anew.
+  const itemsKey = items.map((item) => item.key).join(" ");
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -40,7 +49,7 @@ export function ShapeContextMenu({ x, y, label, items, onClose }: {
       top: Math.max(margin, Math.min(y, window.innerHeight - height - margin)),
     });
     menu.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
-  }, [x, y]);
+  }, [x, y, itemsKey]);
 
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
@@ -92,12 +101,19 @@ export function ShapeContextMenu({ x, y, label, items, onClose }: {
           type="button"
           role="menuitem"
           className={`${item.danger ? "danger" : ""}${item.separated ? " separated" : ""}`.trim() || undefined}
-          onClick={() => {
-            onClose();
-            item.onSelect();
+          onClick={(event) => {
+            if (!item.keepOpen) onClose();
+            item.onSelect({ shift: event.shiftKey });
           }}
+          onPointerEnter={item.onHover ? () => item.onHover?.(true) : undefined}
+          onPointerLeave={item.onHover ? () => item.onHover?.(false) : undefined}
+          onFocus={item.onHover ? () => item.onHover?.(true) : undefined}
+          onBlur={item.onHover ? () => item.onHover?.(false) : undefined}
         >
-          <span>{item.label}</span>
+          <span>
+            {item.color ? <i className="shape-context-menu-swatch" style={{ background: item.color }} aria-hidden="true" /> : null}
+            {item.label}
+          </span>
           {item.shortcut ? <kbd>{mac ? item.shortcut.replace(/Ctrl\+/g, "⌘").replace(/Shift\+/g, "⇧") : item.shortcut}</kbd> : null}
         </button>
       ))}

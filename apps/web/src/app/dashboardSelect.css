@@ -1,0 +1,105 @@
+/*
+ * Choosing several designs on the start page to delete them together (#886): the bar that says
+ * how many are chosen, and the card that is chosen. The Select button and the dialog are the
+ * start page's own buttons and confirm dialog.
+ */
+.dashboard-select-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  color: #6f5840;
+  background: #fff4e3;
+  border: 1px solid #e3b77c;
+  border-radius: 8px;
+}
+
+.dashboard-select-bar strong {
+  margin-right: auto;
+  font-size: 14px;
+}
+
+.dashboard-select-bar button {
+  height: 34px;
+  padding: 0 12px;
+  color: #6f5840;
+  font: inherit;
+  font-size: 14px;
+  background: #ffffff;
+  border: 1px solid #e3d7c4;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dashboard-select-bar button:hover:not(:disabled) {
+  border-color: #c9731d;
+}
+
+.dashboard-select-bar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dashboard-select-bar button.delete:not(:disabled) {
+  color: #ffffff;
+  background: #c82031;
+  border-color: #c82031;
+}
+
+/* The button stays pressed while the selection is on. */
+.dashboard-select.active,
+.shared-projects-refresh.active {
+  color: #ffffff;
+  background: #c9731d;
+  border-color: #c9731d;
+}
+
+/* A card in the selection: the whole card is the target, and a tick shows what is chosen. */
+.project-card.selectable .project-card-open {
+  cursor: pointer;
+}
+
+.project-card.selected {
+  border-color: #c9731d;
+  box-shadow: 0 0 0 2px rgba(201, 115, 29, 0.55);
+}
+
+.project-card-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  color: transparent;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid #b59c83;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.project-card.selected .project-card-check {
+  color: #ffffff;
+  background: #c9731d;
+  border-color: #c9731d;
+}
+
+html[data-theme="dark"] .dashboard-select-bar {
+  color: #e8dccb;
+  background: #3a2c1c;
+  border-color: #7a5a30;
+}
+
+html[data-theme="dark"] .dashboard-select-bar button {
+  color: #e8dccb;
+  background: #2a2118;
+  border-color: #5a4630;
+}
+
+html[data-theme="dark"] .project-card-check {
+  background: rgba(42, 33, 24, 0.94);
+  border-color: #8b7458;
+}

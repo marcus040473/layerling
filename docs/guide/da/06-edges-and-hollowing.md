@@ -84,6 +84,18 @@ Hvis du ændrer størrelse på en udhulet form senere, udhuler layerling den ige
 
 > **Tip:** Med en 0,4 mm dyse er 1,2 til 2 mm væg et godt udgangspunkt: tyndt nok til at spare materiale, tykt nok til en solid del.
 
+## Forskyd legemer
+
+Hver flade på et legeme kan flyttes den samme afstand, udad eller indad. Det er, hvad en pasning, et låg eller en snapsamling har brug for: et spillerum på 0,1 til 0,3 mm hele vejen rundt, mens detaljerne bliver, hvor de er, hvad skalering ikke kan give.
+
+1. Vælg ét legeme og klik på {{ui:editor.tool.offset}}, eller højreklik på legemet og vælg det der.
+2. Vælg {{ui:offset.grow}} eller {{ui:offset.shrink}} og indstil {{ui:offset.distance}}.
+3. {{ui:offset.edges}} bestemmer de ydre hjørner: afrundet holder den forskudte flade rund, skarp lader fladerne løbe videre, til de mødes.
+4. Sæt hak ved {{ui:offset.copy}} for at beholde delen, som den er, og få det forstørrede legeme som en kopi, der allerede er et hul. Grupper hullet med modstykket, så skærer det præcis det spillerum, du valgte.
+5. Klik på {{ui:offset.apply}}.
+
+Uden hak forskydes selve legemet. Det bliver et fast, nøjagtigt legeme, som efter en affasning: listen øverst i panelet tager forskydningen tilbage, og {{ui:edge.editAction}} åbner værktøjet igen med den gamle afstand. Kun nøjagtige CAD-legemer kan forskydes - kasser, cylindre og de andre former, grupper af dem, importerede STEP-dele. Et legeme, der kun er et trekantsnet, som mange STL-importer, kan ofte ikke. En afstand, der er for stor til legemet, for eksempel en formindskelse ud over den tyndeste væg, afvises.
+
 ## Slet flader
 
 En runding i vejen, et hul på det forkerte sted, et buldug du ikke har brug for mere: {{ui:editor.tool.deleteFace}} tager det af formen igen, uden at formen bygges på ny.

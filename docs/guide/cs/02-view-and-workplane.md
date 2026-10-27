@@ -14,6 +14,7 @@ Ovládání myší:
 | tažení prostředním tlačítkem | posun pohledu |
 | kolečko | přiblížení a oddálení |
 | [[Ctrl]] / [[Cmd]] a tažení levým tlačítkem | také posun pohledu |
+| dvojklik na prázdné místo pracovní roviny nebo mimo podložku | posune pohled tak, aby to místo bylo uprostřed; pohled se pak otáčí kolem něj |
 
 Rychlost přiblížení nastavuje {{ui:workspace.zoomSpeed}} v části {{ui:workspace.appearance}}. Posuvník má rozsah 1 až 14, výchozí je 5; nad 10 se zrychluje jen kolečko.
 
@@ -80,7 +81,7 @@ Kliknete-li místo toho na prázdnou podložku, rovina se vodorovně položí do
 
 Na ploše se počátek roviny běžně přichytává k mřížce. Kliknutím poblíž rohu jej umístíte přesně do rohu. U hrany se přichytí na hranu a mřížka se s ní zarovná. Tak můžete záměrně zvolit její natočení. Mimo rohy a hrany je mřížka vodorovné plochy rovnoběžná s tělesem; natočení kvádru tedy přebírá.
 
-Kliknutí mimo podložku nebo [[Esc]] vrátí rovinu na základní podložku. Rychlejší je {{ui:camera.resetWorkplane}}, tlačítko se šipkou dolů pod okem, dostupné při umístění roviny na ploše. [[Shift]]+[[W]] ji položí přímo na právě vybranou plochu. Přidržení [[Shift]] při kliknutí obrátí směr roviny.
+Kliknutí mimo podložku nebo [[Esc]] vrátí rovinu na základní podložku. Rychlejší je {{ui:camera.resetWorkplane}}, tlačítko se šipkou dolů pod okem, dostupné při umístění roviny na ploše. [[Shift]]+[[W]] ji položí přímo na právě vybranou plochu. [[Alt]]+[[W]] ji kdykoli vrátí na základní podložku, ať je něco vybráno, nebo ne. Přidržení [[Shift]] při kliknutí obrátí směr roviny.
 
 Při umístění na ploše se vedle {{ui:camera.placeWorkplane}} objeví oko. Skryje rovinu bez zrušení jejího umístění: nové tvary dál dopadají na příslušnou plochu a otáčení používá její orientaci. Znovu ji ukáže oko nebo nastavení nové roviny.
 

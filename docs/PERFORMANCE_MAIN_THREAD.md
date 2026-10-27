@@ -306,6 +306,24 @@ through the file chooser, are not touched: this container renders with SwiftShad
 parallel shader compilation (`KHR_parallel_shader_compile`), so neither an asynchronous compile
 nor its effect can be measured here. That needs a computer with a graphics card.
 
+## Step 7: a group's face read in the worker
+
+The Face tool and the hole pattern when clicked, `layerling_push_face` and
+`layerling_perforate_face` read a plain group's or bundle's face from its parts joined (#878); the
+join now runs in the geometry worker (`faceReadPositionsOffThread`), with the "Calculating" notice,
+and the answer is the joined triangles. A new click stops the click before it waiting; a group's
+read goes on, kept for the next click, and is called off when the pick step ends or the body
+changes. Any other body is read on the page as before; text stays on the page. Measured with
+`face-group` (new).
+
+| Action | Longest block, main at 8615a3d8 → now | Input delay, main at 8615a3d8 → now |
+| --- | ---: | ---: |
+| Push the top of a group of four overlapping 512-sided cylinders | 515 to 523 → 0 ms | 511 to 521 → 41 to 45 ms |
+
+Checked as well: in the browser the Face tool and `layerling_push_face` give the same top of two
+grouped cubes, 27 x 28 across, and the hole pattern picks it, with the worker and with its file
+blocked; tests/e2e/geometryWorkerTransfer.e2e.ts sends a group's join through the worker's packing.
+
 ## Still on the main thread
 
 | Action | Longest input delay now | What it is |

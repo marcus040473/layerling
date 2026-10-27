@@ -57,7 +57,7 @@ function guideSections(sharedStore: boolean): GuideSection[] {
     {
       title: "guide.group.edges",
       chapter: "edges",
-      lines: ["guide.edges.pick", "guide.edges.apply", "guide.edges.undo", "guide.edges.hollow", "guide.edges.deleteFace"],
+      lines: ["guide.edges.pick", "guide.edges.apply", "guide.edges.undo", "guide.edges.hollow", "guide.edges.offset", "guide.edges.deleteFace"],
     },
     {
       title: "guide.group.sketch",

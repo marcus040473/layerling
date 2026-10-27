@@ -1,14 +1,15 @@
 /**
- * SVG lesen fuer die Vase: Querschnitt (ein geschlossener Umriss von oben) und Koerperform (die
- * Silhouette von der Seite). Reines ES-Modul ohne DOM - laeuft im Browser, im Worker und in Node.
+ * Reading SVG for the vase: a cross-section (one closed outline seen from above) and a body form
+ * (the silhouette seen from the side). A plain ES module without the DOM - runs in the browser, in
+ * a worker and in Node.
  *
- * Gelesen werden path (alle Befehle, relativ und absolut), polygon, polyline, rect (auch mit
- * runden Ecken), circle, ellipse und line, in Gruppen mit `transform`. Die Groesse kommt aus
- * width/height und viewBox (mm, cm, in, pt, pc, px; ohne Einheit px wie im Browser), so dass
- * Masse in mm herauskommen. Ausgeblendete Ebenen (display:none) und defs, clipPath usw. zaehlen nicht.
+ * It reads path (all commands, relative and absolute), polygon, polyline, rect (also with round
+ * corners), circle, ellipse and line, in groups with `transform`. The size comes from width/height
+ * and viewBox (mm, cm, in, pt, pc, px; without a unit px, as in the browser), so that the measures
+ * come out in mm. Hidden layers (display:none) and defs, clipPath etc. do not count.
  *
- *   readSvg(text)        -> { paths: [{ start, segs: [{ c1, c2, p }], closed }], notes }  (mm, y nach oben)
- *   svgToSection(text)   -> { ok, drawPoints, notes, size }   Umriss als gezeichnete Punkte (Symmetrie frei)
+ *   readSvg(text)        -> { paths: [{ start, segs: [{ c1, c2, p }], closed }], notes }  (mm, y up)
+ *   svgToSection(text)   -> { ok, drawPoints, notes, size }   outline as drawn points (symmetry "Free")
  *   svgToProfile(text)   -> { ok, profilePoints, height, diameter, notes }
  */
 import { MAX_DRAW_POINTS, PROFILE_CORNER, PROFILE_HANDLE, profileSpline } from './vase-geometry.mjs'
@@ -18,7 +19,7 @@ const SKIP = new Set(['defs', 'clippath', 'mask', 'symbol', 'pattern', 'marker',
 const NUM = /[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/y
 const KAPPA = 0.5522847498307936
 
-/* ---------- Affine Abbildungen [a, b, c, d, e, f]: x' = a x + c y + e, y' = b x + d y + f ---------- */
+/* ---------- Affine maps [a, b, c, d, e, f]: x' = a x + c y + e, y' = b x + d y + f ---------- */
 
 const IDENTITY = [1, 0, 0, 1, 0, 0]
 const mul = (m, n) => [
@@ -48,7 +49,7 @@ function parseTransform(text) {
   return m
 }
 
-/** Laenge mit Einheit -> mm; null ohne Zahl oder bei Prozent. */
+/** Length with a unit -> mm; null without a number or for a percentage. */
 function lengthMm(text) {
   const m = /^\s*([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)\s*([a-z%]*)\s*$/i.exec(text ?? '')
   if (!m || m[2] === '%') return null
@@ -56,11 +57,11 @@ function lengthMm(text) {
   return f === undefined ? null : Number(m[1]) * f
 }
 
-/* ---------- Pfade: alles als kubische Bezier-Stuecke ---------- */
+/* ---------- Paths: everything as cubic Bezier pieces ---------- */
 
 const lineSeg = (a, b) => ({ c1: [a[0] + (b[0] - a[0]) / 3, a[1] + (b[1] - a[1]) / 3], c2: [a[0] + (2 * (b[0] - a[0])) / 3, a[1] + (2 * (b[1] - a[1])) / 3], p: b, line: true })
 
-/** Elliptischer Bogen (SVG-Endpunkt-Form) als Bezier-Stuecke von hoechstens 90 Grad. */
+/** Elliptical arc (SVG endpoint form) as Bezier pieces of at most 90 degrees. */
 function arcSegs(from, rx, ry, phiDeg, large, sweep, to) {
   const [x1, y1] = from, [x2, y2] = to
   if (Math.abs(x1 - x2) < 1e-12 && Math.abs(y1 - y2) < 1e-12) return []
@@ -93,7 +94,7 @@ function arcSegs(from, rx, ry, phiDeg, large, sweep, to) {
   return out
 }
 
-/** Pfad-Daten `d` lesen. Fehler im Text beenden das Lesen an dieser Stelle (wie im Browser). */
+/** Reads path data `d`. An error in the text ends the reading at that point (as in the browser). */
 export function parsePathData(d) {
   const paths = []
   let i = 0
@@ -133,7 +134,7 @@ export function parsePathData(d) {
       }
       lastCtrl = null
       lastCmd = 'Z'
-      // Nach Z folgt immer ein neuer Befehl; Zahlen danach waeren ein Fehler.
+      // Z is always followed by a new command; numbers after it would be an error.
       skip()
       if (i < n && !/[a-zA-Z]/.test(d[i])) break
       continue
@@ -142,7 +143,7 @@ export function parsePathData(d) {
       const x = num(), y = num()
       if (x === null || y === null) break
       begin(at(x, y))
-      cmd = rel ? 'l' : 'L' // weitere Zahlenpaare sind Linien
+      cmd = rel ? 'l' : 'L' // further number pairs are lines
       lastCtrl = null
     } else if (C === 'L') {
       const x = num(), y = num()
@@ -177,7 +178,7 @@ export function parsePathData(d) {
       const x = num(), y = num()
       if (x === null || y === null) break
       const p = at(x, y)
-      // Quadratisch -> kubisch, exakt.
+      // Quadratic -> cubic, exact.
       push({ c1: [cur[0] + (2 / 3) * (q[0] - cur[0]), cur[1] + (2 / 3) * (q[1] - cur[1])], c2: [p[0] + (2 / 3) * (q[0] - p[0]), p[1] + (2 / 3) * (q[1] - p[1])], p })
       lastCtrl = q
     } else if (C === 'A') {
@@ -193,7 +194,7 @@ export function parsePathData(d) {
   return paths.filter((p) => p.segs.length > 0)
 }
 
-/** Grundformen als Pfade. */
+/** Basic shapes as paths. */
 function ellipsePath(cx, cy, rx, ry) {
   const k = KAPPA
   const P = (u, v) => [cx + rx * u, cy + ry * v]
@@ -242,8 +243,8 @@ function attrs(text) {
 const hidden = (a) => a.display === 'none' || /(^|;)\s*display\s*:\s*none/.test(a.style ?? '') || a.visibility === 'hidden'
 
 /**
- * Alle Formen einer SVG-Datei als Pfade in mm, y nach oben (wie die Zeichenflaechen). `notes`
- * meldet, was nicht ging (keine Masse in der Datei, nichts gefunden).
+ * All shapes of an SVG file as paths in mm, y up (like the drawing boards). `notes`
+ * reports what did not work (no measures in the file, nothing found).
  */
 export function readSvg(text) {
   const notes = []
@@ -280,7 +281,7 @@ export function readSvg(text) {
     else if (tag === 'circle') shapes = Number(a.r) > 0 ? ellipsePath(Number(a.cx ?? 0), Number(a.cy ?? 0), Number(a.r), Number(a.r)) : []
     else if (tag === 'ellipse') shapes = Number(a.rx) > 0 && Number(a.ry) > 0 ? ellipsePath(Number(a.cx ?? 0), Number(a.cy ?? 0), Number(a.rx), Number(a.ry)) : []
     else if (tag === 'svg') {
-      // Verschachteltes svg: wie eine Gruppe, um x/y verschoben (sein viewBox zaehlt hier nicht).
+      // Nested svg: like a group, moved by x/y (its viewBox does not count here).
       if (!selfClose) stack.push(mul(stack.at(-1), [1, 0, 0, 1, Number(a.x ?? 0), Number(a.y ?? 0)]))
       continue
     }
@@ -288,11 +289,11 @@ export function readSvg(text) {
       for (const sh of shapes) raw.push({ ...sh, m: m2 })
       continue
     }
-    // Gruppe oder unbekannter Behaelter: seine Transformation gilt fuer alles darin.
+    // Group or unknown container: its transform applies to everything inside it.
     if (!selfClose) stack.push(m2)
   }
   if (!root) notes.push('Keine SVG-Datei erkannt.')
-  // Benutzereinheiten -> mm: viewBox und width/height; ohne Angaben wie im Browser 96 px je Zoll.
+  // User units -> mm: viewBox and width/height; without them 96 px per inch, as in the browser.
   let unit = [MM.px, 0, 0, MM.px, 0, 0]
   const vb = (root?.viewBox ?? '').split(/[\s,]+/).filter(Boolean).map(Number)
   const W = lengthMm(root?.width), H = lengthMm(root?.height)
@@ -300,13 +301,13 @@ export function readSvg(text) {
     let sx = W !== null ? W / vb[2] : H !== null ? H / vb[3] : MM.px
     let sy = H !== null ? H / vb[3] : sx
     if (W === null && H !== null) sx = sy
-    // Seitenverhaeltnis wie preserveAspectRatio "xMidYMid meet": gleicher Massstab, mittig.
+    // Aspect ratio as with preserveAspectRatio "xMidYMid meet": the same scale, centred.
     const s = Math.min(sx, sy)
     const ox = W !== null ? (W - vb[2] * s) / 2 : 0, oy = H !== null ? (H - vb[3] * s) / 2 : 0
     unit = [s, 0, 0, s, ox - vb[0] * s, oy - vb[1] * s]
   }
   if (root && W === null && H === null) notes.push('Die Datei nennt keine Größe in mm – gelesen wie im Browser (96 px je Zoll).')
-  // y nach oben (SVG zeigt nach unten).
+  // y up (SVG points down).
   const flip = mul([1, 0, 0, -1, 0, 0], unit)
   const paths = raw.map(({ start, segs, closed, m }) => {
     const t = mul(flip, m)
@@ -316,7 +317,7 @@ export function readSvg(text) {
   return { paths, notes }
 }
 
-/* ---------- Hilfen ---------- */
+/* ---------- Helpers ---------- */
 
 function bez(a, s, t) {
   const u = 1 - t
@@ -325,7 +326,7 @@ function bez(a, s, t) {
     u * u * u * a[1] + 3 * u * u * t * s.c1[1] + 3 * u * t * t * s.c2[1] + t * t * t * s.p[1],
   ]
 }
-/** Pfad als Linienzug (geschlossen ohne Wiederholung des Anfangs). */
+/** Path as a polyline (a closed one without repeating its start). */
 function flatten(path, steps = 24) {
   const out = [path.start]
   let a = path.start
@@ -365,7 +366,7 @@ function insidePoly(poly, [x, y]) {
   }
   return inside
 }
-/** Groesste geschlossene Form (offene werden geschlossen) samt Linienzug. */
+/** The largest closed shape (open ones are closed), with its polyline. */
 function largest(paths) {
   let best = null
   for (const path of paths) {
@@ -378,11 +379,11 @@ function largest(paths) {
 }
 const fmt = (v) => v.toLocaleString('de-DE', { maximumFractionDigits: 1 })
 
-/** Linienzug vereinfachen (Douglas-Peucker) auf hoechstens `max` Punkte, Indizes zurueck. */
+/** Simplifies a polyline (Douglas-Peucker) to at most `max` points; returns their indices. */
 function simplifyClosed(poly, max) {
   const n = poly.length
   const keep = new Uint8Array(n)
-  // Start an zwei weit auseinanderliegenden Punkten.
+  // Start at two points far apart.
   let far = 0
   for (let i = 1; i < n; i++) if (Math.hypot(poly[i][0] - poly[0][0], poly[i][1] - poly[0][1]) > Math.hypot(poly[far][0] - poly[0][0], poly[far][1] - poly[0][1])) far = i
   keep[0] = keep[far] = 1
@@ -394,7 +395,7 @@ function simplifyClosed(poly, max) {
   }
   let count = 2
   while (count < max) {
-    // Groesste Abweichung ueber alle Abschnitte zwischen behaltenen Punkten.
+    // The largest deviation over all sections between kept points.
     let best = -1, bestD = 0
     const kept = []
     for (let i = 0; i < n; i++) if (keep[i]) kept.push(i)
@@ -414,17 +415,17 @@ function simplifyClosed(poly, max) {
   return out
 }
 
-/* ---------- Querschnitt ---------- */
+/* ---------- Cross-section ---------- */
 
 /**
- * Groesste geschlossene Form als Querschnitt: Punkte im Einheitskreis um den Flaechenschwerpunkt,
- * groesster Radius 1, gegen den Uhrzeigersinn. Jede Bezier-Ecke wird ein Punkt mit ihren eigenen
- * Tangenten davor und danach - die Kurve ist dieselbe. Mehr als 120 Ecken: vereinfacht.
+ * The largest closed shape as a cross-section: points in the unit circle round the centroid,
+ * largest radius 1, anticlockwise. Every Bezier node becomes a point with its own tangents
+ * before and after it - the curve stays the same. More than 120 nodes: simplified.
  */
 export function svgToSection(text) {
   const read = readSvg(text)
   const paths = read.paths
-  // Beim Querschnitt zaehlt nur die Form, nicht die Groesse (der Durchmesser bleibt).
+  // For the cross-section only the shape counts, not the size (the diameter stays).
   const notes = read.notes.filter((n) => !/96 px je Zoll/.test(n))
   const best = largest(paths)
   if (!best) return { ok: false, notes: notes.length ? notes : ['Keine geschlossene Form gefunden.'] }
@@ -434,7 +435,7 @@ export function svgToSection(text) {
   let { path, poly } = best
   const c = centroid(poly)
   if (!c || !insidePoly(poly, c)) return { ok: false, notes: [...notes, 'Die Mitte der Form liegt nicht in der Form (z. B. ein C oder Ring) – so lässt sich keine Vase drehen.'] }
-  // Gegen den Uhrzeigersinn: Pfad bei Bedarf umdrehen (Bezier-Stuecke rueckwaerts).
+  // Anticlockwise: reverse the path if needed (Bezier pieces backwards).
   if (area(poly) < 0) {
     const pts = [path.start, ...path.segs.map((s) => s.p)]
     const segs = []
@@ -445,7 +446,7 @@ export function svgToSection(text) {
     path = { start: pts.at(-1), segs, closed: true }
     poly = poly.slice().reverse()
   }
-  // Stuecke ohne Laenge (doppelte Punkte, wie Zeichenprogramme sie manchmal schreiben) fallen weg.
+  // Pieces without length (doubled points, as drawing programs sometimes write them) are dropped.
   const segs = []
   let from = path.start
   for (const s of path.segs) {
@@ -454,7 +455,7 @@ export function svgToSection(text) {
     segs.push(s)
     from = s.p
   }
-  // Geschlossen: letzte Strecke zurueck zum Anfang, falls sie fehlt.
+  // Closed: a last line back to the start, if it is missing.
   const last = segs.at(-1).p
   if (Math.hypot(last[0] - path.start[0], last[1] - path.start[1]) > 1e-9) segs.push(lineSeg(last, path.start))
   const maxR = Math.max(...poly.map(([x, y]) => Math.hypot(x - c[0], y - c[1])))
@@ -462,7 +463,7 @@ export function svgToSection(text) {
   const size = bbox(poly)
   let drawPoints
   if (segs.length <= MAX_DRAW_POINTS) {
-    // Punkt k sitzt am Anfang von Stueck k; Tangente danach = 3 (c1 - Punkt), davor = 3 (Punkt - c2 des Stuecks davor).
+    // Point k sits at the start of piece k; tangent after it = 3 (c1 - point), before it = 3 (point - c2 of the piece before).
     drawPoints = segs.map((s, k) => {
       const prev = segs[(k - 1 + segs.length) % segs.length]
       const P = k === 0 ? path.start : segs[k - 1].p
@@ -475,7 +476,7 @@ export function svgToSection(text) {
       return q
     })
   } else {
-    // Zu viele Ecken: dicht abtasten, vereinfachen; Knicke ueber 35 Grad als Ecke.
+    // Too many nodes: sample densely, simplify; kinks over 35 degrees become corners.
     const dense = flatten({ start: path.start, segs }, 16)
     const keep = simplifyClosed(dense, MAX_DRAW_POINTS)
     drawPoints = keep.map((i, k) => {
@@ -491,9 +492,9 @@ export function svgToSection(text) {
   return { ok: true, drawPoints, notes, size: { width: size.w, height: size.h } }
 }
 
-/* ---------- Koerperform ---------- */
+/* ---------- Body form ---------- */
 
-/** Schnittpunkte einer waagerechten Linie mit dem Linienzug. */
+/** Crossings of a horizontal line with the polyline. */
 function crossings(poly, y) {
   const xs = []
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -504,9 +505,9 @@ function crossings(poly, y) {
 }
 
 /**
- * Silhouette als Koerperform: Radius je Hoehe. Ganze Silhouette -> halbe Breite; rechte Haelfte
- * mit gerader senkrechter Kante links -> Abstand zu dieser Kante (Achse). Daraus Punkte mit
- * Anfassern, so wenige wie moeglich, bis die Kurve hoechstens `tolerance` mm abweicht.
+ * A silhouette as a body form: radius per height. Whole silhouette -> half the width; right half
+ * with a straight vertical edge on the left -> distance to that edge (the axis). From that, points
+ * with handles, as few as possible, until the curve is at most `tolerance` mm off.
  */
 export function svgToProfile(text, { tolerance = 0.2 } = {}) {
   const { paths, notes } = readSvg(text)
@@ -528,8 +529,8 @@ export function svgToProfile(text, { tolerance = 0.2 } = {}) {
     los.push(Math.min(...xs))
     his.push(Math.max(...xs))
   }
-  // Haelfte: links fast ueberall eine gerade senkrechte Kante, rechts nicht. Ein Rechteck (beide
-  // Seiten gerade) gilt als ganze Silhouette eines Zylinders.
+  // Half: a straight vertical edge on the left almost everywhere, not on the right. A rectangle
+  // (both sides straight) counts as the whole silhouette of a cylinder.
   const straight = (xs, at) => xs.filter((x) => Math.abs(x - at) < box.w * 0.01).length >= xs.length * 0.9
   const half = straight(los, box.x0) && !straight(his, box.x1)
   notes.push(half ? 'Gelesen als rechte Hälfte; die gerade linke Kante ist die Drehachse.' : 'Gelesen als ganze Silhouette; die Drehachse liegt in der Mitte.')
@@ -541,15 +542,15 @@ export function svgToProfile(text, { tolerance = 0.2 } = {}) {
 }
 
 /**
- * Koerperform aus gemessenen Radien: `ts` Hoehen 0..1 (aufsteigend), `rs` Radien in mm, `H` Hoehe in mm.
- * Punkte mit Anfassern, so wenige wie moeglich (hoechstens 40), bis die Kurve hoechstens `tolerance` mm
- * abweicht; Knicke ueber 20 Grad werden Ecken. Gemeinsam fuer SVG- und Netz-Import. Null, wenn nichts da ist.
+ * Body form from measured radii: `ts` heights 0..1 (ascending), `rs` radii in mm, `H` height in mm.
+ * Points with handles, as few as possible (at most 40), until the curve is at most `tolerance` mm
+ * off; kinks over 20 degrees become corners. Shared by SVG and mesh import. Null when there is nothing.
  */
 export function profileFromSamples(ts, rs, H, { tolerance = 0.2 } = {}) {
   const maxR = Math.max(...rs)
   if (!(maxR > 0) || ts.length < 3 || !(H > 0)) return null
   const r = rs.map((v) => v / maxR)
-  // Steigung (Radius je Hoehe, normiert) links und rechts jedes Messpunkts.
+  // Slope (radius per height, normalised) left and right of every sample point.
   const slopeL = (k) => (k > 0 ? (r[k] - r[k - 1]) / (ts[k] - ts[k - 1]) : (r[1] - r[0]) / (ts[1] - ts[0]))
   const slopeR = (k) => (k < ts.length - 1 ? (r[k + 1] - r[k]) / (ts[k + 1] - ts[k]) : slopeL(k))
   const angleMm = (s) => Math.atan((s * maxR) / H)
@@ -559,8 +560,8 @@ export function profileFromSamples(ts, rs, H, { tolerance = 0.2 } = {}) {
     const s = k === 0 ? slopeR(0) : k === ts.length - 1 ? slopeL(k) : (slopeL(k) + slopeR(k)) / 2
     return [ts[k], Math.max(0.03, r[k]), PROFILE_HANDLE, Math.max(-40, Math.min(40, s))]
   }
-  // Anfangen mit unten, oben, der breitesten Stelle und allen Knicken; dann dort einfuegen, wo
-  // die Kurve am weitesten danebenliegt.
+  // Start with the bottom, the top, the widest place and all kinks; then insert where the
+  // curve is furthest off.
   const chosen = new Set([0, ts.length - 1, r.indexOf(1)])
   for (let k = 1; k < ts.length - 1 && chosen.size < 20; k++) if (isCorner(k)) chosen.add(k)
   const build = () => [...chosen].sort((a, b) => a - b).map(pointAt)

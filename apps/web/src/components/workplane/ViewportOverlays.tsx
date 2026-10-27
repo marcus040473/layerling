@@ -1,5 +1,5 @@
 
-import { Crosshair, Eye, EyeOff, Plus, Rows3, X } from "lucide-react";
+import { Crosshair, Eye, EyeOff, MousePointer2, Plus, Rows3, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type Dispatch, type MutableRefObject, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
 import type { CameraTurn } from "@/lib/viewCubeTransition";
 import * as THREE from "three";
@@ -189,6 +189,8 @@ export type TapeModel = {
   /** Unit normal of the surface the first point was placed on, while a measurement is under way (#589). */
   startNormal?: [number, number, number] | null;
   hover: TapeCandidate | null;
+  /** The measurements are kept but not drawn (#881). */
+  hidden?: boolean;
 };
 
 export type TapeOverlayState = {
@@ -541,6 +543,18 @@ function tapeScreenPointList(points: THREE.Vector3[], state: ThreeState) {
   }).join(" ");
 }
 
+/** The length of every measurement in millimetres, for MCP: a measured edge counts along the edge. */
+export function tapeSegmentLengths(state: ThreeState, model: TapeModel): Array<{ id: string; length: number }> {
+  return model.segments.flatMap((segment) => {
+    const start = model.points.find((point) => point.id === segment.startId);
+    const end = model.points.find((point) => point.id === segment.endId);
+    if (!start || !end) return [];
+    const edgePoints = segment.edge ? tapeEdgeWorldPoints(state, segment.edge) : [];
+    const worldPoints = edgePoints.length >= 2 ? edgePoints : [tapePointWorld(state, start), tapePointWorld(state, end)];
+    return [{ id: segment.id, length: Math.round(tapePolylineLength(worldPoints) * 1000) / 1000 }];
+  });
+}
+
 export function syncTapeOverlay(
   state: ThreeState,
   model: TapeModel,
@@ -549,13 +563,14 @@ export function syncTapeOverlay(
   accuracy: MeasurementAccuracy,
 ) {
   const projectedPoints = new Map<string, { screenX: number; screenY: number }>();
-  const points = model.points.map((point) => {
+  // Hidden measurements stay in the model; nothing of them is drawn or can be hit.
+  const points = (model.hidden ? [] : model.points).map((point) => {
     const screen = projectToScreen(tapePointWorld(state, point), state);
     const projected = { screenX: screen.x, screenY: screen.y };
     projectedPoints.set(point.id, projected);
     return { ...point, ...projected };
   });
-  const segments = model.segments.flatMap((segment) => {
+  const segments = (model.hidden ? [] : model.segments).flatMap((segment) => {
     const start = model.points.find((point) => point.id === segment.startId);
     const end = model.points.find((point) => point.id === segment.endId);
     const startScreen = projectedPoints.get(segment.startId);
@@ -583,9 +598,9 @@ export function syncTapeOverlay(
       },
     ];
   });
-  const hoverWorld = model.hover ? tapePointWorld(state, model.hover) : null;
+  const hoverWorld = model.hover && !model.hidden ? tapePointWorld(state, model.hover) : null;
   const hoverScreen = hoverWorld ? projectToScreen(hoverWorld, state) : null;
-  const hoverEdgePoints = model.hover?.edge ? tapeEdgeWorldPoints(state, model.hover.edge) : [];
+  const hoverEdgePoints = model.hover?.edge && !model.hidden ? tapeEdgeWorldPoints(state, model.hover.edge) : [];
   const next: TapeOverlayState = {
     points,
     segments,
@@ -1271,6 +1286,8 @@ export type CornerRulerInstance = {
   axisModes?: CornerRulerAxisModes;
   /** Whether a body in front of the ruler hides its lines (true when left out); false keeps them always in view. */
   occlude?: boolean;
+  /** The measures of the bodies at the arms are shown only for the selected bodies (false when left out, #831). */
+  selectedOnly?: boolean;
 };
 
 /** A tick number or a neighbour's measure on the screen; `hidden` when a body stands in front of the place it belongs to. */
@@ -1288,6 +1305,8 @@ type CornerRulerOverlayItem = {
   axisNames: Record<CornerRulerAxis, "X" | "Y" | "Z">;
   /** True when a body in front hides the ruler's lines; false when they stay in view. */
   occlude: boolean;
+  /** True when the bodies at the arms show no measures of their own. */
+  selectedOnly: boolean;
   labels: CornerRulerLabelScreen[];
   neighborLabels: CornerRulerNeighborLabel[];
   selectedCoordinate?: {
@@ -1466,7 +1485,7 @@ export function syncCornerRulerToolOverlay(
       // Flaeche zeigt das Winkellineal nur die Abstaende der Auswahl (#105).
       const flatRotation = cornerRulerFlatRotation(ruler.frame);
       shapes.forEach((candidate) => {
-        if (flatRotation === null) return;
+        if (flatRotation === null || ruler.selectedOnly) return;
         if (isNonSolidShape(candidate) || candidate.hidden) return;
         if (wanted.has(candidate.id)) return;
         const { armX, armZ } = cornerRulerDimensionMatchesFromCorner(
@@ -1510,6 +1529,7 @@ export function syncCornerRulerToolOverlay(
         handleY: handleScreen.y,
         axisNames: { x: worldAxisNameOfDirection(xAxis), z: worldAxisNameOfDirection(zAxis), elevation: worldAxisNameOfDirection(yAxis) },
         occlude,
+        selectedOnly: ruler.selectedOnly === true,
         labels,
         neighborLabels,
         selectedCoordinate,
@@ -1630,6 +1650,7 @@ export function CornerRulerToolOverlay({
   onToggleMode,
   onToggleAxisMode,
   onToggleOcclude,
+  onToggleSelectedOnly,
   onCoordinateClick,
 }: {
   overlay: CornerRulerOverlayState;
@@ -1641,6 +1662,8 @@ export function CornerRulerToolOverlay({
   onToggleAxisMode: (id: string, axis: CornerRulerAxis) => void;
   /** Switches whether a body in front hides the ruler's lines. */
   onToggleOcclude: (id: string) => void;
+  /** Switches whether the bodies at the arms show their measures without being selected (#831). */
+  onToggleSelectedOnly: (id: string) => void;
   onCoordinateClick: (rulerId: string, shapeIds: string[], axis: "x" | "z" | "elevation", value: number, x: number, y: number) => void;
 }) {
   if (overlay.items.length === 0) {
@@ -1739,6 +1762,18 @@ export function CornerRulerToolOverlay({
             onClick={() => onToggleOcclude(item.id)}
           >
             {item.occlude ? <EyeOff size={11} strokeWidth={2.5} aria-hidden="true" /> : <Eye size={11} strokeWidth={2.5} aria-hidden="true" />}
+          </button>
+          <button
+            type="button"
+            className={`corner-ruler-mode-toggle corner-ruler-selected-toggle${item.selectedOnly ? " active" : ""}`}
+            style={{ left: item.handleX, top: item.handleY + 36 }}
+            aria-label={t("aria.toggleCornerRulerSelectedOnly")}
+            aria-pressed={item.selectedOnly}
+            title={item.selectedOnly ? t("ruler.selectedOnly.on") : t("ruler.selectedOnly.off")}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => onToggleSelectedOnly(item.id)}
+          >
+            <MousePointer2 size={11} strokeWidth={2.5} aria-hidden="true" />
           </button>
           <button
             type="button"

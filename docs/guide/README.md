@@ -1,9 +1,9 @@
 # The user guide
 
 The guide at [layerling.com/guide](https://layerling.com/guide/index.html) (English),
-[layerling.com/anleitung](https://layerling.com/anleitung/index.html) (German) and in eleven more languages (Arabic,
-Czech, Danish, Dutch, French, Hungarian, Polish, Russian, Simplified Chinese, Slovenian, Traditional Chinese) is written here and built into plain static pages;
-the three interface languages without a guide of their own (Italian, Japanese, Turkish) show the English one. It ships with the program: `npm run export` and `npm run dev` build it, nothing else to deploy. The build
+[layerling.com/anleitung](https://layerling.com/anleitung/index.html) (German) and in fifteen more languages (Arabic,
+Brazilian Portuguese, Czech, Danish, Dutch, French, Hungarian, Italian, Polish, Portuguese (Portugal), Russian, Simplified Chinese, Slovenian, Spanish, Traditional Chinese) is written here and built into plain static pages;
+the two interface languages without a guide of their own (Japanese, Turkish) show the English one. It ships with the program: `npm run export` and `npm run dev` build it, nothing else to deploy. The build
 also writes a `search-index.json` per language (one entry per section of every chapter), which the search box in the
 header of each page reads; nothing to maintain, a new chapter or heading is in it with the next build.
 
@@ -47,7 +47,7 @@ language. A scene builds its situation through the MCP bridge and the real butto
 
 ```
 npm run dev -- -p 3010
-npm run guide:images                                  # everything, both languages
+npm run guide:images                                  # everything, every language that has pictures of its own
 node scripts/guide-screenshots.mjs --only fillet-tool --lang de
 ```
 

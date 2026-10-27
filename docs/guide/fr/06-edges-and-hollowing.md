@@ -81,6 +81,18 @@ Si vous redimensionnez un corps évidé ultérieurement, layerling le creuse imm
 
 > **Astuce :** Avec une buse de 0,4 mm, 1,2 à 2 mm de paroi est un bon début : suffisamment fin pour économiser de la matière, suffisamment épais pour une pièce solide.
 
+## Décaler des corps
+
+Chaque face d'un corps peut être déplacée de la même distance, vers l'extérieur ou l'intérieur. C'est ce qu'il faut pour un ajustement, un couvercle ou un assemblage à clip : un jeu de 0,1 à 0,3 mm tout autour, les éléments restant à leur place, ce que la mise à l'échelle ne donne pas.
+
+1. Sélectionne un corps et clique sur {{ui:editor.tool.offset}}, ou fais un clic droit sur le corps et choisis-le là.
+2. Choisis {{ui:offset.grow}} ou {{ui:offset.shrink}} et règle la {{ui:offset.distance}}.
+3. Les {{ui:offset.edges}} décident des coins extérieurs : arrondi garde la surface décalée ronde, vif laisse les faces se prolonger jusqu'à ce qu'elles se rencontrent.
+4. Coche {{ui:offset.copy}} pour garder la pièce telle quelle et obtenir le corps agrandi comme copie qui est déjà un trou. Groupe ce trou avec la pièce complémentaire, il coupe exactement le jeu choisi.
+5. Clique sur {{ui:offset.apply}}.
+
+Sans la coche, le corps lui-même est décalé. Il devient un corps exact fixe, comme après un chanfrein : la liste en haut du panneau annule le décalage, et {{ui:edge.editAction}} rouvre l'outil avec l'ancienne distance. Seuls les corps CAD exacts peuvent être décalés - boîtes, cylindres et les autres formes, leurs groupes, pièces STEP importées. Un corps qui n'est qu'un maillage de triangles, comme beaucoup d'imports STL, ne le peut souvent pas. Une distance trop grande pour le corps, par exemple une réduction au-delà de sa paroi la plus fine, est refusée.
+
 ## Supprimer des faces
 
 Un congé qui gêne, un trou au mauvais endroit, un bossage dont vous n'avez plus besoin : {{ui:editor.tool.deleteFace}} les retire du corps, sans avoir à le reconstruire.

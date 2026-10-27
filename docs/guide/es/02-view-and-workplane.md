@@ -14,6 +14,7 @@ Con el ratón:
 | arrastrar con el botón central | desplazar la vista |
 | rueda del ratón | acercar y alejar |
 | mantener pulsado [[Ctrl]] / [[Cmd]] y arrastrar con el botón izquierdo | desplazar también la vista (en el panel táctil de un MacBook: mantén pulsado [[Cmd]], pulsa y arrastra) |
+| doble clic en un punto vacío del plano de trabajo o fuera de la placa | desplaza la vista hasta que ese punto queda en el centro; después la vista gira alrededor de él |
 
 La rapidez con que hace zoom la rueda se regula con {{ui:workspace.zoomSpeed}} en los ajustes, dentro de {{ui:workspace.appearance}}: es un control deslizante de 1 a 14 que empieza en 5. Solo afecta a la rueda y al panel táctil: los botones y las teclas [[+]] y [[−]] hacen zoom siempre en los mismos pasos pequeños. Cada muesca de la rueda del ratón hace el mismo zoom en todos los navegadores; en un panel táctil, el zoom depende de cuánto deslices los dedos.
 
@@ -82,7 +83,7 @@ Si en cambio haces clic en la placa vacía, el plano de trabajo queda horizontal
 
 En una cara, el origen del plano de trabajo se ajusta normalmente a la cuadrícula. Si haces clic cerca de una esquina de la cara, queda justo en esa esquina. Cerca de una arista, queda sobre la arista y la cuadrícula se alinea con ella; así eliges a propósito el ángulo de la cuadrícula. Sin una esquina ni una arista cerca, la cuadrícula de una cara horizontal va paralela al cuerpo, así que en una caja girada queda girada con ella.
 
-Un clic fuera de la placa o [[Esc]] devuelve el plano de trabajo a la placa base. Más rápido aún es {{ui:camera.resetWorkplane}}: el botón con la flecha hacia abajo está en la barra de cámara, debajo del ojo, mientras el plano de trabajo está sobre una cara. [[Mayús]]+[[W]] lo pone directamente sobre la cara que tengas seleccionada. Si mantienes pulsado [[Mayús]] al hacer clic, el plano mira hacia el otro lado.
+Un clic fuera de la placa o [[Esc]] devuelve el plano de trabajo a la placa base. Más rápido aún es {{ui:camera.resetWorkplane}}: el botón con la flecha hacia abajo está en la barra de cámara, debajo del ojo, mientras el plano de trabajo está sobre una cara. [[Mayús]]+[[W]] lo pone directamente sobre la cara que tengas seleccionada. [[Alt]]+[[W]] lo devuelve a la placa base en cualquier momento, haya algo seleccionado o no. Si mantienes pulsado [[Mayús]] al hacer clic, el plano mira hacia el otro lado.
 
 Mientras hay un plano de trabajo sobre una cara, aparece un ojo junto a {{ui:camera.placeWorkplane}}. Oculta el plano de trabajo sin quitarlo, para que veas el diseño sin estorbos: las formas nuevas siguen apareciendo en esa cara y los giros se siguen haciendo respecto a ella. Un clic en el ojo vuelve a mostrarlo, y lo mismo ocurre al colocar un plano de trabajo nuevo.
 
@@ -146,7 +147,7 @@ La vista de boceto tiene sus propios colores: {{ui:workspace.sketchBackground}} 
 
 {{ui:workspace.frameByDirection}}: un recuadro arrastrado hacia la derecha selecciona solo lo que queda completamente dentro de él, y uno arrastrado hacia la izquierda, todo lo que toca (se dibuja con línea discontinua), como en SketchUp.
 
-{{ui:workspace.doubleClickOpensSketch}} decide si un doble clic sobre un boceto extruido vuelve a abrir el boceto, como en Tinkercad, y {{ui:workspace.doubleClickOpensGroup}}, si un doble clic sobre un grupo o un conjunto lo abre para editarlo.
+{{ui:workspace.doubleClickOpensSketch}} decide si un doble clic sobre un boceto extruido vuelve a abrir el boceto, como en Tinkercad, y {{ui:workspace.doubleClickOpensGroup}}, si un doble clic sobre un grupo o un conjunto lo abre para editarlo. {{ui:workspace.doubleClickCentersView}} decide si un doble clic en un punto vacío del plano de trabajo lleva la vista hasta allí.
 
 {{ui:workspace.objectSnap}} hace que los lados y el centro de una forma se ajusten a otras formas mientras la arrastras; el menú de la cuadrícula, abajo a la derecha, tiene el mismo interruptor. {{ui:workspace.cruise}} hace que una forma nueva quede enganchada al puntero del ratón y se pose en la cara que haya debajo, como Cruise en Tinkercad; si lo desactivas, las formas nuevas aparecen en el centro de la placa. Más en [Seleccionar y organizar](chapter:select-and-arrange).
 

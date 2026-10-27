@@ -10,7 +10,7 @@ layerling läuft im Browser eines Tablets und als App vom Startbildschirm. Ein F
 | Du willst | Auf dem Tablet |
 | --- | --- |
 | Einen Körper wählen | Auf ihn tippen. |
-| Mehrere Körper wählen | Einen Finger eine halbe Sekunde ruhig halten, {{ui:contextMenu.selectMultiple}} wählen, dann einen Körper nach dem anderen antippen. Ein Tipp auf einen gewählten Körper nimmt ihn wieder heraus. |
+| Mehrere Körper wählen | Einen Körper antippen: Unten links erscheint ein runder Knopf. Tippe ihn an, dann kommt jeder weitere angetippte Körper zur Auswahl dazu, und ein Tipp auf einen gewählten Körper nimmt ihn wieder heraus. Ein Tipp auf die leere Fläche ändert daran nichts; ein zweiter Tipp auf den Knopf beendet es und hebt die Auswahl auf. Oder einen Finger eine halbe Sekunde ruhig halten, {{ui:contextMenu.selectMultiple}} wählen, dann einen Körper nach dem anderen antippen. |
 | Alle Körper wählen | Einen Finger eine halbe Sekunde ruhig auf die leere Fläche halten, {{ui:contextMenu.selectAll}} wählen. |
 | Das Menü eines Rechtsklicks öffnen | Einen Finger eine halbe Sekunde ruhig auf einen Körper oder die leere Fläche halten. |
 | Einen Körper verschieben | Ihn ziehen. |
@@ -41,9 +41,9 @@ Wenn Körper verrutschen, weil Kinder oder eilige Hände sie berühren, schalte 
 ## Auf einem iPad oder iPhone
 
 - **Als App installieren.** Tippe in Safari auf das Teilen-Symbol und wähle „Zum Home-Bildschirm“. Die App öffnet sich in einem eigenen Fenster ohne Adressleiste und läuft auch ohne Verbindung, siehe [Offline und installieren](chapter:offline-und-installieren).
-- **Deine Entwürfe liegen im Browser.** Es gibt kein Konto, und nichts wird hochgeladen. Safari hat eine eigene Regel gegen Tracking: Es löscht, was eine Website gespeichert hat, wenn du sie sieben Tage lang nicht in Safari besucht hast. Eine Web-App auf dem Home-Bildschirm ist von dieser Regel ausgenommen, so beschreibt es WebKit. Das ist ein Grund mehr, die App vom Home-Bildschirm zu benutzen und wichtige Arbeiten zu sichern: {{ui:dashboard.backupAll}} auf der Startseite packt alle Entwürfe in eine Datei.
+- **Deine Entwürfe liegen im Browser** (außer du betreibst layerling selbst und richtest einen Serverordner ein). Es gibt kein Konto, und nichts wird hochgeladen. Safari hat eine eigene Regel gegen Tracking: Es löscht, was eine Website gespeichert hat, wenn du sie sieben Tage lang nicht in Safari besucht hast. Eine Web-App auf dem Home-Bildschirm ist von dieser Regel ausgenommen, so beschreibt es WebKit. Das ist ein Grund mehr, die App vom Home-Bildschirm zu benutzen und wichtige Arbeiten zu sichern: {{ui:dashboard.backupAll}} auf der Startseite packt alle Entwürfe in eine Datei.
 - **Dateien.** Safari lässt eine Seite nur über einen Download in eine Datei schreiben, daher legt {{ui:editor.export}} die Datei in die Downloads der Dateien-App, und [[Strg]]+[[S]] an einer Tastatur lädt sie noch einmal herunter; siehe [Dateien und Speichern](chapter:dateien-und-speichern).
-- **Keine Tastatur nötig.** Jedes Werkzeug hat einen Knopf im Menüband, und ein Zahlenfeld öffnet die Bildschirmtastatur. Eine Tastatur am iPad bringt die [Tastenkürzel](chapter:tastenkuerzel) dazu.
+- **Keine Tastatur nötig.** Jedes Werkzeug hat einen Knopf im Menüband, und ein Zahlenfeld öffnet die Bildschirmtastatur. Eine Tastatur am iPad bringt die [Tastenkürzel](chapter:tastenkuerzel) dazu. Ein Wertekästchen neben einem Körper öffnet sein Zahlenfeld erst mit dem zweiten Tipp: Der erste markiert es nur, so holt ein Finger, der versehentlich darauf landet, die Tastatur nicht hoch.
 
 ## Werkstätten mit Kindern
 

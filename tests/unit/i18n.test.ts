@@ -115,8 +115,8 @@ describe("language detection", () => {
     expect(languageFromTag("pt-BR")).toBe("pt-br");
   });
 
-  it("does not serve Brazilian Portuguese for European Portuguese", () => {
-    expect(languageFromTag("pt-PT")).toBe(null);
+  it("serves European Portuguese for pt-PT, not Brazilian Portuguese", () => {
+    expect(languageFromTag("pt-PT")).toBe("pt-pt");
   });
 
   it("serves Spanish for the Spanish of Spain and of Latin America", () => {

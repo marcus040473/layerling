@@ -2,7 +2,11 @@ import { AsyncZipDeflate, Zip, ZipDeflate, ZipPassThrough, type DeflateOptions }
 
 // fflate.zip starts one worker per large entry. Bound jobs during project saves,
 // including the automatic save performed before an imported project opens.
-export function boundedProjectZip(files: Record<string, Uint8Array>, level: DeflateOptions["level"] = 6) {
+/**
+ * Zips `files` at `level`. The paths in `stored` go in as they are, without deflate: files that are
+ * compressed already (an attached photo or PDF) would barely shrink, and trying would cost each save.
+ */
+export function boundedProjectZip(files: Record<string, Uint8Array>, level: DeflateOptions["level"] = 6, stored?: ReadonlySet<string>) {
   return new Promise<Uint8Array>((resolve, reject) => {
     const entries = Object.entries(files);
     const chunks: Uint8Array[] = [];
@@ -53,7 +57,7 @@ export function boundedProjectZip(files: Record<string, Uint8Array>, level: Defl
         }
         while (active < 2 && next < entries.length && !settled) {
           const [name, bytes] = entries[next++];
-          const stream = level === 0 ? new ZipPassThrough(name)
+          const stream = level === 0 || stored?.has(name) ? new ZipPassThrough(name)
             : bytes.length < 160_000 ? new ZipDeflate(name, { level })
               : new AsyncZipDeflate(name, { level });
           if (stream instanceof AsyncZipDeflate) workers.add(stream);

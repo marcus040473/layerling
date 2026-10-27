@@ -154,6 +154,28 @@ describe("cornerRulerDimensionMatchesFromCorner", () => {
   });
 });
 
+describe("a framing square shows the sizes of bodies at its arms only (#831)", () => {
+  // The corner at the origin, the first arm along +x (100 mm), the second along +z (80 mm), bands 12 mm wide.
+  const at = (x: number, z: number) => cornerRulerDimensionMatchesFromCorner({ x: 0, z: 0 }, 0, 100, 80, 12, candidate({ x, z }));
+
+  it("a body inside the square, beside an arm or across it, gets its size", () => {
+    expect(at(20, 8).armX?.extentAlong).toBeCloseTo(20, 6);
+    expect(at(20, 0).armX).not.toBeNull();
+    expect(at(8, 30).armZ?.extentAlong).toBeCloseTo(12, 6);
+  });
+
+  it("a body outside the square, behind the corner or beside an arm from outside, gets none", () => {
+    // Behind the corner on the first arm's extension.
+    expect(at(-15, 3).armX).toBeNull();
+    // Below the first arm, touching it from outside.
+    expect(at(20, -7).armX).toBeNull();
+    // Left of the second arm, touching it from outside.
+    expect(at(-10.5, 30).armZ).toBeNull();
+    // At the corner from outside, in reach of both bands, as in the report.
+    expect(at(-11, 7)).toEqual({ armX: null, armZ: null });
+  });
+});
+
 describe("cornerRulerTicks", () => {
   it("erzeugt einen Teilstrich je Millimeter, einschliesslich beider Enden", () => {
     const ticks = cornerRulerTicks(10);

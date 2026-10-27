@@ -10,7 +10,7 @@ layerling runs in the browser of a tablet, and as an app from its home screen. A
 | You want to | On a tablet |
 | --- | --- |
 | Select a body | Tap it. |
-| Select several bodies | Hold a finger still for half a second, choose {{ui:contextMenu.selectMultiple}}, then tap one body after another. A tap on a selected body takes it out again. |
+| Select several bodies | Tap a body: a round button appears in the lower left. Tap it, and every further body you tap joins the selection; a tap on a selected body takes it out again. A tap on empty space changes nothing; a second tap on the button ends it and clears the selection. Or hold a finger still for half a second, choose {{ui:contextMenu.selectMultiple}}, then tap one body after another. |
 | Select all bodies | Hold a finger still on empty space for half a second, choose {{ui:contextMenu.selectAll}}. |
 | Open the menu of a right click | Hold a finger still on a body or on empty space for half a second. |
 | Move a body | Drag it. |
@@ -41,9 +41,9 @@ If bodies slip when children or hurried hands touch them, switch on {{ui:workspa
 ## On an iPad or iPhone
 
 - **Install it as an app.** In Safari, tap the Share icon and choose "Add to Home Screen". The app opens in a window of its own without the address bar, and it works without a connection, see [Offline and install](chapter:offline-and-install).
-- **Your designs live in the browser.** There is no account, and nothing is uploaded. Safari has a rule of its own against tracking: it deletes what a website stored after seven days in which you did not visit it in Safari. A web app added to the Home Screen is exempt from that rule, as WebKit documents it. That is one more reason to use the app from the Home Screen, and to back up important work: {{ui:dashboard.backupAll}} on the start page packs all designs into one file.
+- **Your designs live in the browser** (unless you host layerling yourself and set up a server folder). There is no account, and nothing is uploaded. Safari has a rule of its own against tracking: it deletes what a website stored after seven days in which you did not visit it in Safari. A web app added to the Home Screen is exempt from that rule, as WebKit documents it. That is one more reason to use the app from the Home Screen, and to back up important work: {{ui:dashboard.backupAll}} on the start page packs all designs into one file.
 - **Files.** Safari lets a page write into a file only through a download, so {{ui:editor.export}} puts the file into the Downloads of the Files app, and [[Ctrl]]+[[S]] on a keyboard downloads it again; see [Files and saving](chapter:files-and-saving).
-- **No keyboard needed.** Every tool has a button in the ribbon, and a number field opens the on-screen keyboard. A keyboard on the iPad adds the [keyboard shortcuts](chapter:shortcuts).
+- **No keyboard needed.** Every tool has a button in the ribbon, and a number field opens the on-screen keyboard. A keyboard on the iPad adds the [keyboard shortcuts](chapter:shortcuts). A value box beside a body opens its number field with the second tap: the first tap only marks it, so a finger that lands on it by accident does not raise the keyboard.
 
 ## Workshops with children
 

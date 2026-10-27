@@ -36,13 +36,13 @@ A derékszögvonalzó a munkasíkon fekszik. Ha az egy test oldalán van, a der�
 - **A mellette lévő ×** eltávolítja.
 - **A fogantyútól balra lévő kis gomb** azt váltja, honnan mér: egy test külső oldalától (végpont, vonalas ikon) vagy a közepétől (középpont, célkereszt). Minden zöld szám mellett egy ugyanilyen kis kapcsoló van, amely csak azt a számot állítja: egy álló hengernél a két szárban a közepet, magasságban az alját, egy fekvőnél keresztben a közepet, hosszában az egyik végét. Ha mindhárom újra egyezik, a fogantyúnál lévő gomb a közös módot mutatja.
 
-Ha testek állnak valamelyik szárnál, a derékszögvonalzó automatikusan mutatja a méreteiket. Ez csak az alaplapon működik, egy test oldalán nem.
+Ha testek állnak valamelyik szárnál, a derékszögvonalzó automatikusan mutatja a méreteiket. Ez csak az alaplapon működik, egy test oldalán nem. A derékszögvonalzó fogantyúja alatti nyilas gomb ezt kikapcsolja, így csak a kijelölt testek mutatják a méreteiket; a tervvel együtt mentődik.
 
 Ha kijelölsz egy testet, a derékszögvonalzó zölddel mutatja, milyen messze van a saroktól, mindkét szár mentén és magasságban. Egy zöld számra kattintva távolságot gépelhetsz be, és a test pontosan oda mozdul. Több kijelölt testnél ezek egynek számítanak: a vonalzó a közös körvonalukat méri, egy begépelt érték pedig együtt mozgatja őket anélkül, hogy az egymáshoz viszonyított helyzetük megváltozna.
 
 Középpontnál a zöld számok a test közepéig számolnak, magasságban is. Így egy gömböt a középpontjával pontosan 15 mm-re helyezel egy éltől, a sugár levonása nélkül. Egy falon egy lyukat így helyezel el balról 40, felülről 190 mm-re: jelöld ki a lyukat, válts középpontra, gépeld be a 40-et és a 190-et. A magasság ott a faltól kifelé számol.
 
-A mérőszalag és a derékszögvonalzó is a helyén marad, amíg vázlatot készítesz, és visszatér a 3D nézetbe. Nem mentődnek a tervvel, nincsenek az előzményekben, és az oldal újratöltésekor eltűnnek.
+A mérőszalag és a derékszögvonalzó is a helyén marad, amíg vázlatot készítesz, és visszatér a 3D nézetbe. Egyik sem kerül az előzményekbe. A derékszögvonalzó a tervvel együtt mentődik, és a mérőszalag mérései is, a böngészőben és a .lyl fájlban: a terv megnyitásakor újra ott vannak. A mérőszalag gombjai közötti szem gomb elrejti az összes mérést, és újra megmutatja őket; az is mentődik, hogy el vannak-e rejtve, és mérés felvétele, mozgatása vagy törlése előtt újra megjelennek.
 
 ## Távolságok az origótól és mozgatás közben
 
@@ -70,7 +70,7 @@ A jegyzetek a tervben mentődnek, egyik exportban sem jelennek meg, és a {{ui:v
 
 ## Referenciapontok
 
-A referenciapont egy puszta jel a térben, mint egy ceruzajel vagy egy kijelölő pont a műhelyben: egyik testhez sem tartozik, sosem nyomtatódik ki, és más dolgok illeszkednek hozzá. Kattints jobb gombbal egy testre, és válaszd az {{ui:contextMenu.markCenter}}, az {{ui:contextMenu.markCorners}} vagy az {{ui:contextMenu.markMidpoints}} lehetőséget: a pontok a test felső lapján jelennek meg (a teljes kijelölésén, ha többet jelöltél ki).
+A referenciapont egy puszta jel a térben, mint egy ceruzajel vagy egy kijelölő pont a műhelyben: egyik testhez sem tartozik, sosem nyomtatódik ki, és más dolgok illeszkednek hozzá. Kattints jobb gombbal egy testre, és válaszd az {{ui:contextMenu.markCenter}}, az {{ui:contextMenu.markCorners}} vagy az {{ui:contextMenu.markMidpoints}} lehetőséget: a pontok a test felső lapján jelennek meg (a teljes kijelölésén, ha többet jelöltél ki). {{ui:contextMenu.markFaceCenter}} ehelyett annak a sík lapnak a közepére tesz egyet, amelyre jobb gombbal kattintottál, például egy oldalon vagy egy végén.
 
 - Húzással mozgatsz egy pontot, vagy rákattintva megnézheted a koordinátáit, és újakat gépelhetsz be; a beállított mértékegységet használják. Minden kártya a címénél fogva elhúzható, ha eltakar valamit, önállóan: a többi a helyén marad, a címre dupla kattintás pedig visszateszi. Az utoljára megérintett kártya áll a többi előtt. Egy kártyán vagy a jobb gombos menüben a **Mind törlése** egyszerre minden pontot töröl. A {{ui:common.delete}} eltávolítja.
 - A mérőszalag is meg tud jelölni egy pontot: az {{ui:camera.tapeMarkMiddle}}, a mérés alatti célkereszt gomb a közepére tesz egyet, például egy kerek lyuk középpontjába. És egy ponttól is mér: a szalag úgy illeszkedik a referenciapontokhoz, mint a sarkokhoz.

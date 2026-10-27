@@ -1,9 +1,10 @@
 /// <reference lib="webworker" />
 
 import { cadHasSolidBody } from "@/lib/cadSolidBody";
-import { OcctKernel, type ShapeHandle } from "occt-wasm";
+import { cadFaultyEdgeIds } from "@/lib/cadFaultyEdges";
+import { OcctKernel, type OcctModuleFactory, type ShapeHandle } from "occt-wasm";
 import { assertCadKernelRunnable } from "@/lib/wasmSupport";
-import { orientedFaceNormal, shellSolid } from "@/lib/cadShell";
+import { CANNOT_OFFSET_MESSAGE, offsetSolid, orientedFaceNormal, shellSolid } from "@/lib/cadShell";
 import { chamfilletSolid } from "@/lib/cadChamfillet";
 import { cadFaceList, cadFaceTessellation, DELETE_FACES_UNCHANGED_MESSAGE, deleteFacesSolid } from "@/lib/cadDeleteFaces";
 import type { CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierFaces, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
@@ -54,12 +55,10 @@ function kernel() {
   // fetching the 22 MB wasm) can be retried on the next call instead of
   // poisoning edge treatment for the rest of the session - same fix as
   // brepKernel.ts's loadBrepWithOcct.
-  kernelPromise ??= import(/* webpackIgnore: true */ moduleUrl).then((imported: { default: (options?: { locateFile?: (path: string) => string }) => Promise<unknown> }) => imported.default({
-    locateFile: (path) => path.endsWith(".wasm") ? `${CAD_MODIFIER_RUNTIME_BASE}/occt-wasm.wasm` : path,
-  })).then((module) => {
-    const KernelConstructor = OcctKernel as unknown as new (rawModule: unknown) => OcctKernel;
-    return new KernelConstructor(module);
-  }).catch((error) => {
+  kernelPromise ??= import(/* webpackIgnore: true */ moduleUrl).then((imported: { default: OcctModuleFactory }) => OcctKernel.init({
+    createModule: imported.default,
+    wasm: `${CAD_MODIFIER_RUNTIME_BASE}/occt-wasm.wasm`,
+  })).catch((error) => {
     kernelPromise = null;
     throw error;
   });
@@ -807,24 +806,38 @@ function treatEdges(cad: OcctKernel, solid: ShapeHandle, edges: ShapeHandle[], r
     : cad.chamferDistAngle(solid, edges, request.amount, request.chamferAngle);
 }
 
-// The kernel only says that the set failed. The edges that fail on their own
-// are the ones to blame; when every edge works alone, it is the combination.
-function culpritEdgeIds(cad: OcctKernel, solid: ShapeHandle, entries: { id: number; edge: ShapeHandle }[], request: Extract<CadModifierWorkerRequest, { type: "preview" }>) {
+function failsAlone(cad: OcctKernel, solid: ShapeHandle, edge: ShapeHandle, request: Extract<CadModifierWorkerRequest, { type: "preview" }>) {
+  try {
+    const single = treatEdges(cad, solid, [edge], request);
+    const solidLeft = cadHasSolidBody(cad, single);
+    releaseHandles(cad, [single]);
+    return !solidLeft;
+  } catch (error) {
+    if (isFatalKernelFault(error)) throw error;
+    return true;
+  }
+}
+
+// The edges that fail on their own are the ones to blame; when every edge works
+// alone, it is the combination. The kernel may name the edges whose contour
+// failed: when each of those fails alone, they are the answer and the other
+// edges need no test. When one of them works alone, every edge is tried.
+function culpritEdgeIds(cad: OcctKernel, solid: ShapeHandle, entries: { id: number; edge: ShapeHandle }[], request: Extract<CadModifierWorkerRequest, { type: "preview" }>, error: unknown) {
   const all = entries.map((entry) => entry.id);
   if (entries.length <= 1 || request.addedEdgeIds?.length) return all;
   const deadline = performance.now() + CULPRIT_SEARCH_BUDGET_MS;
+  const named = new Set(cadFaultyEdgeIds(error, entries));
+  const tried = new Map<number, boolean>();
+  for (const entry of entries) {
+    if (!named.has(entry.id)) continue;
+    if (performance.now() > deadline) return all;
+    tried.set(entry.id, failsAlone(cad, solid, entry.edge, request));
+  }
+  if (tried.size && [...tried.values()].every(Boolean)) return [...tried.keys()];
   const failing: number[] = [];
   for (const entry of entries) {
     if (performance.now() > deadline) return all;
-    try {
-      const single = treatEdges(cad, solid, [entry.edge], request);
-      const solidLeft = cadHasSolidBody(cad, single);
-      releaseHandles(cad, [single]);
-      if (!solidLeft) failing.push(entry.id);
-    } catch (error) {
-      if (isFatalKernelFault(error)) throw error;
-      failing.push(entry.id);
-    }
+    if (tried.get(entry.id) ?? failsAlone(cad, solid, entry.edge, request)) failing.push(entry.id);
   }
   return failing.length ? failing : all;
 }
@@ -896,7 +909,7 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
     ? (request.faceIds ?? []).map((id) => ({ id, face: faceHandles[id], owner: faceOwners[id] })).filter((entry): entry is { id: number; face: ShapeHandle; owner: number } => entry.face !== undefined)
     : [];
   if (request.kind === "deleteFace" && selectedFaces.length === 0) throw new Error("Select at least one face");
-  if (selected.length === 0 && request.kind !== "shell" && request.kind !== "deleteFace") throw new Error("Select at least one highlighted edge");
+  if (selected.length === 0 && request.kind !== "shell" && request.kind !== "deleteFace" && request.kind !== "offset") throw new Error("Select at least one highlighted edge");
   if (request.kind === "fillet" && request.endAmount !== undefined && selected.length !== 1) throw new Error(VARIABLE_FILLET_ONE_EDGE_MESSAGE);
   const componentResults: ShapeHandle[] = [];
   let result: ShapeHandle | null = null;
@@ -908,6 +921,8 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
       let component: ShapeHandle;
       if (request.kind === "shell") {
         component = shellSolid(activeCad, solid, request.amount, request.shellOpenings ?? "none", request.shellEdges);
+      } else if (request.kind === "offset") {
+        component = offsetSolid(activeCad, solid, request.amount, request.offsetShrink === true, request.shellEdges);
       } else if (request.kind === "deleteFace") {
         const componentFaces = selectedFaces.filter((entry) => entry.owner === owner).map((entry) => entry.face);
         component = componentFaces.length ? deleteFacesSolid(activeCad, solid, componentFaces) : activeCad.copy(solid);
@@ -919,7 +934,7 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
         } catch (error) {
           if (isFatalKernelFault(error)) throw error;
           const rawMessage = error instanceof Error ? error.message : String(error ?? "");
-          throw new EdgeTreatmentError(rawMessage, culpritEdgeIds(activeCad, solid, componentEntries, request));
+          throw new EdgeTreatmentError(rawMessage, culpritEdgeIds(activeCad, solid, componentEntries, request, error));
         }
       }
       if (request.kind !== "shell" && componentEdges.length > 0 && !cadHasSolidBody(activeCad, component)) {
@@ -1029,6 +1044,8 @@ self.onmessage = async (event: MessageEvent<CadModifierWorkerRequest>) => {
   const message = kernelRefused
     ? request.kind === "deleteFace"
       ? DELETE_FACES_UNCHANGED_MESSAGE
+      : request.kind === "offset"
+        ? CANNOT_OFFSET_MESSAGE
       : request.kind === "shell"
         ? "The walls cannot be this thick for this body. Choose a thinner wall."
         : `The selected edges cannot be ${request.kind === "fillet" ? "filleted" : "chamfered"} together at this size. Reduce the size or select fewer connected edges.`

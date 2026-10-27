@@ -128,6 +128,8 @@ async function callTool(name, args) {
       return bridgeCommand("group_objects", args, 30000);
     case "layerling_intersect_objects":
       return bridgeCommand("intersect_objects", args, 30000);
+    case "layerling_hull_objects":
+      return bridgeCommand("hull_objects", args, 30000);
     case "layerling_ungroup_objects":
       return bridgeCommand("ungroup_objects", args);
     case "layerling_boolean_cut":
@@ -158,6 +160,10 @@ async function callTool(name, args) {
       return bridgeCommand("delete_faces", args, 90000);
     case "layerling_hollow_object":
       return bridgeCommand("hollow_object", args, 90000);
+    case "layerling_offset_object":
+      return bridgeCommand("offset_object", args, 90000);
+    case "layerling_cut_out":
+      return bridgeCommand("cut_out", args, 90000);
     case "layerling_array_objects":
       return bridgeCommand("array_objects", args, 30000);
     case "layerling_apply_edge_treatment":
@@ -196,6 +202,8 @@ async function callTool(name, args) {
       return bridgeCommand("restore_from_history", args);
     case "layerling_show_workplane":
       return bridgeCommand("show_workplane", args);
+    case "layerling_measurements":
+      return bridgeCommand("measurements", args);
     case "layerling_saved_view":
       return bridgeCommand("saved_view", args);
     case "layerling_export_section_svg":
@@ -234,6 +242,16 @@ async function callTool(name, args) {
       }
       return { ...summary, path: target, overwritten: exists };
     }
+    case "layerling_list_attachments":
+      return bridgeCommand("list_attachments", args);
+    case "layerling_get_attachment":
+      return bridgeCommand("get_attachment", args, 30000);
+    case "layerling_add_attachment":
+      return bridgeCommand("add_attachment", args, 30000);
+    case "layerling_rename_attachment":
+      return bridgeCommand("rename_attachment", args);
+    case "layerling_remove_attachment":
+      return bridgeCommand("remove_attachment", args);
     case "layerling_import_file":
       return bridgeCommand("import_file", args);
     case "layerling_add_font":

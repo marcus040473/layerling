@@ -1,6 +1,6 @@
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import { backupDesignAlreadyThere, backupEntryNames, backupFileName, backupThumbnailPath, packBackup, unpackBackup } from "@/lib/projectBackup";
+import { backupDesignAlreadyThere, backupEntryNames, backupFileName, backupThumbnailPath, createBackupWriter, packBackup, unpackBackup, unpackBackupFolders } from "@/lib/projectBackup";
 
 describe("backing up all designs", () => {
   it("names the backup after the day", () => {
@@ -67,5 +67,26 @@ describe("the card pictures in a backup", () => {
     expect(restored[0].thumbnail).toEqual(picture);
     expect(restored[0].folder).toEqual(["Werkstatt"]);
     expect("thumbnail" in restored[1]).toBe(false);
+  });
+});
+
+describe("a backup written entry by entry (#887)", () => {
+  it("holds the same as packBackup: designs in folders, their pictures and an empty folder", async () => {
+    const entries = [
+      { name: "Eins.lyl", bytes: new Uint8Array([1, 2, 3]) },
+      { name: "Folders/Werkstatt/Zwei.lyl", bytes: new Uint8Array(70_000).fill(7) },
+      { name: "Folders/Werkstatt/Zwei.png", bytes: new Uint8Array([9, 9]) },
+      { name: "Folders/Leer/", bytes: new Uint8Array() },
+    ];
+    const writer = createBackupWriter(new Date(2026, 9, 26));
+    for (const entry of entries) writer.add(entry.name, entry.bytes);
+    const blob = writer.finish();
+    expect(blob.type).toBe("application/zip");
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    expect(unpackBackup(bytes).map((design) => [design.name, design.folder, design.bytes.length, design.thumbnail?.length])).toEqual(
+      unpackBackup(packBackup(entries)).map((design) => [design.name, design.folder, design.bytes.length, design.thumbnail?.length]),
+    );
+    expect(unpackBackup(bytes).find((design) => design.name === "Zwei.lyl")!.bytes.every((value) => value === 7)).toBe(true);
+    expect(unpackBackupFolders(bytes)).toEqual([["Leer"]]);
   });
 });

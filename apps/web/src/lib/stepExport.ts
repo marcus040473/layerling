@@ -10,6 +10,7 @@ import { helicalGearPartSolid } from "@/lib/gearSolid";
 import { gridfinityPartSolid } from "@/lib/gridfinitySolid";
 import { profileExtrusionSolid } from "@/lib/cadProfileSolid";
 import { cadTransformRequiresGeneralTransform } from "@/lib/cadModifierRuntime";
+import { hingeHasExactParts } from "@/lib/hingeGeometry";
 import { hingeWorldParts } from "@/lib/hingeParts";
 import { restoreGroupedChildren } from "@/lib/editorBooleans";
 
@@ -498,7 +499,7 @@ async function buildScope(brep: Brep, shapes: WorkplaneShape[], skipped: Skipped
       parts.push(...await buildScope(brep, restoreGroupedChildren(shape).filter((child) => !child.hidden), skipped));
       continue;
     }
-    if (shape.kind === "hinge" && !shape.cadBrep && !shapeHasShapeDeform(shape)) {
+    if (shape.kind === "hinge" && hingeHasExactParts(shape) && !shape.cadBrep && !shapeHasShapeDeform(shape)) {
       built = buildHingeBody(brep, shape);
     } else if (source === "imported") {
       built = await buildImportedBody(brep, shape);

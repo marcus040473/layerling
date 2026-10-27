@@ -171,3 +171,26 @@ describe("the DXF file", () => {
     expect(result.counts).toEqual({ lines: 4, arcs: 0, circles: 1 });
   });
 });
+
+describe("DXF export: sharp little corners stay corners", () => {
+  it("does not bend an arc through a few hundredths of a millimetre of zigzag", () => {
+    // A square with a tiny step in its top side, as where a QR code's modules meet: its corners lie on some tiny
+    // circle, but an arc through them would bulge across the outline beside it.
+    const loop: Array<[number, number]> = [[0, 0], [10, 0], [10, 10], [5.06, 10], [5.06, 10.04], [5.02, 10.04], [5.02, 10.08], [4.98, 10.08], [4.98, 10], [0, 10]];
+    const { counts } = outlinesToDxf({ loops: [loop] });
+    expect(counts.arcs).toBe(0);
+    expect(counts.circles).toBe(0);
+  });
+
+  it("writes no side shorter than a thousandth of a millimetre, but keeps a QR code's 0.0078 mm steps", () => {
+    // Where faces of a mesh meet, its outline from above has crumbs a ten-thousandth of a millimetre long.
+    const crumbs: Array<[number, number]> = [[0, 0], [10, 0], [10, 5], [10.0001, 5.0001], [10, 10], [0, 10]];
+    const lengths = (loop: Array<[number, number]>) => dxfLoopEntities(loop).map((entity) => {
+      const ends = dxfEntityEnds(entity);
+      return ends ? Math.hypot(ends[1][0] - ends[0][0], ends[1][1] - ends[0][1]) : Infinity;
+    });
+    expect(Math.min(...lengths(crumbs))).toBeGreaterThan(1e-3);
+    const step: Array<[number, number]> = [[0, 0], [10, 0], [10, 5], [10.0078, 5], [10.0078, 10], [0, 10]];
+    expect(lengths(step).some((length) => Math.abs(length - 0.0078) < 1e-9)).toBe(true);
+  });
+});

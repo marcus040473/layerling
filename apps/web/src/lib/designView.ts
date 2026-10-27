@@ -94,6 +94,33 @@ export function writeSavedViews(projectId: string | null | undefined, views: Sav
 }
 
 /**
+ * The view a new design opens in and Home goes back to, when the user chose one (#853). It is kept
+ * per browser, like whether the editor starts in perspective, so the projection is not part of it:
+ * the view is kept as the normal camera would see it.
+ */
+const START_VIEW_STORAGE_KEY = "layerling.editor.startView";
+
+export function readStartView(): DesignView | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = window.localStorage.getItem(START_VIEW_STORAGE_KEY);
+    return stored ? normalizeDesignView(JSON.parse(stored)) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeStartView(view: DesignView | null) {
+  try {
+    const kept = normalizeDesignView(view);
+    if (kept) window.localStorage.setItem(START_VIEW_STORAGE_KEY, JSON.stringify(kept));
+    else window.localStorage.removeItem(START_VIEW_STORAGE_KEY);
+  } catch {
+    // Without storage new designs keep opening in the standard view.
+  }
+}
+
+/**
  * The slot a key press names, and whether it saves (Shift) or goes back. The key's position
  * (`Digit7`) counts too, because Shift turns the digit into "/" and the like, and on some layouts
  * the digit itself needs Shift.

@@ -73,8 +73,10 @@ export const DEFAULT_WORKPLANE_WORKSPACE: WorkplaneWorkspaceSettings = {
   clickToPlaceShapes: true,
   selectBeforeMove: false,
   frameByDirection: false,
+  pasteCentered: false,
   doubleClickOpensSketch: true,
   doubleClickOpensGroup: true,
+  doubleClickCentersView: true,
   objectSnap: true,
   stlAsDownload: false,
   confirmTabClose: false,
@@ -257,7 +259,7 @@ export function snapGridForUnits(units: string, snap: GridSize): GridSize {
 }
 const customizableShapeKinds: ShapeKind[] = [
   "box", "roundedBox", "cylinder", "slot", "ellipse", "sphere", "sketch", "scribble", "cone", "pyramid", "roof", "text", "roundRoof",
-  "halfSphere", "torus", "tube", "bentTube", "star", "heart", "crescent", "gear", "honeycomb", "hinge", "knurl", "dovetail", "counterbore", "countersink", "doubleCountersink", "teardrop", "loft", "vase", "thread", "spring", "gridfinity", "ring", "wedge", "polygon", "icosahedron", "ruler", "mesh",
+  "halfSphere", "paraboloid", "torus", "tube", "bentTube", "star", "heart", "crescent", "gear", "honeycomb", "hinge", "knurl", "dovetail", "counterbore", "countersink", "doubleCountersink", "teardrop", "loft", "vase", "thread", "spring", "gridfinity", "ring", "wedge", "polygon", "icosahedron", "ruler", "mesh",
 ];
 
 function numberOrDefault(value: unknown, fallback: number) {
@@ -324,7 +326,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       maxDimension: optionalShapeDimension(source.maxDimension, fallbackEntry?.maxDimension),
       color: normalizeHexColor(typeof source.color === "string" ? source.color : undefined) ?? fallbackEntry?.color,
     };
-    if (kind === "sphere" || kind === "halfSphere" || kind === "torus") {
+    if (kind === "sphere" || kind === "halfSphere" || kind === "paraboloid" || kind === "torus") {
       entry.steps = optionalShapeNumber(source.steps, fallbackEntry?.steps, 6, MAX_HIGH_RESOLUTION_STEPS, true);
     }
     if (kind === "torus") {
@@ -376,13 +378,16 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
     }
     if (kind === "hinge") {
       entry.hingeKnuckles = optionalShapeNumber(source.hingeKnuckles, fallbackEntry?.hingeKnuckles, 3, 15, true);
+      entry.hingeKnuckleWidth = optionalShapeNumber(source.hingeKnuckleWidth, fallbackEntry?.hingeKnuckleWidth, 1, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.hingePinDiameter = optionalShapeNumber(source.hingePinDiameter, fallbackEntry?.hingePinDiameter, 0.2, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.hingeLeafThickness = optionalShapeNumber(source.hingeLeafThickness, fallbackEntry?.hingeLeafThickness, 0.1, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.hingeClearance = optionalShapeNumber(source.hingeClearance, fallbackEntry?.hingeClearance, 0.1, 1);
       entry.hingePinless = typeof source.hingePinless === "boolean" ? source.hingePinless : fallbackEntry?.hingePinless;
+      entry.hingeStyle = source.hingeStyle === "cone" || source.hingeStyle === "pinless" || source.hingeStyle === "pin" ? source.hingeStyle : fallbackEntry?.hingeStyle;
+      entry.hingeConeSize = optionalShapeNumber(source.hingeConeSize, fallbackEntry?.hingeConeSize, 0.6, MAX_CUSTOM_SHAPE_DIMENSION);
     }
     if (kind === "gridfinity") {
-      entry.gridfinityType = source.gridfinityType === "bin" || source.gridfinityType === "baseplate" ? source.gridfinityType : fallbackEntry?.gridfinityType;
+      entry.gridfinityType = source.gridfinityType === "bin" || source.gridfinityType === "baseplate" || source.gridfinityType === "tray" ? source.gridfinityType : fallbackEntry?.gridfinityType;
       entry.gridfinityLip = typeof source.gridfinityLip === "boolean" ? source.gridfinityLip : fallbackEntry?.gridfinityLip;
       entry.gridfinityMagnets = typeof source.gridfinityMagnets === "boolean" ? source.gridfinityMagnets : fallbackEntry?.gridfinityMagnets;
       entry.gridfinityHalfGrid = typeof source.gridfinityHalfGrid === "boolean" ? source.gridfinityHalfGrid : fallbackEntry?.gridfinityHalfGrid;
@@ -416,10 +421,13 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.gridfinityOpenRight = typeof source.gridfinityOpenRight === "boolean" ? source.gridfinityOpenRight : fallbackEntry?.gridfinityOpenRight;
       entry.gridfinityLipChamfer = optionalShapeNumber(source.gridfinityLipChamfer, fallbackEntry?.gridfinityLipChamfer, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityWallThickness = optionalShapeNumber(source.gridfinityWallThickness, fallbackEntry?.gridfinityWallThickness, 0, MAX_CUSTOM_SHAPE_DIMENSION);
+      entry.gridfinityOpeningCorner = source.gridfinityOpeningCorner === "round" || source.gridfinityOpeningCorner === "chamfer" ? source.gridfinityOpeningCorner : fallbackEntry?.gridfinityOpeningCorner;
+      entry.gridfinityOpeningCornerSize = optionalShapeNumber(source.gridfinityOpeningCornerSize, fallbackEntry?.gridfinityOpeningCornerSize, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingBack = optionalShapeNumber(source.gridfinityPaddingBack, fallbackEntry?.gridfinityPaddingBack, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingFront = optionalShapeNumber(source.gridfinityPaddingFront, fallbackEntry?.gridfinityPaddingFront, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingLeft = optionalShapeNumber(source.gridfinityPaddingLeft, fallbackEntry?.gridfinityPaddingLeft, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityPaddingRight = optionalShapeNumber(source.gridfinityPaddingRight, fallbackEntry?.gridfinityPaddingRight, 0, MAX_CUSTOM_SHAPE_DIMENSION);
+      entry.gridfinityCornerRadius = optionalShapeNumber(source.gridfinityCornerRadius, fallbackEntry?.gridfinityCornerRadius, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityCompartmentsX = optionalShapeNumber(source.gridfinityCompartmentsX, fallbackEntry?.gridfinityCompartmentsX, 1, MAX_CUSTOM_SHAPE_DIMENSION, true);
       entry.gridfinityCompartmentsZ = optionalShapeNumber(source.gridfinityCompartmentsZ, fallbackEntry?.gridfinityCompartmentsZ, 1, MAX_CUSTOM_SHAPE_DIMENSION, true);
       entry.gridfinityDividerThickness = optionalShapeNumber(source.gridfinityDividerThickness, fallbackEntry?.gridfinityDividerThickness, 0, MAX_CUSTOM_SHAPE_DIMENSION);
@@ -718,8 +726,10 @@ export function normalizeWorkspaceSettings(value: unknown, fallback: WorkplaneWo
     clickToPlaceShapes: booleanOrDefault(candidate.clickToPlaceShapes, fallback.clickToPlaceShapes),
     selectBeforeMove: booleanOrDefault(candidate.selectBeforeMove, fallback.selectBeforeMove),
     frameByDirection: booleanOrDefault(candidate.frameByDirection, fallback.frameByDirection),
+    pasteCentered: booleanOrDefault(candidate.pasteCentered, fallback.pasteCentered),
     doubleClickOpensSketch: booleanOrDefault(candidate.doubleClickOpensSketch, fallback.doubleClickOpensSketch),
     doubleClickOpensGroup: booleanOrDefault(candidate.doubleClickOpensGroup, fallback.doubleClickOpensGroup),
+    doubleClickCentersView: booleanOrDefault(candidate.doubleClickCentersView, fallback.doubleClickCentersView),
     objectSnap: booleanOrDefault(candidate.objectSnap, fallback.objectSnap),
     stlAsDownload: booleanOrDefault(candidate.stlAsDownload, fallback.stlAsDownload),
     confirmTabClose: booleanOrDefault(candidate.confirmTabClose, fallback.confirmTabClose),
@@ -802,18 +812,20 @@ export function resetGridInSavedDefault(storage: Storage | null = browserStorage
 
 /**
  * "Use my default" (#754): the look the user saved with "Make default" - colours, grid, shadows, camera, shape
- * starts - put on the design that is open, which a file brings with its own. What belongs to the design itself
- * stays: the size of the plate, the printer, the units and how they are shown. The grid spacing stays too when the
- * saved default counts in other units, since it is a length in those.
+ * starts - put on the design that is open, which a file brings with its own. A printer in the saved default comes
+ * along with its plate, since that is the printer the user prints on (#850); without one the design keeps its plate
+ * and printer. The units and how they are shown stay with the design. The grid spacing stays too when the saved
+ * default counts in other units, since it is a length in those.
  */
 export function workspaceWithSavedDefault(current: WorkplaneWorkspaceSettings, saved: WorkplaneWorkspaceSettings): WorkplaneWorkspaceSettings {
   const sameUnits = saved.units === current.units;
+  const plate = saved.printer ? saved : current;
   return {
     ...saved,
-    width: current.width,
-    depth: current.depth,
-    sizePreset: current.sizePreset,
-    printer: current.printer,
+    width: plate.width,
+    depth: plate.depth,
+    sizePreset: plate.sizePreset,
+    printer: plate.printer,
     units: current.units,
     inchFormat: current.inchFormat,
     scale: current.scale,

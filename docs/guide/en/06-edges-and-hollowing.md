@@ -83,6 +83,18 @@ If you resize a hollowed body later, layerling hollows it again at the new size 
 
 > **Tip:** With a 0.4 mm nozzle, 1.2 to 2 mm of wall is a good start: thin enough to save material, thick enough for a sturdy part.
 
+## Offsetting bodies
+
+Every face of a body can be moved by the same distance, out or in. That is what a press fit, a lid or a snap joint needs: a gap of 0.1 to 0.3 mm all round while the features stay where they are, which scaling cannot give you.
+
+1. Select one body and click {{ui:editor.tool.offset}}, or right-click the body and choose it there.
+2. Choose {{ui:offset.grow}} or {{ui:offset.shrink}} and set the {{ui:offset.distance}}.
+3. The {{ui:offset.edges}} decide the outer corners: rounded keeps the offset surface round there, sharp lets the faces run on until they meet.
+4. Tick {{ui:offset.copy}} to keep the part as it is and get the grown body as a copy that already is a hole. Group that hole with the mating part and it cuts exactly the clearance you chose.
+5. Click {{ui:offset.apply}}.
+
+Without the tick the body itself is offset. It becomes a fixed exact body, like after a chamfer: the list at the top of the panel takes the offset back, and {{ui:edge.editAction}} opens the tool again with the old distance. Only bodies that are exact CAD bodies can be offset - boxes, cylinders and the other shapes, groups of them, imported STEP parts. A body that is only a triangle mesh, such as many STL imports, often cannot be. A distance that is too big for the body, for example a shrink beyond its thinnest wall, is refused.
+
 ## Deleting faces
 
 A fillet in the way, a hole in the wrong place, a boss you no longer need: {{ui:editor.tool.deleteFace}} takes it off the body again, without building the body anew.

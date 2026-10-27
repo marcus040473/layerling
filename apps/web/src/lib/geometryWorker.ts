@@ -1,5 +1,5 @@
 import { buildsDiffer, BUILD_ID, isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
-import { buildGroupedShapeFromSelection, exportSolidVolume, splitShapeIfCrossed, splitShapesByPlane, type ExportSolidVolume, type GroupBuildResult, type SplitShapesOutcome } from "@/lib/editorBooleans";
+import { buildGroupedShapeFromSelection, exportSolidVolume, faceReadJoins, faceReadPositions, splitShapeIfCrossed, splitShapesByPlane, type ExportSolidVolume, type GroupBuildResult, type SplitShapesOutcome } from "@/lib/editorBooleans";
 import { packValue, packedTransfer, unpackValue } from "@/lib/geometryTransfer";
 import { resultMeshes, type GeometryTask, type GeometryWorkerRequest, type GeometryWorkerResponse } from "@/lib/geometryWorkerTypes";
 import { rememberPreparedDisplay } from "@/lib/importedMeshDisplay";
@@ -46,9 +46,11 @@ let crashes = 0;
 let requestCounter = 0;
 const pending = new Map<number, Pending>();
 const busyListeners = new Set<(busy: boolean) => void>();
+/** Clicks waiting for a read begun without "Calculating"; while one waits, it is shown. */
+let busyWaits = 0;
 
 function notifyBusy() {
-  const busy = Array.from(pending.values()).some((entry) => !entry.quiet);
+  const busy = busyWaits > 0 || Array.from(pending.values()).some((entry) => !entry.quiet);
   busyListeners.forEach((listener) => listener(busy));
 }
 
@@ -295,4 +297,125 @@ export function simplifyTrianglePositionsOffThread(positions: ArrayLike<number>,
   return runGeometryTask("simplify", { positions: Array.isArray(positions) ? positions : Array.from(positions), target }, () => simplifyTrianglePositions(positions, target), () => {
     throw new Error(t("status.computeTimedOut"));
   }, signal, true);
+}
+
+/** Whether a face read of `shape` runs in the worker: its parts are joined, and none of them is text. */
+export function faceReadInWorker(shape: WorkplaneShape) {
+  return !containsText([shape]) && faceReadJoins(shape);
+}
+
+/**
+ * The face tools' read of a body (faceReadPositions in lib/editorBooleans.ts) off the page when its
+ * parts are joined: for four overlapping 512-sided cylinders the join held the page for half a
+ * second. A body that is not joined is read on the page, quicker than sending it away; text stays
+ * on the page. `quiet`: read ahead, as the Face tool and the hole pattern open, without "Calculating";
+ * without the worker it fails rather than hold the page, and the click reads.
+ */
+export function faceReadPositionsOffThread(shape: WorkplaneShape, signal?: AbortSignal, quiet = false): Promise<Float64Array> {
+  const onPage = () => faceReadPositions(shape);
+  if (!faceReadInWorker(shape)) return onPage();
+  return runGeometryTask("face", { shape }, quiet ? () => Promise.reject(new Error("no geometry worker")) : onPage, () => {
+    throw new Error(t("status.computeTimedOut"));
+  }, signal, quiet);
+}
+
+/**
+ * Calls a face read off. When it was all the worker had to do, that stops the warm worker, so it is
+ * warmed again and the next cut does not wait for a new one; not as the editor closes.
+ */
+export function callOffFaceRead(abort: AbortController | null | undefined, closing = false) {
+  if (!abort || abort.signal.aborted) return;
+  const running = workerReady;
+  abort.abort();
+  if (running && !workerReady && !closing) warmGeometryWorker();
+}
+
+/** Shows "Calculating" while a click waits for `read`, a read begun quietly; `read` must settle. */
+function showBusyWhile<T>(read: Promise<T>): Promise<T> {
+  busyWaits += 1;
+  notifyBusy();
+  return read.finally(() => {
+    busyWaits -= 1;
+    notifyBusy();
+  });
+}
+
+function calledOff(signal: AbortSignal) {
+  return new Promise<null>((resolve) => {
+    if (signal.aborted) resolve(null);
+    else signal.addEventListener("abort", () => resolve(null), { once: true });
+  });
+}
+
+/**
+ * A face read as the Face tool and the hole pattern keep it: null when it fails or is called off
+ * (a read called off never answers), so a click waiting on it can read for itself.
+ */
+function keptFaceRead(read: Promise<Float64Array>, signal: AbortSignal): Promise<Float64Array | null> {
+  return Promise.race([read.catch(() => null), calledOff(signal)]);
+}
+
+export type FaceReadKeeper = {
+  /** Reads the body quietly, unless a read of it is kept. */
+  readAhead: (shape: WorkplaneShape, fingerprint: string) => void;
+  /**
+   * A click's read: the one kept, when it is of the same body, or its own, kept in turn when it runs
+   * in the worker. Called off, or left with a read dropped for a body that has changed (`unchanged`
+   * false), it never answers, as a read called off never does: the click would not count.
+   */
+  forClick: (shape: WorkplaneShape, fingerprint: string, signal: AbortSignal, unchanged: () => boolean) => Promise<Float64Array>;
+  /** Calls the kept read off: the pick step ended or the body changed. */
+  drop: (closing?: boolean) => void;
+};
+
+/**
+ * The read of one body that the Face tool and the hole pattern keep while they wait for a click:
+ * read ahead quietly, or by the first click, and taken by the clicks after it. The read has a
+ * controller of its own, called off by `drop` or when a read of another body takes its place; a
+ * click called off stops waiting, and the read goes on for the next one. `onRead` hears each kept
+ * read that answers.
+ */
+export function createFaceReadKeeper(onRead: (fingerprint: string, positions: Float64Array) => void): FaceReadKeeper {
+  type Kept = { fingerprint: string; abort: AbortController; read: Promise<Float64Array | null>; failure?: unknown };
+  let kept: Kept | null = null;
+  const keep = (shape: WorkplaneShape, fingerprint: string, quiet: boolean) => {
+    callOffFaceRead(kept?.abort);
+    const abort = new AbortController();
+    const read = faceReadPositionsOffThread(shape, abort.signal, quiet);
+    const entry: Kept = { fingerprint, abort, read: keptFaceRead(read, abort.signal) };
+    read.catch((error: unknown) => { entry.failure = error; });
+    kept = entry;
+    void entry.read.then((positions) => {
+      if (kept !== entry) return;
+      if (positions) onRead(fingerprint, positions);
+      else kept = null;
+    });
+    return entry;
+  };
+  return {
+    readAhead(shape: WorkplaneShape, fingerprint: string) {
+      if (kept?.fingerprint !== fingerprint) keep(shape, fingerprint, true);
+    },
+    async forClick(shape: WorkplaneShape, fingerprint: string, signal: AbortSignal, unchanged: () => boolean): Promise<Float64Array> {
+      if (!faceReadInWorker(shape)) return faceReadPositionsOffThread(shape, signal);
+      const never = () => new Promise<never>(() => undefined);
+      const ahead = kept?.fingerprint === fingerprint ? kept : null;
+      if (ahead) {
+        const positions = await showBusyWhile(Promise.race([ahead.read, calledOff(signal)]));
+        if (positions) return positions;
+        if (signal.aborted || (ahead.abort.signal.aborted && !unchanged())) return never();
+        // A quiet read that failed, or one dropped while the body stayed as it is: the click reads for itself.
+      }
+      const own = keep(shape, fingerprint, false);
+      const positions = await Promise.race([own.read, calledOff(signal)]);
+      if (positions) return positions;
+      if (!signal.aborted && own.failure !== undefined) throw own.failure;
+      return never();
+    },
+    drop(closing = false) {
+      const entry = kept;
+      kept = null;
+      callOffFaceRead(entry?.abort, closing);
+    },
+  };
 }

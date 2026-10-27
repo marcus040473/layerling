@@ -77,11 +77,6 @@ export function imageHandlePositions(image: SketchImage): Array<{ id: ResizeHand
   return IMAGE_HANDLES.map((id) => ({ id, ...imageToWorld(image, { x: HANDLE_LOCALS[id].x * image.width / 2, z: HANDLE_LOCALS[id].z * image.depth / 2 }) }));
 }
 
-/** The turning handle: above the top edge, `gap` mm out from it (in the picture's own up direction). */
-export function imageRotateHandle(image: SketchImage, gap: number): Vec2 {
-  return imageToWorld(image, { x: 0, z: -image.depth / 2 - gap });
-}
-
 /** The angle of a point about the image's centre, in degrees counter-clockwise on the plate. */
 export function imageAngleTo(image: Pick<SketchImage, "x" | "z">, point: Vec2) {
   return (Math.atan2(-(point.z - image.z), point.x - image.x) * 180) / Math.PI;

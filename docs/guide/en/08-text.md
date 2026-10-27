@@ -22,6 +22,8 @@ The edges of text can be chamfered or filleted too, straight or curved, see [Bre
 
 ## Your own fonts
 
+The list under {{ui:prop.font}} draws every font in its own letters, with the words of your text, so you see how they will look before you choose. The same goes for the fonts in the window below; the fonts listed from your computer show their names in their own letters. Arrow keys and [[Enter]] work in the list, and a letter jumps to the next font that starts with it.
+
 Besides the eight built-in fonts you can use any font of your own: a font file from your computer or, in Chrome and Edge, a font installed on your computer. Choose {{ui:font.manage}} at the bottom of {{ui:prop.font}}. The {{ui:font.title}} window opens.
 
 - **{{ui:font.addFile}}** takes a TrueType file (`.ttf`), an OpenType file (`.otf`) or a WOFF file (`.woff`). You can also simply drag the file into the window.

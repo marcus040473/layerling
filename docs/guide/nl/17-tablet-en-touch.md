@@ -41,7 +41,7 @@ Verschuiven lichamen doordat kinderen of haastige handen ze aanraken, zet dan in
 - **Als app installeren.** Tik in Safari op het deelpictogram en kies "Zet op beginscherm". De app opent in een eigen venster zonder adresbalk en werkt ook zonder verbinding, zie [Offline en installeren](chapter:offline-en-installeren).
 - **Je ontwerpen staan in de browser.** Er is geen account en er wordt niets geüpload. Safari heeft een eigen regel tegen tracking: het wist wat een website heeft opgeslagen als je haar zeven dagen niet in Safari hebt bezocht. Een web-app op het beginscherm is van die regel uitgezonderd, zoals WebKit het beschrijft. Dat is een reden te meer om de app vanaf het beginscherm te gebruiken en belangrijk werk te back-uppen: {{ui:dashboard.backupAll}} op de startpagina pakt alle ontwerpen in één bestand.
 - **Bestanden.** Safari laat een pagina alleen via een download in een bestand schrijven, dus {{ui:editor.export}} zet het bestand in de Downloads van de Bestanden-app, en [[Ctrl]]+[[S]] op een toetsenbord downloadt het opnieuw; zie [Bestanden en opslaan](chapter:bestanden-en-opslaan).
-- **Geen toetsenbord nodig.** Elk gereedschap heeft een knop in het lint, en een getalveld opent het schermtoetsenbord. Een toetsenbord aan de iPad voegt de [sneltoetsen](chapter:sneltoetsen) toe.
+- **Geen toetsenbord nodig.** Elk gereedschap heeft een knop in het lint, en een getalveld opent het schermtoetsenbord. Een toetsenbord aan de iPad voegt de [sneltoetsen](chapter:sneltoetsen) toe. Een waardevak naast een lichaam opent zijn getalveld pas bij de tweede tik: de eerste markeert het alleen, zodat een vinger die er per ongeluk op landt het toetsenbord niet omhoog haalt.
 
 ## Werkplaatsen met kinderen
 

@@ -71,11 +71,14 @@ Die KI arbeitet mit denselben Funktionen wie du, sie läuft über denselben Weg 
 | `layerling_ungroup_objects` | löst Gruppen auf |
 | `layerling_boolean_cut` | schneidet Körper mit Aussparungen |
 | `layerling_intersect_objects` | behält nur, was die Objekte gemeinsam haben (Schnittmenge) |
+| `layerling_hull_objects` | hüllt die Objekte in einen konvexen Körper, wie in Schrumpffolie (Hülle) |
 | `layerling_separate_parts` | zerlegt eine Form mit losen Teilen, einen Skizzenkörper in einen Körper je Umriss |
 | `layerling_split_objects` | teilt Körper oder Aussparungen mit einer Ebene in zwei |
 | `layerling_list_edges` | listet die echten CAD-Kanten eines Objekts |
 | `layerling_apply_edge_treatment` | fast oder verrundet ausgewählte Kanten |
 | `layerling_hollow_object` | höhlt einen Körper mit gleichmäßiger Wand aus |
+| `layerling_cut_out` | schneidet einen Körper aus einem anderen aus, damit beide passen: das Teil bleibt, eine um das Spiel vergrößerte Kopie wird vom anderen Körper abgezogen |
+| `layerling_offset_object` | versetzt alle Flächen eines Körpers, für das Spiel einer Passung: vergrößert oder verkleinert ihn, oder legt die vergrößerte Kopie als Loch an |
 | `layerling_list_faces` | listet die Flächen eines exakten Körpers |
 | `layerling_delete_faces` | löscht Flächen und schließt die Lücke |
 | `layerling_array_objects` | vervielfältigt in einer Reihe oder auf einem Kreis |
@@ -100,7 +103,8 @@ Die KI arbeitet mit denselben Funktionen wie du, sie läuft über denselben Weg 
 | `layerling_delete_custom_shape` | entfernt eine eigene Form; eingesetzte Körper bleiben |
 | `layerling_show_workplane` | blendet die Platte mit ihrem Gitter aus und wieder ein, etwa für ein Bild der Unterseite (nur die Ansicht) |
 | `layerling_set_section_view` | schneidet die Ansicht entlang einer Ebene auf, um ins Innere zu sehen (nur die Ansicht, nichts wird zerteilt) |
-| `layerling_saved_view` | speichert die aktuelle Ansicht unter der Taste 7, 8, 9 oder 0 und holt sie zurück, wie Umschalt+Taste und die Taste (nur die Ansicht) |
+| `layerling_measurements` | blendet die Messungen des Maßbands ein oder aus und listet sie mit ihren Längen auf |
+| `layerling_saved_view` | speichert die aktuelle Ansicht unter der Taste 7, 8, 9 oder 0 und holt sie zurück, wie Umschalt+Taste und die Taste (nur die Ansicht); setzt auch die Startansicht neuer Entwürfe |
 | `layerling_clear_history` | löscht jeden Rückgängig-Schritt endgültig, wie der Knopf „Verlauf löschen“ im Verlaufsblick; verlangt `confirm: true` |
 | `layerling_set_history_view` | schaut auf einen früheren Stand des Projekts zurück, wie die Verlaufsansicht (der echte Entwurf bleibt unberührt; ändernde Werkzeuge warten, bis sie geschlossen ist) |
 | `layerling_restore_from_history` | holt Objekte (auch Teile in Gruppen) aus einem früheren Stand als Kopien in den Entwurf zurück, wie „In den Entwurf holen“ in der Verlaufsansicht - ein Schritt, den Rückgängig zurücknimmt |
@@ -108,6 +112,11 @@ Die KI arbeitet mit denselben Funktionen wie du, sie läuft über denselben Weg 
 | `layerling_export_drawing` | macht die Werkstattzeichnung des Exports „2D“: drei Ansichten im Maßstab 1:1 auf einem ISO-Blatt mit Gesamtmaßen und einer Tabelle der runden Bohrungen, als SVG-Text oder PDF |
 | `layerling_export_mesh` | schreibt die Datei des Exportfensters als STL, 3MF, OBJ, SVG (Draufsicht, Aufstandsfläche oder sichtbare Kanten) oder DXF für den Laserschnitt, aus denselben Körpern; an einen Pfad auf diesem Rechner oder als Base64 |
 | `layerling_save_project` | speichert den ganzen bearbeitbaren Entwurf als .lyl-Datei an einem Pfad auf dem Rechner, auf dem der MCP-Server läuft, ohne Dialog; eine vorhandene Datei wird nur mit `overwrite` ersetzt, geschrieben wird über eine temporäre Datei, und das Ziel von Strg+S im Editor bleibt, wie es war |
+| `layerling_list_attachments` | listet die an den Entwurf angehängten Dateien (Name, Art, Größe), wie das Fenster Anhänge sie zeigt |
+| `layerling_get_attachment` | liest eine angehängte Datei, ihre Bytes als base64, wie Herunterladen im Fenster |
+| `layerling_add_attachment` | hängt eine als base64 übergebene Datei an, mit den Prüfungen des Fensters; ein schon vorhandener Name wird nur mit `replace` überschrieben |
+| `layerling_rename_attachment` | gibt einer angehängten Datei einen anderen Namen; der Inhalt bleibt |
+| `layerling_remove_attachment` | entfernt eine angehängte Datei endgültig; braucht `confirm: true` |
 | `layerling_set_workplane` | legt die Arbeitsebene auf eine Seite eines Körpers, setzt sie auf die Grundplatte zurück oder blendet sie aus und ein |
 | `layerling_capture_image` | nimmt ein Bild der Ansicht auf, von vorn, oben, seitlich, schräg von einer Ecke und mehr |
 

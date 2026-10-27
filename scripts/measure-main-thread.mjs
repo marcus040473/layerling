@@ -276,6 +276,16 @@ const ACTIONS = [
     run: (made) => mcp("group_objects", { ids: made }),
   },
   {
+    // push_face on a group: its parts joined first, then the top made a body of its own.
+    key: "face-group", label: "Push the top of a group of four overlapping 512-sided cylinders",
+    setup: async () => {
+      const made = [];
+      for (let k = 0; k < 4; k += 1) made.push((await mcp("create_shape", { kind: "cylinder", x: (k % 2) * 10 - 5, z: Math.floor(k / 2) * 10 - 5, width: 30, depth: 30, height: 20, sides: 512 })).object.id);
+      return (await mcp("group_objects", { ids: made })).object.id;
+    },
+    run: (id) => mcp("push_face", { targetId: id, targetFace: "top", separate: true }),
+  },
+  {
     key: "cut-mesh", label: "Cut a cylinder out of an imported 200k-triangle sphere",
     setup: async () => {
       const sphere = await mcp("import_file", { fileName: "sphere.stl", base64: cutStl });

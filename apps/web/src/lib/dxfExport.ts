@@ -35,11 +35,19 @@ export const DXF_FIT_TOLERANCE = 0.01;
  */
 export const DXF_ROUND_SAGITTA = EXACT_ROUND_TOLERANCE;
 
+/**
+ * A side shorter than this, in mm, is no side: its ends are one corner. The outline of a mesh seen from above has
+ * such crumbs where faces meet (a ten-thousandth of a millimetre), and a cutting program can choke on them. The
+ * steps of a QR code's corners (0.0078 mm) are longer and stay.
+ */
+const MIN_SIDE = 1e-3;
 /** A corner closer than this to the line through its neighbours is no corner at all and is dropped. */
 const STRAIGHT_TOLERANCE = 1e-4;
 /** Larger circles than this are taken for straight lines. */
 const MAX_ARC_RADIUS = 100_000;
 const MIN_ARC_RADIUS = 1e-4;
+/** The sharpest turn, in radians, a corner inside a curve may make: a circle drawn with 9 sides or more turns less. */
+const MAX_ARC_TURN = (40 * Math.PI) / 180;
 /** How many longer runs are still tried after a run fails to be an arc. */
 const DXF_ARC_MISSES = 12;
 
@@ -61,9 +69,9 @@ export function cleanDxfLoop(points: readonly DxfPoint[]): Point[] {
   points.forEach(([x, y]) => {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     const point = { x, y };
-    if (loop.length === 0 || distance(loop[loop.length - 1], point) > 1e-9) loop.push(point);
+    if (loop.length === 0 || distance(loop[loop.length - 1], point) > MIN_SIDE) loop.push(point);
   });
-  while (loop.length > 1 && distance(loop[0], loop[loop.length - 1]) <= 1e-9) loop.pop();
+  while (loop.length > 1 && distance(loop[0], loop[loop.length - 1]) <= MIN_SIDE) loop.pop();
   // Drop corners that lie on the line through their neighbours, until none is left.
   let removed = true;
   while (removed && loop.length > 3) {
@@ -185,6 +193,7 @@ function arcRun(points: readonly Point[], from: number, to: number) {
   for (let index = from; index < to; index += 1) {
     const a = at(index);
     const b = at(index + 1);
+    if (index > from && sharpTurn(points, index)) return null;
     if (index > from && Math.abs(distance(a, circle.center) - circle.radius) > DXF_FIT_TOLERANCE) return null;
     if (sagitta(distance(a, b), circle.radius) > DXF_ROUND_SAGITTA) return null;
   }
@@ -204,6 +213,23 @@ function degrees(radians: number) {
 }
 
 /**
+ * Whether the outline turns sharply at a corner. Such a corner is a corner however short its sides: a few
+ * hundredths of a millimetre of zigzag (where a QR code's modules meet, or a stencil bridge crosses an edge) lie
+ * on some tiny circle too, and an arc bent through them bulges across the outline beside it.
+ */
+function sharpTurn(points: readonly Point[], index: number) {
+  const count = points.length;
+  const previous = points[(index - 1 + count) % count];
+  const point = points[index % count];
+  const next = points[(index + 1) % count];
+  const turn = Math.abs(Math.atan2(
+    (point.x - previous.x) * (next.y - point.y) - (point.y - previous.y) * (next.x - point.x),
+    (point.x - previous.x) * (next.x - point.x) + (point.y - previous.y) * (next.y - point.y),
+  ));
+  return turn > MAX_ARC_TURN;
+}
+
+/**
  * Whether a corner can sit inside a curve: the circle through it and its neighbours exists, and both sides
  * next to it are short enough on that circle. A corner where this fails (a box corner, the tip of a star)
  * is where a run starts, so no arc is ever bent across it.
@@ -215,6 +241,7 @@ function smoothCorner(points: readonly Point[], index: number) {
   const next = points[(index + 1) % count];
   const circle = circleThrough(previous, point, next);
   if (!circle || !isRoundCircle(circle.radius)) return false;
+  if (sharpTurn(points, index)) return false;
   return sagitta(distance(previous, point), circle.radius) <= DXF_ROUND_SAGITTA && sagitta(distance(point, next), circle.radius) <= DXF_ROUND_SAGITTA;
 }
 

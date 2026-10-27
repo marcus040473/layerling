@@ -71,11 +71,14 @@ AI 使用的是與你相同的功能，走的也是你在編輯器中操作時�
 | `layerling_ungroup_objects` | 取消群組 |
 | `layerling_boolean_cut` | 用孔切割實體 |
 | `layerling_intersect_objects` | 只保留物件共同的部分（交集） |
+| `layerling_hull_objects` | 把物件包成一個凸體，就像用收縮膜包住一樣（凸包） |
 | `layerling_separate_parts` | 把形狀分離成各自的鬆散部件；草圖實體則依輪廓拆成每個輪廓一個實體 |
 | `layerling_split_objects` | 用平面把實體或孔切成兩半 |
 | `layerling_list_edges` | 列出一個物件真實的 CAD 邊 |
 | `layerling_apply_edge_treatment` | 對選定的邊倒角或圓角 |
 | `layerling_hollow_object` | 以均勻壁厚抽殼實體 |
+| `layerling_cut_out` | 從一個實體中挖出另一個實體使兩者配合：零件保留，依間隙放大的副本從另一個實體中減去 |
+| `layerling_offset_object` | 移動實體的所有面以得到配合間隙：放大或縮小實體，或把放大的副本作為孔加入 |
 | `layerling_list_faces` | 列出精確實體的面 |
 | `layerling_delete_faces` | 刪除面並補平缺口 |
 | `layerling_array_objects` | 以直線排列或環繞圓周複製 |
@@ -100,7 +103,8 @@ AI 使用的是與你相同的功能，走的也是你在編輯器中操作時�
 | `layerling_delete_custom_shape` | 移除自訂形狀；已插入的實體會保留 |
 | `layerling_show_workplane` | 隱藏或顯示帶格線的平台，例如為了拍攝底面（只影響檢視） |
 | `layerling_set_section_view` | 沿平面剖開檢視以查看內部（只影響檢視，不會真的切開任何東西） |
-| `layerling_saved_view` | 把目前檢視儲存到按鍵 7、8、9 或 0，之後可回到該檢視，就像 Shift+按鍵與單按該鍵（只影響檢視） |
+| `layerling_measurements` | 顯示或隱藏捲尺的量測，並列出它們及其長度 |
+| `layerling_saved_view` | 把目前檢視儲存到按鍵 7、8、9 或 0，之後可回到該檢視，就像 Shift+按鍵與單按該鍵（只影響檢視）；也可設定新設計的起始視圖 |
 | `layerling_clear_history` | 永久刪除所有復原步驟，就像歷史記錄檢視的「刪除歷史記錄」按鈕；需要 `confirm: true` |
 | `layerling_set_history_view` | 回看專案較早的狀態，就像歷史記錄檢視（實際設計不受影響；會修改設計的工具會等到它關閉） |
 | `layerling_restore_from_history` | 把物件（也包括群組內的部件）從較早的狀態以副本帶回設計，就像歷史記錄檢視的「帶入設計」——復原時一步就能撤回 |
@@ -108,6 +112,11 @@ AI 使用的是與你相同的功能，走的也是你在編輯器中操作時�
 | `layerling_export_drawing` | 製作「2D」匯出的工程圖：在 ISO 圖紙上以 1:1 繪出三個視圖，標註整體尺寸並附圓孔表格，可輸出 SVG 文字或 PDF |
 | `layerling_export_mesh` | 寫出匯出視窗的檔案，可為 STL、3MF、OBJ、SVG（俯視、底面輪廓或可見邊）或用於雷射切割的 DXF，所用實體相同；可寫到這台電腦上的路徑，或以 base64 回傳 |
 | `layerling_save_project` | 把整個可編輯設計儲存成 .lyl 檔，寫到執行 MCP 伺服器的那台電腦上的路徑，不會跳出對話方塊；既有檔案只有在指定 `overwrite` 時才會被取代，寫入時會先經過暫存檔，而編輯器中 Ctrl+S 的目標維持不變 |
+| `layerling_list_attachments` | 列出附加到設計的檔案（名稱、類型、大小），與「Attachments」面板顯示的一致 |
+| `layerling_get_attachment` | 讀取一個附件，以 base64 傳回其位元組，與面板中的「Download」相同 |
+| `layerling_add_attachment` | 附加一個以 base64 提供的檔案，並經過面板的檢查；已附加的同名檔案只有在 `replace` 時才會被覆寫 |
+| `layerling_rename_attachment` | 為附件改名；內容不變 |
+| `layerling_remove_attachment` | 永久移除一個附件；需要 `confirm: true` |
 | `layerling_set_workplane` | 把工作平面放到實體的某個面，或放回底板，並可隱藏或顯示 |
 | `layerling_capture_image` | 擷取檢視畫面：前視、上視、側視、從角落斜看等 |
 

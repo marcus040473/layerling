@@ -81,6 +81,18 @@ Verander je later de maat van een uitgehold lichaam, dan holt layerling het mete
 
 > **Tip:** Met een spuitmond van 0,4 mm is 1,2 tot 2 mm wand een goed begin: dun genoeg om materiaal te besparen, dik genoeg voor een stevig onderdeel.
 
+## Lichamen verschuiven
+
+Elk vlak van een lichaam kan over dezelfde afstand naar buiten of naar binnen worden verschoven. Dat is wat een pasvorm, een deksel of een klikverbinding nodig heeft: een spleet van 0,1 tot 0,3 mm rondom terwijl de onderdelen op hun plaats blijven, wat schalen niet kan.
+
+1. Selecteer één lichaam en klik op {{ui:editor.tool.offset}}, of klik met de rechtermuisknop op het lichaam en kies het daar.
+2. Kies {{ui:offset.grow}} of {{ui:offset.shrink}} en stel de {{ui:offset.distance}} in.
+3. De {{ui:offset.edges}} bepalen de buitenhoeken: afgerond houdt het verschoven oppervlak daar rond, scherp laat de vlakken doorlopen tot ze elkaar raken.
+4. Vink {{ui:offset.copy}} aan om het onderdeel te houden en het vergrote lichaam als kopie te krijgen die al een gat is. Groepeer dat gat met het tegenstuk en het snijdt precies de speling die je koos.
+5. Klik op {{ui:offset.apply}}.
+
+Zonder vinkje wordt het lichaam zelf verschoven. Het wordt een vast exact lichaam, zoals na een afschuining: de lijst bovenin het paneel neemt de offset terug en {{ui:edge.editAction}} opent het gereedschap opnieuw met de oude afstand. Alleen exacte CAD-lichamen kunnen worden verschoven - blokken, cilinders en de andere vormen, groepen daarvan, geïmporteerde STEP-onderdelen. Een lichaam dat alleen een driehoeksnet is, zoals veel STL-imports, lukt vaak niet. Een afstand die te groot is voor het lichaam, bijvoorbeeld verkleinen voorbij de dunste wand, wordt geweigerd.
+
 ## Vlakken verwijderen
 
 Een afronding die in de weg zit, een gat op de verkeerde plek, een nok die je niet meer nodig hebt: {{ui:editor.tool.deleteFace}} haalt ze weer van het lichaam af, zonder dat je het opnieuw hoeft op te bouwen.

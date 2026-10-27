@@ -1,5 +1,6 @@
 "use client";
 
+import { FontPreviewLine } from "@/components/workplane/FontPicker";
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import type { ManifoldToplevel } from "manifold-3d";
 import { FilePlus2, LoaderCircle, Monitor, Trash2, Type, X } from "lucide-react";
@@ -54,6 +55,8 @@ export function FontManagerPanel({
   const [error, setError] = useState<string | null>(null);
   const [systemFonts, setSystemFonts] = useState<SystemFont[] | null>(null);
   const [query, setQuery] = useState("");
+  // The list grows as it is scrolled to its end, so the fonts after the first 150 can be reached without searching.
+  const [shown, setShown] = useState(SYSTEM_FONTS_SHOWN);
   const systemSupported = systemFontsSupported();
   const systemNeedsHttps = systemFontsNeedHttps();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -176,22 +179,31 @@ export function FontManagerPanel({
               value={query}
               placeholder={t("font.systemSearch")}
               aria-label={t("font.systemSearch")}
-              onChange={(event) => setQuery(event.currentTarget.value)}
+              onChange={(event) => {
+                setQuery(event.currentTarget.value);
+                setShown(SYSTEM_FONTS_SHOWN);
+              }}
             />
-            <ul>
-              {matches.slice(0, SYSTEM_FONTS_SHOWN).map((font) => (
+            <ul
+              onScroll={(event) => {
+                const list = event.currentTarget;
+                if (list.scrollHeight - list.scrollTop - list.clientHeight < 80) setShown((count) => Math.min(matches.length, count + SYSTEM_FONTS_SHOWN));
+              }}
+            >
+              {matches.slice(0, shown).map((font) => (
                 <li key={font.fullName}>
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() => void add(async () => ({ bytes: await (await font.blob()).arrayBuffer(), name: font.fullName }))}
                   >
-                    {font.fullName}
+                    {/* Installed on this computer, so the browser can draw its name in it. */}
+                    <span style={{ fontFamily: `"${Array.from(font.fullName).filter((character) => character !== '"' && character !== String.fromCharCode(92)).join("")}", var(--font-ui)` }}>{font.fullName}</span>
                   </button>
                 </li>
               ))}
             </ul>
-            {matches.length > SYSTEM_FONTS_SHOWN ? <small className="font-manager-note">{t("font.systemMore", { count: matches.length - SYSTEM_FONTS_SHOWN })}</small> : null}
+            {matches.length > shown ? <small className="font-manager-note">{t("font.systemMore", { count: matches.length - shown })}</small> : null}
           </div>
         ) : null}
 
@@ -202,6 +214,7 @@ export function FontManagerPanel({
               <Type size={16} />
               <div>
                 <strong>{font.name}</strong>
+                <FontPreviewLine fontId={font.id} text={font.name} height={26} />
                 <small>{storedIds.has(font.id) ? t("font.stored") : t("font.fromDesign")}</small>
               </div>
               {canApply ? (

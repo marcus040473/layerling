@@ -8,7 +8,7 @@ import {
   type HolePatternSettings,
 } from "@/lib/holePattern";
 import { placementPatchForNewShape, type PlacementWorkplane } from "@/lib/placementWorkplane";
-import { planarFaceTriangles } from "@/lib/rotationPivot";
+import { nearestFaceTriangle, planarFaceTriangles } from "@/lib/rotationPivot";
 import { makeShapeFromAsset, toolbarShapeAssets } from "@/lib/shapeCatalog";
 import { canonicalizeShape, withHoleMode } from "@/lib/workplaneShapes";
 import type { ShapeKind, WorkplaneShape } from "@/types/layerling";
@@ -43,33 +43,7 @@ export function readPerforableFace(positions: ArrayLike<number>, point: Vec, nor
   n.normalize();
 
   const p = new THREE.Vector3(point.x, point.y, point.z);
-  const a = new THREE.Vector3();
-  const b = new THREE.Vector3();
-  const c = new THREE.Vector3();
-  const triangle = new THREE.Triangle();
-  const closest = new THREE.Vector3();
-  const edgeAB = new THREE.Vector3();
-  const edgeAC = new THREE.Vector3();
-  let hit = -1;
-  let hitDistance = Infinity;
-  for (let index = 0; index < triangleCount; index += 1) {
-    const o = index * 9;
-    a.set(positions[o], positions[o + 1], positions[o + 2]);
-    b.set(positions[o + 3], positions[o + 4], positions[o + 5]);
-    c.set(positions[o + 6], positions[o + 7], positions[o + 8]);
-    edgeAB.subVectors(b, a);
-    edgeAC.subVectors(c, a);
-    const triangleNormal = edgeAB.clone().cross(edgeAC);
-    if (triangleNormal.lengthSq() < 1e-18) continue;
-    // The pick's normal and the winding of the mesh may disagree in sign; the plane is what counts.
-    if (Math.abs(triangleNormal.normalize().dot(n)) < 0.999) continue;
-    triangle.set(a, b, c);
-    const distance = triangle.closestPointToPoint(p, closest).distanceTo(p);
-    if (distance < hitDistance) {
-      hitDistance = distance;
-      hit = index;
-    }
-  }
+  const hit = nearestFaceTriangle(positions, point, n);
   if (hit < 0) return { ok: false, reason: "noFace" };
 
   const face = planarFaceTriangles(positions, hit);

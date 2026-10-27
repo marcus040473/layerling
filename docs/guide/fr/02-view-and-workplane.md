@@ -14,6 +14,7 @@ Avec la souris :
 | faites glisser avec le bouton du milieu | déplacer la vue |
 | molette de la souris | zoomer et dézoomer |
 | maintenez [[Ctrl]] / [[Cmd]] et faites glisser avec le bouton gauche | déplace également la vue |
+| double-clic sur un endroit vide du plan de travail ou à côté de la plaque | déplace la vue pour amener cet endroit au milieu ; la vue tourne ensuite autour de lui |
 
 La vitesse de zoom de la molette se règle avec {{ui:workspace.zoomSpeed}} dans les paramètres, sous {{ui:workspace.appearance}} : un curseur de 1 à 14, réglé sur 5 au départ ; au-dessus de 10, seule la molette devient plus rapide.
 
@@ -78,7 +79,7 @@ Cliquez plutôt sur la plaque vide et le plan de travail repose à plat à l'end
 
 Sur une face, l'origine du plan de travail s'accroche autrement à la grille. Cliquez près d’un coin du visage et il se place exactement sur ce coin. Près d'un bord, il repose sur le bord et la grille s'aligne avec lui ; c’est ainsi que l’on choisit volontairement l’angle de la grille. Sans coin ni bord, la grille sur une face couchée est parallèle au corps, donc sur une boîte tournée, elle est tournée avec lui.
 
-Un clic à côté de la plaque ou [[Esc]] ramène le plan de travail à la plaque de base. {{ui:camera.resetWorkplane}} est encore plus rapide : le bouton avec la flèche vers le bas se trouve dans la barre de la caméra sous l'œil tandis que le plan de travail se trouve sur un visage. [[Shift]]+[[W]] le place directement sur la face actuellement sélectionnée. Si vous maintenez [[Shift]] tout en cliquant, le plan pointe dans l'autre sens.
+Un clic à côté de la plaque ou [[Esc]] ramène le plan de travail à la plaque de base. {{ui:camera.resetWorkplane}} est encore plus rapide : le bouton avec la flèche vers le bas se trouve dans la barre de la caméra sous l'œil tandis que le plan de travail se trouve sur un visage. [[Shift]]+[[W]] le place directement sur la face actuellement sélectionnée. [[Alt]]+[[W]] le ramène sur la plaque de base à tout moment, qu'il y ait une sélection ou non. Si vous maintenez [[Shift]] tout en cliquant, le plan pointe dans l'autre sens.
 
 Lorsqu'un plan de travail repose sur une face, un œil apparaît à côté de {{ui:camera.placeWorkplane}}. Il masque le plan de travail sans le faire tomber, pour une vision claire du design : de nouvelles formes se posent toujours sur cette face, et la rotation tourne toujours autour d'elle. Un clic sur l'œil le montre à nouveau, tout comme la définition d'un nouveau plan de travail.
 

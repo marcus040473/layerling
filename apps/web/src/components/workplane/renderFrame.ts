@@ -251,7 +251,27 @@ function drawCutPreviews(state: FrameState) {
   }
 }
 
+const plateNormal = new THREE.Vector3();
+const plateCenter = new THREE.Vector3();
+const plateToCamera = new THREE.Vector3();
+
+/**
+ * The plate is see-through and drawn before the see-through bodies, so a body above it is not laid over by
+ * it (viewportScene.ts). Seen from below the plate is in front of them instead, and drawn first it hid them
+ * completely (#894). From its back side the plate is drawn after them, so they show through it, faded.
+ */
+function orderPlatesForView(scene: THREE.Scene, camera: THREE.Camera) {
+  scene.traverse((object) => {
+    if (object.name !== "WorkplaneBase" && object.name !== "WorkplaneBaseReference") return;
+    plateNormal.set(0, 0, 1).transformDirection(object.matrixWorld);
+    object.getWorldPosition(plateCenter);
+    const behind = plateToCamera.copy(camera.position).sub(plateCenter).dot(plateNormal) < 0;
+    object.renderOrder = behind ? 10 : -10;
+  });
+}
+
 export function renderFrame(state: FrameState) {
+  orderPlatesForView(state.scene, state.camera);
   state.renderer.render(state.scene, state.camera);
   drawCutPreviews(state);
 }

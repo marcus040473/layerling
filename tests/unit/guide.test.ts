@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   loadMessages,
   loadValues,
@@ -17,6 +17,9 @@ import {
 } from "../../scripts/build-guide.mjs";
 import { tools } from "../../scripts/layerling-mcp-tools.mjs";
 import { GUIDE_CHAPTERS, GUIDE_SECTIONS, guideChapterForShape, guideHref, guideSectionForShape } from "@/lib/guideLinks";
+
+// These read every language's chapters; under a full parallel run that can take more than the 5 s default.
+vi.setConfig({ testTimeout: 30_000 });
 
 const root = join(__dirname, "..", "..");
 const LANGUAGES = ["de", "en", "nl", "ru", "cs"] as const;

@@ -71,11 +71,14 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_ungroup_objects` | rozwiązuje grupy |
 | `layerling_boolean_cut` | wycina otworami materiał z brył |
 | `layerling_intersect_objects` | zostawia tylko to, co obiekty mają wspólnego (część wspólna) |
+| `layerling_hull_objects` | owija obiekty jedną wypukłą bryłą, jak folią termokurczliwą (otoczka) |
 | `layerling_separate_parts` | rozdziela kształt na jego luźne części, bryłę ze szkicu na jedną bryłę na kontur |
 | `layerling_split_objects` | przecina bryły albo otwory na dwie części płaszczyzną |
 | `layerling_list_edges` | wypisuje prawdziwe krawędzie CAD obiektu |
 | `layerling_apply_edge_treatment` | fazuje albo zaokrągla wybrane krawędzie |
 | `layerling_hollow_object` | drąży bryłę z równą ścianką |
+| `layerling_cut_out` | wycina jedną bryłę z drugiej, aby do siebie pasowały: część zostaje, kopia powiększona o luz jest odejmowana od drugiej bryły |
+| `layerling_offset_object` | odsuwa wszystkie ściany bryły na luz pasowania: powiększa lub zmniejsza ją albo dodaje powiększoną kopię jako otwór |
 | `layerling_list_faces` | wypisuje ściany dokładnej bryły |
 | `layerling_delete_faces` | usuwa ściany i zamyka lukę |
 | `layerling_array_objects` | powiela w rzędzie albo na okręgu |
@@ -100,7 +103,8 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_delete_custom_shape` | usuwa własny kształt. Wstawione bryły zostają |
 | `layerling_show_workplane` | ukrywa i pokazuje płytę z siatką, na przykład do zdjęcia spodu (tylko widok) |
 | `layerling_set_section_view` | rozcina widok wzdłuż płaszczyzny, żeby zajrzeć do środka (tylko widok, nic nie jest cięte) |
-| `layerling_saved_view` | zapisuje bieżący widok pod klawiszem 7, 8, 9 lub 0 i do niego wraca, jak Shift+klawisz i sam klawisz (tylko widok) |
+| `layerling_measurements` | pokazuje lub ukrywa pomiary narzędzia Zmierz i wypisuje je z ich długościami |
+| `layerling_saved_view` | zapisuje bieżący widok pod klawiszem 7, 8, 9 lub 0 i do niego wraca, jak Shift+klawisz i sam klawisz (tylko widok); ustawia też widok startowy nowych projektów |
 | `layerling_clear_history` | usuwa na dobre wszystkie kroki cofania, tak jak przycisk „Usuń historię” w widoku historii. Wymaga `confirm: true` |
 | `layerling_set_history_view` | pokazuje wcześniejszy stan projektu, jak widok historii (prawdziwy projekt zostaje nietknięty, a narzędzia zmieniające czekają, aż widok zostanie zamknięty) |
 | `layerling_restore_from_history` | przywraca obiekty (także części wewnątrz grup) z wcześniejszego stanu do projektu jako kopie, jak przycisk Przywróć do projektu w widoku historii. To jeden krok, który cofanie wycofuje |
@@ -108,6 +112,11 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_export_drawing` | tworzy rysunek warsztatowy eksportu „2D”: trzy widoki w skali 1:1 na arkuszu ISO z wymiarami gabarytowymi i tabelą okrągłych otworów, jako tekst SVG albo PDF |
 | `layerling_export_mesh` | zapisuje plik okna eksportu jako STL, 3MF, OBJ, SVG (widok z góry, ślad albo widoczne krawędzie) albo DXF do cięcia laserem, z tych samych brył, do ścieżki na tym komputerze albo jako base64 |
 | `layerling_save_project` | zapisuje cały edytowalny projekt jako plik .lyl pod ścieżką na komputerze, na którym działa serwer MCP, bez okna dialogowego; istniejący plik jest zastępowany tylko z `overwrite`, zapis idzie przez plik tymczasowy, a cel Ctrl+S w edytorze pozostaje bez zmian |
+| `layerling_list_attachments` | wypisuje pliki dołączone do projektu (nazwa, typ, rozmiar), tak jak pokazuje je panel Attachments |
+| `layerling_get_attachment` | odczytuje jeden załącznik, jego bajty jako base64, jak Download w panelu |
+| `layerling_add_attachment` | dołącza plik podany jako base64, z kontrolami panelu; nazwa już dołączona jest nadpisywana tylko z `replace` |
+| `layerling_rename_attachment` | nadaje załącznikowi inną nazwę; zawartość zostaje |
+| `layerling_remove_attachment` | usuwa załącznik na zawsze; wymaga `confirm: true` |
 | `layerling_set_workplane` | kładzie płaszczyznę roboczą na boku bryły albo z powrotem na płycie bazowej oraz ją ukrywa lub pokazuje |
 | `layerling_capture_image` | robi zdjęcie widoku: z przodu, z góry, z boku, ukośnie od narożnika i inne |
 

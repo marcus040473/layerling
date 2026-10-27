@@ -1,11 +1,14 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { GUIDE_SECTIONS, guideHref, type GuideSection } from "@/lib/guideLinks";
 // @ts-expect-error the guide build is a plain .mjs module
 import { effectiveChapters, headingIds, loadMessages, loadValues, readChapters, renderBlocks } from "../../scripts/build-guide.mjs";
 // @ts-expect-error the tool list is a plain .mjs module
 import { tools } from "../../scripts/layerling-mcp-tools.mjs";
+
+// These read every language's chapters; under a full parallel run that can take more than the 5 s default.
+vi.setConfig({ testTimeout: 30_000 });
 
 /*
  * guide.test.ts holds the five languages that translate every chapter to the same plan. These
@@ -22,8 +25,8 @@ type Chapter = { file: string; number: string; slug: string; body: string };
 const AI_CHAPTER_NUMBER = "14";
 
 describe("the guide in every language", () => {
-  it("covers the sixteen guide languages", () => {
-    expect(LANGUAGES.sort()).toEqual(["ar", "cs", "da", "de", "en", "es", "fr", "hu", "it", "nl", "pl", "pt-br", "ru", "sl", "zh-cn", "zh-tw"]);
+  it("covers the seventeen guide languages", () => {
+    expect(LANGUAGES.sort()).toEqual(["ar", "cs", "da", "de", "en", "es", "fr", "hu", "it", "nl", "pl", "pt-br", "pt-pt", "ru", "sl", "zh-cn", "zh-tw"]);
   });
 
   it("writes headings with a plain space, so they render as headings", async () => {

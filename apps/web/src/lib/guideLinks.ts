@@ -61,6 +61,8 @@ export const GUIDE_SECTIONS = {
   splitting: { chapter: "solids", de: "teilen", en: "splitting", nl: "splitsen", "pt-br": "dividindo", ru: "razdelenie", cs: "rozdeleni", sl: "rezanje", hu: "kettevagas", es: "dividir" },
   edgeTreatment: { chapter: "edges", de: "kanten-fasen-und-verrunden", en: "chamfering-and-filleting-edges", nl: "randen-afschuinen-en-afronden", ru: "faska-i-skruglenie-kromok", cs: "zkoseni-a-zaobleni-hran", sl: "posnetje-in-zaokrozitev-robov", hu: "elek-letoerese-es-lekerekitese", es: "achaflanar-y-redondear-aristas" },
   hollowing: { chapter: "edges", de: "koerper-aushoehlen", en: "hollowing-bodies", nl: "lichamen-uithollen", ru: "sozdanie-obolochki", cs: "vytvareni-dutin", sl: "izdolbljenje-teles", hu: "testek-kiueregelese", es: "vaciar-cuerpos" },
+  cutOut: { chapter: "solids", de: "koerper-ausschneiden", en: "cutting-one-body-out-of-another", nl: "het-ene-lichaam-uit-het-andere-snijden", "pt-br": "recortando-um-corpo-de-outro", ru: "vyrezanie-odnogo-tela-iz-drugogo", cs: "vyriznuti-jednoho-telesa-z-druheho", sl: "izrezovanje-enega-telesa-iz-drugega", hu: "egy-test-kivagasa-egy-masikbol", es: "recortar-un-cuerpo-de-otro", fr: "decouper-un-corps-dans-un-autre" },
+  offset: { chapter: "edges", de: "koerper-versetzen", en: "offsetting-bodies", nl: "lichamen-verschuiven", fr: "decaler-des-corps", ru: "smeshchenie-tela", cs: "odsazeni-teles", sl: "odmik-teles", es: "desfasar-cuerpos" },
   deleteFace: { chapter: "edges", de: "flaechen-loeschen", en: "deleting-faces", nl: "vlakken-verwijderen", fr: "supprimer-des-faces", ru: "udalenie-graney", cs: "mazani-ploch", sl: "brisanje-ploskev", es: "eliminar-caras" },
   threads: { chapter: "threads", de: "gewinde", en: "threads", nl: "schroefdraad", ru: "rezba", cs: "zavity", sl: "navoj", hu: "menetek", es: "roscas" },
   gears: { chapter: "threads", de: "zahnraeder", en: "gears", nl: "tandwielen", ru: "shesterni", cs: "ozubena-kola", sl: "zobniki", hu: "fogaskerekek", es: "engranajes" },
@@ -102,7 +104,7 @@ export const GUIDE_SECTIONS = {
   sketchCurve: { chapter: "sketches", de: "eine-gerade-seite-kruemmen", en: "curving-a-straight-side", nl: "een-rechte-zijde-buigen", ru: "izgib-pryamoy-storony", cs: "prohnuti-prime-strany", sl: "ukrivljanje-ravne-stranice", hu: "egyenes-oldal-goerbitese", es: "curvar-un-lado-recto" },
   commandSearch: { chapter: "shortcuts", de: "befehlssuche", en: "command-search", nl: "opdrachten-zoeken", "pt-br": "pesquisa-de-comandos", ru: "poisk-komand", cs: "vyhledavani-prikazu", sl: "iskanje-ukazov", hu: "parancskereso", es: "busqueda-de-comandos" },
   interactiveHelp: { chapter: "shortcuts", de: "interaktive-hilfe", en: "interactive-help", nl: "interactieve-hulp", "pt-br": "ajuda-interativa", fr: "aide-interactive", ru: "interaktivnaya-spravka", cs: "interaktivni-napoveda", sl: "interaktivna-pomoc", es: "ayuda-interactiva" },
-  whatsNew: { chapter: "start", de: "neu-seit-deinem-letzten-besuch", en: "new-since-your-last-visit", nl: "nieuw-sinds-je-laatste-bezoek", "pt-br": "novidades-desde-a-sua-ultima-visita", ru: "novoe-s-vashego-poslednego-vizita", cs: "novinky-od-posledni-navstevy", sl: "novo-od-tvojega-zadnjega-obiska", hu: "ujdonsagok-a-legutobbi-latogatasod-ota", es: "novedades-desde-tu-ultima-visita" },
+  whatsNew: { chapter: "start", "pt-pt": "novidades-desde-a-tua-ultima-visita", de: "neu-seit-deinem-letzten-besuch", en: "new-since-your-last-visit", nl: "nieuw-sinds-je-laatste-bezoek", "pt-br": "novidades-desde-a-sua-ultima-visita", ru: "novoe-s-vashego-poslednego-vizita", cs: "novinky-od-posledni-navstevy", sl: "novo-od-tvojega-zadnjega-obiska", hu: "ujdonsagok-a-legutobbi-latogatasod-ota", es: "novedades-desde-tu-ultima-visita" },
 } as const satisfies Record<string, { chapter: GuideChapter; en: string } & Partial<Record<Language, string>>>;
 
 export type GuideSection = keyof typeof GUIDE_SECTIONS;
@@ -148,7 +150,7 @@ export function guideSectionForShape(shape: GuideShape): GuideSection | undefine
   if (shape.imagePlate) return "referenceImage";
   if (shape.groupedShapes?.length) {
     if (shape.groupOperation === "bundle") return "bundling";
-    if (shape.groupOperation === "intersection") return "intersection";
+    if (shape.groupOperation === "intersection" || shape.groupOperation === "hull") return "intersection";
     return "grouping";
   }
   // A body made from a sketch, or a file brought in, is explained where it was made.

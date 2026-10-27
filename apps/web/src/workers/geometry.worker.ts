@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 import { buildMessage } from "@/lib/buildStamp";
-import { buildGroupedShapeFromSelection, exportSolidVolume, splitShapeIfCrossed } from "@/lib/editorBooleans";
+import { buildGroupedShapeFromSelection, exportSolidVolume, faceReadPositions, splitShapeIfCrossed } from "@/lib/editorBooleans";
 import { getManifoldRuntime, setManifoldAssetBase } from "@/lib/editorMeshCore";
 import { packValue, packedTransfer, unpackValue } from "@/lib/geometryTransfer";
 import { resultMeshes, type GeometryWorkerRequest, type GeometryWorkerResponse } from "@/lib/geometryWorkerTypes";
@@ -51,6 +51,9 @@ self.onmessage = async (event: MessageEvent<GeometryWorkerRequest>) => {
     } else if (request.task === "simplify") {
       const { positions, target } = args as { positions: number[]; target: number };
       result = await simplifyTrianglePositions(positions, target);
+    } else if (request.task === "face") {
+      const { shape } = args as { shape: WorkplaneShape };
+      result = await faceReadPositions(shape);
     } else if (request.task === "warm") {
       await getManifoldRuntime();
       result = null;

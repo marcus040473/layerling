@@ -413,7 +413,8 @@ export type TransformOverlayProps = {
   onCommitCornerEdit: (aroundCenter?: boolean) => void;
   onCancelCornerEdit: () => void;
   onEditingDimensionChange: (value: string) => void;
-  onCommitDimensionEdit: (aroundCenter?: boolean) => void;
+  /** `aroundCenter` with Alt+Enter (#327), `proportional` with Shift+Enter (#899). */
+  onCommitDimensionEdit: (aroundCenter?: boolean, proportional?: boolean) => void;
   /** Tab in a dimension box: keep the value and open the next one (Shift: the one before) (#300). */
   onTabDimensionEdit: (backwards: boolean) => void;
   onCancelDimensionEdit: () => void;

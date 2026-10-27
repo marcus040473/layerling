@@ -36,13 +36,13 @@ Kotno ravnilo se položi na delovno ravnino. Če leži na strani telesa, torej l
 - **×** ob njem ga odstrani.
 - **Majhen gumb levo od ročaja** preklopi, od kod se meri: od zunanjega roba telesa (oglišče, simbol s črtami) ali od njegove sredine (središče, nitni križ). Majhno stikalo iste vrste je ob vsaki zeleni številki in nastavi samo to številko: pri stoječem valju sredino v obeh krakih in dno po višini, pri ležečem sredino počez in konec po dolžini. Ko se vse tri spet ujemajo, gumb pri ročaju pokaže skupni način.
 
-Če ob enem od krakov stojijo telesa, kotno ravnilo samodejno pokaže njihove mere. To gre samo na osnovni plošči, ne na strani telesa.
+Če ob enem od krakov stojijo telesa, kotno ravnilo samodejno pokaže njihove mere. To gre samo na osnovni plošči, ne na strani telesa. Gumb s puščico pod ročico kotnega ravnila to izklopi, tako da mere kažejo samo izbrana telesa; shrani se z načrtom.
 
 Če označiš telo, kotno ravnilo zeleno pokaže, kako daleč je od vogala, vzdolž obeh krakov in v višino. Klik na zeleno številko odpre vnosno polje: vpiši želeno razdaljo in telo se premakne natanko tja. Če je označenih več teles, štejejo skupaj kot eno. Meri se njihov skupni obris in vpisana vrednost premakne vse skupaj, ne da bi se njihova lega drugo glede na drugo spremenila.
 
 S središčem zelene številke štejejo do sredine telesa, tudi v višini. Tako na primer postaviš kroglo s sredino natanko 15 mm ob rob, ne da bi odštel polmer. Na steni tako postaviš luknjo 40 mm z leve in 190 mm od zgoraj: označi luknjo, vklopi središče, vpiši 40 in 190. Višina tam šteje od stene navzven.
 
-Merilni trak in kotno ravnilo ostaneta tam, kjer sta, ko skiciraš in se vrneš v 3D pogled. Z načrtom nista shranjena in ju ni v zgodovini; izgineta, ko stran naložiš znova.
+Merilni trak in kotno ravnilo ostaneta tam, kjer sta, ko skiciraš in se vrneš v 3D pogled. Nobenega ni v zgodovini. Kotno ravnilo se shrani z načrtom, prav tako meritve merilnega traku, v brskalniku in v datoteki .lyl: ko načrt odpreš, so spet tam. Gumb z očesom med gumbi merilnega traku skrije vse meritve in jih spet pokaže; shrani se tudi, ali so skrite, in kdor meritev doda, premakne ali izbriše, jih najprej spet vidi.
 
 ## Razdalje do ničle in pri premikanju
 
@@ -70,7 +70,7 @@ Opombe se shranijo v načrtu, ne pojavijo se v nobenem izvozu in jih lahko prika
 
 ## Referenčne točke
 
-Referenčna točka je zgolj oznaka v prostoru, kot svinčnikova črta ali točka za zarisovanje v delavnici: ne spada k nobenemu telesu, nikoli se ne natisne in druge stvari se nanjo zaskočijo. Z desnim gumbom klikni na telo in izberi {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} ali {{ui:contextMenu.markMidpoints}}: točke se pokažejo na zgornji strani telesa (celotnega izbora, če si jih izbral več).
+Referenčna točka je zgolj oznaka v prostoru, kot svinčnikova črta ali točka za zarisovanje v delavnici: ne spada k nobenemu telesu, nikoli se ne natisne in druge stvari se nanjo zaskočijo. Z desnim gumbom klikni na telo in izberi {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} ali {{ui:contextMenu.markMidpoints}}: točke se pokažejo na zgornji strani telesa (celotnega izbora, če si jih izbral več). {{ui:contextMenu.markFaceCenter}} namesto tega postavi točko na sredino ravne ploskve, na katero si kliknil z desno tipko, na primer na stranski ali čelni.
 
 - Povleci točko, da jo premakneš, ali jo klikni, da vidiš njene koordinate in vpišeš nove; veljajo v nastavljeni enoti. Vsako kartico lahko za naslov povlečeš stran, če kaj zakriva, samo zase: druge ostanejo, kjer so, dvoklik na naslov pa jo vrne nazaj. Kartica, katere si se nazadnje dotaknil, stoji pred drugimi. **Izbriši vse** v kartici ali v meniju z desnim klikom izbriše vse točke naenkrat. {{ui:common.delete}} jo odstrani.
 - Ko vlečeš obliko, se njeni robovi in sredina zaskočijo na točko, kot se zaskočijo na druge oblike ({{ui:workspace.objectSnap}}). Tudi kotno ravnilo se zaskoči na točke.

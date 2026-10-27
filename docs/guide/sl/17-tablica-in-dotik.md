@@ -41,7 +41,7 @@ Konica prsta zakriva, na kar cilja. layerling pusti prstu seči do ročic, točk
 - **Namestite jo kot aplikacijo.** V Safariju tapnite ikono za deljenje in izberite „Dodaj na začetni zaslon“. Aplikacija se odpre v lastnem oknu brez naslovne vrstice in deluje tudi brez povezave, glejte [Brez povezave in namestitev](chapter:offline-in-namestitev).
 - **Vaši načrti so v brskalniku.** Računa ni in nič se ne nalaga. Safari ima lastno pravilo proti sledenju: izbriše, kar je spletno mesto shranilo, če ga sedem dni niste obiskali v Safariju. Spletna aplikacija na začetnem zaslonu je iz tega pravila izvzeta, kot ga opisuje WebKit. To je še en razlog, da uporabljate aplikacijo z začetnega zaslona in varnostno shranite pomembno delo: {{ui:dashboard.backupAll}} na začetni strani zapakira vse načrte v eno datoteko.
 - **Datoteke.** Safari pusti strani pisati v datoteko samo prek prenosa, zato {{ui:editor.export}} da datoteko med prenose aplikacije Datoteke, [[Ctrl]]+[[S]] na tipkovnici pa jo prenese še enkrat; glejte [Datoteke in shranjevanje](chapter:datoteke-in-shranjevanje).
-- **Tipkovnica ni potrebna.** Vsako orodje ima gumb na traku, številsko polje pa odpre zaslonsko tipkovnico. Tipkovnica ob iPadu doda [bližnjice](chapter:bliznjice).
+- **Tipkovnica ni potrebna.** Vsako orodje ima gumb na traku, številsko polje pa odpre zaslonsko tipkovnico. Tipkovnica ob iPadu doda [bližnjice](chapter:bliznjice). Polje z vrednostjo ob telesu odpre svoje številsko polje šele z drugim dotikom: prvi ga samo označi, tako da prst, ki nanj pomotoma pade, ne prikliče tipkovnice.
 
 ## Delavnice z otroki
 

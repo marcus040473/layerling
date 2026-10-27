@@ -23,7 +23,7 @@ import { createHoneycombGeometry } from "@/lib/honeycombGeometry";
 import { createRoundedBoxGeometry } from "@/lib/roundedBoxGeometry";
 import { createBentTubeGeometry } from "@/lib/bentTubeGeometry";
 import { createPrismGeometry } from "@/lib/prismGeometry";
-import { createBooleanHalfSphereGeometry, createBooleanHollowCylinderGeometry, createBooleanRoundRoofGeometry } from "@/lib/roundBodyGeometry";
+import { createBooleanHalfSphereGeometry, createBooleanHollowCylinderGeometry, createBooleanRoundRoofGeometry, createParaboloidGeometry } from "@/lib/roundBodyGeometry";
 import { createPyramidGeometry } from "@/lib/pyramidGeometry";
 import { roundSideCount } from "@/lib/roundSideCount";
 import { createThreadGeometry } from "@/lib/threadGeometry";
@@ -417,6 +417,9 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
     case "halfSphere":
       geometry = createBooleanHalfSphereGeometry(width, height, depth, shape.steps ?? 32);
       break;
+    case "paraboloid":
+      geometry = createParaboloidGeometry(width, height, depth, shape.steps ?? 32);
+      break;
     case "torus":
       geometry = createBooleanTorusGeometry(width, height, depth, shape);
       break;
@@ -484,6 +487,9 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         depth,
         height,
         hingeKnuckles: shape.hingeKnuckles,
+        hingeKnuckleWidth: shape.hingeKnuckleWidth,
+        hingeConeSize: shape.hingeConeSize,
+        hingeStyle: shape.hingeStyle,
         hingePinDiameter: shape.hingePinDiameter,
         hingeLeafThickness: shape.hingeLeafThickness,
         hingeClearance: shape.hingeClearance,
@@ -535,12 +541,16 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         gridfinityPaddingFront: shape.gridfinityPaddingFront,
         gridfinityPaddingLeft: shape.gridfinityPaddingLeft,
         gridfinityPaddingRight: shape.gridfinityPaddingRight,
+        gridfinityCornerRadius: shape.gridfinityCornerRadius,
         gridfinityCompartmentsX: shape.gridfinityCompartmentsX,
         gridfinityCompartmentsZ: shape.gridfinityCompartmentsZ,
         gridfinityDividerThickness: shape.gridfinityDividerThickness,
         gridfinityDividerPositionsX: shape.gridfinityDividerPositionsX,
         gridfinityDividerPositionsZ: shape.gridfinityDividerPositionsZ,
         gridfinityCompartmentLabels: shape.gridfinityCompartmentLabels,
+        gridfinityOpenings: shape.gridfinityOpenings,
+        gridfinityOpeningCorner: shape.gridfinityOpeningCorner,
+        gridfinityOpeningCornerSize: shape.gridfinityOpeningCornerSize,
       });
       break;
     case "loft":
@@ -778,10 +788,22 @@ export function boundsForCuboids(bounds: Cuboid[]): Cuboid {
   };
 }
 
+/**
+ * The box around the real vertices of every shape, also of a wrapped body, which meshAabb measures by its
+ * cylinder. A group is shown stretched to its size over the vertices it holds, so it has to be sized by them (#667).
+ */
+export function boundsForShapesOfVertices(shapes: WorkplaneShape[]): Cuboid {
+  return boundsForCuboids(shapes.map((shape) => aabbOfShape(shape, true)));
+}
+
 export function meshAabb(shape: WorkplaneShape): Cuboid {
+  return aabbOfShape(shape, false);
+}
+
+function aabbOfShape(shape: WorkplaneShape, ofVertices: boolean): Cuboid {
   // A wrapped body covers only an arc; its box around the cylinder's axis is what
   // makes "centre on the cylinder" put it on that cylinder's wall (#106).
-  if (shape.cylinderWrap && shape.importedMesh) return shapeAabb(shape);
+  if (shape.cylinderWrap && shape.importedMesh && !ofVertices) return shapeAabb(shape);
   const mesh = meshForShape(shape);
   if (mesh.vertices.length === 0) {
     return shapeAabb(shape);

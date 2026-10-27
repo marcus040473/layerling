@@ -26,11 +26,11 @@ Målebåndet sidder for neden i kamerabjælken ved venstre kant ({{ui:camera.tap
 
 ## Linealen
 
-Du henter {{ui:shape.ruler}} fra formbiblioteket. Den er rent et måleværktøj: den optræder i ingen eksport og kan hverken grupperes eller skæres. For hver form der rører eller overlapper linealen viser den udstrækningen som et flydende tal lige i visningen. Du kan ændre det tal der, og formen følger med. Det flydende plus-symbol laver en kopi af den målte form. Dens påtrykte skala er i millimeter; skifter du enheden til tommer (kontakten nederst til højre), er den i tommer, med en streg for hver sekstendedel tomme og de hele tommer nummereret.
+Du henter {{ui:shape.ruler}} fra formbiblioteket. Den er rent et måleværktøj: den optræder i ingen eksport og kan hverken grupperes eller skæres. For hver form der rører eller overlapper linealen viser den udstrækningen som et flydende tal lige i visningen. Du kan ændre det tal der, og formen følger med. Rejs linealen op eller vip den, så måler den i sin egen retning: står den oprejst ved siden af en form, viser den formens højde. Det flydende plus-symbol laver en kopi af den målte form; det er der, mens linealen ligger ned. Dens påtrykte skala er i millimeter; skifter du enheden til tommer (kontakten nederst til højre), er den i tommer, med en streg for hver sekstendedel tomme og de hele tommer nummereret.
 
 ## Vinkelmåleren
 
-Nogle gange måler man bedre i en ret vinkel. Klik på {{ui:camera.cornerRulerTool}} i kamerabjælken og derefter på arbejdsplanet. En vinkelmåler med to arme i en ret vinkel, med takker som en vinkelhage, placeres der. Den har heller ingen egen form. Klik tæt på et hjørne af en form, og dens hjørne snapper præcis der.
+Nogle gange måler man bedre i en ret vinkel. Klik på {{ui:camera.cornerRulerTool}} i kamerabjælken og derefter på arbejdsplanet. En vinkelmåler med to arme i en ret vinkel, med takker som en vinkelhage, placeres der. Den har heller ingen egen form. Klik tæt på et hjørne af en form, og dens hjørne snapper præcis der. Designet beholder vinkelmåleren, hvor du satte den, også i en gemt LYL-fil: når du åbner designet igen, er den det samme sted, drejet den samme vej og måler fra de samme punkter, indtil du fjerner den.
 
 Vinkelmåleren ligger på arbejdsplanet. Ligger det på siden af en form, ligger vinkelmåleren også på den side, se [Visning og arbejdsplan](chapter:view-and-workplane). Sådan målsætter du på en lodret væg: læg arbejdsplanet på væggen, placér måleren i dens øverste venstre hjørne og klik håndtaget indtil armene peger til højre og ned.
 
@@ -40,7 +40,7 @@ Vinkelmåleren ligger på arbejdsplanet. Ligger det på siden af en form, ligger
 - **Den lille knap til venstre for håndtaget** skifter hvad der måles fra: ydersiden af en form (endepunkt, et ikon med streger) eller dens midte (midtpunkt, et sigtekorn).
   En lille kontakt af samme slags sidder ved siden af hvert grønt tal og sætter kun det tal: for en stående cylinder er det midten i de to arme og bunden i højden, for en liggende midten på tværs og en ende i længden. Når alle tre igen er enige, viser knappen ved håndtaget den fælles tilstand.
 
-Står der former ved en af armene, viser vinkelmåleren automatisk deres dimensioner. Det virker kun på grundpladen, ikke på siden af en form.
+Står der former ved en af armene, viser vinkelmåleren automatisk deres dimensioner, valgt eller ikke: former inden i vinkelmåleren, ved siden af en arm eller på tværs af den. En form uden for den, bag hjørnet eller ved siden af en arm udefra, får ingen. Det virker kun på grundpladen, ikke på siden af en form. Knappen med pilen under vinkelmålerens håndtag slår det fra, så kun de valgte former viser deres mål; den gemmes med designet.
 
 Når du vælger en form, viser vinkelmåleren med grønt hvor langt den er fra hjørnet, langs begge arme og i højden. Klik et grønt tal for at taste en afstand, og formen flytter sig præcis derhen. Med flere former valgt tæller de som én: måleren måler deres fælles omrids, og en tastet værdi flytter dem alle sammen uden at ændre deres position i forhold til hinanden.
 
@@ -48,7 +48,7 @@ De grønne tals hjælpelinjer løber langs det plan, vinkelmåleren ligger i, fr
 
 Med midtpunktet tæller de grønne tal til formens midte, også i højden. Sådan placerer du en kugle med dens centrum præcis 15 mm fra en kant, uden at trække radius fra. På en væg placerer du et hul 40 mm fra venstre og 190 mm fra toppen sådan: vælg hullet, skift til midtpunkt, tast 40 og 190. Højden der tæller udad fra væggen.
 
-Både målebåndet og vinkelmåleren bliver hvor de er mens du skitser og kommer tilbage til 3D-visningen. De gemmes ikke med designet og ikke i historikken, og de forsvinder når du genindlæser siden.
+Både målebåndet og vinkelmåleren bliver hvor de er mens du skitser og kommer tilbage til 3D-visningen. Ingen af dem er i historikken. Vinkelmåleren gemmes med designet, og det samme gør målebåndets målinger, i browseren og i .lyl-filen: de er der igen, når du åbner designet. Øjeknappen blandt målebåndets knapper skjuler alle målinger og viser dem igen; om de er skjult, gemmes også, og hvis du sætter, flytter eller sletter en måling, vises de først.
 
 ## Afstande til nulpunktet og under flytning
 
@@ -76,7 +76,7 @@ Noter gemmes i designet, optræder i ingen eksport og kan vises eller skjules me
 
 ## Referencepunkter
 
-Et referencepunkt er et bart mærke i rummet, som en blyantsmarkering eller et layout-punkt i et værksted: det hører til ingen form, printes aldrig, og andre ting snapper til det. Højreklik en form og vælg {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} eller {{ui:contextMenu.markMidpoints}}: punkterne dukker op på formens øverste flade (af hele markeringen, hvis du valgte flere).
+Et referencepunkt er et bart mærke i rummet, som en blyantsmarkering eller et layout-punkt i et værksted: det hører til ingen form, printes aldrig, og andre ting snapper til det. Højreklik en form og vælg {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} eller {{ui:contextMenu.markMidpoints}}: punkterne dukker op på formens øverste flade (af hele markeringen, hvis du valgte flere). {{ui:contextMenu.markFaceCenter}} sætter i stedet ét i midten af den flade du højreklikkede på, for eksempel på en side eller en ende.
 
 - Træk et punkt for at flytte det, eller klik det for at se dets koordinater og taste nye; de bruger den enhed du har sat. Kortet kan trækkes væk i dets titellinje hvis det dækker noget, og et dobbeltklik på titellinjen sætter det tilbage. {{ui:common.delete}} fjerner det.
   Hvert kort kan trækkes væk alene, så de andre kort bliver hvor de er. Det kort du rørte sidst ligger foran de andre. **Slet alle** i et kort, eller **Slet alle referencepunkter** i højreklikmenuen (på en form eller på et tomt sted i 3D-visningen), sletter alle punkter på én gang.

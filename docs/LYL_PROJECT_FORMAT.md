@@ -1,6 +1,6 @@
 # layerling project files (`.lyl`)
 
-`.lyl` is layerling's native, editable project format. It is an additional backup, transfer, and sharing mechanism; IndexedDB autosave remains the normal local persistence system, and STL, 3MF, OBJ, STEP, and SVG remain geometry exports.
+`.lyl` is layerling's native, editable project format. It is an additional backup, transfer, and sharing mechanism; IndexedDB autosave remains the normal local persistence system, and STL, 3MF, OBJ, STEP, SVG, and DXF remain geometry exports.
 
 ## Architecture decision
 
@@ -39,6 +39,37 @@ Object nodes keep stable layerling object IDs. Groups refer to child node IDs in
 
 Large object data lives in `assets/` and is referenced by content hash, never repeated per state. Imported and baked meshes use `importedMesh.meshAssetId`, exact CAD uses `cadBrepAssetId`, and the display edges of a CAD object use `cadDisplayEdgesAssetId` (`SKFEDG1` little-endian binary: an 8-byte magic, the edge count, the total coordinate count, one 32-bit length per edge, then the coordinates as doubles). Undo states that share an object therefore share one stored copy of its geometry, which keeps autosave proportional to what actually changed rather than to the whole history.
 
+## Version 3: attachments
+
+A design can carry files - its instructions, a parts list - which are saved with it (#820). They are the only addition of version 3, and they are written **only for a design that has some**: such a design is a `formatVersion` 3 package with `minimumReaderVersion` 3, and every other design is written as version 2, byte for byte as before. A layerling that knows version 2 only refuses a version 3 package with its usual "requires a newer layerling" message, instead of opening it and dropping the files at its next save.
+
+```text
+project.lyl
+├── project.json          "attachments": [ { "id", "fileName", "assetId" }, ... ]
+└── assets/
+    └── attachment/       The files themselves: <sha256>.md or <sha256>.txt
+```
+
+- Each file is an asset of the kind `attachment`, so it is checked like every other asset: safe path, size, and SHA-256 against its record. Bytes that are the same are stored once, however many names they have.
+- The list `attachments` in `project.json` holds the name each file goes by (`fileName`) and the asset that holds its bytes (`assetId`). Its `id` is what the file is known by inside the design; it stays the same when the file is replaced or renamed in the editor. The list keeps the order the files are shown in.
+- What may be attached is one table in the code (`ATTACHMENT_TYPES` in `lib/projectAttachments.ts`): `.md` (`text/markdown`) and `.txt` (`text/plain`), both UTF-8 text without NUL bytes. A file is checked by its content, not only by its name, on the way in and on the way out. A package that holds anything else under `attachment` is refused.
+- Limits: 2 MB a file, 16 files and 8 MB together (version 4 raises them, see below); a name has at most 120 characters, no folder and no control characters, and no two names are the same without regard to case. A package that breaks one of them is refused.
+- A list in a package of version 2 or older is refused: the list belongs to version 3.
+- Attachments are not part of the undo history: they belong to the design, not to one of its states. A file added or removed is saved like any change to the design, in the browser and, for a design in a shared folder, on the server.
+- They are not carried by custom shapes or by "Insert into this design", and the bug report does not contain them.
+
+## Version 4: pictures and PDF attachments
+
+Version 4 adds more types of attachment and larger limits for them, and nothing else (#820): pictures, `.png` (`image/png`), `.jpg` or `.jpeg` (`image/jpeg`) and `.webp` (`image/webp`), and `.pdf` (`application/pdf`). The layout is the layout of version 3; the files are stored under `assets/attachment/` as `<sha256>.png`, `.jpg`, `.webp` or `.pdf`.
+
+- Version 4 is written **only for a design that needs it**: one that has one of these files, or more attachments than version 3 allowed (more than 16 files or 8 MB together). Such a design is a `formatVersion` 4 package with `minimumReaderVersion` 4. A design whose attachments are all text and within those limits is still written as version 3, and a design without attachments as version 2. Each row of `ATTACHMENT_TYPES` says which version first carries it (`formatVersion`), and the package takes the newest version its files need.
+- The reason is the same as for version 3: a layerling that knows version 3 refuses an attachment type it does not know, and a list over its limits, so it must be told with its usual "requires a newer layerling" message instead of failing on the file.
+- A version 3 package that holds a picture or a PDF, or more files or bytes than version 3 allowed, is refused.
+- A file is checked by its first bytes, which every file of its type starts with: PNG by its eight-byte signature, JPEG by `FF D8 FF`, WebP by `RIFF` and, from byte 8, `WEBP`, PDF by `%PDF-`. A file with another type's name, or a text file renamed to `.png`, is refused on the way in and on the way out.
+- SVG is not a type that may be attached: it is a document that can carry scripts and links to other servers. GIF, BMP and HEIC are not either.
+- Each type has its own size limit: 16 MB for a picture and 32 MB for a PDF, while `.md` and `.txt` keep their 2 MB. A design holds up to 32 files and 64 MB together.
+- Pictures and PDF files are compressed already, so they are stored in the ZIP as they are (method 0, `compressed` in the type table); text is deflated as before. A reader takes either method.
+
 ## What is preserved
 
 - All current native shape kinds and their editable parameters
@@ -47,6 +78,7 @@ Large object data lives in `assets/` and is referenced by content hash, never re
 - Sketch points, lines, Bezier/smooth handles, disjoint profiles, reference images, and extrusion depth
 - Imported STL, OBJ, 3MF, SVG, and STEP sources, stored once and reused by instances
 - Exact imported STEP data, current exact CAD B-Rep, display edges, chamfer/fillet settings, and reversible edge-treatment history
+- Attachments, the files kept with the design (version 3), in the order they are listed, with their names and their exact bytes
 - Custom fonts used by texts, embedded in `project.json` as a subset of the characters the design's texts use (at most 64 fonts), so the file opens with its lettering on another computer
 - Undo and redo states according to the export choice: Unlimited, 100, 50, or 30 recent actions, the custom limit set in the workspace settings, or None (the current state only, for sharing a file without its steps). Unlimited means every state still retained by the editor, including available redo states.
 - Workspace units, grid/snap settings, dimensions, and active offset workplane
@@ -59,7 +91,7 @@ layerling inspects ZIP metadata before expansion and validates the entire projec
 
 Opening a valid project file creates a new local project. It does not overwrite the project that is currently open. The imported project is then saved through the existing dashboard, thumbnail, IndexedDB, history, and editor lifecycle.
 
-Current safety limits are 512 MB compressed, 1 GB expanded, 256 MB per asset, 64 MB for `project.json`, 4,096 archive entries, 100,000 object nodes per state, and 5,001 distinct states. The live editor retains at most 5,000 history entries and 64 MB of serialized history, so Unlimited means all history currently available inside those safety limits.
+The attachments are checked as well: every attachment asset must be of an allowed type and be what its type says (UTF-8 text for `.md` and `.txt`, the right first bytes for a picture or a PDF), carried by the package's version, the list must refer only to attachment assets and keep to its limits, and its names must be usable and different. Current safety limits are 512 MB compressed, 1 GB expanded, 256 MB per asset, 64 MB for `project.json`, 4,096 archive entries, 100,000 object nodes per state, and 5,001 distinct states. The live editor retains at most 5,000 history entries and 64 MB of serialized history, so Unlimited means all history currently available inside those safety limits.
 
 ## Files from before the rename
 
@@ -74,7 +106,7 @@ back writes a `.lyl`.
 
 ## Compatibility and migrations
 
-The current format is version 2. Readers refuse a higher `formatVersion` or `minimumReaderVersion` instead of partially loading it. Version 2 moves display edges out of every state into deduplicated `display-edges` assets; version 1 packages are still opened, and their inline `definition.cadDisplayEdges` is read as written. The importer also contains an explicit migration for the documented version 0 pure-JSON prototype and preserves its object IDs and valid history. An installation that only knows version 1 refuses a version 2 package, so a project shared with an older installation has to be exported from that older installation.
+A design is written as version 2, as version 3 when it has text attachments, or as version 4 when it has a picture or a PDF attached (see above); the newest version this layerling reads is 4. Readers refuse a higher `formatVersion` or `minimumReaderVersion` instead of partially loading it. Version 2 moves display edges out of every state into deduplicated `display-edges` assets; version 1 packages are still opened, and their inline `definition.cadDisplayEdges` is read as written. The importer also contains an explicit migration for the documented version 0 pure-JSON prototype and preserves its object IDs and valid history. An installation that only knows version 1 refuses a version 2 package, so a project shared with an older installation has to be exported from that older installation. In the same way an installation that knows version 2 only refuses a version 3 package: a design with attachments has to be opened in a current layerling, and its attachments removed, before an older one can open it. Likewise a layerling that knows version 3 only refuses a version 4 package, until its pictures and PDF files are removed.
 
 Future schema changes should add a version-to-version migration, run validation after every migration, and never mutate the user's original file.
 
@@ -87,3 +119,4 @@ Future schema changes should add a version-to-version migration, run validation 
 - The camera is stored as optional editor state, `editor.view` (#220): `orthographic`, `position`, `target`, `up` and `zoom`. It is not part of the undo history; a reader that does not know it passes over it, and a file without it opens in the standard view.
 - OBJ and 3MF are import formats as well as export formats; their source files are kept like STL ones and the bodies are rebuilt from them on load.
 - The views saved under the keys 7, 8, 9 and 0 are stored as optional editor state too, `editor.savedViews`: an array of four entries in that order, each a view like `editor.view` or `null` for an empty slot. It is left out when no slot holds a view, is not part of the undo history, and a reader that does not know it passes over it.
+- The measurements of the tape measure are stored as optional editor state, `editor.tapeMeasurements` (#881): `points` (each with `id`, a world position `x`, `y`, `z` and, for a point fixed to a body, an `attachment` with the body's `shapeId` and a `normalized` place measured against its box) and `segments` (each `id`, `startId`, `endId` and, for a measured edge, an `edge`), plus `hidden: true` when the measurements are kept but not shown. It is left out when there is no measurement, is not part of the undo history, and a reader that does not know it passes over it; the format version stays as it is. A point whose body is gone, or whose edge no longer fits the body, is dropped when the design is opened.

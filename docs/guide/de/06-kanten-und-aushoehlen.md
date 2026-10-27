@@ -83,6 +83,18 @@ Auch ein Körper mit einer Tasche lässt sich aushöhlen, etwa ein Block mit ein
 
 > **Tipp:** Bei einer 0,4-mm-Düse sind 1,2 bis 2 mm Wandstärke ein guter Anfang: dünn genug, um Material zu sparen, dick genug für ein stabiles Teil.
 
+## Körper versetzen
+
+Jede Fläche eines Körpers lässt sich um dieselbe Strecke nach außen oder innen verschieben. Das braucht eine Passung, ein Deckel oder eine Schnappverbindung: ein Spalt von 0,1 bis 0,3 mm ringsum, während die Merkmale an ihrem Platz bleiben, was Skalieren nicht kann.
+
+1. Wähle einen Körper und klicke auf {{ui:editor.tool.offset}}, oder klicke den Körper mit der rechten Maustaste an und wähle es dort.
+2. Wähle {{ui:offset.grow}} oder {{ui:offset.shrink}} und stelle den {{ui:offset.distance}} ein.
+3. Die {{ui:offset.edges}} bestimmen die Außenecken: Gerundet hält die versetzte Fläche dort rund, scharf lässt die Flächen weiterlaufen, bis sie sich treffen.
+4. Setze den Haken bei {{ui:offset.copy}}, um das Teil zu behalten und den vergrößerten Körper als Kopie zu bekommen, die schon ein Loch ist. Gruppiere dieses Loch mit dem Gegenstück, und es schneidet genau das Spiel, das du gewählt hast.
+5. Klicke auf {{ui:offset.apply}}.
+
+Ohne den Haken wird der Körper selbst versetzt. Er wird zu einem festen exakten Körper, wie nach einer Fase: Die Liste oben im Fenster nimmt den Versatz zurück, und {{ui:edge.editAction}} öffnet das Werkzeug wieder mit dem alten Abstand. Versetzen lassen sich nur exakte CAD-Körper - Quader, Zylinder und die anderen Formen, Gruppen davon, importierte STEP-Teile. Ein Körper, der nur ein Dreiecksnetz ist, wie viele STL-Importe, lässt sich oft nicht versetzen. Ein Abstand, der für den Körper zu groß ist, etwa ein Verkleinern über die dünnste Wand hinaus, wird abgelehnt.
+
 ## Flächen löschen
 
 Eine Verrundung, die stört, ein Loch an der falschen Stelle, ein Zapfen, der nicht mehr gebraucht wird: {{ui:editor.tool.deleteFace}} nimmt sie wieder vom Körper, ohne dass du ihn neu bauen musst.

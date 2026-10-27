@@ -67,11 +67,14 @@ Umetna inteligenca dela z istimi funkcijami kot ti, teče po isti poti kot tvoje
 | `layerling_ungroup_objects` | razpusti skupine |
 | `layerling_boolean_cut` | reže telesa z luknjami |
 | `layerling_intersect_objects` | obdrži samo to, kar imajo objekti skupnega (presek) |
+| `layerling_hull_objects` | ovije objekte v eno izbočeno telo, kot bi jih skrčili v folijo (ovojnica) |
 | `layerling_separate_parts` | razstavi obliko z ločenimi deli, telo iz skice na eno telo za vsak obris |
 | `layerling_split_objects` | razdeli telesa ali luknje z ravnino na dva dela |
 | `layerling_list_edges` | našteje prave robove CAD objekta |
 | `layerling_apply_edge_treatment` | posname ali zaobli izbrane robove |
 | `layerling_hollow_object` | izdolbe telo z enakomerno steno |
+| `layerling_cut_out` | izreže eno telo iz drugega, da si ustrezata: del ostane, kopija, povečana za zračnost, se odšteje od drugega telesa |
+| `layerling_offset_object` | odmakne vse ploskve telesa za zračnost nasedanja: telo poveča ali zmanjša ali doda povečano kopijo kot luknjo |
 | `layerling_list_faces` | našteje ploskve natančnega telesa |
 | `layerling_delete_faces` | izbriše ploskve in zapre vrzel |
 | `layerling_array_objects` | pomnoži v vrsti ali na krogu |
@@ -96,13 +99,19 @@ Umetna inteligenca dela z istimi funkcijami kot ti, teče po isti poti kot tvoje
 | `layerling_delete_custom_shape` | odstrani lastno obliko; vstavljena telesa ostanejo |
 | `layerling_show_workplane` | skrije ploščo z njeno mrežo in jo spet prikaže, na primer za sliko spodnje strani (samo pogled) |
 | `layerling_set_section_view` | prereže pogled vzdolž ravnine, da se vidi notranjost (samo pogled, nič se ne razreže) |
-| `layerling_saved_view` | shrani trenutni pogled pod tipko 7, 8, 9 ali 0 in se vrne nanj, kot Shift+tipka in tipka (samo pogled) |
+| `layerling_measurements` | prikaže ali skrije meritve merilnega traku in jih našteje z njihovimi dolžinami |
+| `layerling_saved_view` | shrani trenutni pogled pod tipko 7, 8, 9 ali 0 in se vrne nanj, kot Shift+tipka in tipka (samo pogled); nastavi tudi začetni pogled novih osnutkov |
 | `layerling_clear_history` | za vedno izbriše vse korake razveljavitve, kot gumb »Izbriši zgodovino« v pogledu zgodovine; potrebuje `confirm: true` |
 | `layerling_set_history_view` | pogleda nazaj na prejšnje stanje projekta, kot pogled zgodovine (pravi načrt ostane nedotaknjen; orodja, ki spreminjajo, počakajo, da se zapre) |
 | `layerling_restore_from_history` | vrne objekte (tudi dele v skupinah) iz prejšnjega stanja v načrt kot kopije, kot »Vrni v načrt« v pogledu zgodovine - en korak, ki ga razveljavitev vzame nazaj |
 | `layerling_export_drawing` | naredi delavniško risbo izvoza »2D«: trije pogledi v merilu 1:1 na listu ISO s skupnimi merami in tabelo okroglih izvrtin, kot besedilo SVG ali PDF |
 | `layerling_export_mesh` | zapiše datoteko izvoznega okna kot STL, 3MF, OBJ, SVG (tloris, odtis ali vidni robovi) ali DXF za lasersko rezanje iz istih teles; na pot v tem računalniku ali kot base64 |
 | `layerling_save_project` | shrani celoten urejevalni načrt kot datoteko .lyl na pot v računalniku, na katerem teče strežnik MCP, brez pogovornega okna; obstoječa datoteka se zamenja le z `overwrite`, piše se prek začasne datoteke, cilj Ctrl+S v urejevalniku pa ostane, kakršen je bil |
+| `layerling_list_attachments` | našteje datoteke, priložene načrtu (ime, vrsta, velikost), kot jih kaže plošča Priloge |
+| `layerling_get_attachment` | prebere eno priloženo datoteko, njene bajte kot base64, kot Prenesi na plošči |
+| `layerling_add_attachment` | priloži datoteko, podano kot base64, s preverjanji plošče; že priloženo ime prepiše le z `replace` |
+| `layerling_rename_attachment` | priloženi datoteki da drugo ime; vsebina ostane |
+| `layerling_remove_attachment` | priloženo datoteko trajno odstrani; zahteva `confirm: true` |
 | `layerling_export_section_svg` | izda obrise na ravnini prereza kot SVG v merilu 1:1, iz istih teles kot izvoz |
 | `layerling_set_workplane` | položi delovno ravnino na stran telesa, jo ponastavi na osnovno ploščo ali jo skrije in prikaže |
 | `layerling_capture_image` | posname sliko pogleda, od spredaj, zgoraj, s strani, poševno z vogala in več |

@@ -67,11 +67,14 @@ Az MI ugyanazokkal a funkciókkal dolgozik, mint te, ugyanazon az úton, mint a 
 | `layerling_ungroup_objects` | csoportokat bont fel |
 | `layerling_boolean_cut` | tömör testeket vág lyukakkal |
 | `layerling_intersect_objects` | csak azt tartja meg, ami az objektumokban közös (Metszet) |
+| `layerling_hull_objects` | egyetlen domború testbe burkolja az objektumokat, mintha zsugorfóliába csomagolnák (Burok) |
 | `layerling_separate_parts` | egy alakzatot a különálló részeire bont, a vázlattestet körvonalanként egy testre |
 | `layerling_split_objects` | tömör testeket vagy lyukakat vág ketté egy síkkal |
 | `layerling_list_edges` | felsorolja egy objektum valódi CAD-éleit |
 | `layerling_apply_edge_treatment` | kiválasztott éleket tör le vagy kerekít le |
 | `layerling_hollow_object` | egyenletes fallal üregel ki egy testet |
+| `layerling_cut_out` | kivág egy testet egy másikból, hogy illeszkedjenek: az alkatrész marad, a hézaggal megnövelt másolatot kivonja a másik testből |
+| `layerling_offset_object` | eltolja a test minden lapját az illesztés játékához: nagyítja vagy kicsinyíti, vagy lyukként adja hozzá a megnagyobbított másolatot |
 | `layerling_list_faces` | felsorolja egy pontos test lapjait |
 | `layerling_delete_faces` | lapokat töröl, és bezárja a rést |
 | `layerling_array_objects` | sorban vagy körön sokszoroz |
@@ -96,7 +99,8 @@ Az MI ugyanazokkal a funkciókkal dolgozik, mint te, ugyanazon az úton, mint a 
 | `layerling_delete_custom_shape` | eltávolít egy saját alakzatot; a beillesztett testek megmaradnak |
 | `layerling_show_workplane` | elrejti és megmutatja a tárgyasztalt a rácsával, például az alsó oldalról készülő képhez (csak a nézet) |
 | `layerling_set_section_view` | egy sík mentén felnyitja a nézetet, hogy belenézz (csak a nézet, semmi sem vágódik szét) |
-| `layerling_saved_view` | elmenti az aktuális nézetet a 7, 8, 9 vagy 0 billentyű alá, és visszaállítja, mint a Shift+billentyű és a billentyű (csak a nézet) |
+| `layerling_measurements` | megjeleníti vagy elrejti a mérőszalag méréseit, és felsorolja őket a hosszukkal |
+| `layerling_saved_view` | elmenti az aktuális nézetet a 7, 8, 9 vagy 0 billentyű alá, és visszaállítja, mint a Shift+billentyű és a billentyű (csak a nézet); az új tervek indulási nézetét is beállítja |
 | `layerling_clear_history` | véglegesen töröl minden visszavonási lépést, ahogy az előzménynézet „Előzmények törlése” gombja; `confirm: true` kell hozzá |
 | `layerling_set_history_view` | visszatekint a projekt egy korábbi állapotára, mint az előzménynézet (a valódi terv érintetlen marad; a módosító eszközök várnak, amíg bezárul) |
 | `layerling_restore_from_history` | objektumokat (csoportokon belüli alkatrészeket is) hoz vissza másolatként egy korábbi állapotból a tervbe, mint az előzménynézet visszahozó gombja - egy lépés, amelyet a visszavonás visszavesz |
@@ -104,6 +108,11 @@ Az MI ugyanazokkal a funkciókkal dolgozik, mint te, ugyanazon az úton, mint a 
 | `layerling_export_drawing` | elkészíti a „2D” export műhelyrajzát: három nézet 1:1 méretarányban ISO lapon, befoglaló méretekkel és a kerek furatok táblázatával, SVG-szövegként vagy PDF-ként |
 | `layerling_export_mesh` | az exportablak fájlját STL, 3MF, OBJ, SVG (felülnézet, felfekvési felület vagy látható élek) vagy lézervágáshoz DXF formában írja ki ugyanazokból a testekből; ezen a számítógépen megadott helyre vagy base64-ként |
 | `layerling_save_project` | elmenti a teljes szerkeszthető tervet .lyl fájlként egy útvonalra azon a gépen, amelyen az MCP-kiszolgáló fut, párbeszédablak nélkül; meglévő fájlt csak az `overwrite` cserél le, ideiglenes fájlon át íródik, és a Ctrl+S célja a szerkesztőben változatlan marad |
+| `layerling_list_attachments` | felsorolja a tervhez csatolt fájlokat (név, típus, méret), ahogy az Attachments panel mutatja őket |
+| `layerling_get_attachment` | beolvas egy csatolt fájlt, a bájtjait base64-ként, mint a panel Download gombja |
+| `layerling_add_attachment` | csatol egy base64-ként megadott fájlt a panel ellenőrzéseivel; a már csatolt nevet csak `replace` mellett írja felül |
+| `layerling_rename_attachment` | más nevet ad egy csatolt fájlnak; a tartalma marad |
+| `layerling_remove_attachment` | véglegesen eltávolít egy csatolt fájlt; `confirm: true` kell hozzá |
 | `layerling_set_workplane` | egy test oldalára vagy vissza az alaplapra teszi a munkasíkot, és elrejti vagy megmutatja |
 | `layerling_capture_image` | képet készít a nézetről: elölről, felülről, oldalról, ferdén egy sarokból és még sok másból |
 

@@ -1,7 +1,7 @@
 import manifoldModule, { type CrossSection, type ManifoldToplevel } from "manifold-3d";
 import { beforeAll, describe, expect, it } from "vitest";
 import { guideChapterForShape, guideHref, guideSectionForShape } from "@/lib/guideLinks";
-import { addTextLayer, MIN_NAME_TAG_LAYERS, NAME_TAG_GAP, NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, removeTextLayer, textLetterSize, textLetterSizePatch, textShrinkPatch } from "@/lib/nameTag";
+import { addTextLayer, MIN_NAME_TAG_LAYERS, NAME_TAG_GAP, NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, removeTextLayer, textBaselineKeepShift, textLetterSize, textLetterSizePatch, textShrinkPatch } from "@/lib/nameTag";
 import { libraryShapeAssets, nameTagAsset, parseDroppedShapeAsset, toolbarShapeAssets } from "@/lib/shapeCatalog";
 import { textFillComponents, textHasFill } from "@/lib/textFill";
 import { TEXT_FILL_CHOICES, textFillChoice, textLineSettingsInView, textStrokeForChoice, textStrokeWider } from "@/lib/textFillChoice";
@@ -302,5 +302,52 @@ describe("a text shrunk by its box takes the box with it (#432)", () => {
     const stretched = text({ text: "TEXT", width: 86, depth: 28, textStretch: true });
     expect(textShrinkPatch(stretched, { depth: 4 })).toEqual({ depth: 4 });
     expect(textShrinkPatch(plain, { color: "#112233" })).toEqual({ color: "#112233" });
+  });
+});
+
+// #871: other words keep the baseline. The box is laid round the letters, so a "p" reaches the bottom of its box; the
+// text used to be bottom aligned, its tail ending on the old baseline instead of reaching below it.
+describe("other words keep the baseline (#871)", () => {
+  const edges = (shape: WorkplaneShape) => {
+    const made: CrossSection[] = [];
+    try {
+      const { min, max } = outline(shape, made).bounds();
+      return { top: min[1], bottom: max[1] };
+    } finally {
+      made.forEach((section) => section.delete());
+    }
+  };
+  const retyped = (shape: WorkplaneShape, words: string) => {
+    const next = { ...shape, text: words, ...textLetterSizePatch({ ...shape, text: words } as WorkplaneShape, textLetterSize(shape)) } as WorkplaneShape;
+    const shift = textBaselineKeepShift(shape, next);
+    return shift ? { ...next, x: shape.x + shift.x, z: shape.z + shift.z } : next;
+  };
+
+  it("lets the tail of a p reach below the line the capitals stand on", () => {
+    const before = sized(text({ text: "TEXT", x: 10, z: 5 }), 2);
+    const after = retyped(before, "Dp");
+    // Both start with a capital, so their tops are the same height; the p's tail goes below the old bottom.
+    expect(edges(after).top).toBeCloseTo(edges(before).top, 1);
+    expect(edges(after).bottom).toBeGreaterThan(edges(before).bottom + 0.4);
+    expect(textLetterSize(after)).toBeCloseTo(2, 2);
+  });
+
+  it("leaves a text without a descender where it was", () => {
+    const before = sized(text({ text: "TEXT", x: 10, z: 5 }), 2);
+    expect(textBaselineKeepShift(before, retyped(before, "TEXT AGAIN"))).toBeNull();
+  });
+
+  it("moves along the text's own depth when it is turned, and not for curved, stretched or tilted text", () => {
+    const flat = sized(text({ text: "TEXT" }), 2);
+    const turned = { ...flat, rotation: 90 };
+    const next = (shape: WorkplaneShape) => ({ ...shape, text: "Dp", ...textLetterSizePatch({ ...shape, text: "Dp" } as WorkplaneShape, 2) }) as WorkplaneShape;
+    const straight = textBaselineKeepShift(flat, next(flat))!;
+    const side = textBaselineKeepShift(turned, next(turned))!;
+    expect(Math.abs(straight.x)).toBeLessThan(1e-6);
+    expect(Math.abs(side.z)).toBeLessThan(1e-6);
+    expect(side.x).toBeCloseTo(straight.z, 6);
+    expect(textBaselineKeepShift({ ...flat, textStretch: true }, next(flat))).toBeNull();
+    expect(textBaselineKeepShift({ ...flat, textCurved: true }, next(flat))).toBeNull();
+    expect(textBaselineKeepShift({ ...flat, rotationX: 90 }, next(flat))).toBeNull();
   });
 });

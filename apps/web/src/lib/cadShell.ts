@@ -251,3 +251,31 @@ export function shellSolid(cad: OcctKernel, solid: ShapeHandle, thickness: numbe
     if (cleaned !== null) cad.release(cleaned);
   }
 }
+
+/** The raw message of an offset that failed; the editor words it for the person (cadModifierRuntime). */
+export const CANNOT_OFFSET_MESSAGE = "This body cannot be grown or shrunk by this distance. Choose a smaller distance.";
+
+/**
+ * Offsets every face of a body along its normal by `distance`: outward when it grows, inward when it
+ * shrinks (#919), the outside of a clearance gap for a press fit. Round corners (the offset surface of
+ * an edge is a cylinder) or sharp ones (the faces run on until they meet). The precise tolerance is
+ * tried first, the coarser one survives more curved inputs; a result that did not grow or shrink the
+ * volume is not an offset.
+ */
+export function offsetSolid(cad: OcctKernel, solid: ShapeHandle, distance: number, shrink: boolean, edges: ShellEdges = "round") {
+  const joinTypes: Array<JoinType.Arc | JoinType.Intersection> = edges === "sharp" ? [JoinType.Intersection] : [JoinType.Arc, JoinType.Intersection];
+  const baseVolume = cad.getVolume(solid);
+  for (const joinType of joinTypes) {
+    for (const tolerance of [1e-6, 1e-3]) {
+      try {
+        const result = cavityFromOffset(cad, cad.offset(solid, shrink ? -distance : distance, tolerance, joinType));
+        const volume = shapeIsValid(cad, result) ? cad.getVolume(result) : 0;
+        if (volume > 0 && (shrink ? volume < baseVolume * (1 - 1e-6) : volume > baseVolume * (1 + 1e-6))) return result;
+        cad.release(result);
+      } catch (error) {
+        if (error instanceof Error && /is not a function/.test(error.message)) throw error;
+      }
+    }
+  }
+  throw new Error(CANNOT_OFFSET_MESSAGE);
+}

@@ -19,16 +19,29 @@ const PICK_EDGE_ANGLE = 30;
 /** Above this a mesh gets the tint only: its outline would take too long to work out on a click. */
 const PICK_OUTLINE_TRIANGLE_LIMIT = 200_000;
 
-const highlightLayers = new WeakMap<ThreeState, THREE.Group>();
+const highlightLayers = new WeakMap<ThreeState, Map<string, THREE.Group>>();
 
 /** Draws the marking for these objects, replacing what was drawn before; no ids clears it. */
 export function syncHistoryPickHighlight(state: ThreeState, ids: readonly string[]) {
-  let layer = highlightLayers.get(state);
+  syncPickHighlight(state, ids, "history-pick-highlight");
+}
+
+/**
+ * The same marking in a layer of its own, so two uses do not clear each other: the History view's,
+ * and the body a row of "Select other" points at (#804).
+ */
+export function syncPickHighlight(state: ThreeState, ids: readonly string[], name: string) {
+  let layers = highlightLayers.get(state);
+  if (!layers) {
+    layers = new Map();
+    highlightLayers.set(state, layers);
+  }
+  let layer = layers.get(name);
   if (!layer) {
     layer = new THREE.Group();
-    layer.name = "history-pick-highlight";
+    layer.name = name;
     state.scene.add(layer);
-    highlightLayers.set(state, layer);
+    layers.set(name, layer);
   }
   clearLayer(layer);
 

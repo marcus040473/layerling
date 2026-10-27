@@ -16,7 +16,7 @@
  * (Čeština, Dansk, Deutsch, Français, ...); then the others, by the name in their own script.
  * A new language goes in at its place, not at the end.
  */
-export const LANGUAGES = ["en", "cs", "da", "de", "es", "fr", "it", "hu", "nl", "pl", "pt-br", "sl", "tr", "ru", "ar", "ja", "zh-cn", "zh-tw"] as const;
+export const LANGUAGES = ["en", "cs", "da", "de", "es", "fr", "it", "hu", "nl", "pl", "pt-pt", "pt-br", "sl", "tr", "ru", "ar", "ja", "zh-cn", "zh-tw"] as const;
 export type Language = (typeof LANGUAGES)[number];
 export const DEFAULT_LANGUAGE: Language = "en";
 
@@ -505,6 +505,44 @@ export const LANGUAGE_INFO: Readonly<Record<Language, LanguageInfo>> = {
       printButton: "Imprimir",
     },
   },
+  // European Portuguese: partial interface; missing sentences fall back to English.
+  "pt-pt": {
+    name: "Português de Portugal",
+    htmlLang: "pt-PT",
+    numberLocale: "pt-PT",
+    quotes: ["«", "»"],
+    guideDir: "guia-pt-pt",
+    communityUrl: GITHUB_DISCUSSIONS,
+    readme: "README.md",
+    quickstartAnchor: "windows-quickstart",
+    legal: { imprint: "Informações legais", privacy: "Política de privacidade" },
+    keyNames: { Click: "Clique", RightClick: "Clique com o botão direito", Drag: "Arrastar" },
+    asciiUmlauts: false,
+    complete: false,
+    guide: {
+      site: "Guia do utilizador do layerling",
+      home: "Guia do utilizador",
+      openEditor: "Abrir o editor",
+      backToEditor: "Voltar ao editor",
+      editorElsewhere: "O editor já está aberto noutro separador. Muda para esse separador.",
+      chapters: "Capítulos",
+      onThisPage: "Nesta página",
+      previous: "Capítulo anterior",
+      next: "Capítulo seguinte",
+      overviewLead: "Tudo o que podes fazer com o layerling, passo a passo. As imagens são captadas no programa em funcionamento e atualizadas a cada versão.",
+      sourceNote: "Este guia cresce com o programa. Se faltar alguma coisa ou encontrares um erro, diz-nos nas",
+      forum: "discussões",
+      notTranslated: "Este capítulo ainda não está traduzido para português de Portugal. Segue-se o texto em inglês.",
+      languageMenu: "Idioma",
+      search: "Pesquisar no guia",
+      searchNothing: "Nenhum resultado encontrado.",
+      printAll: "Guia completo para impressão",
+      printAllTitle: "O guia completo numa página",
+      printAllLead: "Todos os capítulos seguidos, para imprimir ou guardar em PDF: prime Ctrl+P e desativa «Cabeçalhos e rodapés» nas definições de impressão. Para imprimir apenas uma parte, escolhe aí os números das páginas.",
+      printContents: "Índice",
+      printButton: "Imprimir",
+    },
+  },
   sl: {
     name: "Slovenščina",
     htmlLang: "sl",
@@ -684,8 +722,8 @@ export const LANGUAGE_INFO: Readonly<Record<Language, LanguageInfo>> = {
     quotes: ["«", "»"],
     guideDir: "dalil",
     communityUrl: GITHUB_DISCUSSIONS,
-    readme: "README.md",
-    quickstartAnchor: "windows-quickstart",
+    readme: "README.ar.md",
+    quickstartAnchor: "البدء-السريع-على-windows",
     legal: { imprint: "بيانات الناشر", privacy: "سياسة الخصوصية" },
     keyNames: { Click: "نقرة", RightClick: "نقرة بالزر الأيمن", Drag: "سحب" },
     asciiUmlauts: false,

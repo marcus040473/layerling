@@ -16,6 +16,21 @@ describe("using the saved default on an open design", () => {
     expect(next.sizePreset).toBe("Custom");
   });
 
+  // #850: the printer the user prints on comes along, with its plate.
+  it("takes the printer of the saved default with its plate", () => {
+    const printing = { ...mine, printer: "snapmaker-u1", sizePreset: "Custom", width: 270, depth: 270 };
+    const next = workspaceWithSavedDefault(fromFile, printing);
+    expect(next.printer).toBe("snapmaker-u1");
+    expect(next.width).toBe(270);
+    expect(next.depth).toBe(270);
+  });
+
+  it("keeps the printer of the design when the saved default has none", () => {
+    const next = workspaceWithSavedDefault({ ...fromFile, printer: "prusa-mk4" }, mine);
+    expect(next.printer).toBe("prusa-mk4");
+    expect(next.width).toBe(600);
+  });
+
   it("takes the grid spacing of the saved default when the units are the same", () => {
     expect(workspaceWithSavedDefault(fromFile, mine).gridBlockSize).toBe(mine.gridBlockSize);
   });

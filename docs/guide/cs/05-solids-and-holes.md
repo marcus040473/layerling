@@ -51,6 +51,10 @@ Někdy mají díly jen držet pohromadě, aniž by se spojila jejich geometrie. 
 
 {{ui:editor.tool.intersect}} zachová pouze prostor společný dvěma nebo více tělesům. Umístěte dva tvary tak, aby se překrývaly, vyberte je a spusťte příkaz. Z válce a kvádru tak vznikne například díl s jednou oblou a jednou rovnou stranou. Sloučený tvar se vyhodnocuje podle skutečné geometrie včetně otvorů. Obsahuje-li výběr i výřez, zachová se společná oblast všech plných těles a všech výřezů.
 
+## Vyříznutí jednoho tělesa z druhého
+
+U dílů, které k sobě musí pasovat, hřídele v objímce nebo šroubu ve skříňce, vytvoříš jeden díl a vyřízneš ho z druhého. Vyber obě tělesa a klikni na {{ui:editor.tool.cutOut}} v oblasti {{ui:editor.group.combine}}, nebo klikni pravým tlačítkem a vyber to tam. Panel uvádí díl, který zůstane, a těleso, které dostane dutinu; layerling bere menší těleso jako díl a {{ui:cutOut.swap}} to otočí. {{ui:cutOut.clearance}} udělá dutinu ze všech stran o tolik větší než díl: 0 sedí přesně, 0,2 mm je obvyklá vůle pro tištěné spojení. {{ui:cutOut.apply}} vyřízne kopii dílu z druhého tělesa a samotný díl nechá, kde je. Výsledkem je skupina: {{ui:editor.tool.ungroup}} řez zase rozloží. Vůle vyžaduje, aby díl byl přesné těleso, jako u nástroje {{ui:editor.tool.offset}}, který se k tomu používá.
+
 ## Úprava sloučení
 
 Příliš malý otvor nemusíte opravovat rozložením a novým sestavením celého dílu. Vyberte sloučený celek a použijte {{ui:group.edit}} v jeho nastavení, ikonu složky v seznamu objektů nebo klávesu [[E]]. Totéž provede dvojklik na celek, stejně jako v Tinkercadu; funguje i pro skupinu. Pokud dvojklik nechcete používat, vypněte {{ui:workspace.doubleClickOpensGroup}}. Těleso se začne přesouvat až po tažení o několik pixelů, takže nepřesný klik ani dvojklik neposune jeho polohu. Jednotlivé části nyní můžete upravovat všemi nástroji: zvětšit otvor, přesunout těleso nebo přidat výřez.

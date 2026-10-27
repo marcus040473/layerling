@@ -49,6 +49,8 @@ export type TransformDragState = {
   liftStartPoint?: THREE.Vector3;
   liftHandlePoint?: THREE.Vector3;
   liftStartValue?: number;
+  /** Alt was held when a lift began: the shapes stand in for a copy that is made on release (#865). */
+  duplicate?: { standIns: THREE.Object3D[] };
   rotationAxisVector?: THREE.Vector3;
   rotationPivot?: THREE.Vector3;
   /** A pivot the user set; the shapes then move around it instead of spinning in place. */
@@ -313,7 +315,7 @@ export function resizeShapeFromFrameHandle(
     // Past the opposite corner both sides cross together.
     flipX = flipZ = flipX || flipZ;
   }
-  // A Gridfinity bin or baseplate is whole grid units: the box is rounded to them before the
+  // A Gridfinity bin or baseplate is whole grid units (a tray's size is free): the box is rounded to them before the
   // middle is placed, so the side that is not dragged stays where it is.
   if (shape.kind === "gridfinity" && (signs.x || signs.z)) {
     const footprint = gridfinityFootprintPatch({ ...shape, width: nextWidth, depth: nextDepth });
@@ -492,7 +494,7 @@ export function resizeShapeAlongFrameNormal(
     return importedPatch;
   }
 
-  // A Gridfinity bin is whole height units: the height is rounded before the fixed face is kept.
+  // A Gridfinity bin is whole height units (a tray's height is free): the height is rounded before the fixed face is kept.
   const frameHeight = shape.kind === "gridfinity" && !shape.rotationX && !shape.rotationZ
     ? gridfinityFootprintPatch({ ...shape, height: Math.abs(nextFrameHeight) }).height
     : nextFrameHeight;

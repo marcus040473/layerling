@@ -23,11 +23,11 @@ The tape measure sits at the lower end of the camera bar on the left edge ({{ui:
 
 ## The ruler
 
-You fetch the {{ui:shape.ruler}} from the shape library. It is purely a measuring tool: it appears in no export and can neither be grouped nor cut. For every body that touches or overlaps the ruler, it shows the extent as a floating number right in the view. You can change that number right there, and the body follows. Stand the ruler up or tip it, and it measures along its own direction: upright beside a body it shows the body's height. The floating plus symbol creates a copy of the measured shape; it is there while the ruler lies flat. Its printed scale is in millimetres; once the unit is switched to inches (the switch at the bottom right), it is in inches, with a line every sixteenth of an inch and the whole inches numbered.
+You fetch the {{ui:shape.ruler}} from the shape library. It is purely a measuring tool: it appears in no export and can neither be grouped nor cut. For every body that touches or overlaps the ruler, it shows the extent as a floating number right in the view. You can change that number right there, and the body follows. Stand the ruler up or tip it, and it measures along its own direction: upright beside a body it shows the body's height. The floating plus symbol creates a copy of the measured shape; it is there while the ruler lies flat. Its printed scale is in millimetres along one long edge, with the tens numbered, and in inches along the other, with a line every sixteenth of an inch and the whole inches numbered. The scale of the unit you work in (the switch at the bottom right) runs along the top edge; a ruler narrower than 15 mm carries only that one.
 
 ## The framing square
 
-Sometimes you measure better at a right angle. Click {{ui:camera.cornerRulerTool}} in the camera bar and then the workplane. A framing square with two arms at a right angle, with tick marks like a try square, is placed there. It has no body of its own either. Click close to the corner of a body, and its corner snaps exactly there.
+Sometimes you measure better at a right angle. Click {{ui:camera.cornerRulerTool}} in the camera bar and then the workplane. A framing square with two arms at a right angle, with tick marks like a try square, is placed there. It has no body of its own either. Click close to the corner of a body, and its corner snaps exactly there. The design keeps the square where you set it, also in a saved .lyl file: when you open the design again, it is in the same place, turned the same way and measuring from the same points, until you remove it.
 
 The framing square lies on the workplane. If that sits on the side of a body, the square lies on that side too, see [View and workplane](chapter:view-and-workplane). That is how you dimension on a vertical wall: put the workplane on the wall, place the square at its top left corner and click the handle until the arms point right and down.
 
@@ -36,7 +36,7 @@ The framing square lies on the workplane. If that sits on the side of a body, th
 - **The ×** beside it removes it.
 - **The small button left of the handle** switches what is measured from: the outside of a body (endpoint, an icon with lines) or its middle (midpoint, a crosshair). A small switch of the same kind sits beside each green number and sets that number alone: for a standing cylinder the middle in the two arms and the bottom in height, for a lying one the middle across and an end along. When all three agree again, the button at the handle shows the common mode.
 
-If bodies stand at one of the arms, the framing square shows their dimensions automatically. That works on the base plate only, not on the side of a body.
+If bodies stand at one of the arms, the framing square shows their dimensions automatically, selected or not: bodies inside the square, beside an arm or across it. A body outside it, behind the corner or beside an arm from the outside, gets none. That works on the base plate only, not on the side of a body. The button with the arrow under the square's handle switches that off, so that only the selected bodies show their dimensions; it is kept with the design.
 
 When you select a body, the framing square shows in green how far it is from the corner, along both arms and in height. Click a green number to type a distance, and the body moves exactly there. With several bodies selected, they count as one: the ruler measures their shared outline, and a typed value moves them all together without changing their positions relative to each other.
 
@@ -44,7 +44,7 @@ The guide lines of the green numbers run along the floor, the plane the framing 
 
 With the midpoint, the green numbers count to the middle of the body, in height as well. That way you place a sphere with its centre exactly 15 mm from an edge, without subtracting the radius. On a wall you place a hole 40 mm from the left and 190 mm from the top like this: select the hole, switch to midpoint, type 40 and 190. The height there counts outward from the wall.
 
-Both the tape measure and the framing square stay where they are while you sketch and come back to the 3D view. They are not saved with the design and not in the history, and they go when you reload the page.
+Both the tape measure and the framing square stay where they are while you sketch and come back to the 3D view. Neither is in the history. The framing square is kept with the design, and so are the measurements of the tape measure, in the browser and in the .lyl file: they are there again when you open the design. The eye button among the tape measure's buttons hides all measurements and shows them again; whether they are hidden is kept as well, and adding, moving or deleting a measurement shows them first.
 
 ## Distances to the origin and while moving
 
@@ -72,7 +72,7 @@ Notes are saved in the design, appear in no export and can be shown or hidden wi
 
 ## Reference points
 
-A reference point is a bare mark in space, like a pencil mark or a layout point in a workshop: it belongs to no body, is never printed, and other things snap to it. Right-click a body and choose {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} or {{ui:contextMenu.markMidpoints}}: the points appear on the top face of the body (of the whole selection, if you selected several).
+A reference point is a bare mark in space, like a pencil mark or a layout point in a workshop: it belongs to no body, is never printed, and other things snap to it. Right-click a body and choose {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} or {{ui:contextMenu.markMidpoints}}: the points appear on the top face of the body (of the whole selection, if you selected several). {{ui:contextMenu.markFaceCenter}} puts one in the middle of the flat face you right-clicked instead, on a side or an end, say.
 
 - Drag a point to move it: it snaps to the corners, the middles of the edges and faces of bodies, to their real corners and to other points; hold [[Alt]] to let it go free. Or click it to see its coordinates and type new ones; they use the unit you set. Each card can be dragged away by its title if it covers something, on its own: the others stay where they are, and a double-click on the title puts it back. The card you touched last stands in front of the others. **Delete all** in a card, or **Delete all reference points** in the right-click menu (of a body, or of an empty spot of the 3D view), deletes every point at once. {{ui:common.delete}} removes it.
 - The tape measure can mark a point too: {{ui:camera.tapeMarkMiddle}}, the crosshair button under a measurement, puts one in its middle, in the centre of a round hole for example. And it measures from a point: the tape snaps to reference points like to corners.

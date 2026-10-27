@@ -1,20 +1,20 @@
 /**
- * Durchbrochene Wand: Lochmuster als Abstandsfeld und ein Netz-Baustein fuer ein Stueck Wand
- * zwischen zwei Hoehen, mit Loechern durch Aussen- und Innenwand.
+ * Pierced wall: a hole pattern as a distance field, and a mesh building block for a piece of wall
+ * between two heights, with holes through the outer and the inner wall.
  *
- * Feld f(Winkel, Hoehe) in mm: > 0 Material, < 0 Loch; |f| ist ungefaehr der Abstand zum Lochrand.
- * Gerechnet wird in (u = Winkel x Bezugsradius, z) mit einem oertlichen Massstab: waagerecht zaehlt
- * der echte Umfang in dieser Hoehe. So bleiben Stege auch dort so breit wie eingestellt, wo die
- * Vase schmal ist (die Loecher werden dort kleiner). Rundum passt immer eine ganze Zahl von Zellen.
+ * Field f(angle, height) in mm: > 0 material, < 0 hole; |f| is roughly the distance to the hole's edge.
+ * It is worked out in (u = angle x reference radius, z) with a local scale: across, the real
+ * circumference at that height counts. So the webs stay as wide as set even where the vase is
+ * narrow (the holes get smaller there). A whole number of cells always fits around.
  *
- * Am Rand des Bereichs werden Loecher angeschnitten (Vorgabe) oder - wie beim Perforieren in SolidCraft
- * (Loch nur bei Randabstand) - nur ganze Loecher gesetzt: Zellen, deren Loch ueber den Bereich hinausragt,
- * bleiben voll, und die Reihen stehen mittig im Bereich (oben und unten gleich viel Rand).
+ * At the border of the region, holes are cut off (the default) or - as when perforating in SolidCraft
+ * (a hole only with a margin to the edge) - only whole holes are placed: cells whose hole reaches past
+ * the region stay solid, and the rows sit centred in the region (the same margin above and below).
  *
- * Netz: Marching Squares auf dem Raster (Spalten = Winkel, Zeilen = Hoehen). Jede Rasterzelle traegt
- * ihr Stueck Material als konvexes Vieleck; Schnittpunkte auf Rasterkanten teilen sich die
- * Nachbarzellen. Dieselbe Triangulierung liegt auf der Aussen- und (umgekehrt) auf der Innenwand;
- * jede offene Kante bekommt eine Wand zwischen beiden. Das Netz bleibt geschlossen.
+ * Mesh: marching squares on the grid (columns = angles, rows = heights). Every grid cell carries
+ * its piece of material as a convex polygon; crossing points on grid edges are shared by the
+ * neighbouring cells. The same triangulation lies on the outer and (reversed) on the inner wall;
+ * every open edge gets a wall between the two. The mesh stays closed.
  */
 
 export const CUTOUTS = { keine: 'Keine', voronoi: 'Voronoi', waben: 'Waben', rauten: 'Rauten', kreise: 'Kreise' }
@@ -28,10 +28,10 @@ function hash2(i, j, seed) {
 }
 
 /**
- * Lochmuster als Feld. `Rref`: Bezugsradius (mm) fuer die Zellen rundum; `scale(z)`: echter
- * Umfang / Bezugsumfang in Hoehe z; `whole`: { z0, z1 } - nur ganze Loecher zwischen diesen Hoehen,
- * Reihen mittig. Liefert { field(theta, z), cellsAround, cellWidth, cellHeight, rows? } (`rows`: so viele
- * Lochreihen passen bei `whole`, Voronoi ausgenommen).
+ * Hole pattern as a field. `Rref`: reference radius (mm) for the cells around; `scale(z)`: real
+ * circumference / reference circumference at height z; `whole`: { z0, z1 } - whole holes only between
+ * these heights, rows centred. Returns { field(theta, z), cellsAround, cellWidth, cellHeight, rows? } (`rows`:
+ * how many rows of holes fit with `whole`, except for Voronoi).
  */
 export function cutoutPattern(p, { Rref, scale, whole = null }) {
   const kind = p.cutout
@@ -41,14 +41,14 @@ export function cutoutPattern(p, { Rref, scale, whole = null }) {
   const web = p.cutoutWeb
   const U = 2 * Math.PI * Rref
   const uOf = (theta) => ((((theta / (2 * Math.PI)) % 1) + 1) % 1) * U
-  // Gitterpunkte (Zellmitten) in Zelle (i, j) des Rasters cw x ch; i wird rundum umgebrochen.
+  // Lattice points (cell centres) in cell (i, j) of the cw x ch grid; i wraps around.
   const wrap = (i) => ((i % around) + around) % around
   const site = kind === 'voronoi'
     ? (i, j) => [(i + 0.1 + 0.8 * hash2(wrap(i), j, p.cutoutSeed)) * cw, (j + 0.1 + 0.8 * hash2(wrap(i), j, p.cutoutSeed + 7919)) * ch]
-    // Waben und Kreise: Dreiecksgitter, jede zweite Reihe um eine halbe Zelle versetzt (Sechsecke als Voronoi-Zellen).
+    // Honeycomb and circles: a triangular lattice, every other row shifted by half a cell (hexagons as Voronoi cells).
     : (i, j) => [(i + (j & 1 ? 0.5 : 0)) * cw, j * ch * (Math.sqrt(3) / 2)]
   const rowH = kind === 'voronoi' ? ch : ch * (Math.sqrt(3) / 2)
-  // Gitterpunkte um einen Ort sammeln (rundum umgebrochen); oertliches Mass: waagerecht x k.
+  // Collect the lattice points around a place (wrapped around); local scale: across x k.
   const cu = new Float64Array(13 * 5), cz = new Float64Array(13 * 5), ci = new Int32Array(13 * 5), cj = new Int32Array(13 * 5)
   const collect = (u, z, k) => {
     const i0 = Math.floor(u / cw), j0 = Math.floor(z / rowH)
@@ -66,19 +66,19 @@ export function cutoutPattern(p, { Rref, scale, whole = null }) {
     }
     return n
   }
-  // Muster in (u, z) mit oertlichem Mass k; `shift` verschiebt die Reihen in der Hoehe (nur ganze Loecher).
+  // Pattern in (u, z) with local scale k; `shift` moves the rows up or down (whole holes only).
   let shift = 0
-  // value(u, z, k): Feld; cellAt(u, z, k): Zelle als Schluessel; spanOf(Zelle): Hoehen [unten, oben] ihres Lochs oder null.
+  // value(u, z, k): the field; cellAt(u, z, k): the cell as a key; spanOf(cell): heights [bottom, top] of its hole, or null.
   let value, cellAt, spanOf
   if (kind === 'rauten') {
-    // Rauten: Kanten sind die Geraden u/cw +- z/ch = n + 1/2; Abstand zur naechsten im oertlichen Mass.
+    // Diamonds: the edges are the lines u/cw +- z/ch = n + 1/2; distance to the nearest one in the local scale.
     const normAt = (k) => Math.sqrt(1 / (cw * k) ** 2 + 1 / ch ** 2)
     value = (u, z, k) => {
       const x = u / cw, y = z / ch, norm = normAt(k)
       const dist = (s) => Math.abs(s - 0.5 - Math.round(s - 0.5)) / norm
       return web / 2 - Math.min(dist(x + y), dist(x - y))
     }
-    // Raute m, n: Mitte bei x + y = m, x - y = n; ihr Loch reicht senkrecht ch (1/2 - Steg/2 im Mass der Kanten).
+    // Diamond m, n: centre at x + y = m, x - y = n; its hole reaches ch (1/2 - web/2 in the edges' measure) up and down.
     cellAt = (u, z) => [Math.round(u / cw + z / ch), Math.round(u / cw - z / ch)]
     spanOf = ([m, n]) => {
       const zc = (ch * (m - n)) / 2
@@ -86,7 +86,7 @@ export function cutoutPattern(p, { Rref, scale, whole = null }) {
       return e > 0 ? [zc - e, zc + e] : null
     }
   } else {
-    // Naechster Gitterpunkt; liefert seine Nummer in `collect`.
+    // Nearest lattice point; returns its index in `collect`.
     const nearest = (u, z, k, n) => {
       let a = 0, da = Infinity
       for (let c = 0; c < n; c++) {
@@ -100,7 +100,7 @@ export function cutoutPattern(p, { Rref, scale, whole = null }) {
       return [wrap(ci[a]), cj[a]]
     }
     if (kind === 'kreise') {
-      // Kleinster Abstand zweier Nachbarn in dieser Hoehe: waagerecht cw x k, schraeg (cw/2 x k, Reihenhoehe).
+      // Smallest distance between two neighbours at this height: across cw x k, diagonally (cw/2 x k, row height).
       const radiusAt = (k) => Math.max(0, Math.min(cw * k, Math.hypot((cw / 2) * k, rowH)) / 2 - web / 2)
       value = (u, z, k) => {
         const n = collect(u, z, k)
@@ -114,9 +114,9 @@ export function cutoutPattern(p, { Rref, scale, whole = null }) {
         return r > 0 ? [sz - r, sz + r] : null
       }
     } else {
-      // Voronoi und Waben: Abstand zum Rand der eigenen Zelle = kleinster Abstand zu den
-      // Mittelsenkrechten zu allen Nachbarn (nicht nur zum zweitnaechsten - sonst laufen Loecher an
-      // den Ecken, wo drei Zellen zusammenstossen, zu weit aufeinander zu).
+      // Voronoi and honeycomb: distance to the border of the point's own cell = smallest distance to the
+      // perpendicular bisectors towards all neighbours (not only the second nearest - otherwise holes run
+      // too far towards each other at the corners where three cells meet).
       value = (u, z, k) => {
         const n = collect(u, z, k)
         const a = nearest(u, z, k, n)
@@ -131,8 +131,8 @@ export function cutoutPattern(p, { Rref, scale, whole = null }) {
         }
         return web / 2 - edge
       }
-      // Loch = Zelle, um die halbe Stegbreite nach innen versetzt: ein grosses Viereck an allen
-      // Mittelsenkrechten abschneiden (je Nachbar d: x . d <= |d|^2/2 - Steg/2 |d|), dann hoechster und tiefster Punkt.
+      // Hole = the cell, moved inwards by half the web width: clip a big square at all perpendicular
+      // bisectors (per neighbour d: x . d <= |d|^2/2 - web/2 |d|), then take the highest and lowest point.
       spanOf = ([i, j]) => {
         const [su, sz] = site(i, j)
         const k = scale(sz + shift)
@@ -158,8 +158,8 @@ export function cutoutPattern(p, { Rref, scale, whole = null }) {
   }
   let rows
   if (whole && kind !== 'voronoi') {
-    // Reihen mittig: eine Reihe in der Mitte des Bereichs oder zwei je eine halbe Reihe daneben -
-    // was mehr ganze Reihen ergibt (bei Gleichstand die Mitte).
+    // Rows centred: one row in the middle of the region, or two, each half a row off the middle -
+    // whichever gives more whole rows (on a tie, the middle).
     const step = kind === 'rauten' ? ch / 2 : rowH
     const mid = (whole.z0 + whole.z1) / 2, room = (whole.z1 - whole.z0) / 2
     shift = mid
@@ -175,15 +175,15 @@ export function cutoutPattern(p, { Rref, scale, whole = null }) {
     const u = uOf(theta), k = scale(z), zp = z - shift
     const f = value(u, zp, k)
     if (!whole || f >= web / 2) return f
-    // Nur ganze Loecher: ragt das Loch dieser Zelle ueber den Bereich, bleibt die Zelle voll (am Zellrand
-    // ist das Feld schon Steg/2 - der Uebergang bleibt stetig).
+    // Whole holes only: if this cell's hole reaches past the region, the cell stays solid (at the cell's
+    // border the field is already web/2 - the transition stays continuous).
     const span = spanFor(cellAt(u, zp, k))
     return span && (span[0] + shift < whole.z0 - 1e-6 || span[1] + shift > whole.z1 + 1e-6) ? Math.max(f, web / 2) : f
   }
   return { field, cellsAround: around, cellWidth: cw, cellHeight: ch, rows }
 }
 
-/** Vieleck (Liste [x, y]) an der Halbebene a x + b y <= c abschneiden (Sutherland-Hodgman). */
+/** Clip a polygon (a list of [x, y]) at the half-plane a x + b y <= c (Sutherland-Hodgman). */
 function clipHalfPlane(poly, a, b, c) {
   const out = []
   for (let k = 0; k < poly.length; k++) {
@@ -199,20 +199,20 @@ function clipHalfPlane(poly, a, b, c) {
 }
 
 /**
- * Wandstueck zwischen den Zeilen `zs[0]` und `zs.at(-1)` an den Spalten `thetas` (rundum, steigend).
- * `F[i][j]`: Feld an Zeile i, Spalte j (> 0 Material). `outer(theta, z)`/`inner(theta, z)`: Punkt der
- * Aussen-/Innenwand. `bottom`/`top`: { outer, inner } - vorhandene Punkte der Nachbarwand (dann muss
- * die Zeile ganz Material sein); `bottom.open`: die unterste Zeile ist der Rand des Teils (Kabelschlitz
- * von unten) - ihre Punkte werden genutzt, aber offene Kanten bekommen einen Streifen zwischen Aussen-
- * und Innenwand. Neue Dreiecke landen in `tris`; die Nummern der Lochwaende und Streifen in
- * `locked` (dort soll der Oberflaechen-Kern kein Muster aufbringen).
+ * Piece of wall between the rows `zs[0]` and `zs.at(-1)` at the columns `thetas` (all round, rising).
+ * `F[i][j]`: field at row i, column j (> 0 material). `outer(theta, z)`/`inner(theta, z)`: point on the
+ * outer/inner wall. `bottom`/`top`: { outer, inner } - existing points of the neighbouring wall (then the
+ * row must be all material); `bottom.open`: the lowest row is the part's edge (a cable slit from
+ * below) - its points are used, but open edges get a strip between the outer and the inner
+ * wall. New triangles go into `tris`; the indices of the hole walls and strips go into
+ * `locked` (the surface core is to put no pattern there).
  */
 export function wallZone({ thetas, zs, F, outer, inner, bottom, top, tris, addVertex, locked }) {
   const J = thetas.length
   const m = zs.length - 1
   const theta = (j) => (j < J ? thetas[j] : thetas[j - J] + 2 * Math.PI)
   const solid = (i, j) => F[i][j % J] >= 0
-  // Punkte des ebenen Rasters, durchnummeriert: Ecken, Schnitte auf waagerechten, auf senkrechten Kanten.
+  // Points of the flat grid, numbered in turn: corners, crossings on horizontal edges, on vertical edges.
   const NC = (m + 1) * J, NH = (m + 1) * J, NV = m * J, N = NC + NH + NV
   const vOut = new Int32Array(N).fill(-1), vIn = new Int32Array(N).fill(-1)
   const make = (id, th, z) => {
@@ -230,7 +230,7 @@ export function wallZone({ thetas, zs, F, outer, inner, bottom, top, tris, addVe
     }
     return id
   }
-  // Schnittpunkt auf einer Rasterkante; t nie ganz an einer Ecke (sonst entstuenden Splitter).
+  // Crossing point on a grid edge; t never right at a corner (that would make slivers).
   const cut = (fa, fb) => Math.min(0.95, Math.max(0.05, fa / (fa - fb)))
   const hCross = (i, j) => {
     const jj = j % J, id = NC + i * J + jj
@@ -250,7 +250,7 @@ export function wallZone({ thetas, zs, F, outer, inner, bottom, top, tris, addVe
       const s0 = solid(i, j), s1 = solid(i, j + 1), s2 = solid(i + 1, j + 1), s3 = solid(i + 1, j)
       if (!s0 && !s1 && !s2 && !s3) continue
       if (s0 && s1 && s2 && s3) { polys.push([corner(i, j), corner(i, j + 1), corner(i + 1, j + 1), corner(i + 1, j)]); continue }
-      // Sattel: zwei gegenueberliegende Ecken Material - die Mitte entscheidet, ob sie verbunden sind.
+      // Saddle: two opposite corners are material - the centre decides whether they are joined.
       const center = F[i][j % J] + F[i][(j + 1) % J] + F[i + 1][(j + 1) % J] + F[i + 1][j % J]
       if (s0 && s2 && !s1 && !s3 && center < 0) {
         polys.push([corner(i, j), hCross(i, j), vCross(i, j)], [vCross(i, j + 1), corner(i + 1, j + 1), hCross(i + 1, j)])
@@ -260,7 +260,7 @@ export function wallZone({ thetas, zs, F, outer, inner, bottom, top, tris, addVe
         polys.push([hCross(i, j), corner(i, j + 1), vCross(i, j + 1)], [hCross(i + 1, j), corner(i + 1, j), vCross(i, j)])
         continue
       }
-      // Rundgang gegen den Uhrzeigersinn: Ecken aus Material, dazwischen die Schnittpunkte.
+      // Walk round counter-clockwise: the corners of material, with the crossing points between them.
       const poly = []
       if (s0) poly.push(corner(i, j))
       if (s0 !== s1) poly.push(hCross(i, j))
@@ -273,7 +273,7 @@ export function wallZone({ thetas, zs, F, outer, inner, bottom, top, tris, addVe
       polys.push(poly)
     }
   }
-  // Flaechen: aussen gegen den Uhrzeigersinn (von aussen gesehen), innen umgekehrt.
+  // Faces: outside counter-clockwise (seen from outside), inside the other way round.
   const edges = new Set()
   for (const poly of polys) {
     for (let k = 1; k + 1 < poly.length; k++) {
@@ -282,8 +282,8 @@ export function wallZone({ thetas, zs, F, outer, inner, bottom, top, tris, addVe
     }
     for (let k = 0; k < poly.length; k++) edges.add(poly[k] * N + poly[(k + 1) % poly.length])
   }
-  // Offene Kanten: Lochrand, offener unterer/oberer Rand. Kanten auf einer angeschlossenen Randzeile
-  // gehoeren zur Nachbarwand.
+  // Open edges: a hole's border, an open bottom/top edge. Edges on a joined border row
+  // belong to the neighbouring wall.
   const row = (id) => (id < NC ? Math.floor(id / J) : id < NC + NH ? Math.floor((id - NC) / J) : -1)
   for (const poly of polys) {
     for (let k = 0; k < poly.length; k++) {

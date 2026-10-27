@@ -1,0 +1,37 @@
+/* Locked outlines in a sketch (#653), shown as a locked body in the 3D editor: the same greys
+   (.transform-overlay.locked), handles that stay put and do nothing, and a padlock on the selection. */
+.sketch-plate {
+  --locked-handle-ink: #a59c92;
+  --locked-handle-fill: #e4e0da;
+}
+
+html[data-theme="dark"] .sketch-plate {
+  --locked-handle-ink: #7d7368;
+  --locked-handle-fill: #4a4037;
+}
+
+/* A locked outline is paler, in any theme, so it reads as fixed. */
+.sketch-segments path.locked {
+  stroke-opacity: 0.5;
+}
+
+/* A locked point is filled grey; hovered or selected, it shows that as any point does. */
+.sketch-points circle.locked:not(.selected):not(.active):not(:hover) {
+  fill: var(--locked-handle-ink);
+}
+
+.sketch-geometry-resize-handle.locked,
+.sketch-geometry-resize-handle.locked:hover {
+  cursor: not-allowed;
+  fill: var(--locked-handle-fill);
+  stroke: var(--locked-handle-ink);
+}
+
+.sketch-rotate-handle.locked {
+  cursor: not-allowed;
+  color: var(--locked-handle-ink);
+}
+
+.sketch-rotate-handle.locked:hover .rotate-arrow-arc {
+  stroke-width: 2.4;
+}

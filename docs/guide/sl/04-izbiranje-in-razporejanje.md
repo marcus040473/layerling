@@ -58,7 +58,7 @@ Tipka za to je [[L]]. [[Esc]] prekine.
 
 ## Vrtenje in postavitev vrtišča
 
-Vrti se z zakrivljenimi puščicami na obliki, s številkami v nastavitvah ali s [[R]] v korakih po 45°. Ko vlečeš po krogu za vrtenje, se zasuk zaskoči na vsako črtico, to je na vsakih 22,5°; s pridržano tipko [[Shift]] so koraki finejši, dodatne črtice se pokažejo na vsakih 11,25°. Vleci zunaj kroga, da se vrtiš prosto v korakih po 1°, ali v korakih po 45° s tipko [[Shift]]. Običajno se izbor vrti okoli svoje sredine. Včasih to ni zaželeno, na primer če se nagnjena cev vrti naprej okoli svojega konca. Za to je {{ui:editor.tool.rotationPivot}}: potem klikni na ploskev. Ravna ploskev poda svoje središče, na primer os konca cevi. Izbor se zdaj vrti okoli te točke. Drugi klik na orodje jo spet odpravi.
+Vrti se z zakrivljenimi puščicami na obliki, s številkami v nastavitvah ali s [[R]] v korakih po 45°. Ko vlečeš po krogu za vrtenje, se zasuk zaskoči na vsako črtico, to je na vsakih 22,5°; s pridržano tipko [[Shift]] so koraki finejši, dodatne črtice se pokažejo na vsakih 11,25°. Vleci zunaj kroga, da se vrtiš prosto v korakih po 1°, ali v korakih po 45° s tipko [[Shift]]. Običajno se izbor vrti okoli svoje sredine. Včasih to ni zaželeno, na primer če se nagnjena cev vrti naprej okoli svojega konca. Za to je {{ui:editor.tool.rotationPivot}}: potem klikni na ploskev. Ravna ploskev poda svoje središče, na primer os konca cevi. Pri skupini ali svežnju se ploskev razteza čez dele, ki se stikajo, kot pri enem telesu, vrtišče pa gre na sredino cele ploskve, ko so deli spojeni, razen pri skupini ali svežnju z besedilom ali svežnju z luknjo. Izbor se zdaj vrti okoli te točke. Drugi klik na orodje jo spet odpravi.
 
 Koti ostanejo na telesu. V njegovih nastavitvah jih {{ui:inspector.rotation}} kaže kot {{ui:prop.rotateX}}, {{ui:prop.rotateY}} in {{ui:prop.rotateZ}}, poimenovane kot lega: Y teče prečno čez ploščo, Z navzgor. Če tam vpišeš kot, se telo zavrti na ta kot – okoli svoje sredine ali okoli svojega lastnega vrtišča, če ga ima. Dokler je zavrteno telo izbrano, so njegovi koti prikazani tudi pod njim na delovni površini; {{ui:workspace.showRotationAngles}} v nastavitvah to izklopi.
 
@@ -101,7 +101,7 @@ Kopije se najprej pokažejo kot predogled. Šele {{ui:array.apply}} jih ustvari.
 
 Za prezračevalne reže, zvočniške mreže, košare in ohišja {{ui:holePattern.title}} enakomerno razporedi luknje po ravni ploskvi. Zato ti ni treba vsake luknje posebej ustvariti, pomnožiti in prestaviti na steno. Izberi natanko eno telo in v skupini {{ui:editor.group.modify}} orodne vrstice klikni {{ui:holePattern.title}}, tik ob polju. Lahko tudi z desnim gumbom klikneš na telo ali ga poiščeš s [[Ctrl]]+[[K]].
 
-1. Klikni ravno ploskev telesa. Šteje cela ravna ploskev okoli tvojega klika, ne samo trikotnik pod kazalcem. Ukrivljena ploskev ne gre: dobiš opombo in klikneš ravno.
+1. Klikni ravno ploskev telesa. Šteje cela ravna ploskev okoli tvojega klika, ne samo trikotnik pod kazalcem. Ukrivljena ploskev ne gre: dobiš opombo in klikneš ravno. Pri skupini ali svežnju se ploskev razteza čez dele, ki se stikajo, kot pri enem telesu, pri svežnju pa le, če med deli ni luknje. Deli se spojijo kmalu po tem, ko se orodje odpre; do takrat se pod kazalcem osvetli le ploskev enega dela, klik pa počaka, da se spojijo. Pri skupini ali svežnju z besedilom se osvetli le ploskev enega dela, dele pa spoji šele klik.
 2. V oknu nastavi, kako luknje izgledajo in ležijo:
    - **{{ui:holePattern.form}}:** {{ui:holePattern.form.round}}, {{ui:holePattern.form.square}}, {{ui:holePattern.form.rectangle}}, {{ui:holePattern.form.hexagon}} ali {{ui:holePattern.form.slot}}.
    - **Velikost:** {{ui:holePattern.size.diameter}} okrogle luknje, {{ui:holePattern.size.side}} kvadratne, {{ui:holePattern.size.width}} in {{ui:holePattern.size.height}} pri pravokotniku in podolgovati luknji. Pri šestkotniku velja mera {{ui:holePattern.size.corners}}.
@@ -121,7 +121,7 @@ Umetna inteligenca lahko isto naredi prek vmesnika MCP, z `layerling_perforate_f
 
 Za debelejšo steno, dvignjeno ploščico na ploskvi ali vanjo izrezan žep orodje {{ui:faceTool.title}} dela na eni ravni ploskvi. Deluje tudi na uvoženem STL, ki nima skice za spreminjanje. Izberi natanko eno telo in v skupini {{ui:editor.group.modify}} orodne vrstice klikni {{ui:faceTool.title}}, tik ob vzorcu lukenj. Lahko tudi z desnim gumbom klikneš na telo ali ga poiščeš s [[Ctrl]]+[[K]].
 
-1. Klikni ravno ploskev telesa. Tako kot pri vzorcu lukenj šteje cela ravna ploskev okoli tvojega klika; ukrivljena ploskev ne gre.
+1. Klikni ravno ploskev telesa. Tako kot pri vzorcu lukenj šteje cela ravna ploskev okoli tvojega klika; ukrivljena ploskev ne gre. Pri skupini ali svežnju se ploskev kot pri vzorcu lukenj razteza čez dele, ki se stikajo.
 2. V oknu:
    - **{{ui:faceTool.direction}}:** {{ui:faceTool.direction.out}} za material na ploskvi ali {{ui:faceTool.direction.in}} za žep, izrezan vanjo. Žep ne gre globlje od telesa za ploskvijo; pri izdolbenem telesu lahko vseeno seže do votline.
    - **{{ui:faceTool.inset}}:** kako daleč nov obris ostane znotraj roba ploskve. Navzven pri 0 šteje cela ploskev, tako se stena odebeli. Odprtine v ploskvi se povečajo za isto mero.

@@ -81,3 +81,15 @@ Egy zsebes test – egy olyan hasáb, amelyben egy nem teljesen átmenő lyuk va
 Ha egy kiüregelt testet később átméretezel, a layerling azonnal újra kiüregeli az új méretben. A fal olyan vastag marad, amilyennek választottad, a kerek testeknél is. Egy hengerből, amelyet az egyik irányba jobban húzol, mint a másikba, ellipszis lesz.
 
 > **Tipp:** 0,4 mm-es fúvókával 1,2–2 mm-es fal jó kiindulás: elég vékony, hogy anyagot spórolj, és elég vastag egy erős alkatrészhez.
+
+## Testek eltolása
+
+A test minden lapja ugyanannyival tolható el kifelé vagy befelé. Erre van szüksége egy illesztésnek, fedélnek vagy pattintós kötésnek: 0,1-0,3 mm rés körben, miközben a részletek a helyükön maradnak, amit a méretezés nem ad.
+
+1. Jelölj ki egy testet, és kattints az {{ui:editor.tool.offset}} gombra, vagy kattints a testre jobb gombbal, és ott válaszd.
+2. Válaszd a {{ui:offset.grow}} vagy a {{ui:offset.shrink}} lehetőséget, és állítsd be a {{ui:offset.distance}} értékét.
+3. A {{ui:offset.edges}} a külső sarkokat dönti el: a lekerekített kerekre hagyja az eltolt felületet, az éles tovább viszi a lapokat, míg találkoznak.
+4. Pipáld be az {{ui:offset.copy}} jelölőt, hogy az alkatrész maradjon, a megnagyobbított test pedig másolatként jöjjön létre, amely már lyuk. Csoportosítsd ezt a lyukat a párjával, és pontosan a választott játékot vágja ki.
+5. Kattints az {{ui:offset.apply}} gombra.
+
+Pipa nélkül maga a test tolódik el. Rögzített, pontos test lesz, mint egy letörés után: a panel tetején lévő lista visszavonja az eltolást, az {{ui:edge.editAction}} pedig újra megnyitja az eszközt a régi távolsággal. Csak pontos CAD-testek tolhatók el - dobozok, hengerek és a többi forma, ezek csoportjai, importált STEP-alkatrészek. Az a test, amely csak háromszögháló, mint sok STL-import, gyakran nem. A testhez túl nagy távolságot, például a legvékonyabb falon túli kicsinyítést, elutasítja.

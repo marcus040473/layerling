@@ -15,7 +15,7 @@ export type HistoryStepDescription = {
   values?: Record<string, string | number>;
 };
 
-type ChangeKind = "moved" | "rotated" | "resized" | "color" | "hole" | "solid" | "renamed" | "mirrored" | "edges" | "rounded" | "chamfered" | "hollowed" | "facesDeleted" | "hidden" | "shown" | "locked" | "unlocked" | "edited";
+type ChangeKind = "moved" | "rotated" | "resized" | "color" | "hole" | "solid" | "renamed" | "mirrored" | "edges" | "rounded" | "chamfered" | "hollowed" | "offset" | "facesDeleted" | "hidden" | "shown" | "locked" | "unlocked" | "edited";
 
 /** What a treatment the step added did, by the tool that made it. */
 const FEATURE_KINDS: Record<EdgeTreatmentFeature["kind"], ChangeKind> = {
@@ -23,6 +23,7 @@ const FEATURE_KINDS: Record<EdgeTreatmentFeature["kind"], ChangeKind> = {
   chamfer: "chamfered",
   chamfillet: "edges",
   shell: "hollowed",
+  offset: "offset",
   deleteFace: "facesDeleted",
   // A texture is no treatment in the list; it is kept only in the history, for Change and Remove.
   surfaceTexture: "edited",
@@ -90,6 +91,7 @@ const ONE_KEYS: Record<ChangeKind, MessageKey> = {
   rounded: "historyStep.roundedOne",
   chamfered: "historyStep.chamferedOne",
   hollowed: "historyStep.hollowedOne",
+  offset: "historyStep.offsetOne",
   facesDeleted: "historyStep.facesDeletedOne",
   hidden: "historyStep.hiddenOne",
   shown: "historyStep.shownOne",
@@ -111,6 +113,7 @@ const MANY_KEYS: Record<ChangeKind, MessageKey> = {
   rounded: "historyStep.roundedMany",
   chamfered: "historyStep.chamferedMany",
   hollowed: "historyStep.hollowedMany",
+  offset: "historyStep.offsetMany",
   facesDeleted: "historyStep.facesDeletedMany",
   hidden: "historyStep.hiddenMany",
   shown: "historyStep.shownMany",

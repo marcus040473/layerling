@@ -13,7 +13,7 @@ Abra [layerling.com](https://layerling.com/). Na página inicial, clique em {{ui
 
 Se você já tem um arquivo para continuar, use {{ui:dashboard.importGeometry}}. Isso funciona tanto para projetos do layerling (`.lyl`) quanto para arquivos STL, OBJ, 3MF, STEP ou SVG.
 
-Depois, todos os seus projetos aparecem na página inicial com uma miniatura. Eles ficam guardados no seu navegador e são salvos automaticamente a cada alteração, por isso não há botão de salvar. **layerling não se responsabiliza pelos projetos guardados no navegador.** Um navegador pode falhar, ou uma atualização pode causar problemas, então faça backup dos seus projetos de vez em quando com {{ui:dashboard.backupAll}} na página inicial, ou salve-os como arquivos. Para restaurar um backup, use {{ui:dashboard.restoreBackup}}. Como juntar projetos num arquivo e passá-los adiante está em [Arquivos e salvamento](chapter:files-and-saving). Se quiser um lembrete, ative {{ui:workspace.confirmTabClose}} nas configurações (a engrenagem na faixa): o navegador pergunta antes de fechar ou recarregar uma aba com um projeto aberto.
+Depois, todos os seus projetos aparecem na página inicial com uma miniatura. Eles ficam guardados no seu navegador e são salvos automaticamente a cada alteração, por isso não há botão de salvar. **layerling não se responsabiliza pelos projetos guardados no navegador.** Um navegador pode falhar, ou uma atualização pode causar problemas, então faça backup dos seus projetos de vez em quando com {{ui:dashboard.backupAll}} na página inicial, ou salve-os como arquivos. Para restaurar um backup, use {{ui:dashboard.restoreBackup}}. Como juntar projetos num arquivo e passá-los adiante está em [Arquivos e salvamento](chapter:files-and-saving). Se quiser um lembrete, ative {{ui:workspace.confirmTabClose}} nas configurações (a engrenagem na barra de opções): o navegador pergunta antes de fechar ou recarregar uma aba com um projeto aberto.
 
 ## Conhecendo o editor
 
@@ -31,7 +31,7 @@ Passe o mouse sobre um botão para ver o nome dele. Se não tiver certeza do que
 
 ### Colar
 
-{{ui:editor.tool.paste}} ([[Ctrl]]+[[V]]) adiciona ao projeto o que você copiou com {{ui:editor.tool.copy}}. {{ui:common.duplicate}} copia e cola num só passo.
+{{ui:editor.tool.paste}} ([[Ctrl]]+[[V]]) adiciona ao projeto o que você copiou com {{ui:editor.tool.copy}}. {{ui:common.duplicate}} copia e cola num só passo. Ao colar, cada peça fica um pouco ao lado de onde estava. Peças que vêm de outro programa podem cair longe da mesa; para elas existe {{ui:workspace.pasteCentered}} nas configurações, em {{ui:workspace.appearance}}: ao colar, as peças vão juntas para o meio do plano de trabalho e baixam até ele.
 
 ### Excluir
 
@@ -111,4 +111,4 @@ Numa cópia do layerling no seu próprio computador ou servidor, o aviso "Atuali
 
 Quando a peça estiver pronta, clique em {{ui:editor.export}}, escolha STL ou 3MF e baixe o arquivo. Abra-o no seu fatiador, por exemplo Bambu Studio, PrusaSlicer, OrcaSlicer ou Cura. Se você escolher sua impressora nas configurações, dá para ver enquanto modela se a peça cabe na mesa de impressão. Mais em [Impressão](chapter:printing).
 
-> **Dica:** Se você vem do Tinkercad, vai se achar rapidinho: a mesa, as formas, sólido e orifício, agrupar, alinhar e espelhar funcionam quase igual. O que é novo é principalmente chanfro e arredondamento, vazar, roscas e esboços. Seus próprios designs do Tinkercad também podem vir junto, veja [Files, saving and sharing](chapter:files-and-saving).
+> **Dica:** Se você vem do Tinkercad, vai se achar rapidinho: a mesa, as formas, sólido e orifício, agrupar, alinhar e espelhar funcionam quase igual. As novidades são principalmente chanfro e arredondamento, vazar, roscas e esboços. Seus próprios projetos do Tinkercad também podem vir junto, veja [Arquivos e salvamento](chapter:files-and-saving).

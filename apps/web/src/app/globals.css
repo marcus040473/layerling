@@ -1391,6 +1391,29 @@ html[data-theme="dark"] .dashboard-trademark {
   border-radius: 10px;
 }
 
+/* The designs are on the server: a statement, not a warning. */
+.storage-notice.on-server {
+  background: #e8f4ec;
+  border-color: #4f9a6a;
+}
+
+.storage-notice.on-server .storage-notice-icon {
+  background: #3d8a59;
+}
+
+.storage-notice.on-server .storage-notice-text strong {
+  color: #1f3d2a;
+}
+
+.storage-notice.on-server .storage-notice-text span {
+  color: #34503e;
+}
+
+.storage-notice.on-server .storage-notice-button.secondary {
+  color: #24553a;
+  box-shadow: inset 0 0 0 2px #3d8a59;
+}
+
 .storage-notice-icon {
   display: grid;
   flex: none;
@@ -3455,6 +3478,18 @@ html[data-theme="dark"] .edge-modifier-quick-actions button.active {
 
 html[data-theme="dark"] .shell-openings-summary {
   color: #a8957f;
+}
+
+.offset-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.offset-copy input {
+  flex: none;
+  margin-top: 2px;
 }
 
 .edge-modifier-history-actions {
@@ -6367,139 +6402,6 @@ html[data-theme="dark"] .sketch-shape-options .unit {
   vector-effect: non-scaling-stroke;
 }
 
-.sketch-reference-images image {
-  cursor: move;
-  image-rendering: auto;
-  transition: opacity 100ms ease;
-}
-
-.sketch-reference-images image:hover {
-  filter: saturate(1.08) contrast(1.03);
-}
-
-.sketch-image-selection-box {
-  fill: none;
-  stroke: #da7409;
-  stroke-width: 1.7;
-  stroke-dasharray: 5 3;
-  vector-effect: non-scaling-stroke;
-}
-
-.sketch-image-resize-handle {
-  fill: #ffffff;
-  stroke: #a3590b;
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-}
-
-.sketch-image-resize-handle:hover {
-  fill: #ffb24b;
-  stroke: #9d4d00;
-}
-
-.sketch-image-resize-handle.handle-nw,
-.sketch-image-resize-handle.handle-se {
-  cursor: nwse-resize;
-}
-
-.sketch-image-resize-handle.handle-ne,
-.sketch-image-resize-handle.handle-sw {
-  cursor: nesw-resize;
-}
-
-.sketch-image-resize-handle.handle-n,
-.sketch-image-resize-handle.handle-s {
-  cursor: ns-resize;
-}
-
-.sketch-image-resize-handle.handle-e,
-.sketch-image-resize-handle.handle-w {
-  cursor: ew-resize;
-}
-
-/* Reference image (#216): crop handles, the turning handle and the calibration marks. */
-.sketch-image-selection-box.cropping {
-  stroke: #2f7f9e;
-}
-
-.sketch-image-resize-handle.crop {
-  fill: #e7f4f9;
-  stroke: #2f7f9e;
-}
-
-.sketch-image-resize-handle.crop:hover {
-  fill: #9fd3e8;
-}
-
-.sketch-image-rotate line {
-  stroke: #da7409;
-  stroke-width: 1.4;
-  stroke-dasharray: 3 3;
-  vector-effect: non-scaling-stroke;
-}
-
-.sketch-image-rotate-handle {
-  fill: #ffffff;
-  stroke: #a3590b;
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-  cursor: grab;
-}
-
-.sketch-image-rotate-handle:hover {
-  fill: #ffb24b;
-}
-
-.sketch-image-calibration circle {
-  fill: rgba(255, 255, 255, 0.85);
-  stroke: #2f7f9e;
-  stroke-width: 1.6;
-  vector-effect: non-scaling-stroke;
-}
-
-.sketch-image-calibration line {
-  stroke: #2f7f9e;
-  stroke-width: 1.6;
-  vector-effect: non-scaling-stroke;
-}
-
-.sketch-image-action-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.sketch-image-hint {
-  margin: -2px 0 0;
-  color: #8d7b68;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.sketch-image-calibrate-field {
-  display: grid;
-  gap: 6px;
-}
-
-html[data-theme="dark"] .sketch-image-hint {
-  color: #b7a992;
-}
-
-.sketch-image-dimension rect {
-  fill: rgba(255, 255, 255, 0.97);
-  stroke: rgba(139, 118, 95, 0.9);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 1px 2px rgba(76, 51, 25, 0.15));
-}
-
-.sketch-image-dimension text {
-  fill: #5a3917;
-  font-weight: 700;
-  text-anchor: middle;
-}
-
 .sketch-profile-fills path {
   fill: rgba(199, 128, 52, 0.2);
   fill-rule: evenodd;
@@ -6566,11 +6468,6 @@ html[data-theme="dark"] .sketch-image-hint {
 .sketch-segments path.construction.selected {
   stroke: #ff8a00;
   stroke-width: 3;
-}
-
-/* A locked outline (#653): paler, in any theme, so it reads as fixed. */
-.sketch-segments path.locked {
-  stroke-opacity: 0.5;
 }
 
 .sketch-preview-line {
@@ -6899,158 +6796,6 @@ html[data-theme="dark"] .sketch-image-hint {
 .sketch-corner-cancel svg {
   width: 15px;
   height: 15px;
-}
-
-.sketch-image-inspector .shape-inspector-header strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sketch-image-inspector .inspector-header-icon.danger:hover {
-  color: #c3262e;
-  background: #fff0f1;
-}
-
-.sketch-image-inspector .inspector-header-icon:disabled {
-  cursor: default;
-  opacity: 0.38;
-}
-
-.sketch-image-preview-card {
-  display: grid;
-  place-items: center;
-  gap: 8px;
-  margin: 10px;
-  padding: 14px;
-  color: #907d6a;
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 750;
-}
-
-.sketch-image-preview-card img {
-  display: block;
-  width: 100%;
-  height: 112px;
-  object-fit: contain;
-  background:
-    linear-gradient(45deg, #f6f3ed 25%, transparent 25%),
-    linear-gradient(-45deg, #f6f3ed 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #f6f3ed 75%),
-    linear-gradient(-45deg, transparent 75%, #f6f3ed 75%);
-  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
-  background-size: 12px 12px;
-  border: 1px solid #e9e1d3;
-  border-radius: 4px;
-}
-
-.sketch-image-inspector .property-card-header.static {
-  cursor: default;
-}
-
-.sketch-image-inspector .property-card-header.static:hover {
-  color: #5d4731;
-}
-
-.sketch-image-range-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.sketch-image-number-input,
-.sketch-image-position-field input {
-  width: 100%;
-  height: 31px;
-  padding: 0 10px;
-  color: #746352;
-  font: 700 14px/1 var(--font-ui);
-  background: #ffffff;
-  border: 1px solid #daccbe;
-  border-radius: 999px;
-  outline: 0;
-}
-
-.sketch-image-number-input:focus,
-.sketch-image-position-field input:focus {
-  border-color: #ea953d;
-  box-shadow: 0 0 0 3px rgba(161, 83, 0, 0.14);
-}
-
-.sketch-image-range-row span {
-  min-width: 26px;
-  color: #988672;
-  font-size: 12px;
-}
-
-.sketch-image-range > input[type="range"] {
-  width: 100%;
-  height: 12px;
-  margin: 0;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-.sketch-image-range > input[type="range"]::-webkit-slider-runnable-track {
-  height: 4px;
-  background: linear-gradient(to right, #d27009 0 var(--slider-pos), #e8e3da var(--slider-pos) 100%);
-  border-radius: 999px;
-}
-
-.sketch-image-range > input[type="range"]::-webkit-slider-thumb {
-  width: 13px;
-  height: 13px;
-  margin-top: -4.5px;
-  appearance: none;
-  background: #ffffff;
-  border: 2px solid #ce6d09;
-  border-radius: 999px;
-  box-shadow: 0 1px 3px rgba(90, 58, 23, 0.22);
-}
-
-.sketch-image-position-field {
-  display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-  color: #867563;
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.sketch-image-aspect-toggle {
-  display: flex;
-  min-height: 36px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  color: #7c6853;
-  background: #fcfaf7;
-  border: 1px solid #ded1c4;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 850;
-}
-
-.sketch-image-aspect-toggle.active {
-  color: #a55808;
-  background: #f8f4ee;
-  border-color: #d59c5f;
-}
-
-.sketch-image-aspect-toggle:disabled,
-.sketch-image-position-field input:disabled,
-.sketch-image-number-input:disabled {
-  cursor: default;
-  opacity: 0.52;
-}
-
-.sketch-reference-images image.locked {
-  cursor: default;
 }
 
 .camera-controls {
@@ -7749,6 +7494,53 @@ html[data-theme="dark"] .inspector-bundle-note {
   height: 100%;
 }
 
+/* The round Select multiple button of a touch screen (#337): it stands in the lower left while a
+   body is picked with a finger. Tapped, it locks Select multiple and every further tap adds a body
+   to the selection; tapped again, it ends the mode, clears the selection and goes away. */
+.touch-multi-select {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 30;
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  color: var(--foreground);
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  box-shadow: 0 6px 18px rgba(75, 56, 35, 0.22);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: background-color 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.touch-multi-select:hover,
+.touch-multi-select:focus-visible {
+  background: var(--tile-hover);
+  border-color: var(--active-tab);
+}
+
+.touch-multi-select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.touch-multi-select.active {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: scale(0.94);
+}
+
+html[data-theme="dark"] .touch-multi-select {
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
 .selection-counter {
   position: fixed;
   top: 0;
@@ -8146,13 +7938,15 @@ html[data-theme="dark"] .inspector-bundle-note {
 }
 
 /* The ruler's lines stay in view over bodies (the eye is open) or hide behind them. */
-.corner-ruler-occlude-toggle {
+.corner-ruler-occlude-toggle,
+.corner-ruler-selected-toggle {
   color: #6b5b46;
   background: rgba(255, 255, 255, 0.96);
   border-color: rgba(182, 97, 8, 0.45);
 }
 
-.corner-ruler-occlude-toggle.active {
+.corner-ruler-occlude-toggle.active,
+.corner-ruler-selected-toggle.active {
   color: #b66108;
 }
 
@@ -8374,6 +8168,20 @@ html[data-theme="dark"] .inspector-bundle-note {
   transform: translate(-50%, -50%);
 }
 
+/* For a finger or a rubber-tip stylus the dots keep their look and catch from further away, a finger's width round them (#854). */
+@media (pointer: coarse) {
+  .align-dot {
+    touch-action: none;
+  }
+
+  .align-dot::before {
+    position: absolute;
+    inset: -14px;
+    border-radius: 999px;
+    content: "";
+  }
+}
+
 .align-dot:hover:not(:disabled),
 .align-dot:focus-visible:not(:disabled) {
   background: #e17709;
@@ -8482,6 +8290,12 @@ html[data-theme="dark"] .inspector-bundle-note {
   transform: translate3d(var(--overlay-x, 0), var(--overlay-y, 0), 0) translate(-50%, -50%);
   will-change: transform;
   box-shadow: 0 1px 4px rgba(58, 40, 20, 0.09);
+}
+
+/* With a finger the first tap on a value box only marks it; the second tap opens the number field (#855). */
+.dimension-label.armed {
+  border-color: rgba(166, 86, 0, 0.85);
+  box-shadow: 0 0 0 3px rgba(173, 89, 0, 0.22), 0 1px 4px rgba(58, 40, 20, 0.09);
 }
 
 .dimension-input {
@@ -8785,9 +8599,9 @@ html[data-theme="dark"] .inspector-bundle-note {
 
 .rotate-handle {
   z-index: 3;
-  /* The grab area is 40px; the arrow drawn in it is smaller. */
-  width: 40px;
-  height: 40px;
+  /* The grab area is 52px; the arrow drawn in it is smaller. */
+  width: 52px;
+  height: 52px;
   --rotate-handle-ink: #433629;
   --rotate-handle-axis: var(--rotate-handle-ink);
   --rotate-handle-halo: rgba(255, 252, 247, 0.95);
@@ -8813,8 +8627,8 @@ html[data-theme="dark"] .inspector-bundle-note {
 .rotate-handle-icon,
 .rotate-handle-icon svg {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
 }
 
 .rotate-handle-icon {
@@ -9612,6 +9426,40 @@ html[data-theme="dark"] .rotation-angle-badge {
   cursor: default;
 }
 
+/* A bin's four open sides as a cross seen from above: the back on top, the
+   front at the bottom, left and right between. Each switch is placed by its
+   side's class, named rather than counted. The columns take what room the
+   panel gives, so a long label may wrap to a second line. */
+.property-layout-sides {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: space-between;
+  grid-template-areas:
+    "back back"
+    "left right"
+    "front front";
+  gap: 8px 12px;
+}
+
+.property-layout-sides > .check-property-back {
+  grid-area: back;
+  justify-self: center;
+}
+
+.property-layout-sides > .check-property-left {
+  grid-area: left;
+}
+
+.property-layout-sides > .check-property-right {
+  grid-area: right;
+  justify-self: end;
+}
+
+.property-layout-sides > .check-property-front {
+  grid-area: front;
+  justify-self: center;
+}
+
 .range-property {
   display: grid;
   gap: 7px;
@@ -9795,7 +9643,8 @@ html[data-theme="dark"] .property-defaults-actions button {
 
 .select-property {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
+  /* A long label (German "Buchstabenkanten") takes the room it needs instead of running under the field. */
+  grid-template-columns: minmax(92px, max-content) minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   color: #867563;
@@ -10587,6 +10436,147 @@ html[data-theme="dark"] .shape-inspector .name-tag-start .name-tag-start-button:
   font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
+}
+
+/* The font picker: a field that draws the chosen font, and a list that draws every font. */
+.font-picker-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 3px 12px;
+  color: #746352;
+  font: 600 15px/1 var(--font-ui);
+  text-align: left;
+  background: #fff;
+  border: 1px solid #daccbe;
+  border-radius: 999px;
+  outline: 0;
+  cursor: pointer;
+  box-shadow: inset 0 1px 1px rgba(65, 46, 25, 0.04);
+}
+
+.font-picker-button:focus-visible {
+  border-color: #ea953d;
+  box-shadow: 0 0 0 3px rgba(161, 83, 0, 0.14);
+}
+
+.font-picker-button:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+
+.font-picker-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.font-picker-current small,
+.font-picker-option small {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  color: #9a8874;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.font-preview-line {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: #5d4731;
+}
+
+.font-preview-line.empty {
+  display: inline-block;
+  width: 0;
+}
+
+.font-picker-list {
+  position: fixed;
+  z-index: 1000;
+  display: grid;
+  align-content: start;
+  padding: 4px;
+  overflow-y: auto;
+  color: #5d4731;
+  background: #fff;
+  border: 1px solid #daccbe;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(65, 46, 25, 0.22);
+}
+
+.font-picker-group {
+  padding: 8px 10px 3px;
+  color: #9a8874;
+  font: 700 11px/1 var(--font-ui);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.font-picker-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 36px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.font-picker-option.active {
+  background: #f6e8d6;
+}
+
+.font-picker-option.selected {
+  box-shadow: inset 3px 0 0 #ea953d;
+}
+
+.font-picker-option.action {
+  color: #8a5a1c;
+  font: 600 14px/1.2 var(--font-ui);
+}
+
+.font-picker-option.action small {
+  max-width: none;
+  color: inherit;
+  font-size: 14px;
+}
+
+html[data-theme="dark"] .font-picker-button {
+  color: #e6d8c6;
+  background: #21180f;
+  border-color: #5c4b3a;
+}
+
+html[data-theme="dark"] .font-picker-list {
+  color: #e6d8c6;
+  background: #2b2016;
+  border-color: #5c4b3a;
+}
+
+html[data-theme="dark"] .font-preview-line {
+  color: #f1e4d1;
+}
+
+html[data-theme="dark"] .font-picker-option.active {
+  background: #3b2c1d;
+}
+
+html[data-theme="dark"] .font-picker-option.action {
+  color: #f0b36a;
+}
+
+.font-manager-row .font-preview-line {
+  margin-top: 2px;
 }
 
 .text-property input:focus,
@@ -12335,6 +12325,25 @@ html[data-theme="dark"] .storage-notice-text span {
   color: #e2cfb6;
 }
 
+html[data-theme="dark"] .storage-notice.on-server {
+  background: #15291d;
+  border-color: #4f9a6a;
+}
+
+html[data-theme="dark"] .storage-notice.on-server .storage-notice-text strong {
+  color: #dff0e5;
+}
+
+html[data-theme="dark"] .storage-notice.on-server .storage-notice-text span {
+  color: #bcd6c5;
+}
+
+html[data-theme="dark"] .storage-notice.on-server .storage-notice-button.secondary {
+  color: #dff0e5;
+  background: #15291d;
+  box-shadow: inset 0 0 0 2px #4f9a6a;
+}
+
 html[data-theme="dark"] .storage-notice-button.secondary {
   color: #fbeed9;
   background: #33230f;
@@ -13631,12 +13640,13 @@ html[data-theme="dark"] .grid-settings {
    Gruppe einfach abgeschnitten, jetzt gehen die Symbole eine Stufe zurueck.
    Gemessen (Breite von der linken Kante der ersten bis zur rechten der letzten
    Gruppe, mit Lupen-, Anleitungs-, Kuerzel- und Hilfeknopf und "Flaeche
-   loeschen"): in voller Groesse braucht das Band 2081 px, in der mittleren
-   Stufe 1765 px, in der kleinen 1615 px. Ohne "Flaeche loeschen" waren es
+   loeschen" und "Huelle"): in voller Groesse braucht das Band 2172 px, in der
+   mittleren Stufe 1842 px, in der kleinen 1690 px (24.10.2026, #863). Ohne
+   "Huelle" passten 2081, 1765 und 1615 px. Ohne "Flaeche loeschen" waren es
    2038, 1728 und 1582 px, ohne den Knopf der Interaktiven Hilfe 1990, 1688
    und 1544 px: Jeder neue Knopf verschiebt alle drei Schwellen um das, was
    er braucht - neu messen. */
-@media (max-width: 2081px) {
+@media (max-width: 2180px) {
   :root {
     --toolbar-icon-size: calc(37px * var(--toolbar-scale));
   }
@@ -13657,7 +13667,7 @@ html[data-theme="dark"] .grid-settings {
   }
 }
 
-@media (max-width: 1765px) {
+@media (max-width: 1850px) {
   :root {
     --toolbar-icon-size: calc(34px * var(--toolbar-scale));
   }
@@ -13672,14 +13682,14 @@ html[data-theme="dark"] .grid-settings {
   }
 }
 
-/* Below the width even the smallest step needs (1615 px, measured with the
-   command search, guide, shortcuts, Interactive Help and Delete face buttons;
-   the middle step needs 1765 px and the full size 2081 px) the groups wrap onto a
+/* Below the width even the smallest step needs (1690 px, measured with the
+   command search, guide, shortcuts, Interactive Help, Delete face and Hull buttons;
+   the middle step needs 1842 px and the full size 2172 px) the groups wrap onto a
    further row instead of scrolling sideways: a scrolling bar hides tools and
    cuts off every menu that hangs beneath it. The bar grows, and the editor
    passes its real height on (see --editor-toolbar-height). A new button in
    the bar moves all three thresholds up: measure again. */
-@media (max-width: 1615px) {
+@media (max-width: 1698px) {
   .toolbar-mode-content,
   .sketch-toolbar-ribbon {
     flex-wrap: wrap;
@@ -14859,6 +14869,22 @@ html[data-theme="dark"] .color-keep-button[aria-pressed="true"] {
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+/* "Select other" can list many bodies (#804): the menu scrolls instead of running off the window. */
+.shape-context-menu {
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+
+.shape-context-menu-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
 }
 
 html[data-theme="dark"] .shape-context-menu {

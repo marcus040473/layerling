@@ -43,7 +43,7 @@ Auch eine ganze Gruppe kann ein Körper oder eine Aussparung sein. Dabei gilt ei
 
 Manchmal sollen Teile nur zusammenbleiben, ohne eins zu werden – etwa ein weißes Logo auf einer schwarzen Platte für den Mehrfarbdruck. Dafür gibt es {{ui:editor.tool.bundle}} ([[Strg]]+[[B]]), wie in Tinkercad. Ein Bündel lässt sich verschieben, drehen und in der Größe ändern wie eine Form, aber nichts wird verrechnet:
 
-- Jedes Teil behält seine Farbe und bleibt Körper oder Aussparung.
+- Jedes Teil behält seine Farbe und bleibt Körper oder Aussparung. Die Einstellungen des Bündels haben dieselben Karten wie die einer Gruppe: {{ui:inspector.solid}} und {{ui:inspector.hole}} für das ganze Bündel (die Farben der Teile bleiben dabei), {{ui:inspector.transparent}} ([[T]]) und {{ui:inspector.multicolor}} ([[Umschalt]]+[[M]]); ist „Multicolor“ ausgeschaltet, zeigt und exportiert sich das Bündel in einer Farbe. {{ui:inspector.separateParts}} löst das Bündel auf, wie es [[Strg]]+[[Umschalt]]+[[G]] tut.
 - Aussparungen schneiden nicht. Gruppierst du das Bündel mit anderen Teilen, schneiden seine Aussparungen diese Teile, die Körper des Bündels selbst aber weiterhin nicht – wie in Tinkercad. So lässt sich zum Beispiel ein Zapfen mit seiner Bohrung daneben als Bündel immer wieder verwenden.
 - Beim Export als STL, 3MF oder OBJ ist jedes Teil ein eigener Körper; im 3MF und OBJ mit seiner Farbe.
 
@@ -52,6 +52,12 @@ Manchmal sollen Teile nur zusammenbleiben, ohne eins zu werden – etwa ein wei�
 ## Schnittmenge
 
 {{ui:editor.tool.intersect}} behält nur das, was zwei oder mehr Körper gemeinsam haben. Lege zwei überlappende Formen übereinander, markiere beide und klicke darauf. So entsteht zum Beispiel aus einem Zylinder und einem Quader ein Stück mit runder und gerader Seite. Eine Gruppe zählt dabei so, wie sie aussieht, also mit ihren Bohrungen. Ist eine Aussparung mit markiert, bleibt das, was alle Körper mit allen Aussparungen gemeinsam haben. Haben die Formen nichts gemeinsam, bleibt alles, wie es ist, und eine Meldung sagt es. Daneben zeigt {{ui:editor.tool.intersectPreview}} das gemeinsame Stück, bevor du es anwendest: Die markierten Formen werden durchsichtig, und was sie gemeinsam haben, ist grün gezeichnet. Markiere und verschiebe jede Form einzeln, und das grüne Stück folgt; {{ui:editor.tool.intersect}} wendet es an, [[Esc]] schließt die Vorschau.
+
+{{ui:editor.tool.hull}} hüllt die markierten Formen in einen einzigen konvexen Körper, als wären sie in Schrumpffolie gepackt: den kleinsten Körper ohne Dellen, der alle umfasst. Aus einer Halbkugel auf einem Zylinder wird eine Kuppel ohne Absatz, aus vier Zylindern an den Ecken ein Kasten mit runden Ecken, aus zwei Kugeln eine Kapsel. Aussparungen in der Auswahl werden danach aus der Hülle herausgeschnitten. Die Teile bleiben darin: {{ui:group.edit}} öffnet die Hülle wie eine Gruppe, und wer dort ein Teil verschiebt und abschließt, bekommt die Hülle neu berechnet. Die Hülle ist ein Dreiecksnetz, runde Formen zeigen also Facetten, und die Kantenwerkzeuge wirken darauf wie auf jedes Netz.
+
+## Körper ausschneiden
+
+Bei Teilen, die zusammenpassen müssen, eine Welle in einer Hülse, eine Schraube in einem Gehäuse, baust du das eine Teil und schneidest es aus dem anderen aus. Wähle die beiden Körper und klicke im Bereich {{ui:editor.group.combine}} auf {{ui:editor.tool.cutOut}}, oder klicke mit rechts und wähle es dort. Das Fenster nennt das Teil, das bleibt, und den Körper, der die Aussparung bekommt; layerling nimmt den kleineren als Teil, und {{ui:cutOut.swap}} dreht es um. Das {{ui:cutOut.clearance}} macht die Aussparung ringsum um so viel größer als das Teil: 0 passt genau, 0,2 mm ist ein üblicher Wert für eine gedruckte Passung. {{ui:cutOut.apply}} schneidet eine Kopie des Teils aus dem anderen Körper und lässt das Teil selbst, wo es ist. Das Ergebnis ist eine Gruppe: {{ui:editor.tool.ungroup}} nimmt den Schnitt wieder auseinander. Ein Spiel verlangt, dass das Teil ein exakter Körper ist, wie beim Werkzeug {{ui:editor.tool.offset}}, das dafür benutzt wird.
 
 ## Eine Gruppe bearbeiten
 

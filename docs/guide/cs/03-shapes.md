@@ -100,7 +100,7 @@ Válec, kužel, trubka, elipsa a otvory mají {{ui:prop.sidesFollowSize}} a {{ui
 Vedle číselných polí jsou úchyty přímo na tvaru:
 
 - **Rohy a hrany** mění velikost. [[Shift]] při tažení rohu zachovává poměr šířky, hloubky a výšky, [[Alt]] mění velikost vůči středu místo protějšího rohu. Bez držení klávesy zapněte {{ui:inspector.keepProportions}}. Rohy pak zachovávají poměry vždy a zadání jednoho rozměru přepočítá zbývající. Volba se pamatuje.
-- **Horní šipka** mění výšku, **prostřední úchyt** zvedá nebo spouští celé těleso.
+- Černá **šipka nad** tvarem ho zvedá nebo spouští; s [[Alt]] drženým od začátku vznikne tam, kde pustíte, kopie, takže můžete skládat nad sebe. Bílý úchyt **na horní stěně** mění výšku.
 - **Obloukové šipky** otáčejí.
 - **Čísla** vedle tělesa umožňují přímé zadání. [[Enter]] mění rozměr od protějšího okraje jako tažení; [[Alt]]+[[Enter]] souměrně vůči středu, aby se zachovalo zarovnání. Platí pro délku a šířku. Výška roste vždy od spodní strany vzhůru. Pravý panel zachovává střed i bez klávesy. [[Tab]] převezme číslo a otevře další pole (šířka, hloubka, výška); [[Shift]]+[[Tab]] jde zpět. V poli vlastností, na které jste klikli, mění hodnotu i kolečko myši: jednotku na zub, desetinásobek s [[Shift]], desetinu s [[Ctrl]] a setinu s [[Alt]]. Pole, na které jste neklikli, nechává kolečko panelu, který se posouvá.
 - **Kliknutí na roh bez tažení** otevře šířku a hloubku společně. Zadejte první, [[Tab]] přejděte na druhou a [[Enter]] potvrďte obě. [[Esc]] zruší změnu.

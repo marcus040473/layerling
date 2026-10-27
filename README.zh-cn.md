@@ -21,7 +21,7 @@
     <a href="#layerling-mcp-skill"><img alt="可由 AI 驱动" src="https://img.shields.io/badge/AI--drivable-MCP%20server-16c0d4"></a>
   </p>
 
-  <p><strong>简体中文</strong> · <a href="README.md">English</a> · <a href="README.de.md">Deutsch</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.zh-tw.md">繁體中文</a></p>
+  <p><strong>简体中文</strong> · <a href="README.md">English</a> · <a href="README.de.md">Deutsch</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.ar.md">العربية</a> · <a href="README.zh-tw.md">繁體中文</a></p>
 </div>
 
 <p align="center">
@@ -127,6 +127,7 @@ layerling 站在 Tinkercad 之上、朝 Fusion 360 更近一步：操作方式�
 由他人制作，不是本项目出品：
 
 <!-- videos:start -->
+- [I Tried Layerling After Tinkercad… Is It REALLY Better?](https://youtu.be/5DpOxdoNwqs) – Maker Mates Studio 3D Printing（英语）。一位 Tinkercad 用户试用 layerling，并对两者进行比较。
 - [Layerling CAD Videos](https://www.youtube.com/playlist?list=PLc09BHr_6nn8) – Printology（英语）。一个关于 layerling 的播放列表，目前包含“I'm 100% In on Layerling - The Next Big Free CAD”和“Layerling Features That Blow Tinkercad Out Of The Water”。
 - [Print by Layer](https://www.youtube.com/playlist?list=PLejZBz4L7CGQ) – Print N Repeat（英语）。一个关于 layerling 的播放列表，目前包含“The EASIEST Way to Design Hinges in Layerling”和“The EASIEST Way to 3D Model Threads!”。
 - [Layerling la nueva herramienta gratuita de modelado 3D, más completo que Tinkercad](https://youtu.be/-EEt0RSINoY) – Fulcro 1900（西班牙语）。一条关于 layerling 的视频：这款新的免费 3D 建模工具比 Tinkercad 更完整。

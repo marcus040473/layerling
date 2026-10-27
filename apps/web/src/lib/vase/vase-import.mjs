@@ -1,12 +1,12 @@
 /**
- * Koerperform aus einem Netz (STL, 3MF, OBJ) uebernehmen - etwa von einer Vorbild-Vase.
+ * Take a body form from a mesh (STL, 3MF, OBJ) - from a model vase, say.
  *
- * Die Vase steht (Z nach oben, wie im Slicer). Die Drehachse ist die senkrechte Linie durch ihren
- * Schwerpunkt (bei einem offenen Netz den der Flaeche). An 240 Hoehen wird der
- * groesste Abstand des Netzes zur Achse gemessen: die Huelle eines Drehkoerpers, wie SolidCraft sie
- * fuer „Spun profile“ nimmt. Eine hohle Vase liefert so ihre Aussenwand, ein Henkel ragt heraus. Aus
- * den Messwerten werden Punkte mit Anfassern wie beim SVG-Import (hoechstens 0,2 mm daneben). Liegt das
- * Teil (keine ebene Flaeche unten) oder ist es um die Achse nicht rund, sagt es ein Hinweis.
+ * The vase stands upright (Z up, as in the slicer). The axis of revolution is the vertical line through its
+ * centre of mass (for an open mesh, that of its surface). At 240 heights the mesh's
+ * greatest distance from the axis is measured: the hull of a body of revolution, as SolidCraft takes it
+ * for "Spun profile". So a hollow vase gives its outer wall, and a handle sticks out. The
+ * measurements become points with control handles as in the SVG import (at most 0.2 mm off). If the
+ * part lies on its side (no flat face at the bottom) or is not round about the axis, a note says so.
  */
 import { profileFromSamples } from './svg-import.mjs'
 
@@ -14,8 +14,8 @@ const fmt = (v) => v.toLocaleString('de-DE', { maximumFractionDigits: 1 })
 const SECTORS = 16
 
 /**
- * `soup`: Dreiecke als flache Liste x, y, z (je 9 Zahlen). Liefert { ok, profilePoints, height,
- * diameter, notes } wie svgToProfile, oder { ok: false, notes }.
+ * `soup`: triangles as a flat list x, y, z (9 numbers each). Returns { ok, profilePoints, height,
+ * diameter, notes } like svgToProfile, or { ok: false, notes }.
  */
 export function meshToProfile(soup, { stations = 240, tolerance = 0.2 } = {}) {
   const n = Math.floor(soup.length / 9) * 9
@@ -32,8 +32,8 @@ export function meshToProfile(soup, { stations = 240, tolerance = 0.2 } = {}) {
   }
   const H = z1 - z0
   if (!(H > 0)) return { ok: false, notes: ['Das Netz hat keine Höhe – ist es leer oder flach?'] }
-  // Achse durch den Schwerpunkt des Koerpers (Tetraeder zum Ursprung, vorzeichenbehaftet) - bei einem
-  // Dreieck oder Fuenfeck liegt die Mitte des Kastens daneben. Offenes Netz: Schwerpunkt der Flaeche.
+  // Axis through the body's centre of mass (signed tetrahedra to the origin) - for a triangle or a
+  // pentagon, the middle of the bounding box is off. Open mesh: centre of mass of the surface.
   let vol = 0, mx = 0, my = 0, area = 0, ax = 0, ay = 0
   for (let t = 0; t < n; t += 9) {
     const [a0, a1, a2, b0, b1, b2, c0, c1, c2] = [soup[t], soup[t + 1], soup[t + 2] - z0, soup[t + 3], soup[t + 4], soup[t + 5] - z0, soup[t + 6], soup[t + 7], soup[t + 8] - z0]
@@ -52,7 +52,7 @@ export function meshToProfile(soup, { stations = 240, tolerance = 0.2 } = {}) {
   const cx = solid ? mx / vol : area > 0 ? ax / area : (x0 + x1) / 2
   const cy = solid ? my / vol : area > 0 ? ay / area : (y0 + y1) / 2
   const dz = H / stations
-  // Je Hoehe: groesster Abstand zur Achse, und je Winkelbereich (fuer die Pruefung, ob das Teil rund ist).
+  // Per height: greatest distance from the axis, and per angle sector (to check whether the part is round).
   const rMax = new Float64Array(stations).fill(-1)
   const sector = new Float64Array(stations * SECTORS).fill(-1)
   const hit = (k, x, y) => {
@@ -62,7 +62,7 @@ export function meshToProfile(soup, { stations = 240, tolerance = 0.2 } = {}) {
     const s = Math.min(SECTORS - 1, Math.floor(((Math.atan2(dy, dx) / (2 * Math.PI)) + 0.5) * SECTORS))
     if (r > sector[k * SECTORS + s]) sector[k * SECTORS + s] = r
   }
-  // Unten und oben: die Punkte genau dort (Rand des Bodens, Rand der Oeffnung).
+  // Bottom and top: the points right there (edge of the bottom, rim of the opening).
   let rBottom = -1, rTop = -1
   const eps = H * 1e-6
   for (let i = 0; i < n; i += 3) {
@@ -70,8 +70,8 @@ export function meshToProfile(soup, { stations = 240, tolerance = 0.2 } = {}) {
     if (soup[i + 2] <= z0 + eps && r > rBottom) rBottom = r
     if (soup[i + 2] >= z1 - eps && r > rTop) rTop = r
   }
-  // Steht das Teil? Eine stehende Vase hat unten eine ebene Flaeche (auch ein hohler Fuss einen Ring);
-  // ein liegendes Teil beruehrt das Bett nur auf einer Linie, bei gleich weitem Rand unten.
+  // Does the part stand? A standing vase has a flat face at the bottom (a hollow foot still has a ring);
+  // a part lying on its side touches the bed only along a line, for the same width of its bottom edge.
   let flat = 0
   for (let t = 0; t < n; t += 9) {
     if (Math.max(soup[t + 2], soup[t + 5], soup[t + 8]) > z0 + 0.01) continue
@@ -83,11 +83,11 @@ export function meshToProfile(soup, { stations = 240, tolerance = 0.2 } = {}) {
     const za = soup[t + 2], zb = soup[t + 5], zc = soup[t + 8]
     const lo = Math.min(za, zb, zc), hi = Math.max(za, zb, zc)
     if (!(hi > lo)) continue
-    // Hoehen z_k = z0 + (k + 0,5) dz, die das Dreieck schneidet.
+    // Heights z_k = z0 + (k + 0.5) dz that the triangle crosses.
     const k0 = Math.max(0, Math.ceil((lo - z0) / dz - 0.5)), k1 = Math.min(stations - 1, Math.floor((hi - z0) / dz - 0.5))
     for (let k = k0; k <= k1; k++) {
       const z = z0 + (k + 0.5) * dz
-      // Der Abstand zur Achse ist laengs einer Strecke konvex: das Groesste liegt an einem Ende der Schnittstrecke.
+      // The distance from the axis is convex along a segment: the greatest lies at one end of the cut.
       for (const [a, b] of [[t, t + 3], [t + 3, t + 6], [t + 6, t]]) {
         const ea = soup[a + 2], eb = soup[b + 2]
         if ((ea - z) * (eb - z) > 0 || ea === eb) continue
@@ -103,7 +103,7 @@ export function meshToProfile(soup, { stations = 240, tolerance = 0.2 } = {}) {
     if (rMax[k] <= 0) continue
     ts.push((k + 0.5) / stations)
     rs.push(rMax[k])
-    // Rund um die Achse? Nur mit genug Messstellen rundum (ein grobes Vieleck trifft nicht jeden Bereich).
+    // Round about the axis? Only with enough measuring points all round (a coarse polygon does not hit every sector).
     let filled = 0, lo = Infinity
     for (let s = 0; s < SECTORS; s++) {
       const v = sector[k * SECTORS + s]
@@ -125,5 +125,5 @@ export function meshToProfile(soup, { stations = 240, tolerance = 0.2 } = {}) {
   return { ok: true, ...fit, notes }
 }
 
-// In Layerling liest der Editor die Datei selbst (wie das Importfenster) und gibt die Dreiecke an meshToProfile;
-// das Lesen ueber das Oberflaechen-Werkzeug (meshFileToProfile im Vasen-Werkzeug) entfaellt hier.
+// In Layerling the editor reads the file itself (like the import window) and hands the triangles to meshToProfile;
+// reading through the surface tool (meshFileToProfile in the vase tool) is not needed here.

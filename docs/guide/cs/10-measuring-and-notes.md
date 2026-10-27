@@ -36,13 +36,13 @@ Pro měření v pravém úhlu použijte {{ui:camera.cornerRulerTool}} v liště 
 - **×** vedle úhelníku jej odstraní.
 - **Malé tlačítko vlevo od úchytu** přepíná měření od vnějšího okraje tělesa, se symbolem čar, nebo od jeho středu, se zaměřovacím křížem. Stejný malý přepínač je i u každého zeleného čísla a nastavuje pouze danou kótu. U stojícího válce tak můžete měřit v obou ramenech ke středu a ve výšce ke spodní straně, u ležícího napříč ke středu a podélně ke konci. Pokud se všechna tři nastavení shodují, tlačítko u úchytu ukáže společný režim.
 
-U těles umístěných u ramen úhelník automaticky ukazuje rozměry. To funguje pouze na základní podložce, nikoli na boční stěně.
+U těles umístěných u ramen úhelník automaticky ukazuje rozměry. To funguje pouze na základní podložce, nikoli na boční stěně. Tlačítko se šipkou pod úchytem úhelníku to vypne, takže míry ukazují jen vybraná tělesa; ukládá se s projektem.
 
 Po výběru tělesa se zeleně zobrazí vzdálenosti od rohu podél obou ramen i výškově. Kliknutím na zelené číslo zadáte požadovanou vzdálenost a těleso se přesune. Více vybraných těles se posuzuje jako celek: měří se společný obrys a zadaná hodnota přesune celý výběr bez změny vzájemných poloh.
 
 V režimu středu vedou zelené rozměry do středu tělesa, včetně výšky. Střed koule tak umístíte přesně 15 mm od okraje bez odečítání poloměru. Otvor na stěně umístíte například 40 mm zleva a 190 mm shora tak, že jej vyberete, zapnete měření od středu a zadáte 40 a 190. Výška v tomto případě směřuje ven ze stěny.
 
-Měřicí nástroj i úhelník zůstávají na místě při přechodu do náčrtu a zpět do 3D. Neukládají se do projektu ani historie a po obnovení stránky zmizí.
+Měřicí nástroj i úhelník zůstávají na místě při přechodu do náčrtu a zpět do 3D. Ani jeden se neukládá do historie. Úhelník se s projektem ukládá, stejně jako měření měřicího nástroje, v prohlížeči i v souboru .lyl: po otevření projektu jsou zase tam. Tlačítko s okem mezi tlačítky měřicího nástroje všechna měření skryje a znovu zobrazí; uloží se i to, zda jsou skrytá, a kdo měření přidá, posune nebo smaže, uvidí je předtím znovu.
 
 ## Vzdálenosti od počátku a při přesouvání
 
@@ -70,7 +70,7 @@ Poznámky se ukládají v projektu, do exportu se nezahrnují a jejich viditelno
 
 ## Referenční body
 
-Referenční bod je samostatná značka v prostoru, podobná rysce při práci v dílně. Nepatří žádnému tělesu, netiskne se a ostatní objekty se na něj přichytávají. Klikněte pravým tlačítkem na těleso a vyberte {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} nebo {{ui:contextMenu.markMidpoints}}. Body vzniknou na horní ploše tělesa, případně celého výběru.
+Referenční bod je samostatná značka v prostoru, podobná rysce při práci v dílně. Nepatří žádnému tělesu, netiskne se a ostatní objekty se na něj přichytávají. Klikněte pravým tlačítkem na těleso a vyberte {{ui:contextMenu.markCenter}}, {{ui:contextMenu.markCorners}} nebo {{ui:contextMenu.markMidpoints}}. Body vzniknou na horní ploše tělesa, případně celého výběru. {{ui:contextMenu.markFaceCenter}} místo toho umístí bod doprostřed rovné stěny, na kterou jste klikli pravým tlačítkem, třeba na boku nebo na konci.
 
 - Bod přesunete tažením nebo kliknutím otevřete souřadnice v nastavených jednotkách. Každou kartu lze přetáhnout za záhlaví samostatně; ostatní zůstanou na místě. Dvojklik ji vrátí a naposledy použitá karta se zobrazí vpředu. **Odstranit všechny** na kartě nebo v nabídce pravého tlačítka odstraní všechny body najednou. {{ui:common.delete}} odstraní jednotlivý bod.
 - Bod vytvoří i měřicí nástroj: {{ui:camera.tapeMarkMiddle}} pod hodnotou měření označí jeho střed, například střed kruhového otvoru. Měřit lze také od takového bodu: pásmo se k referenčním bodům přichytává stejně jako k rohům.

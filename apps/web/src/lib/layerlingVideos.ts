@@ -7,6 +7,12 @@
  */
 export const LAYERLING_VIDEOS = [
   {
+    title: "I Tried Layerling After Tinkercad… Is It REALLY Better?",
+    channel: "Maker Mates Studio 3D Printing",
+    lang: "EN",
+    url: "https://youtu.be/5DpOxdoNwqs",
+  },
+  {
     // A whole playlist, so new videos in it arrive here without a release.
     title: "Layerling CAD Videos",
     channel: "Printology",

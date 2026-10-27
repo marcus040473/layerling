@@ -208,6 +208,13 @@
   cursor: copy;
 }
 
+/* In the sketch a note lands on a line or a picture as well, so they keep the same pointer; the doubled class
+   outranks the select tool's plain arrow and the cursors of lines, points, pictures and handles. */
+.sketch-plate.note-mode.note-mode,
+.sketch-plate.note-mode.note-mode * {
+  cursor: copy;
+}
+
 @media (max-width: 720px) {
   .note-card {
     width: 168px;

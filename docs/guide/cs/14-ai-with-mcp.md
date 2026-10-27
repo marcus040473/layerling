@@ -67,11 +67,14 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_ungroup_objects` | rozloží sloučení |
 | `layerling_boolean_cut` | odečte výřezy od plných těles |
 | `layerling_intersect_objects` | zachová pouze společný průnik objektů |
+| `layerling_hull_objects` | obalí objekty jedním vypouklým tělesem, jako by byly zataveny ve fólii (obal) |
 | `layerling_separate_parts` | rozdělí tvar na jeho nespojené části, těleso z náčrtu na jedno těleso za každý obrys |
 | `layerling_split_objects` | rozdělí tělesa nebo výřezy rovinou na dvě části |
 | `layerling_list_edges` | vypíše skutečné CAD hrany objektu |
 | `layerling_apply_edge_treatment` | zkosí nebo zaoblí vybrané hrany |
 | `layerling_hollow_object` | vytvoří dutinu s rovnoměrnou stěnou |
+| `layerling_cut_out` | vyřízne jedno těleso z druhého, aby k sobě pasovala: díl zůstane, kopie zvětšená o vůli se odečte od druhého tělesa |
+| `layerling_offset_object` | odsadí všechny plochy tělesa pro vůli lícovaného spoje: zvětší nebo zmenší těleso, nebo přidá zvětšenou kopii jako díru |
 | `layerling_list_faces` | vypíše plochy přesného tělesa |
 | `layerling_delete_faces` | smaže plochy a uzavře mezeru |
 | `layerling_array_objects` | opakuje objekty v řadě nebo po kružnici |
@@ -96,7 +99,8 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_delete_custom_shape` | odstraní uložený vlastní tvar; vložená tělesa zůstanou |
 | `layerling_show_workplane` | skryje nebo zobrazí podložku s mřížkou, pouze změna pohledu |
 | `layerling_set_section_view` | zapne pohled v řezu, aniž by skutečně rozdělil tělesa |
-| `layerling_saved_view` | uloží aktuální pohled pod klávesu 7, 8, 9 nebo 0 a vrátí se k němu, jako Shift+klávesa a klávesa (jen pohled) |
+| `layerling_measurements` | zobrazí nebo skryje měření měřicího nástroje a vypíše je s jejich délkami |
+| `layerling_saved_view` | uloží aktuální pohled pod klávesu 7, 8, 9 nebo 0 a vrátí se k němu, jako Shift+klávesa a klávesa (jen pohled); nastaví také úvodní pohled nových návrhů |
 | `layerling_clear_history` | trvale vymaže historii kroků zpět, vyžaduje `confirm: true` |
 | `layerling_set_history_view` | zobrazí starší stav projektu bez změny současného; editační nástroje počkají na zavření historie |
 | `layerling_restore_from_history` | vrátí objekty (i díly ve skupinách) ze staršího stavu do návrhu jako kopie, jako tlačítko „Vrátit do návrhu“ v historii - jeden krok, který Zpět vrátí |
@@ -104,6 +108,11 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_export_drawing` | vytvoří technický výkres tří pohledů v měřítku 1:1 na listu ISO s celkovými rozměry a tabulkou kruhových otvorů, jako SVG nebo PDF |
 | `layerling_export_mesh` | zapíše soubor exportního okna jako STL, 3MF, OBJ, SVG (pohled shora, půdorys nebo viditelné hrany) nebo DXF pro laserové řezání ze stejných těles; na cestu v tomto počítači nebo jako base64 |
 | `layerling_save_project` | uloží celý upravitelný návrh jako soubor .lyl na cestu v počítači, kde běží server MCP, bez dialogu; existující soubor se nahradí jen s `overwrite`, zapisuje se přes dočasný soubor a cíl Ctrl+S v editoru zůstává, jaký byl |
+| `layerling_list_attachments` | vypíše soubory připojené k návrhu (název, typ, velikost), jak je ukazuje panel Přílohy |
+| `layerling_get_attachment` | přečte jeden připojený soubor, jeho bajty jako base64, jako Stáhnout v panelu |
+| `layerling_add_attachment` | připojí soubor zadaný jako base64, s kontrolami panelu; už připojený název přepíše jen s `replace` |
+| `layerling_rename_attachment` | dá připojenému souboru jiný název; obsah zůstane |
+| `layerling_remove_attachment` | natrvalo odebere připojený soubor; vyžaduje `confirm: true` |
 | `layerling_set_workplane` | položí pracovní rovinu na plochu tělesa nebo zpět na podložku a přepíná její viditelnost |
 | `layerling_capture_image` | pořídí snímek zepředu, shora, z boku, šikmo z rohu a z dalších pohledů |
 

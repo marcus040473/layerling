@@ -1,34 +1,33 @@
 /**
- * Zubehoer zur Vase, jedes Teil ein eigenes, geschlossenes Netz: Beine (zum Einstecken oder
- * angeformt), Staender, Untersetzer (Schale oder versteckt im hohlen Fuss), Einsaetze
- * (Pflanzeinsatz, Selbstbewaesserung, Steckeinsatz fuer Schnittblumen, Wasserroehrchen), Deckel
- * (Stuelp-, Schnapp-, Schraubdeckel).
+ * Accessories for the vase, each part a closed mesh of its own: legs (plug-in or moulded on),
+ * stand, saucer (a dish, or hidden in the hollow foot), inserts (planter insert, self-watering,
+ * flower frog for cut flowers, water tube), lids (push-in, snap-on, screw-on).
  *
- * Eigene Entwuerfe mit Blick auf den Alltag: Untersetzer mit Auflagerippen, Zentrierstegen,
- * Ausguss und Griffmulde; Kegelzapfen, die klemmen und sich zentrieren; Staender mit schraeger
- * Auflage (zentriert den Topf, druckt ohne Stuetzen); Einsaetze mit Griffnasen, Gefaelle-freiem
- * Lochboden und Giessschacht. Alle Passungen mit einem Spiel (`fitClearance`).
+ * Own designs with everyday use in mind: saucer with support ribs, centring tabs, spout and
+ * finger grip; tapered pegs that clamp and centre themselves; stand with a sloped seat (centres
+ * the pot, prints without supports); inserts with lifting tabs, a perforated floor without slope
+ * and a watering shaft. Every fit has a clearance (`fitClearance`).
  *
  *   buildParts(vaseParams, { outward }) -> { parts: [...], lift, notes }
  *
- * Ein Teil: { id, name, mesh: { vertices, indices }, z, merge (gehoert zum Objekt der Vase),
- * flip (zum Drucken umdrehen), info (z. B. Inhalt in ml) }. Die Netze liegen in den Koordinaten
- * der Vase (Mitte auf der Achse); im Zusammenbau wird die Vase um `lift` angehoben, ein Teil um
- * `lift + z` (Untersetzer unten, Beine bzw. Staender darauf, Einsaetze in der Vase: z = 0).
- * `layoutParts` legt alles zum Drucken nebeneinander - Vorschau und Datei nutzen dasselbe.
+ * A part: { id, name, mesh: { vertices, indices }, z, merge (belongs to the vase's object),
+ * flip (turn over for printing), info (e.g. capacity in ml) }. The meshes lie in the vase's
+ * coordinates (centre on the axis); when assembled, the vase is lifted by `lift`, a part by
+ * `lift + z` (saucer at the bottom, legs or stand on it, inserts in the vase: z = 0).
+ * `layoutParts` lays everything out side by side for printing - preview and file use the same.
  */
 import { MeshBuilder } from './mesh-tools.mjs'
 import { LID_MODES, floorLayout, normalizeParams, threadDepthAt } from './vase-geometry.mjs'
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 const ml = (mm3) => Math.round(mm3 / 1000)
-/** Weiches Fenster um einen Winkel (1 in der Mitte, 0 ab `width`). */
+/** Soft window round an angle (1 in the middle, 0 from `width` on). */
 const bump = (a, center, width) => {
   let d = Math.abs(((a - center + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI)
   return d >= width ? 0 : 0.5 * (1 + Math.cos((Math.PI * d) / width))
 }
 
-/** Flaeche eines Rings r(theta) (Polygon mit n Punkten). */
+/** Area of a ring r(theta) (polygon of n points). */
 function ringArea(r, n = 256) {
   let a = 0
   for (let k = 0; k < n; k++) {
@@ -46,21 +45,21 @@ export function buildParts(input, { outward = 0 } = {}) {
   const c = p.fitClearance
   const notes = []
   const parts = []
-  // Lampenschirm: kein Untersetzer, kein Einsatz - Wasser und Licht vertragen sich nicht.
+  // Lampshade: no saucer, no insert - water and light do not mix.
   if (p.body === 'hohl' && p.lamp !== 'keine') {
     if (p.saucerMode !== 'keine' || p.insertMode !== 'keine') notes.push('Beim Lampenschirm gibt es keinen Untersetzer und keinen Einsatz.')
     p.saucerMode = 'keine'
     p.insertMode = 'keine'
   }
-  // Ringe fein genug fuer den Querschnitt (Lamellen, Wellen, Ecken).
+  // Rings fine enough for the cross-section (slats, waves, corners).
   const N = clamp(Math.max(192, (p.section === 'welle' ? p.sectionWaves : 0) * 8, p.section === 'vieleck' ? p.polySides * 24 : 0,
     (p.section2 === 'welle' ? p.section2Waves : 0) * 8, p.section2 === 'vieleck' ? p.section2Sides * 24 : 0), 192, 720)
-  // Rand des Bodens samt nach aussen stehendem Muster.
+  // Rim of the bottom, including any pattern standing outwards.
   const rim = (a) => shape.rimAt(a) + outward
   /**
-   * Weitester Umriss des Topfs (samt Muster) zwischen den Hoehen z0 und z1, als Tabelle je
-   * Ringwinkel: Ein bauchiger Topf ist ueber dem Boden weiter als unten - Reif, Schale und Stege
-   * muessen um diese Stelle herum passen. Zwischen zwei Ringpunkten mit Sicherheit fuer die Sehne.
+   * Widest outline of the pot (pattern included) between heights z0 and z1, as a table per ring
+   * angle: a bulging pot is wider above its bottom than at it - hoop, dish and tabs must fit round
+   * that point. Between two ring points, with a margin for the chord.
    */
   const potEnvelope = (z0, z1) => {
     const table = new Float64Array(N)
@@ -76,29 +75,29 @@ export function buildParts(input, { outward = 0 } = {}) {
     }
     return (a) => table[((Math.round(a / da) % N) + N) % N]
   }
-  /** Bauteile einzeln bauen: Geht eines schief, fehlt nur dieses - mit Hinweis statt Abbruch. */
+  /** Builds the parts one by one: if one fails, only that one is missing - with a note instead of an abort. */
   const safely = (label, fn) => {
     try { fn() } catch (error) { notes.push(`${label} ließ sich nicht bauen: ${error.message}`) }
   }
-  // Hoehe, auf der Topf bzw. Beine stehen: im Untersetzer auf dessen Rippen. Mit Beinen keine
-  // Rippen - die Beine halten den Topf schon aus dem Wasser, und ein Fuss auf einer Rippe, die
-  // anderen daneben, liesse ihn kippeln.
+  // Height the pot or the legs stand at: in the saucer, on its ribs. No ribs with legs - the legs
+  // already keep the pot out of the water, and one foot on a rib with the others beside it would
+  // make it wobble.
   const saucerFloor = 2, saucerRib = p.saucerRibs === 'ja' && p.legMode === 'keine' ? 2.5 : 0
   const standLevel = p.saucerMode === 'schale' ? saucerFloor + saucerRib : 0
   let lift = standLevel
-  // Fuesse der Beine (Mitte und Radius am Boden), fuer die Pruefung im Untersetzer.
+  // Feet of the legs (centre and radius at the bottom), for the check in the saucer.
   const feet = []
   const splayOut = (h) => h * Math.tan((p.legSplay * Math.PI) / 180)
   const footR = p.legShape === 'zylinder' ? p.legDiameter / 2 : (p.legDiameter / 2) * 0.62
 
-  /* ---------- Beine und Staender ---------- */
+  /* ---------- Legs and stand ---------- */
   const legShape = (b, x, y, angle, topZ, height, withPeg, splayDeg) => {
     const rT = p.legDiameter / 2
     const rB = p.legShape === 'zylinder' ? rT : rT * 0.62
     const ch = Math.min(1, rB * 0.3)
     const peg = layout.peg
     const socket = peg.r + c
-    // Kegelzapfen: an der Schulter so weit wie die Buchse (+0,05 mm, klemmt), zur Spitze schlanker.
+    // Tapered peg: at the shoulder as wide as the socket (+0.05 mm, so it clamps), slimmer towards the tip.
     const profile = [[0, topZ - height], [rB - ch, topZ - height], [rB, topZ - height + ch], [rT, topZ]]
     if (withPeg) profile.push([socket + 0.05, topZ], [peg.r - 0.2, topZ + peg.length - 0.8], [peg.r - 1, topZ + peg.length], [0, topZ + peg.length])
     else profile.push([0, topZ])
@@ -106,7 +105,7 @@ export function buildParts(input, { outward = 0 } = {}) {
     const ca = Math.cos(angle), sa = Math.sin(angle)
     b.lathe(profile, p.legShape === 'kantig' ? 4 : 40, {
       phase: p.legShape === 'kantig' ? Math.PI / 4 : 0,
-      // Spreizung: unterhalb der Oberkante nach aussen geschert; Ober- und Unterseite bleiben waagerecht.
+      // Splay: sheared outwards below the top edge; the top and bottom faces stay level.
       transform: (u, v, z) => {
         const out = z < topZ ? (topZ - z) * t : 0
         const lu = u + out
@@ -115,7 +114,7 @@ export function buildParts(input, { outward = 0 } = {}) {
     })
   }
   if (p.legMode === 'stecken' || p.legMode === 'angeformt') safely('Die Beine', () => {
-    // Steckbeine nur dort, wo eine Buchse in den Boden passt.
+    // Plug-in legs only where a socket fits into the bottom.
     const legs = p.legMode === 'stecken' ? layout.legs.filter((leg) => leg.socket) : layout.legs
     if (p.legMode === 'stecken' && !legs.length) notes.push('Ohne Buchsen im Boden gibt es keine Steckbeine.')
     else {
@@ -136,22 +135,22 @@ export function buildParts(input, { outward = 0 } = {}) {
     }
   })
   if (p.legMode === 'staender') safely('Der Ständer', () => {
-    // Reif nach dem Querschnitt: innen mit Spiel um den Topf, darunter eine schraege Auflage (45 Grad),
-    // auf der der Topf mit seiner Kante sitzt und sich dabei selbst zentriert. Mitte offen (Ablauf).
+    // Hoop following the cross-section: inside, with clearance round the pot; below it a sloped seat
+    // (45 degrees) that the pot sits on with its edge, centring itself. Open in the middle (drainage).
     const b = new MeshBuilder()
     const rIn = (a) => rim(a) + c + 0.5
     const zBot = -12, zTop = 8
     const lipW = (a) => clamp(rim(a) * 0.12, 4, 10)
     const rLip = (a) => rIn(a) - lipW(a)
-    // Wo der Topf auf der Schraege (45 Grad, Reif-z = r - rIn) aufsitzt: mit der Kante - oder, wenn
-    // er sich unten flacher als 45 Grad weitet, mit der Flanke; dann sitzt er entsprechend hoeher.
+    // Where the pot rests on the slope (45 degrees, hoop z = r - rIn): with its edge - or, if it
+    // widens at the bottom flatter than 45 degrees, with its flank; it then sits that much higher.
     let seat = -Infinity
     for (let k = 0; k < 360; k++) {
       const a = (2 * Math.PI * k) / 360
       for (let h = 0; h <= lipW(a) + 2; h += 0.25) seat = Math.max(seat, shape.outerAt(a, h) + outward - h - rIn(a))
     }
-    // Die Wand des Reifs steht um die weiteste Stelle des Topfs in ihrer Hoehe (bauchige Toepfe);
-    // eine Stufe fuehrt hinunter zur Schraege.
+    // The hoop's wall stands round the pot's widest point within the wall's height (bulging pots);
+    // a step leads down to the slope.
     const env = potEnvelope(0, zTop - seat + 1)
     const rWall = (a) => Math.max(rIn(a), env(a) + c + 0.5)
     const rOut = (a) => rWall(a) + 3.2
@@ -166,7 +165,7 @@ export function buildParts(input, { outward = 0 } = {}) {
     b.wall([rows[5], rows[4]], true)
     b.wall([rows[6], rows[5]], true)
     b.band(rows[0], rows[6], false)
-    // Beine unter den Reif, leicht in ihn hinein (ein Objekt).
+    // Legs under the hoop, reaching slightly into it (one object).
     for (let k = 0; k < p.legCount; k++) {
       const a = (2 * Math.PI * k) / p.legCount + Math.PI / p.legCount
       const r = (rLip(a) + rOut(a)) / 2
@@ -174,34 +173,34 @@ export function buildParts(input, { outward = 0 } = {}) {
       feet.push({ a, r: r + splayOut(p.legHeight + 0.6), fr: footR })
     }
     lift = standLevel + p.legHeight + (seat - zBot)
-    // Zum Drucken umdrehen: Reif liegt mit der Oberkante auf, die Schraege braucht keine Stuetzen.
+    // Turn over for printing: the hoop rests on its top edge, and the slope needs no supports.
     const shift = p.legHeight - zBot
     const m = b.mesh()
     for (let i = 2; i < m.vertices.length; i += 3) m.vertices[i] += shift
     parts.push({ id: 'staender', name: 'Ständer', mesh: m, z: standLevel - lift, merge: false, flip: true })
   })
 
-  /* ---------- Untersetzer ---------- */
+  /* ---------- Saucer ---------- */
   if (p.saucerMode === 'schale') safely('Der Untersetzer', () => {
     const b = new MeshBuilder()
     const floor = saucerFloor
     const flare = Math.tan((8 * Math.PI) / 180)
     const top = p.saucerHeight
-    // Ausguss vorn (0 Grad) und Griffmulde hinten (180 Grad): Rand dort tiefer und nach aussen gezogen.
+    // Spout at the front (0 degrees) and finger grip at the back (180 degrees): the rim is lower there and drawn outwards.
     const spout = p.saucerSpout === 'ja'
     const grip = p.saucerGrip === 'ja'
     const dip = (a) => (spout ? 3.5 * bump(a, 0, 0.2) : 0) + (grip ? Math.min(top * 0.35, 5) * bump(a, Math.PI, 0.5) : 0)
     const bulge = (a, t) => ((spout ? 5 * bump(a, 0, 0.17) : 0) + (grip ? 3 * bump(a, Math.PI, 0.5) : 0)) * t * t
     const zTop = (a) => top - dip(a)
-    // Der Topf steht `lift` ueber dem Tisch; so weit er in die Schale reicht, ist er hier so weit wie
-    // an seiner weitesten Stelle (bauchig) - daran richtet sich die Innenwand.
+    // The pot stands `lift` above the table; as far as it reaches into the dish, it counts here as wide
+    // as at its widest point (bulging) - the inner wall follows that.
     const reach = Math.max(0, top - lift + 0.5)
     const env = reach > 0 ? potEnvelope(0, Math.min(H, reach)) : null
     const base = (a) => Math.max(rim(a), env ? env(a) : 0)
-    // Mit Beinen bzw. Staender waechst die Schale, bis alle Fuesse mit 1,5 mm Luft darin stehen
-    // (jeder Punkt des Fusses, nicht nur seine Mitte).
-    // Kerben im Rand (Wellen, Ecken) koennen zwischen zwei Punkten des Fusses liegen: gegen den
-    // engsten Rand im ganzen Winkelbereich des Fusses pruefen.
+    // With legs or a stand, the dish grows until all feet stand in it with 1.5 mm to spare
+    // (every point of the foot, not only its centre).
+    // Notches in the rim (waves, corners) can lie between two points of the foot: check against
+    // the narrowest rim over the foot's whole angle range.
     let gap = p.saucerGap
     for (const f of feet) {
       const span = Math.asin(Math.min(1, f.fr / Math.max(f.r, f.fr))) + 0.01
@@ -229,8 +228,8 @@ export function buildParts(input, { outward = 0 } = {}) {
     const ribH = saucerRib
     const tabEnv = ribH > 0 ? potEnvelope(0, 5.5) : null
     if (ribH > 0) {
-      // Auflagerippen: Der Topf steht 2,5 mm ueber dem Boden, also nicht im Wasser.
-      // Am Ende jeder Rippe ein Zentriersteg knapp ausserhalb der Topfkante.
+      // Support ribs: the pot stands 2.5 mm above the floor, so not in the water.
+      // At the end of every rib a centring tab just outside the pot's edge.
       const n = 6
       for (let k = 0; k < n; k++) {
         const a = (2 * Math.PI * k) / n + Math.PI / n
@@ -238,8 +237,8 @@ export function buildParts(input, { outward = 0 } = {}) {
         const L = r2 - r1, mid = (r1 + r2) / 2
         b.box(mid * Math.cos(a), mid * Math.sin(a), floor - 0.4, floor + ribH, L, 2.4, a)
         ribVolume += L * 2.4 * ribH
-        // Steg knapp ausserhalb der weitesten Stelle des Topfs in seiner Hoehe (5 mm); nur, wenn er
-        // noch vor die Innenwand passt.
+        // Tab just outside the pot's widest point within the tab's height (5 mm); only if it still
+        // fits in front of the inner wall.
         const rt = tabEnv(a) + c + 0.3 + 1
         if (rt + 1.2 < rInner(a, floor)) {
           b.box(rt * Math.cos(a), rt * Math.sin(a), floor - 0.4, floor + ribH + 5, 2, 6, a)
@@ -247,7 +246,7 @@ export function buildParts(input, { outward = 0 } = {}) {
         }
       }
     }
-    // Inhalt bis zur tiefsten Stelle des Rands (Ausguss).
+    // Capacity up to the lowest point of the rim (spout).
     let minTop = Infinity
     for (let k = 0; k < 360; k++) minTop = Math.min(minTop, zTop((2 * Math.PI * k) / 360))
     let vol = 0
@@ -263,7 +262,7 @@ export function buildParts(input, { outward = 0 } = {}) {
   if (p.saucerMode === 'versteckt') safely('Die versteckte Schale', () => {
     if (!(p.body === 'hohl' && layout.foot > 0)) notes.push('Die versteckte Schale braucht eine hohle Vase mit hohlem Fuß (Boden-Einstellung „Hohler Fuß“).')
     else {
-      // Schale im Hohlraum des Fusses: aussen mit Spiel zur Fusswand, 1,5 mm niedriger als der Fuss.
+      // Dish in the hollow of the foot: outside with clearance to the foot's wall, 1.5 mm lower than the foot.
       const foot = layout.foot
       const rIn0 = (a) => {
         let m = Infinity
@@ -292,10 +291,10 @@ export function buildParts(input, { outward = 0 } = {}) {
     }
   })
 
-  /* ---------- Einsaetze ---------- */
+  /* ---------- Inserts ---------- */
   const hollow = p.body === 'hohl'
   const floorTop = hollow ? layout.foot + layout.floor : 1.2
-  // Innenraum je Winkel und Hoehe; beim vollen Koerper (Slicer-Vasenmodus) etwa eine Linie Wand.
+  // Inner space per angle and height; for a solid body (slicer vase mode) about one line of wall.
   const cavity = (a, z) => (hollow ? shape.innerAt(a, z) : shape.outerAt(a, z) - 1)
   if (p.insertMode === 'pflanze' || p.insertMode === 'bewaesserung') safely('Der Einsatz', () => {
     const water = p.insertMode === 'bewaesserung'
@@ -303,7 +302,7 @@ export function buildParts(input, { outward = 0 } = {}) {
     const z1 = H - 1.5
     if (z1 - z0 < 15) notes.push('Für einen Einsatz ist die Vase zu niedrig.')
     else {
-      // Huelle zum Einsetzen von oben: an jeder Hoehe hoechstens so weit wie die engste Stelle darueber.
+      // Envelope for putting it in from above: at every height at most as wide as the narrowest point above it.
       const rows = 16
       const zs = Array.from({ length: rows + 1 }, (_, i) => z0 + ((z1 - z0) * i) / rows)
       const env = new Array(rows + 1)
@@ -313,8 +312,8 @@ export function buildParts(input, { outward = 0 } = {}) {
         for (let j = 0; j < AN; j++) {
           const a = (2 * Math.PI * j) / AN
           let m = cavity(a, zs[i])
-          // Zwischen dieser und der naechsten Hoehe dicht pruefen (Hals, Rippen); oben bis zum Rand,
-          // durch den der Einsatz hinein muss.
+          // Check densely between this height and the next (neck, ribs); at the top, up to the rim
+          // the insert has to pass through.
           if (i < rows) for (let s = 1; s < 4; s++) m = Math.min(m, cavity(a, zs[i] + ((zs[i + 1] - zs[i]) * s) / 4))
           else for (let s = 1; s <= 4; s++) m = Math.min(m, cavity(a, z1 + ((H - z1) * s) / 4))
           env[i][j] = i < rows ? Math.min(m, env[i + 1][j]) : m
@@ -335,8 +334,8 @@ export function buildParts(input, { outward = 0 } = {}) {
         b.wall(outer)
         b.wall(inner, true)
         b.band(outer[rows], inner[rows], true)
-        // Lochboden: Kreise duerfen sich nicht beruehren und muessen innen auf der Bodenplatte liegen
-        // (bei schmalen Einsaetzen fallen aeussere Loecher bzw. der Giessschacht weg).
+        // Perforated floor: circles must not touch and must lie inside, on the floor plate
+        // (narrow inserts lose the outer holes or the watering shaft).
         const plate = (a) => rAt(0)(a) - wall
         const onPlate = (h, margin) => {
           for (let k = 0; k < 24; k++) {
@@ -349,7 +348,7 @@ export function buildParts(input, { outward = 0 } = {}) {
         const apart = (h, list, gap) => list.every((o) => Math.hypot(h.cx - o.cx, h.cy - o.cy) >= h.r + o.r + gap)
         const center = { cx: 0, cy: 0, r: water ? 5 : 3 }
         const holes = [center]
-        // Fuesse als Abstand zum Vasenboden (bei Selbstbewaesserung hohe Saeulen im Wasser).
+        // Feet as spacers to the vase's bottom (with self-watering, tall columns in the water).
         const fr = clamp(minR * 0.13, 2, water ? 5 : 3.5)
         const rFoot = clamp(minR * 0.62, center.r + fr + 1.5, minR - wall - fr - 1)
         const feet = [0, 1, 2].map((k) => {
@@ -366,8 +365,8 @@ export function buildParts(input, { outward = 0 } = {}) {
         }
         let shaft = null
         if (water) {
-          // Giessschacht an der Wand (90 Grad): Rohr bis unter den Boden ins Wasser.
-          // Das Rohr reicht bis knapp ueber den Vasenboden: Es muss auch dort frei in der Vase stehen.
+          // Watering shaft at the wall (90 degrees): a tube reaching below the floor into the water.
+          // The tube reaches to just above the vase's bottom: it must stand clear inside the vase there too.
           const a = Math.PI / 2
           const ro = 7, ri = 5
           const tubeFits = (s) => {
@@ -396,8 +395,8 @@ export function buildParts(input, { outward = 0 } = {}) {
             transform: (x, y, z) => [x + f.cx, y + f.cy, z],
           })
         }
-        // Zwei Griffnasen innen am Rand zum Herausheben. Die ebene Aussenseite der Nase bleibt an
-        // jeder Stelle innerhalb der Huelle (Rippen, Ecken), greift aber in die Wand.
+        // Two lifting tabs on the inside of the rim, for lifting it out. The tab's flat outer side stays
+        // inside the envelope at every point (ribs, corners), but reaches into the wall.
         for (const a of [0, Math.PI]) {
           let rOut = rAt(rows)(a) - wall + 0.5
           const fits = (ro) => {
@@ -426,11 +425,11 @@ export function buildParts(input, { outward = 0 } = {}) {
     }
   })
   if (p.insertMode === 'stecker') safely('Der Steckeinsatz', () => {
-    // Platte auf dem Rand mit Loechern fuer Stiele (innen groesser, aussen kleiner), darunter ein
-    // Kragen, der in der Oeffnung sitzt. Gedruckt mit der Platte nach unten.
+    // Plate on the rim with holes for stems (larger towards the middle, smaller further out), below it
+    // a collar that sits in the opening. Printed with the plate down.
     const b = new MeshBuilder()
     const plateR = (a) => shape.outerAt(a, H) + 1
-    // Der Kragen steckt von H - 8 bis H in der Oeffnung: so weit wie ihre engste Stelle dort.
+    // The collar sits in the opening from H - 8 to H: as wide as the opening's narrowest point there.
     const collarO = (a) => {
       let m = Infinity
       for (let i = 0; i <= 8; i++) m = Math.min(m, cavity(a, H - 8 + i))
@@ -469,8 +468,8 @@ export function buildParts(input, { outward = 0 } = {}) {
     }
   })
   if (p.insertMode === 'roehrchen') safely('Das Wasserröhrchen', () => {
-    // Dichtes Roehrchen: passt durch die engste Stelle, haengt mit einem Kragen auf dem Rand.
-    // Engste Stelle dicht abgetastet: Lamellen und Ecken liegen sonst zwischen den Messstellen.
+    // Watertight tube: fits through the narrowest point, hangs on the rim by a collar.
+    // Narrowest point sampled densely: otherwise slats and corners fall between the samples.
     let narrow = Infinity
     for (let i = 0; i <= 48; i++) {
       const z = floorTop + 2 + ((H - floorTop - 2) * i) / 48
@@ -479,7 +478,7 @@ export function buildParts(input, { outward = 0 } = {}) {
     const rt = Math.min(p.tubeDiameter / 2, narrow - c - 0.5)
     let rimMin = Infinity
     for (let k = 0; k < 72; k++) rimMin = Math.min(rimMin, shape.outerAt((2 * Math.PI * k) / 72, H))
-    // Kragen fast bis an den Aussenrand der Oeffnung: liegt sicher auf, ragt nicht ueber.
+    // Collar almost out to the outer edge of the opening: it rests securely and does not overhang.
     const rf = Math.max(rt + 3, rimMin - 0.3)
     let openMin = Infinity
     for (let k = 0; k < 720; k++) openMin = Math.min(openMin, cavity((2 * Math.PI * k) / 720, H))
@@ -493,10 +492,10 @@ export function buildParts(input, { outward = 0 } = {}) {
       if (rf < openMin + 1) notes.push('Der Kragen des Röhrchens liegt kaum auf dem Rand – die Öffnung ist fast so weit wie die Vase.')
     }
   })
-  /* ---------- Deckel ---------- */
-  // Platte auf dem Rand (so weit wie die Vase aussen, beim Schraubdeckel mit Griffrand), darunter eine
-  // Lippe bzw. ein Gewindezapfen, der in der Oeffnung sitzt. Gedruckt mit der Platte nach unten: Lippe,
-  // Wulst und Gewinde stehen nach oben, ihre Flanken unter 45 Grad - ohne Stuetzen.
+  /* ---------- Lid ---------- */
+  // Plate on the rim (as wide as the outside of the vase, with a grip edge on the screw lid), below it
+  // a lip or a threaded plug that sits in the opening. Printed with the plate down: lip, bead and
+  // thread point upwards, their flanks at 45 degrees - no supports needed.
   if (p.lidMode !== 'keiner') safely('Der Deckel', () => {
     if (p.lamp !== 'keine') return
     if (p.insertMode === 'stecker' || p.insertMode === 'roehrchen') return
@@ -508,9 +507,9 @@ export function buildParts(input, { outward = 0 } = {}) {
     const t = p.lidThickness
     const L = p.lidDepth
     const grip = p.lidGrip === 'ja' && p.lidMode === 'schraube'
-    // Griffrand: 36 flache Riffeln (0,8 mm), so greift die Hand beim Schrauben.
+    // Grip edge: 36 shallow ridges (0.8 mm), so the hand gets a hold when screwing.
     const plateR = (a) => shape.outerAt(a, H) + outward + (grip ? 0.8 * (0.5 + 0.5 * Math.cos(36 * a)) : 0)
-    // Lippe bzw. Zapfen: aussen mit Spiel zur Oeffnung, innen 2 mm Wand (beim Gewinde 2,4 mm unter dem Kern).
+    // Lip or plug: outside with clearance to the opening, inside a wall of 1.2 mm (snap-on lid) or 1.6 mm (with the thread, a core 2.4 mm inside).
     let plugO, plugI, zs, info
     if (p.lidMode === 'schraube') {
       const zb = lid.z0 + 0.5
@@ -522,7 +521,7 @@ export function buildParts(input, { outward = 0 } = {}) {
       zs = Array.from({ length: n + 1 }, (_, i) => zb + ((H - zb) * i) / n)
       info = `Gewinde ${fmt(lid.pitch)} mm Steigung, ${fmt((H - lid.z0) / lid.pitch)} Gänge, Rechtsgewinde`
     } else {
-      // Die Lippe folgt der Oeffnung: je Winkel die engste Stelle im Bereich der Lippe.
+      // The lip follows the opening: per angle, the narrowest point over the lip's length.
       const openAt = (a) => {
         let m = Infinity
         for (let i = 0; i <= 8; i++) m = Math.min(m, cavity(a, H - L + (L * i) / 8))
@@ -532,7 +531,7 @@ export function buildParts(input, { outward = 0 } = {}) {
       for (let j = 0; j < N; j++) table[j] = openAt((2 * Math.PI * j) / N)
       const at = (a) => table[((Math.round((a / (2 * Math.PI)) * N) % N) + N) % N]
       const wall = p.lidMode === 'schnapp' ? 1.2 : 1.6
-      // Schnapp: Wulst auf der Lippe, wo die Nut sitzt; 0,3 mm groesser als die Oeffnung, in der Nut mit Spiel.
+      // Schnapp (snap-on lid): a bead on the lip where the groove is; 0.3 mm larger than the opening, with clearance in the groove.
       const bead = (z) => {
         if (!lid || lid.kind !== 'schnapp') return 0
         const d = Math.abs(z - lid.zc) / (lid.half - 0.4)
@@ -566,7 +565,7 @@ export function buildParts(input, { outward = 0 } = {}) {
 
 const fmt = (v, digits = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: digits })
 
-/** Umgebender Quader eines Netzes: { min: [x, y, z], max: [x, y, z] }. */
+/** Bounding box of a mesh: { min: [x, y, z], max: [x, y, z] }. */
 export function meshBox(vertices) {
   const min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity]
   for (let i = 0; i < vertices.length; i += 3) {
@@ -578,17 +577,17 @@ export function meshBox(vertices) {
   return { min, max }
 }
 
-/** Ein Punkt in seiner Lage: (x, y, z) -> umgedreht (180 Grad um x) und verschoben. */
+/** A point in its pose: (x, y, z) -> turned over (180 degrees about x) and moved. */
 export function placePoint(pose, x, y, z) {
   return pose.flip ? [x + pose.dx, -y + pose.dy, -z + pose.dz] : [x + pose.dx, y + pose.dy, z + pose.dz]
 }
 
 /**
- * Lage der Vase und jedes Teils, fuer Vorschau und Datei gleich. `mode`:
- * - 'zusammen': wie aufgebaut (Vase um `lift` angehoben, Teile um `lift + z`);
- * - 'druck': jedes Teil druckfertig (umgedreht, wenn `flip`), auf z = 0, in Reihen rechts neben
- *   der Vase. Teile mit `merge` gehoeren zur Vase und liegen wie sie.
- * `vaseBox` ist der Quader der Vase samt Muster. Liefert { vase, parts } mit je { flip, dx, dy, dz }.
+ * Pose of the vase and of every part, the same for preview and file. `mode`:
+ * - 'zusammen' (assembled): as put together (vase lifted by `lift`, parts by `lift + z`);
+ * - 'druck' (print): every part ready to print (turned over if `flip`), on z = 0, in rows to the
+ *   right of the vase. Parts with `merge` belong to the vase and lie as it does.
+ * `vaseBox` is the box of the vase, pattern included. Returns { vase, parts }, each with { flip, dx, dy, dz }.
  */
 export function layoutParts(vaseBox, parts, lift, mode, { gap = 10, rowWidth = 220 } = {}) {
   if (mode === 'zusammen') {
@@ -597,7 +596,7 @@ export function layoutParts(vaseBox, parts, lift, mode, { gap = 10, rowWidth = 2
       parts: parts.map((part) => ({ flip: false, dx: 0, dy: 0, dz: lift + (part.merge ? 0 : part.z ?? 0) })),
     }
   }
-  // Vase samt angeformten Teilen: zusammen auf das Bett.
+  // The vase with its moulded-on parts: onto the bed together.
   const obj = { min: [...vaseBox.min], max: [...vaseBox.max] }
   const boxes = parts.map((part) => part.box ?? meshBox(part.mesh.vertices))
   parts.forEach((part, k) => {

@@ -58,7 +58,7 @@ Zkratka je [[L]], [[Esc]] nástroj ukončí.
 
 ## Otáčení a střed otáčení
 
-Otáčejte obloukovými šipkami, čísly v nastavení nebo [[R]] po 45°. Tažení po kružnici přichytává po ryskách 22,5°, se [[Shift]] přidá jemnější rysky po 11,25°. Tažení mimo kružnici umožní kroky 1°, se [[Shift]] 45°. Výběr se běžně otáčí kolem svého středu. Pro jiný bod, například konec nakloněné trubky, použijte {{ui:editor.tool.rotationPivot}} a klikněte na plochu. Rovinná plocha poskytne svůj střed, například osu konce trubky. Další použití nástroje vlastní střed zruší.
+Otáčejte obloukovými šipkami, čísly v nastavení nebo [[R]] po 45°. Tažení po kružnici přichytává po ryskách 22,5°, se [[Shift]] přidá jemnější rysky po 11,25°. Tažení mimo kružnici umožní kroky 1°, se [[Shift]] 45°. Výběr se běžně otáčí kolem svého středu. Pro jiný bod, například konec nakloněné trubky, použijte {{ui:editor.tool.rotationPivot}} a klikněte na plochu. Rovinná plocha poskytne svůj střed, například osu konce trubky. U sloučeného celku nebo skupiny se plocha táhne přes díly, které se stýkají, jako u jednoho tělesa, a střed otáčení se po jejich spojení posune doprostřed celé plochy, kromě sloučeného celku nebo skupiny s textem a skupiny s výřezem. Další použití nástroje vlastní střed zruší.
 
 Úhly se uchovávají s tělesem. {{ui:inspector.rotation}} uvádí {{ui:prop.rotateX}}, {{ui:prop.rotateY}} a {{ui:prop.rotateZ}} podle stejné soustavy jako poloha, s Y po podložce a Z vzhůru. Zadání úhlu otočí těleso kolem středu či vlastního uloženého bodu. Úhly vybraného tělesa jsou vidět i pod ním; vypnete je přes {{ui:workspace.showRotationAngles}}.
 
@@ -101,7 +101,7 @@ Kopie jsou nejprve pouze náhled. Vytvoří je až {{ui:array.apply}}. Výřezy 
 
 {{ui:holePattern.title}} rozmístí otvory po rovinné ploše krytu, mřížky reproduktoru, košíku nebo ventilace. Nemusíte vytvářet a opakovat jednotlivý výřez. Vyberte právě jedno těleso a spusťte {{ui:holePattern.title}} v {{ui:editor.group.modify}} vedle opakování, pravým tlačítkem nebo vyhledáváním [[Ctrl]]+[[K]].
 
-1. Klikněte na rovinnou plochu. Použije se celá souvislá rovinná oblast, nikoli jen trojúhelník pod ukazatelem. Oblá plocha není podporovaná a nástroj vás vyzve k jinému výběru.
+1. Klikněte na rovinnou plochu. Použije se celá souvislá rovinná oblast, nikoli jen trojúhelník pod ukazatelem. Oblá plocha není podporovaná a nástroj vás vyzve k jinému výběru. U sloučeného celku nebo skupiny se plocha táhne přes díly, které se stýkají, jako u jednoho tělesa, u skupiny ale jen tehdy, když mezi díly není výřez. Díly se spojí krátce po otevření nástroje; do té doby se pod ukazatelem rozsvítí jen plocha jednoho dílu a kliknutí počká, až se díly spojí. U sloučeného celku nebo skupiny s textem se rozsvítí jen plocha jednoho dílu a díly spojí až kliknutí.
 2. Nastavte otvory:
    - **{{ui:holePattern.form}}:** {{ui:holePattern.form.round}}, {{ui:holePattern.form.square}}, {{ui:holePattern.form.rectangle}}, {{ui:holePattern.form.hexagon}} nebo {{ui:holePattern.form.slot}}.
    - **Rozměry:** {{ui:holePattern.size.diameter}} kruhu, {{ui:holePattern.size.side}} čtverce, {{ui:holePattern.size.width}} a {{ui:holePattern.size.height}} obdélníku či podlouhlého otvoru. Šestiúhelník používá {{ui:holePattern.size.corners}}.
@@ -121,7 +121,7 @@ AI může provést totéž přes `layerling_perforate_face`, viz [Modelování s
 
 Pro zesílení stěny, vyvýšenou plošku nebo vyříznutou kapsu pracuje nástroj {{ui:faceTool.title}} s jednou rovinnou plochou. Funguje i u importovaného STL, které nemá náčrt ke změně. Vyberte právě jedno těleso a spusťte {{ui:faceTool.title}} v {{ui:editor.group.modify}} vedle rastru otvorů, pravým tlačítkem nebo vyhledáváním [[Ctrl]]+[[K]].
 
-1. Klikněte na rovinnou plochu tělesa. Stejně jako u rastru otvorů se použije celá souvislá rovinná oblast; oblá plocha není podporovaná.
+1. Klikněte na rovinnou plochu tělesa. Stejně jako u rastru otvorů se použije celá souvislá rovinná oblast; oblá plocha není podporovaná. U sloučeného celku nebo skupiny se plocha jako u rastru otvorů táhne přes díly, které se stýkají.
 2. V okně nastavte:
    - **{{ui:faceTool.direction}}:** {{ui:faceTool.direction.out}} pro materiál na ploše, nebo {{ui:faceTool.direction.in}} pro kapsu vyříznutou do ní. Kapsa nejde hlouběji než těleso za plochou; u dutého tělesa může přesto dosáhnout do dutiny.
    - **{{ui:faceTool.inset}}:** jak daleko zůstane nový obrys uvnitř okraje plochy. Směrem ven se při 0 vezme celá plocha, tak se stěna zesílí. Otvory v ploše se zvětší o stejnou hodnotu.

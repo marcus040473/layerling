@@ -74,6 +74,70 @@ export function createBooleanHalfSphereGeometry(width: number, height: number, d
   return geometry;
 }
 
+/**
+ * The paraboloid (#922): a dome whose height falls with the square of the
+ * distance from the axis, y = height * (1 - (r / R)^2), so it comes to a rounded
+ * tip, stretched to the depth when the footprint is oval. Rings are spaced even
+ * along the radius; `steps` sets the corners round (twice as many) and the rings.
+ * The normals are the surface's own, so the dome shades smooth.
+ */
+export function createParaboloidGeometry(width: number, height: number, depth: number, steps = 32) {
+  const lon = Math.max(8, Math.round(steps) * 2);
+  const lat = Math.max(6, Math.round(steps));
+  const rx = Math.max(0.001, width / 2);
+  const rz = Math.max(0.001, depth / 2);
+  const safeHeight = Math.max(0.001, height);
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const point = (latIndex: number, lonIndex: number): Vec3 => {
+    const rho = latIndex / lat;
+    const phi = ((lonIndex % lon) / lon) * Math.PI * 2;
+    return [Math.cos(phi) * rx * rho, safeHeight * (1 - rho * rho), Math.sin(phi) * rz * rho];
+  };
+  const normal = ([x, , z]: Vec3): Vec3 => {
+    const vector = new THREE.Vector3((2 * x) / (rx * rx), 1 / safeHeight, (2 * z) / (rz * rz)).normalize();
+    return [vector.x, vector.y, vector.z];
+  };
+  const addTri = (a: Vec3, b: Vec3, c: Vec3) => {
+    positions.push(...a, ...b, ...c);
+    normals.push(...normal(a), ...normal(b), ...normal(c));
+  };
+
+  const top: Vec3 = [0, safeHeight, 0];
+  for (let xStep = 0; xStep < lon; xStep += 1) {
+    addTri(top, point(1, xStep + 1), point(1, xStep));
+  }
+  for (let yStep = 1; yStep < lat; yStep += 1) {
+    for (let xStep = 0; xStep < lon; xStep += 1) {
+      const next = xStep + 1;
+      const a = point(yStep, xStep);
+      const b = point(yStep, next);
+      const c = point(yStep + 1, next);
+      const d = point(yStep + 1, xStep);
+      addTri(a, c, d);
+      addTri(a, b, c);
+    }
+  }
+
+  const bottomCenter: Vec3 = [0, 0, 0];
+  const capPoint = (lonIndex: number): Vec3 => {
+    const phi = ((lonIndex % lon) / lon) * Math.PI * 2;
+    return [Math.cos(phi) * rx, 0, Math.sin(phi) * rz];
+  };
+  for (let xStep = 0; xStep < lon; xStep += 1) {
+    const a = bottomCenter;
+    const b = capPoint(xStep);
+    const c = capPoint(xStep + 1);
+    positions.push(...a, ...b, ...c);
+    normals.push(0, -1, 0, 0, -1, 0, 0, -1, 0);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+  return geometry;
+}
+
 export function createBooleanHollowCylinderGeometry(width: number, height: number, depth: number, thickness: number, segments = 96) {
   const outerX = width / 2;
   const outerZ = depth / 2;

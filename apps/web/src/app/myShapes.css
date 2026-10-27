@@ -130,6 +130,7 @@
 
 .my-shapes-name-form input,
 .my-shape-rename input,
+.attachment-rename input,
 .my-shapes-folder-rename input {
   flex: 1 1 100px;
   min-width: 0;
@@ -455,7 +456,8 @@ html[data-theme="dark"] .my-shapes-name-form button[type="submit"] {
 }
 
 html[data-theme="dark"] .my-shapes-name-form input,
-html[data-theme="dark"] .my-shape-rename input {
+html[data-theme="dark"] .my-shape-rename input,
+html[data-theme="dark"] .attachment-rename input {
   color: #f0e7d9;
   background: #2c2117;
   border-color: #6b5741;

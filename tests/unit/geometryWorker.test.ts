@@ -6,7 +6,7 @@ import type { WorkplaneShape } from "@/types/layerling";
  * worker, the work is done on the page instead, and the editor neither crashes nor waits forever.
  * A stand-in Worker plays each case; the page's own functions are stand-ins too.
  */
-const page = vi.hoisted(() => ({ calls: 0 }));
+const page = vi.hoisted(() => ({ calls: 0, faceReads: 0 }));
 vi.mock("@/lib/editorBooleans", () => ({
   buildGroupedShapeFromSelection: async () => {
     page.calls += 1;
@@ -14,6 +14,11 @@ vi.mock("@/lib/editorBooleans", () => ({
   },
   splitShapeIfCrossed: async () => ({ parts: null, error: "page" }),
   splitShapesByPlane: async () => ({ status: "done", replacements: new Map(), splitCount: 0 }),
+  faceReadJoins: (shape: { groupedShapes?: unknown[] }) => Boolean(shape.groupedShapes),
+  faceReadPositions: async () => {
+    page.faceReads += 1;
+    return new Float64Array([0, 0, 0]);
+  },
 }));
 
 class FakeWorker {
@@ -45,6 +50,8 @@ class FakeWorker {
   }
 }
 
+const pair = { id: "pair", kind: "box", groupedShapes: [{ id: "a", kind: "box" }, { id: "b", kind: "box" }] } as unknown as WorkplaneShape;
+
 const solidAndHole = [
   { id: "box", kind: "box" },
   { id: "hole", kind: "cylinder", hole: true },
@@ -61,6 +68,7 @@ async function load(build = "") {
 
 beforeEach(() => {
   page.calls = 0;
+  page.faceReads = 0;
   FakeWorker.instances = [];
   FakeWorker.failOnCreate = false;
   dispatched.length = 0;
@@ -182,5 +190,402 @@ describe("geometry worker on the page's side", () => {
     await flush();
     expect(worker.posted[0].task).toBe("warm");
     expect(busy).toEqual([false]);
+  });
+
+  it("joins a group's parts for the face readers in the worker, saying it is calculating", async () => {
+    const { faceReadPositionsOffThread, subscribeGeometryBusy } = await load();
+    const busy: boolean[] = [];
+    subscribeGeometryBusy((value) => busy.push(value));
+    const result = faceReadPositionsOffThread(pair);
+    const worker = FakeWorker.instances[0];
+    worker.hello();
+    await flush();
+    expect(worker.posted[0].task).toBe("face");
+    worker.answer(worker.posted[0].requestId, new Float64Array([1, 2, 3]));
+    expect(await result).toEqual(new Float64Array([1, 2, 3]));
+    expect(busy).toEqual([true, false]);
+    expect(page.faceReads).toBe(0);
+  });
+
+  it("reads a body whose parts are not joined on the page, without the worker", async () => {
+    const { faceReadPositionsOffThread } = await load();
+    expect(await faceReadPositionsOffThread({ id: "box", kind: "box" } as unknown as WorkplaneShape)).toEqual(new Float64Array([0, 0, 0]));
+    expect(FakeWorker.instances).toHaveLength(0);
+    expect(page.faceReads).toBe(1);
+  });
+
+  it("calls off a face read: no answer, and nothing left calculating", async () => {
+    const { faceReadPositionsOffThread, subscribeGeometryBusy } = await load();
+    const busy: boolean[] = [];
+    subscribeGeometryBusy((value) => busy.push(value));
+    const controller = new AbortController();
+    let settled = false;
+    void faceReadPositionsOffThread(pair, controller.signal).then(() => { settled = true; });
+    const worker = FakeWorker.instances[0];
+    worker.hello();
+    await flush();
+    controller.abort();
+    worker.answer(worker.posted[0].requestId, new Float64Array([1, 2, 3]));
+    await flush();
+    expect(settled).toBe(false);
+    expect(busy).toEqual([true, false]);
+    expect(page.faceReads).toBe(0);
+  });
+
+  it("joins a group with text in it on the page, and any group when the worker cannot start", async () => {
+    const { faceReadPositionsOffThread } = await load();
+    const tag = { id: "tag", kind: "box", groupedShapes: [{ id: "plate", kind: "box" }, { id: "words", kind: "text" }] } as unknown as WorkplaneShape;
+    expect(await faceReadPositionsOffThread(tag)).toEqual(new Float64Array([0, 0, 0]));
+    expect(FakeWorker.instances).toHaveLength(0);
+    FakeWorker.failOnCreate = true;
+    const again = await load();
+    expect(await again.faceReadPositionsOffThread(pair)).toEqual(new Float64Array([0, 0, 0]));
+    expect(page.faceReads).toBe(2);
+  });
+
+  it("reads a group ahead without \"Calculating\" when asked to be quiet", async () => {
+    const { faceReadPositionsOffThread, subscribeGeometryBusy } = await load();
+    const busy: boolean[] = [];
+    subscribeGeometryBusy((value) => busy.push(value));
+    const ahead = faceReadPositionsOffThread(pair, undefined, true);
+    const worker = FakeWorker.instances[0];
+    worker.hello();
+    await flush();
+    expect(worker.posted.map((message) => message.task)).toContain("face");
+    worker.answer(worker.posted.at(-1)!.requestId, new Float64Array([1, 2, 3]));
+    expect(await ahead).toEqual(new Float64Array([1, 2, 3]));
+    expect(busy).not.toContain(true);
+  });
+
+  it("does not read ahead on the page when the worker cannot start, but leaves the read to the click", async () => {
+    FakeWorker.failOnCreate = true;
+    const { faceReadPositionsOffThread } = await load();
+    await expect(faceReadPositionsOffThread(pair, undefined, true)).rejects.toThrow();
+    expect(page.faceReads).toBe(0);
+    await faceReadPositionsOffThread(pair);
+    expect(page.faceReads).toBe(1);
+  });
+
+  it("warms the worker again when calling off a face read stopped it, but not as the editor closes", async () => {
+    const { callOffFaceRead, faceReadPositionsOffThread } = await load();
+    const first = new AbortController();
+    void faceReadPositionsOffThread(pair, first.signal, true);
+    FakeWorker.instances[0].hello();
+    await flush();
+    callOffFaceRead(first);
+    expect(FakeWorker.instances[0].terminated).toBe(true);
+    await flush();
+    expect(FakeWorker.instances).toHaveLength(2);
+    const second = FakeWorker.instances[1];
+    second.hello();
+    await flush();
+    expect(second.posted.map((message) => message.task)).toEqual(["warm"]);
+    second.answer(second.posted[0].requestId, null);
+    const closing = new AbortController();
+    void faceReadPositionsOffThread(pair, closing.signal, true);
+    await flush();
+    callOffFaceRead(closing, true);
+    await flush();
+    expect(second.terminated).toBe(true);
+    expect(FakeWorker.instances).toHaveLength(2);
+  });
+
+  it("does not warm the worker again when the read had answered", async () => {
+    const { callOffFaceRead, faceReadPositionsOffThread } = await load();
+    const controller = new AbortController();
+    const read = faceReadPositionsOffThread(pair, controller.signal, true);
+    const worker = FakeWorker.instances[0];
+    worker.hello();
+    await flush();
+    worker.answer(worker.posted.at(-1)!.requestId, new Float64Array([1, 2, 3]));
+    await read;
+    callOffFaceRead(controller);
+    await flush();
+    expect(worker.terminated).toBe(false);
+    expect(worker.posted.map((message) => message.task)).toEqual(["face"]);
+  });
+
+  describe("the read the Face tool and the hole pattern keep", () => {
+    const faceTasks = (worker: FakeWorker) => worker.posted.filter((message) => message.task === "face");
+    const settled = (promise: Promise<unknown>) => {
+      const state = { done: false };
+      void promise.then(() => { state.done = true; }, () => { state.done = true; });
+      return state;
+    };
+
+    it("is read ahead once, quietly, and taken by the clicks after it", async () => {
+      const { createFaceReadKeeper, subscribeGeometryBusy } = await load();
+      const heard: string[] = [];
+      const keeper = createFaceReadKeeper((fingerprint) => heard.push(fingerprint));
+      const busy: boolean[] = [];
+      subscribeGeometryBusy((value) => busy.push(value));
+      keeper.readAhead(pair, "f");
+      keeper.readAhead(pair, "f");
+      const worker = FakeWorker.instances[0];
+      worker.hello();
+      await flush();
+      expect(busy).not.toContain(true);
+      const click = keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      expect(busy.at(-1)).toBe(true);
+      const answered = new Float64Array([1, 2, 3]);
+      worker.answer(faceTasks(worker)[0].requestId, answered);
+      expect(await click).toBe(answered);
+      expect(heard).toEqual(["f"]);
+      expect(await keeper.forClick(pair, "f", new AbortController().signal, () => true)).toBe(answered);
+      expect(faceTasks(worker)).toHaveLength(1);
+    });
+
+    it("keeps a click's own read when none was read ahead, for the pointer and the next click", async () => {
+      const { createFaceReadKeeper } = await load();
+      const heard: string[] = [];
+      const keeper = createFaceReadKeeper((fingerprint) => heard.push(fingerprint));
+      const click = keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      const worker = FakeWorker.instances[0];
+      worker.hello();
+      await flush();
+      const answered = new Float64Array([1, 2, 3]);
+      worker.answer(faceTasks(worker)[0].requestId, answered);
+      expect(await click).toBe(answered);
+      expect(heard).toEqual(["f"]);
+      keeper.readAhead(pair, "f");
+      expect(await keeper.forClick(pair, "f", new AbortController().signal, () => true)).toBe(answered);
+      expect(faceTasks(worker)).toHaveLength(1);
+    });
+
+    it("shows \"Calculating\" while a click waits for a read ahead that fails, then reads for the click", async () => {
+      const { createFaceReadKeeper, subscribeGeometryBusy } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      const busy: boolean[] = [];
+      subscribeGeometryBusy((value) => busy.push(value));
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances[0].hello();
+      await flush();
+      const click = keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      expect(busy.at(-1)).toBe(true);
+      FakeWorker.instances[0].crash();
+      await flush();
+      const worker = FakeWorker.instances.at(-1)!;
+      worker.hello();
+      await flush();
+      const answered = new Float64Array([1, 2, 3]);
+      worker.answer(faceTasks(worker).at(-1)!.requestId, answered);
+      expect(await click).toBe(answered);
+      expect(busy.at(-1)).toBe(false);
+    });
+
+    it("keeps the read made after a drop, though the dropped one settles after it", async () => {
+      const { createFaceReadKeeper } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances[0].hello();
+      await flush();
+      keeper.drop();
+      keeper.readAhead(pair, "f");
+      await flush();
+      const worker = FakeWorker.instances.at(-1)!;
+      worker.hello();
+      await flush();
+      const click = keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      const answered = new Float64Array([1, 2, 3]);
+      worker.answer(faceTasks(worker).at(-1)!.requestId, answered);
+      expect(await click).toBe(answered);
+      expect(FakeWorker.instances.flatMap(faceTasks)).toHaveLength(2);
+    });
+
+    it("calls off a read it no longer keeps when it reads another body", async () => {
+      const { createFaceReadKeeper } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances[0].hello();
+      await flush();
+      keeper.readAhead(pair, "g");
+      await flush();
+      expect(FakeWorker.instances[0].terminated).toBe(true);
+    });
+
+    it("lets a click called off stop waiting while the read goes on for the next click", async () => {
+      const { createFaceReadKeeper, subscribeGeometryBusy } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      const busy: boolean[] = [];
+      subscribeGeometryBusy((value) => busy.push(value));
+      keeper.readAhead(pair, "f");
+      const first = new AbortController();
+      const firstClick = settled(keeper.forClick(pair, "f", first.signal, () => true));
+      const worker = FakeWorker.instances[0];
+      worker.hello();
+      await flush();
+      first.abort();
+      await flush();
+      expect(busy.at(-1)).toBe(false);
+      const second = keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      await flush();
+      expect(worker.terminated).toBe(false);
+      const answered = new Float64Array([1, 2, 3]);
+      worker.answer(faceTasks(worker)[0].requestId, answered);
+      expect(await second).toBe(answered);
+      await flush();
+      expect(firstClick.done).toBe(false);
+      expect(faceTasks(worker)).toHaveLength(1);
+    });
+
+    it("lets a click already called off stop waiting at once, the read ahead going on", async () => {
+      const { createFaceReadKeeper, subscribeGeometryBusy } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      const busy: boolean[] = [];
+      subscribeGeometryBusy((value) => busy.push(value));
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances[0].hello();
+      await flush();
+      const calledOff = new AbortController();
+      calledOff.abort();
+      const click = settled(keeper.forClick(pair, "f", calledOff.signal, () => true));
+      await flush();
+      expect(busy.at(-1)).toBe(false);
+      expect(click.done).toBe(false);
+      expect(FakeWorker.instances[0].terminated).toBe(false);
+    });
+
+    it("lets a click called off during its own read stop waiting, the read kept for the next click", async () => {
+      const { createFaceReadKeeper } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      const first = new AbortController();
+      const firstClick = settled(keeper.forClick(pair, "f", first.signal, () => true));
+      const worker = FakeWorker.instances[0];
+      worker.hello();
+      await flush();
+      first.abort();
+      await flush();
+      const second = keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      const answered = new Float64Array([1, 2, 3]);
+      worker.answer(faceTasks(worker)[0].requestId, answered);
+      expect(await second).toBe(answered);
+      expect(firstClick.done).toBe(false);
+      expect(faceTasks(worker)).toHaveLength(1);
+    });
+
+    it("gives no answer to a click whose kept read was dropped for a changed body, and reads nothing more for it", async () => {
+      const { createFaceReadKeeper, subscribeGeometryBusy } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      const busy: boolean[] = [];
+      subscribeGeometryBusy((value) => busy.push(value));
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances[0].hello();
+      await flush();
+      const click = settled(keeper.forClick(pair, "f", new AbortController().signal, () => false));
+      keeper.drop();
+      await flush();
+      FakeWorker.instances.at(-1)!.hello();
+      await flush();
+      expect(click.done).toBe(false);
+      expect(busy.at(-1)).toBe(false);
+      expect(FakeWorker.instances.flatMap(faceTasks)).toHaveLength(1);
+    });
+
+    it("reads again for a click whose kept read was dropped while the body stayed as it is", async () => {
+      const { createFaceReadKeeper } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances[0].hello();
+      await flush();
+      const click = keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      keeper.drop();
+      await flush();
+      const worker = FakeWorker.instances.at(-1)!;
+      worker.hello();
+      await flush();
+      const answered = new Float64Array([1, 2, 3]);
+      worker.answer(faceTasks(worker).at(-1)!.requestId, answered);
+      expect(await click).toBe(answered);
+    });
+
+    it("tries the read ahead again once a kept read failed or was dropped", async () => {
+      const { createFaceReadKeeper } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances[0].hello();
+      await flush();
+      FakeWorker.instances[0].crash();
+      await flush();
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances.at(-1)!.hello();
+      await flush();
+      expect(FakeWorker.instances.flatMap(faceTasks)).toHaveLength(2);
+      keeper.drop();
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances.at(-1)!.hello();
+      await flush();
+      expect(FakeWorker.instances.flatMap(faceTasks)).toHaveLength(3);
+    });
+
+    it("warms the worker again when dropping a read still running stopped it, but not as the editor closes", async () => {
+      const { createFaceReadKeeper } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      keeper.readAhead(pair, "f");
+      FakeWorker.instances[0].hello();
+      await flush();
+      keeper.drop();
+      await flush();
+      expect(FakeWorker.instances[0].terminated).toBe(true);
+      expect(FakeWorker.instances).toHaveLength(2);
+      FakeWorker.instances[1].hello();
+      await flush();
+      keeper.readAhead(pair, "g");
+      await flush();
+      keeper.drop(true);
+      await flush();
+      expect(FakeWorker.instances).toHaveLength(2);
+    });
+
+    it("reads for the click on the page when the read ahead fails without a worker", async () => {
+      FakeWorker.failOnCreate = true;
+      const { createFaceReadKeeper } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      keeper.readAhead(pair, "f");
+      await flush();
+      expect(page.faceReads).toBe(0);
+      await keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      expect(page.faceReads).toBe(1);
+    });
+
+    it("tells a click that its own read took too long", async () => {
+      vi.useFakeTimers();
+      const { createFaceReadKeeper, GEOMETRY_WORKER_TIMEOUT_MS } = await load();
+      const keeper = createFaceReadKeeper(() => undefined);
+      const click = keeper.forClick(pair, "f", new AbortController().signal, () => true);
+      const failed = expect(click).rejects.toThrow(/too long/);
+      FakeWorker.instances[0].hello();
+      await vi.advanceTimersByTimeAsync(GEOMETRY_WORKER_TIMEOUT_MS);
+      await failed;
+    });
+
+    it("reads a group with text in it for the click alone, on the page", async () => {
+      const { createFaceReadKeeper } = await load();
+      const heard: string[] = [];
+      const keeper = createFaceReadKeeper((fingerprint) => heard.push(fingerprint));
+      const tag = { ...pair, groupedShapes: [{ id: "a", kind: "box" }, { id: "t", kind: "text" }] } as unknown as WorkplaneShape;
+      await keeper.forClick(tag, "t", new AbortController().signal, () => true);
+      await keeper.forClick(tag, "t", new AbortController().signal, () => true);
+      expect(page.faceReads).toBe(2);
+      expect(heard).toEqual([]);
+      expect(FakeWorker.instances).toHaveLength(0);
+    });
+  });
+
+  it("reads in the worker only a group whose parts are joined and hold no text", async () => {
+    const { faceReadInWorker } = await load();
+    expect(faceReadInWorker(pair)).toBe(true);
+    expect(faceReadInWorker({ id: "box", kind: "box" } as WorkplaneShape)).toBe(false);
+    expect(faceReadInWorker({ ...pair, groupedShapes: [{ id: "a", kind: "box" }, { id: "t", kind: "text" }] } as unknown as WorkplaneShape)).toBe(false);
+  });
+
+  it("says so when a face read takes too long", async () => {
+    vi.useFakeTimers();
+    const { faceReadPositionsOffThread, GEOMETRY_WORKER_TIMEOUT_MS } = await load();
+    const result = faceReadPositionsOffThread(pair);
+    const failed = expect(result).rejects.toThrow(/too long/);
+    FakeWorker.instances[0].hello();
+    await vi.advanceTimersByTimeAsync(GEOMETRY_WORKER_TIMEOUT_MS);
+    await failed;
+    expect(page.faceReads).toBe(0);
   });
 });

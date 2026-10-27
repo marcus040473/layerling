@@ -1,18 +1,18 @@
 /**
- * Vasen-Generator: Vase aus Querschnitt (Kreis, Vieleck, Welle oder selbst
- * gezeichnet) und Koerperform (Vorlage oder selbst gezeichnet), auf Wunsch
- * verdreht, mit einer Oberflaeche: Rillen, Streifen, Voronoi oder Low Poly -
- * auch nur in einem Hoehenbereich. Reines ES-Modul ohne Abhaengigkeiten: Die
- * Vorschau im Browser, der STL-Export und das Einfuegen in Layerling rechnen
- * mit genau diesem Code.
+ * Vase generator: a vase from a cross-section (circle, polygon, wave or drawn
+ * by hand) and a body shape (preset or drawn by hand), twisted if wanted,
+ * with a surface: grooves, stripes, Voronoi or low poly - also only in a
+ * height range. A plain ES module without dependencies: the preview in the
+ * browser, the STL export and the insert into Layerling all compute with
+ * exactly this code.
  *
- * Aufbau: Radius(Winkel, Hoehe) = groesster Radius x Koerperform(Hoehe) x
- * Querschnitt(Winkel - Drehung(Hoehe)), minus der Tiefe des Oberflaecheneffekts.
- * Das Netz ist ein regelmaessiges Raster aus Winkel und Hoehe: Jede Hoehe
- * trifft Rillen und Kanten an denselben Stellen.
+ * Structure: radius(angle, height) = largest radius x body shape(height) x
+ * cross-section(angle - rotation(height)), minus the depth of the surface effect.
+ * The mesh is a regular grid of angle and height: every height meets
+ * grooves and edges at the same places.
  *
- * Koordinaten: Millimeter, Z nach oben (wie STL und jeder Slicer), die Vase
- * steht mit dem Boden auf z = 0, ihre Achse ist die Z-Achse.
+ * Coordinates: millimetres, Z up (like STL and every slicer), the vase
+ * stands with its bottom on z = 0, its axis is the Z axis.
  */
 import { capWithHoles, holeCeiling, holeWall, zipRings } from './mesh-tools.mjs'
 import { CUTOUTS, CUTOUT_EDGES, cutoutPattern, wallZone } from './vase-cutout.mjs'
@@ -20,7 +20,7 @@ import { REINFORCE, slitBody } from './vase-slits.mjs'
 
 export { CUTOUTS, CUTOUT_EDGES, REINFORCE }
 
-/** Silhouetten als Stuetzpunkte [Hoehe 0..1, Radius 0..1 vom Maximaldurchmesser]. */
+/** Silhouettes as control points [height 0..1, radius 0..1 relative to the largest diameter]. */
 export const PROFILES = {
   flasche: { label: 'Flasche', points: [[0, 0.93], [0.06, 1], [0.5, 1], [0.6, 0.95], [0.7, 0.7], [0.78, 0.46], [0.86, 0.37], [1, 0.4]] },
   bauchig: { label: 'Bauchig', points: [[0, 0.66], [0.1, 0.86], [0.32, 1], [0.55, 0.94], [0.75, 0.66], [0.9, 0.46], [1, 0.5]] },
@@ -32,62 +32,62 @@ export const PROFILES = {
 
 export const RIB_SHAPES = { rund: 'Rund', v: 'Spitz (V)', flach: 'Flach' }
 export const SECTIONS = { kreis: 'Kreis', vieleck: 'Vieleck', welle: 'Welle', gezeichnet: 'Gezeichnet' }
-/** Querschnitt-Uebergang: oben ein zweiter Querschnitt, in den der erste ueber die Hoehe uebergeht. */
+/** Cross-section transition: a second cross-section at the top that the first one blends into over the height. */
 export const SECTIONS2 = { keiner: 'Keiner', ...SECTIONS }
-/** Wellenformen des Querschnitts. Boegen: runde Bogen, scharfe Kerben (Kuerbis, Bluete). Lamellen: schmale Rippen mit runder Kante, dazwischen ein Spalt bis zum Kern. */
+/** Wave styles of the cross-section. Arches: round arcs, sharp notches (pumpkin, blossom). Fins: narrow ribs with a round edge, with a gap down to the core between them. */
 export const WAVE_STYLES = { weich: 'Weich', spitz: 'Spitz', bogen: 'Bögen', lamellen: 'Lamellen' }
 export const INNER_SHAPES = { folgt: 'Folgt der Form', rund: 'Rund' }
-/** Ausserhalb des Hoehenbereichs wird der Querschnitt rund: auf mittlerem Radius, an den Spitzen oder am Grund. */
+/** Outside the height range the cross-section becomes round: on the mean radius, at the tips or at the troughs. */
 export const SECTION_OUTSIDE = { mitte: 'Mitte', spitzen: 'Außen an den Spitzen', grund: 'Innen am Grund' }
 export const LEG_MODES = { keine: 'Keine', stecken: 'Zum Einstecken', angeformt: 'Angeformt', staender: 'Ständer' }
 export const LEG_SHAPES = { kegel: 'Kegel', zylinder: 'Zylinder', kantig: 'Kantig' }
 export const SAUCER_MODES = { keine: 'Keiner', schale: 'Schale', versteckt: 'Versteckt im Fuß' }
 export const INSERT_MODES = { keine: 'Keiner', pflanze: 'Pflanzeinsatz', bewaesserung: 'Selbstbewässerung', stecker: 'Steckeinsatz', roehrchen: 'Wasserröhrchen' }
 export const YES_NO = { ja: 'Ja', nein: 'Nein' }
-/** Lampenschirm: haengend (Loch fuer die Fassung im Boden, zum Aufhaengen umdrehen), stehend mit Fassung im Boden, ueber einem LED-Puck (ohne Boden). */
+/** Lampshade: hanging (hole for the socket in the bottom, turn it over to hang it), standing with the socket in the bottom, over an LED puck (without a bottom). */
 export const LAMPS = { keine: 'Keiner', haengend: 'Hängend', stehend: 'Stehend mit Fassung', puck: 'Über LED-Puck' }
-/** Loch fuer die Fassung: ungefaehre Werte fuer den Schirmring - an der eigenen Fassung nachmessen. */
+/** Hole for the socket: approximate values for the shade ring - measure your own socket. */
 export const LAMP_SOCKETS = { e27: 'E27 (≈ 41 mm)', e14: 'E14 (≈ 29 mm)', eigen: 'Eigenes Maß' }
 const SOCKET_HOLES = { e27: 41, e14: 29 }
-/** Einstellungen des Zubehoers: Form-Vorlagen lassen sie stehen. */
+/** Settings of the accessories: shape presets leave them as they are. */
 export const PART_KEYS = ['legMode', 'legCount', 'legHeight', 'legDiameter', 'legShape', 'legSplay', 'legInset', 'fitClearance',
   'saucerMode', 'saucerRibs', 'saucerSpout', 'saucerGrip', 'saucerGap', 'saucerHeight', 'saucerWall',
   'insertMode', 'insertWall', 'insertStandoff', 'reservoirHeight', 'tubeDiameter', 'frogHole',
   'lidMode', 'lidClearance', 'lidThickness', 'lidDepth', 'threadPitch', 'lidGrip']
 /**
- * Deckel: Stuelpdeckel (Platte mit Lippe, die in der Oeffnung sitzt), Schnappdeckel (Lippe mit Wulst, Nut
- * in der Innenwand), Schraubdeckel (Innengewinde im Hals, Gewindezapfen am Deckel).
+ * Lid: slip lid (a plate with a lip that sits in the opening), snap lid (a lip with a bead, a groove
+ * in the inner wall), screw lid (internal thread in the neck, threaded spigot on the lid).
  */
 export const LID_MODES = { keiner: 'Keiner', stuelp: 'Stülpdeckel', schnapp: 'Schnappdeckel', schraube: 'Schraubdeckel' }
 export const SYMMETRIES = { halb: 'Hälfte', viertel: 'Viertel', windmuehle: 'Windmühle', frei: 'Frei' }
 export const EFFECTS = { keine: 'Keine', rillen: 'Rillen', streifen: 'Streifen', voronoi: 'Voronoi', lowpoly: 'Low Poly' }
-/** Drehung des Querschnitts ueber die Hoehe: gleichmaessig (Verdrehung + Pendeln) oder als gezeichnete Kurve. */
+/** Rotation of the cross-section over the height: even (twist + sway) or as a drawn curve. */
 export const TWIST_MODES = { gleichmaessig: 'Gleichmäßig', kurve: 'Als Kurve' }
-/** Material fuer Gewicht und Filament: Dichte in g/cm^3 (Herstellerangaben, gerundet). */
+/** Material for weight and filament: density in g/cm^3 (manufacturer figures, rounded). */
 export const MATERIALS = { pla: { label: 'PLA', density: 1.24 }, petg: { label: 'PETG', density: 1.27 }, abs: { label: 'ABS', density: 1.04 }, asa: { label: 'ASA', density: 1.07 }, tpu: { label: 'TPU', density: 1.21 } }
-/** Filament fuer die Laengenangabe (mm Durchmesser). */
+/** Filament for the length figure (mm diameter). */
 export const FILAMENT_DIAMETER = 1.75
-/** Boden im Slicer-Vasenmodus (mm): ueblich sind 3 bis 5 Schichten. */
+/** Bottom in the slicer's vase mode (mm): 3 to 5 layers are usual. */
 export const VASE_MODE_BOTTOM = 1
-/** Wonach sich die Drehung verteilt: nach der Hoehe oder nach der Bogenlaenge der Koerperform (Kontur). */
+/** What the rotation is spread along: the height, or the arc length of the body shape (contour). */
 export const TWIST_ALONG = { hoehe: 'Nach der Höhe', kontur: 'Nach der Kontur' }
 
-/** Vorgaben fuer gezeichnete Querschnitte je Symmetrie (Einheitskreis, Punkte des Grundstuecks). */
+/** Defaults for drawn cross-sections per symmetry (unit circle, points of the base piece). */
 export const DRAW_PRESETS = Object.freeze({
-  // Haelfte: von oben (x = 0) rechts herum nach unten (x = 0); wird gespiegelt.
+  // Half: from the top (x = 0) round the right side down to the bottom (x = 0); gets mirrored.
   halb: [{ x: 0, y: 0.95 }, { x: 0.7, y: 0.75 }, { x: 0.95, y: 0 }, { x: 0.7, y: -0.75 }, { x: 0, y: -0.95 }],
-  // Viertel: von oben (x = 0) zur Seite (y = 0); wird zweimal gespiegelt - ein Kleeblatt.
+  // Quarter: from the top (x = 0) to the side (y = 0); gets mirrored twice - a cloverleaf.
   viertel: [{ x: 0, y: 0.6 }, { x: 0.5, y: 0.95 }, { x: 0.95, y: 0.5 }, { x: 0.6, y: 0 }],
-  // Windmuehle: ein Fluegel ab oben, wird gedreht wiederholt (keine Spiegelung).
+  // Windmill: one blade from the top, repeated rotated (no mirroring).
   windmuehle: [{ x: 0, y: 0.7 }, { x: 0.55, y: 0.85 }, { x: 0.7, y: 0.35 }],
-  // Frei: der ganze Umriss.
+  // Free: the whole outline.
   frei: [{ x: 0, y: 0.9 }, { x: 0.8, y: 0.6 }, { x: 0.7, y: -0.6 }, { x: -0.5, y: -0.85 }, { x: -0.9, y: 0.2 }],
 })
 
-/** Vorgabe fuer eine gezeichnete Koerperform: [Hoehe 0..1, Radius 0..1]. */
+/** Default for a drawn body shape: [height 0..1, radius 0..1]. */
 export const DRAW_PROFILE = Object.freeze([[0, 0.7], [0.3, 1], [0.7, 0.75], [1, 0.55]])
 
-// tol/maxStep: Zeilen nach Kruemmung bei glatten runden Koerpern (hoechstens tol mm Sehnenabweichung, hoechstens maxStep mm je Zeile).
+// tol/maxStep: rows by curvature on smooth round bodies (at most tol mm chord deviation, at most maxStep mm per row).
 const QUALITY = {
   entwurf: { perRib: 6, mmPerRow: 2, smoothSegments: 96, tol: 0.05, maxStep: 10 },
   standard: { perRib: 10, mmPerRow: 1, smoothSegments: 160, tol: 0.02, maxStep: 6 },
@@ -95,7 +95,7 @@ const QUALITY = {
 }
 export const QUALITY_LABELS = { entwurf: 'Entwurf', standard: 'Standard', fein: 'Fein' }
 
-/** Voreinstellung: Minimal-Vase (Flasche, 48 runde Rillen, voll fuer den Slicer-Vasenmodus). */
+/** Default: a minimal vase - bottle, 48 round grooves, body 'voll' (solid, for the slicer's vase mode). */
 export const DEFAULTS = Object.freeze({
   profile: 'flasche',
   height: 180,
@@ -106,28 +106,28 @@ export const DEFAULTS = Object.freeze({
   ribShape: 'rund',
   twist: 0,
   twistMode: 'gleichmaessig',
-  /** Drehkurve (twistMode = 'kurve'): [[Hoehe 0..1, Winkel in Grad, Art?, Steigung?], ...]; null = aus Verdrehung und Pendeln. */
+  /** Twist curve (twistMode = 'kurve'): [[height 0..1, angle in degrees, kind?, slope?], ...]; null = from twist and sway. */
   twistPoints: null,
-  /** Pendeln: Querschnitt und Muster schwingen ueber die Hoehe hin und her (Ausschlag in Grad, Anzahl der Schwuenge). */
+  /** Sway: the cross-section and pattern swing back and forth over the height (amplitude in degrees, number of swings). */
   swayAngle: 0,
   swayCount: 3,
   /**
-   * Drehung (Verdrehung, Pendeln, Drehkurve) nach der Hoehe oder nach der Kontur verteilt: bei `kontur`
-   * zaehlt die Bogenlaenge der Koerperform - an einem flachen Bauch dreht sich die Wand dann je mm Wand
-   * gleich viel, statt sich dort zusammenzudraengen.
+   * Rotation (twist, sway, twist curve) spread along the height or along the contour: with `kontur`
+   * the arc length of the body shape counts - on a flat belly the wall then turns by the same amount
+   * per mm of wall instead of crowding together there.
    */
   twistAlong: 'hoehe',
-  /** Material fuer Gewicht und Filament (aendert die Form nicht). */
+  /** Material for weight and filament (does not change the shape). */
   material: 'pla',
-  /** Querschnitt nur in diesem Hoehenbereich (Prozent der Hoehe), weicher Uebergang in mm; ausserhalb rund. */
+  /** Cross-section only in this height range (percent of the height), soft transition in mm; round outside it. */
   sectionZoneFrom: 0,
   sectionZoneTo: 100,
   sectionZoneFade: 10,
   sectionOutside: 'mitte',
   /**
-   * Querschnitt-Uebergang: oben ein zweiter Querschnitt (keiner = aus) mit eigenen Ecken bzw. Wellen;
-   * zwischen `section2From` und `section2To` (% der Hoehe) geht der Querschnitt weich in ihn ueber.
-   * Gezeichnet nimmt den gezeichneten Umriss (drawPoints).
+   * Cross-section transition: a second cross-section at the top ('keiner' = off) with its own corners or waves;
+   * between `section2From` and `section2To` (% of the height) the cross-section blends softly into it.
+   * 'gezeichnet' takes the drawn outline (drawPoints).
    */
   section2: 'keiner',
   section2Sides: 5,
@@ -145,10 +145,10 @@ export const DEFAULTS = Object.freeze({
   body: 'voll',
   wall: 2,
   bottom: 2,
-  /** Hohle Vase: Innenwand folgt dem Querschnitt oder ist rund (z. B. fuer ein Teelicht). */
+  /** Hollow vase: the inner wall follows the cross-section or is round (e.g. for a tealight). */
   innerShape: 'folgt',
-  // Boden (hohle Vase): Ablaufloecher, Gefaelle des Innenbodens zu ihnen hin, hohler Fuss fuer
-  // eine versteckte Auffangschale. Mulden fuer Gummifuesse gehen auch beim vollen Koerper.
+  // Bottom (hollow vase): drain holes, slope of the inner floor towards them, a hollow foot for
+  // a hidden drip tray. Recesses for rubber feet also work with a solid body.
   drainHoles: 0,
   drainDiameter: 6,
   floorSlope: 0,
@@ -156,7 +156,7 @@ export const DEFAULTS = Object.freeze({
   rubberFeet: 0,
   rubberFootDiameter: 10,
   rubberFootDepth: 1.5,
-  // Beine: keine, zum Einstecken (Buchsen im Boden), angeformt (ein Objekt) oder Staender (Gestell).
+  // Legs: none, plug-in (sockets in the bottom), integral (one object) or stand (a frame).
   legMode: 'keine',
   legCount: 3,
   legHeight: 35,
@@ -164,9 +164,9 @@ export const DEFAULTS = Object.freeze({
   legShape: 'kegel',
   legSplay: 8,
   legInset: 0.2,
-  /** Spiel fuer alle Passungen (Zapfen, Einsaetze, Untersetzer) in mm. */
+  /** Clearance for all fits (pegs, inserts, saucer) in mm. */
   fitClearance: 0.2,
-  // Untersetzer: Schale nach dem Querschnitt oder versteckte Schale im hohlen Fuss.
+  // Saucer: a dish following the cross-section, or a hidden dish in the hollow foot.
   saucerMode: 'keine',
   saucerRibs: 'ja',
   saucerSpout: 'ja',
@@ -174,15 +174,15 @@ export const DEFAULTS = Object.freeze({
   saucerGap: 4,
   saucerHeight: 16,
   saucerWall: 2,
-  // Einsatz: Pflanzeinsatz, Selbstbewaesserung, Steckeinsatz fuer Schnittblumen, Wasserroehrchen.
+  // Insert: plant insert, self-watering, plug-in insert for cut flowers, water tubes.
   insertMode: 'keine',
   insertWall: 1.6,
   insertStandoff: 5,
   reservoirHeight: 30,
   tubeDiameter: 24,
   frogHole: 7,
-  // Deckel (Zubehoer): Art, Spiel (FDM: 0,3-0,4 mm), Plattenstaerke, Laenge der Lippe bzw. des Gewindes,
-  // Steigung des Gewindes, geriffelter Rand zum Greifen.
+  // Lid (accessory): kind, clearance (FDM: 0.3-0.4 mm), plate thickness, length of the lip or thread,
+  // pitch of the thread, knurled rim for grip.
   lidMode: 'keiner',
   lidClearance: 0.35,
   lidThickness: 2.4,
@@ -190,8 +190,8 @@ export const DEFAULTS = Object.freeze({
   threadPitch: 4,
   lidGrip: 'ja',
   quality: 'standard',
-  // Durchbrochene Wand (hohle Vase): Muster, Zellgroesse, Stegbreite, Hoehenbereich (%), Streckung, Anordnung,
-  // am Rand des Bereichs Loecher anschneiden oder nur ganze Loecher.
+  // Pierced wall (hollow vase): pattern, cell size, web width, height range (%), stretch, arrangement,
+  // cut holes off at the edge of the range or only whole holes.
   cutout: 'keine',
   cutoutSize: 14,
   cutoutWeb: 3,
@@ -200,43 +200,43 @@ export const DEFAULTS = Object.freeze({
   cutoutAspect: 1,
   cutoutSeed: 1,
   cutoutEdge: 'anschneiden',
-  /** Muss Wasser halten: Mindestwand und -boden, Widersprueche (Loecher) und Slicer-Hinweise (vaseChecks). */
+  /** Must hold water: minimum wall and bottom, conflicts (holes) and slicer notes (vaseChecks). */
   watertight: 'nein',
-  // Lampenschirm (hohle Vase): Art, Fassung bzw. Lochmass, LED-Puck, Kabelschlitz unten (Breite 0 = keiner).
+  // Lampshade (hollow vase): kind, socket or hole size, LED puck, cable slot at the bottom (width 0 = none).
   lamp: 'keine',
   lampSocket: 'e27',
   lampHole: 41,
   puckDiameter: 70,
   lampNotch: 10,
   lampNotchHeight: 8,
-  // Vasenmodus stabiler (voller Koerper): Rippen innen oder Doppelwand ueber feine Schlitze.
+  // Sturdier vase mode (solid body): ribs inside, or a double wall through fine slits.
   reinforce: 'keine',
   reinforceCount: 12,
-  /** Rippen: wie tief sie nach innen reichen; Doppelwand: Abstand der beiden Waende (mm). */
+  /** Ribs: how deep they reach inwards; double wall: distance between the two walls (mm). */
   reinforceDepth: 6,
-  /** Breite der Schlitze und Linienbreite im Slicer (mm) - davon haengt ab, ob die Linien verschmelzen. */
+  /** Width of the slits and line width in the slicer (mm) - whether the lines fuse depends on these. */
   slitWidth: 0.1,
   lineWidth: 0.45,
-  // Querschnitt
+  // Cross-section
   section: 'kreis',
   polySides: 6,
   polyRound: 0.2,
   sectionWaves: 20,
   sectionWaveAmp: 0.06,
   sectionWaveStyle: 'weich',
-  /** Lamellen: Anteil der Teilung, den eine Lamelle einnimmt. */
+  /** Fins: share of the spacing that one fin takes up. */
   sectionFinWidth: 0.45,
   drawSymmetry: 'viertel',
   drawRepeat: 5,
   /**
-   * Punkte des Grundstuecks: { x, y, corner, tx?, ty? } im Einheitskreis; null = Vorgabe der
-   * Symmetrie. `tx`/`ty`: Anfasser (Tangente der Kurve im Punkt, wie beim Hermite-Spline); ohne
-   * Anfasser rechnet die Kurve die Tangente selbst aus den Nachbarn.
+   * Points of the base piece: { x, y, corner, tx?, ty? } in the unit circle; null = the symmetry's
+   * default. `tx`/`ty`: handle (tangent of the curve at the point, as in a Hermite spline); without a
+   * handle the curve works out the tangent itself from the neighbours.
    */
   drawPoints: null,
-  /** Gezeichnete Koerperform (profile = 'gezeichnet'): [[Hoehe 0..1, Radius 0..1], ...]. */
+  /** Drawn body shape (profile = 'gezeichnet'): [[height 0..1, radius 0..1], ...]. */
   profilePoints: null,
-  // Oberflaeche: eine neue Vase ist glatt; Muster waehlt man dazu.
+  // Surface: a new vase is smooth; a pattern is something you add.
   effect: 'keine',
   stripeStyle: 'einfach',
   stripeTurn: 180,
@@ -253,7 +253,7 @@ export const DEFAULTS = Object.freeze({
   lowpolySeed: 1,
 })
 
-/** Grenzen fuer jeden Zahlenwert; dieselben nutzt die Seite fuer ihre Regler. */
+/** Limits for every number; the page uses the same ones for its sliders. */
 export const LIMITS = {
   height: [20, 400],
   diameter: [10, 300],
@@ -339,9 +339,9 @@ export const LIMITS = {
 }
 
 const MAX_SEGMENTS = 2400
-/** Mindestwand und -boden (mm) fuer eine hohle Vase, die Wasser halten soll. */
+/** Minimum wall and bottom (mm) for a hollow vase that must hold water. */
 export const WATERTIGHT_MIN = 1.6
-/** Duese, von der die Pruefungen ausgehen (mm): zwei Linien = duennste sinnvolle Wand. */
+/** Nozzle the checks assume (mm): two lines = the thinnest sensible wall. */
 const NOZZLE = 0.4
 const MAX_ROWS = 1200
 
@@ -349,12 +349,12 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
 }
 
-/** Vervollstaendigt und begrenzt Einstellungen; unbekannte Felder fallen weg. */
+/** Completes and clamps settings; unknown fields are dropped. */
 export function normalizeParams(input = {}) {
   const p = { ...DEFAULTS }
   for (const key of Object.keys(DEFAULTS)) {
     if (key === 'drawPoints' || key === 'profilePoints' || key === 'twistPoints') continue
-    // Nur einfache Werte; ein Objekt (auch ohne Prototyp) oder eine Liste gilt als nicht angegeben.
+    // Only plain values; an object (even one without a prototype) or an array counts as not given.
     const value = input?.[key]
     if (typeof value !== 'number' && typeof value !== 'string' && typeof value !== 'boolean') continue
     if (typeof DEFAULTS[key] === 'number') {
@@ -401,7 +401,7 @@ export function normalizeParams(input = {}) {
   if (!REINFORCE[p.reinforce]) p.reinforce = DEFAULTS.reinforce
   if (!LAMPS[p.lamp]) p.lamp = DEFAULTS.lamp
   if (!YES_NO[p.watertight]) p.watertight = DEFAULTS.watertight
-  // Wasserdicht: Wand und Boden einer hohlen Vase mindestens WATERTIGHT_MIN (vier Linien bzw. acht Schichten).
+  // Watertight: wall and bottom of a hollow vase at least WATERTIGHT_MIN (four lines, or eight layers).
   if (p.watertight === 'ja' && p.body === 'hohl') {
     p.wall = Math.max(p.wall, WATERTIGHT_MIN)
     p.bottom = Math.max(p.bottom, WATERTIGHT_MIN)
@@ -415,18 +415,18 @@ export function normalizeParams(input = {}) {
 }
 
 /**
- * Monotone kubische Interpolation (Fritsch-Carlson): rund wie ein Spline, aber
- * ohne Ueberschwingen - eine Taille bleibt eine Taille, der Hals wird nicht
- * duenner als seine Stuetzpunkte.
+ * Monotone cubic interpolation (Fritsch-Carlson): round like a spline, but
+ * without overshoot - a waist stays a waist, the neck does not get
+ * thinner than its control points.
  */
 export function profileFunction(points) {
   return profileSpline(points).at
 }
 
 /**
- * Die Kurve der Koerperform als Hermite-Stuecke: Stuetzstellen `xs` (Hoehe 0..1), Werte `ys`,
- * Steigung je Punkt fuer das Stueck davor (`mL`) und danach (`mR`), dazu `at(x)`. Jedes Stueck
- * ist eine kubische Kurve - genau so wird es zur Bezier-Kurve (Layerling-Skizze).
+ * The curve of the body shape as Hermite pieces: knots `xs` (height 0..1), values `ys`,
+ * slope per point for the piece before it (`mL`) and after it (`mR`), plus `at(x)`. Every piece
+ * is a cubic curve - which is exactly how it becomes a Bezier curve (Layerling sketch).
  */
 export function profileSpline(points) {
   const xs = points.map((pt) => pt[0])
@@ -439,8 +439,8 @@ export function profileSpline(points) {
     h.push(xs[i + 1] - xs[i])
     delta.push((ys[i + 1] - ys[i]) / h[i])
   }
-  // Steigung je Punkt, getrennt fuer das Stueck davor (mL) und danach (mR): rund automatisch
-  // (Fritsch-Carlson), Ecke (je Seite die Gerade zum Nachbarn) oder Anfasser (fester Winkel).
+  // Slope per point, separately for the piece before it (mL) and after it (mR): round automatically
+  // (Fritsch-Carlson), corner (on each side the straight line to the neighbour) or handle (fixed angle).
   const mL = new Array(n), mR = new Array(n)
   for (let i = 0; i < n; i++) {
     const kind = points[i][2] ?? PROFILE_ROUND
@@ -478,9 +478,9 @@ export function profileSpline(points) {
 }
 
 /**
- * Rillenform ueber eine Periode: u in [0, 1), 1 = volle Tiefe in der
- * Rillenmitte (u = 0.5), 0 = Grat. `width` ist der Anteil der Periode, den
- * die Rille einnimmt; der Rest bleibt als Grat stehen.
+ * Groove shape over one period: u in [0, 1), 1 = full depth in the
+ * middle of the groove (u = 0.5), 0 = ridge. `width` is the share of the period
+ * the groove takes up; the rest stays standing as a ridge.
  */
 export function grooveShape(u, width, shape) {
   const x = (u - 0.5) / (width / 2)
@@ -497,7 +497,7 @@ function smoothstep(edge0, edge1, x) {
   return t * t * (3 - 2 * t)
 }
 
-/** 1 im Rillenbereich, 0 ausserhalb, weicher Uebergang ueber `zoneFade` mm. */
+/** 1 in the groove range, 0 outside it, soft transition over `zoneFade` mm. */
 function zoneMask(z, p) {
   const a = (p.zoneFrom / 100) * p.height
   const b = (p.zoneTo / 100) * p.height
@@ -509,23 +509,23 @@ function zoneMask(z, p) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Gezeichnete Formen pruefen                                          */
+/* Checking drawn shapes                                              */
 /* ------------------------------------------------------------------ */
 
 const MAX_POINTS = 40
-/** Querschnitt: mehr Punkte, damit eingelesene SVG-Umrisse genau bleiben (jede Bezier-Ecke ein Punkt). */
+/** Cross-section: more points, so that imported SVG outlines stay exact (one point per Bezier corner). */
 export const MAX_DRAW_POINTS = 120
-/** Arten eines Punkts der Koerperform (dritter Wert): rund automatisch, Ecke, Anfasser mit fester Steigung. */
+/** Kinds of a body shape point (third value): round automatically, corner, handle with a fixed slope. */
 export const PROFILE_ROUND = 0
 export const PROFILE_CORNER = 1
 export const PROFILE_HANDLE = 2
-/** Steigung (Radius je Hoehe, beides 0..1) hoechstens so steil - fast waagerecht, aber nie ueberhaengend gespeichert. */
+/** Slope (radius per height, both 0..1) at most this steep - nearly horizontal, but never stored as overhanging. */
 const MAX_PROFILE_SLOPE = 40
 
 /**
- * Punkte eines gezeichneten Querschnitts: { x, y, corner, tx?, ty?, ix?, iy? } im Bereich -1..1.
- * `tx`/`ty`: Tangente nach dem Punkt; `ix`/`iy` (optional): eigene Tangente davor - so wird eine
- * Bezier-Ecke mit ungleichen Griffen genau (SVG-Import). Ohne `ix` gilt `tx` auf beiden Seiten.
+ * Points of a drawn cross-section: { x, y, corner, tx?, ty?, ix?, iy? } in the range -1..1.
+ * `tx`/`ty`: tangent after the point; `ix`/`iy` (optional): its own tangent before it - this makes a
+ * Bezier corner with unequal handles exact (SVG import). Without `ix`, `tx` applies on both sides.
  */
 export function normalizeDrawPoints(list) {
   if (!Array.isArray(list)) return null
@@ -535,7 +535,7 @@ export function normalizeDrawPoints(list) {
     if (!Number.isFinite(x) || !Number.isFinite(y)) continue
     const q = { x: clamp(x, -1.2, 1.2), y: clamp(y, -1.2, 1.2), corner: pt.corner === true }
     const tx = Number(pt.tx), ty = Number(pt.ty)
-    // Anfasser nur an runden Punkten; eine Ecke hat keine Tangente.
+    // Handles only on round points; a corner has no tangent.
     if (!q.corner && pt.tx !== undefined && pt.tx !== null && Number.isFinite(tx) && Number.isFinite(ty)) {
       q.tx = clamp(tx, -4, 4)
       q.ty = clamp(ty, -4, 4)
@@ -550,7 +550,7 @@ export function normalizeDrawPoints(list) {
   return out.length >= 2 ? out : null
 }
 
-/** Punkte einer gezeichneten Koerperform: [Hoehe 0..1, Radius 0.03..1], nach Hoehe sortiert. */
+/** Points of a drawn body shape: [height 0..1, radius 0.03..1], sorted by height. */
 export function normalizeProfilePoints(list) {
   if (!Array.isArray(list)) return null
   const out = list
@@ -559,25 +559,25 @@ export function normalizeProfilePoints(list) {
     .filter(([t, r]) => Number.isFinite(t) && Number.isFinite(r))
     .map(([t, r, kind, slope]) => {
       const q = [clamp(t, 0, 1), clamp(r, 0.03, 1)]
-      // Rund bleibt kurz [Hoehe, Radius] (wie bisher); Ecke [.., 1]; Anfasser [.., 2, Steigung].
+      // Round stays short [height, radius] (as before); corner [.., 1]; handle [.., 2, slope].
       if (kind === PROFILE_CORNER) q.push(PROFILE_CORNER)
       else if (kind === PROFILE_HANDLE && Number.isFinite(slope)) q.push(PROFILE_HANDLE, clamp(slope, -MAX_PROFILE_SLOPE, MAX_PROFILE_SLOPE))
       return q
     })
     .sort((a, b) => a[0] - b[0])
   if (out.length < 2) return null
-  // Unten und oben muss je ein Punkt sitzen, sonst haette die Form keinen Boden bzw. Rand.
+  // There must be one point at the bottom and one at the top, otherwise the shape would have no bottom or rim.
   out[0][0] = 0
   out[out.length - 1][0] = 1
   for (let i = 1; i < out.length; i++) if (out[i][0] - out[i - 1][0] < 1e-3) out[i][0] = Math.min(1, out[i - 1][0] + 1e-3)
   return out
 }
 
-/** Groesster Winkel einer Drehkurve (Grad) und groesste Steigung (Grad je ganzer Hoehe). */
+/** Largest angle of a twist curve (degrees) and largest slope (degrees per whole height). */
 export const MAX_TWIST_ANGLE = 1080
 const MAX_TWIST_SLOPE = 40000
 
-/** Punkte einer Drehkurve: [Hoehe 0..1, Winkel in Grad, Art?, Steigung?], nach Hoehe sortiert, unten und oben je einer. */
+/** Points of a twist curve: [height 0..1, angle in degrees, kind?, slope?], sorted by height, one each at the bottom and top. */
 export function normalizeTwistPoints(list) {
   if (!Array.isArray(list)) return null
   const out = list
@@ -599,8 +599,8 @@ export function normalizeTwistPoints(list) {
 }
 
 /**
- * Drehkurve aus gleichmaessiger Verdrehung und Pendeln: Anfang, jeder Wendepunkt des Pendelns und
- * Ende, je mit der Steigung an dieser Stelle - so sieht die Kurve beim Umschalten aus wie vorher.
+ * Twist curve from even twist and sway: start, every turning point of the sway and
+ * end, each with the slope at that place - so the curve looks as before when switching over.
  */
 export function twistPointsFrom(input) {
   const p = input.twistMode === undefined ? normalizeParams(input) : input
@@ -613,7 +613,7 @@ export function twistPointsFrom(input) {
   return ts.map((t) => [t, Math.round(at(t) * 100) / 100, PROFILE_HANDLE, slope(t)])
 }
 
-/** Drehung (Bogenmass) des Querschnitts in der Hoehe t (0..1): gleichmaessig oder nach der Drehkurve. */
+/** Rotation (radians) of the cross-section at height t (0..1): even, or following the twist curve. */
 export function rotationFunction(p) {
   if (p.twistMode === 'kurve') {
     const spline = profileSpline(p.twistPoints ?? twistPointsFrom(p))
@@ -625,16 +625,16 @@ export function rotationFunction(p) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Querschnitt                                                          */
+/* Cross-section                                                      */
 /* ------------------------------------------------------------------ */
 
 const TABLE_SIZE = 4096
 
-/** Umriss eines gerundeten Vielecks (erste Ecke bei 0°, faellt auf eine Gitterspalte), groesster Radius 1. */
+/** Outline of a rounded polygon (first corner at 0°, falls on a grid column), largest radius 1. */
 function polygonOutline(n, round) {
   const half = Math.PI / n
-  const d = round * Math.cos(half) // Rundungsradius
-  const ri = 1 - d // Eckradius des inneren Vielecks; Ecke + Rundung = 1
+  const d = round * Math.cos(half) // rounding radius
+  const ri = 1 - d // corner radius of the inner polygon; corner + rounding = 1
   const pts = []
   const arc = d > 1e-6 ? 24 : 0
   for (let k = 0; k < n; k++) {
@@ -650,8 +650,8 @@ function polygonOutline(n, round) {
 }
 
 /**
- * Catmull-Rom durch geschlossene Punktfolge; Eckpunkte bekommen keine Tangente (Knick). Ein Punkt
- * mit eigener Tangente davor (`ix`, `iy`) nimmt sie fuer den Abschnitt, der in ihn hineinlaeuft.
+ * Catmull-Rom through a closed run of points; corner points get no tangent (a kink). A point
+ * with its own tangent before it (`ix`, `iy`) uses it for the piece that runs into it.
  */
 function smoothClosed(points, steps = null) {
   const n = points.length
@@ -667,8 +667,8 @@ function smoothClosed(points, steps = null) {
   for (let i = 0; i < n; i++) {
     const p0 = points[i], p1 = points[(i + 1) % n]
     const m0 = tangent(i, false), m1 = tangent(i + 1, true)
-    // Ohne feste Zahl: Stuetzstellen nach der Laenge des Stuecks (Kontrollpolygon), damit auch wenige,
-    // grosse Boegen (ein Kreis aus vier Stuecken) rund bleiben - hoechstens ~0,001 % daneben.
+    // Without a fixed count: samples by the length of the piece (control polygon), so that even a few
+    // large arcs (a circle of four pieces) stay round - at most ~0.001 % off.
     let count = steps
     if (!count) {
       const ax = p0.x + m0[0] / 3, ay = p0.y + m0[1] / 3, bx = p1.x - m1[0] / 3, by = p1.y - m1[1] / 3
@@ -685,10 +685,10 @@ function smoothClosed(points, steps = null) {
 }
 
 /**
- * Aus dem gezeichneten Grundstueck den ganzen Umriss machen.
- * Haelfte: rechte Seite von oben nach unten, links gespiegelt. Viertel: von oben
- * zur rechten Seite, zweimal gespiegelt. Windmuehle: ein Fluegel, gedreht
- * wiederholt. Frei: der Umriss selbst.
+ * Make the whole outline from the drawn base piece.
+ * Half: right side from top to bottom, mirrored to the left. Quarter: from the top
+ * to the right side, mirrored twice. Windmill: one blade, repeated
+ * rotated. Free: the outline itself.
  */
 export function drawnSectionPoints(p) {
   const base = (p.drawPoints ?? DRAW_PRESETS[p.drawSymmetry]).map((pt) => {
@@ -697,8 +697,8 @@ export function drawnSectionPoints(p) {
     if (!q.corner && pt.tx !== undefined && pt.ix !== undefined) Object.assign(q, { ix: pt.ix, iy: pt.iy })
     return q
   })
-  // Gespiegelt und in umgekehrter Reihenfolge: Die Tangente wird mitgespiegelt und kehrt um; eine
-  // eigene Tangente davor wird dabei zur Tangente danach und umgekehrt.
+  // Mirrored and in reverse order: the tangent is mirrored along and turns round; an
+  // own tangent before the point becomes the tangent after it, and the other way round.
   const mirrored = (pt, f) => {
     const q = { ...pt, x: f[0] * pt.x, y: f[1] * pt.y }
     if (pt.tx === undefined) return q
@@ -709,7 +709,7 @@ export function drawnSectionPoints(p) {
   }
   const mirrorX = (pt) => mirrored(pt, [-1, 1])
   const mirrorY = (pt) => mirrored(pt, [1, -1])
-  // Auf einer Spiegelachse muss die Tangente senkrecht zur Achse stehen, sonst gaebe es dort einen Knick.
+  // On a mirror axis the tangent must be perpendicular to the axis, otherwise there would be a kink there.
   const symmetric = ({ ix, iy, ...pt }) => pt
   const onYAxis = (pt) => (pt.tx === undefined ? { ...pt, x: 0 } : { ...symmetric(pt), x: 0, ty: 0 })
   const onXAxis = (pt) => (pt.tx === undefined ? { ...pt, y: 0 } : { ...symmetric(pt), y: 0, tx: 0 })
@@ -722,11 +722,11 @@ export function drawnSectionPoints(p) {
   if (p.drawSymmetry === 'viertel') {
     const q1 = base.map((pt, i) => (i === 0 ? onYAxis(pt) : i === base.length - 1 ? onXAxis(pt) : pt))
     const q4 = q1.slice(0, -1).reverse().map(mirrorY)
-    const lowerHalf = [...q1, ...q4] // oben -> rechts -> unten
+    const lowerHalf = [...q1, ...q4] // top -> right -> bottom
     const left = lowerHalf.slice(1, -1).reverse().map(mirrorX)
     return [...lowerHalf, ...left]
   }
-  // Windmuehle: Fluegel k um k * 360/N gedreht (im Uhrzeigersinn), Tangenten mitgedreht.
+  // Windmill: blade k rotated by k * 360/N (clockwise), tangents rotated with it.
   const n = p.drawRepeat
   const out = []
   for (let k = 0; k < n; k++) {
@@ -743,9 +743,9 @@ export function drawnSectionPoints(p) {
 }
 
 /**
- * Geschlossene Umrisslinie des Querschnitts (ohne Wellen - die rechnet die Tabelle direkt).
- * `steps`: Stuetzstellen je Abschnitt eines gezeichneten Umrisses (fest, z. B. 16 fuer die
- * Zeichenflaeche); ohne Angabe nach Laenge, so genau wie noetig.
+ * Closed outline of the cross-section (without waves - the table computes those directly).
+ * `steps`: samples per piece of a drawn outline (fixed, e.g. 16 for the
+ * drawing area); if not given, by length, as exact as needed.
  */
 export function sectionOutline(p, steps = null) {
   if (p.section === 'vieleck') return polygonOutline(p.polySides, p.polyRound)
@@ -753,7 +753,7 @@ export function sectionOutline(p, steps = null) {
   return null
 }
 
-/** Strahl vom Mittelpunkt in Richtung `th`: aeusserster Schnitt mit den Kanten und Anzahl der Schnitte. */
+/** Ray from the centre in direction `th`: outermost crossing with the edges, and the number of crossings. */
 function castRay(outline, edges, th) {
   const dx = Math.cos(th), dy = Math.sin(th)
   const m = outline.length
@@ -766,8 +766,8 @@ function castRay(outline, edges, th) {
     if (Math.abs(den) < 1e-14) continue
     const r = (x1 * ey - y1 * ex) / den
     const s = (x1 * dy - y1 * dx) / den
-    // Mit kleiner Toleranz: Ein Strahl genau durch eine Ecke darf nicht an beiden Kanten vorbeigehen
-    // (sonst faellt der Radius dort auf den Notwert). Dieselbe Ecke zaehlt nur einmal.
+    // With a small tolerance: a ray exactly through a corner must not slip past both edges
+    // (otherwise the radius there drops to the fallback value). The same corner counts only once.
     if (s >= -1e-9 && s <= 1 + 1e-9 && r > 0) {
       if (!found.some((f) => Math.abs(f - r) < 1e-9)) found.push(r)
       if (r > best) best = r
@@ -778,7 +778,7 @@ function castRay(outline, edges, th) {
 
 const BUCKETS = 512
 
-/** Kanten nach Winkelbereich einsortieren, damit ein Strahl nur wenige Kanten pruefen muss. */
+/** Sort edges by angle range, so that a ray only has to test a few edges. */
 function bucketEdges(outline) {
   const m = outline.length
   const buckets = Array.from({ length: BUCKETS }, () => [])
@@ -789,7 +789,7 @@ function bucketEdges(outline) {
     let span = Math.atan2(y2, x2) - a1
     if (span > Math.PI) span -= 2 * Math.PI
     if (span < -Math.PI) span += 2 * Math.PI
-    // Kante durch den Mittelpunkt (oder fast): ueberall pruefen.
+    // Edge through the centre (or nearly): test it everywhere.
     if (Math.abs(Math.abs(span) - Math.PI) < 1e-9) {
       for (const b of buckets) b.push(i)
       continue
@@ -803,13 +803,13 @@ function bucketEdges(outline) {
 }
 
 /**
- * Radius des Querschnitts je Winkel (groesster Wert 1) als Funktion `at(winkel)`,
- * exakt gerechnet: Wellen direkt aus der Formel, Umrisslinien per Strahl vom
- * Mittelpunkt (aeusserster Schnittpunkt) - so liegen Vieleck-Ecken genau auf
- * den Gitterspalten und Seiten bleiben gerade. Eine Tabelle mit 4096 Winkeln
- * prueft nur die Form: Ein Umriss, den ein Strahl mehrfach schneidet (nicht
- * sternfoermig), wird an diesen Stellen ueberdeckt - das meldet
- * `starShaped: false`. Liegt der Mittelpunkt nicht innen, meldet es `valid: false`.
+ * Radius of the cross-section per angle (largest value 1) as a function `at(angle)`,
+ * computed exactly: waves straight from the formula, outlines by a ray from the
+ * centre (outermost crossing) - so polygon corners lie exactly on
+ * the grid columns and sides stay straight. A table of 4096 angles
+ * only checks the shape: an outline that a ray crosses more than once (not
+ * star-shaped) gets covered over at those places - this is reported as
+ * `starShaped: false`. If the centre is not inside, it reports `valid: false`.
  */
 export function sectionTable(p) {
   let raw, max = 1
@@ -817,8 +817,8 @@ export function sectionTable(p) {
   if (p.section === 'welle') {
     const n = p.sectionWaves, a = p.sectionWaveAmp
     const style = p.sectionWaveStyle
-    // Lamellen: halbe Breite als Winkel (rund um den Wellenberg) und Rundung der Kante,
-    // beides im Mass des Querschnitts (1 = Radius); die Kante ist hoechstens halbrund.
+    // Fins: half width as an angle (round the wave crest) and rounding of the edge,
+    // both in the cross-section's measure (1 = radius); the edge is at most a half circle.
     const half = p.sectionFinWidth / 2
     const halfLen = (half * 2 * Math.PI) / n
     const tip = Math.min(halfLen, 2 * a)
@@ -826,7 +826,7 @@ export function sectionTable(p) {
       const phase = (n * th) / (2 * Math.PI)
       const f = phase - Math.floor(phase)
       if (style === 'lamellen') {
-        // Abstand zur Lamellenmitte (Wellenberg bei f = 0) als Anteil der Teilung.
+        // Distance to the middle of the fin (wave crest at f = 0) as a share of the spacing.
         const d = Math.min(f, 1 - f)
         if (d >= half) return 1 - a
         const e = d / half
@@ -852,18 +852,18 @@ export function sectionTable(p) {
     sum += table[k]
   }
   const mean = sum / TABLE_SIZE
-  // Der Mittelpunkt muss innen liegen; sonst waere der Boden nicht geschlossen.
+  // The centre must lie inside; otherwise the bottom would not be closed.
   const valid = min > 0.02
   const at = (th) => Math.max(max > 0 ? raw(th) / max : 1, 0.02)
   return { table, at, starShaped, valid, min, mean }
 }
 
-/** Einstellungen des zweiten Querschnitts (Uebergang) in der Form des ersten - fuer sectionTable und die Zeichenflaeche. */
+/** Settings of the second cross-section (transition) in the form of the first - for sectionTable and the drawing area. */
 export function secondSectionParams(p) {
   return { ...p, section: p.section2, polySides: p.section2Sides, polyRound: p.section2Round, sectionWaves: p.section2Waves, sectionWaveAmp: p.section2WaveAmp, sectionWaveStyle: p.section2WaveStyle }
 }
 
-/** Anteil des zweiten Querschnitts in der Hoehe z: 0 unten, 1 oben, dazwischen Smoothstep (ohne Knick). */
+/** Share of the second cross-section at height z: 0 at the bottom, 1 at the top, smoothstep in between (no kink). */
 export function sectionBlend(z, p) {
   if (p.section2 === 'keiner') return 0
   const a = (p.section2From / 100) * p.height, b = (p.section2To / 100) * p.height
@@ -873,9 +873,9 @@ export function sectionBlend(z, p) {
 }
 
 /**
- * Gewicht des Querschnitts in der Hoehe z: 1 im Bereich `sectionZoneFrom`..`sectionZoneTo`, 0
- * ausserhalb, dazwischen ein glatter Uebergang (Smoothstep, ohne Knick) ueber `sectionZoneFade` mm.
- * Beginnt der Bereich unten bzw. endet er oben, gibt es dort keinen Uebergang.
+ * Weight of the cross-section at height z: 1 in the range `sectionZoneFrom`..`sectionZoneTo`, 0
+ * outside it, in between a smooth transition (smoothstep, no kink) over `sectionZoneFade` mm.
+ * If the range starts at the bottom or ends at the top, there is no transition there.
  */
 export function sectionZoneWeight(z, p) {
   const H = p.height
@@ -889,7 +889,7 @@ export function sectionZoneWeight(z, p) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Oberflaecheneffekte                                                  */
+/* Surface effects                                                    */
 /* ------------------------------------------------------------------ */
 
 function hash2(i, j, seed) {
@@ -899,7 +899,7 @@ function hash2(i, j, seed) {
   return (h >>> 0) / 4294967295
 }
 
-/** Der Zellpunkt einer Voronoi-Zelle (Schluessel aus Spalte rundum und Zeile), in der Abwicklung nahe bei `uRef`. */
+/** The seed point of a Voronoi cell (key from the wrapped column and the row), in the unrolled surface near `uRef`. */
 function voronoiSeed(key, uRef, cellsAround, cellW, cellH, seed) {
   const wrapped = Math.floor(key / 100003), j = (key % 100003) - 50
   const i = wrapped + cellsAround * Math.round((Math.round(uRef / cellW) - wrapped) / cellsAround)
@@ -907,12 +907,12 @@ function voronoiSeed(key, uRef, cellsAround, cellW, cellH, seed) {
 }
 
 /**
- * Voronoi-Zellen rundum nahtlos: ein Zufallspunkt je Rasterzelle, die Zellen rundum ganzzahlig. Ergebnis: die
- * Zelle, in der (u, v) liegt (ihr Schluessel), und der Abstand zu ihrer Grenze in mm - genau: der kleinste Abstand
- * zu den Mittelsenkrechten zwischen ihrem Punkt und allen anderen. (Nur der zweitnaechste Punkt, wie frueher,
- * liess den Wert springen, wo drei Zellen zusammenstossen, und die Fugen dort ungleich breit werden.) Gibt den
- * Abstand zurueck; den Schluessel der Zelle legt sie in `voronoiCellKey` (kein Objekt je Aufruf - sie laeuft
- * fuer jeden Punkt der Wand).
+ * Voronoi cells, seamless all round: one random point per grid cell, a whole number of cells round. Result: the
+ * cell that (u, v) lies in (its key), and the distance to its border in mm - exactly: the smallest distance
+ * to the perpendicular bisectors between its point and all others. (Only the second nearest point, as before,
+ * made the value jump where three cells meet, and the joints there came out unequally wide.) Returns the
+ * distance; it puts the cell's key into `voronoiCellKey` (no object per call - it runs
+ * for every point of the wall).
  */
 let voronoiCellKey = 0
 
@@ -943,7 +943,7 @@ function voronoiCell(u, v, cellsAround, cellW, cellH, seed) {
   for (let k = 0; k < n; k++) {
     if (k === near) continue
     const dx = cellXs[k] - nx, dy = cellYs[k] - ny
-    // Nur Punkte, deren Mittelsenkrechte naeher sein kann als die bisher naechste: (d - best) / (2 len) < edge.
+    // Only points whose bisector can be nearer than the nearest so far: (d - best) / (2 len) < edge.
     const d = (cellXs[k] - u) * (cellXs[k] - u) + (cellYs[k] - v) * (cellYs[k] - v) - best
     if (d >= 2 * edge * Math.sqrt(dx * dx + dy * dy)) continue
     edge = d / (2 * (Math.sqrt(dx * dx + dy * dy) || 1))
@@ -953,26 +953,26 @@ function voronoiCell(u, v, cellsAround, cellW, cellH, seed) {
 }
 
 /**
- * Schneidet die Aussenwand entlang der Hoehenlinien ihrer Voronoi-Fugen: Jede Linie `levels` (Abstaende zur
- * Zellgrenze in mm, aufsteigend, mit Vorzeichen) wird eine Kante des Netzes. Die Fugen laufen schraeg zum Raster;
- * ohne Schnitt kamen sie als Stufen heraus. Jede Kante des Rasters entscheidet fuer sich: Liegen ihre Enden in einer
- * Zelle, zaehlt der Abstand zu deren Grenze; liegen sie in zwei Zellen, der Abstand mit Vorzeichen zur Grenze
- * genau zwischen diesen beiden - eine Gerade, so sitzt auch der Grund der Fuge genau. Ein Dreieck mit zwei Zellen
- * misst mit Vorzeichen (positiv in der mit dem kleineren Schluessel); eines, an dem drei Zellen oder eine weitere
- * Grenze zusammenkommen, nimmt nur die Punkte seiner Nachbarn auf (ein Punkt in der Mitte, aufgefaechert), ebenso
- * eines, das nicht geschnitten werden darf (`fixed`: an Zeilen, an die andere Teile stossen). Gemeinsame Kanten
- * bekommen dieselben Punkte, das Netz bleibt geschlossen. Neue Punkte liegen auf der Flaeche selbst
- * (`point(theta, z)` gibt ihre Nummer). Liegt ein Schnitt naeher als `eps` an einer Ecke, entfaellt er: Die Ecke
- * gilt als auf der Linie.
- *   wall: { count, v (3 Punkte), e (3 Kanten: a-b, b-c, c-a), p (je Ecke theta, z; abgewickelt), fixed } je Dreieck;
- *   site: { key, edge, u, z } je Punktnummer (Zelle, Abstand zu ihrer Grenze, Lage in der Abwicklung);
- *   seedAt(key, uRef): Zellpunkt nahe uRef; around: Umfang der Abwicklung; edgeCount: Zahl der Kanten.
+ * Cuts the outer wall along the contour lines of its Voronoi joints: every line in `levels` (distances to the
+ * cell border in mm, ascending, signed) becomes an edge of the mesh. The joints run at a slant to the grid;
+ * without cutting they came out as steps. Every grid edge decides on its own: if its ends lie in one
+ * cell, the distance to that cell's border counts; if they lie in two cells, the signed distance to the border
+ * exactly between those two - a straight line, so the floor of the joint sits exactly as well. A triangle with two
+ * cells measures signed (positive in the one with the smaller key); one where three cells or a further
+ * border meet only takes up the points of its neighbours (one point in the middle, fanned out), and so does
+ * one that must not be cut (`fixed`: at rows that other parts butt against). Shared edges
+ * get the same points, so the mesh stays closed. New points lie on the surface itself
+ * (`point(theta, z)` gives their number). If a cut lies closer than `eps` to a corner, it is dropped: the corner
+ * counts as lying on the line.
+ *   wall: { count, v (3 points), e (3 edges: a-b, b-c, c-a), p (theta, z per corner; unrolled), fixed } per triangle;
+ *   site: { key, edge, u, z } per point number (cell, distance to its border, position in the unrolled surface);
+ *   seedAt(key, uRef): seed point near uRef; around: circumference of the unrolled surface; edgeCount: number of edges.
  */
 function sliceVoronoiJoints(wall, site, seedAt, around, edgeCount, levels, eps, point, tris) {
   const lists = new Array(edgeCount)
   const NONE = { lo: -1, signed: false, ids: [], fs: [] }
   const near = (u, uRef) => (u - uRef > around / 2 ? u - around : uRef - u > around / 2 ? u + around : u)
-  /** Abstand mit Vorzeichen zur Grenze zwischen den Zellen lo und hi (positiv bei lo) an (u, z), gemessen nahe uRef. */
+  /** Signed distance to the border between cells lo and hi (positive on lo's side) at (u, z), measured near uRef. */
   const across = (lo, hi, uRef, u, z) => {
     const [ax, ay] = seedAt(lo, uRef), [bx, by] = seedAt(hi, uRef)
     const len = Math.hypot(bx - ax, by - ay) || 1
@@ -980,7 +980,7 @@ function sliceVoronoiJoints(wall, site, seedAt, around, edgeCount, levels, eps, 
   }
   const { key: K, edge: E, u: U, z: Z } = site
   const outside = levels[levels.length - 1] + eps
-  /** Die Schnitte auf Kante `e` zwischen a und b (von lo nach hi gespeichert); `create`: noch nicht bekannte anlegen. */
+  /** The cuts on edge `e` between a and b (stored from lo to hi); `create`: add the ones not known yet. */
   const pointsOn = (e, a, b, ta, za, tb, zb, create) => {
     let list = lists[e]
     if (list || !create) return list ?? NONE
@@ -999,7 +999,7 @@ function sliceVoronoiJoints(wall, site, seedAt, around, edgeCount, levels, eps, 
     const min = Math.min(f0, f1), max = Math.max(f0, f1)
     list = NONE
     for (let l = 0; l < levels.length; l++) {
-      // Nach dem Weg von lo nach hi geordnet: Die Linien steigen oder fallen mit ihm.
+      // Ordered along the way from lo to hi: the lines rise or fall with it.
       const L = f1 >= f0 ? levels[l] : levels[levels.length - 1 - l]
       if (!signed && L <= 0) continue
       if (L <= min + eps || L >= max - eps) continue
@@ -1021,15 +1021,15 @@ function sliceVoronoiJoints(wall, site, seedAt, around, edgeCount, levels, eps, 
       deferred.push(t)
       continue
     }
-    // Ganz in einer Zelle und weiter als die Fuge von ihrer Grenze: kein Schnitt (die meisten Dreiecke).
+    // Entirely in one cell and farther from its border than the joint: no cut (most triangles).
     const oneCell = K[a0] === K[a1] && K[a1] === K[a2]
     if (oneCell && E[a0] >= outside && E[a1] >= outside && E[a2] >= outside) {
       tris.push(a0, a1, a2)
       continue
     }
     const lo = Math.min(K[a0], K[a1], K[a2]), hi = Math.max(K[a0], K[a1], K[a2])
-    // Drei Zellen nimmt nur Punkte auf; ebenso zwei, wenn der Abstand einer Ecke nicht der zu ihrer gemeinsamen
-    // Grenze ist (eine weitere Grenze ist naeher, das Dreieck misst nicht linear).
+    // Three cells only take up points; so do two if a corner's distance is not the one to their shared
+    // border (another border is nearer, the triangle does not measure linearly).
     if (!oneCell) {
       let skip = false
       for (const c of [a0, a1, a2]) {
@@ -1062,7 +1062,7 @@ function sliceVoronoiJoints(wall, site, seedAt, around, edgeCount, levels, eps, 
       tris.push(a0, a1, a2)
       continue
     }
-    // Je Streifen zwischen zwei Linien: die Punkte des Randes darin, in ihrer Reihenfolge - ein konvexes Vieleck.
+    // Per strip between two lines: the boundary points inside it, in their order - a convex polygon.
     let fMin = Infinity, fMax = -Infinity
     for (let i = 0; i < n; i++) {
       if (ringF[i] < fMin) fMin = ringF[i]
@@ -1090,19 +1090,19 @@ function sliceVoronoiJoints(wall, site, seedAt, around, edgeCount, levels, eps, 
     const ring = []
     for (let k = 0; k < 3; k++) ring.push(v[k], ...on[k])
     if (used === 1) {
-      // Ein Faecher von der Ecke gegenueber der Kante mit Punkten: kein Dreieck liegt auf einer Linie.
+      // A fan from the corner opposite the edge with points: no triangle lies on a line.
       const edge = on.findIndex((ids) => ids.length)
       const apex = ring.indexOf(v[(edge + 2) % 3])
       for (let k = 1; k + 1 < ring.length; k++) tris.push(ring[apex], ring[(apex + k) % ring.length], ring[(apex + k + 1) % ring.length])
     } else {
-      // Mehrere Kanten mit Punkten: ein Punkt in der Mitte, ringsum aufgefaechert.
+      // Several edges with points: one point in the middle, fanned out all round.
       const mid = point((WP[t * 6] + WP[t * 6 + 2] + WP[t * 6 + 4]) / 3, (WP[t * 6 + 1] + WP[t * 6 + 3] + WP[t * 6 + 5]) / 3)
       for (let k = 0; k < ring.length; k++) tris.push(mid, ring[k], ring[(k + 1) % ring.length])
     }
   }
 }
 
-/** Tiefe, die der Effekt hoechstens erreicht (fuer die Innenwand). */
+/** Largest depth the effect reaches (for the inner wall). */
 function effectDepth(p, ribsActive) {
   if (p.effect === 'rillen') return ribsActive ? p.ribDepth : 0
   if (p.effect === 'streifen') return p.stripeDepth
@@ -1110,14 +1110,14 @@ function effectDepth(p, ribsActive) {
   return 0
 }
 
-/** Steigung und Tiefe des Gewindes (mm): Flanken unter 45 Grad (druckt ohne Stuetzen), hoechstens 1,5 mm tief. */
+/** Pitch and depth of the thread (mm): flanks at 45 degrees (prints without supports), at most 1.5 mm deep. */
 export function threadSize(p) {
   return { pitch: p.threadPitch, depth: Math.min(1.5, 0.3 * p.threadPitch) }
 }
 
 /**
- * Gewindeprofil ueber eine Steigung (u 0..1): 0 = Gewindespitze (Material), 1 = Gang (Rille). Trapez mit
- * Flanken unter 45 Grad: je Flanke so viel der Steigung, wie das Gewinde tief ist.
+ * Thread profile over one pitch (u 0..1): 0 = thread crest (material), 1 = root (the groove). A trapezoid with
+ * flanks at 45 degrees: each flank takes as much of the pitch as the thread is deep.
  */
 export function threadProfile(u, p) {
   const { pitch, depth } = threadSize(p)
@@ -1131,15 +1131,15 @@ export function threadProfile(u, p) {
 }
 
 /**
- * Deckel-Bereich in der Innenwand (nur hohle Vase, nur Schnapp- und Schraubdeckel): wo Nut bzw. Gewinde
- * sitzen. Rechtsgewinde: im Uhrzeigersinn (von oben) gedreht, geht der Deckel nach unten - Phase
- * u = z / Steigung - Winkel / 2 pi. Ein- und Auslauf je eine halbe Steigung (Tiefe von 0 auf voll).
+ * Lid zone in the inner wall (hollow vase only, snap and screw lids only): where the groove or thread
+ * sits. Right-hand thread: turned clockwise (seen from above), the lid goes down - phase
+ * u = z / pitch - angle / 2 pi. Run-in and run-out half a pitch each (depth from 0 to full).
  */
 export function lidZone(p) {
   if (p.body !== 'hohl' || p.lamp !== 'keine' || p.insertMode === 'stecker' || p.insertMode === 'roehrchen') return null
   const H = p.height
   if (p.lidMode === 'schnapp') {
-    // Nut 3 mm ueber dem unteren Ende der Lippe, 0,5 mm tief, 2,8 mm hoch (Flanken flach, druckt ohne Stuetzen).
+    // Groove 3 mm above the lower end of the lip, 0.5 mm deep, 2.8 mm high (flat flanks, prints without supports).
     const zc = H - p.lidDepth + 3
     return { kind: 'schnapp', z0: zc - 1.4, z1: zc + 1.4, zc, half: 1.4, depth: 0.5, snap: 0.3 }
   }
@@ -1150,7 +1150,7 @@ export function lidZone(p) {
   return null
 }
 
-/** Tiefe der Gewinderille (0..1) an Winkel und Hoehe, mit Ein- und Auslauf an den Enden des Bereichs. */
+/** Depth of the thread groove (0..1) at angle and height, with run-in and run-out at the ends of the zone. */
 export function threadDepthAt(theta, z, zone, p) {
   if (z < zone.z0 || z > zone.z1) return 0
   const ramp = zone.pitch / 2
@@ -1159,8 +1159,8 @@ export function threadDepthAt(theta, z, zone, p) {
 }
 
 /**
- * Wo die Drehung in der Hoehe z steht (0 unten, 1 oben): nach der Hoehe z / H, oder nach der Bogenlaenge
- * der Koerperform (Kontur, wie ein Sweep in SolidCraft) - Tabelle mit 1024 Schritten, linear dazwischen.
+ * Where the rotation stands at height z (0 at the bottom, 1 at the top): by the height z / H, or by the arc length
+ * of the body shape (contour, like a sweep in SolidCraft) - a table of 1024 steps, linear in between.
  */
 export function twistParameter(p, R, H) {
   if (p.twistAlong !== 'kontur') return (z) => z / H
@@ -1181,8 +1181,8 @@ export function twistParameter(p, R, H) {
 }
 
 /**
- * Form der Vase ohne Oberflaechen-Effekt, fuer Boden, Zubehoer und Einsaetze: Radius je
- * Winkel und Hoehe (mm), Drehung, Querschnitt. `outerAt(theta, z)` ist die Aussenwand.
+ * Shape of the vase without the surface effect, for the bottom, accessories and inserts: radius per
+ * angle and height (mm), rotation, cross-section. `outerAt(theta, z)` is the outer wall.
  */
 export function vaseShape(input) {
   const p = normalizeParams(input)
@@ -1191,19 +1191,19 @@ export function vaseShape(input) {
   const radiusAt = profileFunction(profilePts)
   const maxR = p.diameter / 2
   const H = p.height
-  // Drehung des Querschnitts in der Hoehe t (0..1): Verdrehung plus Pendeln oder die Drehkurve. Muster drehen gleich mit.
+  // Rotation of the cross-section at height t (0..1): twist plus sway, or the twist curve. Patterns turn along with it.
   const rotation = rotationFunction(p)
   const first = sectionTable(p)
-  // Querschnitt-Uebergang: Radius je Winkel aus beiden Querschnitten gemischt. Beide sind sternfoermig
-  // (ein Strahl je Winkel), also gibt es keine Zuordnung von Punkten und kein Verdrillen.
+  // Cross-section transition: radius per angle mixed from both cross-sections. Both are star-shaped
+  // (one ray per angle), so there is no matching of points and no twisting.
   const second = p.section2 !== 'keiner' ? sectionTable(secondSectionParams(p)) : null
   const section = second
     ? { table: first.table, at: first.at, starShaped: first.starShaped && second.starShaped, valid: first.valid && second.valid, min: Math.min(first.min, second.min), mean: Math.max(first.mean, second.mean) }
     : first
   const R = (z) => (maxR * Math.max(0.02, radiusAt(clamp(z / H, 0, 1)))) / profileMax
   const twistT = twistParameter(p, R, H)
-  // Ausserhalb des Hoehenbereichs geht der Querschnitt in einen Kreis ueber (mittlerer Radius,
-  // an den Spitzen = 1 oder am Grund = kleinster Wert der Tabelle) - beim Uebergang gemischt wie der Querschnitt.
+  // Outside the height range the cross-section turns into a circle (mean radius,
+  // at the tips = 1 or at the troughs = smallest table value) - during a transition mixed like the cross-section.
   const roundOf = (s) => ({ mitte: s.mean, spitzen: 1, grund: s.min })[p.sectionOutside]
   const sectionAt = (theta, z) => {
     const th = theta - rotation(twistT(z))
@@ -1215,7 +1215,7 @@ export function vaseShape(input) {
     return roundTo + (v - roundTo) * w
   }
   const outerAt = (theta, z) => R(z) * sectionAt(theta, z)
-  /** Ecke (Zeile i, Spalte j) der Facetten, genau wie buildVase sie setzt. */
+  /** Corner (row i, column j) of the facets, exactly as buildVase places it. */
   const lowpolyVertex = (i, j) => {
     const seg = p.lowpolyAround, rows = p.lowpolyRows
     const jj = ((j % seg) + seg) % seg
@@ -1227,15 +1227,15 @@ export function vaseShape(input) {
     }
     return { theta, z, r: R(z) * sectionAt(theta, z) }
   }
-  /** Kleinster Radius der Aussenwand in Hoehe z (ueber alle Winkel). */
+  /** Smallest radius of the outer wall at height z (over all angles). */
   const minOuterAt = (z) => R(z) * section.min
-  // Innenwand (hohle Vase): Abstand `wall` senkrecht zur Flaeche hinter dem tiefsten Punkt des
-  // Effekts; rund = Kreis durch die engste Stelle des Querschnitts.
+  // Inner wall (hollow vase): distance `wall` perpendicular to the surface behind the deepest point of the
+  // effect; round = a circle through the narrowest place of the cross-section.
   const ribsActive = p.effect === 'rillen' && p.ribCount > 0 && p.ribDepth > 0
   const lowpoly = p.effect === 'lowpoly'
   const maxDepth = effectDepth(p, ribsActive)
-  // Facetten: Jeder Punkt einer Facette liegt hoechstens um den halben Winkel einer (verschobenen)
-  // Spalte innen von der kleinsten Ecke in der Naehe - die Innenwand bleibt darunter.
+  // Facets: every point of a facet lies inward of the smallest nearby corner by at most half the angle of a
+  // (shifted) column - the inner wall stays below that.
   const lowpolyFloorAt = (theta, z) => {
     const seg = p.lowpolyAround, rows = p.lowpolyRows
     const jc = Math.floor((((theta / (2 * Math.PI)) % 1) + 1) % 1 * seg)
@@ -1244,7 +1244,7 @@ export function vaseShape(input) {
     for (let j = jc - 1; j <= jc + 2; j++) for (let i = Math.max(0, ic - 1); i <= Math.min(rows, ic + 2); i++) m = Math.min(m, lowpolyVertex(i, j).r)
     return m * Math.cos(Math.min(1.4, ((1 + p.lowpolyJitter) * Math.PI) / seg))
   }
-  // Rand unten bei Facetten: das Vieleck der untersten Ecken, genau.
+  // Bottom rim with facets: the polygon of the lowest corners, exactly.
   const lowpolyRim = lowpoly ? Array.from({ length: p.lowpolyAround }, (_, j) => { const v = lowpolyVertex(0, j); return [v.r * Math.cos(v.theta), v.r * Math.sin(v.theta)] }) : null
   const lowpolyRimEdges = lowpoly ? lowpolyRim.map((_, i) => i) : null
   const slopeZ = (z) => (R(Math.min(H, z + 0.5)) - R(Math.max(0, z - 0.5))) / (Math.min(H, z + 0.5) - Math.max(0, z - 0.5))
@@ -1255,15 +1255,15 @@ export function vaseShape(input) {
     const tiltZ = Math.sqrt(1 + slopeZ(z) ** 2)
     const zoneDepth = maxDepth * (lowpoly ? 0 : zoneMask(z, p))
     const sec = roundInner ? innerSection : sectionAt(theta, z)
-    // Neigung des Querschnitts: Wand senkrecht zur Kontur messen, nicht nur radial.
+    // Tilt of the cross-section: measure the wall perpendicular to the contour, not only radially.
     const ds = roundInner ? 0 : (sectionAt(theta + dAngle, z) - sectionAt(theta - dAngle, z)) / (2 * dAngle)
     const tiltTheta = Math.sqrt(1 + (ds / Math.max(sec, 1e-6)) ** 2)
     const base = lowpoly ? lowpolyFloorAt(theta, z) : R(z) * sec
     return Math.max(0.5, base - Math.min(zoneDepth, base / 3) - p.wall * Math.min(3, tiltZ * tiltTheta))
   }
-  // Deckel: Nut fuer den Schnappdeckel bzw. Innengewinde fuer den Schraubdeckel unter dem Rand. Das
-  // Gewinde braucht einen runden Hals: dort die engste Stelle der Innenwand, darunter ein Uebergang
-  // unter 45 Grad (kein Ueberhang innen).
+  // Lid: groove for the snap lid, or internal thread for the screw lid, below the rim. The
+  // thread needs a round neck: there the narrowest place of the inner wall, below it a transition
+  // at 45 degrees (no overhang inside).
   const lid = lidZone(p)
   let neck = 0
   if (lid?.kind === 'schraube') {
@@ -1279,20 +1279,20 @@ export function vaseShape(input) {
       if (z < lid.z0) return Math.min(baseInnerAt(theta, z), neck + (lid.z0 - z))
       return neck + lid.depth * threadDepthAt(theta, z, lid, p)
     }
-  /** Rand des Bodens aussen (bei Facetten das Vieleck der untersten Ecken). */
+  /** Outer rim of the bottom (with facets, the polygon of the lowest corners). */
   const rimAt = (theta) => (lowpoly ? castRay(lowpolyRim, lowpolyRimEdges, theta)[0] || outerAt(theta, 0) * 0.5 : outerAt(theta, 0))
   return { p, H, maxR, R, rotation, twistT, section, sectionAt, outerAt, minOuterAt, innerAt, baseInnerAt, rimAt, lowpolyVertex, lid, neck }
 }
 
-/** Liegt ein Kreis (cx, cy, r) mit Abstand `margin` ganz innerhalb des Rands `radiusAt(winkel)`? */
+/** Does a circle (cx, cy, r) with a margin of `margin` lie entirely inside the rim `radiusAt(angle)`? */
 function circleFits(h, radiusAt, margin) {
   for (let k = 0; k < 96; k++) {
     const a = (2 * Math.PI * k) / 96
     const x = h.cx + (h.r + margin) * Math.cos(a), y = h.cy + (h.r + margin) * Math.sin(a)
     if (Math.hypot(x, y) > radiusAt(Math.atan2(y, x)) * 0.97) return false
   }
-  // Spitze Kerben im Rand (Boegen, Ecken) koennen zwischen zwei Messstellen in den Kreis ragen:
-  // den Rand selbst dicht abtasten, im Winkelbereich des Kreises.
+  // Sharp notches in the rim (arches, corners) can reach into the circle between two sample points:
+  // sample the rim itself densely, within the circle's angle range.
   const d = Math.hypot(h.cx, h.cy)
   const need = h.r + margin
   const span = d > need ? Math.asin(Math.min(1, need / d)) + 0.05 : Math.PI
@@ -1307,39 +1307,39 @@ function circleFits(h, radiusAt, margin) {
 const apart = (a, b, gap) => Math.hypot(a.cx - b.cx, a.cy - b.cy) >= a.r + b.r + gap
 const fmtMm = (v) => (Math.round(v * 10) / 10).toLocaleString('de-DE')
 
-/** Zapfen eines Steckbeins: Radius und Laenge (mm) aus der Dicke des Beins. */
+/** Peg of a plug-in leg: radius and length (mm) from the thickness of the leg. */
 export function legPeg(p) {
   const r = clamp(p.legDiameter * 0.25, 2.5, 6)
   return { r, length: clamp(r * 2.4, 5, 12) }
 }
 
 /**
- * Wo im Boden etwas sitzt (mm, Mitte der Vase = 0): Ablaufloecher (durch den Boden),
- * Buchsen fuer Steckbeine und Mulden fuer Gummifuesse (von unten, blind), dazu die noetige
- * Bodenstaerke und Hinweise fuer die Seite. Alles passt in den Boden; was nicht passt, wird
- * weniger oder rutscht nach innen - und steht in `notes`.
+ * Where things sit in the bottom (mm, middle of the vase = 0): drain holes (through the bottom),
+ * sockets for plug-in legs and recesses for rubber feet (from below, blind), plus the bottom
+ * thickness they need and notes for the page. Everything fits into the bottom; what does not fit becomes
+ * fewer or moves inwards - and is listed in `notes`.
  */
 export function floorLayout(input) {
   const shape = vaseShape(input)
   const p = shape.p
   const notes = []
   const hollow = p.body === 'hohl'
-  // Lampe ueber einem LED-Puck: ohne Boden und ohne Fuss.
+  // Lamp over an LED puck: no bottom and no foot.
   const lamp = hollow ? p.lamp : 'keine'
   if (!hollow && p.lamp !== 'keine') notes.push('Ein Lampenschirm braucht eine hohle Vase (Bauart „Hohl mit Wand“).')
   const foot = hollow && lamp !== 'puck' ? Math.min(p.footHeight, p.height * 0.4) : 0
   const blind = []
-  // Steckbeine: Buchsen nur in einem hohlen Boden ohne Fuss (im Slicer-Vasenmodus ist der Boden duenn).
+  // Plug-in legs: sockets only in a hollow bottom without a foot (in the slicer's vase mode the bottom is thin).
   const legs = []
   if (p.legMode !== 'keine') {
     for (let k = 0; k < p.legCount; k++) {
       const a = (2 * Math.PI * k) / p.legCount + Math.PI / p.legCount
       const legR = p.legDiameter / 2
-      // Rand ueber die ganze Auflage des Beins messen (bei Lamellen der Kern, nicht die Rippe).
+      // Measure the rim across the whole contact area of the leg (with fins: the core, not the rib).
       const reach = (legR + 2) / Math.max(5, shape.outerAt(a, 0))
       let rim = Infinity
       for (let s = -4; s <= 4; s++) rim = Math.min(rim, shape.outerAt(a + (reach * s) / 4, 0))
-      // Die Mitte des Beins sitzt um `legInset` vom Rand nach innen, das Bein ragt nicht ueber den Rand.
+      // The middle of the leg sits `legInset` in from the rim; the leg does not stick out over the rim.
       const r = Math.max(legR * 0.6, Math.min(rim * (1 - p.legInset), rim - legR * 0.85))
       legs.push({ angle: a, x: r * Math.cos(a), y: r * Math.sin(a), rim })
     }
@@ -1351,7 +1351,7 @@ export function floorLayout(input) {
     else {
       let dropped = 0
       for (const leg of legs) {
-        // Passt die Buchse nicht in den Boden oder stoesst an die naechste, rutscht sie nach innen.
+        // If the socket does not fit into the bottom or runs into the next one, it moves inwards.
         let h = null
         for (let f = 1; f >= 0.3 && !h; f -= 0.1) {
           const c = { kind: 'buchse', cx: leg.x * f, cy: leg.y * f, r: peg.r + p.fitClearance, depth: peg.length + 0.6 }
@@ -1387,12 +1387,12 @@ export function floorLayout(input) {
     floor = deepest + 1.2
     notes.push(`Boden auf ${floor.toFixed(1).replace('.', ',')} mm verstärkt, damit die Buchsen bzw. Mulden nicht durchgehen.`)
   }
-  // Lampenschirm mit Fassung: Boden mindestens 2,5 mm, in der Mitte das Loch fuer die Fassung.
+  // Lampshade with a socket: bottom at least 2.5 mm, in the middle the hole for the socket.
   if (lamp === 'haengend' || lamp === 'stehend') {
     if (floor < 2.5) { floor = 2.5; notes.push('Boden auf 2,5 mm verstärkt – er trägt den Schirm an der Fassung.') }
   }
   if (lamp === 'puck') floor = 0
-  // Ablaufloecher in der Mitte und auf einem Ring; der Innenboden faellt zu ihnen hin ab.
+  // Drain holes in the middle and on a ring; the inner floor slopes down towards them.
   const drains = []
   let slope = 0
   if (lamp === 'haengend' || lamp === 'stehend') {
@@ -1404,7 +1404,7 @@ export function floorLayout(input) {
     if (lamp === 'haengend') notes.push(`Hängend: Zum Aufhängen umdrehen – die Platte mit dem Loch (Ø ${fmtMm(p.lampHole)} mm) kommt oben auf die Fassung und wird vom Schirmring gehalten. Lochmaß an der eigenen Fassung nachmessen.`)
     else notes.push(`Stehend: Fassung im Bodenloch (Ø ${fmtMm(p.lampHole)} mm) mit dem Schirmring befestigen, das Kabel läuft durch den hohlen Fuß${p.lampNotch > 0 ? ' und den Schlitz' : ''}. Fuß so hoch wählen, dass der Fassungskörper darunter Platz hat – nachmessen.`)
   } else if (lamp === 'puck') {
-    // Innen unten muss der Puck hineinpassen.
+    // At the bottom on the inside, the puck must fit in.
     let inner = Infinity
     for (let k = 0; k < 72; k++) inner = Math.min(inner, shape.innerAt((2 * Math.PI * k) / 72, 0))
     if (2 * inner < p.puckDiameter + 2) notes.push(`Der LED-Puck (Ø ${fmtMm(p.puckDiameter)} mm) passt nicht hinein – unten innen sind es nur Ø ${fmtMm(2 * inner)} mm.`)
@@ -1413,8 +1413,8 @@ export function floorLayout(input) {
   if (lamp !== 'keine') notes.push('Nur LED-Leuchtmittel verwenden: PLA wird ab etwa 55 °C weich, PETG ab etwa 80 °C.')
   if (lamp === 'keine' && hollow && p.drainHoles > 0) {
     const r = p.drainDiameter / 2
-    // Ein Ablaufloch geht durch beide Seiten des Bodens: es muss in den Innenboden oben und in die
-    // Unterseite (Rand aussen bzw. Wand des hohlen Fusses) passen.
+    // A drain hole goes through both sides of the bottom: it must fit into the inner floor on top and into the
+    // underside (the outer rim, or the wall of the hollow foot).
     const top = (a) => shape.innerAt(a, foot + floor)
     const under = foot > 0 ? (a) => shape.innerAt(a, foot) : shape.rimAt
     const floorAt = (a) => Math.min(top(a), under(a))
@@ -1431,14 +1431,14 @@ export function floorLayout(input) {
     slope = Math.min(p.floorSlope, Math.max(0, floor - 1.2))
     if (p.floorSlope > slope + 1e-9) notes.push(`Gefälle auf ${slope.toFixed(1).replace('.', ',')} mm begrenzt (Boden ${floor.toFixed(1).replace('.', ',')} mm).`)
   } else if (!hollow && p.drainHoles > 0) notes.push('Ablauflöcher gibt es nur bei einer hohlen Vase.')
-  // Kabelschlitz unten (stehend im Fuss, ueber dem Puck in der Wand): ein Bereich mit offenem Rand.
+  // Cable slot at the bottom (standing: in the foot; over the puck: in the wall): a zone with an open edge.
   let notchZone = null
   if ((lamp === 'stehend' || lamp === 'puck') && p.lampNotch > 0) {
     const top = p.lampNotchHeight + 2
     if (lamp === 'stehend' && foot < top + 1) notes.push(`Für den Kabelschlitz (${fmtMm(p.lampNotchHeight)} mm hoch) braucht es einen hohlen Fuß von mindestens ${fmtMm(top + 1)} mm.`)
     else notchZone = { z0: 0, z1: top, open: true, kind: 'notch' }
   }
-  // Durchbrochene Wand: Hoehenbereich ueber dem Boden und unter dem Rand, je mit vollem Streifen.
+  // Pierced wall: height range above the bottom and below the rim, each with a solid band.
   let cutoutZone = null
   if (p.cutout !== 'keine') {
     if (!hollow) notes.push('Eine durchbrochene Wand gibt es nur bei einer hohlen Vase (Bauart „Hohl mit Wand“).')
@@ -1454,7 +1454,7 @@ export function floorLayout(input) {
       }
     }
   }
-  // Vasenmodus stabiler: nur beim vollen Koerper; Doppelwand braucht Platz fuer zwei Waende und Stege.
+  // Sturdier vase mode: only with a solid body; a double wall needs room for two walls and webs.
   let reinforce = null
   if (p.reinforce !== 'keine') {
     if (hollow) notes.push('Rippen und Doppelwand sind für den Slicer-Vasenmodus (Bauart „Voll“) – bei einer hohlen Vase ohne Wirkung.')
@@ -1462,8 +1462,8 @@ export function floorLayout(input) {
     else if (p.reinforce === 'doppelwand' && p.reinforceDepth < 4 * p.lineWidth + p.slitWidth) notes.push(`Die Wände stehen zu dicht für Stege – Abstand mindestens ${(4 * p.lineWidth + p.slitWidth).toFixed(1).replace('.', ',')} mm (vier Linienbreiten).`)
     else {
       reinforce = { floor: Math.max(0.6, p.bottom) }
-      // Nachgemessen mit PrusaSlicer 2.7 (Spiral-Vasenmodus): Spalten unter 2 x „Slice gap closing radius“
-      // (Vorgabe 0,049 mm) schliesst der Slicer - dann druckt er eine einfache Wand ohne Rippen.
+      // Measured with PrusaSlicer 2.7 (spiral vase mode): gaps below 2 x "Slice gap closing radius"
+      // (default 0.049 mm) are closed by the slicer - it then prints a single wall without ribs.
       const mm = (v, d = 2) => v.toFixed(d).replace('.', ',')
       const lw = `Slicer: Spiral-Vasenmodus an, Linienbreite außen ${mm(p.lineWidth)} mm (wie hier eingestellt).`
       if (p.slitWidth / 2 > 0.049) notes.push(`${lw} Die Schlitze (${mm(p.slitWidth)} mm) bleiben mit den Standardwerten erhalten; die beiden Linien einer Rippe liegen ${mm(p.slitWidth)} mm auseinander. Fest verschmolzen: Schlitzbreite 0,03 mm und im Slicer „Slice gap closing radius“ 0,01 mm (PrusaSlicer, OrcaSlicer, Bambu Studio).`)
@@ -1474,16 +1474,16 @@ export function floorLayout(input) {
 }
 
 /**
- * Druckbarkeit und Wasserdichtheit pruefen, als Hinweise fuer Seite und Kommandozeile:
- * Ueberhang ueber 45 Grad (mit Hoehe), Wand und Boden unter zwei Duesenbreiten, Widersprueche zu
- * „Muss Wasser halten“ und Slicer-Hinweise dafuer.
+ * Check printability and watertightness, as notes for the page and the command line:
+ * overhang above 45 degrees (with its height), wall and bottom below two nozzle widths, conflicts with
+ * "must hold water" (`watertight`) and slicer notes for it.
  */
 export function vaseChecks(input) {
   const p = normalizeParams(input)
   const notes = []
   const shape = vaseShape(p)
   const H = p.height
-  // Ueberhang der Aussenwand: Neigung der Flaeche aus Ableitungen nach Winkel und Hoehe (samt Drehung).
+  // Overhang of the outer wall: tilt of the surface from the derivatives by angle and height (rotation included).
   const N = 180, dz = 0.5
   const limit = Math.sin(Math.PI / 4)
   let worst = 0
@@ -1495,7 +1495,7 @@ export function vaseChecks(input) {
       const r = shape.outerAt(th, z)
       const rTheta = (shape.outerAt(th + 1e-3, z) - shape.outerAt(th - 1e-3, z)) / 2e-3
       const rZ = (shape.outerAt(th, z + dz) - shape.outerAt(th, z - dz)) / (2 * dz)
-      // Normale (r, -r_theta, -r r_z) im mitdrehenden Rahmen; nach unten, wenn r_z > 0.
+      // Normal (r, -r_theta, -r r_z) in the co-rotating frame; pointing down when r_z > 0.
       const nz = (-r * rZ) / Math.hypot(r, rTheta, r * rZ)
       if (-nz > rowWorst) rowWorst = -nz
     }
@@ -1518,7 +1518,7 @@ export function vaseChecks(input) {
     else if (p.lamp !== 'keine') notes.push('Ein Lampenschirm bekommt keinen Deckel.')
     else if (p.insertMode === 'stecker' || p.insertMode === 'roehrchen') notes.push('Deckel und Steckeinsatz bzw. Wasserröhrchen liegen beide auf dem Rand – nur eins von beiden.')
     else if (shape.lid) {
-      // Wand neben Nut bzw. Gewinde: mindestens 1 mm Material.
+      // Wall beside the groove or thread: at least 1 mm of material.
       let thin = Infinity
       for (let i = 0; i <= 8; i++) for (let k = 0; k < 360; k++) {
         const th = (2 * Math.PI * k) / 360, z = shape.lid.z0 + ((shape.lid.z1 - shape.lid.z0) * i) / 8
@@ -1541,10 +1541,10 @@ export function vaseChecks(input) {
 }
 
 /**
- * Baut die Vase. Liefert ein dreiecksweises Netz (je 9 Zahlen pro Dreieck,
- * aussen gegen den Uhrzeigersinn = Normale nach aussen) und Kennzahlen.
- * Der Koerper ist geschlossen (wasserdicht): Jede Kante gehoert genau zwei
- * Dreiecken - so verlangen es Slicer und Layerling.
+ * Builds the vase. Returns a triangle-by-triangle mesh (9 numbers per triangle,
+ * counter-clockwise seen from outside = normal pointing out) and key figures.
+ * The body is closed (watertight): every edge belongs to exactly two
+ * triangles - as slicers and Layerling require.
  */
 export function buildVase(input) {
   const layout = floorLayout(input)
@@ -1555,8 +1555,8 @@ export function buildVase(input) {
   const ribsActive = p.effect === 'rillen' && p.ribCount > 0 && p.ribDepth > 0
   const lowpoly = p.effect === 'lowpoly'
 
-  // Spalten rundum: so viele, wie Querschnitt und Effekt brauchen. Ecken von
-  // Vieleck und spitzer Welle fallen genau auf Spalten.
+  // Columns round the vase: as many as the cross-section and effect need. Corners of
+  // polygons and pointed waves fall exactly on columns.
   const scale = { entwurf: 0.6, standard: 1, fein: 1.6 }[p.quality]
   let segments
   if (lowpoly) segments = p.lowpolyAround
@@ -1569,13 +1569,13 @@ export function buildVase(input) {
     }
     if (ribsActive) needs.push(p.ribCount * q.perRib)
     if (p.effect === 'streifen') needs.push(p.stripeCount * q.perRib)
-    // Voronoi: die Fugen werden entlang ihrer Hoehenlinien geschnitten (sliceVoronoiJoints) - das Raster muss sie
-    // nicht mehr selbst nachbilden, anderthalb Punkte je Fugenbreite reichen.
+    // Voronoi: the joints are cut along their contour lines (sliceVoronoiJoints) - the grid no longer has to
+    // model them itself, one and a half points per joint width are enough.
     if (p.effect === 'voronoi') needs.push(Math.ceil((2 * Math.PI * maxR) / (p.voronoiGap / (1.5 * scale))))
     if (layout.cutoutZone) needs.push(Math.ceil((2 * Math.PI * maxR) / cutoutStep(p)))
     segments = Math.min(MAX_SEGMENTS, Math.max(...needs))
-    // Scharfe Stellen (Ecken, Kerben, Lamellenkanten) fallen so auf Spalten - beim Uebergang die beider
-    // Querschnitte (kleinstes gemeinsames Vielfaches, solange es in die Hoechstzahl passt).
+    // This makes sharp places (corners, notches, fin edges) fall on columns - during a transition those of both
+    // cross-sections (least common multiple, as long as it fits within the maximum count).
     const alignOf = (s) => {
       const sharp = { spitz: 2, bogen: 2, lamellen: 4 }[s.sectionWaveStyle]
       return s.section === 'vieleck' ? s.polySides : s.section === 'welle' && sharp ? sharp * s.sectionWaves : 1
@@ -1589,14 +1589,14 @@ export function buildVase(input) {
     }
     if (align > 1) segments = Math.ceil(segments / align) * align
   }
-  // Zeilen: Hoehe in mm-Schritten; Streifen mit Spirale und Voronoi brauchen mehr.
+  // Rows: height in mm steps; stripes with a spiral and Voronoi need more.
   let rows
   if (lowpoly) rows = p.lowpolyRows
   else {
     let mmPerRow = q.mmPerRow
     if (p.effect === 'voronoi') mmPerRow = Math.min(mmPerRow, p.voronoiGap / (1.5 * scale))
     rows = Math.ceil(H / mmPerRow)
-    // Pendeln: je Schwung mindestens 24 Zeilen, damit die Falten rund schwingen; Drehkurve: je Punkt 12.
+    // Sway: at least 24 rows per swing, so that the folds swing smoothly; twist curve: 12 per point.
     if (p.twistMode === 'kurve') rows = Math.max(rows, (p.twistPoints?.length ?? 2) * 12)
     else if (p.swayAngle > 0 && p.swayCount > 0) rows = Math.max(rows, Math.ceil(p.swayCount * 24))
     if (p.effect === 'streifen' && p.stripeTurn !== 0) rows = Math.max(rows, Math.ceil((p.stripeCount * Math.abs(p.stripeTurn) * q.perRib) / 360))
@@ -1605,7 +1605,7 @@ export function buildVase(input) {
 
   const zone = (z) => zoneMask(z, p)
 
-  // Effekt: Tiefe (mm, nach innen) an Winkel/Hoehe; dreht mit der Verdrehung mit.
+  // Effect: depth (mm, inwards) at angle/height; turns along with the twist.
   const cellsAround = Math.max(3, Math.round((2 * Math.PI * maxR) / p.voronoiCell))
   const cellW = (2 * Math.PI * maxR) / cellsAround
   const effectAt = (theta, z, base) => {
@@ -1648,10 +1648,10 @@ export function buildVase(input) {
     return verts.length / 3 - 1
   }
 
-  // Aussenwand: Zeile i (Hoehe), Spalte j (Winkel). Low Poly: Punkte zufaellig
-  // versetzt (Rand und Boden bleiben eben), die Facetten bleiben flach.
-  // Bereiche der Wand, die ein eigener Baustein netzt (Durchbrueche): ihre Raender liegen genau auf
-  // Zeilen, dazwischen gibt es keine Rasterzeilen.
+  // Outer wall: row i (height), column j (angle). Low poly: points shifted at random
+  // (rim and bottom stay flat), the facets stay flat.
+  // Zones of the wall that a module of their own meshes (cut-outs): their borders lie exactly on
+  // rows, there are no grid rows in between.
   const zones = []
   const locked = []
   if (layout.cutoutZone) zones.push({ ...layout.cutoutZone, kind: 'cutout' })
@@ -1661,12 +1661,12 @@ export function buildVase(input) {
     return base - effectAt(theta, z, base)
   }
   const slitted = Boolean(layout.reinforce) && !lowpoly
-  // Glatter runder Koerper (Muster kommen aus den Ebenen des Oberflaechen-Werkzeugs): Zeilen nach der
-  // Kruemmung der Koerperform statt alle mm - eine bauchige Vase braucht so 30 statt 170 Zeilen, und
-  // das Muster darauf ein Viertel der Dreiecke. Querschnitte mit Ecken, Verdrehung oder Hoehenbereich
-  // und die eigenen Effekte der Vase brauchen die festen Zeilen weiter.
+  // Smooth round body (any pattern comes later, as a texture on top): rows by the curvature of
+  // the body shape instead of every mm - a bulbous vase then needs 30 instead of 170 rows, and the
+  // pattern on it a quarter of the triangles. Cross-sections with corners, twist or a height range
+  // and the vase's own effects still need the fixed rows.
   const adaptive = !lowpoly && !slitted && p.effect === 'keine' && p.section === 'kreis' && p.section2 === 'keiner' && !shape.lid
-  // Mit Schlitzen baut vase-slits.mjs den ganzen vollen Koerper; hier nur den untersten Ring fuer den Boden.
+  // With slits, vase-slits.mjs builds the whole solid body; here only the lowest ring, for the bottom.
   const zsOuter = slitted ? [] : adaptive ? adaptiveRows((z) => R(z), 0, H, q.tol, q.maxStep, zones) : rowHeights(0, H, H / rows, zones)
   if (adaptive) rows = zsOuter.length - 1
   const outer = []
@@ -1684,12 +1684,12 @@ export function buildVase(input) {
     outer.push(row)
     outerAtZ.set(zsOuter[i], row)
   }
-  // Voronoi: die Aussenwand wird entlang der Hoehenlinien ihrer Fugen geschnitten (sliceVoronoiJoints).
-  // Kanten auf Zeilen, an die andere Teile stossen (Rand oben, Boden, Bereiche), bleiben ganz.
+  // Voronoi: the outer wall is cut along the contour lines of its joints (sliceVoronoiJoints).
+  // Edges on rows that other parts butt against (top rim, bottom, zones) stay whole.
   const voronoiCut = p.effect === 'voronoi' && !lowpoly && !slitted && p.voronoiDepth > 0
   const fixedRow = new Set(voronoiCut ? [0, zsOuter.length - 1, ...zsOuter.flatMap((z, i) => (zones.some((zn) => zn.z0 === z || zn.z1 === z) ? [i] : []))] : [])
-  // Die Dreiecke der Wand mit ihren Kanten im Raster: waagrecht H(i, j) zwischen (i, j) und (i, j+1), senkrecht
-  // V(i, j) zwischen (i, j) und (i+1, j), schraeg D(i, j) zwischen (i, j) und (i+1, j+1).
+  // The wall's triangles with their edges in the grid: horizontal H(i, j) between (i, j) and (i, j+1), vertical
+  // V(i, j) between (i, j) and (i+1, j), diagonal D(i, j) between (i, j) and (i+1, j+1).
   const quads = zsOuter.length - 1
   const edgeH = (i, j) => i * segments + j
   const edgeV = (i, j) => (quads + 1) * segments + i * segments + j
@@ -1736,7 +1736,7 @@ export function buildVase(input) {
     }
     const seedAt = (key, uRef) => voronoiSeed(key, uRef, cellsAround, cellW, p.voronoiCell, p.voronoiSeed)
     const half = p.voronoiGap / 2
-    // Rand, Flanke (zweimal) und Grund, auf beiden Seiten der Grenze.
+    // Joint edge, flank (twice) and floor, on both sides of the border.
     const levels = [-1, -0.6, -0.25, 0, 0.25, 0.6, 1].map((share) => share * half)
     const point = (theta, z) => {
       const r = outerRadius(theta, z)
@@ -1749,7 +1749,7 @@ export function buildVase(input) {
   const top = outer[outer.length - 1]
   const bottomRing = outer[0]
   const xyOf = (i) => [verts[i * 3], verts[i * 3 + 1]]
-  /** Blinde Loecher (Buchsen, Mulden): Wand nach oben bis zur Tiefe und Decke. */
+  /** Blind holes (sockets, recesses): wall up to the depth, and a ceiling. */
   const blindHoles = (loops) => blind.forEach((h, k) => {
     const ceil = loops[k].map((i) => addVertex(verts[i * 3], verts[i * 3 + 1], h.depth))
     holeWall(loops[k], ceil, tris)
@@ -1757,7 +1757,7 @@ export function buildVase(input) {
   })
 
   if (slitted) {
-    // Voller Koerper mit Schlitzen (vase-slits.mjs), darunter der Boden mit Mulden wie sonst.
+    // Solid body with slits (vase-slits.mjs), below it the bottom with recesses as usual.
     const zS = Math.min(layout.reinforce.floor, H / 3)
     const innerWall = p.reinforce === 'doppelwand' ? vaseShape({ ...p, body: 'hohl', wall: p.reinforceDepth, innerShape: 'folgt' }).innerAt : null
     const ring0 = slitBody({
@@ -1766,12 +1766,12 @@ export function buildVase(input) {
     })
     blindHoles(capWithHoles(ring0, 0, blind, true, verts, tris, addVertex))
   } else if (p.body === 'voll') {
-    // Boden aussen (Normale nach unten), mit Mulden fuer Gummifuesse.
+    // Outer bottom (normal pointing down), with recesses for rubber feet.
     blindHoles(capWithHoles(bottomRing, 0, blind, true, verts, tris, addVertex))
     const topCenter = addVertex(0, 0, H)
     for (let j = 0; j < segments; j++) tris.push(topCenter, top[j], top[(j + 1) % segments])
   } else {
-    // Innenwand: glatt, folgt Querschnitt und Koerperform (shape.innerAt).
+    // Inner wall: smooth, follows the cross-section and body shape (shape.innerAt).
     const innerRow = (z) => {
       const row = new Array(segments)
       for (let j = 0; j < segments; j++) {
@@ -1791,11 +1791,11 @@ export function buildVase(input) {
       }
     }
     const inZone = (a, b) => zones.some((zn) => zn.z0 === a && zn.z1 === b)
-    /** Innenwand von a bis b: Rasterzeilen, Bereiche (Durchbruch, Kabelschlitz) nur mit ihren Raendern. */
+    /** Inner wall from a to b: grid rows, zones (cut-out, cable slot) only with their borders. */
     const innerAtZ = new Map()
     const innerWall = (a, b, step) => {
       let zs = adaptive ? adaptiveRows((z) => shape.innerAt(0, z), a, b, q.tol, q.maxStep, zones) : rowHeights(a, b, step, zones)
-      // Deckel: Nut bzw. Gewinde (samt Uebergang darunter) mit feinen Zeilen - 16 je Steigung bzw. 0,2 mm.
+      // Lid: groove or thread (with the transition below it) in fine rows - 16 per pitch, or 0.2 mm.
       if (shape.lid) {
         const fine = shape.lid.kind === 'schraube' ? shape.lid.pitch / 16 : 0.2
         const z0 = Math.max(a, shape.lid.z0 - (shape.lid.kind === 'schraube' ? 12 : 0)), z1 = Math.min(b, shape.lid.z1)
@@ -1810,13 +1810,13 @@ export function buildVase(input) {
       for (let i = 0; i < list.length - 1; i++) if (!inZone(zs[i], zs[i + 1])) wallBetween([list[i], list[i + 1]])
       return list
     }
-    // Innenboden auf Fuss + Bodenstaerke; darunter bei hohlem Fuss ein Hohlraum fuer die Auffangschale.
-    // Ohne Boden (Lampe ueber einem LED-Puck): Innenwand bis ganz unten.
+    // Inner floor at foot + bottom thickness; below it, with a hollow foot, a cavity for the drip tray.
+    // Without a bottom (lamp over an LED puck): inner wall all the way down.
     const floorTop = foot + floor
     const innerRows = lowpoly ? rows : Math.max(8, Math.ceil(rows / 4))
     const inner = innerWall(floorTop, H, (H - floorTop) / innerRows)
     const skirt = foot > 0 ? innerWall(0, foot, 4) : null
-    // Bereiche: Aussen- und Innenwand mit Loechern dazwischen; unten offen beim Kabelschlitz.
+    // Zones: outer and inner wall with holes in between; open at the bottom for the cable slot.
     for (const zn of zones) {
       const thetas = Array.from({ length: segments }, (_, j) => (2 * Math.PI * j) / segments)
       const step = zn.kind === 'cutout' ? cutoutStep(p) : 0.5
@@ -1840,7 +1840,7 @@ export function buildVase(input) {
     }
     const openBottom = zones.some((zn) => zn.open && zn.z0 === 0)
     if (floorTop === 0) {
-      // Kein Boden: unten nur der Rand zwischen Aussen- und Innenwand (beim Kabelschlitz macht ihn der Bereich).
+      // No bottom: at the bottom only the rim between outer and inner wall (for the cable slot the zone makes it).
       if (!openBottom) {
         for (let j = 0; j < segments; j++) {
           const k = (j + 1) % segments
@@ -1851,7 +1851,7 @@ export function buildVase(input) {
     } else {
       let under
       if (foot > 0) {
-        // Fuss: Wand innen von 0 bis `foot`, unten ein Ring zwischen Aussenwand und Fusswand.
+        // Foot: inner wall from 0 to `foot`, at the bottom a ring between the outer wall and the foot wall.
         if (!openBottom) {
           const coords = []
           for (const i of [...skirt[0], ...bottomRing]) coords[i] = xyOf(i)
@@ -1859,12 +1859,12 @@ export function buildVase(input) {
         }
         under = capWithHoles(skirt[skirt.length - 1], foot, drains, true, verts, tris, addVertex)
       } else {
-        // Boden aussen: Ablaufloecher durch, Buchsen und Mulden blind von unten.
+        // Outer bottom: drain holes go through, sockets and recesses are blind from below.
         const loops = capWithHoles(bottomRing, 0, [...drains, ...blind], true, verts, tris, addVertex)
         under = loops.slice(0, drains.length)
         blindHoles(loops.slice(drains.length))
       }
-      // Innenboden oben; die Ablaufloecher liegen um das Gefaelle tiefer, das Wasser laeuft hin.
+      // Inner floor on top; the drain holes sit lower by the slope, so the water runs to them.
       const upper = capWithHoles(inner[0], floorTop, drains.map((h) => ({ ...h, z: floorTop - slope })), false, verts, tris, addVertex)
       drains.forEach((_, k) => holeWall(under[k], upper[k], tris))
     }
@@ -1887,10 +1887,10 @@ export function buildVase(input) {
     flat: lowpoly,
     section: { starShaped: section.starShaped, valid: section.valid },
     grid: { segments, rows },
-    // Boden: wo Loecher, Buchsen, Mulden sitzen und was angepasst wurde (Hinweise fuer die Seite).
+    // Bottom: where holes, sockets and recesses sit and what was adjusted (notes for the page).
     floor: { foot: layout.foot, thickness: layout.floor, slope: layout.slope, drains: layout.drains, blind: layout.blind, legs: layout.legs },
     notes: layout.notes,
-    // Dreiecke, die Form sind und kein Oberflaechen-Muster bekommen sollen (Lochwaende), je 1.
+    // Triangles that are shape and should get no surface pattern (hole walls), 1 each.
     locked: lockedMask(tris.length / 3, locked),
   }
 }
@@ -1902,8 +1902,8 @@ function lockedMask(count, list) {
 }
 
 /**
- * Zeilenhoehen von a bis b, hoechstens `step` auseinander; Bereiche in `zones` ({ z0, z1 }) bekommen
- * nur ihre Raender (dazwischen netzt der Baustein). Ohne Bereiche genau gleichmaessig.
+ * Row heights from a to b, at most `step` apart; zones in `zones` ({ z0, z1 }) get
+ * only their borders (the module meshes in between). Without zones exactly even.
  */
 function rowHeights(a, b, step, zones) {
   const cuts = [a, b]
@@ -1913,7 +1913,7 @@ function rowHeights(a, b, step, zones) {
   for (let k = 0; k < sorted.length - 1; k++) {
     const p = sorted[k], q = sorted[k + 1]
     if (zones.some((zn) => zn.z0 === p && zn.z1 === q)) { out.push(p); continue }
-    // Ohne Bereiche genau die bisherige Teilung; mit Bereichen hoechstens `step` je Zeile.
+    // Without zones exactly the previous division; with zones at most `step` per row.
     const count = Math.max(1, zones.length ? Math.ceil((q - p) / step - 1e-9) : Math.round((q - p) / step))
     for (let i = 0; i < count; i++) out.push(p + ((q - p) * i) / count)
   }
@@ -1922,10 +1922,10 @@ function rowHeights(a, b, step, zones) {
 }
 
 /**
- * Zeilenhoehen nach Kruemmung (Douglas-Peucker in der r-z-Ebene): von a bis b so wenige Zeilen wie
- * moeglich, dabei weicht die Sehne zwischen zwei Zeilen hoechstens `tol` mm vom Profil `radiusAt(z)`
- * ab und keine Zeile ist hoeher als `maxStep`. Bereiche (Durchbruch, Kabelschlitz) nur mit ihren
- * Raendern, wie bei rowHeights.
+ * Row heights by curvature (Douglas-Peucker in the r-z plane): from a to b as few rows as
+ * possible, while the chord between two rows deviates at most `tol` mm from the profile `radiusAt(z)`
+ * and no row is taller than `maxStep`. Zones (cut-out, cable slot) only with their
+ * borders, as in rowHeights.
  */
 export function adaptiveRows(radiusAt, a, b, tol, maxStep, zones = []) {
   const cuts = [a, b]
@@ -1936,7 +1936,7 @@ export function adaptiveRows(radiusAt, a, b, tol, maxStep, zones = []) {
     const p0 = sorted[k], p1 = sorted[k + 1]
     out.push(p0)
     if (zones.some((zn) => zn.z0 === p0 && zn.z1 === p1)) continue
-    // Fein abtasten (alle 0,25 mm), dann Zeilen dort einfuegen, wo die Sehne am weitesten abweicht.
+    // Sample finely (every 0.25 mm), then insert rows where the chord deviates the most.
     const n = Math.max(2, Math.ceil((p1 - p0) / 0.25))
     const zs = Array.from({ length: n + 1 }, (_, i) => (i === n ? p1 : p0 + ((p1 - p0) * i) / n))
     const rs = zs.map((z) => radiusAt(z))
@@ -1949,7 +1949,7 @@ export function adaptiveRows(radiusAt, a, b, tol, maxStep, zones = []) {
       const len = Math.hypot(dz, dr) || 1
       let worst = 0, at = (i0 + i1) >> 1
       for (let i = i0 + 1; i < i1; i++) {
-        // Abstand des Profilpunkts von der Sehne in der r-z-Ebene.
+        // Distance of the profile point from the chord in the r-z plane.
         const d = Math.abs(dr * (zs[i0] - zs[i]) - (rs[i0] - rs[i]) * dz) / len
         if (d > worst) { worst = d; at = i }
       }
@@ -1964,13 +1964,13 @@ export function adaptiveRows(radiusAt, a, b, tol, maxStep, zones = []) {
   return out
 }
 
-/** Rasterabstand im Durchbruch (mm): fein genug fuer Stege von `cutoutWeb`. */
+/** Grid spacing in the cut-out (mm): fine enough for webs of `cutoutWeb`. */
 function cutoutStep(p) {
   const base = { entwurf: 1.2, standard: 0.7, fein: 0.45 }[p.quality]
   return Math.max(0.3, Math.min(base, p.cutoutWeb / 2.5))
 }
 
-/** Kabelschlitz: Rechteck von unten (Breite als Bogen aussen gemessen), bei 0 Grad; darueber voll. */
+/** Cable slot: a rectangle from the bottom (width measured as an arc on the outside), at 0 degrees; solid above it. */
 function notchFieldFor(p, shape, zn) {
   return (theta, z) => {
     let a = theta % (2 * Math.PI)
@@ -1981,8 +1981,9 @@ function notchFieldFor(p, shape, zn) {
 }
 
 /**
- * Lochfeld fuer einen Bereich: Zellen nach dem groessten Umfang darin, Stege an jeder Hoehe gleich breit,
- * Raender voll; bei „Nur ganze Loecher“ bleiben angeschnittene Zellen zu. `rows` am Feld: ganze Lochreihen.
+ * Hole field for a zone: cells by the largest circumference in it, webs equally wide at every height,
+ * borders solid; with "only whole holes" (cutoutEdge 'ganz') cells cut by the border stay closed.
+ * `rows` on the field: whole rows of holes.
  */
 function cutoutFieldFor(p, shape, zn) {
   const mean = shape.section.mean
@@ -1995,10 +1996,10 @@ function cutoutFieldFor(p, shape, zn) {
 }
 
 /**
- * Nur der Koerper, ohne Oberflaechen-Effekt (Facetten bleiben, sie sind Form) - fuer den
- * Vasenmodus des Oberflaechen-Werkzeugs, das die Muster selbst aufbringt. Liefert die
- * Dreiecke (je 9 Zahlen), die verwendeten Einstellungen und je Dreieck, ob es gesperrt ist
- * (Lochwaende: dort kein Muster).
+ * Only the body, without the surface effect (facets stay, they are shape) - for the
+ * vase mode of the surface tool, which applies the patterns itself. Returns the
+ * triangles (9 numbers each), the settings used and, per triangle, whether it is locked
+ * (hole walls: no pattern there).
  */
 export function vaseBody(input) {
   const p = normalizeParams({ ...input, effect: input?.effect === 'lowpoly' ? 'lowpoly' : 'keine', quality: 'standard' })
@@ -2006,7 +2007,7 @@ export function vaseBody(input) {
   return { soup: mesh.positions, params: mesh.params, section: mesh.section, locked: mesh.locked }
 }
 
-/** Kurzer Name (fuer Layerling) und Dateiname, z. B. "Vase Sechseck, 48 Rillen" / "vase-6eck-48-rillen". */
+/** Short name (for Layerling) and file name, e.g. "Vase 6-Eck, 48 Rillen" / "vase-flasche-6eck-48-rillen". */
 export function describeVase(input) {
   const p = normalizeParams(input)
   const sec = {
@@ -2015,7 +2016,7 @@ export function describeVase(input) {
     welle: [`${p.sectionWaves} ${{ lamellen: 'Lamellen', bogen: 'Bögen' }[p.sectionWaveStyle] ?? 'Wellen'}`, `${{ lamellen: 'lamellen', bogen: 'boegen' }[p.sectionWaveStyle] ?? 'welle'}${p.sectionWaves}`],
     gezeichnet: [`gezeichnet (${SYMMETRIES[p.drawSymmetry]})`, 'gezeichnet'],
   }[p.section]
-  // Uebergang: "Kreis zu 5-Eck" / "kreis-zu-5eck".
+  // Transition: "Kreis zu 5-Eck" / "kreis-zu-5eck".
   if (p.section2 !== 'keiner') {
     const q = secondSectionParams(p)
     const to = { kreis: ['Kreis', 'kreis'], vieleck: [`${q.polySides}-Eck`, `${q.polySides}eck`], welle: [`${q.sectionWaves} ${{ lamellen: 'Lamellen', bogen: 'Bögen' }[q.sectionWaveStyle] ?? 'Wellen'}`, `welle${q.sectionWaves}`], gezeichnet: ['gezeichnet', 'gezeichnet'] }[q.section]
@@ -2038,11 +2039,11 @@ export function describeVase(input) {
 }
 
 /**
- * Gedrucktes Volumen fuer Gewicht und Filament (ohne Fuellung gerechnet, Waende voll).
- * Hohl: das Volumen des Netzes. Voll: Der Slicer druckt im Vasenmodus eine Linie (`lineWidth`) entlang
- * der Mantelflaeche und einen Boden von VASE_MODE_BOTTOM mm - also Mantel x Linienbreite + Bodenflaeche x
- * Bodenstaerke (Schlitze fuer Rippen zaehlen mit ihren beiden Seiten: Dort laeuft die Linie hinein und zurueck).
- * Liefert { mm3, mode } - Gramm und Meter rechnet printWeight je Material.
+ * Printed volume for weight and filament (computed without infill, walls solid).
+ * Body 'hohl': the volume of the mesh. Body 'voll': in vase mode the slicer prints one line (`lineWidth`) along
+ * the outer surface and a bottom of VASE_MODE_BOTTOM mm - so surface x line width + bottom area x
+ * bottom thickness (slits for ribs count with both their sides: the line runs in there and back out).
+ * Returns { mm3, mode } - printWeight works out grams and metres per material.
  */
 export function printVolume(input, positions) {
   const p = normalizeParams(input)
@@ -2068,13 +2069,13 @@ export function printVolume(input, positions) {
   return { mm3: side * p.lineWidth + bottom * VASE_MODE_BOTTOM, mode: 'vasenmodus' }
 }
 
-/** Gramm und Meter Filament (1,75 mm) fuer ein gedrucktes Volumen in mm^3. */
+/** Grams and metres of filament (1.75 mm) for a printed volume in mm^3. */
 export function printWeight(mm3, material = 'pla') {
   const m = MATERIALS[material] ?? MATERIALS.pla
   return { grams: (mm3 / 1000) * m.density, meters: mm3 / (Math.PI * (FILAMENT_DIAMETER / 2) ** 2) / 1000, material: m.label }
 }
 
-/** Volumen in mm^3 (Divergenzsatz) - fuer Gewicht und Filament. */
+/** Volume in mm^3 (divergence theorem) - for weight and filament. */
 export function meshVolume(positions) {
   let v = 0
   for (let i = 0; i < positions.length; i += 9) {
@@ -2084,7 +2085,7 @@ export function meshVolume(positions) {
   return v / 6
 }
 
-/** Binaeres STL (Z oben), wie es jeder Slicer und Layerling einlesen. */
+/** Binary STL (Z up), as every slicer and Layerling reads it. */
 export function toBinaryStl(positions, name = 'Vase') {
   const count = positions.length / 9
   const buffer = new ArrayBuffer(84 + count * 50)
@@ -2113,9 +2114,9 @@ export function toBinaryStl(positions, name = 'Vase') {
 }
 
 /**
- * Fuer Layerlings `import_mesh`: dort zeigt Y nach oben. Drehung um X um
- * -90 Grad: (x, y, z) -> (x, z, -y). Eine echte Drehung, also bleibt der
- * Umlaufsinn der Dreiecke - und damit aussen/innen - erhalten.
+ * For Layerling's `import_mesh`: Y points up there. Rotation about X by
+ * -90 degrees: (x, y, z) -> (x, z, -y). A true rotation, so the
+ * winding of the triangles - and with it outside/inside - is kept.
  */
 export function toLayerlingPositions(positions) {
   const out = new Array(positions.length)
@@ -2127,7 +2128,7 @@ export function toLayerlingPositions(positions) {
   return out
 }
 
-/** Ein ZIP ohne Kompression (Methode 0) - genug, um eine STL-Datei zu verpacken. */
+/** A ZIP without compression (method 0) - enough to pack an STL file. */
 export function storedZip(files) {
   const crcTable = new Uint32Array(256)
   for (let n = 0; n < 256; n++) {

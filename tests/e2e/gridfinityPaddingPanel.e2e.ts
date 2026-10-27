@@ -12,7 +12,8 @@ import type { WorkplaneShape } from "@/types/layerling";
 /**
  * A Gridfinity baseplate's padding in its settings (#455): a row for each side on a baseplate and
  * none on a bin, and a change of padding writes the plate's size with it, keeping the units. The
- * drawer rows show the drawer a baseplate fills and fit it to one typed in.
+ * drawer rows show the drawer a baseplate fills and fit it to one typed in. The corner radius
+ * row (#856) rounds the plate's outer corners less, down to square.
  */
 beforeAll(() => {
   // jsdom lays nothing out; the panel only scrolls itself back to the top.
@@ -64,8 +65,8 @@ describe("a Gridfinity baseplate's padding in its settings", () => {
   });
 
   it("has no padding or drawer rows on a bin, which keeps the setting", () => {
-    const panel = mount({ gridfinityType: "bin", gridfinityPaddingRight: 14.2 });
-    [...sides, "Drawer width", "Drawer depth"].forEach((row) => expect(rowNamed(panel, row), row).toBeUndefined());
+    const panel = mount({ gridfinityType: "bin", gridfinityPaddingRight: 14.2, gridfinityCornerRadius: 1.5 });
+    [...sides, "Drawer width", "Drawer depth", "Corner radius"].forEach((row) => expect(rowNamed(panel, row), row).toBeUndefined());
   });
 
   it("writes the plate's size with a new padding, keeping its six units", () => {
@@ -93,5 +94,21 @@ describe("a Gridfinity baseplate's padding in its settings", () => {
     type(rowNamed(panel, "Drawer depth")!.querySelector<HTMLInputElement>("input:not([type=range])")!, "230");
     expect(updates).toHaveLength(1);
     expect(updates[0]).toMatchObject({ gridfinityPaddingBack: 9.75, gridfinityPaddingFront: 9.75, depth: 229.5, width: 252 });
+  });
+
+  it("shows the radius a baseplate has, below the padding rows, from 0 to 4 mm", () => {
+    const panel = mount({ ...plate, gridfinityCornerRadius: 1.5 });
+    const row = rowNamed(panel, "Corner radius")!;
+    expect(row.querySelector<HTMLInputElement>("input:not([type=range])")!.value).toContain("1.5");
+    const slider = row.querySelector<HTMLInputElement>("input[type=range]")!;
+    expect([slider.min, slider.max]).toEqual(["0", "4"]);
+    expect(rowNamed(panel, "Padding on the right")!.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("writes a radius typed in as one change, at most 4 mm", () => {
+    const updates: Partial<WorkplaneShape>[] = [];
+    const panel = mount({ ...plate, gridfinityCornerRadius: 1.5 }, (patch) => updates.push(patch));
+    type(rowNamed(panel, "Corner radius")!.querySelector<HTMLInputElement>("input:not([type=range])")!, "7");
+    expect(updates).toEqual([{ gridfinityCornerRadius: 4 }]);
   });
 });
