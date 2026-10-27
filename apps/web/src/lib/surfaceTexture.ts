@@ -20,6 +20,10 @@
  *   levels of its profile (a half ball, a cone, a soft or a flat top).
  * - Cells (Voronoi): cut like honeycomb, along the borders between cells of
  *   irregular shape; another seed, another arrangement.
+ * - Bricks: cut in strips along the joints between the bricks of a wall laid
+ *   in a bond (running, stack, English, English cross, Flemish) and along the
+ *   creases where two joints meet; the faces of the bricks stay as coarse as
+ *   the body's own grid.
  * - Knitting, rope, basket weave, grain and an image (a grey height map, see
  *   surfaceTextureImages.ts): refined evenly, finer where the value jumps.
  * - Cracks (kintsugi, see surfaceTextureCracks.ts): lines that grow across the surface,
@@ -78,7 +82,7 @@ import {
   type SurfaceTextureOwnImage,
 } from "@/lib/surfaceTextureImages";
 
-export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "knit", "rope", "weave", "grain", "image", "cracks", "text"] as const;
+export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "bricks", "knit", "rope", "weave", "grain", "image", "cracks", "text"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
 /** round: a soft bell; pointed: a V (a cone on a bump); flat: a flat floor or top; dome: a half circle (half a ball on a bump). */
@@ -103,6 +107,14 @@ export type SurfaceTextureCrackStyle = (typeof SURFACE_TEXTURE_CRACK_STYLES)[num
 /** Where cracks begin: at the top rim (a vase, a cup), at the bottom, at the rim towards the middle (a plate), anywhere. */
 export const SURFACE_TEXTURE_CRACK_STARTS = ["top", "bottom", "rim", "anywhere"] as const;
 export type SurfaceTextureCrackStart = (typeof SURFACE_TEXTURE_CRACK_STARTS)[number];
+
+/**
+ * How bricks are laid: running (every course half a brick along), stack (the joints in one line), English (courses of
+ * stretchers and of headers in turn), English cross (as English, every other course of stretchers half a brick along)
+ * and Flemish (stretchers and headers in turn in every course). A header is half a stretcher long.
+ */
+export const SURFACE_TEXTURE_BRICK_BONDS = ["running", "stack", "english", "englishCross", "flemish"] as const;
+export type SurfaceTextureBrickBond = (typeof SURFACE_TEXTURE_BRICK_BONDS)[number];
 
 /** Image: a ready image (see surfaceTextureImages.ts) or one's own. */
 export const SURFACE_TEXTURE_IMAGES = [...SURFACE_TEXTURE_IMAGE_PRESETS, "own"] as const;
@@ -187,8 +199,18 @@ export type SurfaceTextureSettings = {
   textHeight: number;
   /** Turned on the surface, degrees. */
   textTurn: number;
-  /** Cells and grain: another number, another arrangement. */
+  /** Cells and grain: another number, another arrangement; bricks: other bricks lie deeper. */
   seed: number;
+  /**
+   * Bricks: the height of a course, mm, from joint to joint (the spacing is a brick's length). The courses are fitted to
+   * the height the texture covers, so whole courses go from its bottom to its top.
+   */
+  brickHeight: number;
+  /** Bricks: the joint's width, mm. */
+  brickJoint: number;
+  brickBond: SurfaceTextureBrickBond;
+  /** Bricks: how unevenly they lie, 0 to 1 - at 1 a brick sinks by up to half the depth, each its own way. */
+  brickVary: number;
   /** Image: which one (light = the full depth); "own" is `imageOwn`. The tile's width is the spacing. */
   image: SurfaceTextureImage;
   /** One's own image: its grey values, at most SURFACE_TEXTURE_OWN_IMAGE_SIZE points a side. */
@@ -252,6 +274,10 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   textTurn: 0,
   textOutline: [],
   seed: 1,
+  brickHeight: 4,
+  brickJoint: 0.8,
+  brickBond: "running",
+  brickVary: 0,
   image: "topography",
   imageOwn: null,
   tileHeight: 0,
@@ -288,6 +314,9 @@ export const SURFACE_TEXTURE_LIMITS: Record<NumberKey, [number, number]> = {
   textHeight: [0, 100],
   textTurn: [-180, 180],
   seed: [1, 9999],
+  brickHeight: [0.5, 100],
+  brickJoint: [0.1, 10],
+  brickVary: [0, 1],
   tileHeight: [0, 200],
   imageTurn: [-180, 180],
   imageBlur: [0, 8],
@@ -302,6 +331,7 @@ const CHOICES = {
   detail: SURFACE_TEXTURE_DETAILS,
   crackStyle: SURFACE_TEXTURE_CRACK_STYLES,
   crackStart: SURFACE_TEXTURE_CRACK_STARTS,
+  brickBond: SURFACE_TEXTURE_BRICK_BONDS,
   image: SURFACE_TEXTURE_IMAGES,
   imageTiling: SURFACE_TEXTURE_TILINGS,
 } as const;
@@ -341,8 +371,8 @@ const DETAIL_STEPS: Record<SurfaceTextureDetail, number> = { coarse: 3, medium: 
 export const SURFACE_TEXTURE_MAX_TRIANGLES = 600_000;
 export const SURFACE_TEXTURE_PREVIEW_TRIANGLES = 200_000;
 
-/** Cut along their cell borders (see sliceCells). */
-const CELL_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells"];
+/** Cut along their cell borders (see sliceCells; bricks: sliceBricks). */
+const CELL_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells", "bricks"];
 /** Around a cylinder a whole number of cells, stitches, strands, stakes or tiles goes round. */
 const ROUND_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells", "knit", "rope", "weave", "image"];
 const SQRT3 = Math.sqrt(3);
@@ -401,12 +431,13 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
 
 /**
  * Where a pattern starts when it is chosen, for what it is not told: bumps as half balls (the V a groove gets by default
- * would make them cones), and knitting, rope and weave raised and round as their models, at the size those were
- * measured at.
+ * would make them cones), knitting, rope and weave raised and round as their models, at the size those were measured
+ * at, and bricks three times as long as a course is high, with the joints' flat floor sunk in as mortar.
  */
 export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Partial<SurfaceTextureSettings>>> = {
   bumps: { profile: "dome" },
   cells: { spacing: 9, depth: 0.8, width: 0.22, profile: "round" },
+  bricks: { spacing: 12, depth: 0.6, profile: "flat" },
   knit: { spacing: 5, depth: 1.2, width: 0.85, profile: "round", direction: "outward" },
   rope: { spacing: 6, depth: 3, width: 0.6, profile: "round", direction: "outward" },
   weave: { spacing: 10, depth: 1.6, width: 0.6, profile: "round", direction: "outward" },
@@ -678,6 +709,88 @@ function weave(u: number, v: number, S: number, s: SurfaceTextureSettings) {
   return Math.max(weaver, stake);
 }
 
+/**
+ * The courses of a bond, repeating from the bottom up: the lengths of their bricks in a stretcher's length (a header is
+ * half one), repeating along the course, and how far along the course begins.
+ */
+const BRICK_COURSES: Record<SurfaceTextureBrickBond, { lengths: number[]; offset: number }[]> = {
+  running: [{ lengths: [1], offset: 0 }, { lengths: [1], offset: 0.5 }],
+  stack: [{ lengths: [1], offset: 0 }],
+  // Headers centred over the stretchers' joints and middles.
+  english: [{ lengths: [1], offset: 0 }, { lengths: [0.5], offset: 0.25 }],
+  englishCross: [{ lengths: [1], offset: 0 }, { lengths: [0.5], offset: 0.25 }, { lengths: [1], offset: 0.5 }, { lengths: [0.5], offset: 0.25 }],
+  // Every header over the middle of a stretcher below, every stretcher's middle over a header.
+  flemish: [{ lengths: [1, 0.5], offset: 0 }, { lengths: [1, 0.5], offset: 0.75 }],
+};
+/** How far a bond repeats along a course, in stretcher lengths: around a cylinder a whole number of these goes round. */
+const BRICK_PERIOD: Record<SurfaceTextureBrickBond, number> = { running: 1, stack: 1, english: 1, englishCross: 1, flemish: 1.5 };
+/** The shortest brick of a bond, in stretcher lengths. */
+const BRICK_SHORTEST: Record<SurfaceTextureBrickBond, number> = { running: 1, stack: 1, english: 0.5, englishCross: 0.5, flemish: 0.5 };
+/** Bricks lying unevenly sink by up to this share of the depth. */
+const BRICK_VARY_DEPTH = 0.5;
+
+/** A brick's length and where the bricks begin along `axis` (x, y or z: what u is, flat or all round), as fitted. */
+function brickAlong(layout: SurfaceTextureLayout, axis: number) {
+  return (axis >= 0 ? layout.brickAxes?.[axis] : undefined) ?? { origin: 0, cell: layout.cell };
+}
+
+/**
+ * The brick at (u, v): its key (its number along the course, the same from both sides of a cylinder's seam, and the
+ * course), its middle and half its length and height, the distance to its nearest side (the middle of the joint) and which
+ * side that is (0 right, 1 top, 2 left, 3 bottom). `axis`: the axis u runs along (-1 round a cylinder).
+ */
+function brickAt(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axis: number) {
+  const { origin, cell: L } = brickAlong(layout, axis);
+  const H = layout.rowHeight ?? s.brickHeight;
+  const v0 = layout.rowOrigin ?? 0;
+  const courses = BRICK_COURSES[s.brickBond];
+  const j = Math.floor((v - v0) / H);
+  const course = courses[((j % courses.length) + courses.length) % courses.length];
+  const lengths = course.lengths;
+  let period = 0;
+  for (const length of lengths) period += length;
+  const x = (u - origin) / L - course.offset;
+  const p = Math.floor(x / period);
+  const rest = x - p * period;
+  let k = 0, left = 0;
+  while (k < lengths.length - 1 && rest >= left + lengths[k]) {
+    left += lengths[k];
+    k += 1;
+  }
+  const hl = (lengths[k] * L) / 2, hh = H / 2;
+  const cx = origin + (course.offset + p * period + left) * L + hl;
+  const cy = v0 + (j + 0.5) * H;
+  let n = p * lengths.length + k;
+  if (layout.around) {
+    const perRound = Math.round(((layout.around * BRICK_PERIOD[s.brickBond]) / period) * lengths.length);
+    n = ((n % perRound) + perRound) % perRound;
+  }
+  const right = cx + hl - u, top = cy + hh - v, leftSide = u - (cx - hl), bottom = v - (cy - hh);
+  let edge = right, side = 0;
+  if (top < edge) [edge, side] = [top, 1];
+  if (leftSide < edge) [edge, side] = [leftSide, 2];
+  if (bottom < edge) [edge, side] = [bottom, 3];
+  return { key: (n + 50000) * 100000 + (j + 50000), n, j, cx, cy, hl, hh, edge, side };
+}
+
+/** Half a brick joint's width, mm: as asked, but at most 45 % of the shortest brick or the course, so a brick stays. */
+function brickJointHalf(s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axis: number) {
+  const H = layout.rowHeight ?? s.brickHeight;
+  return Math.min(s.brickJoint / 2, 0.45 * Math.min(H, BRICK_SHORTEST[s.brickBond] * brickAlong(layout, axis).cell));
+}
+
+/** Bricks: 1 in the middle of a joint, 0 on a brick's face - or, laid unevenly, as deep as that brick lies. */
+function brickValue(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axis: number) {
+  const brick = brickAt(u, v, s, layout, axis);
+  const hw = brickJointHalf(s, layout, axis);
+  // A point closer to the joint's edge than the cuts come to a point (SURFACE_MIN_EDGE, see sliceByField) lies on it: a
+  // brick's face is often one long triangle, and the least depth at one of its corners tilted it.
+  const joint = brick.edge >= hw - SURFACE_MIN_EDGE ? 0 : surfaceFalloff(brick.edge / hw, s.profile);
+  if (!(s.brickVary > 0)) return joint;
+  const sunk = s.brickVary * BRICK_VARY_DEPTH * hash3(brick.n, brick.j, s.seed);
+  return sunk + (1 - sunk) * joint;
+}
+
 function valueNoise(x: number, y: number, z: number) {
   const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
   const f = (t: number) => t * t * (3 - 2 * t);
@@ -782,6 +895,12 @@ export type SurfaceTextureLayout = {
   /** Image: the grey values and a tile's height, mm. */
   image?: GreyImage | null;
   tileHeight?: number;
+  /** Bricks: a course's height as fitted (mm), where the bottom course begins along the courses' axis, and how many fit. */
+  rowHeight?: number;
+  rowOrigin?: number;
+  rows?: number;
+  /** Bricks flat or all round: per axis x, y, z a brick's length as fitted to the body's size along it, and where they begin. */
+  brickAxes?: { origin: number; cell: number }[];
 };
 
 /**
@@ -918,7 +1037,8 @@ const TEXT_FRONT: Record<SurfaceTextureAxis, [number[], number[]]> = {
   x: [[0, 0, 1], [0, -1, 0]],
 };
 
-function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+/** The pattern's value at (u, v) of its plane; `axis`: the axis u runs along, x, y or z (-1 round a cylinder). */
+function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axis: number) {
   switch (s.pattern) {
     case "grooves":
       return stripe(u, v, layout.angle, layout.period, s);
@@ -930,6 +1050,8 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
       return surfaceFalloff(hexCell(u, v, layout.cell).center / ((layout.cell / 2) * s.width), s.profile);
     case "cells":
       return surfaceFalloff(cellEdge(u, v, layout.cell, layout.around, s.seed) / ((layout.cell / 2) * s.width), s.profile);
+    case "bricks":
+      return brickValue(u, v, s, layout, axis);
     case "knit":
       return knit(u, v, layout.cell, s);
     case "rope":
@@ -955,16 +1077,16 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
     const ax = AXIS_INDEX[s.axis];
     const [i1, i2] = acrossAxes(s.axis);
     const theta = Math.atan2(pos[i2] - layout.center[1], pos[i1] - layout.center[0]);
-    return patternValue(theta * layout.radius, pos[ax], s, layout);
+    return patternValue(theta * layout.radius, pos[ax], s, layout, -1);
   }
   if (projection === "flat") {
     const [i1, i2] = acrossAxes(s.axis);
-    return patternValue(pos[i1], pos[i2], s, layout);
+    return patternValue(pos[i1], pos[i2], s, layout, i1);
   }
   // All round: three projections, weighted by the normal.
   const wx = nx ** 4, wy = ny ** 4, wz = nz ** 4;
   const sum = wx + wy + wz || 1;
-  return (wx * patternValue(y, z, s, layout) + wy * patternValue(x, z, s, layout) + wz * patternValue(x, y, s, layout)) / sum;
+  return (wx * patternValue(y, z, s, layout, 1) + wy * patternValue(x, z, s, layout, 0) + wz * patternValue(x, y, s, layout, 0)) / sum;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1125,6 +1247,7 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
   }
   const layout: SurfaceTextureLayout = { projection: s.projection as SurfaceTextureLayout["projection"], period: s.spacing, cell: s.spacing, around: null, angle: s.angle, center: [c1, c2], radius, rMin, rMax };
   if (s.pattern === "image") layout.image = textureImage(s);
+  if (s.pattern === "bricks") fitBrickCourses(base, s, kept, layout);
   const tileHeight = () => (s.tileHeight > 0 ? s.tileHeight : layout.image ? (layout.cell * layout.image.height) / layout.image.width : layout.cell);
   if (s.projection !== "cylinder") {
     layout.tileHeight = tileHeight();
@@ -1143,6 +1266,12 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
       const k = Math.round((C * cos) / s.spacing);
       layout.angle = ((s.angle < 0 ? -1 : 1) * (Math.acos(Math.min(1, (k * s.spacing) / C)) * 180)) / Math.PI;
     }
+  } else if (s.pattern === "bricks") {
+    // A whole number of the bond's repeats goes round, so the courses close at the seam.
+    const repeat = BRICK_PERIOD[s.brickBond];
+    const k = Math.max(1, Math.round(C / (repeat * s.spacing)));
+    layout.cell = C / (repeat * k);
+    layout.around = k;
   } else if (ROUND_PATTERNS.includes(s.pattern)) {
     // Weave: an even number of stakes, or two weavers "over" would meet at the seam.
     const k = s.pattern === "weave" ? Math.max(2, 2 * Math.round(C / (2 * s.spacing))) : Math.max(1, Math.round(C / s.spacing));
@@ -1151,6 +1280,53 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
   }
   layout.tileHeight = tileHeight();
   return layout;
+}
+
+/**
+ * Bricks: the courses fitted to the height the texture covers along their axis (round a cylinder its axis, flat the
+ * second axis across it, all round z), so whole courses go from its bottom to its top and a joint runs along both - the
+ * course height rounded as the spacing is round a cylinder. The height band counts when the courses run up z. Flat and
+ * all round, the bricks' length is fitted the same way along every axis (round a cylinder: see makeSurfaceTextureLayout),
+ * so a box's side begins and ends with a joint, as a wall would, instead of a sliver of a brick.
+ */
+function fitBrickCourses(base: SurfaceBase, s: SurfaceTextureSettings, kept: Uint8Array, layout: SurfaceTextureLayout) {
+  const along = s.projection === "cylinder" ? AXIS_INDEX[s.axis] : s.projection === "flat" ? acrossAxes(s.axis)[1] : 2;
+  const v = base.vertices;
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < kept.length; i += 1) {
+    if (!kept[i]) continue;
+    lo = Math.min(lo, v[i * 3 + along]);
+    hi = Math.max(hi, v[i * 3 + along]);
+  }
+  if (along === 2 && Number.isFinite(lo)) {
+    const zH = base.size[2] || 1;
+    lo = Math.max(lo, base.min[2] + (s.zoneFrom / 100) * zH);
+    hi = Math.min(hi, base.min[2] + (s.zoneTo / 100) * zH);
+  }
+  if (s.projection !== "cylinder") {
+    const repeat = BRICK_PERIOD[s.brickBond] * s.spacing;
+    layout.brickAxes = [0, 1, 2].map((k) => {
+      let from = Infinity, to = -Infinity;
+      for (let i = 0; i < kept.length; i += 1) {
+        if (!kept[i]) continue;
+        from = Math.min(from, v[i * 3 + k]);
+        to = Math.max(to, v[i * 3 + k]);
+      }
+      const width = to - from;
+      if (!(width > 1e-6)) return { origin: 0, cell: s.spacing };
+      return { origin: from, cell: (width / Math.max(1, Math.round(width / repeat)) / repeat) * s.spacing };
+    });
+  }
+  if (!(hi - lo > 1e-6)) {
+    layout.rowHeight = s.brickHeight;
+    layout.rowOrigin = Number.isFinite(lo) ? lo : 0;
+    layout.rows = 1;
+    return;
+  }
+  const rows = Math.max(1, Math.round((hi - lo) / s.brickHeight));
+  layout.rows = rows;
+  layout.rowHeight = (hi - lo) / rows;
+  layout.rowOrigin = lo;
 }
 
 /**
@@ -1221,25 +1397,29 @@ function stripesAreCut(s: SurfaceTextureSettings) {
   return (s.pattern === "grooves" || s.pattern === "knurl") && s.projection !== "allRound";
 }
 
-/** What else shapes the pattern and so its refining: the cells' and the grain's seed, the image and its tiles. */
-function patternExtras(s: SurfaceTextureSettings) {
+/**
+ * What else shapes the pattern and so its refining: the cells' and the grain's seed, the image and its tiles, the bricks'
+ * bond, joint and courses (not how unevenly they lie: that only moves their faces).
+ */
+function patternExtras(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   if (s.pattern === "cells" || s.pattern === "grain") return [s.seed];
+  if (s.pattern === "bricks") return [s.brickBond, s.brickJoint, layout.rowHeight ?? s.brickHeight, layout.rowOrigin ?? 0, layout.brickAxes ?? null];
   if (s.pattern === "image") return [s.image === "own" && s.imageOwn ? ownImageKey(s.imageOwn) : s.image, s.tileHeight, s.imageTurn, s.imageInvert, s.imageBlur, s.imageTiling];
   return null;
 }
 
 /** Edge length at which the pattern is cleanly resolved. */
 function targetEdge(s: SurfaceTextureSettings) {
-  // Honeycomb, cells and bumps that are cut (see sliceCells) get their detail from the cuts: the grid only
-  // has to follow the body's roundness (a 1.2 mm chord on 30 mm radius: 0.006 mm).
-  if (cellsAreCut(s)) return s.spacing / 2.5;
+  // Honeycomb, cells and bumps that are cut (see sliceCells) get their detail from the cuts: the grid only has to follow
+  // the body's roundness (a 1.2 mm chord on 30 mm radius: 0.006 mm). Bricks' faces are flat: their cuts are all they need.
+  if (cellsAreCut(s)) return s.pattern === "bricks" ? 10 : s.spacing / 2.5;
   const steps = DETAIL_STEPS[s.detail];
   // An image: about 14 points per tile and step of detail (its tile has 256 image points and more).
   if (s.pattern === "image") return Math.min(s.spacing, s.tileHeight > 0 ? s.tileHeight : s.spacing) / (steps * 14);
-  const narrow = s.width < 0.35 && s.pattern !== "grain" ? 0.65 : 1;
+  const narrow = s.width < 0.35 && s.pattern !== "grain" && s.pattern !== "bricks" ? 0.65 : 1;
   // Knitting: a stitch has two loops of about a quarter of its width each; a rope's strands and the weave's rows are
   // narrower than the spacing too.
-  const size = s.pattern === "grain" ? s.spacing / 2 : s.pattern === "knit" ? s.spacing / 2.2 : s.pattern === "rope" ? s.spacing / 1.5 : s.pattern === "weave" ? s.spacing / 2 : s.spacing;
+  const size = s.pattern === "bricks" ? Math.min(s.spacing, s.brickHeight) : s.pattern === "grain" ? s.spacing / 2 : s.pattern === "knit" ? s.spacing / 2.2 : s.pattern === "rope" ? s.spacing / 1.5 : s.pattern === "weave" ? s.spacing / 2 : s.spacing;
   return (size / steps) * narrow;
 }
 
@@ -2012,6 +2192,147 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
   return { mesh: out, reduced: count < Math.max(2, steps) };
 }
 
+/**
+ * Bricks: cut along their joints in strips (see sliceByField) rather than cell by cell as honeycomb - their joints are
+ * straight lines, and a brick's face is flat, so the body's own coarse grid is all a face needs. In three steps:
+ * 1. Along the courses: every joint between two courses, at its middle and at the profile's levels either side.
+ * 2. Across, course by course: a course's own joints the same way. Every triangle lies in one course after step 1;
+ *    those of the other courses take the points on the edges they share.
+ * 3. Where a course's joint meets the joint between the courses, the depth follows the nearer of the two: cut along the
+ *    line where both are equally far (every other course at a time, so a point on the border between two courses is
+ *    measured in the course being cut). Then the depth is linear in every triangle.
+ * A round profile gets half of `steps` levels per flank (as grooves), fewer down to 2 when the triangles would not fit
+ * `maxTriangles`.
+ * `skipBase`: input triangles that surely stay smooth. Parents point at the input mesh.
+ */
+function sliceBricks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, steps: number, maxTriangles: number, skipBase: Uint8Array): { mesh: SurfaceMesh; reduced: boolean; fixed: null } {
+  const ax = AXIS_INDEX[s.axis];
+  const [i1, i2] = acrossAxes(s.axis);
+  const cyl = s.projection === "cylinder";
+  const R = layout.radius, [c1, c2] = layout.center;
+  const round = cyl ? 2 * Math.PI * R : 0;
+  const uAxis = cyl ? -1 : i1;
+  const { origin, cell: L } = brickAlong(layout, uAxis);
+  const H = layout.rowHeight ?? s.brickHeight, v0 = layout.rowOrigin ?? 0;
+  const hw = brickJointHalf(s, layout, uAxis);
+  const courses = BRICK_COURSES[s.brickBond];
+  // Every point's place in the unrolled surface, the change from one point to another across the seam too.
+  const unrolled = (m: SurfaceMesh) => {
+    const v = m.vertices, n = v.length / 3;
+    const U = new Float64Array(n), V = new Float64Array(n), pole = new Uint8Array(n);
+    for (let i = 0; i < n; i += 1) {
+      if (cyl) {
+        const x = v[i * 3 + i1] - c1, y = v[i * 3 + i2] - c2;
+        if (Math.hypot(x, y) < 1e-6) pole[i] = 1;
+        U[i] = Math.atan2(y, x) * R;
+        V[i] = v[i * 3 + ax];
+      } else {
+        U[i] = v[i * 3 + i1];
+        V[i] = v[i * 3 + i2];
+      }
+    }
+    const du = (i: number, j: number) => {
+      const d = U[j] - U[i];
+      return round ? d - round * Math.round(d / round) : d;
+    };
+    return { U, V, pole, du, dv: (i: number, j: number) => V[j] - V[i] };
+  };
+  // Not cut: faces that surely stay smooth, triangles at the axis and - around a cylinder - top and bottom.
+  const cuttable = (m: SurfaceMesh, F: ReturnType<typeof unrolled>) => {
+    const I = m.indices, T = I.length / 3;
+    const out = new Uint8Array(T);
+    for (let f = 0; f < T; f += 1) {
+      const a = I[f * 3], b = I[f * 3 + 1], c = I[f * 3 + 2];
+      if (skipBase[m.parents[f]] || F.pole[a] || F.pole[b] || F.pole[c]) continue;
+      if (cyl) {
+        const n = faceCross(m.vertices, a, b, c);
+        const l = Math.hypot(n[0], n[1], n[2]);
+        if (l === 0 || Math.abs(n[ax]) / l > 0.8) continue;
+      }
+      out[f] = 1;
+    }
+    return out;
+  };
+  const courseOf = (V: Float64Array, I: Uint32Array, f: number) => Math.floor(((V[I[f * 3]] + V[I[f * 3 + 1]] + V[I[f * 3 + 2]]) / 3 - v0) / H);
+  const modulo = (x: number, m: number) => ((x % m) + m) % m;
+  // The joint's middle and its levels either side, at `at` along a field repeating every `P`.
+  const placesOf = (at: number[], levels: number[], P: number) => {
+    const out: number[] = [];
+    for (const middle of at) {
+      for (const d of [0, ...levels.flatMap((level) => [-level, level])]) {
+        const o = modulo(middle + d, P);
+        if (!out.some((known) => Math.abs(known - o) < 1e-9 * P || Math.abs(known - o) > P * (1 - 1e-9))) out.push(o);
+      }
+    }
+    return out.sort((a, b) => a - b);
+  };
+  const cut = (levels: number[]) => {
+    // 1. The joints between the courses.
+    let F = unrolled(mesh);
+    let cur: SurfaceMesh = sliceByField(mesh, F.V, F.dv, H, placesOf([v0], levels, H), cuttable(mesh, F), F.du);
+    // 2. Each course's joints. A quad over an edge along a joint between courses stays two triangles.
+    for (let c = 0; c < courses.length; c += 1) {
+      F = unrolled(cur);
+      const I = cur.indices;
+      const sliced = cuttable(cur, F);
+      for (let f = 0; f < sliced.length; f += 1) if (sliced[f] && modulo(courseOf(F.V, I, f), courses.length) !== c) sliced[f] = 0;
+      const { lengths, offset } = courses[c];
+      const length = lengths.reduce((sum, value) => sum + value, 0);
+      const ends: number[] = [];
+      let along = offset;
+      for (const value of lengths) {
+        ends.push(origin + along * L);
+        along += value;
+      }
+      const V = F.V;
+      cur = sliceByField(cur, F.U, F.du, length * L, placesOf(ends, levels, length * L), sliced, F.dv, false, (p, q) => Math.abs(V[p] - V[q]) < 1e-9);
+    }
+    // 3. The creases at the corners: nearer to the joint between the courses, or to the course's own.
+    for (let parity = 0; parity < 2; parity += 1) {
+      F = unrolled(cur);
+      const I = cur.indices, n = F.U.length;
+      const crease = new Float64Array(n);
+      const near = new Uint8Array(n);
+      for (let i = 0; i < n; i += 1) {
+        // The course of this parity the point lies in, or on the border of.
+        const at = (F.V[i] - v0) / H;
+        let j = Math.floor(at);
+        if (modulo(j, 2) !== parity) j += at - j < 0.5 ? -1 : 1;
+        const bottom = v0 + j * H;
+        const brick = brickAt(F.U[i], bottom + H / 2, s, layout, uAxis);
+        const across = Math.max(0, Math.min(F.V[i] - bottom, bottom + H - F.V[i]));
+        const along = Math.max(0, Math.min(F.U[i] - (brick.cx - brick.hl), brick.cx + brick.hl - F.U[i]));
+        crease[i] = across - along;
+        near[i] = (across < hw * 1.02 ? 1 : 0) | (along < hw * 1.02 ? 2 : 0);
+      }
+      const sliced = cuttable(cur, F);
+      for (let f = 0; f < sliced.length; f += 1) {
+        if (!sliced[f]) continue;
+        const a = I[f * 3], b = I[f * 3 + 1], c = I[f * 3 + 2];
+        if (modulo(courseOf(F.V, I, f), 2) !== parity || ((near[a] | near[b] | near[c]) & 3) !== 3) sliced[f] = 0;
+      }
+      cur = sliceByField(cur, crease, (p, q) => crease[q] - crease[p], 1e6, [0], sliced);
+    }
+    return cur;
+  };
+  const wanted = s.profile === "round" || s.profile === "dome" ? Math.max(2, Math.round(steps / 2)) : steps;
+  let count = wanted;
+  let out = cut(profileLevels(s.profile, count).map((t) => t * hw));
+  while ((s.profile === "round" || s.profile === "dome") && count > 2 && out.indices.length / 3 > maxTriangles) {
+    count = Math.max(2, Math.floor(count / 2));
+    out = cut(profileLevels(s.profile, count).map((t) => t * hw));
+  }
+  // Short edges (levels close to a corner) are pulled together here already, once for all depths.
+  for (let pass = 0; pass < 12; pass += 1) {
+    const c = collapseShortEdges(out.vertices, out.indices, SURFACE_MIN_EDGE);
+    if (c.merged === 0 || !c.faces) break;
+    const parents = out.parents;
+    out = { vertices: out.vertices, indices: c.indices, parents: Uint32Array.from(c.faces, (f) => parents[f]) };
+  }
+  out.limited = Boolean(mesh.limited || out.indices.length / 3 > maxTriangles);
+  return { mesh: out, reduced: count < wanted, fixed: null };
+}
+
 const FLANK_JUMP = 0.3;
 const FLANK_ROUNDS = 3;
 
@@ -2151,6 +2472,8 @@ export type SurfaceTextureStats = {
    * not agree (the text tears there, as a label would); null for the other patterns.
    */
   text: { placed: boolean; torn: number } | null;
+  /** Bricks: how many courses fit the height and how high each is as made, mm; null for the other patterns. */
+  bricks: { courses: number; height: number } | null;
   /** How the pattern was laid on: what "auto" chose, or what was asked for. */
   projection: Exclude<SurfaceTextureProjection, "auto">;
 };
@@ -2355,7 +2678,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       ? JSON.stringify([s.pattern, crackCache?.key ?? null])
       : text
         ? JSON.stringify([s.pattern, layout.text ? [layout.text.point, layout.text.face] : null, s.axis, s.textTurn, outlineKey(s.textOutline)])
-        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center, patternExtras(s)]);
+        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center, patternExtras(s, layout)]);
     const key = `${edge.toFixed(5)}|${smoothKey}|${maxTriangles}|${s.edgeAngle}|${s.detail}|${scale}|${layoutKey}`;
     if (cache?.key === key) return cache;
     let mesh: SurfaceMesh;
@@ -2497,9 +2820,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       const start = baseMesh(base);
       // Honeycomb is cut along its joints afterwards and bumps get their flanks refined: they leave half the budget for that.
       const budget = Math.floor(maxTriangles / 2);
-      // Grooves on straight faces are cut, not refined: points only on such faces (or smooth ones) stay as they are.
+      // Grooves and bricks on straight faces are cut, not refined: points only on such faces (or smooth ones) stay as they are.
       let keep = smooth.points;
-      if (straight && striped) {
+      if (straight && (striped || s.pattern === "bricks")) {
         const other = new Uint8Array(smooth.points.length);
         for (let f = 0; f < straight.length; f += 1) {
           if (straight[f] !== 255 || smooth.faces[f]) continue;
@@ -2535,7 +2858,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       return scale > 1 ? Math.ceil(full / 2) : full;
     };
     if (cellsAreCut(s) && !mesh.limited) {
-      const cut = sliceCells(mesh, s, layout, cellSteps(), maxTriangles, smooth.faces);
+      const cut = s.pattern === "bricks" ? sliceBricks(mesh, s, layout, cellSteps(), maxTriangles, smooth.faces) : sliceCells(mesh, s, layout, cellSteps(), maxTriangles, smooth.faces);
       if (cut.reduced) raised = true;
       fixed = cut.fixed ?? null;
       mesh = { ...cut.mesh, limited: Boolean(mesh.limited || cut.mesh.indices.length / 3 > maxTriangles) };
@@ -2567,6 +2890,10 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
             mesh = sliceStripes(mesh, sk, { ...layout, angle: -layout.angle }, steps, skip, layout);
             mesh = sliceKnurlCrease(mesh, sk, layout, skip);
           }
+        } else if (s.pattern === "bricks") {
+          const cut = sliceBricks(mesh, sk, layout, cellSteps(), maxTriangles, skip);
+          if (cut.reduced) raised = true;
+          mesh = cut.mesh;
         } else {
           const cut = sliceCells(mesh, sk, layout, cellSteps(), maxTriangles, skip);
           if (cut.reduced) raised = true;
@@ -2985,6 +3312,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         removed: base.removed,
         cracks: layout.crack ? { lines: layout.crack.lines.length, length: layout.crack.length } : null,
         text: s.pattern === "text" ? { placed: lettered > 0, torn: state.text?.torn ?? 0 } : null,
+        bricks: s.pattern === "bricks" && layout.rows && layout.rowHeight ? { courses: layout.rows, height: layout.rowHeight } : null,
         projection: s.projection as Exclude<SurfaceTextureProjection, "auto">,
       },
       fill,
