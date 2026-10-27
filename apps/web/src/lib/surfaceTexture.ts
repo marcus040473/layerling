@@ -487,7 +487,7 @@ export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Par
   // A piece of a trunk shows its annual rings on its ends: the top and the bottom take the pattern (inward, the bottom
   // stays flat on the bed).
   bark: { topFree: 0, bottomFree: 0 },
-  wood: { depth: 0.4, topFree: 0, bottomFree: 0 },
+  wood: { depth: 0.8, topFree: 0, bottomFree: 0 },
   image: { depth: 0.6 },
 };
 
@@ -1124,10 +1124,10 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
   if (s.pattern === "cracks") return layout.crack ? crackValue(layout.crack, x, y, z, nx, ny, nz, s.profile) : 0;
   // Grain is noise in space: no projection. So is wood, a piece cut from a trunk.
   if (s.pattern === "grain") return grain(x, y, z, s.spacing, s.seed);
-  if (s.pattern === "wood") return layout.wood ? woodValue(s.woodType, layout.wood, x, y, z, s.ringWidth, s.woodWobble, s.seed) : 0;
+  if (s.pattern === "wood") return layout.wood ? woodValue(s.woodType, layout.wood, x, y, z, s.ringWidth, s.woodWobble, s.seed, [nx, ny, nz]) : 0;
   // A log with bark shows the annual rings of its wood on its ends, less deep than the bark.
   if (s.pattern === "bark" && layout.wood && Math.abs([nx, ny, nz][AXIS_INDEX[s.axis]]) > 0.7) {
-    return BARK_END_DEPTH * woodValue(BARK_WOOD[s.barkType], layout.wood, x, y, z, s.ringWidth, 0.5, s.seed);
+    return BARK_END_DEPTH * woodValue(BARK_WOOD[s.barkType], layout.wood, x, y, z, s.ringWidth, 0.5, s.seed, [nx, ny, nz]);
   }
   const pos = [x, y, z];
   const projection = s.projection === "auto" ? layout.projection : s.projection;

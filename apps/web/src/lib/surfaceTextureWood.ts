@@ -276,7 +276,7 @@ export type WoodFrame = {
   knots: Knot[];
 };
 
-function dot(a: number[], b: number[]) {
+function dot(a: ArrayLike<number>, b: ArrayLike<number>) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 function unit(a: number[]) {
@@ -372,26 +372,34 @@ export function woodFrame(cut: WoodCut, axis: number, center: [number, number], 
   return { origin, dir, e1, e2, reach: Math.max(reach, 1), knots: list };
 }
 
-/** Within a ring (0 where it begins, 1 where it ends): how deep, 1 the soft earlywood, 0 the hard latewood. */
-function ringProfile(kind: WoodKind, phase: number, pores: number) {
-  // The step from one ring's latewood to the next ring's earlywood is sharp; it rises over a tenth of the ring (the mesh
-  // could not follow a sharper one: it came out in steps).
-  const start = smooth(0, 0.1, phase);
+/**
+ * Within a ring (0 where it begins, 1 where it ends): how deep, 1 the soft earlywood, 0 the hard latewood. `sharp` is
+ * how many times a face stretches the ring compared to an end, which cuts straight across it: the steps narrow by as
+ * much, so they keep on every face the width they have on an end.
+ */
+function ringProfile(kind: WoodKind, phase: number, pores: number, sharp = 1) {
+  const step = (from: number, to: number) => smooth(from, from + (to - from) / sharp, phase);
+  // The step from one ring's latewood to the next ring's earlywood is sharp; on an end it rises over a tenth of the ring
+  // (the mesh could not follow a sharper one: it came out in steps).
+  const start = step(0, 0.1);
   switch (kind) {
     case "pine":
-      return start * (1 - smooth(0.42, 0.78, phase));
+      return start * (1 - step(0.42, 0.78));
     case "oak":
-      return start * (1 - smooth(0.2, 0.32, phase)) * (0.7 + 0.3 * pores) + 0.12 * smooth(0.2, 0.32, phase);
+      return start * (1 - step(0.2, 0.32)) * (0.7 + 0.3 * pores) + 0.12 * step(0.2, 0.32);
     case "ash":
-      return start * (1 - smooth(0.26, 0.36, phase)) * (0.65 + 0.35 * pores) + 0.06 * smooth(0.26, 0.36, phase);
+      return start * (1 - step(0.26, 0.36)) * (0.65 + 0.35 * pores) + 0.06 * step(0.26, 0.36);
     case "beech":
-      return 0.25 + 0.45 * start * (1 - smooth(0.6, 0.95, phase));
+      return 0.25 + 0.45 * start * (1 - step(0.6, 0.95));
     case "walnut":
-      return start * (1 - smooth(0.3, 0.85, phase));
+      return start * (1 - step(0.3, 0.85));
     default:
       return 0;
   }
 }
+
+/** A face cutting the rings at a slant stretches them at most this many times over (on a board's face, a log's side). */
+const MAX_STRETCH = 5;
 
 /** How much the rings wobble per wood (times the setting), and how big its rays are: tangential spacing, width, height (mm). */
 const WOOD_LOOK: Record<WoodKind, { wobble: number; rays: { spacing: number; half: number; height: number } | null }> = {
@@ -404,9 +412,10 @@ const WOOD_LOOK: Record<WoodKind, { wobble: number; rays: { spacing: number; hal
 
 /**
  * The grain's value at a point (the editor's screen frame, mm): `ring` the width of an annual ring, `wobble` how
- * unevenly the tree grew (0 to 1).
+ * unevenly the tree grew (0 to 1). With the surface's `normal`, a face that cuts the rings at a slant keeps their steps
+ * as sharp as an end does.
  */
-export function woodValue(kind: WoodKind, frame: WoodFrame, x: number, y: number, z: number, ring: number, wobble: number, seed: number) {
+export function woodValue(kind: WoodKind, frame: WoodFrame, x: number, y: number, z: number, ring: number, wobble: number, seed: number, normal?: ArrayLike<number>) {
   const p = [x - frame.origin[0], y - frame.origin[1], z - frame.origin[2]];
   const a = dot(p, frame.dir);
   const x1 = dot(p, frame.e1), x2 = dot(p, frame.e2);
@@ -443,9 +452,15 @@ export function woodValue(kind: WoodKind, frame: WoodFrame, x: number, y: number
   // Some years grew more than others: the ring widths vary a little (never backwards).
   const years = rr / ring + 0.3 * (noise3(rr / (3 * ring), 0.5, 0.5, seed + 73) - 0.5);
   const phase = years - Math.floor(years);
+  // How far the face stretches a ring: by 1 / the sine of the angle between the face and the way out from the pith.
+  let sharp = 1;
+  if (normal && r > 1e-9) {
+    const out = (x1 * dot(normal, frame.e1) + x2 * dot(normal, frame.e2)) / r;
+    sharp = 1 / Math.max(Math.sqrt(Math.max(0, 1 - out * out)), 1 / MAX_STRETCH);
+  }
   // Pores and fibres: fine streaks along the trunk.
   const fibre = noise3(a / 5, (r * c) / 0.45, (r * s) / 0.45, seed + 79);
-  let value = ringProfile(kind, phase, fibre) + 0.1 * (fibre - 0.5);
+  let value = ringProfile(kind, phase, fibre, sharp) + 0.1 * (fibre - 0.5);
   // Rays: thin plates out from the pith, each only so high along the trunk; harder, so they stand out a little.
   if (look.rays) {
     const count = Math.max(8, Math.round((2 * Math.PI * frame.reach) / look.rays.spacing));
