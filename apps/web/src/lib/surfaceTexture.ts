@@ -1830,8 +1830,16 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
         uvOfPoint.set(id, [u, w]);
         return id;
       };
+      // A coarse rim (few points, to stay within the triangle budget) cuts into its circle with its chords: a ring further
+      // out than the nearest chord would poke through the rim. Such rings go; the rim takes their place.
+      let chord = hw;
+      for (let k = 0; k < loop.length; k += 1) {
+        const [u0, w0] = rimUv[k], [u1, w1] = rimUv[(k + 1) % loop.length];
+        const du = u1 - u0, dw = w1 - w0, l = Math.hypot(du, dw);
+        if (l > 0) chord = Math.min(chord, Math.abs(du * (cy - w0) - dw * (cx - u0)) / l);
+      }
       // Rings inwards: as many points as keep their spacing, at least six; the first point at the angle of the rim's first.
-      const ringsIn = levels.slice().reverse().map((t) => {
+      const ringsIn = levels.filter((t) => t * hw < chord - near).reverse().map((t) => {
         const count = Math.max(6, Math.round(Math.min(loop.length, BUMP_RING_POINTS[s.detail]) * t));
         const ids: number[] = [], angles: number[] = [];
         for (let k = 0; k < count; k += 1) {
@@ -1856,9 +1864,22 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
         const m = O.length, n = In.length;
         const angO = (k: number) => oa[k % m] + 2 * Math.PI * Math.floor(k / m);
         const angI = (k: number) => ia[k % n] + 2 * Math.PI * Math.floor(k / n);
+        // Whether a new triangle runs the loop's way round in the unrolled surface (is not turned over).
+        const upright = (a: number, b: number, c: number) => {
+          const [ua, wa] = uvOfPoint.get(a)!, [ub, wb] = uvOfPoint.get(b)!, [uc, wc] = uvOfPoint.get(c)!;
+          return dir * ((ub - ua) * (wc - wa) - (uc - ua) * (wb - wa)) > 0;
+        };
         let i = 0, j = 0;
         while (i < m || j < n) {
-          if (j >= n || (i < m && angO(i + 1) <= angI(j + 1))) {
+          let outward = j >= n || (i < m && angO(i + 1) <= angI(j + 1));
+          // Across a wide gap of a coarse rim, a fan from one rim point to the ring turned its last triangle over: the
+          // edge it made in the flat side counted as a sharp one, and the bumps round it were left out. Then the other
+          // way on.
+          if (i < m && j < n) {
+            const alongRim = upright(O[i % m], O[(i + 1) % m], In[j % n]);
+            if (alongRim !== upright(O[i % m], In[(j + 1) % n], In[j % n])) outward = alongRim;
+          }
+          if (outward) {
             tri(O[i % m], O[(i + 1) % m], In[j % n]);
             i += 1;
           } else {
