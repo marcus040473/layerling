@@ -19,6 +19,7 @@ import {
   normalizeSurfaceTexture,
   surfaceTexturePositions,
   SURFACE_TEXTURE_MAX_MASK_PLANES,
+  type SurfaceTextureBrickBond,
   type SurfaceTextureCrackStart,
   type SurfaceTextureCrackStyle,
   type SurfaceTextureDetail,
@@ -67,6 +68,8 @@ export const SURFACE_TEXTURE_LABELS: {
   mask: Record<SurfaceTextureMaskMode | "none", MessageKey>;
   crackStyle: Record<SurfaceTextureCrackStyle, MessageKey>;
   crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
+  brickBond: Record<SurfaceTextureBrickBond, MessageKey>;
+  brickBondHint: Record<SurfaceTextureBrickBond, MessageKey>;
   image: Record<SurfaceTextureImage, MessageKey>;
   tiling: Record<SurfaceTextureTiling, MessageKey>;
 } = {
@@ -76,6 +79,7 @@ export const SURFACE_TEXTURE_LABELS: {
     honeycomb: "surfaceTexture.honeycomb",
     bumps: "surfaceTexture.bumps",
     cells: "surfaceTexture.cells",
+    bricks: "surfaceTexture.bricks",
     knit: "surfaceTexture.knit",
     rope: "surfaceTexture.rope",
     weave: "surfaceTexture.weave",
@@ -93,6 +97,20 @@ export const SURFACE_TEXTURE_LABELS: {
   mask: { none: "surfaceTexture.maskNone", exclude: "surfaceTexture.maskExclude", only: "surfaceTexture.maskOnly" },
   crackStyle: { crack: "surfaceTexture.crackStyleCrack", lightning: "surfaceTexture.crackStyleLightning" },
   crackStart: { top: "surfaceTexture.crackStartTop", bottom: "surfaceTexture.crackStartBottom", rim: "surfaceTexture.crackStartRim", anywhere: "surfaceTexture.crackStartAnywhere" },
+  brickBond: {
+    running: "surfaceTexture.bondRunning",
+    stack: "surfaceTexture.bondStack",
+    english: "surfaceTexture.bondEnglish",
+    englishCross: "surfaceTexture.bondEnglishCross",
+    flemish: "surfaceTexture.bondFlemish",
+  },
+  brickBondHint: {
+    running: "surfaceTexture.bondRunningHint",
+    stack: "surfaceTexture.bondStackHint",
+    english: "surfaceTexture.bondEnglishHint",
+    englishCross: "surfaceTexture.bondEnglishCrossHint",
+    flemish: "surfaceTexture.bondFlemishHint",
+  },
   image: {
     topography: "surfaceTexture.imageTopography",
     wood: "surfaceTexture.imageWood",
