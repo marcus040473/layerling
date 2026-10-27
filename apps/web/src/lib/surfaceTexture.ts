@@ -26,6 +26,9 @@
  *   the body's own grid.
  * - Knitting, rope, basket weave, grain and an image (a grey height map, see
  *   surfaceTextureImages.ts): refined evenly, finer where the value jumps.
+ * - Bark and wood grain (see surfaceTextureWood.ts): refined evenly too. The
+ *   grain is a solid, like grain: a piece of wood with its annual rings round
+ *   a pith, so the ends of a log show the rings that match its sides.
  * - Cracks (kintsugi, see surfaceTextureCracks.ts): lines that grow across the surface,
  *   with kinks, branches and a tapering width; only the band round them is
  *   refined. Their notch can be filled by a body of its own (gold, a second
@@ -69,6 +72,7 @@ import {
 } from "@/lib/surfaceTextureMesh";
 import { crackEdgeNear, crackFillBody, crackNetwork, crackValue, surfaceIndex, type CrackNetwork, type CrackSurfaceIndex } from "@/lib/surfaceTextureCracks";
 import { nearestSurfacePoint, unfoldSurface } from "@/lib/surfaceTextureUnfold";
+import { BARK_KINDS, BARK_STARTS, BARK_WOOD, barkValue, WOOD_CUTS, WOOD_KINDS, WOOD_RINGS, woodFrame, woodValue, type WoodFrame } from "@/lib/surfaceTextureWood";
 import {
   blurGreyImage,
   normalizeSurfaceTextureOwnImage,
@@ -82,7 +86,7 @@ import {
   type SurfaceTextureOwnImage,
 } from "@/lib/surfaceTextureImages";
 
-export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "bricks", "knit", "rope", "weave", "grain", "image", "cracks", "text"] as const;
+export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "bricks", "knit", "rope", "weave", "bark", "wood", "grain", "image", "cracks", "text"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
 /** round: a soft bell; pointed: a V (a cone on a bump); flat: a flat floor or top; dome: a half circle (half a ball on a bump). */
@@ -115,6 +119,15 @@ export type SurfaceTextureCrackStart = (typeof SURFACE_TEXTURE_CRACK_STARTS)[num
  */
 export const SURFACE_TEXTURE_BRICK_BONDS = ["running", "stack", "english", "englishCross", "flemish"] as const;
 export type SurfaceTextureBrickBond = (typeof SURFACE_TEXTURE_BRICK_BONDS)[number];
+
+/** Bark: oak, pine, spruce, birch or beech (see surfaceTextureWood.ts). */
+export const SURFACE_TEXTURE_BARK_TYPES = BARK_KINDS;
+export type SurfaceTextureBarkType = (typeof SURFACE_TEXTURE_BARK_TYPES)[number];
+/** Wood grain: oak, ash, beech, pine or walnut, cut as a log, a flat-sawn or a quarter-sawn board. */
+export const SURFACE_TEXTURE_WOOD_TYPES = WOOD_KINDS;
+export type SurfaceTextureWoodType = (typeof SURFACE_TEXTURE_WOOD_TYPES)[number];
+export const SURFACE_TEXTURE_WOOD_CUTS = WOOD_CUTS;
+export type SurfaceTextureWoodCut = (typeof SURFACE_TEXTURE_WOOD_CUTS)[number];
 
 /** Image: a ready image (see surfaceTextureImages.ts) or one's own. */
 export const SURFACE_TEXTURE_IMAGES = [...SURFACE_TEXTURE_IMAGE_PRESETS, "own"] as const;
@@ -199,7 +212,7 @@ export type SurfaceTextureSettings = {
   textHeight: number;
   /** Turned on the surface, degrees. */
   textTurn: number;
-  /** Cells and grain: another number, another arrangement; bricks: other bricks lie deeper. */
+  /** Cells, grain, bark and wood: another number, another arrangement; bricks: other bricks lie deeper. */
   seed: number;
   /**
    * Bricks: the height of a course, mm, from joint to joint (the spacing is a brick's length). The courses are fitted to
@@ -211,6 +224,16 @@ export type SurfaceTextureSettings = {
   brickBond: SurfaceTextureBrickBond;
   /** Bricks: how unevenly they lie, 0 to 1 - at 1 a brick sinks by up to half the depth, each its own way. */
   brickVary: number;
+  /** Bark: which tree's (the spacing is the size of its pieces or marks). */
+  barkType: SurfaceTextureBarkType;
+  /** Wood grain: which wood, and how the piece was cut from the trunk. */
+  woodType: SurfaceTextureWoodType;
+  woodCut: SurfaceTextureWoodCut;
+  /** Wood grain, and the ends of a log with bark: an annual ring's width, mm - fine grain or coarse. */
+  ringWidth: number;
+  /** Wood grain: how many knots, and how unevenly the tree grew (0 to 1). */
+  woodKnots: number;
+  woodWobble: number;
   /** Image: which one (light = the full depth); "own" is `imageOwn`. The tile's width is the spacing. */
   image: SurfaceTextureImage;
   /** One's own image: its grey values, at most SURFACE_TEXTURE_OWN_IMAGE_SIZE points a side. */
@@ -278,6 +301,12 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   brickJoint: 0.8,
   brickBond: "running",
   brickVary: 0,
+  barkType: "oak",
+  woodType: "oak",
+  woodCut: "log",
+  ringWidth: 3,
+  woodKnots: 0,
+  woodWobble: 0.5,
   image: "topography",
   imageOwn: null,
   tileHeight: 0,
@@ -317,6 +346,9 @@ export const SURFACE_TEXTURE_LIMITS: Record<NumberKey, [number, number]> = {
   brickHeight: [0.5, 100],
   brickJoint: [0.1, 10],
   brickVary: [0, 1],
+  ringWidth: [0.3, 20],
+  woodKnots: [0, 12],
+  woodWobble: [0, 1],
   tileHeight: [0, 200],
   imageTurn: [-180, 180],
   imageBlur: [0, 8],
@@ -332,6 +364,9 @@ const CHOICES = {
   crackStyle: SURFACE_TEXTURE_CRACK_STYLES,
   crackStart: SURFACE_TEXTURE_CRACK_STARTS,
   brickBond: SURFACE_TEXTURE_BRICK_BONDS,
+  barkType: SURFACE_TEXTURE_BARK_TYPES,
+  woodType: SURFACE_TEXTURE_WOOD_TYPES,
+  woodCut: SURFACE_TEXTURE_WOOD_CUTS,
   image: SURFACE_TEXTURE_IMAGES,
   imageTiling: SURFACE_TEXTURE_TILINGS,
 } as const;
@@ -374,7 +409,7 @@ export const SURFACE_TEXTURE_PREVIEW_TRIANGLES = 200_000;
 /** Cut along their cell borders (see sliceCells; bricks: sliceBricks). */
 const CELL_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells", "bricks"];
 /** Around a cylinder a whole number of cells, stitches, strands, stakes or tiles goes round. */
-const ROUND_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells", "knit", "rope", "weave", "image"];
+const ROUND_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells", "knit", "rope", "weave", "bark", "image"];
 const SQRT3 = Math.sqrt(3);
 
 function clamp(value: number, min: number, max: number) {
@@ -413,6 +448,7 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
   out.crackCount = Math.round(out.crackCount);
   out.crackSeed = Math.round(out.crackSeed);
   out.seed = Math.round(out.seed);
+  out.woodKnots = Math.round(out.woodKnots);
   // What a pattern is not told starts as it looks right (see SURFACE_TEXTURE_STARTERS), not as the knurling would.
   const starter = SURFACE_TEXTURE_STARTERS[out.pattern];
   if (starter) {
@@ -424,6 +460,12 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
   // One's own image asked for without one: the first ready image.
   if (out.image === "own" && !out.imageOwn) out.image = SURFACE_TEXTURE_IMAGE_PRESETS[0];
   if (out.pattern === "image" && source.spacing === undefined) out.spacing = surfaceTextureImageTile(out.image);
+  // A bark starts at its own size and depth, a wood at its own ring width.
+  if (out.pattern === "bark") {
+    if (source.spacing === undefined) out.spacing = BARK_STARTS[out.barkType].spacing;
+    if (source.depth === undefined) out.depth = BARK_STARTS[out.barkType].depth;
+  }
+  if (out.pattern === "wood" && source.ringWidth === undefined) out.ringWidth = WOOD_RINGS[out.woodType];
   out.masks = normalizeSurfaceTextureMasks(source.masks);
   out.textOutline = normalizeSurfaceTextOutline(source.textOutline);
   return out;
@@ -442,6 +484,10 @@ export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Par
   rope: { spacing: 6, depth: 3, width: 0.6, profile: "round", direction: "outward" },
   weave: { spacing: 10, depth: 1.6, width: 0.6, profile: "round", direction: "outward" },
   grain: { spacing: 1.2, depth: 0.25 },
+  // A piece of a trunk shows its annual rings on its ends: the top and the bottom take the pattern (inward, the bottom
+  // stays flat on the bed).
+  bark: { topFree: 0, bottomFree: 0 },
+  wood: { depth: 0.4, topFree: 0, bottomFree: 0 },
   image: { depth: 0.6 },
 };
 
@@ -901,6 +947,8 @@ export type SurfaceTextureLayout = {
   rows?: number;
   /** Bricks flat or all round: per axis x, y, z a brick's length as fitted to the body's size along it, and where they begin. */
   brickAxes?: { origin: number; cell: number }[];
+  /** Wood grain, and the ends of a log with bark: where the pith runs, and the knots. */
+  wood?: WoodFrame | null;
 };
 
 /**
@@ -1058,6 +1106,8 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
       return rope(u, v, layout.cell, s);
     case "weave":
       return weave(u, v, layout.cell, s);
+    case "bark":
+      return barkValue(s.barkType, u, v, layout.cell, layout.around, s.seed);
     case "image":
       return imageValue(u, v, s, layout);
     default:
@@ -1065,12 +1115,20 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
   }
 }
 
+/** The rings on the ends of a log with bark lie this much as deep as the bark. */
+const BARK_END_DEPTH = 0.4;
+
 /** Pattern value 0 to 1 at a point with its normal. */
 export function surfaceTextureValueAt(x: number, y: number, z: number, nx: number, ny: number, nz: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   // Cracks lie on the surface itself, not in a projection.
   if (s.pattern === "cracks") return layout.crack ? crackValue(layout.crack, x, y, z, nx, ny, nz, s.profile) : 0;
-  // Grain is noise in space: no projection.
+  // Grain is noise in space: no projection. So is wood, a piece cut from a trunk.
   if (s.pattern === "grain") return grain(x, y, z, s.spacing, s.seed);
+  if (s.pattern === "wood") return layout.wood ? woodValue(s.woodType, layout.wood, x, y, z, s.ringWidth, s.woodWobble, s.seed) : 0;
+  // A log with bark shows the annual rings of its wood on its ends, less deep than the bark.
+  if (s.pattern === "bark" && layout.wood && Math.abs([nx, ny, nz][AXIS_INDEX[s.axis]]) > 0.7) {
+    return BARK_END_DEPTH * woodValue(BARK_WOOD[s.barkType], layout.wood, x, y, z, s.ringWidth, 0.5, s.seed);
+  }
   const pos = [x, y, z];
   const projection = s.projection === "auto" ? layout.projection : s.projection;
   if (projection === "cylinder") {
@@ -1248,6 +1306,10 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
   const layout: SurfaceTextureLayout = { projection: s.projection as SurfaceTextureLayout["projection"], period: s.spacing, cell: s.spacing, around: null, angle: s.angle, center: [c1, c2], radius, rMin, rMax };
   if (s.pattern === "image") layout.image = textureImage(s);
   if (s.pattern === "bricks") fitBrickCourses(base, s, kept, layout);
+  if (s.pattern === "wood" || s.pattern === "bark") {
+    const cut = s.pattern === "wood" ? s.woodCut : "log";
+    layout.wood = woodFrame(cut, AXIS_INDEX[s.axis], [c1, c2], base.min, base.max, s.ringWidth, s.pattern === "wood" ? s.woodKnots : 0, s.seed);
+  }
   const tileHeight = () => (s.tileHeight > 0 ? s.tileHeight : layout.image ? (layout.cell * layout.image.height) / layout.image.width : layout.cell);
   if (s.projection !== "cylinder") {
     layout.tileHeight = tileHeight();
@@ -1404,6 +1466,8 @@ function stripesAreCut(s: SurfaceTextureSettings) {
 function patternExtras(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   if (s.pattern === "cells" || s.pattern === "grain") return [s.seed];
   if (s.pattern === "bricks") return [s.brickBond, s.brickJoint, layout.rowHeight ?? s.brickHeight, layout.rowOrigin ?? 0, layout.brickAxes ?? null];
+  if (s.pattern === "bark") return [s.barkType, s.seed, s.ringWidth];
+  if (s.pattern === "wood") return [s.woodType, s.woodCut, s.ringWidth, s.woodKnots, s.woodWobble, s.seed];
   if (s.pattern === "image") return [s.image === "own" && s.imageOwn ? ownImageKey(s.imageOwn) : s.image, s.tileHeight, s.imageTurn, s.imageInvert, s.imageBlur, s.imageTiling];
   return null;
 }
@@ -1416,10 +1480,11 @@ function targetEdge(s: SurfaceTextureSettings) {
   const steps = DETAIL_STEPS[s.detail];
   // An image: about 14 points per tile and step of detail (its tile has 256 image points and more).
   if (s.pattern === "image") return Math.min(s.spacing, s.tileHeight > 0 ? s.tileHeight : s.spacing) / (steps * 14);
-  const narrow = s.width < 0.35 && s.pattern !== "grain" && s.pattern !== "bricks" ? 0.65 : 1;
+  const narrow = s.width < 0.35 && s.pattern !== "grain" && s.pattern !== "bricks" && s.pattern !== "bark" && s.pattern !== "wood" ? 0.65 : 1;
   // Knitting: a stitch has two loops of about a quarter of its width each; a rope's strands and the weave's rows are
   // narrower than the spacing too.
-  const size = s.pattern === "bricks" ? Math.min(s.spacing, s.brickHeight) : s.pattern === "grain" ? s.spacing / 2 : s.pattern === "knit" ? s.spacing / 2.2 : s.pattern === "rope" ? s.spacing / 1.5 : s.pattern === "weave" ? s.spacing / 2 : s.spacing;
+  // Bark: its marks are a share of its size (a birch's lenticels are thin); wood: a ring (flanks refined after).
+  const size = s.pattern === "bricks" ? Math.min(s.spacing, s.brickHeight) : s.pattern === "bark" ? s.spacing / BARK_STARTS[s.barkType].detail : s.pattern === "wood" ? s.ringWidth : s.pattern === "grain" ? s.spacing / 2 : s.pattern === "knit" ? s.spacing / 2.2 : s.pattern === "rope" ? s.spacing / 1.5 : s.pattern === "weave" ? s.spacing / 2 : s.spacing;
   return (size / steps) * narrow;
 }
 
@@ -2353,7 +2418,8 @@ function refineFlanks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
     const { normals } = normalsAndCreases(v, I, 90);
     const values = new Float32Array(n);
     for (let i = 0; i < n; i += 1) {
-      if (s.projection === "cylinder" && Math.abs(normals[i * 3 + ax]) > 0.8) values[i] = NaN;
+      // Wood and bark show their rings on the ends: those are refined too.
+      if (s.projection === "cylinder" && s.pattern !== "wood" && s.pattern !== "bark" && Math.abs(normals[i * 3 + ax]) > 0.8) values[i] = NaN;
       else values[i] = surfaceTextureValueAt(v[i * 3], v[i * 3 + 1], v[i * 3 + 2], normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2], s, layout);
     }
     const flags = new Uint8Array(n);
@@ -2377,6 +2443,35 @@ function refineFlanks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
     const parents = Uint32Array.from(next.parents, (f) => cur.parents[f]);
     cur = { vertices: next.vertices, indices: next.indices, parents, limited: cur.limited || next.limited };
     if (next.limited) break;
+  }
+  return cur;
+}
+
+/**
+ * Bark and wood: their furrows, marks and rings cross the grid at any slant, and a vertex is either in a furrow or not:
+ * its rim came out in steps of the grid. Their values are smoothed over each point's neighbours this many times
+ * (half its own, half its neighbours' mean) - softened to the mesh, as an image is (see textureImage).
+ */
+const SMOOTHED_PASSES: Partial<Record<SurfaceTexturePattern, number>> = { bark: 3, wood: 1 };
+
+function smoothedValues(state: RefinedState, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, passes: number) {
+  const v = state.mesh.vertices, d = state.directions, n = v.length / 3;
+  let cur = new Float32Array(n);
+  for (let i = 0; i < n; i += 1) cur[i] = surfaceTextureValueAt(v[i * 3], v[i * 3 + 1], v[i * 3 + 2], d[i * 3], d[i * 3 + 1], d[i * 3 + 2], s, layout);
+  const { start, nb } = state.adj;
+  for (let pass = 0; pass < passes; pass += 1) {
+    const next = new Float32Array(n);
+    for (let i = 0; i < n; i += 1) {
+      const from = start[i], to = start[i + 1];
+      if (to === from) {
+        next[i] = cur[i];
+        continue;
+      }
+      let sum = 0;
+      for (let k = from; k < to; k += 1) sum += cur[nb[k]];
+      next[i] = 0.5 * cur[i] + (0.5 * sum) / (to - from);
+    }
+    cur = next;
   }
   return cur;
 }
@@ -3252,6 +3347,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // Text: the values come from the unrolled plane, not from a projection.
     const textValue = s.pattern === "text" && state.text ? state.text.values : null;
     const fixedValue = state.fixed ?? null;
+    const smoothedValue = SMOOTHED_PASSES[s.pattern] ? smoothedValues(state, s, layout, SMOOTHED_PASSES[s.pattern]!) : null;
     let lettered = 0;
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
@@ -3261,7 +3357,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       if (wi > 0) {
         textured += used[i];
         const known = fixedValue && i < fixedValue.length ? fixedValue[i] : NaN;
-        const value = textValue ? textValue[i] : !Number.isNaN(known) ? known : surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
+        const value = textValue ? textValue[i] : smoothedValue ? smoothedValue[i] : !Number.isNaN(known) ? known : surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
         if (textValue && value > 0.5) lettered += used[i];
         d = wi * (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
         if (notch) notch[i] = wi * s.depth * value;
