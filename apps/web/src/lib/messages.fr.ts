@@ -1664,7 +1664,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "surfaceTexture.capRows": "Rangs",
   "surfaceTexture.capRings": "Anneaux",
   "inspector.surfaceCapEdge": "Arête en haut et en bas",
-  "inspector.surfaceCapEdgeHint": "Là où le côté rencontre un dessus ou un dessous à motif : vive (les deux s'arrêtent à l'arête), le côté passe par-dessus (ses rangs s'arrondissent par-dessus l'arête et continuent en anneaux – rainures, corde et tricot), ou une bordure dans le style du motif fait le tour de l'arête. Automatique : par-dessus quand c'est possible, sinon vive.",
+  "inspector.surfaceCapEdgeHint": "Là où le côté rencontre un dessus ou un dessous à motif : vive (les deux s'arrêtent à l'arête), le côté passe par-dessus (ses rangs s'arrondissent par-dessus l'arête et continuent en anneaux – corde, tricot, et rainures qui font le tour à l'horizontale, à un angle de 90°), ou une bordure dans le style du motif fait le tour de l'arête. Automatique : par-dessus quand c'est possible, sinon vive.",
   "surfaceTexture.edgeAuto": "Automatique",
   "surfaceTexture.edgeSharp": "Vive",
   "surfaceTexture.edgeOver": "Le côté passe par-dessus",

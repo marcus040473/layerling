@@ -83,7 +83,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "surfaceTexture.capRows": "Rækker",
   "surfaceTexture.capRings": "Ringe",
   "inspector.surfaceCapEdge": "Kant foroven og forneden",
-  "inspector.surfaceCapEdgeHint": "Hvor siden møder en top eller bund med mønster: skarp (begge slutter ved kanten), siden løber over (dens rækker bøjer rundt over kanten og fortsætter som ringe – riller, reb og strik), eller en indfatning i mønstrets stil løber rundt om kanten. Automatisk: over kanten hvor det kan, ellers skarp.",
+  "inspector.surfaceCapEdgeHint": "Hvor siden møder en top eller bund med mønster: skarp (begge slutter ved kanten), siden løber over (dens rækker bøjer rundt over kanten og fortsætter som ringe – reb, strik og riller, der løber vandret rundt, i en vinkel på 90°), eller en indfatning i mønstrets stil løber rundt om kanten. Automatisk: over kanten hvor det kan, ellers skarp.",
   "surfaceTexture.edgeAuto": "Automatisk",
   "surfaceTexture.edgeSharp": "Skarp",
   "surfaceTexture.edgeOver": "Siden løber over",

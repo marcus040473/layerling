@@ -1342,7 +1342,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "surfaceTexture.capRows": "Vrste",
   "surfaceTexture.capRings": "Krogi",
   "inspector.surfaceCapEdge": "Rob zgoraj in spodaj",
-  "inspector.surfaceCapEdgeHint": "Kjer stranica sreča zgornjo ali spodnjo stran z vzorcem: oster (oboje se konča pri robu), stranica teče čez rob (njene vrste se zaobljeno prevesijo čez rob in se nadaljujejo kot krogi – utori, vrv in pletenina) ali pa okoli roba teče obroba v slogu vzorca. Samodejno: čez rob, kjer gre, sicer oster.",
+  "inspector.surfaceCapEdgeHint": "Kjer stranica sreča zgornjo ali spodnjo stran z vzorcem: oster (oboje se konča pri robu), stranica teče čez rob (njene vrste se zaobljeno prevesijo čez rob in se nadaljujejo kot krogi – vrv, pletenina in utori, ki tečejo vodoravno naokoli, pod kotom 90°) ali pa okoli roba teče obroba v slogu vzorca. Samodejno: čez rob, kjer gre, sicer oster.",
   "surfaceTexture.edgeAuto": "Samodejno",
   "surfaceTexture.edgeSharp": "Oster",
   "surfaceTexture.edgeOver": "Stranica teče čez rob",

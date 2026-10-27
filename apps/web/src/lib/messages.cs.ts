@@ -1737,7 +1737,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "surfaceTexture.capRows": "Řady",
   "surfaceTexture.capRings": "Kruhy",
   "inspector.surfaceCapEdge": "Hrana nahoře a dole",
-  "inspector.surfaceCapEdgeHint": "Tam, kde se bok setkává s horní nebo spodní stranou se vzorem: ostrá (obojí končí u hrany), bok přechází přes hranu (jeho řady se oblým ohybem přelijí přes hranu a pokračují jako kruhy – drážky, lano a pletení), nebo kolem hrany vede lem ve stylu vzoru. Automaticky: přes hranu, kde to jde, jinak ostrá.",
+  "inspector.surfaceCapEdgeHint": "Tam, kde se bok setkává s horní nebo spodní stranou se vzorem: ostrá (obojí končí u hrany), bok přechází přes hranu (jeho řady se oblým ohybem přelijí přes hranu a pokračují jako kruhy – lano, pletení a drážky, které vedou vodorovně dokola, pod úhlem 90°), nebo kolem hrany vede lem ve stylu vzoru. Automaticky: přes hranu, kde to jde, jinak ostrá.",
   "surfaceTexture.edgeAuto": "Automaticky",
   "surfaceTexture.edgeSharp": "Ostrá",
   "surfaceTexture.edgeOver": "Bok přechází přes hranu",

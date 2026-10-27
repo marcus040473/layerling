@@ -1678,7 +1678,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "surfaceTexture.capRows": "Rijen",
   "surfaceTexture.capRings": "Ringen",
   "inspector.surfaceCapEdge": "Rand boven en onder",
-  "inspector.surfaceCapEdgeHint": "Waar de zijkant een boven- of onderkant met patroon raakt: scherp (beide stoppen bij de rand), zijkant loopt eroverheen (de rijen buigen rond over de rand en lopen als ringen verder – groeven, touw en breiwerk), of een boord in de stijl van het patroon loopt om de rand. Automatisch: eroverheen waar het kan, anders scherp.",
+  "inspector.surfaceCapEdgeHint": "Waar de zijkant een boven- of onderkant met patroon raakt: scherp (beide stoppen bij de rand), zijkant loopt eroverheen (de rijen buigen rond over de rand en lopen als ringen verder – touw, breiwerk, en groeven die horizontaal rondlopen, bij een hoek van 90°), of een boord in de stijl van het patroon loopt om de rand. Automatisch: eroverheen waar het kan, anders scherp.",
   "surfaceTexture.edgeAuto": "Automatisch",
   "surfaceTexture.edgeSharp": "Scherp",
   "surfaceTexture.edgeOver": "Zijkant loopt eroverheen",

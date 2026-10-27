@@ -1678,7 +1678,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "surfaceTexture.capRows": "Reihen",
   "surfaceTexture.capRings": "Ringe",
   "inspector.surfaceCapEdge": "Kante oben und unten",
-  "inspector.surfaceCapEdgeHint": "Wo die Seite auf eine gemusterte Ober- oder Unterseite trifft: hart (beide enden an der Kante), die Seite läuft drüber (ihre Reihen biegen sich rund über die Kante und laufen oben als Ringe weiter – bei Rillen, Seil und Strick) oder eine Einfassung im Stil des Musters läuft um die Kante. Automatisch: drüber, wo es geht, sonst hart.",
+  "inspector.surfaceCapEdgeHint": "Wo die Seite auf eine gemusterte Ober- oder Unterseite trifft: hart (beide enden an der Kante), die Seite läuft drüber (ihre Reihen biegen sich rund über die Kante und laufen oben als Ringe weiter – bei Seil, Strick und bei Rillen, die waagerecht rundherum laufen, also Winkel 90°) oder eine Einfassung im Stil des Musters läuft um die Kante. Automatisch: drüber, wo es geht, sonst hart.",
   "surfaceTexture.edgeAuto": "Automatisch",
   "surfaceTexture.edgeSharp": "Hart",
   "surfaceTexture.edgeOver": "Seite läuft drüber",
