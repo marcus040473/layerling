@@ -455,8 +455,9 @@ export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Par
   grain: { spacing: 1.2, depth: 0.25 },
   // A piece of a trunk shows its annual rings on its ends: the top and the bottom take the pattern (inward, the bottom
   // stays flat on the bed).
-  bark: { topFree: 0, bottomFree: 0 },
-  wood: { depth: 0.8, topFree: 0, bottomFree: 0 },
+  // Bark and wood go up to the edges: kept smooth, the rim stood out round the log like a column's.
+  bark: { topFree: 0, bottomFree: 0, keepEdges: false },
+  wood: { depth: 0.8, topFree: 0, bottomFree: 0, keepEdges: false },
   image: { depth: 0.6 },
 };
 
@@ -2133,10 +2134,35 @@ function refineFlanks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
  */
 const SMOOTHED_PASSES: Partial<Record<SurfaceTexturePattern, number>> = { bark: 3, wood: 1 };
 
-function smoothedValues(state: RefinedState, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, passes: number) {
+/**
+ * When the triangle budget made the grid coarser than the edge the pattern asked for (see refined), its finest marks
+ * fall between the points and the grid's rows show through - where the rows were split the other way round, as a line
+ * across the body. Smoothing over the neighbours follows the rows too; instead each point takes the mean of the pattern on
+ * a small circle round it in the surface, this share of the grid's edge wide, the same in every direction.
+ */
+const LIMITED_BLUR = 0.5;
+
+function smoothedValues(state: RefinedState, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, passes: number, blur = 0) {
   const v = state.mesh.vertices, d = state.directions, n = v.length / 3;
   let cur = new Float32Array(n);
-  for (let i = 0; i < n; i += 1) cur[i] = surfaceTextureValueAt(v[i * 3], v[i * 3 + 1], v[i * 3 + 2], d[i * 3], d[i * 3 + 1], d[i * 3 + 2], s, layout);
+  for (let i = 0; i < n; i += 1) {
+    const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2], nx = d[i * 3], ny = d[i * 3 + 1], nz = d[i * 3 + 2];
+    let value = surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
+    if (blur > 0) {
+      // Two directions in the surface, then six points round the circle.
+      const h = Math.abs(nx) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+      let ax = ny * h[2] - nz * h[1], ay = nz * h[0] - nx * h[2], az = nx * h[1] - ny * h[0];
+      const al = Math.hypot(ax, ay, az) || 1;
+      ax /= al; ay /= al; az /= al;
+      const bx = ny * az - nz * ay, by = nz * ax - nx * az, bz = nx * ay - ny * ax;
+      for (let k = 0; k < 6; k += 1) {
+        const c = Math.cos((k * Math.PI) / 3) * blur, sn = Math.sin((k * Math.PI) / 3) * blur;
+        value += surfaceTextureValueAt(x + c * ax + sn * bx, y + c * ay + sn * by, z + c * az + sn * bz, nx, ny, nz, s, layout);
+      }
+      value /= 7;
+    }
+    cur[i] = value;
+  }
   const { start, nb } = state.adj;
   for (let pass = 0; pass < passes; pass += 1) {
     const next = new Float32Array(n);
@@ -3020,7 +3046,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // Text: the values come from the unrolled plane, not from a projection.
     const textValue = s.pattern === "text" && state.text ? state.text.values : null;
     const fixedValue = state.fixed ?? null;
-    const smoothedValue = SMOOTHED_PASSES[s.pattern] ? smoothedValues(state, s, layout, SMOOTHED_PASSES[s.pattern]!) : null;
+    const passes = SMOOTHED_PASSES[s.pattern] ?? 0;
+    const coarse = passes > 0 && state.limited && state.edge > 1.5 * targetEdge(s);
+    const smoothedValue = passes ? smoothedValues(state, s, layout, passes, coarse ? LIMITED_BLUR * state.edge : 0) : null;
     let lettered = 0;
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
