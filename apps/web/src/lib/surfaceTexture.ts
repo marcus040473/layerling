@@ -64,6 +64,7 @@ import {
   mergeFlatPoints,
   normalsAndCreases,
   prepareSurfaceBase,
+  refinePlanar,
   SURFACE_MIN_EDGE,
   sliceByField,
   subdivide,
@@ -182,6 +183,11 @@ export type SurfaceTextureSettings = {
   profile: SurfaceTextureProfile;
   /** Grooves and knurling: slant against the axis in degrees (0 = along the axis). */
   angle: number;
+  /**
+   * The pattern on the faces seen along the axis (a box's top and bottom) turned round it, degrees: 0 = rows parallel to
+   * the front edge, 90 = to the side edge. Round tops and bottoms take grooves, rope and knitting in rings (see ringValue).
+   */
+  faceTurn: number;
   direction: SurfaceTextureDirection;
   projection: SurfaceTextureProjection;
   axis: SurfaceTextureAxis;
@@ -285,6 +291,7 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   width: 0.6,
   profile: "pointed",
   angle: 30,
+  faceTurn: 0,
   direction: "inward",
   projection: "auto",
   axis: "z",
@@ -348,6 +355,7 @@ export const SURFACE_TEXTURE_LIMITS: Record<NumberKey, [number, number]> = {
   depth: [0.05, 5],
   width: [0.1, 1],
   angle: [-90, 90],
+  faceTurn: [-180, 180],
   bottomFree: [0, 90],
   topFree: [0, 90],
   zoneFrom: [0, 100],
@@ -741,10 +749,10 @@ function yarn(e2: number, profile: SurfaceTextureProfile) {
 /**
  * Stockinette: columns of stitches `W` wide, each stitch a V of two slanted loops of yarn that meet at the bottom in
  * the middle and reach into the next row. `width` is the yarn's thickness. Fine ripples across hint at the twisted fibres.
+ * With `rowU`, each row has its own u (in rings, see ringValue: fewer stitches round the inner rows); NaN: no such row.
  */
-function knit(u: number, v: number, W: number, s: SurfaceTextureSettings) {
+function knit(u: number, v: number, W: number, s: SurfaceTextureSettings, rowU: ((row: number) => number) | null = null) {
   const H = W * 0.75;
-  const x = u - (Math.floor(u / W) + 0.5) * W;
   const row = Math.floor(v / H);
   // A loop: from the bottom middle up and out, steeper than 45 degrees and into the next row; a narrow gutter stays
   // between the columns.
@@ -754,6 +762,9 @@ function knit(u: number, v: number, W: number, s: SurfaceTextureSettings) {
   const b = (W / 4) * clamp(s.width, 0.3, 1) * 0.95;
   let best = 0;
   for (let k = -1; k <= 1; k += 1) {
+    const uk = rowU ? rowU(row + k) : u;
+    if (Number.isNaN(uk)) continue;
+    const x = uk - (Math.floor(uk / W) + 0.5) * W;
     const y = v - (row + k) * H;
     for (const side of [-1, 1]) {
       const ax = (side * sx) / len, ay = sy / len;
@@ -1009,8 +1020,8 @@ export type SurfaceTextureLayout = {
   /** Wood grain, and the ends of a log with bark: where the pith runs, and the knots. */
   wood?: WoodFrame | null;
   /**
-   * Around a cylinder with a picked top or bottom (set by the session): there the pattern lies flat, across the axis -
-   * round the axis it would run together into rays.
+   * Around a cylinder with a top or bottom that gets the pattern (set by the session): there it lies flat, across the
+   * axis, or runs in rings (RING_PATTERNS) - round the axis it would run together into rays.
    */
   flatCaps?: boolean;
 };
@@ -1149,6 +1160,35 @@ const TEXT_FRONT: Record<SurfaceTextureAxis, [number[], number[]]> = {
   x: [[0, 0, 1], [0, -1, 0]],
 };
 
+/** On a round body's top and bottom these run in rings round the middle, like a tree's year rings (see ringValue). */
+const RING_PATTERNS: readonly SurfaceTexturePattern[] = ["grooves", "rope", "knit"];
+
+/**
+ * Grooves, rope and knitting on a round top or bottom, (du, dv) from the middle: rings round it `period` (grooves) or
+ * `spacing` (rope; knitting: its rows) apart, the first half a ring out. Each ring of rope or knitting has a whole number
+ * of strands or stitches of about the cell round it, so it closes; the inner rings have fewer.
+ */
+function ringValue(du: number, dv: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
+  const r = Math.hypot(du, dv);
+  if (s.pattern === "grooves") return stripe(r, 0, 0, layout.period, s);
+  const turn = Math.atan2(dv, du) / (2 * Math.PI);
+  const W = layout.cell;
+  const round = (middle: number) => Math.max(1, Math.round((2 * Math.PI * middle) / W)) * W;
+  if (s.pattern === "rope") return rope(turn * round((Math.floor(r / s.spacing) + 0.5) * s.spacing), r, W, s);
+  const H = 0.75 * W;
+  return knit(0, r, W, s, (row) => (row < 0 ? NaN : turn * round((row + 0.5) * H)));
+}
+
+/** (u, v) on a face seen along the axis, the pattern turned there by `faceTurn` degrees round the layout's middle (`back`: undone). */
+function turnOnFace(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, back = false): [number, number] {
+  // Bricks lie in courses fitted to the body's edges (see fitBrickCourses), not turned.
+  if (!s.faceTurn || s.pattern === "bricks") return [u, v];
+  const a = ((back ? -s.faceTurn : s.faceTurn) * Math.PI) / 180, c = Math.cos(a), sn = Math.sin(a);
+  const [c1, c2] = layout.center;
+  const du = u - c1, dv = v - c2;
+  return [c1 + du * c + dv * sn, c2 - du * sn + dv * c];
+}
+
 /** The pattern's value at (u, v) of its plane; `axis`: the axis u runs along, x, y or z (-1 round a cylinder). */
 function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axis: number) {
   switch (s.pattern) {
@@ -1198,18 +1238,23 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
   if (projection === "cylinder") {
     const ax = AXIS_INDEX[s.axis];
     const [i1, i2] = acrossAxes(s.axis);
-    if (layout.flatCaps && Math.abs([nx, ny, nz][ax]) > 0.8) return patternValue(pos[i1], pos[i2], s, layout, i1);
+    if (layout.flatCaps && Math.abs([nx, ny, nz][ax]) > 0.8) {
+      if (RING_PATTERNS.includes(s.pattern)) return ringValue(pos[i1] - layout.center[0], pos[i2] - layout.center[1], s, layout);
+      return patternValue(...turnOnFace(pos[i1], pos[i2], s, layout), s, layout, i1);
+    }
     const theta = Math.atan2(pos[i2] - layout.center[1], pos[i1] - layout.center[0]);
     return patternValue(theta * layout.radius, pos[ax], s, layout, -1);
   }
   if (projection === "flat") {
     const [i1, i2] = acrossAxes(s.axis);
-    return patternValue(pos[i1], pos[i2], s, layout, i1);
+    return patternValue(...turnOnFace(pos[i1], pos[i2], s, layout), s, layout, i1);
   }
-  // All round: three projections, weighted by the normal.
+  // All round: three projections, weighted by the normal; the one along the axis turned (see faceTurn).
   const wx = nx ** 4, wy = ny ** 4, wz = nz ** 4;
   const sum = wx + wy + wz || 1;
-  return (wx * patternValue(y, z, s, layout, 1) + wy * patternValue(x, z, s, layout, 0) + wz * patternValue(x, y, s, layout, 0)) / sum;
+  const ax = AXIS_INDEX[s.axis];
+  const along = (k: number, u: number, v: number, uAxis: number) => (k === ax ? patternValue(...turnOnFace(u, v, s, layout), s, layout, uAxis) : patternValue(u, v, s, layout, uAxis));
+  return (wx * along(0, y, z, 1) + wy * along(1, x, z, 0) + wz * along(2, x, y, 0)) / sum;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1586,8 +1631,10 @@ function stripeFields(mesh: { vertices: Float64Array }, s: SurfaceTextureSetting
   const pole = new Uint8Array(n0);
   for (let i = 0; i < n0; i += 1) {
     if (cyl && Math.hypot(v[i * 3 + i2] - c2, v[i * 3 + i1] - c1) < 1e-6) pole[i] = 1;
-    U[i] = cyl ? Math.atan2(v[i * 3 + i2] - c2, v[i * 3 + i1] - c1) : v[i * 3 + i1];
-    V[i] = v[i * 3 + iv];
+    if (cyl) {
+      U[i] = Math.atan2(v[i * 3 + i2] - c2, v[i * 3 + i1] - c1);
+      V[i] = v[i * 3 + iv];
+    } else [U[i], V[i]] = turnOnFace(v[i * 3 + i1], v[i * 3 + i2], s, layout);
     const u = cyl ? U[i] * R : U[i];
     cross[i] = u * ca - V[i] * sa;
     along[i] = u * sa + V[i] * ca;
@@ -1632,15 +1679,7 @@ function profileLevels(profile: SurfaceTextureProfile, steps: number) {
 function sliceStripes(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, steps: number, smoothFace: Uint8Array, first: SurfaceTextureLayout | null = null) {
   const P = layout.period;
   const F = stripeFields(mesh, s, layout);
-  // Profile places per period: groove middle at P/2 (stripe: |x - floor(x) - 0.5|), edges at P/2 ± w P/2.
-  const w = clamp(s.width, 0.05, 1);
-  const offsets: number[] = [];
-  [0, ...profileLevels(s.profile, steps)].forEach((t) => {
-    [P * (0.5 - (t * w) / 2), P * (0.5 + (t * w) / 2)].forEach((o) => {
-      if (o >= 0 && o < P - 1e-9 * P && !offsets.some((known) => Math.abs(known - o) < 1e-9 * P)) offsets.push(o);
-    });
-  });
-  offsets.sort((a, b) => a - b);
+  const offsets = stripeOffsets(P, s, steps);
   const I = mesh.indices;
   const sliced = new Uint8Array(I.length / 3);
   for (let f = 0; f < sliced.length; f += 1) sliced[f] = smoothFace[mesh.parents[f]] || F.pole[I[f * 3]] || F.pole[I[f * 3 + 1]] || F.pole[I[f * 3 + 2]] ? 0 : 1;
@@ -1649,6 +1688,63 @@ function sliceStripes(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
   const A = first ? stripeFields(mesh, s, first) : null;
   const keep = A ? (p: number, q: number) => Math.abs(A.crossDiff(p, q)) < 1e-6 : null;
   return sliceByField(mesh, F.cross, F.crossDiff, P, offsets, sliced, F.alongDiff, false, keep);
+}
+
+/** A groove's places of the profile within a period P: its middle at P/2 (stripe: |x - floor(x) - 0.5|), edges at P/2 ± w P/2. */
+function stripeOffsets(P: number, s: SurfaceTextureSettings, steps: number) {
+  const w = clamp(s.width, 0.05, 1);
+  const offsets: number[] = [];
+  [0, ...profileLevels(s.profile, steps)].forEach((t) => {
+    [P * (0.5 - (t * w) / 2), P * (0.5 + (t * w) / 2)].forEach((o) => {
+      if (o >= 0 && o < P - 1e-9 * P && !offsets.some((known) => Math.abs(known - o) < 1e-9 * P)) offsets.push(o);
+    });
+  });
+  return offsets.sort((a, b) => a - b);
+}
+
+/** Along an edge on a round top, the distance to the middle may stray from a straight line by this share of the spacing. */
+const RING_STRAY = 0.01;
+
+/**
+ * Rings on a round top or bottom (see ringValue) cut along circles round the middle, at `m P + offset`: the grooves' places
+ * of the profile (as sliceStripes), the joints between rings of rope. The distance to the middle is not linear along an
+ * edge - a chord across the middle has the same distance at both ends - so edges where it strays from a straight line by
+ * more than RING_STRAY of P are halved first (only on the faces cut: not `skip`). The cuts are straight chords between
+ * the edges.
+ */
+function sliceRings(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, P: number, offsets: number[], skip: Uint8Array, maxTriangles: number): SurfaceMesh {
+  const ax = AXIS_INDEX[s.axis];
+  const [i1, i2] = acrossAxes(s.axis);
+  const [c1, c2] = layout.center;
+  const tolerance = RING_STRAY * P;
+  // Long strips across the top (as CAD gives it) made into well-shaped triangles about a spacing long first.
+  const shaped = refinePlanar(mesh, Uint8Array.from(skip, (k) => (k ? 0 : 1)), P, maxTriangles);
+  const n0 = shaped.vertices.length / 3;
+  const onFace = new Uint8Array(n0);
+  for (let f = 0; f < shaped.indices.length / 3; f += 1) {
+    if (skip[shaped.parents[f]]) continue;
+    for (let k = 0; k < 3; k += 1) onFace[shaped.indices[f * 3 + k]] = 1;
+  }
+  // New points come from edges halved here, so they lie on such faces too.
+  const strays = (verts: ArrayLike<number>, a: number, b: number) => {
+    if ((a < n0 && !onFace[a]) || (b < n0 && !onFace[b]) || Math.abs(verts[a * 3 + ax] - verts[b * 3 + ax]) > 1e-6) return false;
+    const pu = verts[a * 3 + i1] - c1, pv = verts[a * 3 + i2] - c2;
+    const du = verts[b * 3 + i1] - verts[a * 3 + i1], dv = verts[b * 3 + i2] - verts[a * 3 + i2];
+    const l2 = du * du + dv * dv;
+    if (l2 === 0) return false;
+    // The place nearest the middle is where the distance strays most.
+    const t = clamp(-(pu * du + pv * dv) / l2, 0, 1);
+    const ra = Math.hypot(pu, pv), rb = Math.hypot(pu + du, pv + dv);
+    return ra + t * (rb - ra) - Math.hypot(pu + t * du, pv + t * dv) > tolerance;
+  };
+  const split = subdivide(shaped, tolerance, maxTriangles, null, null, strays);
+  const fine: SurfaceMesh = { vertices: split.vertices, indices: split.indices, parents: Uint32Array.from(split.parents, (f) => shaped.parents[f]), limited: Boolean(shaped.limited || split.limited) };
+  const v = fine.vertices;
+  const r = new Float64Array(v.length / 3);
+  for (let i = 0; i < r.length; i += 1) r[i] = Math.hypot(v[i * 3 + i1] - c1, v[i * 3 + i2] - c2);
+  const sliced = Uint8Array.from({ length: fine.indices.length / 3 }, (_, f) => (skip[fine.parents[f]] ? 0 : 1));
+  const cut = sliceByField(fine, r, (i, j) => r[j] - r[i], P, offsets, sliced);
+  return { ...cut, limited: Boolean(fine.limited || cut.indices.length / 3 > maxTriangles) };
 }
 
 /**
@@ -1766,7 +1862,7 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
     voronoi ? bisectorDistance(sx, sy, bx, by, x, y) : cell / 2 - HEX_NORMALS[k * 2] * (x - sx) - HEX_NORMALS[k * 2 + 1] * (y - sy);
   const uvOf = (verts: ArrayLike<number>, i: number): [number, number, boolean] => {
     const pos = [verts[i * 3], verts[i * 3 + 1], verts[i * 3 + 2]];
-    if (!cyl) return [pos[i1], pos[i2], false];
+    if (!cyl) return [...turnOnFace(pos[i1], pos[i2], s, layout), false];
     const r = Math.hypot(pos[i1] - c1, pos[i2] - c2);
     return [Math.atan2(pos[i2] - c2, pos[i1] - c1) * R, pos[ax], r < 1e-6];
   };
@@ -3050,7 +3146,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const straight = s.projection === "allRound" && cutsFlat ? straightFaces(base, smooth.faces) : cutsFlat ? caps : null;
     // Faces the pattern is not cut into round the axis: those staying smooth and the flat top and bottom.
     const roundSkip = caps ? Uint8Array.from(smooth.faces, (sm, f) => (sm || caps[f] !== 255 ? 1 : 0)) : smooth.faces;
-    const axisSettings = (k: number): SurfaceTextureSettings => ({ ...s, projection: "flat", axis: SURFACE_TEXTURE_AXES[k] });
+    // Each axis' straight faces as flat ones: turned (faceTurn) only on those seen along the body's axis.
+    const axisSettings = (k: number): SurfaceTextureSettings => ({ ...s, projection: "flat", axis: SURFACE_TEXTURE_AXES[k], faceTurn: k === AXIS_INDEX[s.axis] ? s.faceTurn : 0 });
     const notOnAxis = (k: number) => Uint8Array.from(smooth.faces, (sm, f) => (sm || straight![f] !== k ? 1 : 0));
     let edge: number;
     // Grooves: the finest step across, for refining where the pattern fades in (see refineTransitions).
@@ -3084,7 +3181,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       ? JSON.stringify([s.pattern, crackCache?.key ?? null])
       : text
         ? JSON.stringify([s.pattern, layout.text ? [layout.text.point, layout.text.face] : null, s.axis, s.textTurn, outlineKey(s.textOutline)])
-        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center, patternExtras(s, layout)]);
+        : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center, s.faceTurn, Boolean(layout.flatCaps), patternExtras(s, layout)]);
     const key = `${edge.toFixed(5)}|${smoothKey}|${JSON.stringify(s.faces)}|${maxTriangles}|${s.edgeAngle}|${s.detail}|${scale}|${layoutKey}`;
     if (cache?.key === key) return cache;
     let mesh: SurfaceMesh;
@@ -3223,9 +3320,13 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       }
       mesh.limited = mesh.indices.length / 3 > maxTriangles;
     } else {
-      const start = baseMesh(base);
       // Honeycomb is cut along its joints afterwards and bumps get their flanks refined: they leave half the budget for that.
       const budget = Math.floor(maxTriangles / 2);
+      // A flat top or bottom round the axis that is not cut: refined in the plane with flips (see refinePlanar), not
+      // by halving the strips CAD gives it in.
+      let start = caps && !straight ? refinePlanar(baseMesh(base), Uint8Array.from(caps, (k) => (k === 255 ? 0 : 1)), edge, budget) : baseMesh(base);
+      // Rope in rings: cut along the joints between them, or the notch frayed over the grid.
+      if (caps && s.pattern === "rope") start = sliceRings(start, s, layout, s.spacing, [0], Uint8Array.from(caps, (k) => (k === 255 ? 1 : 0)), budget);
       // Grooves and bricks on straight faces are cut, not refined: points only on such faces (or smooth ones) stay as they are.
       let keep = smooth.points;
       if (straight && (striped || s.pattern === "bricks")) {
@@ -3236,19 +3337,29 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         }
         keep = Uint8Array.from(smooth.points, (sm, i) => (sm || !other[i] ? 1 : 0));
       }
-      mesh = subdivide(start, edge, budget, keep);
+      // Points made on a flat top are not smooth.
+      if (keep.length < start.vertices.length / 3) {
+        const longer = new Uint8Array(start.vertices.length / 3);
+        longer.set(keep);
+        keep = longer;
+      }
+      const even = (e: number): SurfaceMesh => {
+        const split = subdivide(start, e, budget, keep);
+        return { ...split, parents: Uint32Array.from(split.parents, (f) => start.parents[f]) };
+      };
+      mesh = even(edge);
       // Halving takes up to four times the triangles in one pass: when the budget stopped it half way, the grid would be
       // uneven and the pattern neither cut nor refined. Rather a little coarser all over.
       for (let tries = 0; mesh.limited && tries < 8; tries += 1) {
         edge *= 1.25;
         raised = true;
-        mesh = subdivide(start, edge, budget, keep);
+        mesh = even(edge);
       }
       // Carefully coarser but far under the budget: once more, finer.
       const goal = 0.6 * budget;
       if (raised && !mesh.limited && mesh.indices.length / 3 < 0.7 * goal) {
         const f = Math.sqrt(mesh.indices.length / 3 / goal);
-        const again = subdivide(start, edge * f, budget, keep);
+        const again = even(edge * f);
         if (!again.limited) {
           mesh = again;
           edge *= f;
@@ -3279,7 +3390,11 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         if (!straight.includes(k)) continue;
         const sk = axisSettings(k);
         const skip = notOnAxis(k);
-        if (striped) {
+        if (striped && layout.flatCaps && RING_PATTERNS.includes(s.pattern)) {
+          // A round top or bottom: grooves in rings.
+          crossMax = (layout.period * clamp(s.width, 0.2, 1)) / CROSS_STEPS[s.detail];
+          mesh = sliceRings(mesh, sk, layout, layout.period, stripeOffsets(layout.period, s, CROSS_STEPS[s.detail] / 2), skip, maxTriangles);
+        } else if (striped) {
           crossMax = (layout.period * clamp(s.width, 0.2, 1)) / CROSS_STEPS[s.detail];
           const F0 = stripeFields(mesh, sk, layout);
           const I = mesh.indices;
@@ -3535,12 +3650,12 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       for (let i = 0; i < baseSkip.length; i += 1) baseSkip[i] = maskFree(base.vertices[i * 3], base.vertices[i * 3 + 1], base.vertices[i * 3 + 2]) ? 1 : 0;
     }
     const layout = makeSurfaceTextureLayout(base, s, baseSkip);
-    // A picked top or bottom round the axis: the pattern lies flat there (see SurfaceTextureLayout.flatCaps). With only
-    // such faces picked, nothing goes round the axis.
+    // A top or bottom round the axis with the pattern (picked, or not kept smooth): the pattern lies flat there or runs
+    // in rings (see SurfaceTextureLayout.flatCaps). With only such faces picked, nothing goes round the axis.
     let goesRound = layout.around !== null;
     if (s.projection === "cylinder" && s.pattern !== "text") {
       const chosen = chosenFaces(s);
-      layout.flatCaps = Boolean(chosen && capFaces(base, chosen.map((c) => (c ? 0 : 1)), AXIS_INDEX[s.axis]));
+      layout.flatCaps = Boolean(capFaces(base, chosen ? chosen.map((c) => (c ? 0 : 1)) : smoothBaseVertices(s, layout).faces, AXIS_INDEX[s.axis]));
       if (chosen && layout.flatCaps) {
         const ax = AXIS_INDEX[s.axis];
         goesRound = chosen.some((c, f) => {
@@ -3637,15 +3752,17 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
             const ax = AXIS_INDEX[SURFACE_TEXTURE_AXES[k]];
             const [i1, i2] = acrossAxes(SURFACE_TEXTURE_AXES[k]);
             const p = [v[i * 3], v[i * 3 + 1], v[i * 3 + 2]];
-            const site = hexSite(p[i1], p[i2], layout.cell);
-            if (Math.hypot(p[i1] - site.x, p[i2] - site.y) >= radius) continue;
+            // Faces seen along the body's axis have the pattern turned (see faceTurn).
+            const turned = k === AXIS_INDEX[s.axis];
+            const [pu, pv] = turned ? turnOnFace(p[i1], p[i2], s, layout) : [p[i1], p[i2]];
+            const site = hexSite(pu, pv, layout.cell);
+            if (Math.hypot(pu - site.x, pv - site.y) >= radius) continue;
             // Opposite faces share their sites: the face's place along its axis tells them apart.
             const key = `${site.key}|${k}|${Math.round(p[ax] * 1000)}`;
             let drop = off.get(key);
             if (drop === undefined) {
               const middle = p.slice();
-              middle[i1] = site.x;
-              middle[i2] = site.y;
+              [middle[i1], middle[i2]] = turned ? turnOnFace(site.x, site.y, s, layout, true) : [site.x, site.y];
               drop = near(middle);
               off.set(key, drop);
             }

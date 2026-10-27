@@ -1334,6 +1334,8 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "inspector.surfaceProfile": "Profil",
   "inspector.surfaceBumpShape": "Oblika izboklin",
   "inspector.surfaceAngle": "Naklon (°)",
+  "inspector.surfaceFaceTurn": "Smer zgoraj/spodaj (°)",
+  "inspector.surfaceFaceTurnHint": "Zavrti vzorec na zgornji in spodnji ploskvi: pri 0° tečejo vrste vzdolž sprednjega roba, pri 90° vzdolž stranskega. Na okrogli zgornji ploskvi tečejo utori, vrv in pletenina v krogih.",
   "inspector.surfaceOutside": "Zunanje stene",
   "inspector.surfaceInside": "Notranje stene",
   "inspector.surfaceBottomFree": "Spodaj gladko do (°)",

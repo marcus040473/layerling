@@ -1670,6 +1670,8 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "inspector.surfaceProfile": "Profil",
   "inspector.surfaceBumpShape": "Form der Noppen",
   "inspector.surfaceAngle": "Schräge (°)",
+  "inspector.surfaceFaceTurn": "Richtung oben/unten (°)",
+  "inspector.surfaceFaceTurnHint": "Dreht das Muster auf Ober- und Unterseite: bei 0° laufen die Reihen parallel zur Vorderkante, bei 90° zur Seitenkante. Auf runden Deckeln laufen Rillen, Seil und Strick in Ringen.",
   "inspector.surfaceOutside": "Außenwände",
   "inspector.surfaceInside": "Innenwände",
   "inspector.surfaceBottomFree": "Unten glatt bis (°)",

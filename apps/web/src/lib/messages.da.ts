@@ -75,6 +75,8 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "inspector.surfaceProfile": "Profil",
   "inspector.surfaceBumpShape": "Kulform",
   "inspector.surfaceAngle": "Hældning (°)",
+  "inspector.surfaceFaceTurn": "Retning top/bund (°)",
+  "inspector.surfaceFaceTurnHint": "Drejer mønsteret på toppen og bunden: ved 0° løber rækkerne langs forkanten, ved 90° langs sidekanten. På en rund top løber riller, reb og strik i ringe.",
   "inspector.surfaceOutside": "Ydre vægge",
   "inspector.surfaceInside": "Indre vægge",
   "inspector.surfaceBottomFree": "Bund glat til (°)",

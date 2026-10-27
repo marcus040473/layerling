@@ -1670,6 +1670,8 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "inspector.surfaceProfile": "Profiel",
   "inspector.surfaceBumpShape": "Vorm van de noppen",
   "inspector.surfaceAngle": "Schuinte (°)",
+  "inspector.surfaceFaceTurn": "Richting boven/onder (°)",
+  "inspector.surfaceFaceTurnHint": "Draait het patroon op de boven- en onderkant: bij 0° lopen de rijen langs de voorrand, bij 90° langs de zijrand. Op ronde bovenkanten lopen groeven, touw en breiwerk in ringen.",
   "inspector.surfaceOutside": "Buitenwanden",
   "inspector.surfaceInside": "Binnenwanden",
   "inspector.surfaceBottomFree": "Onder glad tot (°)",

@@ -1663,6 +1663,8 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "inspector.surfaceProfile": "Профиль",
   "inspector.surfaceBumpShape": "Форма пупырышков",
   "inspector.surfaceAngle": "Наклон (°)",
+  "inspector.surfaceFaceTurn": "Направление сверху/снизу (°)",
+  "inspector.surfaceFaceTurnHint": "Поворачивает узор на верхней и нижней грани: при 0° ряды идут вдоль передней кромки, при 90° — вдоль боковой. На круглом верхе канавки, канат и вязка идут кольцами.",
   "inspector.surfaceOutside": "Наружные стенки",
   "inspector.surfaceInside": "Внутренние стенки",
   "inspector.surfaceBottomFree": "Низ гладкий до (°)",

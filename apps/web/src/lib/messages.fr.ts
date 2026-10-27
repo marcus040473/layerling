@@ -1656,6 +1656,8 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "inspector.surfaceProfile": "Profil",
   "inspector.surfaceBumpShape": "Forme des picots",
   "inspector.surfaceAngle": "Inclinaison (°)",
+  "inspector.surfaceFaceTurn": "Direction dessus/dessous (°)",
+  "inspector.surfaceFaceTurnHint": "Tourne le motif sur le dessus et le dessous : à 0° les rangs suivent le bord avant, à 90° le bord latéral. Sur un dessus rond, les rainures, la corde et le tricot forment des anneaux.",
   "inspector.surfaceOutside": "Parois extérieures",
   "inspector.surfaceInside": "Parois intérieures",
   "inspector.surfaceBottomFree": "Dessous lisse (°)",

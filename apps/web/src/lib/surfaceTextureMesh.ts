@@ -668,6 +668,99 @@ export function sliceByField(mesh: SurfaceMesh, field: Float64Array, diff: Field
 }
 
 /**
+ * Delaunay flips among the triangles that `free` marks (by their parent) and that lie in one plane: the edge between two
+ * of them becomes the other diagonal of their quad when the corners opposite it see it under more than 180 degrees
+ * together. The mesh stays closed, the triangles keep their winding and each new triangle a parent of the two.
+ */
+export function flipPlanar(mesh: SurfaceMesh, free: Uint8Array, rounds = 12): SurfaceMesh {
+  const v = mesh.vertices;
+  const I = Uint32Array.from(mesh.indices);
+  const parents = Uint32Array.from(mesh.parents);
+  const T = I.length / 3;
+  const angle = (o: number, a: number, b: number) => {
+    const ux = v[a * 3] - v[o * 3], uy = v[a * 3 + 1] - v[o * 3 + 1], uz = v[a * 3 + 2] - v[o * 3 + 2];
+    const wx = v[b * 3] - v[o * 3], wy = v[b * 3 + 1] - v[o * 3 + 1], wz = v[b * 3 + 2] - v[o * 3 + 2];
+    return Math.atan2(Math.hypot(uy * wz - uz * wy, uz * wx - ux * wz, ux * wy - uy * wx), ux * wx + uy * wy + uz * wz);
+  };
+  for (let round = 0; round < rounds; round += 1) {
+    // Edges between exactly two free triangles: the first one's side, then -2 once the second has come.
+    const seen = new EdgeTable(T * 2);
+    const pairs: number[] = [];
+    for (let f = 0; f < T; f += 1) {
+      if (!free[parents[f]]) continue;
+      for (let k = 0; k < 3; k += 1) {
+        const a = I[f * 3 + k], b = I[f * 3 + ((k + 1) % 3)];
+        const known = seen.get(a, b, -1);
+        if (known === -1) seen.set(a, b, f * 3 + k);
+        else if (known >= 0) {
+          pairs.push(known, f * 3 + k);
+          seen.set(a, b, -2);
+        } else seen.set(a, b, -3);
+      }
+    }
+    const flipped = new Uint8Array(T);
+    let count = 0;
+    for (let k = 0; k < pairs.length; k += 2) {
+      const f = Math.floor(pairs[k] / 3), kf = pairs[k] % 3, g = Math.floor(pairs[k + 1] / 3), kg = pairs[k + 1] % 3;
+      if (flipped[f] || flipped[g]) continue;
+      const p = I[f * 3 + kf], q = I[f * 3 + ((kf + 1) % 3)], r = I[f * 3 + ((kf + 2) % 3)];
+      // A third triangle took the edge since (-3), or the two are wound against each other.
+      if (seen.get(p, q, -1) !== -2 || I[g * 3 + kg] !== q || I[g * 3 + ((kg + 1) % 3)] !== p) continue;
+      const s = I[g * 3 + ((kg + 2) % 3)];
+      const nf = faceCross(v, p, q, r), ng = faceCross(v, q, p, s);
+      const lf = Math.hypot(...nf), lg = Math.hypot(...ng);
+      if (lf === 0 || lg === 0 || (nf[0] * ng[0] + nf[1] * ng[1] + nf[2] * ng[2]) / (lf * lg) < 1 - 1e-10) continue;
+      if (angle(r, p, q) + angle(s, q, p) <= Math.PI + 1e-9) continue;
+      // The new diagonal r-s must cross p-q: p and q on either side of it.
+      const sp = faceCross(v, r, s, p), sq = faceCross(v, r, s, q);
+      const dp = sp[0] * nf[0] + sp[1] * nf[1] + sp[2] * nf[2], dq = sq[0] * nf[0] + sq[1] * nf[1] + sq[2] * nf[2];
+      if (!(dp * dq < 0) || Math.abs(dp) < 1e-12 * lf * lf || Math.abs(dq) < 1e-12 * lf * lf) continue;
+      I.set([p, s, r], f * 3);
+      I.set([s, q, r], g * 3);
+      flipped[f] = 1;
+      flipped[g] = 1;
+      count += 1;
+    }
+    if (!count) break;
+  }
+  return { vertices: v, indices: I, parents, limited: mesh.limited };
+}
+
+/**
+ * Refine the triangles that `free` marks (by their parent), each lying in a plane like a round top, to edges of at most
+ * `maxEdge`: halving and flipping (see flipPlanar) by turns. Halving alone keeps a triangle's shape - a round top that
+ * CAD gives in long strips across came out in thousands of slivers per strip, and a pattern frayed along them.
+ */
+export function refinePlanar(mesh: SurfaceMesh, free: Uint8Array, maxEdge: number, maxTriangles: number): SurfaceMesh {
+  let cur = flipPlanar(mesh, free);
+  // The planes of the free triangles: only edges lying in one of them are split.
+  const planes: number[][] = [];
+  let longest = 0;
+  for (let f = 0; f < cur.indices.length / 3; f += 1) {
+    if (!free[cur.parents[f]]) continue;
+    const [a, b, c] = [cur.indices[f * 3], cur.indices[f * 3 + 1], cur.indices[f * 3 + 2]];
+    const n = faceCross(cur.vertices, a, b, c);
+    const l = Math.hypot(...n);
+    if (l === 0) continue;
+    const plane = [n[0] / l, n[1] / l, n[2] / l, (n[0] * cur.vertices[a * 3] + n[1] * cur.vertices[a * 3 + 1] + n[2] * cur.vertices[a * 3 + 2]) / l];
+    if (!planes.some((o) => o[0] * plane[0] + o[1] * plane[1] + o[2] * plane[2] > 1 - 1e-9 && Math.abs(o[3] - plane[3]) < 1e-6)) planes.push(plane);
+    for (const [p, q] of [[a, b], [b, c], [c, a]]) {
+      longest = Math.max(longest, Math.hypot(cur.vertices[p * 3] - cur.vertices[q * 3], cur.vertices[p * 3 + 1] - cur.vertices[q * 3 + 1], cur.vertices[p * 3 + 2] - cur.vertices[q * 3 + 2]));
+    }
+  }
+  const height = (plane: number[], verts: ArrayLike<number>, i: number) => plane[0] * verts[i * 3] + plane[1] * verts[i * 3 + 1] + plane[2] * verts[i * 3 + 2] - plane[3];
+  const inPlane = (verts: ArrayLike<number>, a: number, b: number) => planes.some((plane) => Math.abs(height(plane, verts, a)) < 1e-6 && Math.abs(height(plane, verts, b)) < 1e-6);
+  let edge = longest;
+  while (edge > maxEdge && !cur.limited) {
+    edge = Math.max(maxEdge, edge / 2);
+    const split = subdivide(cur, edge, maxTriangles, null, null, inPlane);
+    const before = cur;
+    cur = flipPlanar({ vertices: split.vertices, indices: split.indices, parents: Uint32Array.from(split.parents, (f) => before.parents[f]), limited: Boolean(before.limited || split.limited) }, free);
+  }
+  return cur;
+}
+
+/**
  * Point normals weighted by area and, per point, whether a face at it bends away by more than
  * half of `edgeAngle` (a sharp edge), how far the steepest face at it points down and up (so a
  * point on the rim of the bottom counts as bottom and stays on the bed).

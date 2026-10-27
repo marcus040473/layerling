@@ -1671,6 +1671,8 @@ export const MESSAGES_EN = {
   "inspector.surfaceProfile": "Profile",
   "inspector.surfaceBumpShape": "Bump shape",
   "inspector.surfaceAngle": "Slant (°)",
+  "inspector.surfaceFaceTurn": "Direction on top/bottom (°)",
+  "inspector.surfaceFaceTurnHint": "Turns the pattern on the top and bottom: at 0° the rows run along the front edge, at 90° along the side edge. On round tops, grooves, rope and knitting run in rings.",
   "inspector.surfaceOutside": "Outer walls",
   "inspector.surfaceInside": "Inner walls",
   "inspector.surfaceBottomFree": "Bottom smooth to (°)",

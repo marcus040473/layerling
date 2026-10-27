@@ -1729,6 +1729,8 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "inspector.surfaceProfile": "Profil",
   "inspector.surfaceBumpShape": "Tvar výstupků",
   "inspector.surfaceAngle": "Sklon (°)",
+  "inspector.surfaceFaceTurn": "Směr nahoře/dole (°)",
+  "inspector.surfaceFaceTurnHint": "Otočí vzor na horní a spodní ploše: při 0° vedou řady podél přední hrany, při 90° podél boční. Na kulaté horní ploše vedou drážky, lano a pletení v kruzích.",
   "inspector.surfaceOutside": "Vnější stěny",
   "inspector.surfaceInside": "Vnitřní stěny",
   "inspector.surfaceBottomFree": "Spodek hladký do (°)",

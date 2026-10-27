@@ -3,11 +3,14 @@ import {
   applySurfaceTexture,
   insideToScreenPositions,
   normalizeSurfaceTexture,
+  surfaceFalloff,
   SURFACE_TEXTURE_MAX_FACES,
   surfaceTextureChosenTriangles,
   surfaceTextureFacePick,
   surfaceTexturePickedFaceIds,
   toggleSurfaceTexturePickedFace,
+  surfaceTextureValueAt,
+  type SurfaceTextureLayout,
 } from "@/lib/surfaceTexture";
 import { mergeFlatPoints, prepareSurfaceBase, subdivide, surfaceMeshReport } from "@/lib/surfaceTextureMesh";
 
@@ -21,8 +24,11 @@ function box(w: number, h: number, d: number): number[] {
   return faces.flatMap((face) => face.flatMap((i) => p[i]));
 }
 
-/** A closed cylinder standing on the plate, inside frame, a point in the middle of top and bottom. */
-function cylinder(radius: number, height: number, segments = 96): number[] {
+/**
+ * A closed cylinder standing on the plate, inside frame: top and bottom a fan round a point in the middle, or (`strips`)
+ * long strips across as CAD gives them.
+ */
+function cylinder(radius: number, height: number, segments = 96, strips = false): number[] {
   const out: number[] = [];
   const tri = (a: Vec3, b: Vec3, c: Vec3) => out.push(...a, ...b, ...c);
   const at = (k: number, y: number): Vec3 => {
@@ -32,8 +38,20 @@ function cylinder(radius: number, height: number, segments = 96): number[] {
   for (let k = 0; k < segments; k += 1) {
     tri(at(k, 0), at(k, height), at(k + 1, height));
     tri(at(k, 0), at(k + 1, height), at(k + 1, 0));
+    if (strips) continue;
     tri([0, height, 0], at(k + 1, height), at(k, height));
     tri([0, 0, 0], at(k, 0), at(k + 1, 0));
+  }
+  if (strips) {
+    // Zigzag between the two halves of the rim: every strip reaches across.
+    let lo = 0, hi = segments - 1;
+    for (let turn = true; hi - lo > 1; turn = !turn) {
+      const [a, b, c] = turn ? [lo, lo + 1, hi] : [lo, hi - 1, hi];
+      tri(at(a, height), at(c, height), at(b, height));
+      tri(at(a, 0), at(b, 0), at(c, 0));
+      if (turn) lo += 1;
+      else hi -= 1;
+    }
   }
   return out;
 }
@@ -138,7 +156,7 @@ describe("picked faces", () => {
     expect(mantle).toBeGreaterThan(1000);
   }, 60_000);
 
-  it("texture a cylinder's top flat, not in rays round the axis, with a clean rim", () => {
+  it("texture a cylinder's top flat or in rings, not in rays round the axis, with a clean rim", () => {
     for (const pattern of ["knurl", "grooves", "honeycomb", "bumps"]) {
       const result = applySurfaceTexture(cylinder(15, 30), { pattern, faces: ["top"] });
       expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
@@ -221,4 +239,91 @@ describe("faces that stay smooth stay coarse", () => {
     };
     expect(volume(merged.indices)).toBeCloseTo(volume(fine.indices), 6);
   });
+});
+
+describe("round tops in rings, and the direction on top and bottom", () => {
+  it("lay grooves on a round top in rings round the middle, picked or not kept smooth", () => {
+    for (const settings of [{ faces: ["top"] }, { topFree: 0 }]) {
+      const result = applySurfaceTexture(cylinder(15, 30, 96, true), { pattern: "grooves", ...settings });
+      expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+      const P = result.stats.spacing;
+      let inGroove = 0;
+      for (const [x, y, z] of usedPoints(result)) {
+        const r = Math.hypot(x, z);
+        if (y < 25 || r > 13) continue;
+        // Pointed grooves 0.6 deep, the share 0.6 of the spacing wide, their middles half a spacing apart from the middle out.
+        const t = r / P;
+        const expected = 0.6 * surfaceFalloff(Math.abs(t - Math.floor(t) - 0.5) / 0.3, "pointed");
+        expect(30 - y).toBeCloseTo(expected, 2);
+        if (expected > 0.5) inGroove += 1;
+      }
+      expect(inGroove).toBeGreaterThan(100);
+    }
+  }, 120_000);
+
+  it("close rope and knitting in rings round the middle, and leave the mantle as it was", () => {
+    const layout: SurfaceTextureLayout = { projection: "cylinder", period: 3, cell: 6, around: 21, angle: 0, center: [0, 0], radius: 20, rMin: 20, rMax: 20, flatCaps: true };
+    for (const pattern of ["rope", "knit"]) {
+      const s = normalizeSurfaceTexture({ pattern, projection: "cylinder", axis: "z" });
+      const top = (r: number, a: number) => surfaceTextureValueAt(r * Math.cos(a), r * Math.sin(a), 30, 0, 0, 1, s, layout);
+      let across = 0, round = 0;
+      for (let r = 0.5; r < 19; r += 0.37) {
+        // No seam where the angle comes round.
+        expect(top(r, Math.PI - 1e-9), `${pattern} at ${r}`).toBeCloseTo(top(r, -Math.PI + 1e-9), 6);
+        across = Math.max(across, Math.abs(top(r + 0.5, 0.3) - top(r, 0.3)));
+        round = Math.max(round, Math.abs(top(r, 0.3) - top(r, 0.3 + 2 / r)));
+      }
+      // It changes both outwards (the rings) and round (strands, stitches).
+      expect(across).toBeGreaterThan(0.3);
+      expect(round).toBeGreaterThan(0.3);
+      const mantle = surfaceTextureValueAt(20, 0, 15, 1, 0, 0, s, layout);
+      expect(mantle).toBeCloseTo(surfaceTextureValueAt(20, 0, 15, 1, 0, 0, s, { ...layout, flatCaps: false }), 12);
+    }
+  });
+
+  it("refine a round top given in long strips into well-shaped triangles, not slivers", () => {
+    // Halving alone kept the strips' shape: rope made 81 000 triangles on this top and knitting 259 000, frayed along them.
+    for (const [pattern, most] of [["rope", 50_000], ["knit", 150_000]] as const) {
+      const result = applySurfaceTexture(cylinder(20, 30, 96, true), { pattern, faces: ["top"] });
+      expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+      expect(result.indices.length / 3, pattern).toBeLessThan(most);
+      expect(usedPoints(result).filter(([, y]) => y > 30.2).length, pattern).toBeGreaterThan(1000);
+    }
+  }, 120_000);
+
+  it("turn the pattern on the faces seen along the axis, and only there", () => {
+    const layout: SurfaceTextureLayout = { projection: "allRound", period: 6, cell: 6, around: null, angle: 30, center: [0, 0], radius: 20, rMin: 20, rMax: 20 };
+    for (const pattern of ["rope", "knit", "bumps", "grooves", "weave"]) {
+      for (const projection of ["allRound", "flat"]) {
+        const s = normalizeSurfaceTexture({ pattern, projection, axis: "z" });
+        const turned = { ...s, faceTurn: 90 };
+        for (const [x, y] of [[1.3, 2.9], [-7.1, 4.4], [12.5, -3.3]]) {
+          // A quarter turn counterclockwise seen from above: what lay at (y, -x) now lies at (x, y).
+          expect(surfaceTextureValueAt(x, y, 30, 0, 0, 1, turned, layout), `${pattern} ${projection}`).toBeCloseTo(surfaceTextureValueAt(y, -x, 30, 0, 0, 1, s, layout), 9);
+          if (projection === "allRound") expect(surfaceTextureValueAt(20, x, y, 1, 0, 0, turned, layout)).toBe(surfaceTextureValueAt(20, x, y, 1, 0, 0, s, layout));
+        }
+      }
+    }
+  });
+
+  it("run rope on a box's top along the front edge, and turned along the side edge", () => {
+    /** How much the top's height changes from row to row of 1 mm across `axis` (0: x, 2: z), averaged along it. */
+    const rowSpread = (result: Result, axis: 0 | 2) => {
+      const rows = new Map<number, number[]>();
+      for (const p of usedPoints(result)) {
+        if (p[1] < 39 || Math.abs(p[0]) > 15 || Math.abs(p[2]) > 15) continue;
+        const key = Math.floor(p[axis]);
+        rows.set(key, [...(rows.get(key) ?? []), p[1]]);
+      }
+      const means = [...rows.values()].map((ys) => ys.reduce((a, b) => a + b, 0) / ys.length);
+      const mean = means.reduce((a, b) => a + b, 0) / means.length;
+      return Math.sqrt(means.reduce((a, b) => a + (b - mean) ** 2, 0) / means.length);
+    };
+    const along = applySurfaceTexture(box(40, 40, 40), { pattern: "rope", faces: ["top"] });
+    const turned = applySurfaceTexture(box(40, 40, 40), { pattern: "rope", faces: ["top"], faceTurn: 90 });
+    expect(closed(turned)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+    // The rings of rope lie along the front edge (x): rows across z differ, rows across x hardly.
+    expect(rowSpread(along, 2)).toBeGreaterThan(2 * rowSpread(along, 0));
+    expect(rowSpread(turned, 0)).toBeGreaterThan(2 * rowSpread(turned, 2));
+  }, 120_000);
 });
