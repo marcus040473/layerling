@@ -158,6 +158,22 @@ describe("picked faces", () => {
     }
   }, 120_000);
 
+  it("give a picked bottom the pattern, also a raised one", () => {
+    // Rope stands out of the body: on a picked bottom it reaches below the bed on purpose, as with the bottom not kept
+    // smooth (before, it was pressed flat onto the bed again and the bottom stayed plain).
+    const onBox = applySurfaceTexture(box(40, 40, 40), { pattern: "rope", faces: ["bottom"] });
+    expect(closed(onBox)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+    expect(onBox.stats.bedClamped).toBe(0);
+    expect(usedPoints(onBox).filter(([, y]) => y < -0.1).length).toBeGreaterThan(1000);
+    const moved = boxMoves(onBox);
+    expect([moved.top, moved.front, moved.back, moved.left, moved.right]).toEqual([0, 0, 0, 0, 0]);
+    const onCylinder = applySurfaceTexture(cylinder(15, 30), { pattern: "rope", faces: ["bottom"] });
+    expect(closed(onCylinder)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+    expect(usedPoints(onCylinder).filter(([, y]) => y < -0.1).length).toBeGreaterThan(1000);
+    // The top stays as it was.
+    for (const [x, y, z] of usedPoints(onCylinder)) if (y > 15 && Math.hypot(x, z) < 13) expect(y).toBeCloseTo(30, 9);
+  }, 60_000);
+
   it("texture a cylinder's top and mantle together", () => {
     const result = applySurfaceTexture(cylinder(15, 30), { pattern: "bumps", faces: ["top", { at: [1, 0.5, 0.5], normal: [1, 0, 0] }] });
     expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });

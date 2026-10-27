@@ -3690,9 +3690,20 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       out[i * 3 + 2] = z + moves[i * 3 + 2] * d;
     }
     // With the bottom kept smooth, nothing belongs below the bed (the slicer would cut it off, or the first layer stick
-    // badly). With a patterned bottom it sinks on purpose, as does a text put on the bottom itself.
+    // badly). With a patterned bottom it sinks on purpose, as does a text put on the bottom itself - and a picked face
+    // pointing down (the bottom picked: a raised rope there was pressed flat again).
     const onBottom = placed && Boolean(layout.text && layout.text.point[2] <= base.min[2] + 1e-6);
-    const bedClamped = (placed ? !onBottom : s.bottomFree > 0) ? clampToBed(out, v, mesh.indices, base.min[2]) : 0;
+    const picked = placed ? null : chosenFaces(s);
+    let bottomPicked = false;
+    if (picked) {
+      for (let f = 0; f < picked.length && !bottomPicked; f += 1) {
+        if (!picked[f]) continue;
+        const n = faceCross(base.vertices, base.indices[f * 3], base.indices[f * 3 + 1], base.indices[f * 3 + 2]);
+        bottomPicked = n[2] < -0.5 * Math.hypot(n[0], n[1], n[2]);
+      }
+    }
+    const keepOnBed = placed ? !onBottom : picked ? !bottomPicked : s.bottomFree > 0;
+    const bedClamped = keepOnBed ? clampToBed(out, v, mesh.indices, base.min[2]) : 0;
     // Tiny edges (left over from fitting to the profile) are pulled together: slicers merge such close points themselves
     // and throw away the triangles without area - which tore edges open.
     let indices = mesh.indices;
