@@ -274,6 +274,8 @@ export type WoodFrame = {
   /** The body's radius round the pith (log) or the pith's distance to the board's far side: how many rays begin. */
   reach: number;
   knots: Knot[];
+  /** How much sharper a slanted face may make the rings' steps (see ringProfile). */
+  stretch: number;
 };
 
 function dot(a: ArrayLike<number>, b: ArrayLike<number>) {
@@ -369,7 +371,9 @@ export function woodFrame(cut: WoodCut, axis: number, center: [number, number], 
       reach: Math.max(reach, 1),
     });
   }
-  return { origin, dir, e1, e2, reach: Math.max(reach, 1), knots: list };
+  // A board's faces cross the rings in long, even lines, which the mesh follows; a log's side runs along a ring and
+  // touches it in patches, whose edges came out in steps of the grid when kept as sharp.
+  return { origin, dir, e1, e2, reach: Math.max(reach, 1), knots: list, stretch: cut === "log" ? LOG_STRETCH : MAX_STRETCH };
 }
 
 /**
@@ -398,8 +402,9 @@ function ringProfile(kind: WoodKind, phase: number, pores: number, sharp = 1) {
   }
 }
 
-/** A face cutting the rings at a slant stretches them at most this many times over (on a board's face, a log's side). */
+/** A face cutting the rings at a slant stretches them at most this many times over: on a board's face, and on a log's side. */
 const MAX_STRETCH = 5;
+const LOG_STRETCH = 2;
 
 /** How much the rings wobble per wood (times the setting), and how big its rays are: tangential spacing, width, height (mm). */
 const WOOD_LOOK: Record<WoodKind, { wobble: number; rays: { spacing: number; half: number; height: number } | null }> = {
@@ -456,7 +461,7 @@ export function woodValue(kind: WoodKind, frame: WoodFrame, x: number, y: number
   let sharp = 1;
   if (normal && r > 1e-9) {
     const out = (x1 * dot(normal, frame.e1) + x2 * dot(normal, frame.e2)) / r;
-    sharp = 1 / Math.max(Math.sqrt(Math.max(0, 1 - out * out)), 1 / MAX_STRETCH);
+    sharp = 1 / Math.max(Math.sqrt(Math.max(0, 1 - out * out)), 1 / frame.stretch);
   }
   // Pores and fibres: fine streaks along the trunk.
   const fibre = noise3(a / 5, (r * c) / 0.45, (r * s) / 0.45, seed + 79);
