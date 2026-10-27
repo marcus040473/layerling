@@ -75,7 +75,7 @@ describe("bark and wood settings", () => {
   });
 
   it("start each wood at its own ring width, and keep the rest within limits", () => {
-    expect(normalizeSurfaceTexture({ pattern: "wood" })).toMatchObject({ woodType: "oak", woodCut: "log", ringWidth: 3, depth: 0.4, topFree: 0, bottomFree: 0, woodKnots: 0, woodWobble: 0.5 });
+    expect(normalizeSurfaceTexture({ pattern: "wood" })).toMatchObject({ woodType: "oak", woodCut: "log", ringWidth: 3, depth: 0.8, topFree: 0, bottomFree: 0, woodKnots: 0, woodWobble: 0.5 });
     expect(normalizeSurfaceTexture({ pattern: "wood", woodType: "pine" })).toMatchObject({ ringWidth: 4 });
     expect(normalizeSurfaceTexture({ pattern: "wood", woodType: "teak", woodCut: "rotary", woodKnots: 30.6, woodWobble: -1, ringWidth: 0 })).toMatchObject({ woodType: "oak", woodCut: "log", woodKnots: 12, woodWobble: 0, ringWidth: 0.3 });
   });
@@ -121,8 +121,23 @@ describe("wood grain", () => {
     const coarseRings = ringsAlong((r) => coarse.at(r, 0, 30, [0, 0, 1]), 19);
     expect(Math.abs(fineRings - 19 / 2)).toBeLessThanOrEqual(2.5);
     expect(Math.abs(coarseRings - 19 / 4)).toBeLessThanOrEqual(1.5);
-    // The grain is a solid: the same point has the same value seen from the end or from the side.
-    expect(fine.at(19.9, 0, 30, [0, 0, 1])).toBe(fine.at(19.9, 0, 30, [1, 0, 0]));
+    // The grain is a solid: along the top's edge the end and the side see the same rings.
+    expect(ringsAlong((r) => fine.at(r, 0, 30, [1, 0, 0]), 19)).toBe(fineRings);
+  });
+
+  it("keeps the rings' steps as sharp on a board's face as on its end", () => {
+    // Pine: no rays, whose edges would be steep anywhere.
+    const board = onBody(box(60, 12, 30), { pattern: "wood", woodType: "pine", woodCut: "flatSawn", woodWobble: 0 });
+    // The steepest change per mm along a line: along the face (top, z = 12), where the arches stretch the rings most, and
+    // across the end (x = 30).
+    const steepest = (value: (t: number) => number, length: number, steps = 6000) => {
+      let most = 0;
+      for (let k = 1; k <= steps; k += 1) most = Math.max(most, Math.abs(value((length * k) / steps) - value((length * (k - 1)) / steps)) / (length / steps));
+      return most;
+    };
+    const face = Math.max(...[-5, 0, 5].map((y) => steepest((t) => board.at(-30 + t, y, 12, [0, 0, 1]), 60)));
+    const end = steepest((t) => board.at(30, -15 + t, 6, [1, 0, 0]), 30);
+    expect(face).toBeGreaterThan(0.5 * end);
   });
 
   it("cuts a flat-sawn board's face across its rings, and a quarter-sawn one along them", () => {
