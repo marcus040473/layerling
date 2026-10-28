@@ -298,3 +298,67 @@ describe("the edge where the side meets a patterned top", () => {
     }
   }, 120_000);
 });
+
+describe("every face of an angular body cut alike", () => {
+  /** Triangles per side of a box 40 wide and deep (inside frame), by which side their middle lies nearest. */
+  function perSide(result: { vertices: ArrayLike<number>; indices: Uint32Array }) {
+    const count = { "+x": 0, "-x": 0, "+z": 0, "-z": 0 };
+    const v = result.vertices, I = result.indices;
+    for (let t = 0; t < I.length; t += 3) {
+      const c = [0, 1, 2].map((a) => (v[I[t] * 3 + a] + v[I[t + 1] * 3 + a] + v[I[t + 2] * 3 + a]) / 3);
+      if (c[1] < 2 || c[1] > 28) continue;
+      if (Math.abs(c[0]) > 19) count[c[0] > 0 ? "+x" : "-x"] += 1;
+      else if (Math.abs(c[2]) > 19) count[c[2] > 0 ? "+z" : "-z"] += 1;
+    }
+    return Object.values(count);
+  }
+
+  it("lay every bump anew, on the sides past half way round too", () => {
+    // Round an outline u runs from 0 to the whole way round; the bumps on the far half once kept their coarse grid.
+    const counts = perSide(applySurfaceTexture(box(40, 30, 40), { pattern: "bumps", spacing: 4, depth: 0.6 }));
+    expect(Math.min(...counts)).toBeGreaterThan(0.9 * Math.max(...counts));
+  }, 120_000);
+
+  it("cut a top's cells where its values put them, on both halves", () => {
+    const depth = 0.8;
+    const result = applySurfaceTexture(box(40, 30, 40), { pattern: "cells", topFree: 0, depth });
+    const base = prepareSurfaceBase(insideToScreenPositions(box(40, 30, 40)));
+    const s = { ...normalizeSurfaceTexture({ pattern: "cells", topFree: 0, depth }), projection: "cylinder" as const };
+    const layout = makeSurfaceTextureLayout(base, s, null, prismOutline(base, 2, 0, 1, 30));
+    layout.flatCaps = true;
+    // Each triangle of the top, away from the rims, as deep in its middle as the pattern says: one reaching across a
+    // joint that was not cut where the values have it is not.
+    const v = result.vertices, I = result.indices;
+    let checked = 0, off = 0;
+    for (let t = 0; t < I.length; t += 3) {
+      const ps = [0, 1, 2].map((k) => [v[I[t + k] * 3], v[I[t + k] * 3 + 1], v[I[t + k] * 3 + 2]]);
+      if (ps.some((p) => p[1] < 30 - depth - 0.01)) continue;
+      const c = [0, 1, 2].map((a) => (ps[0][a] + ps[1][a] + ps[2][a]) / 3);
+      if (Math.abs(c[0]) > 15 || Math.abs(c[2]) > 15) continue;
+      checked += 1;
+      if (Math.abs(c[1] - (30 - depth * surfaceTextureValueAt(c[0], -c[2], 30, 0, 0, 1, s, layout))) > 0.3 * depth) off += 1;
+    }
+    expect(checked).toBeGreaterThan(1000);
+    expect(off).toBe(0);
+  }, 120_000);
+
+  it("cut knurling in round a corner without folding it over", () => {
+    // Moved in along its own face alone, a point by the corner stood out of the other face moved in: little triangles
+    // turned over along the corner. Facing the way out from a core 3 mm in, almost none is turned over.
+    const result = applySurfaceTexture(box(40, 30, 40), { pattern: "knurl" });
+    const v = result.vertices, I = result.indices;
+    let near = 0, turned = 0;
+    for (let t = 0; t < I.length; t += 3) {
+      const ps = [0, 1, 2].map((k) => [v[I[t + k] * 3], v[I[t + k] * 3 + 1], v[I[t + k] * 3 + 2]]);
+      const c = [0, 1, 2].map((a) => (ps[0][a] + ps[1][a] + ps[2][a]) / 3);
+      if (Math.abs(c[0]) < 17 || Math.abs(c[2]) < 17 || c[1] < 3 || c[1] > 27) continue;
+      near += 1;
+      const u = [0, 1, 2].map((a) => ps[1][a] - ps[0][a]), w = [0, 1, 2].map((a) => ps[2][a] - ps[0][a]);
+      const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+      const out = [c[0] - Math.sign(c[0]) * 17, 0, c[2] - Math.sign(c[2]) * 17];
+      if (n[0] * out[0] + n[2] * out[2] < -0.2 * Math.hypot(...n) * Math.hypot(...out)) turned += 1;
+    }
+    expect(near).toBeGreaterThan(200);
+    expect(turned).toBeLessThan(0.01 * near);
+  }, 120_000);
+});

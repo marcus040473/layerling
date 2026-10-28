@@ -4602,6 +4602,8 @@ export function SurfaceTextureCard({
   const endRings = settings.topFree === 0 && settings.bottomFree === 0;
   // Grooves, rope and knitting can lie on a top in rings (see SurfaceTextureSettings.capStyle).
   const ringPattern = settings.pattern === "grooves" || settings.pattern === "rope" || settings.pattern === "knit";
+  // Running over or folding over a rim only goes with those: for the others such a choice shows as automatic.
+  const capEdgeShown = !ringPattern && (settings.capEdge === "over" || settings.capEdge === "fold") ? "auto" : settings.capEdge;
   // Grain lies in space: no projection, no axis. An image's grey values are its profile and width.
   const grain = settings.pattern === "grain";
   const image = settings.pattern === "image";
@@ -4992,15 +4994,18 @@ export function SurfaceTextureCard({
                       ) : null}
                       {/* Where the side meets a patterned top or bottom: sharp, the side's rows running over (ring patterns), a border. */}
                       {settings.projection !== "allRound" && settings.projection !== "flat" && !grain && !cracks && !wood && settings.pattern !== "text" ? (
-                        <SelectProperty
-                          type="select"
-                          label={t("inspector.surfaceCapEdge")}
-                          value={!ringPattern && (settings.capEdge === "over" || settings.capEdge === "fold") ? "auto" : settings.capEdge}
-                          options={options(SURFACE_TEXTURE_CAP_EDGES.filter((value) => ringPattern || (value !== "over" && value !== "fold")), (value) => t(SURFACE_TEXTURE_LABELS.capEdge[value]))}
-                          hint={t("inspector.surfaceCapEdgeHint")}
-                          disabled={disabled || busy}
-                          onChange={(value) => set({ capEdge: value as SurfaceTextureSettings["capEdge"] })}
-                        />
+                        <>
+                          <SelectProperty
+                            type="select"
+                            label={t("inspector.surfaceCapEdge")}
+                            value={capEdgeShown}
+                            options={options(SURFACE_TEXTURE_CAP_EDGES.filter((value) => ringPattern || (value !== "over" && value !== "fold")), (value) => t(SURFACE_TEXTURE_LABELS.capEdge[value]))}
+                            disabled={disabled || busy}
+                            onChange={(value) => set({ capEdge: value as SurfaceTextureSettings["capEdge"] })}
+                          />
+                          {/* What the chosen edge does, one line under the whole row: the long label leaves the hint column too narrow. */}
+                          <p className="cylinder-wrap-hint">{t(SURFACE_TEXTURE_LABELS.capEdgeHint[capEdgeShown])}</p>
+                        </>
                       ) : null}
                       {grain || cracks || bricks || wood || bark ? null : (
                         <>

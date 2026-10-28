@@ -541,7 +541,8 @@ export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Par
   grooves: { angle: 0 },
   bumps: { profile: "dome" },
   cells: { spacing: 9, depth: 0.8, width: 0.22, profile: "round" },
-  bricks: { spacing: 12, depth: 0.6, profile: "flat" },
+  // Bricks run into a box's corners: kept smooth there, the corner stood in a strip of its own between two walls.
+  bricks: { spacing: 12, depth: 0.6, profile: "flat", keepEdges: false },
   knit: { spacing: 5, depth: 1.2, width: 0.85, profile: "round", direction: "outward" },
   rope: { spacing: 6, depth: 3, width: 0.6, profile: "round", direction: "outward" },
   weave: { spacing: 10, depth: 1.6, width: 0.6, profile: "round", direction: "outward" },
@@ -1063,6 +1064,8 @@ export type SurfaceTextureLayout = {
    */
   capEdge?: "over" | "fold" | "bead" | null;
   rims?: SurfaceRim[];
+  /** Every patterned top's or bottom's rim round a patterned side, whatever capEdge says: a pattern cut in meets in a mitre there (see edgeRounding). */
+  inRims?: SurfaceRim[];
 };
 
 /**
@@ -1070,6 +1073,9 @@ export type SurfaceTextureLayout = {
  * radius there, and how far either side of it the pattern bends round it (see edgeRounding).
  */
 export type SurfaceRim = { level: number; sign: 1 | -1; radius: number; reach: number };
+
+/** The move (mm, out positive) the pattern makes at a point for a normal there; NaN where only the point's own is known. */
+type SurfaceFootDepth = (foot: number[], normal: number[]) => number;
 
 /**
  * A text stuck on: the anchor on the surface (the middle of the text's box), the box (mm), the window round it (half
@@ -2201,7 +2207,9 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
   const hw = (cell / 2) * clamp(s.width, 0.02, 1);
   // Cells (Voronoi): the joint lies on the borders between irregular cell points instead of a hexagon's sides.
   const voronoi = s.pattern === "cells";
-  const around = cyl ? layout.around : null;
+  // The same grid as the values (see cellEdge): a top of a body the cells run round takes them from there too, and the
+  // half of it left of the middle (u below 0) lay in other cells than its cuts.
+  const around = layout.around;
   // Per point ten numbers: distance to the joint, cell key, nearest side (honeycomb: 0 to 5; cells: the key of the cell
   // behind it), cell middle u and v, the point's own u, v and whether it lies on the axis (1), and - cells - the point of
   // the cell behind the nearest border, u and v.
@@ -2523,7 +2531,9 @@ function sliceCells(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfac
       if (!bump) bumps.set(key, (bump = { cx, cy, faces: [], bad: false, at }));
       // A bump reaching a face that stays smooth (or the axis) keeps its cut grid. A triangle between two rim points and one point just outside lies outside: only the rim's bulge puts its middle
       // in. One reaching from well inside to outside was not cut - the bump keeps its grid.
-      const off = [[ua, va], [ub, vb], [uc, vc]].map(([u, w]) => Math.hypot(u - cx, w - cy) - hw);
+      // Measured from the middle brought to the front, the corners brought along (round a box's outline u runs from 0 to
+      // the whole way round: the far half of its bumps found no triangle of their own and kept their grid).
+      const off = [[ua, va], [ub, vb], [uc, vc]].map(([u, w]) => Math.hypot(unwrap(u, cx) - cx, w - cy) - hw);
       if (skip[f] || steep || (Math.max(...off) > near && Math.min(...off) < -near)) bump.bad = true;
       else if (Math.max(...off) <= near) bump.faces.push(f);
     }
@@ -3374,6 +3384,8 @@ function edgeRounding(layout: SurfaceTextureLayout, s: SurfaceTextureSettings, k
   const ax = AXIS_INDEX[s.axis];
   const [i1, i2] = acrossAxes(s.axis);
   const rims = layout.capEdge ? (layout.rims ?? []) : [];
+  // Cut in, every patterned top's or bottom's rim (see cutIn), how far its mitre's slide runs out.
+  const inRims = (layout.inRims ?? []).map((rim) => ({ ...rim, inReach: Math.min(Math.max(1, 2 * s.depth), 2 * rim.reach) }));
   const corners = (layout.outline?.corners ?? []).map((c) => {
     const cos = clamp(c.before[0] * c.after[0] + c.before[1] * c.after[1], -1, 1);
     const angle = Math.acos(cos), sin = Math.sin(angle);
@@ -3387,6 +3399,10 @@ function edgeRounding(layout: SurfaceTextureLayout, s: SurfaceTextureSettings, k
       towardAfter: [(c.after[0] - cos * c.before[0]) / sin, (c.after[1] - cos * c.before[1]) / sin],
       towardBefore: [(c.before[0] - cos * c.after[0]) / sin, (c.before[1] - cos * c.after[1]) / sin],
       reach: Math.min(c.reach, Math.max(1, s.depth)),
+      // Cut in (see below): how far the mitre's slide runs out, and its share per depth on the corner (tan of half the bend).
+      cos,
+      sin,
+      inReach: Math.min(c.reach, Math.max(1, 2 * s.depth * Math.max(1, Math.tan(angle / 2)))),
     };
   });
   /**
@@ -3401,8 +3417,118 @@ function edgeRounding(layout: SurfaceTextureLayout, s: SurfaceTextureSettings, k
     return { lean: Math.sin(theta) / Math.sin(angle - theta), foot: Math.max(0, sigma - half) };
   };
   const rimOf = (h: number, sign: number) => rims.find((rim) => rim.sign === sign && Math.abs(rim.level - h) <= RIM_LEVEL);
-  return (i: number, x: number, y: number, z: number, d: number, out: Float64Array) => {
+  /**
+   * Cut in (`d` < 0), round a convex edge - a corner between two sides, a rim between a side and a patterned top or
+   * bottom - the faces moved in meet in a mitre (see creaseMoves). A point near the edge moved in along its own normal
+   * alone stood out of the other face moved in, and the cut folded over itself there in little triangles. Its foot
+   * slides away from the edge along its face instead, so that it lies as deep under the other face as that face is cut
+   * in at the edge (`footDepth`: the move at a point for a normal), running out over `inReach`.
+   */
+  const slideFrom = (other: number, own: number, cos: number, sin: number, t: number, reach: number) =>
+    Math.max(0, (-(Number.isFinite(other) ? other : own) + own * cos) / sin) * Math.max(0, 1 - t / reach);
+  const cutIn = (i: number, kind: number, p: number[], d: number, out: Float64Array, footDepth: SurfaceFootDepth) => {
+    const slide = [0, 0, 0];
+    const normal = [0, 0, 0];
+    let moved = false;
+    if (kind === 1) {
+      // A corner between two sides.
+      for (const c of corners) {
+        const qx = p[i1] - c.at[0], qy = p[i2] - c.at[1];
+        for (const [n0, away, to, n1] of [[c.before, c.awayBefore, c.towardAfter, c.after], [c.after, c.awayAfter, c.towardBefore, c.before]]) {
+          if (Math.abs(qx * n0[0] + qy * n0[1]) > 1e-4) continue;
+          const along = qx * away[0] + qy * away[1];
+          if (along < -1e-6 || along >= c.inReach) continue;
+          const t = Math.max(0, along);
+          const foot = p.slice();
+          foot[i1] += t * to[0];
+          foot[i2] += t * to[1];
+          const across = [0, 0, 0];
+          across[i1] = n1[0];
+          across[i2] = n1[1];
+          const shift = slideFrom(footDepth(foot, across), d, c.cos, c.sin, t, c.inReach);
+          normal[i1] = n0[0];
+          normal[i2] = n0[1];
+          slide[i1] -= shift * to[0];
+          slide[i2] -= shift * to[1];
+          moved = true;
+          break;
+        }
+        if (moved) break;
+      }
+      // A rim above or below, round a patterned top or bottom.
+      for (const rim of inRims) {
+        const t = rim.sign * (rim.level - p[ax]);
+        if (t < -RIM_LEVEL || t >= rim.inReach) continue;
+        const foot = p.slice();
+        foot[ax] = rim.level;
+        const up = [0, 0, 0];
+        up[ax] = rim.sign;
+        slide[ax] -= rim.sign * slideFrom(footDepth(foot, up), d, 0, 1, Math.max(0, t), rim.inReach);
+        moved = true;
+        break;
+      }
+      if (!moved) return false;
+      if (normal[i1] === 0 && normal[i2] === 0) {
+        const h1 = directions[i * 3 + i1], h2 = directions[i * 3 + i2], l = Math.hypot(h1, h2);
+        if (l < 1e-6) return false;
+        normal[i1] = h1 / l;
+        normal[i2] = h2 / l;
+      }
+    } else {
+      // On a top or bottom near its rim, or on the rim itself.
+      const sign = directions[i * 3 + ax] > 0 ? 1 : -1;
+      const rim = inRims.find((r) => r.sign === sign && Math.abs(r.level - p[ax]) <= RIM_LEVEL);
+      if (!rim) return false;
+      if (kind === 3) {
+        // On the rim, not at a corner of sides (there three faces meet: the plain mitre stays): as deep under either face
+        // as the other is cut in there.
+        if (corners.some((c) => Math.hypot(p[i1] - c.at[0], p[i2] - c.at[1]) < 1e-4)) return false;
+        const h1 = directions[i * 3 + i1], h2 = directions[i * 3 + i2], l = Math.hypot(h1, h2);
+        if (l < 1e-6) return false;
+        const side = [0, 0, 0];
+        side[i1] = h1 / l;
+        side[i2] = h2 / l;
+        const up = [0, 0, 0];
+        up[ax] = sign;
+        const along = footDepth(p, side), across = footDepth(p, up);
+        if (!Number.isFinite(along) || !Number.isFinite(across)) return false;
+        for (let k = 0; k < 3; k += 1) out[i * 3 + k] = p[k] + Math.min(0, along) * side[k] + Math.min(0, across) * up[k];
+        return true;
+      }
+      normal[ax] = sign;
+      const away = (n: number[], t: number) => {
+        const foot = p.slice();
+        foot[i1] += t * n[0];
+        foot[i2] += t * n[1];
+        const side = [0, 0, 0];
+        side[i1] = n[0];
+        side[i2] = n[1];
+        const shift = slideFrom(footDepth(foot, side), d, 0, 1, Math.max(0, t), rim.inReach);
+        slide[i1] -= shift * n[0];
+        slide[i2] -= shift * n[1];
+      };
+      let cornered = false;
+      for (const c of corners) {
+        const tb = (c.at[0] - p[i1]) * c.before[0] + (c.at[1] - p[i2]) * c.before[1];
+        const ta = (c.at[0] - p[i1]) * c.after[0] + (c.at[1] - p[i2]) * c.after[1];
+        if (tb < -1e-6 || ta < -1e-6 || tb >= rim.inReach || ta >= rim.inReach) continue;
+        away(c.before, tb);
+        away(c.after, ta);
+        cornered = true;
+        break;
+      }
+      if (!cornered) {
+        const ring = rimRing(p[i1], p[i2], rim, layout);
+        if (ring.depth >= rim.inReach) return false;
+        away(ring.normal, ring.depth);
+      }
+    }
+    for (let k = 0; k < 3; k += 1) out[i * 3 + k] = p[k] + d * normal[k] + slide[k];
+    return true;
+  };
+  return (i: number, x: number, y: number, z: number, d: number, out: Float64Array, footDepth?: SurfaceFootDepth) => {
     const kind = kinds[i];
+    if (d < 0) return (kind === 1 || kind === 2 || kind === 3) && Boolean(footDepth) && (corners.length > 0 || inRims.length > 0) && cutIn(i, kind, [x, y, z], d, out, footDepth!);
     // Without rims, only points on the sides alone (as before a top or bottom had a say).
     if (!(kind === 1 || (rims.length && (kind === 3 || kind === 2)))) return false;
     const p = [x, y, z];
@@ -4409,6 +4535,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       }
     }
     if (layout.flatCaps) {
+      layout.inRims = capRims(s, layout);
       layout.capEdge = capEdgeMode(s, layout);
       if (layout.capEdge) {
         layout.rims = capRims(s, layout);
@@ -4572,6 +4699,11 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const smoothedValue = passes ? smoothedValues(state, s, layout, passes, coarse ? LIMITED_BLUR * state.edge : 0) : null;
     let lettered = 0;
     const roundCorner = (layout.outline && layout.outline.corners.length) || layout.capEdge ? edgeRounding(layout, s, pointKindsFor(mesh, AXIS_INDEX[s.axis]), directions) : null;
+    const moveFor = (value: number) => (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
+    // The move at a point on an edge, for the point now moved (its weight) and a face's normal: values not from the
+    // projection (text, smoothed) are not known there - the point's own move stands in.
+    let footW = 0;
+    const footDepth: SurfaceFootDepth = textValue || smoothedValue ? () => NaN : (foot, normal) => footW * moveFor(surfaceTextureValueAt(foot[0], foot[1], foot[2], normal[0], normal[1], normal[2], s, layout));
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
       const nx = directions[i * 3], ny = directions[i * 3 + 1], nz = directions[i * 3 + 2];
@@ -4589,10 +4721,13 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
               ? layout.capEdge === "bead" ? beadOver(known, surfaceTextureBeadAt(x, y, z, [nx, ny, nz][AXIS_INDEX[s.axis]], s, layout)) : known
               : surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
         if (textValue && value > 0.5) lettered += used[i];
-        d = wi * (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
+        d = wi * moveFor(value);
         if (notch) notch[i] = wi * s.depth * value;
       }
-      if (roundCorner && d > 0 && roundCorner(i, x, y, z, d, out)) continue;
+      if (roundCorner && d !== 0) {
+        footW = wi;
+        if (roundCorner(i, x, y, z, d, out, footDepth)) continue;
+      }
       out[i * 3] = x + moves[i * 3] * d;
       out[i * 3 + 1] = y + moves[i * 3 + 1] * d;
       out[i * 3 + 2] = z + moves[i * 3 + 2] * d;
