@@ -1746,6 +1746,10 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
  * course height rounded as the spacing is round a cylinder. The height band counts when the courses run up z. Flat and
  * all round, the bricks' length is fitted the same way along every axis (round a cylinder: see makeSurfaceTextureLayout),
  * so a box's side begins and ends with a joint, as a wall would, instead of a sliver of a brick.
+ *
+ * Where the courses run over the edge (keepEdges off) onto a top or bottom that has bricks too, the last course ends in
+ * a brick there instead, its joint just beyond the edge: a joint along the rim was a notch the top slid down into (see
+ * edgeRounding), and a round top's coarse brick faces came out as splinters there.
  */
 function fitBrickCourses(base: SurfaceBase, s: SurfaceTextureSettings, kept: Uint8Array, layout: SurfaceTextureLayout) {
   const along = s.projection === "cylinder" ? AXIS_INDEX[s.axis] : s.projection === "flat" ? acrossAxes(s.axis)[1] : 2;
@@ -1781,10 +1785,40 @@ function fitBrickCourses(base: SurfaceBase, s: SurfaceTextureSettings, kept: Uin
     layout.rows = 1;
     return;
   }
+  // Half a joint (see brickJointHalf), as the courses will come out about.
+  const half = Math.min(s.brickJoint / 2, 0.45 * Math.min(s.brickHeight, BRICK_SHORTEST[s.brickBond] * s.spacing));
+  const [below, above] = capsWithBricks(base, s, along, lo, hi);
+  if (below) lo -= half;
+  if (above) hi += half;
   const rows = Math.max(1, Math.round((hi - lo) / s.brickHeight));
   layout.rows = rows;
   layout.rowHeight = (hi - lo) / rows;
   layout.rowOrigin = lo;
+}
+
+/**
+ * Bricks running over the edges (keepEdges off): per end of the courses' range along axis `k` (from, to), whether the
+ * body's top or bottom there - flat, facing along k - has bricks too (see fitBrickCourses): picked, when faces are
+ * picked; else not kept smooth by its slope (topFree, bottomFree: z up).
+ */
+function capsWithBricks(base: SurfaceBase, s: SurfaceTextureSettings, k: number, from: number, to: number) {
+  if (s.keepEdges) return [false, false];
+  const chosen = s.faces.length ? surfaceTextureChosenTriangles(base, s.faces, s.edgeAngle) : null;
+  if (!chosen && k !== 2) return [false, false];
+  const v = base.vertices, I = base.indices;
+  return [-1, 1].map((sign) => {
+    const level = sign > 0 ? to : from;
+    // Only at the body's own end: a height band ending on a side fades out there.
+    if (Math.abs(level - (sign > 0 ? base.max[k] : base.min[k])) > RIM_LEVEL) return false;
+    if (!chosen) return sign > 0 ? s.topFree === 0 : s.bottomFree === 0;
+    for (let f = 0; f < I.length / 3; f += 1) {
+      if (!chosen[f]) continue;
+      const n = faceCross(v, I[f * 3], I[f * 3 + 1], I[f * 3 + 2]);
+      if (n[k] * sign < 0.99 * Math.hypot(n[0], n[1], n[2])) continue;
+      if ([0, 1, 2].every((c) => Math.abs(v[I[f * 3 + c] * 3 + k] - level) <= RIM_LEVEL)) return true;
+    }
+    return false;
+  });
 }
 
 /**

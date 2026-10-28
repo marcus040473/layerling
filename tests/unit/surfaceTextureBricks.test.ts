@@ -200,6 +200,30 @@ describe("bricks", () => {
     expect(corners).toBe(8);
   }, 30000);
 
+  it("ends the courses in a brick at a picked top, without splinters along its rim", () => {
+    const mantle = { at: [1, 0.5, 0.5], normal: [1, 0, 0] };
+    const s = normalizeSurfaceTexture({ pattern: "bricks", faces: ["top", mantle] });
+    const layout = makeSurfaceTextureLayout(prepareSurfaceBase(insideToScreenPositions(cylinder(15, 30))), s);
+    // A joint along the plate (the bottom is not picked), the last course's joint just above the top's rim.
+    expect(layout.rowOrigin).toBeCloseTo(0, 9);
+    expect(layout.rowOrigin! + layout.rows! * layout.rowHeight!).toBeCloseTo(30 + s.brickJoint / 2, 9);
+    const result = applySurfaceTexture(cylinder(15, 30), s);
+    expectClosed(result);
+    // Near the top's rim the faces are flat (bricks, joint floors) or steep (the joints' walls): a joint along the rim
+    // drew the top's coarse brick faces down into it in long tilted splinters.
+    const v = result.vertices, I = result.indices;
+    let tilted = 0;
+    for (let t = 0; t < I.length; t += 3) {
+      const p = [0, 1, 2].map((k) => [v[I[t + k] * 3], v[I[t + k] * 3 + 1], v[I[t + k] * 3 + 2]]);
+      if (p.some(([x, y, z]) => y < 29 || Math.hypot(x, z) < 12)) continue;
+      const a = [0, 1, 2].map((k) => p[1][k] - p[0][k]), b = [0, 1, 2].map((k) => p[2][k] - p[0][k]);
+      const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+      const l = Math.hypot(n[0], n[1], n[2]);
+      if (l > 0 && Math.abs(n[1] / l) > 0.3 && Math.abs(n[1] / l) < 0.97) tilted += l / 2;
+    }
+    expect(tilted).toBeLessThan(35);
+  }, 60000);
+
   it("stays within the triangle budget on a large vase", () => {
     const result = applySurfaceTexture(cylinder(50, 150), { pattern: "bricks" });
     expectClosed(result);
