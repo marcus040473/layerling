@@ -3171,6 +3171,11 @@ function smoothedValues(state: RefinedState, s: SurfaceTextureSettings, layout: 
   return cur;
 }
 
+/** Where a weave's stakes are cut across (see weaveCuts): shares of the stake's half width from its middle. */
+const WEAVE_STAKE_PLACES = [0.4, 0.7, 0.87, 0.95, 0.99];
+/** Where its weavers' bands are cut along: shares of the band's half height from its middle (its joints too). */
+const WEAVE_BAND_PLACES = [0.4, 0.7, 0.9];
+
 /** Neighbours smoothed over face about the same way: the cosine between their directions (about 35 degrees). */
 const SMOOTH_ALONG = 0.82;
 
@@ -3946,6 +3951,35 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     return { mesh: cut, values: Float32Array.from(cut.field!) };
   }
 
+  /**
+   * A weave round the axis cut along its stakes and rows (see weave): upright at places across each stake's round back,
+   * steepest by its edges, and level at the joints between the rows and across the weavers' bands. Its stakes rise from
+   * the weaver at a slant to the grid, and their sides and the rows' joints came out in a sawtooth over its diagonals.
+   * Only on the sides round the axis (not on a top or bottom, nor on faces staying smooth).
+   */
+  function weaveCuts(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, maxTriangles: number, smoothFace: Uint8Array) {
+    const ax = AXIS_INDEX[s.axis];
+    const [i1, i2] = acrossAxes(s.axis);
+    const S = layout.cell, rowH = (2 / 3) * S;
+    const r = (clamp(s.width, 0.1, 1) * S) / 4;
+    const kinds = baseFaceKinds(ax);
+    const sides = (m: SurfaceMesh) => Uint8Array.from({ length: m.indices.length / 3 }, (_, f) => (!smoothFace[m.parents[f]] && kinds[m.parents[f]] === 1 ? 1 : 0));
+    const turn = 2 * Math.PI * layout.radius;
+    let v = mesh.vertices;
+    const U = Float64Array.from({ length: v.length / 3 }, (_, i) => aroundAngle(layout, v[i * 3 + i1], v[i * 3 + i2]) * layout.radius);
+    const du = (i: number, j: number) => {
+      const d = U[j] - U[i];
+      return d - turn * Math.round(d / turn);
+    };
+    const across = WEAVE_STAKE_PLACES.flatMap((t) => [t * r, S - t * r]);
+    let out = soundOr(mesh, sliceByField(mesh, U, du, S, across, sides(mesh)));
+    v = out.vertices;
+    const V = Float64Array.from({ length: v.length / 3 }, (_, i) => v[i * 3 + ax]);
+    const along = [0, ...WEAVE_BAND_PLACES.flatMap((t) => [rowH * (0.5 - 0.5 * t), rowH * (0.5 + 0.5 * t)])];
+    out = soundOr(out, sliceByField(out, V, (i, j) => V[j] - V[i], rowH, along, sides(out)));
+    return out.indices.length / 3 > maxTriangles ? mesh : out;
+  }
+
   /** Points of the mesh lying on side faces round the axis only (not on a top or bottom too). */
   function sidePointsFor(mesh: SurfaceMesh, ax: number) {
     return pointKindsFor(mesh, ax).map((k) => (k === 1 ? 1 : 0));
@@ -4442,6 +4476,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // Not refined at the flanks: faces cut exactly already, and faces that stay smooth (the top of a box: its grid only
     // went finer and finer along the pattern's lines, and no point there moves).
     const cutFaces = straight ? Uint8Array.from(straight, (k, f) => (k === 255 && !smooth.faces[f] ? 0 : 1)) : smooth.faces;
+    if (s.pattern === "weave" && s.projection === "cylinder" && !mesh.limited) mesh = weaveCuts(mesh, s, layout, maxTriangles, smooth.faces);
     if (!slice && !cracks && !text && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles, cutFaces);
     // Cut even where the budget stopped refining (a long log): as long as the cuts still fit in (see barkLevelCuts).
     if (s.pattern === "bark") {

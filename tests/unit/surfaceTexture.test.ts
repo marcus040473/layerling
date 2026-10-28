@@ -308,6 +308,29 @@ describe("texturing a body", () => {
     expect(cutIn).toBeGreaterThan(20);
   }, 30000);
 
+  it("cuts a weave along its stakes and rows on a box: their sides straight, not in a sawtooth", () => {
+    const result = applySurfaceTexture(box(40, 30, 30), { pattern: "weave" });
+    expect(surfaceMeshReport(result.indices, result.vertices.length / 3)).toEqual({ shells: 1, openEdges: 0, nonManifoldEdges: 0 });
+    // On the front face, away from its edges: a stake's side faces sideways, a row's joint up or down. A sawtooth along
+    // them turned its teeth both ways at once.
+    const v = result.vertices, I = result.indices;
+    let teeth = 0, sides = 0;
+    for (let t = 0; t < I.length / 3; t += 1) {
+      const [a, b, c] = [I[t * 3], I[t * 3 + 1], I[t * 3 + 2]];
+      const [x, y, z] = [0, 1, 2].map((k) => (v[a * 3 + k] + v[b * 3 + k] + v[c * 3 + k]) / 3);
+      if (z < 14 || Math.abs(x) > 17 || y < 3 || y > 27) continue;
+      const u = [v[b * 3] - v[a * 3], v[b * 3 + 1] - v[a * 3 + 1], v[b * 3 + 2] - v[a * 3 + 2]];
+      const w = [v[c * 3] - v[a * 3], v[c * 3 + 1] - v[a * 3 + 1], v[c * 3 + 2] - v[a * 3 + 2]];
+      const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+      const l = Math.hypot(n[0], n[1], n[2]) || 1;
+      if (Math.abs(n[0] / l) > 0.4) sides += 1;
+      if (Math.abs(n[0] / l) > 0.4 && Math.abs(n[1] / l) > 0.4) teeth += 1;
+    }
+    expect(sides).toBeGreaterThan(100);
+    // (About one in seven before, one in thirty now.)
+    expect(teeth).toBeLessThan(0.1 * sides);
+  }, 30000);
+
   it("runs rope out at a cylinder's rim on rows cut at its steps, not over halved triangles", () => {
     const result = applySurfaceTexture(tube(12, 0, 20, 96, 2), { pattern: "rope", projection: "cylinder" });
     expect(surfaceMeshReport(result.indices, result.vertices.length / 3)).toEqual({ shells: 1, openEdges: 0, nonManifoldEdges: 0 });
