@@ -125,7 +125,59 @@ describe("bark", () => {
     expect(rim).toBeGreaterThan(50);
     expect(full).toBe(0);
   }, 30000);
+
+  it("cuts its furrows along their levels round a log, and the side's long strips do not use up the budget", () => {
+    for (const barkType of ["pine", "spruce"]) {
+      const result = applySurfaceTexture(cylinder(15, 30, 148), { pattern: "bark", barkType });
+      expectClosed(result);
+      // The side came in strips 30 mm long and 0.6 mm wide: halved in their own shape they ran out of triangles, and the
+      // bark was laid on a coarser grid of slivers, in streaks.
+      expect(result.stats.limited).toBe(false);
+      // Taken at the grid's points, a furrow's flank crossing it came out as a zip of small triangles folding against each
+      // other: few bends over 30 degrees on the side now, away from the ends.
+      // (Pine about 15 000 before, spruce about 40 000.)
+      expect(sideBends(result, 30, (p) => p[1] > 2 && p[1] < 28)).toBeLessThan(600);
+    }
+  }, 120000);
+
+  it("cuts its furrows along their levels on a box's faces as well, taken without smoothing, and they do not fold", () => {
+    const result = applySurfaceTexture(box(40, 30, 30), { pattern: "bark", barkType: "pine" });
+    expectClosed(result);
+    expect(sideBends(result, 30, (p) => p[1] > 2 && p[1] < 28 && Math.abs(p[0]) < 18 && Math.abs(p[2]) < 13)).toBeLessThan(50);
+  }, 60000);
 });
+
+/** How many edges between two triangles bend by more than `degrees`, with their middle where `where` says (inside frame). */
+function sideBends(result: SurfaceTextureResult, degrees: number, where: (p: Vec3) => boolean) {
+  const v = result.vertices, I = result.indices;
+  const normal = (t: number): Vec3 => {
+    const [a, b, c] = [I[t * 3], I[t * 3 + 1], I[t * 3 + 2]];
+    const u = [v[b * 3] - v[a * 3], v[b * 3 + 1] - v[a * 3 + 1], v[b * 3 + 2] - v[a * 3 + 2]];
+    const w = [v[c * 3] - v[a * 3], v[c * 3 + 1] - v[a * 3 + 1], v[c * 3 + 2] - v[a * 3 + 2]];
+    const n: Vec3 = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    const l = Math.hypot(...n) || 1;
+    return [n[0] / l, n[1] / l, n[2] / l];
+  };
+  const first = new Map<string, number>();
+  const limit = Math.cos((degrees * Math.PI) / 180);
+  let count = 0;
+  for (let t = 0; t < I.length / 3; t += 1) {
+    for (let k = 0; k < 3; k += 1) {
+      const p = I[t * 3 + k], q = I[t * 3 + ((k + 1) % 3)];
+      const key = p < q ? `${p},${q}` : `${q},${p}`;
+      const other = first.get(key);
+      if (other === undefined) {
+        first.set(key, t);
+        continue;
+      }
+      const middle: Vec3 = [(v[p * 3] + v[q * 3]) / 2, (v[p * 3 + 1] + v[q * 3 + 1]) / 2, (v[p * 3 + 2] + v[q * 3 + 2]) / 2];
+      if (!where(middle)) continue;
+      const [n1, n2] = [normal(t), normal(other)];
+      if (n1[0] * n2[0] + n1[1] * n2[1] + n1[2] * n2[2] < limit) count += 1;
+    }
+  }
+  return count;
+}
 
 describe("wood grain", () => {
   it("shows the annual rings on a log's end, as many as fit its radius", () => {

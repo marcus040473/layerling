@@ -28,13 +28,17 @@ export type WoodKind = (typeof WOOD_KINDS)[number];
 export const WOOD_CUTS = ["log", "flatSawn", "quarterSawn"] as const;
 export type WoodCut = (typeof WOOD_CUTS)[number];
 
-/** A bark's own size (the spacing, mm) and depth (mm) to start from, and how finely its marks have to be resolved. */
+/**
+ * A bark's own size (the spacing, mm) and depth (mm) to start from, and how finely its marks have to be resolved. Oak,
+ * pine and beech have broad ridges: at a grid of 1.1 to 1.5 mm their rounded backs came out in flat facets, so they ask
+ * for one about 0.8 to 1.1 mm (medium detail).
+ */
 export const BARK_STARTS: Record<BarkKind, { spacing: number; depth: number; detail: number }> = {
-  oak: { spacing: 8, depth: 1.5, detail: 1.4 },
-  pine: { spacing: 12, depth: 1.5, detail: 1.8 },
+  oak: { spacing: 8, depth: 1.5, detail: 2 },
+  pine: { spacing: 12, depth: 1.5, detail: 2.6 },
   spruce: { spacing: 5, depth: 0.8, detail: 1.2 },
   birch: { spacing: 10, depth: 0.6, detail: 3 },
-  beech: { spacing: 16, depth: 0.5, detail: 2.2 },
+  beech: { spacing: 16, depth: 0.5, detail: 3 },
 };
 /** A wood's ring width to start from (mm). */
 export const WOOD_RINGS: Record<WoodKind, number> = { oak: 3, ash: 3.5, beech: 2.5, pine: 4, walnut: 3 };
@@ -52,10 +56,13 @@ function hash(i: number, j: number, k: number, seed: number) {
   return (h >>> 0) / 4294967295;
 }
 
-/** Smooth value noise in space, 0 to 1. */
+/**
+ * Smooth value noise in space, 0 to 1. Blended with a fifth-order curve, smooth in its slope too: with a third-order one
+ * the lattice showed through as steps where a bark cut its noise at a level.
+ */
 function noise3(x: number, y: number, z: number, seed: number) {
   const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
-  const f = (t: number) => t * t * (3 - 2 * t);
+  const f = (t: number) => t * t * t * (t * (6 * t - 15) + 10);
   const fx = f(x - xi), fy = f(y - yi), fz = f(z - zi);
   let sum = 0;
   for (let dz = 0; dz < 2; dz += 1) {
@@ -69,9 +76,16 @@ function noise3(x: number, y: number, z: number, seed: number) {
   return sum;
 }
 
-/** Three octaves, 0 to 1. */
+/** Three octaves, 0 to 1 - each finer one turned against the one before, so their lattices do not line up in rows. */
 function fbm3(x: number, y: number, z: number, seed: number) {
-  return 0.57 * noise3(x, y, z, seed) + 0.29 * noise3(2 * x + 17, 2 * y, 2 * z, seed) + 0.14 * noise3(4 * x, 4 * y + 31, 4 * z, seed);
+  // About z by 37 degrees, then about x by 29: a turn keeps the scale.
+  const turn = (p: number[]) => {
+    const [c1, s1, c2, s2] = [0.7986, 0.6018, 0.8746, 0.4848];
+    const a = c1 * p[0] - s1 * p[1], b = s1 * p[0] + c1 * p[1];
+    return [a, c2 * b - s2 * p[2], s2 * b + c2 * p[2]];
+  };
+  const p1 = turn([x, y, z]), p2 = turn(p1);
+  return 0.57 * noise3(x, y, z, seed) + 0.29 * noise3(2 * p1[0] + 17, 2 * p1[1], 2 * p1[2], seed) + 0.14 * noise3(4 * p2[0], 4 * p2[1] + 31, 4 * p2[2], seed);
 }
 
 /** Noise in the plane round a cylinder: `u` repeats after `period` mm when given (it is read on a circle). */
@@ -109,9 +123,8 @@ function smooth(e0: number, e1: number, x: number) {
 function stretchedCells(u: number, v: number, cell: number, stretch: number, around: number | null, seed: number) {
   const w = v / stretch;
   const ci = Math.floor(u / cell);
-  const pts: number[] = [];
-  const keys: number[] = [];
-  let best = Infinity, k1 = 0;
+  const pts = CELL_POINTS, keys = CELL_KEYS;
+  let best = Infinity, k1 = 0, count = 0;
   for (let di = -2; di <= 2; di += 1) {
     const i = ci + di;
     const wi = around ? ((i % around) + around) % around : i;
@@ -124,30 +137,55 @@ function stretchedCells(u: number, v: number, cell: number, stretch: number, aro
       const d = (px - u) ** 2 + (py - w) ** 2;
       if (d < best) {
         best = d;
-        k1 = pts.length / 2;
+        k1 = count;
       }
-      pts.push(px, py);
-      keys.push(wi * 100003 + j);
+      pts[count * 2] = px;
+      pts[count * 2 + 1] = py;
+      keys[count] = wi * 100003 + j;
+      count += 1;
     }
   }
   const sx = pts[k1 * 2], sy = pts[k1 * 2 + 1];
-  let edge = Infinity, across = 0;
-  for (let k = 0; k < keys.length; k += 1) {
-    if (k === k1) continue;
+  const near = (sx - u) ** 2 + (sy - w) ** 2;
+  let edge = Infinity;
+  const ds = CELL_DS, as = CELL_AS;
+  for (let k = 0; k < count; k += 1) {
+    if (k === k1) {
+      ds[k] = Infinity;
+      continue;
+    }
     const bx = pts[k * 2], by = pts[k * 2 + 1];
-    const len = Math.hypot(bx - sx, by - sy) || 1;
+    const len = Math.sqrt((bx - sx) ** 2 + (by - sy) ** 2) || 1;
     const nx = (bx - sx) / len, ny = (by - sy) / len;
     // Distance to the bisector in the stretched plane, then in the true one (the normal shrinks along v).
-    const ds = ((bx - u) ** 2 + (by - w) ** 2 - (sx - u) ** 2 - (sy - w) ** 2) / (2 * len);
-    const scale = Math.hypot(nx, ny / stretch);
-    const d = ds / scale;
-    if (d < edge) {
-      edge = d;
-      across = Math.abs(ny / stretch) / scale;
-    }
+    const scale = Math.sqrt(nx * nx + (ny / stretch) ** 2);
+    const d = ((bx - u) ** 2 + (by - w) ** 2 - near) / (2 * len) / scale;
+    edge = Math.min(edge, d);
+    ds[k] = d;
+    as[k] = Math.abs(ny / stretch) / scale;
   }
-  return { edge, across, u: sx, v: sy * stretch, key: keys[k1] };
+  // How much the borders near the point run across, the nearest most: from the nearest one alone, it jumped where two
+  // borders meet, and a ridge narrowed by it broke off in a wedge there. Borders further than CELL_SOFT_REACH softs
+  // weigh nothing to speak of.
+  const soft = 0.08 * cell;
+  let sum = 0, across = 0;
+  for (let k = 0; k < count; k += 1) {
+    const over = (ds[k] - edge) / soft;
+    if (!(over < CELL_SOFT_REACH)) continue;
+    const weight = Math.exp(-over);
+    sum += weight;
+    across += weight * as[k];
+  }
+  return { edge, across: across / sum, u: sx, v: sy * stretch, key: keys[k1] };
 }
+
+/** Scratch for stretchedCells: the 5 × 5 points round a place, their keys, borders and how much those run across. */
+const CELL_POINTS = new Float64Array(50);
+const CELL_KEYS = new Float64Array(25);
+const CELL_DS = new Float64Array(25);
+const CELL_AS = new Float64Array(25);
+/** Beyond this many softs (see stretchedCells) a border's weight is under 0.1 %. */
+const CELL_SOFT_REACH = 7;
 
 /** A furrow `half` mm wide either side of a border: 1 in its middle, a soft bowl (cosine) to its edges. */
 function furrow(edge: number, half: number) {
@@ -194,7 +232,9 @@ export function barkValue(kind: BarkKind, u: number, v: number, cell: number, ar
       const [wu, wv] = warp(u, v, cell, 1.3, 0.18, period, seed);
       const scale = stretchedCells(wu, wv, cell, 1.3, around, seed);
       const rel = Math.min(0.5, Math.max(-0.5, (wv - scale.v) / (1.3 * cell)));
-      return Math.min(1, softMax(0.9 * furrow(scale.edge, 0.12 * cell), 0.15 + 0.7 * (rel + 0.5), 0.2));
+      // The lower edge falls to the border over a short way: as a step it ran over the grid in stairs.
+      const shingle = (0.15 + 0.7 * (rel + 0.5)) * smooth(0, 0.15 * cell, scale.edge);
+      return Math.min(1, softMax(0.9 * furrow(scale.edge, 0.12 * cell), shingle, 0.2));
     }
     case "birch": {
       // Smooth, with short crosswise lenticels in rows and now and then a long peeling line.

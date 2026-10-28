@@ -1543,7 +1543,8 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
   const ax = AXIS_INDEX[s.axis];
   const along = (k: number, u: number, v: number, uAxis: number) => (k === ax ? patternValue(...turnOnFace(u, v, s, layout), s, layout, uAxis) : patternValue(u, v, s, layout, uAxis));
   // Seen along z, a top or bottom: its bricks fitted of its own (see SurfaceTextureLayout.capBricks).
-  return (wx * along(0, y, z, 1) + wy * along(1, x, z, 0) + wz * along(2, x, y, 3)) / sum;
+  // A projection without weight is not asked for (on a box's face two of three).
+  return ((wx > 0 ? wx * along(0, y, z, 1) : 0) + (wy > 0 ? wy * along(1, x, z, 0) : 0) + (wz > 0 ? wz * along(2, x, y, 3) : 0)) / sum;
 }
 
 /* ------------------------------------------------------------------ */
@@ -3105,7 +3106,8 @@ function refineFlanks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
 /**
  * Bark and wood: their furrows, marks and rings cross the grid at any slant, and a vertex is either in a furrow or not:
  * its rim came out in steps of the grid. Their values are smoothed over each point's neighbours this many times
- * (half its own, half its neighbours' mean) - softened to the mesh, as an image is (see textureImage).
+ * (half its own, half its neighbours' mean) - softened to the mesh, as an image is (see textureImage). Bark cut along its
+ * levels (see barkLevelCuts) is not: only where the budget left it uncut.
  */
 const SMOOTHED_PASSES: Partial<Record<SurfaceTexturePattern, number>> = { bark: 3, wood: 1 };
 
@@ -3116,45 +3118,60 @@ const SMOOTHED_PASSES: Partial<Record<SurfaceTexturePattern, number>> = { bark: 
  * a small circle round it in the surface, this share of the grid's edge wide, the same in every direction.
  */
 const LIMITED_BLUR = 0.5;
+/**
+ * Bark: its finest marks (a crack across a ridge, a lenticel) are about as fine as the grid. Taken at the points
+ * alone, a mark fell on one point and missed the next, and the furrows' rims came out in steps and spikes: each point
+ * takes the mean on a circle this share of the grid's edge wide (see circleValue), always - the same wherever the grid
+ * was refined, unlike smoothing over the neighbours.
+ */
+const BARK_BLUR = 0.5;
 
-function smoothedValues(state: RefinedState, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, passes: number, blur = 0) {
+/** The pattern's value at a point for a normal: the mean on a circle `blur` mm wide round it in the surface, and at it. */
+function circleValue(x: number, y: number, z: number, nx: number, ny: number, nz: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, blur: number) {
+  let value = surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
+  if (!(blur > 0)) return value;
+  // Two directions in the surface, then six points round the circle.
+  const h = Math.abs(nx) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+  let ax = ny * h[2] - nz * h[1], ay = nz * h[0] - nx * h[2], az = nx * h[1] - ny * h[0];
+  const al = Math.hypot(ax, ay, az) || 1;
+  ax /= al; ay /= al; az /= al;
+  const bx = ny * az - nz * ay, by = nz * ax - nx * az, bz = nx * ay - ny * ax;
+  for (let k = 0; k < 6; k += 1) {
+    const c = Math.cos((k * Math.PI) / 3) * blur, sn = Math.sin((k * Math.PI) / 3) * blur;
+    value += surfaceTextureValueAt(x + c * ax + sn * bx, y + c * ay + sn * by, z + c * az + sn * bz, nx, ny, nz, s, layout);
+  }
+  return value / 7;
+}
+
+/**
+ * Each point's value on its circle (see circleValue) - or as `known` has it, for its first points - then smoothed over its
+ * neighbours `passes` times - only those facing about its way: over a sharp edge a log's end took its bark's deep
+ * furrows, and its rim came out in teeth.
+ */
+function smoothedValues(state: RefinedState, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, passes: number, blur = 0, known: Float32Array | null = null) {
   const v = state.mesh.vertices, d = state.directions, n = v.length / 3;
   let cur = new Float32Array(n);
-  for (let i = 0; i < n; i += 1) {
-    const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2], nx = d[i * 3], ny = d[i * 3 + 1], nz = d[i * 3 + 2];
-    let value = surfaceTextureValueAt(x, y, z, nx, ny, nz, s, layout);
-    if (blur > 0) {
-      // Two directions in the surface, then six points round the circle.
-      const h = Math.abs(nx) < 0.9 ? [1, 0, 0] : [0, 1, 0];
-      let ax = ny * h[2] - nz * h[1], ay = nz * h[0] - nx * h[2], az = nx * h[1] - ny * h[0];
-      const al = Math.hypot(ax, ay, az) || 1;
-      ax /= al; ay /= al; az /= al;
-      const bx = ny * az - nz * ay, by = nz * ax - nx * az, bz = nx * ay - ny * ax;
-      for (let k = 0; k < 6; k += 1) {
-        const c = Math.cos((k * Math.PI) / 3) * blur, sn = Math.sin((k * Math.PI) / 3) * blur;
-        value += surfaceTextureValueAt(x + c * ax + sn * bx, y + c * ay + sn * by, z + c * az + sn * bz, nx, ny, nz, s, layout);
-      }
-      value /= 7;
-    }
-    cur[i] = value;
-  }
+  for (let i = 0; i < n; i += 1) cur[i] = known && i < known.length ? known[i] : circleValue(v[i * 3], v[i * 3 + 1], v[i * 3 + 2], d[i * 3], d[i * 3 + 1], d[i * 3 + 2], s, layout, blur);
   const { start, nb } = state.adj;
   for (let pass = 0; pass < passes; pass += 1) {
     const next = new Float32Array(n);
     for (let i = 0; i < n; i += 1) {
-      const from = start[i], to = start[i + 1];
-      if (to === from) {
-        next[i] = cur[i];
-        continue;
+      let sum = 0, count = 0;
+      for (let k = start[i]; k < start[i + 1]; k += 1) {
+        const j = nb[k];
+        if (d[i * 3] * d[j * 3] + d[i * 3 + 1] * d[j * 3 + 1] + d[i * 3 + 2] * d[j * 3 + 2] < SMOOTH_ALONG) continue;
+        sum += cur[j];
+        count += 1;
       }
-      let sum = 0;
-      for (let k = from; k < to; k += 1) sum += cur[nb[k]];
-      next[i] = 0.5 * cur[i] + (0.5 * sum) / (to - from);
+      next[i] = count ? 0.5 * cur[i] + (0.5 * sum) / count : cur[i];
     }
     cur = next;
   }
   return cur;
 }
+
+/** Neighbours smoothed over face about the same way: the cosine between their directions (about 35 degrees). */
+const SMOOTH_ALONG = 0.82;
 
 /**
  * Whether the masks keep a point smooth (screen frame), or null without masks. A point on a mask's
@@ -3867,6 +3884,67 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     }
     return out;
   }
+  /**
+   * The long strips CAD gives a round side in (a cylinder's: 40 mm along the axis, 1 mm round it) cut across at levels
+   * `edge` apart along the axis, two strips' halves together as one (see sliceByField): halved in their own shape they
+   * came out in slivers by the hundred thousand - the budget ran out before the grid was even, and the pattern showed the
+   * strips as streaks. Only needles (see hasNeedles) on faces that do not stay smooth, reaching over more than two levels.
+   */
+  function cutStrips(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, edge: number, smoothFace: Uint8Array) {
+    const ax = AXIS_INDEX[s.axis];
+    const [i1, i2] = acrossAxes(s.axis);
+    const v = mesh.vertices, I = mesh.indices;
+    const F = new Float64Array(v.length / 3), A = new Float64Array(v.length / 3);
+    for (let i = 0; i < F.length; i += 1) {
+      F[i] = v[i * 3 + ax];
+      A[i] = Math.atan2(v[i * 3 + i2] - layout.center[1], v[i * 3 + i1] - layout.center[0]) * layout.radius;
+    }
+    const turn = 2 * Math.PI * layout.radius;
+    const sliced = new Uint8Array(I.length / 3);
+    let any = false;
+    for (let f = 0; f < sliced.length; f += 1) {
+      if (smoothFace[mesh.parents[f]]) continue;
+      const a = I[f * 3], b = I[f * 3 + 1], c = I[f * 3 + 2];
+      if (Math.max(F[a], F[b], F[c]) - Math.min(F[a], F[b], F[c]) <= 2 * edge) continue;
+      const area2 = Math.hypot(...faceCross(v, a, b, c));
+      let longest = 0;
+      for (const [p, q] of [[a, b], [b, c], [c, a]]) longest = Math.max(longest, (v[p * 3] - v[q * 3]) ** 2 + (v[p * 3 + 1] - v[q * 3 + 1]) ** 2 + (v[p * 3 + 2] - v[q * 3 + 2]) ** 2);
+      if (area2 > 0 && longest > 8 * area2) {
+        sliced[f] = 1;
+        any = true;
+      }
+    }
+    if (!any) return mesh;
+    const around = (i: number, j: number) => {
+      const d = A[j] - A[i];
+      return d - turn * Math.round(d / turn);
+    };
+    return soundOr(mesh, sliceByField(mesh, F, (i, j) => F[j] - F[i], edge, [0], sliced, around));
+  }
+
+  /**
+   * Bark: cut along lines of equal value (each point's on its circle, see circleValue) at a few heights, so the furrows'
+   * steep flanks run along the edges. Taken at the grid's points alone, a flank crossing the grid at a slant came out as
+   * a zip of small triangles along each furrow, and smoothing over the neighbours (see smoothedValues) only blurred it.
+   * The values come back with the mesh (every point's), to be taken as they are: a point on a cut has its level - its
+   * value taken afresh strayed a little from the line's, and the flanks came out crinkled along the cuts. Faces in `skip`
+   * stay as they are; over the budget nothing is cut and no values come back.
+   */
+  function barkLevelCuts(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, blur: number, maxTriangles: number, skip: Uint8Array) {
+    const v = mesh.vertices, I = mesh.indices;
+    const { normals, crease } = normalsAndCreases(v, I, s.edgeAngle);
+    const F = new Float64Array(v.length / 3);
+    for (let i = 0; i < F.length; i += 1) F[i] = circleValue(v[i * 3], v[i * 3 + 1], v[i * 3 + 2], normals[i * 3], normals[i * 3 + 1], normals[i * 3 + 2], s, layout, blur);
+    const steps = CROSS_STEPS[s.detail] / 2;
+    const levels = Array.from({ length: steps }, (_, k) => (k + 0.5) / steps);
+    // Not at a sharp edge (a log's rim): a point there has a value for either face, and the cuts towards it took the
+    // bark's levels onto the end - which turned over there.
+    const sliced = Uint8Array.from({ length: I.length / 3 }, (_, f) => (skip[mesh.parents[f]] || crease[I[f * 3]] || crease[I[f * 3 + 1]] || crease[I[f * 3 + 2]] ? 0 : 1));
+    const cut = sliceByField(mesh, F, (i, j) => F[j] - F[i], 1e6, levels, sliced, null, true);
+    if (cut.indices.length / 3 > maxTriangles || badEdges(cut.indices) > badEdges(mesh.indices)) return { mesh, values: null };
+    return { mesh: cut, values: Float32Array.from(cut.field!) };
+  }
+
   /** Points of the mesh lying on side faces round the axis only (not on a top or bottom too). */
   function sidePointsFor(mesh: SurfaceMesh, ax: number) {
     return pointKindsFor(mesh, ax).map((k) => (k === 1 ? 1 : 0));
@@ -4238,6 +4316,10 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       let start = capFree && hasNeedles(baseMesh(base), capFree) ? refinePlanar(baseMesh(base), capFree, edge, budget) : baseMesh(base);
       // Rope in rings: cut along the joints between them, or the notch frayed over the grid.
       if (caps && s.pattern === "rope") start = capRingCuts(start, s, layout, s.spacing, [0], Uint8Array.from(caps, (k) => (k === 255 ? 1 : 0)), budget, smooth.faces);
+      // Bark's side round a cylinder in long strips: cut across first (see cutStrips). Not yet the other patterns': halving
+      // the strips gave them a grid finer than asked for along the axis, and a weave's strands lost their straight edges
+      // on the even one.
+      if (s.pattern === "bark" && s.projection === "cylinder" && !layout.outline) start = cutStrips(start, s, layout, edge, smooth.faces);
       // Grooves and bricks on straight faces are cut, not refined: points only on such faces (or smooth ones) stay as they are.
       let keep = smooth.points;
       if (straight && (striped || s.pattern === "bricks")) {
@@ -4360,6 +4442,12 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // went finer and finer along the pattern's lines, and no point there moves).
     const cutFaces = straight ? Uint8Array.from(straight, (k, f) => (k === 255 && !smooth.faces[f] ? 0 : 1)) : smooth.faces;
     if (!slice && !cracks && !text && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles, cutFaces);
+    // Cut even where the budget stopped refining (a long log): as long as the cuts still fit in (see barkLevelCuts).
+    if (s.pattern === "bark") {
+      const cut = barkLevelCuts(mesh, s, layout, BARK_BLUR * edge, maxTriangles, cutFaces);
+      mesh = cut.mesh;
+      fixed = cut.values;
+    }
     // Only when they were cut: over the budget they were not.
     const straightAxis = straightCut ? straight : null;
     cache = { ...withNormals(key, mesh, edge, crossMax, raised || Boolean(mesh.limited), slice ? { smoothFace: smooth.faces } : null, s.edgeAngle), text: unrolledText, fixed, straightAxis };
@@ -4672,7 +4760,10 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       // Where the side's rows run over a rim, or a border runs round it (see SurfaceTextureSettings.capEdge), neither.
       const kinds = layout.capEdge ? pointKindsFor(mesh, AXIS_INDEX[s.axis]) : null;
       const overRim = (i: number) => Boolean(kinds && kinds[i] === 3 && layout.rims!.some((rim) => Math.abs(v[i * 3 + AXIS_INDEX[s.axis]] - rim.level) <= RIM_LEVEL));
-      const kept = (i: number) => s.keepEdges && crease[i] === 1 && !(wrapped && wrapped[i]) && !overRim(i);
+      // Bark all round (a board, a box) keeps its edges smooth anyway: its furrows pulled an edge in past the points beside
+      // it on the other face, which turned over in spikes there. Round a log its ends' rims slide along (see edgeRounding).
+      const keepsEdges = s.keepEdges || (s.pattern === "bark" && s.projection === "allRound");
+      const kept = (i: number) => keepsEdges && crease[i] === 1 && !(wrapped && wrapped[i]) && !overRim(i);
       const w0 = new Uint8Array(n);
       for (let i = 0; i < n; i += 1) {
         const z = v[i * 3 + 2];
@@ -4760,7 +4851,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // fade over such a long triangle would smear and look restless. There - only there - it is refined finely; on the
     // straight faces of an angular body cut along lines of equal distance to the edge.
     // A pattern standing out: its run-out, finer still (see RUN_OUT_STEPS).
-    if (r.crossMax > 0 || r.straightAxis || standsOut(s)) {
+    // Bark all round fades out at the edges it keeps (see weightsFor): over its grid's triangles there in teeth.
+    if (r.crossMax > 0 || r.straightAxis || standsOut(s) || (s.pattern === "bark" && s.projection === "allRound")) {
       const weightKey = JSON.stringify([r.key, s.bottomFree, s.topFree, s.zoneFrom, s.zoneTo, s.keepEdges, s.edgeAngle, s.fade, s.direction, s.margin, s.outside, s.inside, layout.center, s.masks, s.faces]);
       const runOut = standsOut(s) ? Math.min(0.5, Math.max(s.fade, 0.25) / RUN_OUT_STEPS) : Math.min(0.5, Math.max(s.fade, 0.25) / 2);
       if (fadeCache?.key === weightKey) state = fadeCache.state;
@@ -4788,20 +4880,28 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // Text: the values come from the unrolled plane, not from a projection.
     const textValue = s.pattern === "text" && state.text ? state.text.values : null;
     const fixedValue = state.fixed ?? null;
-    const passes = SMOOTHED_PASSES[s.pattern] ?? 0;
+    // Bark cut along its levels comes with its values (see barkLevelCuts): smoothed over neighbours, they would leave the
+    // cuts. Over the budget it was not cut and is smoothed as wood is.
+    const barkCut = s.pattern === "bark" && fixedValue ? fixedValue : null;
+    const passes = barkCut ? 0 : (SMOOTHED_PASSES[s.pattern] ?? 0);
     const coarse = passes > 0 && state.limited && state.edge > 1.5 * targetEdge(s);
-    const smoothedValue = passes ? smoothedValues(state, s, layout, passes, coarse ? LIMITED_BLUR * state.edge : 0) : null;
+    const blur = coarse ? LIMITED_BLUR * state.edge : s.pattern === "bark" ? BARK_BLUR * state.edge : 0;
+    const smoothedValue = passes || blur > 0 ? smoothedValues(state, s, layout, passes, blur, barkCut) : null;
     let lettered = 0;
-    const roundCorner = (layout.outline && layout.outline.corners.length) || layout.capEdge ? edgeRounding(layout, s, pointKindsFor(mesh, AXIS_INDEX[s.axis]), directions) : null;
+    // Bark round a log with its ends: the end's rim slides in with the bark's furrows (see edgeRounding), or the furrows
+    // pulled the rim in past the end's points beside it, and its triangles there turned over in spikes.
+    const logRims = s.pattern === "bark" && Boolean(layout.inRims?.length);
+    const roundCorner = (layout.outline && layout.outline.corners.length) || layout.capEdge || logRims ? edgeRounding(layout, s, pointKindsFor(mesh, AXIS_INDEX[s.axis]), directions) : null;
     const moveFor = (value: number) => (s.direction === "outward" ? s.depth * value : s.direction === "inward" ? -s.depth * value : s.depth * (value - 0.5));
-    // The move at a point on an edge, for the point now moved (its weight) and a face's normal: values not from the
-    // projection (text, smoothed) are not known there - the point's own move stands in.
+    // The move at a point on an edge, for the point now moved (its weight) and a face's normal: a text's values are not
+    // known there - the point's own move stands in.
     let footW = 0;
-    const footDepth: SurfaceFootDepth = textValue || smoothedValue ? () => NaN : (foot, normal) => footW * moveFor(surfaceTextureValueAt(foot[0], foot[1], foot[2], normal[0], normal[1], normal[2], s, layout));
-    // Bricks on a sharp edge: each side moved as deep as its own bricks lie there, the point where they meet. With one
-    // move for both (see creaseMoves), a joint on the top beside a brick on the side pulled the edge into the top, and
-    // its brick faces down into fans.
-    const sides = s.pattern === "bricks" ? creaseSides(base, mesh, s.edgeAngle) : null;
+    // Smoothed values (bark, wood) there as on a circle round the foot (see circleValue), unsmoothed over neighbours.
+    const footDepth: SurfaceFootDepth = textValue ? () => NaN : (foot, normal) => footW * moveFor(circleValue(foot[0], foot[1], foot[2], normal[0], normal[1], normal[2], s, layout, smoothedValue ? blur : 0));
+    // Bricks, bark and wood on a sharp edge: each side moved as deep as its own pattern lies there, the point where they
+    // meet. With one move for both (see creaseMoves), a joint on the top beside a brick on the side pulled the edge into
+    // the top, and its brick faces down into fans; a log's rim took the bark's deep furrows for its end too, in spikes.
+    const sides = s.pattern === "bricks" || s.pattern === "bark" || s.pattern === "wood" ? creaseSides(base, mesh, s.edgeAngle) : null;
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
       const nx = directions[i * 3], ny = directions[i * 3 + 1], nz = directions[i * 3 + 2];
@@ -4828,7 +4928,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       }
       const meet = wi > 0 && sides?.get(i);
       if (meet) {
-        const m = creaseMeet(meet, Array.from({ length: meet.length / 3 }, (_, k) => wi * moveFor(surfaceTextureValueAt(x, y, z, meet[k * 3], meet[k * 3 + 1], meet[k * 3 + 2], s, layout))));
+        const m = creaseMeet(meet, Array.from({ length: meet.length / 3 }, (_, k) => wi * moveFor(circleValue(x, y, z, meet[k * 3], meet[k * 3 + 1], meet[k * 3 + 2], s, layout, smoothedValue ? blur : 0))));
         if (m) {
           out[i * 3] = x + m[0];
           out[i * 3 + 1] = y + m[1];
