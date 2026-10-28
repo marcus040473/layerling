@@ -4482,11 +4482,12 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         const I = mesh.indices;
         const sliced = new Uint8Array(I.length / 3);
         let any = false;
-        // Round the axis, grooves and knurling end in a wall on the side as well (see endsInWall): with a flat top or
-        // bottom picked too, it was faded out in splinters.
-        const walled = endsInWall(s);
+        // Round the axis the side next to a flat top or bottom ends at the same border (see weightsFor): cut along it too.
+        // Its triangles there (not halved, see below) ran from the rim far down, and the pattern ran out over them in
+        // teeth and splinters. Faces staying smooth have no distance to cut at.
+        const round = s.projection === "cylinder";
         for (let f = 0; f < sliced.length; f += 1) {
-          if (axisOf[mesh.parents[f]] === 255 && !(walled && !state.slice?.smoothFace[mesh.parents[f]])) continue;
+          if (axisOf[mesh.parents[f]] === 255 && !round) continue;
           if (Math.min(distance[I[f * 3]], distance[I[f * 3 + 1]], distance[I[f * 3 + 2]]) >= reach) continue;
           sliced[f] = 1;
           any = true;
@@ -4695,7 +4696,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         }
         w0[i] = free ? 0 : 1;
       }
-      const walled = endsInWall(s);
+      // Round the axis with a flat top or bottom (cut as a straight face), the side ends at a border with a wall as well.
+      const walled = endsInWall(s) || (Boolean(state.straightAxis) && s.projection === "cylinder");
       const faded = fadeWeights(v, mesh.indices, adj, w0, s.fade, s.margin, state.straightAxis || walled ? FADE_BEYOND : 0);
       // Straight faces cut along their pattern: a border with a short wall instead of the fade (see BORDER_WALL) - unless
       // the pattern stands out, which runs out up to the edge. Grooves and knurling round the axis likewise (see endsInWall).
@@ -4714,7 +4716,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
           axisAt[I[f * 3 + 2]] = k;
         }
         for (let i = 0; i < n; i += 1) {
-          // Round the axis with a flat top or bottom picked too, the side keeps its wall (not only the flat faces).
+          // Round the axis with a flat top or bottom, the side keeps its wall too (not only the flat faces).
           if ((axisOf && axisAt[i] === 255 && !walled) || w0[i] === 0) continue;
           const d = faded.distance[i];
           faded.weights[i] = d >= reach ? 1 : wall > 0 && d > reach - wall ? (d - (reach - wall)) / wall : 0;

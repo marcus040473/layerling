@@ -205,6 +205,23 @@ describe("picked faces", () => {
     expect(mantle).toBeGreaterThan(1000);
   }, 60_000);
 
+  it("end cells on a cylinder's mantle in a short wall at the rims too, with the top picked", () => {
+    // Faded out over the mantle's long triangles from the rim down, the joints' ends crumpled there.
+    const result = applySurfaceTexture(cylinder(15, 20), { pattern: "cells", fade: 1, margin: 0, faces: ["top", { at: [1, 0.5, 0.5], normal: [1, 0, 0] }] });
+    expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+    let still = 0;
+    for (const [x, y, z] of usedPoints(result)) {
+      const r = Math.hypot(x, z);
+      // On the mantle (the top's own wall stays further in than 14.2).
+      if (r < 14.2 || y < 1e-6 || y > 19.95) continue;
+      if (Math.min(y, 20 - y) < 0.84) {
+        still += 1;
+        expect(15 - r, `${x} ${y} ${z}`).toBeLessThan(0.01);
+      }
+    }
+    expect(still).toBeGreaterThan(100);
+  }, 60_000);
+
   it("end knurling on a cylinder's mantle in a short wall at both rims, with the top picked too", () => {
     // A coin: knurled on its top and round its side. The side faded out in splinters at its rims, not in the wall it
     // ends in alone (see endsInWall).
