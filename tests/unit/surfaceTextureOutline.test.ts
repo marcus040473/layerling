@@ -362,6 +362,28 @@ describe("every face of an angular body cut alike", () => {
     expect(turned).toBeLessThan(0.01 * near);
   }, 120_000);
 
+  it("leave a bump the rim would cut off whole, round an angular body too", () => {
+    // Cut off by the wall under a top kept smooth, the top row of holes on a hexagonal prism came out as half holes along
+    // the rim (issue #955). Every point cut in lies in a whole bump now, a fade's width or more under the rim.
+    const [radius, height, sides, fade] = [20, 45, 6, 1];
+    const result = applySurfaceTexture(prism(radius, height, sides), { pattern: "bumps", spacing: 7, depth: 1, fade });
+    const apothem = radius * Math.cos(Math.PI / sides);
+    let cutIn = 0, inBand = 0;
+    for (const [x, y, z] of usedPoints(result)) {
+      if (y > height - 1e-6 || y < 1e-6) continue;
+      let out = -Infinity;
+      for (let k = 0; k < sides; k += 1) {
+        const a = ((2 * k + 1) * Math.PI) / sides;
+        out = Math.max(out, x * Math.cos(a) + z * Math.sin(a));
+      }
+      if (out > apothem - 1e-3) continue;
+      cutIn += 1;
+      if (y > height - fade + 1e-6 || y < fade - 1e-6) inBand += 1;
+    }
+    expect(cutIn).toBeGreaterThan(1000);
+    expect(inBand).toBe(0);
+  }, 120_000);
+
   it("end grooves round the body at a border with a short wall, not in a twisted ramp", () => {
     // The top stays smooth (30 degrees): the grooves end a fade's width under its rim, flat above.
     const result = applySurfaceTexture(box(40, 30, 40), { pattern: "grooves", spacing: 3, depth: 0.6, fade: 1 });

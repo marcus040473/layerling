@@ -4939,6 +4939,31 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
           if (cornerU.some((at) => Math.abs(site.x - at - turn * Math.round((site.x - at) / turn)) < radius)) faded.weights[i] = 0;
         }
       }
+      // Round the axis, a bump the border would cut (at the rim of a top kept smooth, at a band's edge) stays off whole
+      // too, as on straight faces: cut off by the border's wall, a half hole along an angular body's rim looked like a
+      // mistake (issue #955).
+      if (s.pattern === "bumps" && s.projection === "cylinder") {
+        const radius = (layout.cell / 2) * s.width;
+        const turn = 2 * Math.PI * layout.radius;
+        const ax = AXIS_INDEX[s.axis];
+        // Per point in a bump the bump's place round the axis and up it, the same on both sides of the seam.
+        const siteKey = (i: number) => {
+          if (Math.abs(normals[i * 3 + ax]) > 0.8) return -1;
+          const u = aroundAngle(layout, v[i * 3 + i1], v[i * 3 + i2]) * layout.radius, w = v[i * 3 + ax];
+          const site = hexSite(u, w, layout.cell);
+          if (Math.hypot(u - site.x, w - site.y) >= radius) return -1;
+          const round = Math.max(1, Math.round((2 * turn) / layout.cell));
+          const kx = ((Math.round((2 * site.x) / layout.cell) % round) + round) % round;
+          return kx * 1e6 + Math.round((2 * site.y) / layout.cell) + 5e5;
+        };
+        const keys = new Float64Array(n);
+        const cut = new Set<number>();
+        for (let i = 0; i < n; i += 1) {
+          keys[i] = siteKey(i);
+          if (keys[i] >= 0 && faded.weights[i] < 1 - 1e-9) cut.add(keys[i]);
+        }
+        if (cut.size) for (let i = 0; i < n; i += 1) if (keys[i] >= 0 && cut.has(keys[i])) faded.weights[i] = 0;
+      }
       return faded;
     };
 
