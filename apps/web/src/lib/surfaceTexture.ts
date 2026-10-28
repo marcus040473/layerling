@@ -4424,8 +4424,11 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         const I = mesh.indices;
         const sliced = new Uint8Array(I.length / 3);
         let any = false;
+        // Round the axis, grooves and knurling end in a wall on the side as well (see endsInWall): with a flat top or
+        // bottom picked too, it was faded out in splinters.
+        const walled = endsInWall(s);
         for (let f = 0; f < sliced.length; f += 1) {
-          if (axisOf[mesh.parents[f]] === 255) continue;
+          if (axisOf[mesh.parents[f]] === 255 && !(walled && !state.slice?.smoothFace[mesh.parents[f]])) continue;
           if (Math.min(distance[I[f * 3]], distance[I[f * 3 + 1]], distance[I[f * 3 + 2]]) >= reach) continue;
           sliced[f] = 1;
           any = true;
@@ -4653,7 +4656,8 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
           axisAt[I[f * 3 + 2]] = k;
         }
         for (let i = 0; i < n; i += 1) {
-          if ((axisOf && axisAt[i] === 255) || w0[i] === 0) continue;
+          // Round the axis with a flat top or bottom picked too, the side keeps its wall (not only the flat faces).
+          if ((axisOf && axisAt[i] === 255 && !walled) || w0[i] === 0) continue;
           const d = faded.distance[i];
           faded.weights[i] = d >= reach ? 1 : wall > 0 && d > reach - wall ? (d - (reach - wall)) / wall : 0;
         }

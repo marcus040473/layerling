@@ -204,6 +204,29 @@ describe("picked faces", () => {
     expect(top).toBeGreaterThan(500);
     expect(mantle).toBeGreaterThan(1000);
   }, 60_000);
+
+  it("end knurling on a cylinder's mantle in a short wall at both rims, with the top picked too", () => {
+    // A coin: knurled on its top and round its side. The side faded out in splinters at its rims, not in the wall it
+    // ends in alone (see endsInWall).
+    const result = applySurfaceTexture(cylinder(15, 6), { pattern: "knurl", depth: 0.6, fade: 1, margin: 0, faces: ["top", { at: [1, 0.5, 0.5], normal: [1, 0, 0] }] });
+    expect(closed(result)).toMatchObject({ openEdges: 0, nonManifoldEdges: 0, shells: 1 });
+    let still = 0, full = 0;
+    for (const [x, y, z] of usedPoints(result)) {
+      const r = Math.hypot(x, z);
+      // On the mantle (the top's cut stays a fade's width inside the rim).
+      if (r < 14.3 || y < 1e-6 || y > 6 - 1e-6) continue;
+      const fromRim = Math.min(y, 6 - y);
+      // Within the wall's foot of either rim nothing is cut in (the segments' chords lie up to 0.01 inside); at its
+      // top, a fade's width from the rim, full deep.
+      if (fromRim < 0.84) {
+        still += 1;
+        expect(15 - r, `${x} ${y} ${z}`).toBeLessThan(0.01);
+      }
+      if (Math.abs(fromRim - 1) < 0.01 && 15 - r > 0.5) full += 1;
+    }
+    expect(still).toBeGreaterThan(100);
+    expect(full).toBeGreaterThan(20);
+  }, 60_000);
 });
 
 describe("faces that stay smooth stay coarse", () => {
