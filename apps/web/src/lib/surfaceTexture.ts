@@ -1875,6 +1875,15 @@ function standsOut(s: SurfaceTextureSettings) {
   return s.direction !== "inward" && s.pattern !== "bumps" && s.pattern !== "text" && s.pattern !== "cracks";
 }
 
+/**
+ * Grooves and knurling cut in round a body (a cylinder, along an angular body's outline) end at a border with a short
+ * wall too (see BORDER_WALL), as on the straight faces of a body all round: faded out over the fade, a V groove's end
+ * was a ramp of two twisted halves, and came out as a crooked arrow.
+ */
+function endsInWall(s: SurfaceTextureSettings) {
+  return !standsOut(s) && s.projection === "cylinder" && (s.pattern === "grooves" || s.pattern === "knurl");
+}
+
 /** Grooves and knurling around a cylinder or flat are cut into strips along the grooves (see sliceStripes). */
 function stripesAreCut(s: SurfaceTextureSettings) {
   return (s.pattern === "grooves" || s.pattern === "knurl") && s.projection !== "allRound";
@@ -4468,6 +4477,26 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       }
       pointFlags = new Uint8Array(onCut.length);
       for (let i = 0; i < flags.length; i += 1) pointFlags[i] = flags[i] && !onCut[i] ? 1 : 0;
+    } else if (distance && endsInWall(s)) {
+      // Round the axis the grooves end at a border with a wall too (see endsInWall): cut along it and the foot of the wall,
+      // on the faces that get the pattern (the distance to a rim changes linearly over a triangle there).
+      const reach = s.fade + s.margin;
+      const wall = Math.min(BORDER_WALL, s.fade);
+      const I = mesh.indices;
+      const sliced = new Uint8Array(I.length / 3);
+      let any = false;
+      for (let f = 0; f < sliced.length; f += 1) {
+        if (state.slice?.smoothFace[mesh.parents[f]]) continue;
+        if (Math.min(distance[I[f * 3]], distance[I[f * 3 + 1]], distance[I[f * 3 + 2]]) >= reach) continue;
+        sliced[f] = 1;
+        any = true;
+      }
+      if (any) {
+        const known = reach + FADE_BEYOND;
+        const field = Float64Array.from(distance, (d) => Math.min(d, known));
+        cutMesh = sliceByField(mesh, field, (i, j) => field[j] - field[i], 1e6, wall > 0 ? [reach - wall, reach] : [reach], sliced);
+        if (cutMesh.indices.length / 3 > maxTriangles) cutMesh.limited = true;
+      }
     }
     if (state.slice) {
       // Round the axis (straight faces lying flat are cut above).
@@ -4605,17 +4634,18 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         }
         w0[i] = free ? 0 : 1;
       }
-      const faded = fadeWeights(v, mesh.indices, adj, w0, s.fade, s.margin, state.straightAxis ? FADE_BEYOND : 0);
+      const walled = endsInWall(s);
+      const faded = fadeWeights(v, mesh.indices, adj, w0, s.fade, s.margin, state.straightAxis || walled ? FADE_BEYOND : 0);
       // Straight faces cut along their pattern: a border with a short wall instead of the fade (see BORDER_WALL) - unless
-      // the pattern stands out, which runs out up to the edge.
+      // the pattern stands out, which runs out up to the edge. Grooves and knurling round the axis likewise (see endsInWall).
       const axisOf = state.straightAxis;
-      if (axisOf && faded.distance && !standsOut(s)) {
+      if ((axisOf || walled) && faded.distance && !standsOut(s)) {
         const reach = s.fade + s.margin;
         const wall = Math.min(BORDER_WALL, s.fade);
         // Per point the axis of a straight face it lies on (255: none).
         const axisAt = new Uint8Array(n).fill(255);
         const I = mesh.indices;
-        for (let f = 0; f < I.length / 3; f += 1) {
+        for (let f = 0; axisOf && f < I.length / 3; f += 1) {
           const k = axisOf[mesh.parents[f]];
           if (k === 255) continue;
           axisAt[I[f * 3]] = k;
@@ -4623,12 +4653,12 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
           axisAt[I[f * 3 + 2]] = k;
         }
         for (let i = 0; i < n; i += 1) {
-          if (axisAt[i] === 255 || w0[i] === 0) continue;
+          if ((axisOf && axisAt[i] === 255) || w0[i] === 0) continue;
           const d = faded.distance[i];
           faded.weights[i] = d >= reach ? 1 : wall > 0 && d > reach - wall ? (d - (reach - wall)) / wall : 0;
         }
         // Bumps the border would cut stay off whole: a half bump at the frame looked like a mistake.
-        if (s.pattern === "bumps") {
+        if (axisOf && s.pattern === "bumps") {
           const radius = (layout.cell / 2) * s.width;
           const near = nearBorder(v, freeBorder(I, w0), reach + radius);
           const off = new Map<string, boolean>();

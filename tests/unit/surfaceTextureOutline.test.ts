@@ -361,4 +361,22 @@ describe("every face of an angular body cut alike", () => {
     expect(near).toBeGreaterThan(200);
     expect(turned).toBeLessThan(0.01 * near);
   }, 120_000);
+
+  it("end grooves round the body at a border with a short wall, not in a twisted ramp", () => {
+    // The top stays smooth (30 degrees): the grooves end a fade's width under its rim, flat above.
+    const result = applySurfaceTexture(box(40, 30, 40), { pattern: "grooves", spacing: 3, depth: 0.6, fade: 1 });
+    let above = 0, full = 0;
+    for (const [x, y, z] of usedPoints(result)) {
+      if (Math.abs(x) > 15 || z < 19) continue;
+      const depth = 20 - z, down = 30 - y;
+      // Above the wall's foot nothing is cut in; at its top, a fade's width under the rim, the grooves are full deep.
+      if (down >= 0 && down < 0.86) {
+        above += 1;
+        expect(depth).toBeLessThan(0.01);
+      }
+      if (Math.abs(down - 1) < 0.01 && depth > 0.59) full += 1;
+    }
+    expect(above).toBeGreaterThan(10);
+    expect(full).toBeGreaterThan(5);
+  });
 });
