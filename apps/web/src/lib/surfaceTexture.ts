@@ -1935,10 +1935,11 @@ function standsOut(s: SurfaceTextureSettings) {
 /**
  * Grooves and knurling cut in round a body (a cylinder, along an angular body's outline) end at a border with a short
  * wall too (see BORDER_WALL), as on the straight faces of a body all round: faded out over the fade, a V groove's end
- * was a ramp of two twisted halves, and came out as a crooked arrow.
+ * was a ramp of two twisted halves, and came out as a crooked arrow. So does an image cut in: its dark places ran out
+ * at the rim over the grid's triangles, in notches with teeth along their top.
  */
 function endsInWall(s: SurfaceTextureSettings) {
-  return !standsOut(s) && s.projection === "cylinder" && (s.pattern === "grooves" || s.pattern === "knurl");
+  return !standsOut(s) && s.projection === "cylinder" && (s.pattern === "grooves" || s.pattern === "knurl" || s.pattern === "image");
 }
 
 /** Grooves and knurling around a cylinder or flat are cut into strips along the grooves (see sliceStripes). */
@@ -4627,11 +4628,13 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       }
       pointFlags = new Uint8Array(onCut.length);
       for (let i = 0; i < flags.length; i += 1) pointFlags[i] = flags[i] && !onCut[i] ? 1 : 0;
-    } else if (distance && endsInWall(s)) {
+    } else if (distance && (endsInWall(s) || (s.projection === "cylinder" && standsOut(s)))) {
       // Round the axis the grooves end at a border with a wall too (see endsInWall): cut along it and the foot of the wall,
-      // on the faces that get the pattern (the distance to a rim changes linearly over a triangle there).
+      // on the faces that get the pattern (the distance to a rim changes linearly over a triangle there). A pattern
+      // standing out runs out up to the rim (see RUN_OUT_STEPS): cut at its steps.
       const reach = s.fade + s.margin;
       const wall = Math.min(BORDER_WALL, s.fade);
+      const levels = standsOut(s) ? Array.from({ length: RUN_OUT_STEPS }, (_, k) => s.margin + ((k + 1) * s.fade) / RUN_OUT_STEPS) : wall > 0 ? [reach - wall, reach] : [reach];
       const I = mesh.indices;
       const sliced = new Uint8Array(I.length / 3);
       let any = false;
@@ -4644,8 +4647,15 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       if (any) {
         const known = reach + FADE_BEYOND;
         const field = Float64Array.from(distance, (d) => Math.min(d, known));
-        cutMesh = sliceByField(mesh, field, (i, j) => field[j] - field[i], 1e6, wall > 0 ? [reach - wall, reach] : [reach], sliced);
+        cutMesh = sliceByField(mesh, field, (i, j) => field[j] - field[i], 1e6, levels, sliced);
         if (cutMesh.indices.length / 3 > maxTriangles) cutMesh.limited = true;
+        // Cut exactly, not halved as well: halving the band's triangles round the side made teeth along a wall's top and
+        // a run-out's rim. On a top or bottom a run-out is still halved (the points on its cuts too): its cuts follow the
+        // rim in long steps there, and rope frayed along it.
+        if (!state.slice) {
+          const kinds = standsOut(s) ? pointKindsFor(cutMesh, AXIS_INDEX[s.axis]) : null;
+          pointFlags = Uint8Array.from({ length: cutMesh.vertices.length / 3 }, (_, i) => (kinds && kinds[i] === 2 && (i >= flags.length || flags[i]) ? 1 : 0));
+        }
       }
     }
     if (state.slice) {
@@ -4841,6 +4851,21 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
           }
         }
       }
+      // Round an angular body's outline, a bump cut in right on a corner was folded round it into a heart, half on either
+      // side: such bumps stay off whole, as at a border.
+      if (s.pattern === "bumps" && !standsOut(s) && s.projection === "cylinder" && layout.outline?.corners.length) {
+        const radius = (layout.cell / 2) * s.width;
+        const turn = 2 * Math.PI * layout.radius;
+        const ax = AXIS_INDEX[s.axis];
+        const cornerU = layout.outline.corners.map((c) => aroundAngle(layout, c.at[0], c.at[1]) * layout.radius);
+        for (let i = 0; i < n; i += 1) {
+          if (faded.weights[i] === 0 || Math.abs(normals[i * 3 + ax]) > 0.8) continue;
+          const u = aroundAngle(layout, v[i * 3 + i1], v[i * 3 + i2]) * layout.radius, w = v[i * 3 + ax];
+          const site = hexSite(u, w, layout.cell);
+          if (Math.hypot(u - site.x, w - site.y) >= radius) continue;
+          if (cornerU.some((at) => Math.abs(site.x - at - turn * Math.round((site.x - at) / turn)) < radius)) faded.weights[i] = 0;
+        }
+      }
       return faded;
     };
 
@@ -4852,7 +4877,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // straight faces of an angular body cut along lines of equal distance to the edge.
     // A pattern standing out: its run-out, finer still (see RUN_OUT_STEPS).
     // Bark all round fades out at the edges it keeps (see weightsFor): over its grid's triangles there in teeth.
-    if (r.crossMax > 0 || r.straightAxis || standsOut(s) || (s.pattern === "bark" && s.projection === "allRound")) {
+    if (r.crossMax > 0 || r.straightAxis || standsOut(s) || endsInWall(s) || (s.pattern === "bark" && s.projection === "allRound")) {
       const weightKey = JSON.stringify([r.key, s.bottomFree, s.topFree, s.zoneFrom, s.zoneTo, s.keepEdges, s.edgeAngle, s.fade, s.direction, s.margin, s.outside, s.inside, layout.center, s.masks, s.faces]);
       const runOut = standsOut(s) ? Math.min(0.5, Math.max(s.fade, 0.25) / RUN_OUT_STEPS) : Math.min(0.5, Math.max(s.fade, 0.25) / 2);
       if (fadeCache?.key === weightKey) state = fadeCache.state;
