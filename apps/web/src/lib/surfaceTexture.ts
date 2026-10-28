@@ -59,7 +59,9 @@ import {
   nearBorder,
   faceCross,
   fixCaps,
+  creaseMeet,
   creaseMoves,
+  creaseSides,
   interpolatedNormals,
   mergeFlatPoints,
   normalsAndCreases,
@@ -874,9 +876,19 @@ const BRICK_SHORTEST: Record<SurfaceTextureBrickBond, number> = { running: 1, st
 /** Bricks lying unevenly sink by up to this share of the depth. */
 const BRICK_VARY_DEPTH = 0.5;
 
-/** A brick's length and where the bricks begin along `axis` (x, y or z: what u is, flat or all round), as fitted. */
-function brickAlong(layout: SurfaceTextureLayout, axis: number) {
+/**
+ * A brick's length and where the bricks begin along `axis` (x, y or z: what u is, flat or all round; 3 to 5 the same on a
+ * top or bottom, see SurfaceTextureLayout.capBricks), as fitted.
+ */
+function brickAlong(layout: SurfaceTextureLayout, axis: number): { origin: number; cell: number } {
+  if (axis >= 3) return layout.capBricks?.along ?? brickAlong(layout, axis - 3);
   return (axis >= 0 ? layout.brickAxes?.[axis] : undefined) ?? { origin: 0, cell: layout.cell };
+}
+
+/** A course's height and where the first one begins (`axis` as for brickAlong). */
+function brickRows(s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axis: number) {
+  if (axis >= 3 && layout.capBricks) return { H: layout.capBricks.rowHeight, v0: layout.capBricks.rowOrigin };
+  return { H: layout.rowHeight ?? s.brickHeight, v0: layout.rowOrigin ?? 0 };
 }
 
 /**
@@ -886,8 +898,7 @@ function brickAlong(layout: SurfaceTextureLayout, axis: number) {
  */
 function brickAt(u: number, v: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axis: number) {
   const { origin, cell: L } = brickAlong(layout, axis);
-  const H = layout.rowHeight ?? s.brickHeight;
-  const v0 = layout.rowOrigin ?? 0;
+  const { H, v0 } = brickRows(s, layout, axis);
   const courses = BRICK_COURSES[s.brickBond];
   const j = Math.floor((v - v0) / H);
   const course = courses[((j % courses.length) + courses.length) % courses.length];
@@ -920,7 +931,7 @@ function brickAt(u: number, v: number, s: SurfaceTextureSettings, layout: Surfac
 
 /** Half a brick joint's width, mm: as asked, but at most 45 % of the shortest brick or the course, so a brick stays. */
 function brickJointHalf(s: SurfaceTextureSettings, layout: SurfaceTextureLayout, axis: number) {
-  const H = layout.rowHeight ?? s.brickHeight;
+  const { H } = brickRows(s, layout, axis);
   return Math.min(s.brickJoint / 2, 0.45 * Math.min(H, BRICK_SHORTEST[s.brickBond] * brickAlong(layout, axis).cell));
 }
 
@@ -1046,6 +1057,11 @@ export type SurfaceTextureLayout = {
   rows?: number;
   /** Bricks flat or all round: per axis x, y, z a brick's length as fitted to the body's size along it, and where they begin. */
   brickAxes?: { origin: number; cell: number }[];
+  /**
+   * Bricks on a top or bottom (all round: seen along z; round a body: along its axis): their length and courses fitted
+   * to its own size, ending in a brick at an edge to a side with bricks (see fitBrickCourses).
+   */
+  capBricks?: { along: { origin: number; cell: number }; rowHeight: number; rowOrigin: number };
   /** Wood grain, and the ends of a log with bark: where the pith runs, and the knots. */
   wood?: WoodFrame | null;
   /**
@@ -1512,7 +1528,7 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
     if (layout.flatCaps && Math.abs(nAx) > 0.8) {
       const rim = rimAt(layout, pos[ax], Math.sign(nAx));
       if (rim && (layout.capEdge === "over" || layout.capEdge === "fold")) return overValue(pos[i1], pos[i2], pos[ax], rim, s, layout);
-      value = ringsOnCaps(s, layout) ? capRingValue(pos[i1], pos[i2], s, layout) : patternValue(...turnOnFace(pos[i1], pos[i2], s, layout), s, layout, i1);
+      value = ringsOnCaps(s, layout) ? capRingValue(pos[i1], pos[i2], s, layout) : patternValue(...turnOnFace(pos[i1], pos[i2], s, layout), s, layout, i1 + 3);
     } else value = patternValue(aroundAngle(layout, pos[i1], pos[i2]) * layout.radius, pos[ax], s, layout, -1);
     if (layout.capEdge !== "bead") return value;
     return beadOver(value, surfaceTextureBeadAt(x, y, z, nAx, s, layout));
@@ -1526,7 +1542,8 @@ export function surfaceTextureValueAt(x: number, y: number, z: number, nx: numbe
   const sum = wx + wy + wz || 1;
   const ax = AXIS_INDEX[s.axis];
   const along = (k: number, u: number, v: number, uAxis: number) => (k === ax ? patternValue(...turnOnFace(u, v, s, layout), s, layout, uAxis) : patternValue(u, v, s, layout, uAxis));
-  return (wx * along(0, y, z, 1) + wy * along(1, x, z, 0) + wz * along(2, x, y, 0)) / sum;
+  // Seen along z, a top or bottom: its bricks fitted of its own (see SurfaceTextureLayout.capBricks).
+  return (wx * along(0, y, z, 1) + wy * along(1, x, z, 0) + wz * along(2, x, y, 3)) / sum;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1618,7 +1635,7 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
   if (outline === undefined && (asked.projection === "auto" || asked.projection === "cylinder")) {
     const round = isRoundBody(base, asked.axis);
     shape = round ? null : surfaceTextureOutline(base, asked);
-    if (asked.projection === "auto") s = { ...asked, projection: round || (shape && wrapsOutline(asked)) ? "cylinder" : "allRound" };
+    if (asked.projection === "auto") s = { ...asked, projection: round || (shape && wrapsOutline(asked, shape)) ? "cylinder" : "allRound" };
     if (s.projection !== "cylinder") shape = null;
   }
   const ax = AXIS_INDEX[s.axis];
@@ -1742,14 +1759,15 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
 
 /**
  * Bricks: the courses fitted to the height the texture covers along their axis (round a cylinder its axis, flat the
- * second axis across it, all round z), so whole courses go from its bottom to its top and a joint runs along both - the
- * course height rounded as the spacing is round a cylinder. The height band counts when the courses run up z. Flat and
- * all round, the bricks' length is fitted the same way along every axis (round a cylinder: see makeSurfaceTextureLayout),
- * so a box's side begins and ends with a joint, as a wall would, instead of a sliver of a brick.
+ * second axis across it, all round z), so whole courses go from its bottom to its top - the course height rounded as the
+ * spacing is round a cylinder. The height band counts when the courses run up z. Flat and all round, the bricks' length
+ * is fitted the same way along every axis (round a cylinder: see makeSurfaceTextureLayout), so a box's side holds whole
+ * bricks, not a sliver of one. A top or bottom gets bricks of its own (see SurfaceTextureLayout.capBricks), fitted to its
+ * size the same way: with the sides' length and courses, its joints ran along its edges.
  *
- * Where the courses run over the edge (keepEdges off) onto a top or bottom that has bricks too, the last course ends in
- * a brick there instead, its joint just beyond the edge: a joint along the rim was a notch the top slid down into (see
- * edgeRounding), and a round top's coarse brick faces came out as splinters there.
+ * At every edge a brick ends, its joint just beyond the edge, as at a wall's corner. A joint along the edge was cut in
+ * there: next to a smooth face it ran out in a slope along the whole edge, next to a face with bricks it was a notch the
+ * other face slid into (see edgeRounding), in splinters over its coarse brick faces.
  */
 function fitBrickCourses(base: SurfaceBase, s: SurfaceTextureSettings, kept: Uint8Array, layout: SurfaceTextureLayout) {
   const along = s.projection === "cylinder" ? AXIS_INDEX[s.axis] : s.projection === "flat" ? acrossAxes(s.axis)[1] : 2;
@@ -1765,18 +1783,27 @@ function fitBrickCourses(base: SurfaceBase, s: SurfaceTextureSettings, kept: Uin
     lo = Math.max(lo, base.min[2] + (s.zoneFrom / 100) * zH);
     hi = Math.min(hi, base.min[2] + (s.zoneTo / 100) * zH);
   }
+  // Half a joint (see brickJointHalf), as the courses will come out about: how far beyond an edge a joint lies.
+  const half = Math.min(s.brickJoint / 2, 0.45 * Math.min(s.brickHeight, BRICK_SHORTEST[s.brickBond] * s.spacing));
+  const repeat = BRICK_PERIOD[s.brickBond] * s.spacing;
+  /** Along axis k: where the kept points begin, widened by a joint's half at both ends; null without a width. */
+  const range = (k: number) => {
+    let from = Infinity, to = -Infinity;
+    for (let i = 0; i < kept.length; i += 1) {
+      if (!kept[i]) continue;
+      from = Math.min(from, v[i * 3 + k]);
+      to = Math.max(to, v[i * 3 + k]);
+    }
+    return to - from > 1e-6 ? { from: from - half, to: to + half } : null;
+  };
+  const bricksAlong = (r: { from: number; to: number }) => {
+    const width = r.to - r.from;
+    return { origin: r.from, cell: (width / Math.max(1, Math.round(width / repeat)) / repeat) * s.spacing };
+  };
   if (s.projection !== "cylinder") {
-    const repeat = BRICK_PERIOD[s.brickBond] * s.spacing;
     layout.brickAxes = [0, 1, 2].map((k) => {
-      let from = Infinity, to = -Infinity;
-      for (let i = 0; i < kept.length; i += 1) {
-        if (!kept[i]) continue;
-        from = Math.min(from, v[i * 3 + k]);
-        to = Math.max(to, v[i * 3 + k]);
-      }
-      const width = to - from;
-      if (!(width > 1e-6)) return { origin: 0, cell: s.spacing };
-      return { origin: from, cell: (width / Math.max(1, Math.round(width / repeat)) / repeat) * s.spacing };
+      const r = range(k);
+      return r ? bricksAlong(r) : { origin: 0, cell: s.spacing };
     });
   }
   if (!(hi - lo > 1e-6)) {
@@ -1785,40 +1812,19 @@ function fitBrickCourses(base: SurfaceBase, s: SurfaceTextureSettings, kept: Uin
     layout.rows = 1;
     return;
   }
-  // Half a joint (see brickJointHalf), as the courses will come out about.
-  const half = Math.min(s.brickJoint / 2, 0.45 * Math.min(s.brickHeight, BRICK_SHORTEST[s.brickBond] * s.spacing));
-  const [below, above] = capsWithBricks(base, s, along, lo, hi);
-  if (below) lo -= half;
-  if (above) hi += half;
+  lo -= half;
+  hi += half;
   const rows = Math.max(1, Math.round((hi - lo) / s.brickHeight));
   layout.rows = rows;
   layout.rowHeight = (hi - lo) / rows;
   layout.rowOrigin = lo;
-}
-
-/**
- * Bricks running over the edges (keepEdges off): per end of the courses' range along axis `k` (from, to), whether the
- * body's top or bottom there - flat, facing along k - has bricks too (see fitBrickCourses): picked, when faces are
- * picked; else not kept smooth by its slope (topFree, bottomFree: z up).
- */
-function capsWithBricks(base: SurfaceBase, s: SurfaceTextureSettings, k: number, from: number, to: number) {
-  if (s.keepEdges) return [false, false];
-  const chosen = s.faces.length ? surfaceTextureChosenTriangles(base, s.faces, s.edgeAngle) : null;
-  if (!chosen && k !== 2) return [false, false];
-  const v = base.vertices, I = base.indices;
-  return [-1, 1].map((sign) => {
-    const level = sign > 0 ? to : from;
-    // Only at the body's own end: a height band ending on a side fades out there.
-    if (Math.abs(level - (sign > 0 ? base.max[k] : base.min[k])) > RIM_LEVEL) return false;
-    if (!chosen) return sign > 0 ? s.topFree === 0 : s.bottomFree === 0;
-    for (let f = 0; f < I.length / 3; f += 1) {
-      if (!chosen[f]) continue;
-      const n = faceCross(v, I[f * 3], I[f * 3 + 1], I[f * 3 + 2]);
-      if (n[k] * sign < 0.99 * Math.hypot(n[0], n[1], n[2])) continue;
-      if ([0, 1, 2].every((c) => Math.abs(v[I[f * 3 + c] * 3 + k] - level) <= RIM_LEVEL)) return true;
-    }
-    return false;
-  });
+  if (s.projection !== "allRound" && s.projection !== "cylinder") return;
+  // A top or bottom: seen along z all round, along the axis round a body.
+  const [u, w] = acrossAxes(s.projection === "allRound" ? "z" : s.axis);
+  const across = range(u), up = range(w);
+  if (!across || !up) return;
+  const courses = Math.max(1, Math.round((up.to - up.from) / s.brickHeight));
+  layout.capBricks = { along: bricksAlong(across), rowHeight: (up.to - up.from) / courses, rowOrigin: up.from };
 }
 
 /**
@@ -1863,9 +1869,25 @@ export function surfaceTextureOutline(base: SurfaceBase, s: SurfaceTextureSettin
 }
 
 /** Patterns laid round an angular body along its outline when the projection is automatic; the others go all round there. */
-function wrapsOutline(s: SurfaceTextureSettings) {
-  // Bricks are fitted to each face's edges (see fitBrickCourses); bark and wood belong to a log or a board.
-  return !["text", "cracks", "grain", "bricks", "bark", "wood"].includes(s.pattern);
+function wrapsOutline(s: SurfaceTextureSettings, outline: SurfaceOutline) {
+  // Bricks are fitted to each face's edges (see fitBrickCourses) - where the sides face along x and y, as a box's do.
+  // Any other side (a hexagon's slanted ones) saw them projected from aside, stretched, and their joints cut in teeth:
+  // there they go round the outline. Bark and wood belong to a log or a board.
+  if (s.pattern === "bricks") return !sidesAlongAxes(outline);
+  return !["text", "cracks", "grain", "bark", "wood"].includes(s.pattern);
+}
+
+/** Whether every side of an outline runs along one of the two axes across (within about 2 degrees). */
+function sidesAlongAxes(outline: SurfaceOutline) {
+  return outline.loops.every(({ points }) => {
+    const m = points.length / 2;
+    for (let k = 0; k < m; k += 1) {
+      const dx = points[((k + 1) % m) * 2] - points[k * 2], dy = points[((k + 1) % m) * 2 + 1] - points[k * 2 + 1];
+      const l = Math.hypot(dx, dy);
+      if (l > 1e-9 && Math.min(Math.abs(dx), Math.abs(dy)) > 0.035 * l) return false;
+    }
+    return true;
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -1929,7 +1951,7 @@ function stripesAreCut(s: SurfaceTextureSettings) {
  */
 function patternExtras(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   if (s.pattern === "cells" || s.pattern === "grain") return [s.seed];
-  if (s.pattern === "bricks") return [s.brickBond, s.brickJoint, layout.rowHeight ?? s.brickHeight, layout.rowOrigin ?? 0, layout.brickAxes ?? null];
+  if (s.pattern === "bricks") return [s.brickBond, s.brickJoint, layout.rowHeight ?? s.brickHeight, layout.rowOrigin ?? 0, layout.brickAxes ?? null, layout.capBricks ?? null];
   if (s.pattern === "bark") return [s.barkType, s.seed, s.ringWidth];
   if (s.pattern === "wood") return [s.woodType, s.woodCut, s.ringWidth, s.woodKnots, s.woodWobble, s.seed];
   if (s.pattern === "image") return [s.image === "own" && s.imageOwn ? ownImageKey(s.imageOwn) : s.image, s.tileHeight, s.imageTurn, s.imageInvert, s.imageBlur, s.imageTiling];
@@ -2906,9 +2928,11 @@ function sliceBricks(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surfa
   const cyl = s.projection === "cylinder";
   const R = layout.radius, [c1, c2] = layout.center;
   const round = cyl ? 2 * Math.PI * R : 0;
-  const uAxis = cyl ? -1 : i1;
+  // A top or bottom cut as a flat face (all round: seen along z; round a body: along its axis) has bricks of its own.
+  const cap = !cyl && (layout.projection === "allRound" ? ax === 2 : layout.projection === "cylinder");
+  const uAxis = cyl ? -1 : cap ? i1 + 3 : i1;
   const { origin, cell: L } = brickAlong(layout, uAxis);
-  const H = layout.rowHeight ?? s.brickHeight, v0 = layout.rowOrigin ?? 0;
+  const { H, v0 } = brickRows(s, layout, uAxis);
   const hw = brickJointHalf(s, layout, uAxis);
   const courses = BRICK_COURSES[s.brickBond];
   // Every point's place in the unrolled surface, the change from one point to another across the seam too.
@@ -4574,7 +4598,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const outline = roundAxis && !round ? (outlines.get(outlineKey) ?? null) : null;
     // "auto" decided for this body: round the axis on a round body, along the outline on an angular one standing along it,
     // else all round. Everything below sees the choice.
-    const s: SurfaceTextureSettings = asked.projection === "auto" ? { ...asked, projection: round || (outline && wrapsOutline(asked)) ? "cylinder" : "allRound" } : asked;
+    const s: SurfaceTextureSettings = asked.projection === "auto" ? { ...asked, projection: round || (outline && wrapsOutline(asked, outline)) ? "cylinder" : "allRound" } : asked;
     const preview = Boolean(options.preview);
     const maxTriangles = Math.max(1000, Math.round(options.maxTriangles ?? (preview ? SURFACE_TEXTURE_PREVIEW_TRIANGLES : SURFACE_TEXTURE_MAX_TRIANGLES)));
     const maskFree = maskTest(s.masks);
@@ -4772,6 +4796,10 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // projection (text, smoothed) are not known there - the point's own move stands in.
     let footW = 0;
     const footDepth: SurfaceFootDepth = textValue || smoothedValue ? () => NaN : (foot, normal) => footW * moveFor(surfaceTextureValueAt(foot[0], foot[1], foot[2], normal[0], normal[1], normal[2], s, layout));
+    // Bricks on a sharp edge: each side moved as deep as its own bricks lie there, the point where they meet. With one
+    // move for both (see creaseMoves), a joint on the top beside a brick on the side pulled the edge into the top, and
+    // its brick faces down into fans.
+    const sides = s.pattern === "bricks" ? creaseSides(base, mesh, s.edgeAngle) : null;
     for (let i = 0; i < n; i += 1) {
       const x = v[i * 3], y = v[i * 3 + 1], z = v[i * 3 + 2];
       const nx = directions[i * 3], ny = directions[i * 3 + 1], nz = directions[i * 3 + 2];
@@ -4795,6 +4823,16 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       if (roundCorner && d !== 0) {
         footW = wi;
         if (roundCorner(i, x, y, z, d, out, footDepth)) continue;
+      }
+      const meet = wi > 0 && sides?.get(i);
+      if (meet) {
+        const m = creaseMeet(meet, Array.from({ length: meet.length / 3 }, (_, k) => wi * moveFor(surfaceTextureValueAt(x, y, z, meet[k * 3], meet[k * 3 + 1], meet[k * 3 + 2], s, layout))));
+        if (m) {
+          out[i * 3] = x + m[0];
+          out[i * 3 + 1] = y + m[1];
+          out[i * 3 + 2] = z + m[2];
+          continue;
+        }
       }
       out[i * 3] = x + moves[i * 3] * d;
       out[i * 3 + 1] = y + moves[i * 3 + 1] * d;
