@@ -4240,7 +4240,9 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       : text
         ? JSON.stringify([s.pattern, layout.text ? [layout.text.point, layout.text.face] : null, s.axis, s.textTurn, outlineKey(s.textOutline)])
         : JSON.stringify([s.pattern, s.spacing, s.width, s.profile, s.projection, s.axis, layout.cell, layout.period, layout.angle, layout.radius, layout.center, s.faceTurn, Boolean(layout.flatCaps), s.capStyle, layout.capEdge ?? null, layout.rims ?? null, patternExtras(s, layout)]);
-    const key = `${edge.toFixed(5)}|${smoothKey}|${JSON.stringify(s.faces)}|${maxTriangles}|${s.edgeAngle}|${s.detail}|${scale}|${layoutKey}`;
+    // A raised pattern round an outline's corners is cut along arcs as deep as the pattern stands out (cornerCuts).
+    const cornerReach = s.projection === "cylinder" && layout.outline?.corners.length && standsOut(s) ? Math.max(1, s.depth) : 0;
+    const key = `${edge.toFixed(5)}|${smoothKey}|${JSON.stringify(s.faces)}|${maxTriangles}|${s.edgeAngle}|${s.detail}|${scale}|${cornerReach}|${layoutKey}`;
     if (cache?.key === key) return cache;
     let mesh: SurfaceMesh;
     const net = layout.crack;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySurfaceTexture, insideToScreenPositions, makeSurfaceTextureLayout, normalizeSurfaceTexture, surfaceFalloff, surfaceTextureValueAt } from "@/lib/surfaceTexture";
+import { applySurfaceTexture, createSurfaceTextureSession, insideToScreenPositions, makeSurfaceTextureLayout, normalizeSurfaceTexture, surfaceFalloff, surfaceTexturePositions, surfaceTextureValueAt } from "@/lib/surfaceTexture";
 import { prepareSurfaceBase, surfaceMeshReport } from "@/lib/surfaceTextureMesh";
 import { nearestOnOutline, outlineAngle, outlineRing, prismOutline } from "@/lib/surfaceTextureOutline";
 
@@ -379,4 +379,19 @@ describe("every face of an angular body cut alike", () => {
     expect(above).toBeGreaterThan(10);
     expect(full).toBeGreaterThan(5);
   });
+});
+
+describe("a texture made again on the same body", () => {
+  it("comes out as made anew when the pattern turns inward or stands out further round the corners", () => {
+    const soup = box(30, 30, 30);
+    const session = createSurfaceTextureSession(soup);
+    session.apply({ pattern: "rope", depth: 0.6 });
+    for (const change of [{ depth: 0.6, direction: "in" }, { depth: 2 }]) {
+      const kept = surfaceTexturePositions(session.apply({ pattern: "rope", ...change }));
+      const fresh = surfaceTexturePositions(applySurfaceTexture(soup, { pattern: "rope", ...change }));
+      // Counted rather than compared whole: a list this long would take minutes to show where it differs.
+      const differing = kept.length === fresh.length ? kept.filter((value, i) => value !== fresh[i]).length : -1;
+      expect(differing).toBe(0);
+    }
+  }, 120_000);
 });
