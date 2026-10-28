@@ -3171,6 +3171,8 @@ function smoothedValues(state: RefinedState, s: SurfaceTextureSettings, layout: 
   return cur;
 }
 
+/** In how many steps a pattern standing out is cut round a corner of an outline (see cornerCuts). */
+const CORNER_STEPS = 4;
 /** Where a weave's stakes are cut across (see weaveCuts): shares of the stake's half width from its middle. */
 const WEAVE_STAKE_PLACES = [0.4, 0.7, 0.87, 0.95, 0.99];
 /** Where its weavers' bands are cut along: shares of the band's half height from its middle (its joints too). */
@@ -3980,6 +3982,39 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     return out.indices.length / 3 > maxTriangles ? mesh : out;
   }
 
+  /**
+   * A pattern standing out round an angular body's outline bends round its corners in an arc (see edgeRounding), over
+   * `reach` either side of each: cut upright at its steps there, so the arc is made of strips along the corner. Over the
+   * grid's diagonals it came out as a column of teeth down every corner.
+   */
+  function cornerCuts(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, maxTriangles: number, smoothFace: Uint8Array) {
+    const ax = AXIS_INDEX[s.axis];
+    const [i1, i2] = acrossAxes(s.axis);
+    const kinds = baseFaceKinds(ax);
+    const turn = 2 * Math.PI * layout.radius;
+    const around = (a: number, b: number) => {
+      const u = aroundAngle(layout, a, b) * layout.radius;
+      return u - turn * Math.floor(u / turn);
+    };
+    const levels: number[] = [];
+    for (const c of layout.outline?.corners ?? []) {
+      const reach = Math.min(c.reach, Math.max(1, s.depth));
+      for (const away of [[c.before[1], -c.before[0]], [-c.after[1], c.after[0]]]) {
+        for (let k = 1; k <= CORNER_STEPS; k += 1) levels.push(around(c.at[0] + ((k * reach) / CORNER_STEPS) * away[0], c.at[1] + ((k * reach) / CORNER_STEPS) * away[1]));
+      }
+    }
+    if (!levels.length) return mesh;
+    const v = mesh.vertices;
+    const U = Float64Array.from({ length: v.length / 3 }, (_, i) => around(v[i * 3 + i1], v[i * 3 + i2]));
+    const du = (i: number, j: number) => {
+      const d = U[j] - U[i];
+      return d - turn * Math.round(d / turn);
+    };
+    const sliced = Uint8Array.from({ length: mesh.indices.length / 3 }, (_, f) => (!smoothFace[mesh.parents[f]] && kinds[mesh.parents[f]] === 1 ? 1 : 0));
+    const out = soundOr(mesh, sliceByField(mesh, U, du, turn, levels, sliced));
+    return out.indices.length / 3 > maxTriangles ? mesh : out;
+  }
+
   /** Points of the mesh lying on side faces round the axis only (not on a top or bottom too). */
   function sidePointsFor(mesh: SurfaceMesh, ax: number) {
     return pointKindsFor(mesh, ax).map((k) => (k === 1 ? 1 : 0));
@@ -4477,6 +4512,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     // went finer and finer along the pattern's lines, and no point there moves).
     const cutFaces = straight ? Uint8Array.from(straight, (k, f) => (k === 255 && !smooth.faces[f] ? 0 : 1)) : smooth.faces;
     if (s.pattern === "weave" && s.projection === "cylinder" && !mesh.limited) mesh = weaveCuts(mesh, s, layout, maxTriangles, smooth.faces);
+    if (s.projection === "cylinder" && layout.outline?.corners.length && standsOut(s) && !mesh.limited) mesh = cornerCuts(mesh, s, layout, maxTriangles, smooth.faces);
     if (!slice && !cracks && !text && !mesh.limited && !cellSliced) mesh = refineFlanks(mesh, s, layout, edge / 2.5, maxTriangles, cutFaces);
     // Cut even where the budget stopped refining (a long log): as long as the cuts still fit in (see barkLevelCuts).
     if (s.pattern === "bark") {

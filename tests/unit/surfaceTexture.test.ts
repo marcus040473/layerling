@@ -329,6 +329,20 @@ describe("texturing a body", () => {
     expect(sides).toBeGreaterThan(100);
     // (About one in seven before, one in thirty now.)
     expect(teeth).toBeLessThan(0.1 * sides);
+    // Round the upright edges it bends in an arc, cut upright: no column of teeth tilted up and down along them.
+    let byEdges = 0, tilted = 0;
+    for (let t = 0; t < I.length / 3; t += 1) {
+      const [a, b, c] = [I[t * 3], I[t * 3 + 1], I[t * 3 + 2]];
+      const [x, y, z] = [0, 1, 2].map((k) => (v[a * 3 + k] + v[b * 3 + k] + v[c * 3 + k]) / 3);
+      if (Math.abs(x) < 19 || Math.abs(z) < 14 || y < 3 || y > 27) continue;
+      const u = [v[b * 3] - v[a * 3], v[b * 3 + 1] - v[a * 3 + 1], v[b * 3 + 2] - v[a * 3 + 2]];
+      const w = [v[c * 3] - v[a * 3], v[c * 3 + 1] - v[a * 3 + 1], v[c * 3 + 2] - v[a * 3 + 2]];
+      const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+      byEdges += 1;
+      if (Math.abs(n[1]) > 0.5 * (Math.hypot(n[0], n[1], n[2]) || 1)) tilted += 1;
+    }
+    expect(byEdges).toBeGreaterThan(500);
+    expect(tilted).toBeLessThan(0.015 * byEdges);
   }, 30000);
 
   it("runs rope out at a cylinder's rim on rows cut at its steps, not over halved triangles", () => {
