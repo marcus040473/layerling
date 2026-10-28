@@ -72,6 +72,8 @@ The colours of the work area in the settings have a simpler picker of their own,
 
 Round shapes such as cylinder, cone, tube, ellipse or the bores have the switch {{ui:prop.sidesFollowSize}} and the slider {{ui:prop.sides}} in their properties. The {{ui:shape.torus}} has two sliders: {{ui:prop.torusSides}} around the ring and {{ui:prop.torusSteps}} around the tube. They follow the size there too until you hold them, so a large torus shows no facets. The reason: for the view and for STL, 3MF and OBJ, layerling draws a circle as a polygon of many small sides. The more sides, the smoother it is, and the more triangles it takes.
 
+The {{ui:prop.torusTube}} sets how thick the tube is seen from above. The height only squashes or stretches the tube, so a flat ring keeps its hole; at half the outer size the hole closes. Dragging the handles scales the tube along. Only a torus whose tube is as thick as the torus is high stays an exact body for chamfers, fillets and STEP.
+
 **Where the side count matters**
 
 - **In the export for the slicer** (STL, 3MF, OBJ). A cylinder with few sides arrives there as a polygon.

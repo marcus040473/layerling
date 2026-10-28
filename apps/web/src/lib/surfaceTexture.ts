@@ -449,6 +449,13 @@ const BORDER_WALL = 0.15;
  * or rope 3 mm high came down over a few long triangles, frayed.
  */
 const RUN_OUT_STEPS = 4;
+
+/** In how many steps a pattern standing out is cut round a corner of an outline (see cornerCuts). */
+const CORNER_STEPS = 4;
+/** Where a weave's stakes are cut across (see weaveCuts): shares of the stake's half width from its middle. */
+const WEAVE_STAKE_PLACES = [0.4, 0.7, 0.87, 0.95, 0.99];
+/** Where its weavers' bands are cut along: shares of the band's half height from its middle (its joints too). */
+const WEAVE_BAND_PLACES = [0.4, 0.7, 0.9];
 /** How far past the fade the distance to a smooth edge is known: the longest triangle on a straight face reaching into it. */
 const FADE_BEYOND = 10;
 /**
@@ -3170,13 +3177,6 @@ function smoothedValues(state: RefinedState, s: SurfaceTextureSettings, layout: 
   }
   return cur;
 }
-
-/** In how many steps a pattern standing out is cut round a corner of an outline (see cornerCuts). */
-const CORNER_STEPS = 4;
-/** Where a weave's stakes are cut across (see weaveCuts): shares of the stake's half width from its middle. */
-const WEAVE_STAKE_PLACES = [0.4, 0.7, 0.87, 0.95, 0.99];
-/** Where its weavers' bands are cut along: shares of the band's half height from its middle (its joints too). */
-const WEAVE_BAND_PLACES = [0.4, 0.7, 0.9];
 
 /** Neighbours smoothed over face about the same way: the cosine between their directions (about 35 degrees). */
 const SMOOTH_ALONG = 0.82;

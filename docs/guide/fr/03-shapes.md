@@ -61,6 +61,8 @@ Taper est plus précis que faire glisser. Tous les champs numériques prennent d
 
 Les formes rondes telles que le cylindre, le cône, le tube, l'ellipse ou les alésages ont le commutateur {{ui:prop.sidesFollowSize}} et le curseur {{ui:prop.sides}} dans leurs propriétés. Le {{ui:shape.torus}} possède deux curseurs : {{ui:prop.torusSides}} autour de l'anneau et {{ui:prop.torusSteps}} autour du tube. Là aussi, ils suivent la taille jusqu'à ce que vous les teniez, donc un grand tore ne montre aucune facette. La raison : pour la vue et pour STL, 3MF et OBJ, layerling dessine un cercle comme un polygone de nombreux petits côtés. Plus il y a de côtés, plus il est lisse et plus il faut de triangles.
 
+{{ui:prop.torusTube}} fixe l'épaisseur du tube vu de dessus. La hauteur ne fait qu'écraser ou étirer le tube, un anneau plat garde donc son trou ; à la moitié de la dimension extérieure, le trou se ferme. En tirant sur les poignées, le tube suit la mise à l'échelle. Seul un tore dont le tube est aussi épais que le tore est haut reste un corps exact pour les chanfreins, les congés et le STEP.
+
 **Là où le nombre de côtés compte**
 
 - **Dans l'export pour le slicer** (STL, 3MF, OBJ). Un cylindre avec peu de côtés y arrive sous forme de polygone.

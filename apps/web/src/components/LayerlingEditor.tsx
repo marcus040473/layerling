@@ -29,7 +29,7 @@ import { iconSourceFromFile, PICTURE_FILE_ACCEPT, type IconSource } from "@/lib/
 import { loadedManifoldRuntime, onManifoldReady } from "@/lib/manifoldHandle";
 import { canApplySketchCornerTreatment } from "@/lib/sketchFilletChamfer";
 import { SKETCH_POLYGON_DEFAULT_SIDES, SKETCH_STAR_DEFAULT_INNER_PERCENT, sketchPrimitiveGeometry } from "@/lib/sketchPrimitives";
-import { cloneSketchProfile, orderedSketchPaths, sketchWithPointMode, withSmoothSketchHandles } from "@/lib/sketchSmoothHandles";
+import { cloneSketchProfile, orderedSketchPaths, sketchWithPointMode, withSmoothHandlesAfterRemoval, withSmoothSketchHandles } from "@/lib/sketchSmoothHandles";
 import { curveThroughPoints } from "@/lib/sketchCurveThroughPoints";
 import { changesLockedOutline, setSketchPointsLocked, sketchLockState } from "@/lib/sketchLock";
 import { curveSketchSegment, isSegmentCurved, straightenSketchSegment } from "@/lib/sketchSegmentCurve";
@@ -81,7 +81,7 @@ import { ShortcutsModal } from "./workplane/ShortcutsModal";
 import { InteractiveHelp } from "./InteractiveHelp";
 import { ShapeContextMenu, type ShapeContextMenuItem } from "./workplane/ShapeContextMenu";
 import { nextSelectionTransparency } from "@/lib/selectionTransparency";
-import { canonicalizeShape, cloneWorkplaneShapeTreeWithFreshIds, cleanNearZero, cleanRotationDegrees, isNonSolidShape, meshYawDegrees, preservesEdgeTreatmentSize, serializeShapesForSync, shapeDepth, shapeExtrudeDeformPatch, shapeHasShapeDeform, shapeTaperPatch, shapeTransformShouldRemainEditable, shapeWidth, shapeWithParametricSource, patchTouchesBodyParameters, withHoleMode, workplaneShapesEqual, shellNeedingRebuild, hollowStretchSincePicture } from "@/lib/workplaneShapes";
+import { canonicalizeShape, cloneWorkplaneShapeTreeWithFreshIds, cleanNearZero, cleanRotationDegrees, isNonSolidShape, meshYawDegrees, preservesEdgeTreatmentSize, serializeShapesForSync, shapeDepth, shapeExtrudeDeformPatch, shapeHasShapeDeform, shapeTaperPatch, shapeTransformShouldRemainEditable, shapeWidth, shapeWithParametricSource, patchTouchesBodyParameters, withHoleMode, workplaneShapesEqual, shellNeedingRebuild, hollowStretchSincePicture, edgeTreatmentsAfterShell } from "@/lib/workplaneShapes";
 import { pasteCenteringShift } from "@/lib/pasteCentering";
 import { faceWorkplaneCenteringShift, workplaneCenteringOffset } from "@/lib/workplaneCentering";
 import { projectShapesExtent } from "@/components/workplane/ViewportOverlays";
@@ -91,6 +91,7 @@ import { cadModifierGridfinityForShape, cadModifierHelicalGearForShape, cadModif
 import { DEFAULT_OVERHANG_ANGLE, normalizeOverhangAngle, overhangArea } from "@/lib/overhang";
 import { sectionMeasurement, sectionPointToWorld, snapSectionPoint } from "@/lib/sectionMeasure";
 import { DEFAULT_INFILL_PERCENT, DEFAULT_WALLS, PRINT_MATERIAL_DENSITY, PRINT_MATERIALS, FILAMENT_DIAMETER_MM, normalizePrintMaterial, printEstimate, printEstimateWithInfill } from "@/lib/printEstimate";
+import { matchingEdgeIds } from "@/lib/edgeMatching";
 import { CAD_MODIFIER_MAX_SHARP_ANGLE, CAD_MODIFIER_REQUEST_TIMEOUT_MS, CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT, cadModifierPrepareTimeoutMs, cadModifierTimeoutMessage, cadModifierUserErrorMessage, cadModifierWorkerFailureMessage, cadModifierCandidateEdge, defaultCadModifierTangentChain, rescueSharpAngleForEdges, selectableCadModifierEdge, type CadModifierRequestPhase } from "@/lib/cadModifierRuntime";
 import { createCadPreviewQueue } from "@/lib/cadPreviewQueue";
 import { cloneWorkplaneShapeSnapshot, compactEdgeTreatmentHistory, edgeTreatmentAppliedFrame, groupBeforeEdgeTreatments, restoreShapeBeforeEdgeTreatment, wasGroupBeforeEdgeTreatments } from "@/lib/edgeTreatmentHistory";
@@ -396,6 +397,12 @@ function parseClipboardShapes(serialized: string): ClipboardPayload<WorkplaneSha
   return { copiedAt: payload.copiedAt, shapes };
 }
 
+/**
+ * The last copy made in this page (#964). It outlives the editor, which is taken down and built anew while another
+ * design loads: a copy too large for local storage, a big group say, was gone by the time it was pasted there.
+ */
+let pageClipboard: ClipboardPayload<WorkplaneShape> | null = null;
+
 function readSharedClipboard(): ClipboardPayload<WorkplaneShape> | null {
   if (typeof window === "undefined") {
     return null;
@@ -456,6 +463,7 @@ function writeSharedClipboard(shapes: WorkplaneShape[], copiedAt: number) {
   if (typeof window === "undefined") {
     return;
   }
+  pageClipboard = { copiedAt, shapes };
   const serialized = encodeClipboardPayload(serializeShapesForSync(shapes), copiedAt);
   try {
     if (serialized.length > LOCAL_CLIPBOARD_LIMIT) {
@@ -3261,7 +3269,7 @@ export function LayerlingEditor({
   useEffect(() => {
     setSystemClipboardSupported(Boolean(navigator.clipboard));
     const adoptShared = () => {
-      const shared = readSharedClipboard();
+      const shared = newestClipboard([pageClipboard, readSharedClipboard()]);
       if (shared && shared.copiedAt >= clipboardCopiedAtRef.current) {
         clipboardCopiedAtRef.current = shared.copiedAt;
         setClipboard(shared.shapes);
@@ -4935,7 +4943,7 @@ export function LayerlingEditor({
     (id: string) => {
       // A point between two sides is bridged; at a crossing the sides that run on are joined (#641).
       const next = sketchProfileWithoutPoint(sketchProfile, id);
-      commitSketchProfile(next.segments.some((segment) => segment.kind === "smooth") ? withSmoothSketchHandles(next) : next, t("status.sketchPointRemoved"));
+      commitSketchProfile(withSmoothHandlesAfterRemoval(sketchProfile, next, id), t("status.sketchPointRemoved"));
       if (sketchActivePointId === id) setSketchActivePointId(null);
       setSketchSelection(null);
     },
@@ -5957,6 +5965,7 @@ export function LayerlingEditor({
     // storage) or another browser (system clipboard).
     const newest = newestClipboard([
       { copiedAt: clipboardCopiedAtRef.current, shapes: clipboard },
+      pageClipboard,
       readSharedClipboard(),
       await readSystemClipboard(),
     ]);
@@ -6818,9 +6827,12 @@ export function LayerlingEditor({
     return { response, sourceParts };
   }, [postCadModifierRequestAsync]);
 
-  const applyCadModifierForMcp = useCallback(async (
+  // `lay` only computes the treated body and hands it back, without the checks and the commit: a hollow
+  // body hollowed again after resizing lays its fillets anew on the fresh walls that way (forum, 621213).
+  const edgeTreatedShape = useCallback(async (
     shape: WorkplaneShape,
     params: Record<string, unknown>,
+    lay?: (modified: WorkplaneShape) => void,
   ) => {
     invalidateCadModifierSession();
     const sourceFingerprint = projectShapesFingerprint([shape]);
@@ -6914,6 +6926,10 @@ export function LayerlingEditor({
       preserveEdgeSize,
       createdAt,
     );
+    if (lay) {
+      lay(modifiedShape);
+      return null;
+    }
     const currentTarget = shapesRef.current.find((candidate) => candidate.id === shape.id);
     if (
       projectInfoRef.current.projectId !== sourceProjectId ||
@@ -6935,6 +6951,34 @@ export function LayerlingEditor({
       selectableEdgeIds: selectableIds,
     };
   }, [commitShapes, invalidateCadModifierSession, prepareCadModifierForMcp, postCadModifierRequestAsync]);
+  const applyCadModifierForMcp = useCallback(async (shape: WorkplaneShape, params: Record<string, unknown>) => {
+    const result = await edgeTreatedShape(shape, params);
+    if (!result) throw new Error("The edge treatment returned nothing");
+    return result;
+  }, [edgeTreatedShape]);
+  const relaidEdgeTreatment = useCallback(async (shape: WorkplaneShape, entry: NonNullable<WorkplaneShape["edgeTreatmentHistory"]>[number]) => {
+    const { feature } = entry;
+    // The edges are found again by where they lie, not by their numbers, which a stretched body changes.
+    const sharpAngle = 25;
+    const [{ response: old }, { response: fresh }] = [
+      await prepareCadModifierForMcp(entry.before, sharpAngle),
+      await prepareCadModifierForMcp(shape, sharpAngle),
+    ];
+    const edgeIds = matchingEdgeIds(old.edges, feature.edgeIds ?? [], fresh.edges,
+      fresh.edges.filter((edge) => selectableCadModifierEdge(edge, sharpAngle)).map((edge) => edge.id));
+    if (!edgeIds) throw new Error("The edges of the fillet were not found again on the rebuilt body");
+    let laid: WorkplaneShape | null = null;
+    await edgeTreatedShape(shape, {
+      kind: feature.kind,
+      amount: feature.amount,
+      edgeIds,
+      preserveEdgeSize: true,
+      ...(feature.chamferAngle !== undefined ? { chamferAngle: feature.chamferAngle } : {}),
+      ...(feature.endAmount !== undefined ? { endAmount: feature.endAmount } : {}),
+    }, (modified) => { laid = modified; });
+    if (!laid) throw new Error("The edge treatment returned nothing");
+    return laid as WorkplaneShape;
+  }, [edgeTreatedShape, prepareCadModifierForMcp]);
 
   /*
    * Aushoehlen laeuft ueber denselben Weg wie Fase und Rundung: der Koerper
@@ -7331,7 +7375,14 @@ export function LayerlingEditor({
         return;
       }
       shellRebuildBusyRef.current = true;
+      // Fillets and chamfers laid after the hollowing go on again, on the same edges of the fresh walls.
+      const after = edgeTreatmentsAfterShell(stale) ?? [];
       void shellShape(before, amount, openings ?? "none", shellEdges ?? "round", stale)
+        .then(async (hollowed) => {
+          let rebuilt = hollowed;
+          for (const later of after) rebuilt = await relaidEdgeTreatment(rebuilt, later);
+          return rebuilt;
+        })
         .then((rebuilt) => {
           if (replaceRebuiltShape(stale.id, fingerprint, rebuilt)) setNotice(t("status.shellRebuilt", { size: Number(amount.toFixed(2)) }));
         })
@@ -7348,7 +7399,7 @@ export function LayerlingEditor({
         });
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [deleteFaceTool, edgeModifier, projectInteractionActive, replaceRebuiltShape, shapes, shellRebuildRound, shellShape, shellTool]);
+  }, [deleteFaceTool, edgeModifier, projectInteractionActive, relaidEdgeTreatment, replaceRebuiltShape, shapes, shellRebuildRound, shellShape, shellTool]);
 
   /*
    * Ein Skizzenkoerper, dessen Groesse geaendert wurde, wird aus seiner Skizze

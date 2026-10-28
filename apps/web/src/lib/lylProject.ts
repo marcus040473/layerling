@@ -57,7 +57,7 @@ export const LYL_FILE_TYPES_FORMAT_VERSION = 4;
 /** The newest format this layerling reads. */
 export const LYL_NEWEST_READABLE_FORMAT_VERSION = LYL_FILE_TYPES_FORMAT_VERSION;
 export const LYL_OLDEST_READABLE_FORMAT_VERSION = 1;
-export const LYL_CREATED_WITH_VERSION = "1.117.0";
+export const LYL_CREATED_WITH_VERSION = "1.117.1";
 export const LYL_MEDIA_TYPE = "application/vnd.layerling.project+zip";
 
 export const LYL_LIMITS = {
@@ -1695,6 +1695,11 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (value < 0 || value > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
     }
+  }
+  if (kind === "torus" && definition.torusTubeRatio !== undefined) {
+    // Up to 1, not 0.5: a design from before #981 carries its height as the tube, and that may have been taller than the hole allowed.
+    const ratio = finiteNumber(definition.torusTubeRatio, `${label}.torusTubeRatio`);
+    if (ratio <= 0 || ratio > 1) throw new Error(`${label}.torusTubeRatio is outside the supported range`);
   }
   if (kind === "slot" && definition.slotEndRatio !== undefined) {
     const ratio = finiteNumber(definition.slotEndRatio, `${label}.slotEndRatio`);

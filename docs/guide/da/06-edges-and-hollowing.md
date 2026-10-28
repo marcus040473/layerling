@@ -80,7 +80,7 @@ En form med en lomme - en blok med et hul der ikke går hele vejen igennem, lave
 
 **Former der ender i en spids,** såsom en kegle eller en revolvet trekant, har ingen flad flade på toppen der kan forblive åben. Et helt lukket hulrum virker der heller ikke, fordi en spids ikke kan forskydes indad: selv med 1 mm væg får du beskeden om at væggene ikke kan være så tykke. Tegn væggen ind i profilen før du revolverer i stedet: duplikér omridset, skalér kopien ensartet ned, læg den i midten af det store omrids og skær det store med det, så revolver det hele (kapitel Skitser, afsnit Revolver). Afstanden mellem de to omrids er vægtykkelsen.
 
-Hvis du ændrer størrelse på en udhulet form senere, udhuler layerling den igen med det samme ved den nye størrelse. Væggen forbliver så tyk som du valgte, runde former inkluderet. En cylinder du trækker længere den ene vej end den anden bliver til en ellipse.
+Hvis du ændrer størrelse på en udhulet form senere, udhuler layerling den igen med det samme ved den nye størrelse. Væggen forbliver så tyk som du valgte, runde former inkluderet. En cylinder du trækker længere den ene vej end den anden bliver til en ellipse. Afrundinginger og affasninger du lagde på den efter udhulingen lægges igen på de samme kanter.
 
 > **Tip:** Med en 0,4 mm dyse er 1,2 til 2 mm væg et godt udgangspunkt: tyndt nok til at spare materiale, tykt nok til en solid del.
 

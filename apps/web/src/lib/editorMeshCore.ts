@@ -6,6 +6,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { numberLocale } from "@/lib/i18n";
 import { sphereTessellation } from "@/lib/sphereTessellation";
 import { torusTessellation } from "@/lib/torusTessellation";
+import { torusRadii, torusTubeRatio } from "@/lib/torusShape";
 import { createGearGeometry } from "@/lib/gearGeometry";
 import { createStarGeometry } from "@/lib/starGeometry";
 import { createHeartGeometry } from "@/lib/heartGeometry";
@@ -354,14 +355,12 @@ function createBooleanWedgeGeometry(width: number, height: number, depth: number
   return geometry;
 }
 
-function createBooleanTorusGeometry(width: number, height: number, depth: number, shape: Pick<WorkplaneShape, "sides" | "steps">) {
-  const tubeRadius = Math.max(0.1, height / 2);
-  const majorRadius = Math.max(0.2, Math.min(width, depth) / 2 - tubeRadius);
+function createBooleanTorusGeometry(width: number, height: number, depth: number, shape: Pick<WorkplaneShape, "sides" | "steps" | "torusTubeRatio">) {
+  const { tubeRadius, majorRadius, outerDiameter, verticalScale } = torusRadii(width, depth, height, torusTubeRatio({ ...shape, width, depth, height }));
   const { ringSides, tubeSteps } = torusTessellation(shape, width, depth, height);
   const geometry = new THREE.TorusGeometry(majorRadius, tubeRadius, tubeSteps, ringSides);
   geometry.rotateX(Math.PI / 2);
-  const outerDiameter = (majorRadius + tubeRadius) * 2;
-  geometry.scale(width / Math.max(0.001, outerDiameter), 1, depth / Math.max(0.001, outerDiameter));
+  geometry.scale(width / Math.max(0.001, outerDiameter), verticalScale, depth / Math.max(0.001, outerDiameter));
   return geometry;
 }
 
