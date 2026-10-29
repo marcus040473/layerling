@@ -20,6 +20,7 @@ import {
   surfaceTexturePositions,
   SURFACE_TEXTURE_MAX_MASK_PLANES,
   type SurfaceTextureBrickBond,
+  type SurfaceTextureCarbonWeave,
   type SurfaceTextureBarkType,
   type SurfaceTextureCrackStart,
   type SurfaceTextureCrackStyle,
@@ -75,6 +76,8 @@ export const SURFACE_TEXTURE_LABELS: {
   crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
   brickBond: Record<SurfaceTextureBrickBond, MessageKey>;
   brickBondHint: Record<SurfaceTextureBrickBond, MessageKey>;
+  carbonWeave: Record<SurfaceTextureCarbonWeave, MessageKey>;
+  carbonWeaveHint: Record<SurfaceTextureCarbonWeave, MessageKey>;
   barkType: Record<SurfaceTextureBarkType, MessageKey>;
   barkTypeHint: Record<SurfaceTextureBarkType, MessageKey>;
   woodType: Record<SurfaceTextureWoodType, MessageKey>;
@@ -96,6 +99,7 @@ export const SURFACE_TEXTURE_LABELS: {
     knit: "surfaceTexture.knit",
     rope: "surfaceTexture.rope",
     weave: "surfaceTexture.weave",
+    carbon: "surfaceTexture.carbon",
     bark: "surfaceTexture.bark",
     wood: "surfaceTexture.wood",
     grain: "surfaceTexture.grain",
@@ -126,6 +130,8 @@ export const SURFACE_TEXTURE_LABELS: {
     englishCross: "surfaceTexture.bondEnglishCrossHint",
     flemish: "surfaceTexture.bondFlemishHint",
   },
+  carbonWeave: { twill22: "surfaceTexture.carbonTwill22", twill21: "surfaceTexture.carbonTwill21", twill31: "surfaceTexture.carbonTwill31" },
+  carbonWeaveHint: { twill22: "surfaceTexture.carbonTwill22Hint", twill21: "surfaceTexture.carbonTwill21Hint", twill31: "surfaceTexture.carbonTwill31Hint" },
   barkType: { oak: "surfaceTexture.barkOak", pine: "surfaceTexture.barkPine", spruce: "surfaceTexture.barkSpruce", birch: "surfaceTexture.barkBirch", beech: "surfaceTexture.barkBeech" },
   barkTypeHint: {
     oak: "surfaceTexture.barkOakHint",
