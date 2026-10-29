@@ -1489,15 +1489,25 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         onChange: (value) => onUpdate({ hingeLeafThickness: normalizeHingeLeafThickness(value, shape.height, plan.pinRadius * 2, plan.clearance, plan.style) }),
       },
       {
+        type: "select",
+        id: "hingeLeafStyle",
+        label: t("prop.hingeLeafStyle"),
+        value: plan.fingers ? "fingers" : "plate",
+        options: [{ value: "plate", label: t("hinge.leafPlate") }, { value: "fingers", label: t("hinge.leafFingers") }],
+        hint: plan.fingers ? t("hinge.leafFingersHint") : undefined,
+        onChange: (value) => onUpdate({ hingeLeafStyle: value === "fingers" ? "fingers" : undefined }),
+      },
+      {
         id: "hingeCornerRadius",
         label: t("prop.hingeCornerRadius"),
         value: plan.cornerRadius,
         min: 0,
-        max: Math.max(0.5, hingeLargestCornerRadius(width, depth, plan.leafStart)),
+        max: Math.max(0.5, hingeLargestCornerRadius(plan.fingers ? plan.knuckleLength : width, depth, plan.leafStart)),
         step: 0.5,
         onChange: (value) => onUpdate({ hingeCornerRadius: value > 0 ? value : undefined }),
       },
-      {
+      // Fingers are too narrow for a row of screws: they are joined to the model instead.
+      ...(plan.fingers ? [] : [{
         id: "hingeScrewHoles",
         label: t("prop.hingeScrewHoles"),
         value: normalizeHingeScrewHoles(shape.hingeScrewHoles),
@@ -1506,9 +1516,9 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         step: 1,
         // Asked for and fitting are two things: say so when the leaf takes fewer.
         hint: normalizeHingeScrewHoles(shape.hingeScrewHoles) > plan.screwXs.length ? t("prop.hingeScrewHolesFewer", { count: plan.screwXs.length }) : t("prop.hingeScrewHolesHint"),
-        onChange: (value) => onUpdate({ hingeScrewHoles: normalizeHingeScrewHoles(value) || undefined }),
-      },
-      ...(normalizeHingeScrewHoles(shape.hingeScrewHoles) > 0 ? [
+        onChange: (value: number) => onUpdate({ hingeScrewHoles: normalizeHingeScrewHoles(value) || undefined }),
+      }]),
+      ...(!plan.fingers && normalizeHingeScrewHoles(shape.hingeScrewHoles) > 0 ? [
         {
           id: "hingeScrewDiameter",
           label: t("prop.hingeScrewDiameter"),

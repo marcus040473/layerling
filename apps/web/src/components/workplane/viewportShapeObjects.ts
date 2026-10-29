@@ -203,6 +203,7 @@ export function tapeShapeTopologyKey(shape: WorkplaneShape): string {
     hingeScrewAcross: shape.hingeScrewAcross,
     hingeScrewCountersink: shape.hingeScrewCountersink,
     hingeCornerRadius: shape.hingeCornerRadius,
+    hingeLeafStyle: shape.hingeLeafStyle,
     gridfinityType: shape.gridfinityType,
     gridfinityLip: shape.gridfinityLip,
     gridfinityMagnets: shape.gridfinityMagnets,
@@ -532,6 +533,7 @@ export function shapeGeometrySignature(shape: WorkplaneShape): string {
     hingeScrewAcross: shape.hingeScrewAcross,
     hingeScrewCountersink: shape.hingeScrewCountersink,
     hingeCornerRadius: shape.hingeCornerRadius,
+    hingeLeafStyle: shape.hingeLeafStyle,
     gridfinityType: shape.gridfinityType,
     gridfinityLip: shape.gridfinityLip,
     gridfinityMagnets: shape.gridfinityMagnets,
@@ -1666,6 +1668,7 @@ export function createShapeObject(
         hingeScrewAcross: shape.hingeScrewAcross,
         hingeScrewCountersink: shape.hingeScrewCountersink,
         hingeCornerRadius: shape.hingeCornerRadius,
+        hingeLeafStyle: shape.hingeLeafStyle,
         sides: shape.sides,
       })), material, shape);
       break;

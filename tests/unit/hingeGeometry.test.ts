@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { hingeWorldParts } from "@/lib/hingeParts";
 import { automaticSideCount } from "@/lib/roundSideCount";
-import { hingeSections, hingeConeRadius, hingeKnucklesForWidth, hingeHasExactParts, normalizeHingeStyle, hingeLocalParts, hingePlan, hingeTriangles, normalizeHingeKnuckleWidth, normalizeHingeKnuckles, normalizeHingeLeafThickness, normalizeHingePinDiameter } from "@/lib/hingeGeometry";
+import { hingeLeaves, hingeSections, hingeConeRadius, hingeKnucklesForWidth, hingeHasExactParts, normalizeHingeStyle, hingeLocalParts, hingePlan, hingeTriangles, normalizeHingeKnuckleWidth, normalizeHingeKnuckles, normalizeHingeLeafThickness, normalizeHingePinDiameter } from "@/lib/hingeGeometry";
 
 type V = [number, number, number];
 
@@ -494,5 +494,75 @@ describe("screw holes and rounded corners in the leaves", () => {
     expect(heads({ hingeAngle: 180 }).map((head) => head.up)).toEqual([1, -1]);
     // Mirrored upside down, the heads go with the leaves' tops.
     expect(heads({ mirrorY: true }).map((head) => head.up)).toEqual([-1, -1]);
+  });
+});
+
+describe("fingers instead of leaves", () => {
+  const fingers = { ...shape, hingeLeafStyle: "fingers" };
+
+  it("stays closed in every style and fold; the pin holds A's fingers, B's and the coned ones are loose pieces", () => {
+    for (const [fields, pieces] of [
+      [fingers, 1 + 2],
+      [{ ...fingers, hingeAngle: 180 }, 1 + 2],
+      [{ ...fingers, hingeStyle: "pinless", hingeAngle: 90 }, 5],
+      [{ ...fingers, hingeStyle: "cone", hingeLeafThickness: 8, hingeAngle: 180 }, 5],
+      [{ ...fingers, hingeStyle: "cone", hingeCornerRadius: 2, hingeAngle: 270 }, 5],
+      [{ width: 80, depth: 60, height: 12, hingeKnuckles: 9, hingeLeafThickness: 3, hingeCornerRadius: 3, hingeLeafStyle: "fingers" }, 1 + 4],
+    ] as const) {
+      const triangles = hingeTriangles(fields);
+      expect(edgeProblems(triangles), JSON.stringify(fields)).toBe(0);
+      expect(signedVolume(triangles)).toBeGreaterThan(0);
+      expect(components(triangles), JSON.stringify(fields)).toBe(pieces);
+    }
+  });
+
+  it("is a leaf under each knuckle, as wide as it, and less material than two leaves", () => {
+    const plan = hingePlan(fingers);
+    expect(plan.fingers).toBe(true);
+    const leaves = hingeLeaves(plan);
+    expect(leaves).toHaveLength(plan.knuckles);
+    leaves.forEach((leaf, i) => {
+      expect(leaf.x0).toBeCloseTo(plan.segments[i].x0, 9);
+      expect(leaf.x1).toBeCloseTo(plan.segments[i].x1, 9);
+      expect(leaf.side).toBe(plan.segments[i].owner === "a" ? -1 : 1);
+    });
+    // Two leaves are the same thing along the whole length.
+    expect(hingeLeaves(hingePlan(shape)).map((leaf) => [leaf.x0, leaf.x1])).toEqual([[-20, 20], [-20, 20]]);
+    // The fingers leave out the leaf beside the other side's knuckles and in the gaps: A beside B's two knuckles, B beside
+    // A's three, each side in the four gaps.
+    const missing = (5 * plan.knuckleLength + 2 * 4 * plan.clearance) * (plan.depth / 2 - plan.leafStart) * plan.leaf;
+    expect(signedVolume(hingeTriangles(shape)) - signedVolume(hingeTriangles(fingers))).toBeCloseTo(missing, 6);
+  });
+
+  it("closes flat with cones and fingers as thick as the knuckle: as thick as one finger, the volume kept", () => {
+    const flush = { ...fingers, hingeStyle: "cone", hingeLeafThickness: 8 };
+    const open = hingeTriangles(flush);
+    const closed = hingeTriangles({ ...flush, hingeAngle: 180 });
+    expect(edgeProblems(closed)).toBe(0);
+    expect(signedVolume(closed)).toBeCloseTo(signedVolume(open), 6);
+    const ys = closed.flat().map(([, y]) => y);
+    expect(Math.min(...ys)).toBeCloseTo(0, 6);
+    expect(Math.max(...ys)).toBeCloseTo(8, 6);
+    // B's fingers lie between A's, on A's side.
+    const zs = closed.flat().map(([, , z]) => z);
+    expect(Math.max(...zs)).toBeLessThanOrEqual(hingePlan(flush).radius + 1e-6);
+  });
+
+  it("rounds the finger tips no more than half a finger, and takes no screw holes", () => {
+    const plan = hingePlan({ ...fingers, hingeCornerRadius: 100, hingeScrewHoles: 3 });
+    expect(plan.cornerRadius).toBeCloseTo(plan.knuckleLength / 2 - 0.05, 9);
+    expect(plan.screwXs).toEqual([]);
+  });
+
+  it("builds each finger of the exact parts as wide as its knuckle, B's folding with it", () => {
+    const fields = { ...fingers, hingeAngle: 90 };
+    const plan = hingePlan(fields);
+    const parts = hingeLocalParts(fields);
+    const fingerBoxes = parts.filter((part) => part.kind === "box" && Math.abs((part.depth ?? 0) - (plan.depth / 2 - plan.leafStart)) < 1e-9);
+    expect(fingerBoxes).toHaveLength(plan.knuckles);
+    fingerBoxes.forEach((part) => expect(part.width).toBeCloseTo(plan.knuckleLength, 9));
+    expect(fingerBoxes.filter((part) => part.rotationX === -90)).toHaveLength(2);
+    // With rounded tips: two boxes and two corner cylinders a finger.
+    expect(hingeLocalParts({ ...fields, hingeCornerRadius: 2 }).filter((part) => part.kind === "cylinder" && part.rotationZ === undefined)).toHaveLength(2 * plan.knuckles);
   });
 });

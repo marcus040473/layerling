@@ -207,6 +207,8 @@ export type ShapeCustomization = {
   hingeScrewCountersink?: boolean;
   /** Hinge: the leaves' outer corners rounded with this radius in mm. */
   hingeCornerRadius?: number;
+  /** Hinge: "fingers" gives each knuckle its own finger instead of a leaf each side, the two sides' alternating like combs; left out, plates. */
+  hingeLeafStyle?: "plate" | "fingers";
   /** Gridfinity: a bin or the baseplate it stands in, whose size counts grid units of 42 mm (height units of 7 mm), or a tray of any size in mm (#837). */
   gridfinityType?: GridfinityType;
   /** Gridfinity bin: the stacking lip on top of the wall; missing means on. */
@@ -891,6 +893,8 @@ export type WorkplaneShape = {
   hingeScrewCountersink?: boolean;
   /** Hinge: the leaves' outer corners rounded with this radius in mm. */
   hingeCornerRadius?: number;
+  /** Hinge: "fingers" gives each knuckle its own finger instead of a leaf each side, the two sides' alternating like combs; left out, plates. */
+  hingeLeafStyle?: "plate" | "fingers";
   /** Gridfinity: a bin or the baseplate it stands in, whose size counts grid units of 42 mm (height units of 7 mm), or a tray of any size in mm (#837). */
   gridfinityType?: GridfinityType;
   /** Gridfinity bin: the stacking lip on top of the wall; missing means on. */

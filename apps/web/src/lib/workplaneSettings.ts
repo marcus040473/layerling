@@ -419,6 +419,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.hingeScrewAcross = optionalShapeNumber(source.hingeScrewAcross, fallbackEntry?.hingeScrewAcross, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.hingeScrewCountersink = typeof source.hingeScrewCountersink === "boolean" ? source.hingeScrewCountersink : fallbackEntry?.hingeScrewCountersink;
       entry.hingeCornerRadius = optionalShapeNumber(source.hingeCornerRadius, fallbackEntry?.hingeCornerRadius, 0, MAX_CUSTOM_SHAPE_DIMENSION);
+      entry.hingeLeafStyle = source.hingeLeafStyle === "fingers" || source.hingeLeafStyle === "plate" ? source.hingeLeafStyle : fallbackEntry?.hingeLeafStyle;
     }
     if (kind === "gridfinity") {
       entry.gridfinityType = source.gridfinityType === "bin" || source.gridfinityType === "baseplate" || source.gridfinityType === "tray" ? source.gridfinityType : fallbackEntry?.gridfinityType;

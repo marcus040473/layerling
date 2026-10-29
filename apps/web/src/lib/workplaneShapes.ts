@@ -656,6 +656,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.hingeScrewAcross === b.hingeScrewAcross &&
     a.hingeScrewCountersink === b.hingeScrewCountersink &&
     a.hingeCornerRadius === b.hingeCornerRadius &&
+    a.hingeLeafStyle === b.hingeLeafStyle &&
     a.gridfinityType === b.gridfinityType &&
     a.gridfinityLip === b.gridfinityLip &&
     a.gridfinityMagnets === b.gridfinityMagnets &&

@@ -500,6 +500,7 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         hingeScrewAcross: shape.hingeScrewAcross,
         hingeScrewCountersink: shape.hingeScrewCountersink,
         hingeCornerRadius: shape.hingeCornerRadius,
+        hingeLeafStyle: shape.hingeLeafStyle,
         sides: shape.sides,
       });
       break;
