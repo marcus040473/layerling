@@ -17,9 +17,9 @@
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (3632 passed; new in `tests/unit/hingeGeometry.test.ts`: closed bodies with holes, corners and fingers in every style and fold, exact hole volumes, hole placement and fitting, exact parts and their folding, countersinks pointing the right way when folded or mirrored)
-- [x] `npm run test:e2e` (600 passed, and the 4 of the new `tests/e2e/hingeLeavesPanel.e2e.ts` added after that run; new: STEP export of hinges with holes, corners and fingers through the real OCCT kernel, folded and mirrored, within 1 % of the display mesh's volume, in `tests/e2e/stepRoundTrip.e2e.ts`; the settings rows, which appear only where they apply, in `tests/e2e/hingeLeavesPanel.e2e.ts`)
-- [x] `npm run guide`, `npm run i18n:status`: no problems; the eight languages complete (Danish misses the same 9 sentences as on main)
+- [x] `npm test` (3656 passed; new in `tests/unit/hingeGeometry.test.ts`: closed bodies with holes, corners and fingers in every style and fold, exact hole volumes, hole placement and fitting, exact parts and their folding, countersinks pointing the right way when folded or mirrored)
+- [x] `npm run test:e2e` (615 passed; new: STEP export of hinges with holes, corners and fingers through the real OCCT kernel, folded and mirrored, within 1 % of the display mesh's volume, in `tests/e2e/stepRoundTrip.e2e.ts`; the settings rows, which appear only where they apply, in `tests/e2e/hingeLeavesPanel.e2e.ts`)
+- [x] `npm run guide`, `npm run i18n:status`: no problems; the eight languages complete (Danish misses the same 13 sentences as on main)
 - [x] Manually tested the affected workflow: in Chromium on the dev server of this branch, placed a hinge from the shape library, set two screw holes and a corner radius, then Fingers with cones, a flush leaf and a fold of 120°; the rows come and go as they should and the body follows. Opened the fillet tool on a hinge with countersunk holes: the kernel built it (91 sharp edges), no errors. The display meshes in several styles and folds are in the pictures above
 
 ## Notes
@@ -28,6 +28,7 @@
 - The leaf thickness keeps its limits: with a pin it stays below the other part's bore, so flush fingers come with the cone style.
 - A lift-off hinge (two parts, printed standing, as on many door hinges) could follow as a PR of its own if you like.
 - The translations other than English and German are mine and worth a native reader.
+- Up to date with 1.119.0: your main is merged into the branch (one conflict, the list of length-unit fields in `ShapeInspector.tsx`, kept as yours plus the four hinge fields). Neither 1.118.1 nor 1.119.0 touched the hinge files; the hinge already uses your faster `creasedNormals` from 1.118.0.
 - No CHANGELOG or whatsNew in the diff, so it stays free of conflicts with yours.
 - Developed with the help of Claude Code.
 
