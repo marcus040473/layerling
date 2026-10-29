@@ -6,6 +6,18 @@ code still carries it - so a lower number further down is older, not newer.
 
 ## Unreleased
 
+## 1.119.2
+
+- **The cutting edge in fine steps where the kernel cannot chamfer (#982):** The kernel's chamfer fails on a logo's sharp points and on pieces a hundredth of a millimetre long - the Wera logo from #982, a serif text - so those cutters got a flat top. The wall is now built there from polygon offsets (`steppedEdgeWall`, Manifold): the stroke up to the edge, then steps of 0.1 mm, each set in by one step on both sides, up to the same narrow top. A 0.2 mm print layer cannot tell the steps from the slope; the wall is a triangle mesh rather than an exact body. Reported by @avxmw in #982.
+
+- **Cookie cutters keep the inside of letters, held by bridges (#982):** The cutter only ran round the silhouette, so the inside of an e or an a was lost from the cookie. The wall now runs round every hole of the outline as well, and bridges at the rim's level - on the side the hand presses, as CookieCAD does it - hold those inner walls to the outer one, one bar each where hole and outline come closest; a piece lying inside a hole is held to that hole. The bridges are a sketch body of their own in the bundle, 2 mm wide and 2 mm high (MCP `inner`, `bridge`, `bridgeHeight`). Suggested by @avxmw in #982.
+- **A cookie cutter from a text uses the letters' own curves (#982):** A text lying flat gave its outline by cutting through its triangles, hundreds of short pieces the kernel cannot put a cutting edge on. It now gives the letters' exact curves, as the edge tool takes them (`textGlyphProfiles`), so the wall follows them exactly; letters that touch or overlap still take the cut, which unites them.
+
+## 1.119.1
+
+- **A cookie cutter from overlapping parts runs round all of them (#982):** Two shapes that overlap - a box and a cylinder over its corner - gave each its own wall, crossing in the middle of the cutter, unless they were grouped first. The outlines the workplane cuts through the parts are now united before the cutter is built (`unitedFootprint`, each body by the even-odd rule, then the union of all), so overlapping parts give one outline round all of them; parts apart from each other still give a cutter each. Reported by @raradek in #982.
+- **A cylinder's cookie cutter has its cutting edge again (#982):** 1.119.0 left the edge off every outline of more than 200 rim pieces, to stop a text body from timing out - and with it a plain cylinder, whose footprint has some 240. What made the text slow was not the number of pieces but arcs a few thousandths of a millimetre long, which the kernel cannot chamfer and spends minutes failing on; a clean outline of 900 pieces chamfers in 3.5 s. The edge is now left off when a rim piece is shorter than 0.01 mm or there are more than 1 000 of them.
+
 ## 1.119.0
 
 - **A cookie cutter from a text body timed out (#982):** Since 1.118.1 the cutter tried to chamfer the cutting edge onto every wall. A text body gives its outline as hundreds of short straight pieces cut from its triangles, and one try of the CAD kernel at chamfering the 1 670 pieces of "Wera" ran 159 s before it failed, so the sketch worker stopped at 30 s and the cutter was not made at all. Rims of more than 200 pieces now take no edge at once (the wall gets a flat top and the message says so, as intended), and no further try starts after 8 s. Reported by @avxmw in #982.

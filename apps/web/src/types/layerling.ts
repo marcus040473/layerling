@@ -195,6 +195,20 @@ export type ShapeCustomization = {
   hingePinless?: boolean;
   /** Hinge: the second leaf folded up about the pin, in degrees; 0 lies flat, 180 is closed. */
   hingeAngle?: number;
+  /** Hinge: screw holes in each leaf along the axis, 0 to 6; left out, none. */
+  hingeScrewHoles?: number;
+  /** Hinge: the screw holes' diameter in mm. */
+  hingeScrewDiameter?: number;
+  /** Hinge: from one screw hole's middle to the next along the axis in mm; left out, they share the length evenly. */
+  hingeScrewSpacing?: number;
+  /** Hinge: from the hole in one leaf to the hole in the other, across the axis, in mm; left out, each in the middle of its leaf. */
+  hingeScrewAcross?: number;
+  /** Hinge: false for straight screw holes; otherwise countersunk on the side that faces the other leaf when closed. */
+  hingeScrewCountersink?: boolean;
+  /** Hinge: the leaves' outer corners rounded with this radius in mm. */
+  hingeCornerRadius?: number;
+  /** Hinge: "fingers" gives each knuckle its own finger instead of a leaf each side, the two sides' alternating like combs; left out, plates. */
+  hingeLeafStyle?: "plate" | "fingers";
   /** Gridfinity: a bin or the baseplate it stands in, whose size counts grid units of 42 mm (height units of 7 mm), or a tray of any size in mm (#837). */
   gridfinityType?: GridfinityType;
   /** Gridfinity bin: the stacking lip on top of the wall; missing means on. */
@@ -872,6 +886,20 @@ export type WorkplaneShape = {
   hingePinless?: boolean;
   /** Hinge: the second leaf folded up about the pin, in degrees; 0 lies flat, 180 is closed. */
   hingeAngle?: number;
+  /** Hinge: screw holes in each leaf along the axis, 0 to 6; left out, none. */
+  hingeScrewHoles?: number;
+  /** Hinge: the screw holes' diameter in mm. */
+  hingeScrewDiameter?: number;
+  /** Hinge: from one screw hole's middle to the next along the axis in mm; left out, they share the length evenly. */
+  hingeScrewSpacing?: number;
+  /** Hinge: from the hole in one leaf to the hole in the other, across the axis, in mm; left out, each in the middle of its leaf. */
+  hingeScrewAcross?: number;
+  /** Hinge: false for straight screw holes; otherwise countersunk on the side that faces the other leaf when closed. */
+  hingeScrewCountersink?: boolean;
+  /** Hinge: the leaves' outer corners rounded with this radius in mm. */
+  hingeCornerRadius?: number;
+  /** Hinge: "fingers" gives each knuckle its own finger instead of a leaf each side, the two sides' alternating like combs; left out, plates. */
+  hingeLeafStyle?: "plate" | "fingers";
   /** Gridfinity: a bin or the baseplate it stands in, whose size counts grid units of 42 mm (height units of 7 mm), or a tray of any size in mm (#837). */
   gridfinityType?: GridfinityType;
   /** Gridfinity bin: the stacking lip on top of the wall; missing means on. */
