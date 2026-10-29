@@ -68,7 +68,7 @@ Vinklerne bliver ved formen. I dens indstillinger viser {{ui:inspector.rotation}
 
 ![En form vendt omkring to akser: dens vinkler står under den, og Rotationskortet i dens indstillinger tager dem som tal.](shot:rotation-card)
 
-Med **én form** valgt hører rotationspunktet til den form: vælg andre dele og kom tilbage, så er det stadig der. Det flytter, drejer og skalerer med formen, gemmes i projektet og kommer tilbage med Fortryd. Under {{ui:inspector.position}} har rotationspunktet sit eget X, Y og Z, som du kan taste eller skubbe, og {{ui:inspector.pivotRemove}} fjerner det. Du kan også trække rotationspunktets røde markør med musen: den glider hen over formernes overflade og snapper til hjørner, kantmidtpunkter og kanter, så en hængseltap lander præcis på et hjørne. Med flere former valgt er rotationspunktet kun for den markering, og en ny markering fjerner det.
+Med **én form** valgt hører rotationspunktet til den form: vælg andre dele og kom tilbage, så er det stadig der. Det flytter, drejer og skalerer med formen, gemmes i projektet og kommer tilbage med Fortryd. Under {{ui:inspector.position}} har rotationspunktet sit eget X, Y og Z, som du kan taste eller skubbe, og {{ui:inspector.pivotRemove}} fjerner det. Du kan også trække rotationspunktets røde markør med musen: den glider hen over formernes overflade og snapper til hjørner, kantmidtpunkter og kanter, så en hængseltap lander præcis på et hjørne. Med flere former valgt er rotationspunktet kun for den markering, og en ny markering fjerner det. Grupperer eller bundter du dem, bevares det: gruppen får drejepunktet som sit eget, med X, Y og Z under {{ui:inspector.position}}.
 
 ## Læg fladt på en flade
 

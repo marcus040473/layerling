@@ -391,10 +391,11 @@ describe("snap grid shortcuts (#748)", () => {
     expect(snapGridForShortcut(press("0", "Digit0", { altKey: true }), custom, "1.0 mm")).toBe(custom[9]);
   });
 
-  it("steps finer and coarser with comma and period, leaving Off out", () => {
+  it("steps finer and coarser with comma and period, Off lying below the finest step", () => {
     expect(snapGridForShortcut(press(".", "Period"), metric, "1.0 mm")).toBe("2.0 mm");
     expect(snapGridForShortcut(press(",", "Comma"), metric, "1.0 mm")).toBe("0.5 mm");
-    expect(snapGridForShortcut(press(",", "Comma"), metric, "0.1 mm")).toBeNull();
+    expect(snapGridForShortcut(press(",", "Comma"), metric, "0.1 mm")).toBe("Off");
+    expect(snapGridForShortcut(press(",", "Comma"), metric, "Off")).toBeNull();
     expect(snapGridForShortcut(press(".", "Period"), metric, "Brick")).toBeNull();
     expect(snapGridForShortcut(press(".", "Period"), metric, "Off")).toBe("0.1 mm");
     expect(snapGridForShortcut(press(",", "NumpadDecimal"), metric, "1.0 mm")).toBeNull();

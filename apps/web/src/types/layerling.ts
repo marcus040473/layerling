@@ -1081,6 +1081,11 @@ export type WorkplaneShape = {
    */
   textStretch?: boolean;
   /**
+   * Straight text only (#981): the letters stacked top to bottom, each centred on one upright line, instead of
+   * side by side. Curved text ignores it.
+   */
+  textVertical?: boolean;
+  /**
    * Text only (#594): the space between the letters, in per cent of the letter size on top of the typeface's own
    * advance - 0 or left out as the font has it, above it wider, below it (down to -50) tighter. Straight and curved text.
    */

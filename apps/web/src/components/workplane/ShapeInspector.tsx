@@ -168,7 +168,7 @@ import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
 import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, surfaceTextureEntry } from "@/lib/surfaceTextureShape";
 import { LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, type VaseSettings } from "@/lib/vaseSettings";
-import { vaseShapePatch } from "@/lib/vaseShape";
+import { vaseShapePatchOffThread } from "@/lib/vaseShape";
 import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
 import { VasePrintReport } from "@/components/workplane/VasePrintReport";
 import { shapeDefaultsAsset, shapeDefaultsFromShape } from "@/lib/shapeDefaults";
@@ -1023,7 +1023,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
   if (shape.kind === "vase") {
     const vase = normalizeVaseSettings(shape.vase);
     // A new choice can change the outline (a hexagon is narrower across its flats): the frame follows it.
-    const setVase = (patch: Partial<VaseSettings>) => onUpdate(vaseShapePatch({ width, depth, height: shape.height }, normalizeVaseSettings({ ...vase, ...patch })));
+    // The body is built on a worker, and the change comes once it is there.
+    const setVase = (patch: Partial<VaseSettings>) => vaseShapePatchOffThread({ id: shape.id, width, depth, height: shape.height }, normalizeVaseSettings({ ...vase, ...patch }), (vasePatch) => onUpdate(vasePatch));
     const limits = (key: VaseNumberKey): [number, number] => VASE_LIMITS[key] ?? [0, 100];
     const range = (key: VaseNumberKey, label: MessageKey, step: number, hint?: MessageKey): ShapePropertyConfig => {
       const [min, max] = limits(key);
@@ -2549,6 +2550,17 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         hint: t("prop.textSpacingHint"),
         onChange: (spacing: number) => onUpdate(textSpacingPatch(shape, spacing)),
       },
+      // Straight text (#981): the letters stacked top to bottom; the box turns upright and the letters keep their size.
+      ...(isCurved ? [] : [{
+        type: "toggle",
+        id: "textVertical",
+        label: t("prop.textVertical"),
+        value: Boolean(shape.textVertical),
+        onChange: (vertical: boolean) => {
+          const next = { ...shape, textVertical: vertical || undefined } as WorkplaneShape;
+          onUpdate({ textVertical: vertical || undefined, ...(shape.textStretch ? {} : textLetterSizePatch(next, textLetterSize(shape))) });
+        },
+      } satisfies ShapePropertyConfig]),
       // Straight text (#382): the letters keep their proportions in the box, or are stretched to fill it.
       ...(isCurved ? [] : [{
         type: "toggle",
@@ -2563,7 +2575,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         label: t("prop.textCurved"),
         value: isCurved,
         // Radius, letter size and the box follow in curvedTextPatch.
-        onChange: (textCurved) => onUpdate({ textCurved }),
+        // Curved text has no vertical letters (#981): curving it lays the line on the circle.
+        onChange: (textCurved) => onUpdate({ textCurved, ...(textCurved && shape.textVertical ? { textVertical: undefined } : {}) }),
       },
     ];
     if (isCurved) {
@@ -3789,7 +3802,7 @@ export function ShapeInspector({
  * sliders are the same range rows as everywhere else, so a drag shows a live
  * preview and ends in a single undo step.
  */
-export type TextLayerPatch = { text?: string; font?: string; letterSize?: number; layers?: TextLayer[]; keyring?: NameTagKeyring | null; /** "Free" (#598): the hole comes off the tag and a key ring tab of its own is put beside it. */ keyringTab?: boolean };
+export type TextLayerPatch = { text?: string; font?: string; letterSize?: number; /** Letters stacked top to bottom (#981). */ vertical?: boolean; layers?: TextLayer[]; keyring?: NameTagKeyring | null; /** "Free" (#598): the hole comes off the tag and a key ring tab of its own is put beside it. */ keyringTab?: boolean };
 
 /**
  * A key ring tab of its own (#598): once it is in place, one click fixes it to the nearest tag
@@ -4057,6 +4070,7 @@ function NameTagCard({
     { type: "text", id: "nameTagText", label: t("prop.text"), value: source.text ?? "TEXT", onChange: (text) => onLayerText({ text: text.slice(0, 24) || " " }) },
     textFontProperty(source, (patch) => { if (typeof patch.font === "string") onLayerText({ font: patch.font }); }),
     { id: "letterSize", label: t("nameTag.letterSize"), value: textLetterSize(source), min: MIN_LETTER_SIZE, max: 60, step: 0.5, hint: t("nameTag.letterSizeHint"), onChange: (letterSize) => onLayerText({ letterSize }) },
+    ...(source.textCurved ? [] : [{ type: "toggle", id: "nameTagVertical", label: t("prop.textVertical"), value: Boolean(source.textVertical), onChange: (vertical: boolean) => onLayerText({ vertical }) } satisfies ShapePropertyConfig]),
   ];
 
   return (
@@ -4821,6 +4835,7 @@ export function SurfaceTextureCard({
                     disabled={disabled || busy}
                     onChange={(textFont) => set({ textFont })}
                   />
+                  <ToggleProperty label={t("prop.textVertical")} value={settings.textVertical} disabled={disabled || busy} onChange={(textVertical) => set({ textVertical })} />
                   {range("surfaceTextSize", t("inspector.surfaceTextSize"), settings.textSize, [SURFACE_TEXTURE_LIMITS.textSize[0], 60], 0.5, (textSize) => set({ textSize }))}
                   {range("surfaceTextAround", t("inspector.surfaceTextAround"), settings.textAround, SURFACE_TEXTURE_LIMITS.textAround, 1, (textAround) => set({ textAround }))}
                   {range("surfaceTextHeight", t("inspector.surfaceTextHeight"), settings.textHeight, SURFACE_TEXTURE_LIMITS.textHeight, 1, (textHeight) => set({ textHeight }))}

@@ -128,6 +128,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { combos: ["Home"], label: "shortcuts.resetView" },
       { combos: ["F", "Shift+F"], label: "shortcuts.focusSelection" },
       { combos: ["O"], label: "shortcuts.projection" },
+      { combos: ["Q"], label: "shortcuts.toggleDimensions" },
       { combos: ["+", "−"], label: "shortcuts.zoom" },
       { combos: ["Alt+1 – 0"], label: "shortcuts.snapGridPick" },
       { combos: [",", "."], label: "shortcuts.snapGridStep" },

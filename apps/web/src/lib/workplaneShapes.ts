@@ -762,6 +762,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     sketchStrokesEqual(a.textStroke, b.textStroke) &&
     Boolean(a.textSilhouette) === Boolean(b.textSilhouette) &&
     Boolean(a.textStretch) === Boolean(b.textStretch) &&
+    Boolean(a.textVertical) === Boolean(b.textVertical) &&
     (a.textSpacing ?? 0) === (b.textSpacing ?? 0) &&
     JSON.stringify(a.textKeyring ?? null) === JSON.stringify(b.textKeyring ?? null) &&
     JSON.stringify(a.textEdge ?? null) === JSON.stringify(b.textEdge ?? null) &&

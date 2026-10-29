@@ -109,6 +109,7 @@ export type LayerlingMcpCommandName =
   | "ungroup_objects"
   | "intersect_objects"
   | "hull_objects"
+  | "cookie_cutter"
   | "boolean_cut"
   | "separate_parts"
   | "split_objects"

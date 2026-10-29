@@ -481,6 +481,7 @@ export const tools = [
         silhouette: { type: "boolean", description: "Extruded sketch bodies and texts: true leaves out every outline inside another - holes, and islands in them; on a text the counters of its letters - false brings them back. With an outside stroke this makes a cookie cutter from one SVG; with grow, a base layer under a text." },
         sketchOperation: { type: "string", enum: ["extrude", "revolve", "sweep"], description: "Sketch bodies only: make the body again from its sketch as another kind - an imported SVG comes in extruded, revolve turns its outline about the sketch's vertical axis (x = 0) into a round body, as the sketch's badge does in the editor. The new body keeps the id, name and colour and stands where the old one stood, its foot at the same height; an extrusion made from another kind is 10 mm high. Edge treatments go. For a revolve an outline reaching across the axis is first moved left until its right edge lies on it, so the half cross-section of an SVG turns about its straight side; sweep needs a construction line as the path." },
         stretch: { type: "boolean", description: "Straight text only: true stretches the letters to fill the whole box in both directions, so a capital can be made lower or narrower as in Tinkercad; false (the default) fits them into the box with their proportions kept, centred. Set the box with width and depth." },
+        vertical: { type: "boolean", description: "Straight text only: true stacks the letters top to bottom, each centred on one upright line; the box turns upright and the letters keep their size. Spacing widens or narrows the gap between them. Curved text ignores it." },
         spacing: { type: "number", minimum: -50, maximum: 300, description: "Text only: the space between the letters on top of the font's own, in per cent of the letter size - 0 as the font has it, above it wider, below it tighter (down to -50), up to 300. Straight and curved text; the letters keep their size and the box follows. Not applied to Arabic and Hebrew, whose letters join up." },
         letterEdge: {
           anyOf: [
@@ -716,6 +717,22 @@ export const tools = [
     },
   },
   {
+    name: "layerling_cookie_cutter",
+    description: "Make a cookie cutter from the given objects, like the editor's Cookie cutter button: a wall and a flat rim round the outline, as two sketch bodies in one bundle that replaces the objects. One extruded sketch body gives its own outline; anything else (shapes built in layerling, an imported mesh, several parts) gives what it stands on, the outlines the workplane cuts through it - holes inside stay open. The wall and the rim are lines outside the outline in the sketch fill modes, so change them under Properties afterwards. All sizes in mm: wall (thickness, default 1.2), height (default 15), rim (how far the rim reaches beyond the wall, default 4), rimHeight (default 2).",
+    inputSchema: {
+      ...editorTargetSchema,
+      required: ["ids"],
+      properties: {
+        ...editorTargetSchema.properties,
+        ids: { type: "array", items: { type: "string" } },
+        wall: { type: "number" },
+        height: { type: "number" },
+        rim: { type: "number" },
+        rimHeight: { type: "number" },
+      },
+    },
+  },
+  {
     name: "layerling_ungroup_objects",
     description: "Ungroup one or more grouped objects by id and preserve their edited geometry.",
     inputSchema: {
@@ -814,6 +831,7 @@ export const tools = [
         textAround: { type: "number", description: "Text: where it sits round the axis in degrees, -180 to 180: 0 the front, 90 the right, -90 the left (with axis x or y, 0 is the top and 180 the bottom). Default 0." },
         textHeight: { type: "number", description: "Text: where its middle sits along the axis, in % of the body's size along it, 0 to 100. Default 50." },
         textTurn: { type: "number", description: "Text: turned on the surface in degrees, -180 to 180, counterclockwise seen from outside. Default 0." },
+        textVertical: { type: "boolean", description: "Text: true stacks the letters top to bottom instead of side by side. Default false." },
         seed: { type: "number", description: "Cells, grain, bark and wood: another whole number, 1 to 9999, lays them out anew (wood: another tree, other knots); the same number gives the same pattern. Bricks with brickVary: which bricks lie deeper. Default 1." },
         brickBond: { type: "string", enum: ["running", "stack", "english", "englishCross", "flemish"], description: "Bricks: running (every course half a brick along), stack (the joints in one line), english (courses of stretchers and of headers, half as long, in turn), englishCross (as english, every other course of stretchers half a brick along) or flemish (stretchers and headers in turn in every course). Default running." },
         brickHeight: { type: "number", description: "Bricks: a course's height in mm from joint to joint, 0.5 to 100, fitted to the height the texture covers. Default 4." },
@@ -1104,6 +1122,7 @@ export const tools = [
         id: { type: "string", description: "A text, or a layered-text bundle to build again." },
         text: { type: "string", description: "New words for every layer." },
         font: { type: "string", description: "New font for every layer: a built-in name or a font of one's own by name or id." },
+        vertical: { type: "boolean", description: "true stacks the letters of every layer top to bottom, so the tag stands upright at the same letter size; false lays them side by side again." },
         layers: {
           type: "array",
           maxItems: 6,
@@ -1347,12 +1366,13 @@ export const tools = [
   },
   {
     name: "layerling_measurements",
-    description: "The measurements of the editor's tape measure: what is measured and whether they are shown. Call with nothing to read them: visible and measurements, each with its id and its length in millimetres (a measured edge counts along the edge). visible true shows the measurements, false hides them, like the eye among the tape measure's buttons; hidden measurements stay in the design. The measurements belong to the design: they stay in the browser and travel in a .lyl file, never in the undo history, and hiding is kept too. Combine with layerling_capture_image to see them (or not) in the picture. Not available while a sketch is open.",
+    description: "The measurements of the editor's tape measure: what is measured and whether they are shown. Call with nothing to read them: visible and measurements, each with its id and its length in millimetres (a measured edge counts along the edge). visible true shows the measurements, false hides them, like the eye among the tape measure's buttons; hidden measurements stay in the design. The measurements belong to the design: they stay in the browser and travel in a .lyl file, never in the undo history, and hiding is kept too. dimensions false hides the sizes and distances the editor shows around the selection by itself (the size marks, the movement dimensions while dragging, the distances to the origin and the angle badge), like the key Q; true shows them again. Only the view changes, for this editor until it is reloaded; a handle pointed at still shows its size. The answer has dimensions too. Combine with layerling_capture_image to see them (or not) in the picture. Not available while a sketch is open.",
     inputSchema: {
       ...editorTargetSchema,
       properties: {
         ...editorTargetSchema.properties,
         visible: { type: "boolean", description: "true shows the measurements, false hides them. Left out they stay as they are." },
+        dimensions: { type: "boolean", description: "false hides the sizes and distances around the selection (key Q), true shows them again. Left out they stay as they are." },
       },
     },
   },

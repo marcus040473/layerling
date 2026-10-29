@@ -255,6 +255,8 @@ export type SurfaceTextureSettings = {
   textContent: string;
   textFont: string;
   textSize: number;
+  /** The letters stacked top to bottom instead of side by side (#981). */
+  textVertical: boolean;
   /** Where it sits: round the axis (degrees, 0 = the front, 90 = the right) and up it (% of the body's height). */
   textAround: number;
   textHeight: number;
@@ -344,6 +346,7 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   textContent: "Layerling",
   textFont: "Multilanguage",
   textSize: 10,
+  textVertical: false,
   textAround: 0,
   textHeight: 50,
   textTurn: 0,

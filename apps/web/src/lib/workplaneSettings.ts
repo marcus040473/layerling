@@ -203,7 +203,8 @@ export function snapGridOptions(units: string, customGrids: CustomSnapGrid[] = [
 
 /**
  * The snap step a key picks from the snap menu (#748): Alt+1 to Alt+9 and Alt+0 take that entry of the
- * menu, so Alt+1 turns snapping off; comma and period step one entry finer or coarser, leaving Off out.
+ * menu, so Alt+1 turns snapping off; comma and period step one entry finer or coarser. Off counts as finer than
+ * the finest step: comma goes there from the finest step, period leaves it for the finest step.
  * The digit comes from the key's position, since Option+digit types a sign on the Mac. Null when the key
  * picks nothing or the step would stay the same.
  */
@@ -222,6 +223,7 @@ export function snapGridForShortcut(
     const steps: GridSize[] = options.filter((size) => size !== "Off");
     const index = steps.indexOf(current);
     if (index < 0) next = event.key === "." ? steps[0] : undefined;
+    else if (index === 0 && event.key === "," && options.includes("Off")) next = "Off";
     else next = steps[index + (event.key === "." ? 1 : -1)];
   }
   return next && next !== current ? next : null;

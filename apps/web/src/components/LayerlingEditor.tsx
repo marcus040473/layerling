@@ -17,8 +17,9 @@ import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHei
 import { curvedTextPatch, MAX_TEXT_SPACING, MIN_TEXT_SPACING } from "@/lib/textGeometry";
 import { normalizeTextEdge } from "@/lib/textEdge";
 import { DEFAULT_TEXT_LAYERS, layerTextKeyringArgument, placedKeyring, layerTextLayersError, nameTagOffsets, normalizeTextLayers, type NameTagKeyring } from "@/lib/textLayers";
-import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
-import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, normalizeIconTagCount } from "@/lib/iconTag";
+import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textLetterSize, textLetterSizePatch, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
+import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, isIconLayerBody, normalizeIconTagCount } from "@/lib/iconTag";
+import { cookieCutterProfiles, normalizeCookieCutterOptions, outlineFromLoops, type CookieCutterOptions } from "@/lib/cookieCutter";
 import type { IconLayerPatch, IconTagControls, ReferenceImageControls, TextLayerPatch } from "@/components/workplane/ShapeInspector";
 import { calibratedReferenceImage, dataUrlByteLength, isReferenceImage, LARGE_REFERENCE_IMAGE_BYTES, mirrorHidesReferenceImage, referenceImageOpacity, referenceImagePixelDistance, referenceImageShape } from "@/lib/referenceImage";
 import { IconTagPanel } from "@/components/workplane/IconTagPanel";
@@ -157,6 +158,7 @@ import { svgSketchMatchesMesh } from "@/lib/svgSketch";
 import { DEFAULT_SKETCH_STROKE, normalizeSketchStroke, strokedSketchProfile } from "@/lib/sketchStroke";
 import { bottomCadModifierEdgeIds, horizontalCadModifierEdgeIds, topCadModifierEdgeIds, verticalCadModifierEdgeIds } from "@/lib/topEdges";
 import { tangentCadEdgeChain } from "@/lib/cadEdgeChain";
+import { sketchEditTurn, turnedSketchProfile, type SketchEditTurn } from "@/lib/sketchEditTurn";
 import { movedWithEditedOutline, placedLikeExisting, placeSketchShape, sketchBodyAnchor, type SketchAnchor } from "@/lib/sketchPlacement";
 import { notesWithSketchNotes, sketchNoteFrame, sketchNotesFromBody } from "@/lib/sketchNotes";
 import { useSketchNotes } from "@/lib/useSketchNotes";
@@ -180,9 +182,9 @@ import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
 import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierFaces, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierKind, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierQuality, CadModifierSpringPart, CadModifierThreadPart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
 import { getSectionBounds, sectionAxisLetter, sectionMeshInFrame, sectionPlacementWorkplane, sectionPointFromFrame, sectionPointToFrame, type SectionFrame, type SectionOrientation, type SectionPlaneAxis, type SectionPlaneSettings } from "@/lib/sectionView";
-import { footprintCutOffset, projectSectionPoint, SECTION_VIEW_FACE, sectionSvgDocument, sliceMeshContours } from "@/lib/sectionSvg";
+import { FOOTPRINT_CUT_HEIGHT, footprintCutOffset, projectSectionPoint, SECTION_VIEW_FACE, sectionSvgDocument, sliceMeshContours } from "@/lib/sectionSvg";
 import type { AlignAxis, AlignHandleStatus, AlignTarget, EdgeTreatmentFeature, GridSize, ParametricSource, ProjectAsset, ProjectAttachment, ShapeAsset, ShapeCustomization, ShapeKind, SketchImage, SketchOperation, SketchPoint, SketchProfile, SketchRevolveSettings, SketchSegment, ShellEdges, ShellOpenings, ShellSide, SweepAnchor, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
-import { type Vec3, type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, meshReachAlong, appendMeshData, formatTriangleCount, shapeAabb, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey } from "@/lib/editorMeshCore";
+import { type Vec3, type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, meshReachAlong, appendMeshData, formatTriangleCount, shapeAabb, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey, sameShapeApartFromPlacement } from "@/lib/editorMeshCore";
 import { meshPartCount } from "@/lib/meshPartCount";
 import { buildGroupedShapeOffThread, exportSolidVolumeOffThread, callOffFaceRead, faceReadInWorker, createFaceReadKeeper, faceReadPositionsOffThread, simplifyTrianglePositionsOffThread, splitShapesByPlaneOffThread, subscribeGeometryBusy, warmGeometryWorker } from "@/lib/geometryWorker";
 import { roundedAlignedValue } from "@/lib/alignRounding";
@@ -367,7 +369,7 @@ declare global {
     /** "Hide workplane" in the camera bar for MCP: sets it when given, returns whether the plate is shown. */
     layerlingWorkplaneDisplay?: (visible?: boolean) => { visible: boolean };
     /** The tape measure's measurements for MCP: shows or hides them when asked, returns what is there (#881). */
-    layerlingMeasurements?: (request?: { visible?: boolean }) => { visible: boolean; measurements: Array<{ id: string; length: number }> };
+    layerlingMeasurements?: (request?: { visible?: boolean; dimensions?: boolean }) => { visible: boolean; dimensions: boolean; measurements: Array<{ id: string; length: number }> };
     /** The four saved views (keys 7, 8, 9, 0) for MCP: saves or shows one when asked, returns which keys hold a view. */
     layerlingSavedViews?: (request?: { save?: number; show?: number; startView?: "save" | "reset" }) => { keys: { key: string; saved: boolean }[]; shown?: boolean; startView: boolean };
   }
@@ -1300,6 +1302,19 @@ async function footprintSvg(shapes: readonly WorkplaneShape[], title: string) {
 }
 
 /**
+ * What the shapes stand on as one outline for a cookie cutter (#982): the closed outlines the workplane cuts through them,
+ * as a sketch round the middle of their box, with that middle and the height of their lowest point. Null when nothing closed is cut.
+ */
+async function footprintOutline(shapes: readonly WorkplaneShape[]) {
+  const { solids, meshes: cut, cut: wasCut } = await exportBodiesWithLooseHoles(shapes);
+  const { meshes } = await colorSeparatedExportMeshes(solids, cut, wasCut);
+  const offset = footprintCutOffset(meshes);
+  if (offset === null) return null;
+  const outline = outlineFromLoops(meshes.flatMap((mesh) => sliceMeshContours(mesh, "y", offset)));
+  return outline ? { ...outline, floor: offset - FOOTPRINT_CUT_HEIGHT } : null;
+}
+
+/**
  * The SVG of the edges seen from above (#591), each colour's as lines in that colour, every area it shows closed.
  * The bodies are joined and separated by colour, as STL and 3MF get them, so a part reaching through another gets
  * the line where it comes out. Null for a design with more edges or triangles than the drawing's projection takes:
@@ -2157,6 +2172,11 @@ function textGlyphIndexByFace(shape: WorkplaneShape, faceCount: number) {
   return { glyphs, glyphOfFace };
 }
 
+/** A part of a group inside the treated one that mixes solids and holes keeps that group's scope (#996). */
+function withCadPartScope(part: CadModifierMeshPart, scope: number[]): CadModifierMeshPart {
+  return scope.length ? { ...part, scope } : part;
+}
+
 function cadModifierSourceParts(shape: WorkplaneShape) {
   // The hinge reaches the kernel as the boxes, cylinders and tubes it is made of.
   if (shape.kind === "hinge" && hingeHasExactParts(shape) && !shape.importedMesh && !shape.cadBrep && !shapeHasShapeDeform(shape)) return hingeWorldParts(shape);
@@ -2191,6 +2211,9 @@ function cadModifierSourceParts(shape: WorkplaneShape) {
  * counted it again at every step and stalled the drag.
  */
 const importedPartCounts = new WeakMap<object, number>();
+// The same for a shape built from its settings: moving, turning or picking a vase counted its 200,000
+// triangles again (0.2 s at every step of a drag), and a spring or a gear the same way.
+const builtPartCounts: Array<{ shape: WorkplaneShape; count: number }> = [];
 
 /** Stand-ins for "no edges", the same arrays at every render, so the workplane does not draw the edge lines again for nothing. */
 const NO_MODIFIER_EDGES: CadModifierEdge[] = [];
@@ -2199,7 +2222,15 @@ const NO_EDGE_IDS: number[] = [];
 function separablePartCount(shape: WorkplaneShape) {
   if (shape.locked || shape.hole) return 0;
   if (shape.groupedShapes?.length && !shape.importedMesh) return shape.groupedShapes.length;
-  if (!shape.importedMesh) return meshPartCount(meshForShape(shape), SEPARATE_PARTS_VERTEX_TOLERANCE);
+  if (!shape.importedMesh) {
+    // Text stands in for itself until its font has loaded, so it is counted each time.
+    const known = shape.kind === "text" ? undefined : builtPartCounts.find((entry) => sameShapeApartFromPlacement(entry.shape, shape));
+    if (known) return known.count;
+    const count = meshPartCount(meshForShape(shape), SEPARATE_PARTS_VERTEX_TOLERANCE);
+    if (shape.kind !== "text") builtPartCounts.push({ shape: { ...shape }, count });
+    if (builtPartCounts.length > 24) builtPartCounts.shift();
+    return count;
+  }
   const cached = importedPartCounts.get(shape.importedMesh);
   if (cached !== undefined) return cached;
   const count = meshPartCount(meshForShape(shape), SEPARATE_PARTS_VERTEX_TOLERANCE);
@@ -2461,6 +2492,11 @@ const INTERSECT_PREVIEW_MAX_TRIANGLES = 40000;
 
 /** The files of a design that has none: one list, so that nothing sees a change where there is none. */
 const NO_ATTACHMENTS: ProjectAttachment[] = [];
+
+/** A new group or bundle with the pivot that was set for the bodies it is made of, if there was one. */
+function withSelectionPivot(shape: WorkplaneShape, pivot: PivotPoint | null): WorkplaneShape {
+  return pivot ? { ...shape, rotationPivot: shapePivotFromWorld(shape, pivot) } : shape;
+}
 
 export function LayerlingEditor({
   initialAssets = [],
@@ -4559,6 +4595,8 @@ export function LayerlingEditor({
 
   /** Where the edited body's middle is in the sketch, when the sketch of an existing body was opened (#291). */
   const sketchEditAnchorRef = useRef<SketchAnchor | null>(null);
+  // A body turned about the vertical is edited on the plate as it stands (forum, 621358): how to turn the drawing back.
+  const sketchEditTurnRef = useRef<SketchEditTurn | null>(null);
   /**
    * The edited body's own kind and workplane, once its sketch was switched to another kind of body (#655):
    * finishing then makes a new body of that kind in the old one's place, and switching back edits it as before.
@@ -4571,11 +4609,14 @@ export function LayerlingEditor({
     editingId: string | null = null,
     revolveSettings?: Partial<SketchRevolveSettings>,
     workplaneOverride?: PlacementWorkplane,
+    turn?: SketchEditTurn | null,
   ) => {
     const body = editingId ? shapesRef.current.find((shape) => shape.id === editingId) : undefined;
     const drawn = profile ?? emptySketchProfile();
     // The body's notes come along, shown on the sketch, and go back to the body when it is finished.
-    const initial = cloneSketchProfile({ ...drawn, notes: body ? sketchNotesFromBody(notesRef.current, body, sketchNoteFrame(body, operation, drawn, revolveSettings)) : [] });
+    const own = { ...drawn, notes: body ? sketchNotesFromBody(notesRef.current, body, sketchNoteFrame(body, operation, drawn, revolveSettings)) : [] };
+    sketchEditTurnRef.current = turn ?? null;
+    const initial = cloneSketchProfile(turn ? turnedSketchProfile(own, turn, "toPlate") : own);
     setCruiseAsset(null);
     setNoteMode(false);
     setWorkplaneMode(false);
@@ -4613,6 +4654,7 @@ export function LayerlingEditor({
     }
     const operation = sketchBodyOperation(selectedShape);
     let editWorkplane: PlacementWorkplane | undefined;
+    let turn: SketchEditTurn | null = null;
     sketchEditAnchorRef.current = null;
     if (operation === "extrude" || operation === "sweep") {
       const quaternion = quaternionForShape(selectedShape);
@@ -4637,6 +4679,13 @@ export function LayerlingEditor({
         { x: normal.x, y: normal.y, z: normal.z },
         { x: xAxis.x, y: xAxis.y, z: xAxis.z },
       );
+      // Turned only about the vertical, it opens on the plate as it stands in 3D, turned and moved, on the plate's grid
+      // (forum, 621358); before, its own frame made the bodies round it look turned and the grid sit off the plate's.
+      const upright = !selectedShape.rotationX && !selectedShape.rotationZ && !selectedShape.mirrorX && !selectedShape.mirrorY && !selectedShape.mirrorZ;
+      turn = upright && !selectedShape.sketchProfile.keyring
+        ? sketchEditTurn({ x: origin.x, z: origin.z }, { x: xAxis.x, z: xAxis.z }, { x: zAxis.x, z: zAxis.z })
+        : null;
+      if (turn) editWorkplane = placementWorkplaneFromSurface({ x: 0, y: origin.y, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 1, y: 0, z: 0 });
     } else if (operation === "revolve") {
       const quaternion = quaternionForShape(selectedShape);
       const normal = new THREE.Vector3(0, 1, 0).applyQuaternion(quaternion).normalize();
@@ -4652,13 +4701,14 @@ export function LayerlingEditor({
         { x: xAxis.x, y: xAxis.y, z: xAxis.z },
       );
     }
-    beginSketch(operation, selectedShape.sketchProfile, selectedShape.id, selectedShape.sketchRevolve, editWorkplane);
+    beginSketch(operation, selectedShape.sketchProfile, selectedShape.id, selectedShape.sketchRevolve, editWorkplane, turn);
   }, [beginSketch, selectedShape, selectedShapes.length]);
 
   const cancelSketch = useCallback(() => {
     setSketchActive(false);
     setNoteMode(false);
     sketchEditAnchorRef.current = null;
+    sketchEditTurnRef.current = null;
     sketchOperationSwitchRef.current = null;
     setSketchActivePointId(null);
     setSketchSelection(null);
@@ -5356,8 +5406,10 @@ export function LayerlingEditor({
   }, [sketchActive, sketchOperation, sketchProfile]);
 
   const finishSketch = useCallback(async () => {
+    // Drawn on the plate for a turned body: back into the body's frame, which it keeps.
+    const turn = sketchEditTurnRef.current;
     // The notes are not part of the body's sketch: they become the body's own.
-    const { notes: sketchNotes, ...drawnProfile } = sketchProfile;
+    const { notes: sketchNotes, ...drawnProfile } = turn ? turnedSketchProfile(sketchProfile, turn, "toBody") : sketchProfile;
     const edited = editingSketchShapeId ? shapes.find((shape) => shape.id === editingSketchShapeId) ?? null : null;
     // Switched to another kind of body (#655): a new body of that kind takes the edited one's place.
     const switchedBody = edited && sketchOperationSwitchRef.current ? edited : null;
@@ -5442,6 +5494,7 @@ export function LayerlingEditor({
     setSketchRevolvePreview(null);
     setEditingSketchShapeId(null);
     sketchEditAnchorRef.current = null;
+    sketchEditTurnRef.current = null;
     sketchOperationSwitchRef.current = null;
     setToolbarMode("geometry");
   }, [activeSketchWorkplane, commitShapes, editingSketchShapeId, shapes, sketchOperation, sketchProfile, sketchRevolveSettings]);
@@ -6592,9 +6645,10 @@ export function LayerlingEditor({
     stopCruise();
     const appliedEdgeTreatmentCount = edgeTreatmentFeatureCount(selectedShape);
     const hasAppliedEdgeTreatment = Boolean(selectedShape.importedMesh && selectedShape.edgeTreatments?.length);
-    const sourceParts = (selectedShape.groupedShapes?.length && !hasAppliedEdgeTreatment && !shapeHasShapeDeform(selectedShape)
+    const sourceEntries = (selectedShape.groupedShapes?.length && !hasAppliedEdgeTreatment && !shapeHasShapeDeform(selectedShape)
       ? restoreGroupedChildrenForEdges(selectedShape)
-      : [selectedShape]).flatMap(cadModifierSourceParts);
+      : [{ shape: selectedShape, scope: [] }]).flatMap(({ shape, scope }) => cadModifierSourceParts(shape).map((part) => ({ part, scope })));
+    const sourceParts = sourceEntries.map((entry) => entry.part);
     const partInputs: Array<{ shape: WorkplaneShape; mesh?: MeshData; brep?: string; step?: string; thread?: CadModifierThreadPart; spring?: CadModifierSpringPart; helicalGear?: CadModifierHelicalGearPart; gridfinity?: CadModifierGridfinityPart; brepTransform?: number[]; primitive?: CadModifierPrimitivePart; profile?: CadModifierProfilePart; profileMesh?: MeshData }> = withinExactProfileLimit(sourceParts.map((shape) => {
       const frame = shape.cadBrepFrame;
       const preserveNeedsRetessellation = preservesEdgeTreatmentSize(shape) && Boolean(frame) && (
@@ -6696,7 +6750,7 @@ export function LayerlingEditor({
       if (part.primitive) return { primitive: part.primitive, hole: Boolean(part.shape.hole) };
       if (part.profile) return cadModifierProfileMeshPart(part.profile, part.profileMesh, sendProfileMeshes, Boolean(part.shape.hole));
       return { ...meshDataToCadTransfer(part.mesh as MeshData), hole: Boolean(part.shape.hole) };
-    });
+    }).map((part, index) => withCadPartScope(part, sourceEntries[index].scope));
     const prepareRequestId = postCadModifierRequest({
       type: "prepare",
       parts,
@@ -6735,9 +6789,10 @@ export function LayerlingEditor({
     }
     const appliedEdgeTreatmentCount = edgeTreatmentFeatureCount(shape);
     const hasAppliedEdgeTreatment = Boolean(shape.importedMesh && shape.edgeTreatments?.length);
-    const sourceParts = (shape.groupedShapes?.length && !hasAppliedEdgeTreatment && !shapeHasShapeDeform(shape)
+    const sourceEntries = (shape.groupedShapes?.length && !hasAppliedEdgeTreatment && !shapeHasShapeDeform(shape)
       ? restoreGroupedChildrenForEdges(shape)
-      : [shape]).flatMap(cadModifierSourceParts);
+      : [{ shape, scope: [] }]).flatMap((entry) => cadModifierSourceParts(entry.shape).map((part) => ({ part, scope: entry.scope })));
+    const sourceParts = sourceEntries.map((entry) => entry.part);
     const partInputs: Array<{ shape: WorkplaneShape; mesh?: MeshData; brep?: string; step?: string; thread?: CadModifierThreadPart; spring?: CadModifierSpringPart; helicalGear?: CadModifierHelicalGearPart; gridfinity?: CadModifierGridfinityPart; brepTransform?: number[]; primitive?: CadModifierPrimitivePart; profile?: CadModifierProfilePart; profileMesh?: MeshData }> = withinExactProfileLimit(sourceParts.map((partShape) => {
       const frame = partShape.cadBrepFrame;
       const preserveNeedsRetessellation = preservesEdgeTreatmentSize(partShape) && Boolean(frame) && (
@@ -6811,7 +6866,7 @@ export function LayerlingEditor({
       if (part.primitive) return { primitive: part.primitive, hole: Boolean(part.shape.hole) };
       if (part.profile) return cadModifierProfileMeshPart(part.profile, part.profileMesh, sendProfileMeshes, Boolean(part.shape.hole));
       return { ...meshDataToCadTransfer(part.mesh as MeshData), hole: Boolean(part.shape.hole) };
-    });
+    }).map((part, index) => withCadPartScope(part, sourceEntries[index].scope));
     const transfer = parts.flatMap((part) => part.positions && part.indices ? [part.positions.buffer as Transferable, part.indices.buffer as Transferable] : []);
     const response = await postCadModifierRequestAsync({
       type: "prepare",
@@ -8543,6 +8598,8 @@ export function LayerlingEditor({
       return;
     }
 
+    // A pivot set for these bodies goes to the group, where it stays and shows its coordinates (#990).
+    const selectionPivot = activeRotationPivot;
     const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
     const sourceProjectId = projectInfoRef.current.projectId;
     const result = await buildGroupedShapeOffThread(selectedShapes, workspaceSettingsRef.current.booleanTriangleLimit, geometryAbortRef.current?.signal);
@@ -8561,13 +8618,13 @@ export function LayerlingEditor({
       return;
     }
     const selected = new Set(selectedIds);
-    const editableGroup = canonicalizeShape({ ...group, groupOperation: "group" });
+    const editableGroup = withSelectionPivot(canonicalizeShape({ ...group, groupOperation: "group" }), selectionPivot);
     commitShapes(
       [...shapesRef.current.filter((shape) => !selected.has(shape.id)), editableGroup],
       editableGroup.id,
       result.openGapEdges ? t("status.cutLeftOpen", { count: result.openGapEdges }) : result.mergeWarning ?? withClosedHolesNote(t("status.groupedMany", { count: selectedShapes.length }), result.closedHoles),
     );
-  }, [refuseLockedSelection, commitShapes, selectedIds, selectedShapes]);
+  }, [refuseLockedSelection, commitShapes, selectedIds, selectedShapes, activeRotationPivot]);
 
   /** the usual bundle (Ctrl+B): the parts move, turn and scale together and stay what they are. */
   const bundleSelected = useCallback(() => {
@@ -8586,9 +8643,9 @@ export function LayerlingEditor({
       return;
     }
     const selected = new Set(selectedIds);
-    const bundle = canonicalizeShape({ ...group, name: "Bundle", groupOperation: "bundle" });
+    const bundle = withSelectionPivot(canonicalizeShape({ ...group, name: "Bundle", groupOperation: "bundle" }), activeRotationPivot);
     commitShapes([...shapesRef.current.filter((shape) => !selected.has(shape.id)), bundle], bundle.id, t("status.bundledMany", { count: selectedShapes.length }));
-  }, [refuseLockedSelection, commitShapes, selectedIds, selectedShapes]);
+  }, [refuseLockedSelection, commitShapes, selectedIds, selectedShapes, activeRotationPivot]);
 
   /**
    * A key ring tab of its own (#598) fixed to the nearest tag in one click, where it was put: the
@@ -8752,6 +8809,61 @@ export function LayerlingEditor({
     const hull = canonicalizeShape({ ...result.group, groupOperation: "hull" });
     commitShapes([...shapesRef.current.filter((shape) => !operandIds.has(shape.id)), hull], hull.id, t("status.hulledMany", { count: groupable.length }));
   }, [refuseLockedSelection, commitShapes, selectedShapes]);
+
+  /**
+   * A cookie cutter from the selection (#982): the wall and the rim as two sketch bodies in a bundle, in place of what it is made
+   * from. One extruded sketch body gives its own outline; anything else - bodies built here, an imported mesh, several parts -
+   * gives what it stands on, the outlines the workplane cuts through it. The same code the MCP action uses.
+   */
+  const makeCookieCutter = useCallback(async (given?: Partial<Record<keyof CookieCutterOptions, unknown>>, only?: readonly WorkplaneShape[]) => {
+    const fail = (message: string) => {
+      setNotice(message);
+      return { ok: false as const, message };
+    };
+    const targets = (only ?? selectedShapes).filter((shape) => !isNonSolidShape(shape));
+    if (!targets.length) return fail(t("status.cookieCutterNeedsShape"));
+    if (targets.some((shape) => shape.locked)) return fail(t("status.objectLocked"));
+    const options = normalizeCookieCutterOptions(given);
+    const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
+    const sourceProjectId = projectInfoRef.current.projectId;
+    setNotice(t("status.buildingSketch"), true);
+    try {
+      const single = targets.length === 1 && isIconLayerBody(targets[0]) ? targets[0] : null;
+      let outline: SketchProfile;
+      let place: (built: WorkplaneShape) => WorkplaneShape;
+      if (single) {
+        const stretch = sketchBodyStretch(single);
+        outline = stretch ? stretchedSketchProfile(single.sketchProfile, stretch.x, stretch.z) : single.sketchProfile;
+        place = (built) => placeSketchShape(built, placementWorkplaneRef.current, single);
+      } else {
+        const found = await footprintOutline(targets);
+        if (!found) return fail(t("status.cookieCutterNoOutline"));
+        outline = found.profile;
+        place = (built) => canonicalizeShape({ ...built, x: found.x, z: found.z, elevation: found.floor });
+      }
+      const profiles = cookieCutterProfiles(outline, options);
+      const color = targets[0].color;
+      const build = async (profile: SketchProfile, height: number, name: string) =>
+        canonicalizeShape({ ...place(await cadShapeFromSketchProfile(profile, height, single)), id: createLocalId("cutter"), name, color, hole: false });
+      const wall = await build(profiles.wall, options.height, "Wall");
+      const rim = await build(profiles.rim, options.rimHeight, "Rim");
+      if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
+        return fail(t("status.cookieCutterChanged"));
+      }
+      const group = groupedShape([wall, rim]);
+      if (!group) return fail(t("status.cookieCutterNoOutline"));
+      const cutter = withSelectionPivot(canonicalizeShape({ ...group, name: t("cookieCutter.name"), groupOperation: "bundle" }), activeRotationPivot);
+      const consumed = new Set(targets.map((shape) => shape.id));
+      commitShapes([...shapesRef.current.filter((shape) => !consumed.has(shape.id)), cutter], cutter.id, t("status.cookieCutterMade"));
+      return { ok: true as const, id: cutter.id };
+    } catch (error) {
+      const message = error instanceof Error && error.message === "cookie-cutter-outline-too-complex"
+        ? t("status.cookieCutterTooComplex")
+        : error instanceof Error ? localizedError(error.message) : t("status.sketchCannotExtrude");
+      setNotice(message, true);
+      return { ok: false as const, message };
+    }
+  }, [commitShapes, selectedShapes, activeRotationPivot]);
 
   // Each step answers with what happened, so the buttons can show it and MCP can pass it on.
   const refuseOpenGroupStep = useCallback((message: string): OpenGroupOutcome => {
@@ -9005,7 +9117,7 @@ export function LayerlingEditor({
     let used: SurfaceTextureSettings;
     try {
       // A text's letters are drawn here, where the fonts are, and go to the worker as outlines.
-      const textOutline = settings.pattern === "text" ? await surfaceTextOutline({ content: settings.textContent, font: settings.textFont, size: settings.textSize }) : [];
+      const textOutline = settings.pattern === "text" ? await surfaceTextOutline({ content: settings.textContent, font: settings.textFont, size: settings.textSize, vertical: settings.textVertical }) : [];
       if (settings.pattern === "text" && !textOutline.length) {
         setNotice(t("status.surfaceNoText"));
         return;
@@ -9960,6 +10072,11 @@ export function LayerlingEditor({
           if (typeof params.silhouette === "boolean") patch.textSilhouette = params.silhouette || undefined;
           // Straight text only (#382): the letters stretched to fill the box, or fitted with their proportions.
           if (typeof params.stretch === "boolean") patch.textStretch = params.stretch || undefined;
+          // Straight text only (#981): the letters stacked top to bottom; the box turns upright and the letters keep their size.
+          if (typeof params.vertical === "boolean" && !target.textCurved) {
+            const vertical = { ...target, ...patch, textVertical: params.vertical || undefined } as WorkplaneShape;
+            Object.assign(patch, { textVertical: params.vertical || undefined }, vertical.textStretch ? {} : textLetterSizePatch(vertical, textLetterSize({ ...target, ...patch } as WorkplaneShape)));
+          }
           // The space between the letters (#594), in per cent of the letter size; the letters keep their size and the box follows.
           if (params.spacing !== undefined) {
             const spacing = Number(params.spacing);
@@ -10413,7 +10530,9 @@ export function LayerlingEditor({
         const wasText = target.kind === "text";
         // A font by name as update_object takes it: a font of one's own becomes its id, a built-in name stays.
         const font = typeof params.font === "string" ? mcpTextFont(params.font) ?? params.font : undefined;
-        const source = { ...stack.source, ...(typeof params.text === "string" ? { text: params.text.slice(0, 24) || " " } : {}), ...(font ? { font } : {}) };
+        const plainSource = { ...stack.source, ...(typeof params.text === "string" ? { text: params.text.slice(0, 24) || " " } : {}), ...(font ? { font } : {}) };
+        // Vertical letters (#981) turn the tag upright at the letter size it had.
+        const source = typeof params.vertical === "boolean" && !plainSource.textCurved ? nameTagSource(plainSource, { vertical: params.vertical, letterSize: textLetterSize(stack.source) }) : plainSource;
         const requested = params.layers !== undefined ? normalizeTextLayers(params.layers) : null;
         if (params.layers !== undefined && !requested) throw new Error("layers must be 1 to 6 entries with grow, height, color and silhouette");
         const badCorner = layerTextLayersError(params.layers);
@@ -10654,6 +10773,16 @@ export function LayerlingEditor({
         return { object: mcpShapeSummary(hull) };
       }
 
+      if (command.action === "cookie_cutter") {
+        const ids = new Set(mcpStringArray(params.ids));
+        const targets = currentShapes().filter((shape) => ids.has(shape.id));
+        if (!targets.length) throw new Error("Pass the ids of the objects to make a cookie cutter from");
+        const result = await makeCookieCutter({ wall: params.wall, height: params.height, rim: params.rim, rimHeight: params.rimHeight }, targets);
+        if (!result.ok) throw new Error(result.message);
+        const cutter = currentShapes().find((shape) => shape.id === result.id);
+        return { object: cutter ? mcpShapeSummary(cutter) : { id: result.id } };
+      }
+
       if (command.action === "ungroup_objects") {
         const requestedIds = mcpStringArray(params.ids ?? params.id);
         const ids = requestedIds.length ? new Set(requestedIds) : new Set(selectedIdsRef.current);
@@ -10789,7 +10918,7 @@ export function LayerlingEditor({
           if (!isCustomFontId(font) && !SURFACE_TEXT_FONTS.includes(font)) throw new Error(`textFont must be one of ${SURFACE_TEXT_FONTS.join(", ")}, or the name of a font of one's own`);
           settings.textFont = font;
           // The letters are drawn here, where the fonts are; outlines handed in are not taken.
-          settings.textOutline = await surfaceTextOutline({ content: settings.textContent, font: settings.textFont, size: settings.textSize });
+          settings.textOutline = await surfaceTextOutline({ content: settings.textContent, font: settings.textFont, size: settings.textSize, vertical: settings.textVertical });
           if (!settings.textOutline.length) throw new Error("textContent has no letters to write");
         }
         const outcome = await textureSurfaceOffThread(surfaceTextureInput(source), settings);
@@ -11293,7 +11422,11 @@ export function LayerlingEditor({
       if (command.action === "measurements") {
         if (!window.layerlingMeasurements) throw new Error("The tape measure is not available in this editor (a sketch is open, or the second view)");
         if (params.visible !== undefined && typeof params.visible !== "boolean") throw new Error("visible must be true or false");
-        return window.layerlingMeasurements(typeof params.visible === "boolean" ? { visible: params.visible } : undefined);
+        if (params.dimensions !== undefined && typeof params.dimensions !== "boolean") throw new Error("dimensions must be true or false");
+        return window.layerlingMeasurements({
+          ...(typeof params.visible === "boolean" ? { visible: params.visible } : {}),
+          ...(typeof params.dimensions === "boolean" ? { dimensions: params.dimensions } : {}),
+        });
       }
 
       if (command.action === "set_section_view") {
@@ -13475,6 +13608,8 @@ export function LayerlingEditor({
       items.push(
         { key: "markCenter", label: t("contextMenu.markCenter"), separated: true, onSelect: () => markSelectionPoints("center") },
         ...(shapeContextMenu.facePoint ? [{ key: "markFaceCenter", label: t("contextMenu.markFaceCenter"), onSelect: () => addReferencePoints([shapeContextMenu.facePoint as { x: number; y: number; z: number }]) }] : []),
+        // The point the selection turns about, to snap or align another part to (#990).
+        ...(activeRotationPivot ? [{ key: "markPivot", label: t("contextMenu.markPivot"), onSelect: () => addReferencePoints([activeRotationPivot]) }] : []),
         { key: "markCorners", label: t("contextMenu.markCorners"), onSelect: () => markSelectionPoints("corners") },
         { key: "markMidpoints", label: t("contextMenu.markMidpoints"), onSelect: () => markSelectionPoints("midpoints") },
         ...(referencePoints(notes).length > 0 ? [{ key: "removePoints", label: t("contextMenu.removeAllPoints", { count: referencePoints(notes).length }), danger: true, onSelect: removeAllReferencePoints }] : []),
@@ -13515,6 +13650,7 @@ export function LayerlingEditor({
         canGroup={!selectionLocked && selectedShapes.length > 1 && selectedShapes.every((shape) => !isNonSolidShape(shape))}
         canIntersect={!selectionLocked && canIntersectShapes(selectedShapes.filter((shape) => !isNonSolidShape(shape)))}
         canHull={!selectionLocked && canHullShapes(selectedShapes.filter((shape) => !isNonSolidShape(shape)))}
+        canCookieCutter={!selectionLocked && selectedShapes.some((shape) => !isNonSolidShape(shape))}
         canUngroup={!selectionLocked && selectedShapes.some((shape) => Boolean(shape.groupedShapes?.length) || wasGroupBeforeEdgeTreatments(shape))}
         canModifySelection={hasSelection && !selectionLocked}
         hasClipboard={clipboard.length > 0 || systemClipboardSupported}
@@ -13583,6 +13719,7 @@ export function LayerlingEditor({
         onBundle={bundleSelected}
         onIntersect={intersectSelected}
         onHull={hullSelected}
+        onCookieCutter={() => void makeCookieCutter()}
         onIntersectPreview={toggleIntersectPreview}
         intersectPreviewActive={Boolean(intersectPreviewIds)}
         onFillet={() => edgeModifier?.kind === "fillet" ? cancelEdgeModifier() : startEdgeModifier("fillet")}

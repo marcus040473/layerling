@@ -2,7 +2,7 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { ShapeMenuPanel } from "@/components/workplane/ShapeMenuPanel";
-import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Check, CircleHelp, Percent, Circle as CircleIcon, Eye, EyeOff, Hexagon as HexagonIcon, ListTree, Pencil, Pentagon as PentagonIcon, Rotate3d, Route as RouteIcon, Search, Square as SquareIcon, Star as StarIcon, Triangle as TriangleIcon, X } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Check, CircleHelp, Cookie, Percent, Circle as CircleIcon, Eye, EyeOff, Hexagon as HexagonIcon, ListTree, Pencil, Pentagon as PentagonIcon, Rotate3d, Route as RouteIcon, Search, Square as SquareIcon, Star as StarIcon, Triangle as TriangleIcon, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useWheelField } from "@/lib/useWheelField";
 import { wheelNextValue } from "@/lib/wheelValueStep";
@@ -154,6 +154,7 @@ export function SecondaryToolbar({
   canGroup,
   canIntersect,
   canHull,
+  canCookieCutter,
   canRedo,
   canUngroup,
   canUndo,
@@ -221,6 +222,7 @@ export function SecondaryToolbar({
   onBundle,
   onIntersect,
   onHull,
+  onCookieCutter,
   onIntersectPreview,
   intersectPreviewActive,
   onFillet,
@@ -290,6 +292,7 @@ export function SecondaryToolbar({
   canGroup: boolean;
   canIntersect: boolean;
   canHull: boolean;
+  canCookieCutter: boolean;
   canRedo: boolean;
   canUngroup: boolean;
   canUndo: boolean;
@@ -357,6 +360,7 @@ export function SecondaryToolbar({
   onBundle: () => void;
   onIntersect: () => void;
   onHull: () => void;
+  onCookieCutter: () => void;
   onIntersectPreview: () => void;
   intersectPreviewActive: boolean;
   onFillet: () => void;
@@ -664,6 +668,7 @@ export function SecondaryToolbar({
     { id: "intersect", label: t("editor.tool.intersect"), icon: ToolbarIntersectionIcon, action: onIntersect, enabled: canIntersect || intersectPreviewActive },
     { id: "cutOut", label: t("editor.tool.cutOut"), icon: ToolbarCutOutIcon, action: onCutOut, enabled: canCutOut || cutOutActive, active: cutOutActive },
     { id: "hull", label: t("editor.tool.hull"), icon: ToolbarHullIcon, action: onHull, enabled: canHull },
+    { id: "cookieCutter", label: t("editor.tool.cookieCutter"), icon: Cookie, action: onCookieCutter, enabled: canCookieCutter },
     { id: "intersect-preview", label: t("editor.tool.intersectPreview"), icon: ToolbarIntersectPreviewIcon, action: onIntersectPreview, enabled: canIntersect || intersectPreviewActive, active: intersectPreviewActive },
   ];
   const modifyTools = [
