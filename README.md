@@ -47,6 +47,7 @@ layerling sits a step beyond Tinkercad towards Fusion 360: it is operated the sa
 - **Patterns and wrapping.** Repeat a shape in a row, circle or spiral, or wrap a pattern or text around a cylinder.
 - **Hole patterns.** Click a flat face and spread round, square, rectangular, hexagonal or slot holes over it, in a grid or staggered, with spacing, margin and depth - vents, speaker grilles and baskets in one step.
 - **Scale by percent.** Make one or many parts larger or smaller by a percentage - together, so the layout grows with them, or each in place.
+- **Match sizes.** Hold Alt on an align dot and the parts stretch instead of moving: to the side of another part, or to its width, length or height - to swap a box for a cylinder of the same size, for instance.
 - **Measure and look inside.** Tape measure, rulers, a section view that cuts the model open, and a history slider to look back at earlier states.
 - **Real geometry underneath.** layerling keeps exact CAD shapes, not just a mesh, so a rounded edge stays a rounded edge – all the way into a STEP file for a full CAD program.
 
@@ -86,7 +87,8 @@ It is not a full CAD package: there is no parametric timeline and no assemblies.
 - **Bundle** – Ctrl+B holds parts together like Tinkercad's bundle: they move, turn and scale as one, but keep their colours and stay separate bodies in the export – handy for multicolour prints.
 - **Intersection** – keep only what two or more selected solids have in common, or where solids and holes overlap.
 - **Hull** – wrap the selected shapes in their convex hull, the smallest body without dents round all of them: a half sphere on a cylinder becomes a dome, four posts a box with round corners. Holes in the selection are cut out afterwards.
-- **Cookie cutter** – a wall and a flat rim round the outline of a sketch or an SVG, or of whatever a shape stands on, in one click; holes stay open. Wall thickness, height and rim are the sketch fill modes, so each can be changed afterwards.
+- **Cookie cutter** – a wall and a flat rim round the outline of a sketch or an SVG, or of whatever a shape stands on, in one click; holes stay open. The outline is mirrored, so text and logos come out of the dough the right way round, and the wall runs up to a thin cutting edge. Wall thickness, cutting edge, height and rim are the sketch fill modes, so each can be changed afterwards.
+- **Loft sketches** – two sketches or imported SVGs become one exact body, the outline of the lower one at the bottom and of the upper one at the top, with straight walls between them: a funnel, a square-to-round transition, or from two rings a tapered frame. Edit group opens the two sketches again.
 - **Split** – cut solids or holes in two with a plane; a hollowed body keeps its cavity. Turn the plane for an angled cut, drag its arrow, or lay it on any face with "Pick face".
 
 ### Refining

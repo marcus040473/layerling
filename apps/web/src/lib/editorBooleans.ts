@@ -2372,7 +2372,8 @@ export type EdgeToolPart = { shape: WorkplaneShape; scope: number[] };
 export function restoreGroupedChildrenForEdges(group: WorkplaneShape, scope: number[] = [], nestedScopes = { count: 0 }): EdgeToolPart[] {
   // A hull or an intersection is its own body, not the sum of its parts: opened, Hollow hollowed the two rounds of a
   // hull one by one and the hull was gone, and an intersection could not be hollowed at all (#908). Its mesh goes.
-  if (group.groupOperation === "hull" || group.groupOperation === "intersection") return [{ shape: group, scope }];
+  // A loft between two sketches is the same: its parts are only its two outlines.
+  if (group.groupOperation === "hull" || group.groupOperation === "intersection" || group.groupOperation === "loft") return [{ shape: group, scope }];
   return restoreGroupedChildren(group).flatMap((child) => {
     const grandChildren = child.groupedShapes ?? [];
     // Only while its mesh is still nothing but its parts. Every computed group carries its mesh, so that alone says
@@ -2457,7 +2458,7 @@ function expandGroupsForBoolean(selection: WorkplaneShape[]): WorkplaneShape[] {
 
 function expandGroupsForBoxBoolean(selection: WorkplaneShape[]): WorkplaneShape[] {
   // An intersection or a hull is not the sum of its parts: opened, a hull of four boxes would be cut as the four boxes (#863).
-  return selection.flatMap((shape) => (shape.groupedShapes?.length && shape.groupOperation !== "intersection" && shape.groupOperation !== "hull" ? restoreGroupedChildren(shape) : [shape])).flatMap(splitBoreTube);
+  return selection.flatMap((shape) => (shape.groupedShapes?.length && shape.groupOperation !== "intersection" && shape.groupOperation !== "hull" && shape.groupOperation !== "loft" ? restoreGroupedChildren(shape) : [shape])).flatMap(splitBoreTube);
 }
 
 function canUseBoxBoolean(selection: WorkplaneShape[]) {

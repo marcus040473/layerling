@@ -73,6 +73,7 @@ summary: كيف ينشئ مساعد ذكاء اصطناعي مثل Gemini أو C
 | `layerling_intersect_objects` | تحتفظ فقط بالجزء المشترك بين الأجسام (التقاطع) |
 | `layerling_hull_objects` | تلف الأجسام في جسم واحد محدب، كأنها مغلفة بغشاء (الغلاف) |
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
+| `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | تفصل شكلًا إلى أجزائه المنفصلة، وجسم الرسم التخطيطي إلى جسم لكل حد خارجي |
 | `layerling_split_objects` | تقطع أجسامًا صلبة أو ثقوبًا إلى قسمين بمستوى |
 | `layerling_list_edges` | تسرد حواف CAD الحقيقية لجسم |

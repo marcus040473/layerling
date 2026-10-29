@@ -12,7 +12,7 @@ const square: SketchProfile = {
 
 describe("cookie cutter", () => {
   it("builds the wall and the rim as lines outside the silhouette of the same outline", () => {
-    const { wall, rim } = cookieCutterProfiles(square, COOKIE_CUTTER_DEFAULTS);
+    const { wall, rim } = cookieCutterProfiles(square, { ...COOKIE_CUTTER_DEFAULTS, mirror: false });
     for (const profile of [wall, rim]) {
       expect(profile.silhouette).toBe(true);
       expect(profile.stroke?.align).toBe("outside");
@@ -23,6 +23,38 @@ describe("cookie cutter", () => {
     expect(wall.stroke?.width).toBeCloseTo(COOKIE_CUTTER_DEFAULTS.wall, 9);
     // The rim's line also covers the wall's, so the wall stands on it.
     expect(rim.stroke?.width).toBeCloseTo(COOKIE_CUTTER_DEFAULTS.wall + COOKIE_CUTTER_DEFAULTS.rim, 9);
+    // Only the wall cuts: its top runs in to the edge, the rim stays flat.
+    expect(wall.stroke?.edge).toBeCloseTo(COOKIE_CUTTER_DEFAULTS.edge, 9);
+    expect(rim.stroke?.edge).toBeUndefined();
+  });
+
+  it("mirrors the outline left to right by default, the curves' handles with their points (#982)", () => {
+    const letter: SketchProfile = {
+      points: [
+        { id: "a", x: 2, z: -5, mode: "corner" },
+        { id: "b", x: 9, z: 0, mode: "smooth", handleIn: { x: 9, z: -3 }, handleOut: { x: 9, z: 3 } },
+        { id: "c", x: 2, z: 5, mode: "corner" },
+      ],
+      segments: [
+        { id: "s0", startId: "a", endId: "b", kind: "bezier" },
+        { id: "s1", startId: "b", endId: "c", kind: "bezier" },
+        { id: "s2", startId: "c", endId: "a", kind: "line" },
+      ],
+    };
+    const { wall, rim } = cookieCutterProfiles(letter, COOKIE_CUTTER_DEFAULTS);
+    for (const profile of [wall, rim]) {
+      expect(profile.points.map((point) => [point.x, point.z])).toEqual([[-2, -5], [-9, 0], [-2, 5]]);
+      expect(profile.points[1].handleIn).toEqual({ x: -9, z: -3 });
+      expect(profile.points[1].handleOut).toEqual({ x: -9, z: 3 });
+      expect(profile.segments).toEqual(letter.segments);
+    }
+    expect(cookieCutterProfiles(letter, { ...COOKIE_CUTTER_DEFAULTS, mirror: false }).wall.points.map((point) => point.x)).toEqual([2, 9, 2]);
+  });
+
+  it("gives the wall a flat top for an edge of 0, or one as wide as the wall", () => {
+    expect(cookieCutterProfiles(square, normalizeCookieCutterOptions({ edge: 0 })).wall.stroke?.edge).toBeUndefined();
+    expect(normalizeCookieCutterOptions({ wall: 1, edge: 1.5 }).edge).toBe(0);
+    expect(normalizeCookieCutterOptions({ wall: 2, edge: 0.6 }).edge).toBe(0.6);
   });
 
   it("leaves the sketch it is made from as it was", () => {
@@ -33,7 +65,8 @@ describe("cookie cutter", () => {
 
   it("takes the options as given within their limits, and the nearest allowed value outside", () => {
     expect(normalizeCookieCutterOptions()).toEqual(COOKIE_CUTTER_DEFAULTS);
-    expect(normalizeCookieCutterOptions({ wall: 2, height: 20, rim: 6, rimHeight: 3 })).toEqual({ wall: 2, height: 20, rim: 6, rimHeight: 3 });
+    expect(normalizeCookieCutterOptions({ wall: 2, height: 20, rim: 6, rimHeight: 3, edge: 0.8, mirror: false })).toEqual({ wall: 2, height: 20, rim: 6, rimHeight: 3, edge: 0.8, mirror: false });
+    expect(normalizeCookieCutterOptions({ mirror: "no" }).mirror).toBe(true);
     expect(normalizeCookieCutterOptions({ wall: 0, height: 5000, rim: -1 })).toMatchObject({ wall: 0.4, height: 100, rim: 0.5 });
     expect(normalizeCookieCutterOptions({ wall: "abc", height: "", rim: null })).toEqual(COOKIE_CUTTER_DEFAULTS);
     expect(normalizeCookieCutterOptions({ wall: "1.5" }).wall).toBe(1.5);

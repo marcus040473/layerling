@@ -1,5 +1,45 @@
 [
   {
+    "version": "1.119.0",
+    "items": [
+      {
+        "title": {
+          "de": "Übergang aus Skizzen",
+          "en": "Loft sketches"
+        },
+        "body": {
+          "de": "Zwei Skizzen oder importierte SVGs werden ein Körper: unten der eine Umriss, oben der andere, dazwischen gerade Wände. Aus zwei Ringen wird ein hohler Rahmen, und „Gruppe bearbeiten“ öffnet die Skizzen wieder.",
+          "en": "Two sketches or imported SVGs become one body: one outline at the bottom, the other at the top, straight walls between them. Two rings give a hollow frame, and Edit group opens the sketches again."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.118.1",
+    "items": [
+      {
+        "title": {
+          "de": "Ausstechform: richtig herum und scharf",
+          "en": "Cookie cutter: the right way round and sharp"
+        },
+        "body": {
+          "de": "Die Ausstechform spiegelt den Umriss jetzt, weil man sie zum Ausstechen umdreht: Schrift und Logos kommen richtig herum aus dem Teig. Die Wand läuft oben auf eine schmale Schneidkante zu, deren Breite du unter Eigenschaften änderst.",
+          "en": "The cookie cutter now mirrors the outline, since you turn it over to cut: text and logos come out of the dough the right way round. The wall runs up to a thin cutting edge, and you change its width under Properties."
+        }
+      },
+      {
+        "title": {
+          "de": "Größe angleichen",
+          "en": "Match sizes"
+        },
+        "body": {
+          "de": "Halte beim Ausrichten Alt gedrückt: Die Punkte werden zu Quadraten und strecken die Teile bis an die Kante eines anderen oder auf seine Breite, Länge oder Höhe, statt sie zu verschieben.",
+          "en": "Hold Alt while aligning: the dots turn into squares and stretch the parts to the side of another or to its width, length or height instead of moving them."
+        }
+      }
+    ]
+  },
+  {
     "version": "1.118.0",
     "items": [
       {

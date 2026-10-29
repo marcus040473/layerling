@@ -54,6 +54,12 @@ Eine schräg gedrehte Form, etwa um 45°, hat als Bezug den Kasten um sich herum
 
 Die Taste dafür ist [[L]]. [[Esc]] bricht ab.
 
+### Größe angleichen
+
+Hältst du beim Ausrichten [[Alt]] gedrückt, werden die Punkte zu Quadraten, und ein Klick verschiebt die Formen nicht, sondern ändert ihre Größe. Ein Punkt an der Seite streckt jede Form bis an diese Seite, ihre andere Seite bleibt stehen, als hättest du ihren Griff dorthin gezogen. Der Punkt in der Mitte lässt jede Form an ihrem Platz und gibt ihr die Breite, Länge oder Höhe in dieser Richtung. So tauschst du etwa einen Quader gegen einen gleich großen Zylinder oder ersetzt ein verunglücktes Stück eines Netzes durch eine saubere Form. Fährst du mit gedrückter [[Alt]]-Taste über einen Punkt, siehst du vorher, wie groß die Formen werden.
+
+Bezug ist die Form, die du zuerst angeklickt hast; nur die anderen ändern sich. Ohne sie strecken die Seitenpunkte alle Formen bis an die äußerste Seite, und der Mittelpunkt gibt allen die Größe der größten. Ein Zylinder bleibt dabei rund, er wird also auch in der anderen Richtung breiter. Eine Form, die schräg gedreht ist, bleibt, wie sie ist; um 90° gedrehte Formen gehen.
+
 ## Spiegeln
 
 {{ui:editor.tool.mirror}} ([[M]], oder per Rechtsklick auf die Auswahl) kippt die Auswahl an einer Ebene: {{ui:mirror.leftRight}}, {{ui:mirror.frontBack}} oder {{ui:mirror.topBottom}}. Klicke dazu auf den passenden Achsenpfeil. Das ist praktisch für symmetrische Teile: Baue eine Hälfte, kopiere sie und spiegele die Kopie.

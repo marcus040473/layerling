@@ -69,6 +69,7 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_intersect_objects` | ne garde que ce que les objets ont en commun (Intersection) |
 | `layerling_hull_objects` | enveloppe les objets dans un seul corps convexe, comme sous film rétractable (Enveloppe) |
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
+| `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | sépare une forme en ses parties détachées, un corps d'esquisse en un corps par contour |
 | `layerling_split_objects` | coupe des solides ou des trous en deux avec un rabot |
 | `layerling_list_edges` | répertorie les véritables bords CAO d'un objet |

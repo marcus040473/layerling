@@ -57,7 +57,7 @@ export const LYL_FILE_TYPES_FORMAT_VERSION = 4;
 /** The newest format this layerling reads. */
 export const LYL_NEWEST_READABLE_FORMAT_VERSION = LYL_FILE_TYPES_FORMAT_VERSION;
 export const LYL_OLDEST_READABLE_FORMAT_VERSION = 1;
-export const LYL_CREATED_WITH_VERSION = "1.118.0";
+export const LYL_CREATED_WITH_VERSION = "1.119.0";
 export const LYL_MEDIA_TYPE = "application/vnd.layerling.project+zip";
 
 export const LYL_LIMITS = {
@@ -904,7 +904,7 @@ function nodeGroupOperation(node: LylShapeNodeV1, nodeById: Map<string, LylShape
   if (node.definition.groupOperation === "intersection") return "boolean-intersection";
   if (node.definition.groupOperation === "bundle") return "group";
   // A hull keeps its parts as a group does; the operation itself travels in the definition (#863).
-  if (node.definition.groupOperation === "hull") return "group";
+  if (node.definition.groupOperation === "hull" || node.definition.groupOperation === "loft") return "group";
   const children = (node.groupedShapeNodeIds ?? []).map((id) => nodeById.get(id)).filter(Boolean) as LylShapeNodeV1[];
   const hasHole = children.some((child) => child.definition.hole === true);
   const hasSolid = children.some((child) => child.definition.hole !== true);

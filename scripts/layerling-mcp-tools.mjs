@@ -368,6 +368,7 @@ export const tools = [
             align: { type: "string", enum: ["center", "inside", "outside", "grow", "shrink"] },
             join: { type: "string", enum: ["miter", "round", "bevel"] },
             cap: { type: "string", enum: ["flat", "square", "round"] },
+            edge: { type: "number", description: "Kind sketch with align outside, inside or center: a cutting edge, the width in mm the wall's top runs in to with a 45° chamfer on both sides." },
           },
           required: ["width"],
         },
@@ -472,11 +473,12 @@ export const tools = [
                 align: { type: "string", enum: ["center", "inside", "outside", "grow", "shrink"] },
                 join: { type: "string", enum: ["miter", "round", "bevel"] },
                 cap: { type: "string", enum: ["flat", "square", "round"] },
+                edge: { type: "number", description: "Extruded sketch bodies with align outside, inside or center: a cutting edge, the width in mm the wall's top runs in to with a 45° chamfer on both sides (a cookie cutter's wall); 0 for a flat top, and an edge as wide as the line or wider is none." },
               },
             },
             { type: "null" },
           ],
-          description: "Extruded sketch bodies (an imported SVG among them) and texts: how the body is filled. An object builds the outline as a frame - align outside is Tinkercad's outer line, inside its inner line, center on the line - or with align grow keeps the area and widens it by width all round; width in mm; join miter (sharp), round or bevel; values left out keep the current ones. null makes it a filled area again. A sketch body is built again from its sketch, where it stands; a text keeps its letters and its box grows by the stroke's reach (outside and grow by width, center by half).",
+          description: "Extruded sketch bodies (an imported SVG among them) and texts: how the body is filled. An object builds the outline as a frame - align outside is Tinkercad's outer line, inside its inner line, center on the line - or with align grow keeps the area and widens it by width all round; width in mm; join miter (sharp), round or bevel; edge a cutting edge on top of a sketch body's wall; values left out keep the current ones. null makes it a filled area again. A sketch body is built again from its sketch, where it stands; a text keeps its letters and its box grows by the stroke's reach (outside and grow by width, center by half).",
         },
         silhouette: { type: "boolean", description: "Extruded sketch bodies and texts: true leaves out every outline inside another - holes, and islands in them; on a text the counters of its letters - false brings them back. With an outside stroke this makes a cookie cutter from one SVG; with grow, a base layer under a text." },
         sketchOperation: { type: "string", enum: ["extrude", "revolve", "sweep"], description: "Sketch bodies only: make the body again from its sketch as another kind - an imported SVG comes in extruded, revolve turns its outline about the sketch's vertical axis (x = 0) into a round body, as the sketch's badge does in the editor. The new body keeps the id, name and colour and stands where the old one stood, its foot at the same height; an extrusion made from another kind is 10 mm high. Edge treatments go. For a revolve an outline reaching across the axis is first moved left until its right edge lies on it, so the half cross-section of an SVG turns about its straight side; sweep needs a construction line as the path." },
@@ -515,7 +517,7 @@ export const tools = [
   },
   {
     name: "layerling_align_objects",
-    description: "Align two or more Layerling objects using the same alignment logic as the editor Alignment button. On the plate the axes are the world's; with a workplane set on a face (layerling_set_workplane) the objects are measured and moved along that plane's axes instead - x along the face, y out of it, z across - so a part turned 45° lines up with its own edges.",
+    description: "Align two or more Layerling objects using the same alignment logic as the editor Alignment button. On the plate the axes are the world's; with a workplane set on a face (layerling_set_workplane) the objects are measured and moved along that plane's axes instead - x along the face, y out of it, z across - so a part turned 45° lines up with its own edges. mode size is the editor's Alt on an align dot: the objects stay where they are and change their size instead - min or max stretches each one, its other side fixed, to that side of the anchor (or of the farthest object without one); center gives each one the anchor's size along the axis (or the largest object's), its middle fixed. An object turned at some other angle than square to the axis is left as it is and counted in skipped.",
     inputSchema: {
       ...editorTargetSchema,
       required: ["axis", "target"],
@@ -525,6 +527,7 @@ export const tools = [
         anchorId: { type: "string", description: "Optional object id to keep fixed as the alignment reference." },
         axis: { type: "string", enum: ["x", "y", "z"], description: "x=left/right, z=front/back, y=bottom/top - or along the set workplane's x, z and normal." },
         target: { type: "string", enum: ["min", "center", "max"], description: "Which side/center to align." },
+        mode: { type: "string", enum: ["position", "size"], description: "position (default) moves the objects; size stretches them to the reference instead." },
       },
     },
   },
@@ -718,7 +721,7 @@ export const tools = [
   },
   {
     name: "layerling_cookie_cutter",
-    description: "Make a cookie cutter from the given objects, like the editor's Cookie cutter button: a wall and a flat rim round the outline, as two sketch bodies in one bundle that replaces the objects. One extruded sketch body gives its own outline; anything else (shapes built in layerling, an imported mesh, several parts) gives what it stands on, the outlines the workplane cuts through it - holes inside stay open. The wall and the rim are lines outside the outline in the sketch fill modes, so change them under Properties afterwards. All sizes in mm: wall (thickness, default 1.2), height (default 15), rim (how far the rim reaches beyond the wall, default 4), rimHeight (default 2).",
+    description: "Make a cookie cutter from the given objects, like the editor's Cookie cutter button: a wall and a flat rim round the outline, as two sketch bodies in one bundle that replaces the objects. One extruded sketch body gives its own outline; anything else (shapes built in layerling, an imported mesh, several parts) gives what it stands on, the outlines the workplane cuts through it - holes inside stay open. The wall and the rim are lines outside the outline in the sketch fill modes, so change them under Properties afterwards. The wall's top runs in to a cutting edge, and the outline is mirrored left to right, because the cutter is printed on its rim and turned over to cut: a text or logo comes out the right way round. All sizes in mm: wall (thickness, default 1.2), height (default 15), rim (how far the rim reaches beyond the wall, default 4), rimHeight (default 2), edge (the cutting edge's width on top of the wall, default 0.4, 0 for a flat top; if the outline has steps too short for it, the wall gets a flat top and the answer has a note); mirror (default true; false for an outline that should stay as drawn).",
     inputSchema: {
       ...editorTargetSchema,
       required: ["ids"],
@@ -729,6 +732,20 @@ export const tools = [
         height: { type: "number" },
         rim: { type: "number" },
         rimHeight: { type: "number" },
+        edge: { type: "number" },
+        mirror: { type: "boolean" },
+      },
+    },
+  },
+  {
+    name: "layerling_loft_sketches",
+    description: "Loft between two sketch bodies, like the editor's Loft sketches button: two extruded sketch or SVG bodies, each with one outline (a ring with holes in both is fine, as long as both have as many), become one exact body whose bottom is the outline of the lower body at its bottom and whose top is the outline of the upper body at its top, with straight walls between them - for a funnel, a transition piece or a tapered frame. Each outline is taken where its body stands, turned about the vertical and stretched as the body is; bodies tipped over are refused. The two bodies stay inside the result as a group with groupOperation loft: layerling_open_group opens them, and closing the group builds the loft again. Returns the new object.",
+    inputSchema: {
+      ...editorTargetSchema,
+      required: ["ids"],
+      properties: {
+        ...editorTargetSchema.properties,
+        ids: { type: "array", items: { type: "string" }, minItems: 2, maxItems: 2, description: "The two sketch bodies." },
       },
     },
   },

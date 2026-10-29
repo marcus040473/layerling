@@ -38,7 +38,7 @@ import { chordHandles, withBezierHandles, withBezierStartHandle } from "@/lib/sk
 import { sketchProfileWithoutPoint } from "@/lib/sketchPointRemoval";
 import { sketchProfileWithArc, type SketchArcEnd } from "@/lib/sketchArc";
 import { withSegmentsConstruction } from "@/lib/sketchConstruction";
-import { alignAxesForWorkplane, cuboidAlongAxes, shiftAlongAxis, type AlignAxes } from "@/lib/alignFrame";
+import { alignAxesForWorkplane, shiftAlongAxis, type AlignAxes } from "@/lib/alignFrame";
 import { WorkplaneViewport, type LayFlatPick, type ViewportToolMemory } from "./WorkplaneViewport";
 import { layFlatRotation } from "@/lib/layFlat";
 import { SketchWorkspace, type SketchMeasurement, type SketchPrimitive, type SketchSelection, type SketchTool } from "./SketchWorkspace";
@@ -184,10 +184,12 @@ import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadM
 import { getSectionBounds, sectionAxisLetter, sectionMeshInFrame, sectionPlacementWorkplane, sectionPointFromFrame, sectionPointToFrame, type SectionFrame, type SectionOrientation, type SectionPlaneAxis, type SectionPlaneSettings } from "@/lib/sectionView";
 import { FOOTPRINT_CUT_HEIGHT, footprintCutOffset, projectSectionPoint, SECTION_VIEW_FACE, sectionSvgDocument, sliceMeshContours } from "@/lib/sectionSvg";
 import type { AlignAxis, AlignHandleStatus, AlignTarget, EdgeTreatmentFeature, GridSize, ParametricSource, ProjectAsset, ProjectAttachment, ShapeAsset, ShapeCustomization, ShapeKind, SketchImage, SketchOperation, SketchPoint, SketchProfile, SketchRevolveSettings, SketchSegment, ShellEdges, ShellOpenings, ShellSide, SweepAnchor, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
-import { type Vec3, type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, meshReachAlong, appendMeshData, formatTriangleCount, shapeAabb, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey, sameShapeApartFromPlacement } from "@/lib/editorMeshCore";
+import { type Vec3, type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, meshReachAlong, appendMeshData, formatTriangleCount, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey, sameShapeApartFromPlacement } from "@/lib/editorMeshCore";
 import { meshPartCount } from "@/lib/meshPartCount";
 import { buildGroupedShapeOffThread, exportSolidVolumeOffThread, callOffFaceRead, faceReadInWorker, createFaceReadKeeper, faceReadPositionsOffThread, simplifyTrianglePositionsOffThread, splitShapesByPlaneOffThread, subscribeGeometryBusy, warmGeometryWorker } from "@/lib/geometryWorker";
 import { roundedAlignedValue } from "@/lib/alignRounding";
+import { buildSketchLoftFromSelection, canSketchLoft } from "@/lib/sketchLoft";
+import { frameAabb, sizeAlignmentState, sizedShapesForSelection } from "@/lib/alignSize";
 import { cloneAsGroupChild, meshDataToManifoldMesh, shapeToManifoldSolid, withClosedHolesNote, unionOverlappingExportMeshes, exportBodiesWithLooseHoles, formatSectionOffset, SECTION_SEEN_FROM_KEYS, expandBundles, visibleExportShapes, multicolorExportSolids, exportFaceColors, colorSeparatedExportMeshes, disposeManifold, canIntersectShapes, buildIntersectionShapeFromSelection, canHullShapes, buildHullShapeFromSelection, groupedShape, quaternionForShape, rotationFromQuaternion, cleanShapePatch, restoreGroupedChildren, restoreGroupedChildrenForEdges } from "@/lib/editorBooleans";
 import { handleViewArrowKey } from "@/lib/viewArrowKeys";
 import { escapeWasHandled } from "@/lib/escapeHandled";
@@ -1763,15 +1765,18 @@ function alignmentLabel(axis: AlignAxis, target: AlignTarget) {
   return target === "min" ? t("align.bottom") : target === "max" ? t("align.top") : t("align.middle");
 }
 
-/** The box of a part along a workplane's axes, as the alignment measures it there (#232). */
-function frameAabb(shape: WorkplaneShape, axes: AlignAxes): Cuboid {
-  const mesh = shape.cylinderWrap && shape.importedMesh ? null : meshForShape(shape);
-  const own = mesh && mesh.vertices.length > 0 ? cuboidAlongAxes(mesh.vertices, axes) : null;
-  if (own) return own;
-  const box = shapeAabb(shape);
-  const corners: Array<[number, number, number]> = [];
-  for (const x of [box.minX, box.maxX]) for (const y of [box.minY, box.maxY]) for (const z of [box.minZ, box.maxZ]) corners.push([x, y, z]);
-  return cuboidAlongAxes(corners, axes) ?? box;
+/** What Align by size says: how many parts took the size, and how many could not (#998). */
+function sizedAlignmentMessage(sized: { resized: number; skipped: number }, label: string) {
+  if (sized.resized === 0 && sized.skipped === 0) return t("status.alreadySized");
+  const done = sized.resized === 0 ? null : sized.resized === 1 ? t("status.sizedOne", { alignment: label }) : t("status.sizedMany", { count: sized.resized, alignment: label });
+  const left = sized.skipped === 0 ? null : t("status.sizedSkipped", { count: sized.skipped });
+  return [done, left].filter(Boolean).join(". ");
+}
+
+/** The size mode's dots say where the parts stretch to, and the middle one which size they take (#998). */
+function sizeAlignmentLabel(axis: AlignAxis, target: AlignTarget) {
+  if (target === "center") return axis === "x" ? t("align.sizeWidth") : axis === "z" ? t("align.sizeDepth") : t("align.sizeHeight");
+  return alignmentLabel(axis, target);
 }
 
 function alignmentStatuses(selection: WorkplaneShape[], anchorId: string | null, axes: AlignAxes | null = null): AlignHandleStatus[] {
@@ -1800,12 +1805,18 @@ function alignmentStatuses(selection: WorkplaneShape[], anchorId: string | null,
         return bounds ? Math.abs(alignCoordinate(bounds, axis, target, naturalById.get(shape.id) ?? null, axes) - targetValue) > ALIGN_EPSILON : false;
       });
       const label = alignmentLabel(axis, target);
+      const size = sizeAlignmentState(selection, anchorId, axis, target, axes);
       return {
         axis,
         target,
         aligned,
         disabled: !wouldMove,
         title: aligned ? t("align.already", { label }) : t("align.do", { label }),
+        size: {
+          aligned: size.aligned,
+          disabled: !size.wouldChange,
+          title: size.aligned ? t("align.sizeAlready", { label: sizeAlignmentLabel(axis, target) }) : t("align.sizeDo", { label: sizeAlignmentLabel(axis, target) }),
+        },
       };
     }),
   );
@@ -2751,7 +2762,7 @@ export function LayerlingEditor({
   const [alignMode, setAlignMode] = useState(false);
   const [multiSelect, setMultiSelect] = useState(false);
   const [alignAnchorId, setAlignAnchorId] = useState<string | null>(null);
-  const [alignPreview, setAlignPreview] = useState<{ axis: AlignAxis; target: AlignTarget } | null>(null);
+  const [alignPreview, setAlignPreview] = useState<{ axis: AlignAxis; target: AlignTarget; size?: boolean } | null>(null);
   const [mirrorMode, setMirrorMode] = useState(false);
   const [splitSession, setSplitSession] = useState<SplitSession | null>(null);
   const [mirrorPreviewAxis, setMirrorPreviewAxis] = useState<AlignAxis | null>(null);
@@ -3659,6 +3670,8 @@ export function LayerlingEditor({
   // A workplane set on a face lets the align tool measure along its axes (#232); on the plate it is the world's.
   const alignAxes = useMemo(() => alignAxesForWorkplane(placementWorkplane), [placementWorkplane]);
   const alignHandleStatuses = useMemo(() => (alignMode ? alignmentStatuses(selectedShapes, effectiveAlignAnchorId, alignAxes) : []), [alignAxes, alignMode, effectiveAlignAnchorId, selectedShapes]);
+  // Align by size (#998) stretches no part past the largest size the settings allow, as scaling by percent.
+  const alignSizeLimit = useCallback((shape: WorkplaneShape) => shapeDimensionLimit(workspaceSettingsRef.current, shape.kind, 1000), []);
   // The box the handles stand on along those axes, of the anchor or of the whole selection, from the shapes as they are (no preview).
   const alignFrameBounds = useMemo(() => {
     if (!alignMode || !alignAxes || selectedShapes.length < 2) return null;
@@ -3687,6 +3700,8 @@ export function LayerlingEditor({
         ? [...shapes, faceToolPreview.shape]
         : edgeModifier?.preview && cadModifierBaseShapeRef.current
         ? shapes.map((shape) => shape.id === cadModifierBaseShapeRef.current?.id ? edgeModifier.preview as WorkplaneShape : shape)
+        : alignMode && alignPreview?.size
+        ? sizedShapesForSelection(shapes, selectedIds, selectedShapes, effectiveAlignAnchorId, alignPreview.axis, alignPreview.target, alignAxes, alignSizeLimit).nextShapes
         : alignMode && alignPreview
         ? alignedShapesForSelection(shapes, selectedIds, selectedShapes, effectiveAlignAnchorId, alignPreview.axis, alignPreview.target, alignAxes).nextShapes
         : mirrorMode && mirrorPreviewAxis
@@ -6273,9 +6288,21 @@ export function LayerlingEditor({
   );
 
   const alignSelectionTo = useCallback(
-    (axis: AlignAxis, target: AlignTarget) => {
+    (axis: AlignAxis, target: AlignTarget, size = false) => {
       if (selectedShapes.length < 2) {
         setNotice(t("status.selectTwoToAlign"));
+        return;
+      }
+
+      if (size) {
+        const sized = sizedShapesForSelection(shapes, selectedIds, selectedShapes, effectiveAlignAnchorId, axis, target, alignAxes, alignSizeLimit);
+        setAlignPreview(null);
+        const message = sizedAlignmentMessage(sized, sizeAlignmentLabel(axis, target));
+        if (sized.resized === 0) {
+          setNotice(message);
+          return;
+        }
+        commitShapes(sized.nextShapes, selectedIds, message);
         return;
       }
 
@@ -6291,11 +6318,11 @@ export function LayerlingEditor({
         ? t("status.alignedOne", { alignment: alignmentLabel(axis, target) })
         : t("status.alignedMany", { count: moved, alignment: alignmentLabel(axis, target) }));
     },
-    [alignAxes, commitShapes, effectiveAlignAnchorId, selectedIds, selectedShapes, shapes],
+    [alignAxes, alignSizeLimit, commitShapes, effectiveAlignAnchorId, selectedIds, selectedShapes, shapes],
   );
 
-  const previewAlignSelection = useCallback((axis: AlignAxis, target: AlignTarget) => {
-    setAlignPreview({ axis, target });
+  const previewAlignSelection = useCallback((axis: AlignAxis, target: AlignTarget, size = false) => {
+    setAlignPreview({ axis, target, size });
   }, []);
 
   const clearAlignPreview = useCallback(() => {
@@ -8810,6 +8837,28 @@ export function LayerlingEditor({
     commitShapes([...shapesRef.current.filter((shape) => !operandIds.has(shape.id)), hull], hull.id, t("status.hulledMany", { count: groupable.length }));
   }, [refuseLockedSelection, commitShapes, selectedShapes]);
 
+  /** Loft between two sketches: two sketch or SVG bodies become one body from the outline of one to the other, kept as a group. */
+  const loftSketches = useCallback(async (only?: readonly WorkplaneShape[]) => {
+    const fail = (message: string) => {
+      setNotice(message, true);
+      return { ok: false as const, message };
+    };
+    const targets = (only ?? selectedShapes).filter((shape) => !isNonSolidShape(shape));
+    if (targets.some((shape) => shape.locked)) return fail(t("status.objectLocked"));
+    const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
+    const sourceProjectId = projectInfoRef.current.projectId;
+    setNotice(t("status.lofting"), true);
+    const result = await buildSketchLoftFromSelection(targets);
+    if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
+      return fail(t("status.loftChanged"));
+    }
+    if (!result.group) return fail(localizedError(result.failureNotice));
+    const consumed = new Set(targets.map((shape) => shape.id));
+    const loft = withSelectionPivot(result.group, activeRotationPivot);
+    commitShapes([...shapesRef.current.filter((shape) => !consumed.has(shape.id)), loft], loft.id, t("status.lofted"));
+    return { ok: true as const, id: loft.id };
+  }, [commitShapes, selectedShapes, activeRotationPivot]);
+
   /**
    * A cookie cutter from the selection (#982): the wall and the rim as two sketch bodies in a bundle, in place of what it is made
    * from. One extruded sketch body gives its own outline; anything else - bodies built here, an imported mesh, several parts -
@@ -8845,7 +8894,14 @@ export function LayerlingEditor({
       const color = targets[0].color;
       const build = async (profile: SketchProfile, height: number, name: string) =>
         canonicalizeShape({ ...place(await cadShapeFromSketchProfile(profile, height, single)), id: createLocalId("cutter"), name, color, hole: false });
-      const wall = await build(profiles.wall, options.height, "Wall");
+      // An outline with steps shorter than the edge's chamfer cannot take it; the cutter is built with a flat top then, and says so.
+      let edgeLeftOut = false;
+      const wall = await build(profiles.wall, options.height, "Wall").catch((error: unknown) => {
+        if (!(error instanceof Error && error.message === t("sketch.edgeFailed")) || !profiles.wall.stroke) throw error;
+        edgeLeftOut = true;
+        const { edge: _edge, ...flat } = profiles.wall.stroke;
+        return build({ ...profiles.wall, stroke: flat }, options.height, "Wall");
+      });
       const rim = await build(profiles.rim, options.rimHeight, "Rim");
       if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
         return fail(t("status.cookieCutterChanged"));
@@ -8854,8 +8910,8 @@ export function LayerlingEditor({
       if (!group) return fail(t("status.cookieCutterNoOutline"));
       const cutter = withSelectionPivot(canonicalizeShape({ ...group, name: t("cookieCutter.name"), groupOperation: "bundle" }), activeRotationPivot);
       const consumed = new Set(targets.map((shape) => shape.id));
-      commitShapes([...shapesRef.current.filter((shape) => !consumed.has(shape.id)), cutter], cutter.id, t("status.cookieCutterMade"));
-      return { ok: true as const, id: cutter.id };
+      commitShapes([...shapesRef.current.filter((shape) => !consumed.has(shape.id)), cutter], cutter.id, t(edgeLeftOut ? "status.cookieCutterMadeFlat" : "status.cookieCutterMade"));
+      return { ok: true as const, id: cutter.id, ...(edgeLeftOut ? { edgeLeftOut } : {}) };
     } catch (error) {
       const message = error instanceof Error && error.message === "cookie-cutter-outline-too-complex"
         ? t("status.cookieCutterTooComplex")
@@ -8962,11 +9018,13 @@ export function LayerlingEditor({
     openGroupBusyRef.current = true;
     setOpenGroupBusy(true);
     try {
-      const operation = original.groupOperation === "intersection" || original.groupOperation === "hull" || original.groupOperation === "bundle" ? original.groupOperation : "group";
+      const operation = original.groupOperation === "intersection" || original.groupOperation === "hull" || original.groupOperation === "bundle" || original.groupOperation === "loft" ? original.groupOperation : "group";
       const result = operation === "intersection"
         ? await buildIntersectionShapeFromSelection(parts, workspaceSettingsRef.current.booleanTriangleLimit)
         : operation === "hull"
           ? await buildHullShapeFromSelection(parts, workspaceSettingsRef.current.booleanTriangleLimit)
+          : operation === "loft"
+          ? await buildSketchLoftFromSelection(parts)
           : operation === "bundle"
           ? { group: groupedShape(parts) }
           : await buildGroupedShapeOffThread(parts, workspaceSettingsRef.current.booleanTriangleLimit, geometryAbortRef.current?.signal);
@@ -10456,6 +10514,25 @@ export function LayerlingEditor({
         const validIds = selectedForAlign.map((shape) => shape.id);
         const requestedAnchorId = typeof params.anchorId === "string" ? params.anchorId : null;
         const anchorId = effectiveAlignmentAnchorId(selectedForAlign, requestedAnchorId);
+        if (params.mode === "size") {
+          const sized = sizedShapesForSelection(currentShapes(), validIds, selectedForAlign, anchorId, axis, target, alignAxesForWorkplane(placementWorkplaneRef.current), alignSizeLimit);
+          const message = sizedAlignmentMessage(sized, sizeAlignmentLabel(axis, target));
+          if (sized.resized === 0) {
+            setSelectedIds(validIds);
+            selectedIdsRef.current = validIds;
+            setNotice(message);
+          } else {
+            commitShapes(sized.nextShapes, validIds, message);
+          }
+          return {
+            resized: sized.resized,
+            skipped: sized.skipped,
+            selectedIds: validIds,
+            anchorId,
+            objects: (sized.resized ? sized.nextShapes : selectedForAlign).filter((shape) => validIds.includes(shape.id)).map(mcpShapeSummary),
+          };
+        }
+        if (params.mode !== undefined && params.mode !== "position") throw new Error("align_objects mode must be position or size");
         const { nextShapes, moved } = alignedShapesForSelection(currentShapes(), validIds, selectedForAlign, anchorId, axis, target, alignAxesForWorkplane(placementWorkplaneRef.current));
         if (moved === 0) {
           setSelectedIds(validIds);
@@ -10777,10 +10854,20 @@ export function LayerlingEditor({
         const ids = new Set(mcpStringArray(params.ids));
         const targets = currentShapes().filter((shape) => ids.has(shape.id));
         if (!targets.length) throw new Error("Pass the ids of the objects to make a cookie cutter from");
-        const result = await makeCookieCutter({ wall: params.wall, height: params.height, rim: params.rim, rimHeight: params.rimHeight }, targets);
+        const result = await makeCookieCutter({ wall: params.wall, height: params.height, rim: params.rim, rimHeight: params.rimHeight, edge: params.edge, mirror: params.mirror }, targets);
         if (!result.ok) throw new Error(result.message);
         const cutter = currentShapes().find((shape) => shape.id === result.id);
-        return { object: cutter ? mcpShapeSummary(cutter) : { id: result.id } };
+        return { object: cutter ? mcpShapeSummary(cutter) : { id: result.id }, ...(result.edgeLeftOut ? { note: "The outline could not take the cutting edge; the wall has a flat top." } : {}) };
+      }
+
+      if (command.action === "loft_sketches") {
+        const ids = new Set(mcpStringArray(params.ids));
+        const targets = currentShapes().filter((shape) => ids.has(shape.id));
+        if (targets.length !== 2) throw new Error("Pass the ids of the two sketch bodies to loft between");
+        const result = await loftSketches(targets);
+        if (!result.ok) throw new Error(result.message);
+        const loft = currentShapes().find((shape) => shape.id === result.id);
+        return { object: loft ? mcpShapeSummary(loft) : { id: result.id } };
       }
 
       if (command.action === "ungroup_objects") {
@@ -11775,6 +11862,7 @@ export function LayerlingEditor({
       throw error;
     }
   }, [
+    alignSizeLimit,
     buildSectionSvg,
     rebuildSketchBodyFill,
     applyCustomFontToSelection,
@@ -13651,6 +13739,7 @@ export function LayerlingEditor({
         canIntersect={!selectionLocked && canIntersectShapes(selectedShapes.filter((shape) => !isNonSolidShape(shape)))}
         canHull={!selectionLocked && canHullShapes(selectedShapes.filter((shape) => !isNonSolidShape(shape)))}
         canCookieCutter={!selectionLocked && selectedShapes.some((shape) => !isNonSolidShape(shape))}
+        canLoftSketches={!selectionLocked && canSketchLoft(selectedShapes)}
         canUngroup={!selectionLocked && selectedShapes.some((shape) => Boolean(shape.groupedShapes?.length) || wasGroupBeforeEdgeTreatments(shape))}
         canModifySelection={hasSelection && !selectionLocked}
         hasClipboard={clipboard.length > 0 || systemClipboardSupported}
@@ -13720,6 +13809,7 @@ export function LayerlingEditor({
         onIntersect={intersectSelected}
         onHull={hullSelected}
         onCookieCutter={() => void makeCookieCutter()}
+        onLoftSketches={() => void loftSketches()}
         onIntersectPreview={toggleIntersectPreview}
         intersectPreviewActive={Boolean(intersectPreviewIds)}
         onFillet={() => edgeModifier?.kind === "fillet" ? cancelEdgeModifier() : startEdgeModifier("fillet")}

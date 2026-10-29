@@ -54,6 +54,12 @@ A shape turned at an angle, say by 45°, has its box round it to line up with, n
 
 The key is [[L]]. [[Esc]] cancels.
 
+### Matching sizes
+
+Hold [[Alt]] while aligning and the dots turn into squares: a click no longer moves the shapes but changes their size. A dot at a side stretches each shape to that side, its other side staying where it is, as if you had dragged its handle there. The dot in the middle leaves each shape in its place and gives it the width, length or height in that direction. That way you swap a box for a cylinder of the same size, say, or replace a broken piece of a mesh with a clean shape. Move over a dot with [[Alt]] held and you see beforehand how large the shapes become.
+
+The reference is the shape you clicked first; only the others change. Without one, the side dots stretch all shapes to the farthest side, and the middle dot gives them all the size of the largest. A cylinder stays round, so it grows in the other direction too. A shape turned at an angle stays as it is; shapes turned by 90° work.
+
 ## Mirroring
 
 {{ui:editor.tool.mirror}} ([[M]], or right-click the selection and choose it) flips the selection across a plane: {{ui:mirror.leftRight}}, {{ui:mirror.frontBack}} or {{ui:mirror.topBottom}}. Click the matching axis arrow. That is handy for symmetric parts: build one half, copy it and mirror the copy.

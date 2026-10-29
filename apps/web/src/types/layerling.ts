@@ -476,6 +476,8 @@ export type AlignHandleStatus = {
   disabled: boolean;
   aligned: boolean;
   title: string;
+  /** The same dot with Alt held: it stretches the parts to the reference instead of moving them (#998). */
+  size?: { disabled: boolean; aligned: boolean; title: string };
 };
 
 export type SketchPoint = {
@@ -522,8 +524,11 @@ export type SketchImage = {
 export type SketchStrokeAlign = "center" | "inside" | "outside" | "grow" | "shrink";
 export type SketchStrokeJoin = "miter" | "round" | "bevel";
 export type SketchStrokeCap = "flat" | "square" | "round";
-/** A sketch drawn as a line of this width instead of a filled area (#154). */
-export type SketchStroke = { width: number; align: SketchStrokeAlign; join: SketchStrokeJoin; cap: SketchStrokeCap };
+/**
+ * A sketch drawn as a line of this width instead of a filled area (#154). `edge` makes the wall a cutting edge (#982): its top
+ * runs in to that width with a 45° chamfer on both sides; only for a line inside, outside or centred, and narrower than the line.
+ */
+export type SketchStroke = { width: number; align: SketchStrokeAlign; join: SketchStrokeJoin; cap: SketchStrokeCap; edge?: number };
 /** Where a name tag's key ring hole sits, seen from above (#215). */
 export type TextKeyringSide = "left" | "right" | "top";
 /**
@@ -1206,7 +1211,7 @@ export type WorkplaneShape = {
    * them together: no cutting, every part keeps its colour and goes out as
    * its own body.
    */
-  groupOperation?: "group" | "intersection" | "hull" | "bundle";
+  groupOperation?: "group" | "intersection" | "hull" | "bundle" | "loft";
   /**
    * The point this body turns about, kept with the body: a fraction of its
    * width, height and depth from its centre, in its own frame, so it moves,

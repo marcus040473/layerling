@@ -69,6 +69,7 @@ Claude Desktop не читает файлы проекта. Впишите се�
 | `layerling_intersect_objects` | оставляет только то, что есть общего у объектов (Пересечение) |
 | `layerling_hull_objects` | оборачивает объекты одним выпуклым телом, как термоплёнкой (Оболочка) |
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
+| `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | разделяет фигуру на её отдельные части, тело эскиза — на тело для каждого контура |
 | `layerling_split_objects` | разделяет тела или отверстия надвое плоскостью |
 | `layerling_list_edges` | перечисляет настоящие CAD-кромки объекта |

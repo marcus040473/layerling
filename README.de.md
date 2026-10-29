@@ -47,6 +47,7 @@ layerling ist ein Stück weiter als Tinkercad in Richtung Fusion 360 und wird ge
 - **Muster und Wickeln.** Eine Form in Reihe, Kreis oder Spirale wiederholen, oder ein Muster und Schrift um einen Zylinder wickeln.
 - **Lochmuster.** Eine ebene Fläche anklicken und runde, quadratische, rechteckige, sechseckige oder Langlöcher darauf verteilen, im Raster oder versetzt, mit Abstand, Rand und Tiefe - Lüftungsgitter, Lautsprecher und Körbe in einem Schritt.
 - **Um Prozent skalieren.** Ein oder viele Teile um einen Prozentwert größer oder kleiner machen - zusammen, so dass die Anordnung mitwächst, oder jedes an seinem Platz.
+- **Größe angleichen.** Mit Alt auf einem Ausrichtungspunkt werden die Teile gestreckt statt verschoben: bis an die Kante eines anderen Teils oder auf seine Breite, Länge oder Höhe - etwa um einen Quader gegen einen gleich großen Zylinder zu tauschen.
 - **Messen und hineinschauen.** Maßband, Lineale, eine Schnittansicht, die das Modell aufschneidet, und ein Verlauf-Schieber zum Zurückschauen.
 - **Echte Geometrie darunter.** layerling führt exakte CAD-Körper mit, nicht nur ein Dreiecksnetz. Eine verrundete Kante bleibt deshalb eine verrundete Kante – bis in eine STEP-Datei für ein vollwertiges CAD.
 
@@ -87,7 +88,8 @@ Ein vollständiges CAD-Paket ist es nicht: Es gibt keine parametrische Zeitleist
 - **Bündeln** – Strg+B hält Teile zusammen wie das Bündel in Tinkercad: Sie bewegen, drehen und skalieren sich gemeinsam, behalten aber ihre Farben und bleiben im Export getrennte Körper – praktisch für den Mehrfarbdruck.
 - **Schnittmenge** – nur das behalten, wo sich die ausgewählten Körper und Aussparungen überlappen.
 - **Hülle** – die gewählten Formen in ihre konvexe Hülle packen, den kleinsten Körper ohne Dellen um alle: Eine Halbkugel auf einem Zylinder wird zur Kuppel, vier Pfosten zu einem Kasten mit runden Ecken. Aussparungen in der Auswahl werden danach herausgeschnitten.
-- **Ausstechform** – mit einem Klick eine Wand und ein flacher Rand um den Umriss einer Skizze oder SVG, oder um das, worauf eine Form steht; Löcher bleiben offen. Wanddicke, Höhe und Rand sind die Füllarten der Skizze, jedes lässt sich danach ändern.
+- **Ausstechform** – mit einem Klick eine Wand und ein flacher Rand um den Umriss einer Skizze oder SVG, oder um das, worauf eine Form steht; Löcher bleiben offen. Der Umriss wird gespiegelt, damit Schrift und Logos richtig herum aus dem Teig kommen, und die Wand läuft oben auf eine schmale Schneidkante zu. Wanddicke, Schneidkante, Höhe und Rand sind die Füllarten der Skizze, jedes lässt sich danach ändern.
+- **Übergang aus Skizzen** – zwei Skizzen oder importierte SVGs werden ein genauer Körper, unten der Umriss der unteren, oben der der oberen, dazwischen gerade Wände: ein Trichter, ein Übergang von eckig auf rund oder aus zwei Ringen ein sich verjüngender Rahmen. „Gruppe bearbeiten“ öffnet die beiden Skizzen wieder.
 - **Teilen** – Körper oder Aussparungen mit einer Ebene in zwei schneiden; ein ausgehöhlter Körper behält seinen Hohlraum. Gedreht schneidet die Ebene schräg; am Pfeil ziehen verschiebt sie, und mit „Fläche wählen“ legst du sie auf eine beliebige Fläche.
 
 ### Bearbeiten

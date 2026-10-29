@@ -73,6 +73,7 @@ L’IA usa le stesse funzioni che hai a disposizione, attraverso lo stesso perco
 | `layerling_intersect_objects` | Conserva solo la parte comune agli oggetti (intersezione). |
 | `layerling_hull_objects` | Avvolge gli oggetti in un unico corpo convesso, come con la pellicola termoretraibile (involucro). |
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
+| `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | Separa una forma nelle sue parti distinte; un corpo da schizzo viene diviso in un corpo per contorno. |
 | `layerling_split_objects` | Taglia a metà solidi o fori con un piano. |
 | `layerling_list_edges` | Elenca gli spigoli CAD reali di un oggetto. |

@@ -92,6 +92,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { combos: ["B"], label: "shortcuts.fillet" },
       { combos: ["Shift+B"], label: "shortcuts.chamfer" },
       { combos: ["L"], label: "shortcuts.align" },
+      { combos: ["Alt+Click"], label: "shortcuts.alignSize" },
       { combos: ["D"], label: "shortcuts.dropToWorkplane" },
       { combos: ["C"], label: "shortcuts.carryOntoFace" },
       { combos: ["N"], label: "shortcuts.note" },

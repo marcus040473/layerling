@@ -162,9 +162,10 @@ type WorkplaneViewportProps = {
   /** Puts down the shape on the pointer when a tool here takes over the click. */
   onCancelCruise?: () => void;
   onAlignAnchorChange: (id: string) => void;
-  onAlignPreview: (axis: AlignAxis, target: AlignTarget) => void;
+  /** `size`: Alt is held, and the dot stretches the parts instead of moving them (#998). */
+  onAlignPreview: (axis: AlignAxis, target: AlignTarget, size: boolean) => void;
   onAlignPreviewClear: () => void;
-  onAlignSelection: (axis: AlignAxis, target: AlignTarget) => void;
+  onAlignSelection: (axis: AlignAxis, target: AlignTarget, size: boolean) => void;
   onMirrorPreview: (axis: AlignAxis) => void;
   onMirrorPreviewClear: () => void;
   onMirrorSelection: (axis: AlignAxis) => void;
@@ -7936,9 +7937,9 @@ export function WorkplaneViewport({
             <AlignOverlay
               overlay={alignOverlay}
               onAlign={onAlignSelection}
-              onPreview={(axis, target) => {
+              onPreview={(axis, target, size) => {
                 if (threeRef.current) threeRef.current.alignPreviewActive = true;
-                onAlignPreview(axis, target);
+                onAlignPreview(axis, target, size);
               }}
               onPreviewClear={() => {
                 if (threeRef.current) threeRef.current.alignPreviewActive = false;

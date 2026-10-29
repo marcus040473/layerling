@@ -7719,6 +7719,11 @@ html[data-theme="dark"] .touch-multi-select {
   opacity: 0.72;
 }
 
+/* With Alt held the dots are squares, like the size handles: they stretch the parts instead of moving them (#998). */
+.align-overlay.size-mode .align-dot {
+  border-radius: 2px;
+}
+
 .mirror-overlay {
   position: absolute;
   inset: 0;
