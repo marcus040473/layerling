@@ -1,5 +1,35 @@
 [
   {
+    "version": "1.119.2",
+    "items": [
+      {
+        "title": {
+          "de": "Ausstechform: Innenformen bleiben",
+          "en": "Cookie cutter: the inside stays"
+        },
+        "body": {
+          "de": "Das Innere eines e oder a bekommt jetzt eine eigene Wand, gehalten von Stegen am Rand. Ein Text gibt dabei die echten Kurven seiner Buchstaben.",
+          "en": "The inside of an e or an a now gets a wall of its own, held by bridges at the rim. A text gives its letters' real curves for it."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.119.1",
+    "items": [
+      {
+        "title": {
+          "de": "Ausstechform aus mehreren Teilen",
+          "en": "Cookie cutter from several parts"
+        },
+        "body": {
+          "de": "Teile, die sich überlappen, bekommen jetzt eine gemeinsame Wand um alle herum, ohne dass du sie vorher gruppierst. Ein Zylinder bekommt seine Schneidkante wieder.",
+          "en": "Parts that overlap now get one wall round all of them, without grouping them first. A cylinder gets its cutting edge again."
+        }
+      }
+    ]
+  },
+  {
     "version": "1.119.0",
     "items": [
       {

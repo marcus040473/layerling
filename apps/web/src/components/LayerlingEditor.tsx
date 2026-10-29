@@ -19,7 +19,7 @@ import { normalizeTextEdge } from "@/lib/textEdge";
 import { DEFAULT_TEXT_LAYERS, layerTextKeyringArgument, placedKeyring, layerTextLayersError, nameTagOffsets, normalizeTextLayers, type NameTagKeyring } from "@/lib/textLayers";
 import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textLetterSize, textLetterSizePatch, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
 import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, isIconLayerBody, normalizeIconTagCount } from "@/lib/iconTag";
-import { cookieCutterProfiles, normalizeCookieCutterOptions, outlineFromLoops, type CookieCutterOptions } from "@/lib/cookieCutter";
+import { cookieCutterProfiles, normalizeCookieCutterOptions, outlineFromCurves, outlineFromLoops, sampledCurveLoop, unitedFootprint, type CookieCutterOptions, type CurveLoop } from "@/lib/cookieCutter";
 import type { IconLayerPatch, IconTagControls, ReferenceImageControls, TextLayerPatch } from "@/components/workplane/ShapeInspector";
 import { calibratedReferenceImage, dataUrlByteLength, isReferenceImage, LARGE_REFERENCE_IMAGE_BYTES, mirrorHidesReferenceImage, referenceImageOpacity, referenceImagePixelDistance, referenceImageShape } from "@/lib/referenceImage";
 import { IconTagPanel } from "@/components/workplane/IconTagPanel";
@@ -1304,6 +1304,43 @@ async function footprintSvg(shapes: readonly WorkplaneShape[], title: string) {
 }
 
 /**
+ * A cookie cutter's outline from texts lying flat (#982): the letters' own curves, as the edge tool takes them, placed where
+ * the text stands - so the wall follows them exactly and can take its cutting edge, which an outline cut from the letters'
+ * triangles cannot. Null for anything else, for letters the exact outline does not know, and for letters that overlap
+ * (a joined-up script), which the cut through the triangles unites.
+ */
+async function textCutterOutline(shapes: readonly WorkplaneShape[]) {
+  if (!shapes.length || shapes.some((shape) => shape.kind !== "text" || shape.rotationX || shape.rotationZ)) return null;
+  const bodies: CurveLoop[][] = [];
+  for (const shape of shapes) {
+    const glyphs = textGlyphProfiles(shape);
+    if (!glyphs?.length || glyphs.some((glyph) => !glyph.profile)) return null;
+    for (const { profile } of glyphs) {
+      const t = profile!.transform ?? [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+      const world = (point: { x: number; z: number }) => ({ x: t[0] * point.x + t[2] * point.z + t[3], z: t[8] * point.x + t[10] * point.z + t[11] });
+      const loops: CurveLoop[] = [];
+      for (const loop of profile!.loops) {
+        if (loop.segments.some((segment) => segment.kind === "arc")) return null;
+        loops.push({
+          ...world(loop),
+          segments: loop.segments.map((segment) => ({
+            kind: segment.kind === "bezier" ? "bezier" as const : "line" as const,
+            ...world(segment),
+            ...(segment.kind === "bezier" ? { controls: segment.controls.map(world) } : {}),
+          })),
+        });
+      }
+      bodies.push(loops);
+    }
+  }
+  // Letters that touch or overlap would give walls crossing each other; their united outline has fewer rings than they do.
+  const united = unitedFootprint(await getManifoldRuntime(), bodies.map((loops) => loops.map(sampledCurveLoop)));
+  if (united.length !== bodies.reduce((sum, loops) => sum + loops.length, 0)) return null;
+  const outline = outlineFromCurves(bodies.flat());
+  return outline ? { ...outline, floor: Math.min(...shapes.map((shape) => shape.elevation ?? 0)) } : null;
+}
+
+/**
  * What the shapes stand on as one outline for a cookie cutter (#982): the closed outlines the workplane cuts through them,
  * as a sketch round the middle of their box, with that middle and the height of their lowest point. Null when nothing closed is cut.
  */
@@ -1312,7 +1349,8 @@ async function footprintOutline(shapes: readonly WorkplaneShape[]) {
   const { meshes } = await colorSeparatedExportMeshes(solids, cut, wasCut);
   const offset = footprintCutOffset(meshes);
   if (offset === null) return null;
-  const outline = outlineFromLoops(meshes.flatMap((mesh) => sliceMeshContours(mesh, "y", offset)));
+  // Shapes that overlap give one outline round all of them, as if they were grouped.
+  const outline = outlineFromLoops(unitedFootprint(await getManifoldRuntime(), meshes.map((mesh) => sliceMeshContours(mesh, "y", offset))));
   return outline ? { ...outline, floor: offset - FOOTPRINT_CUT_HEIGHT } : null;
 }
 
@@ -8879,34 +8917,44 @@ export function LayerlingEditor({
     try {
       const single = targets.length === 1 && isIconLayerBody(targets[0]) ? targets[0] : null;
       let outline: SketchProfile;
-      let place: (built: WorkplaneShape) => WorkplaneShape;
+      // A built part is centred on its own outline (its x and z, in the sketch's coordinates); each is put where the wall
+      // goes, shifted by how far its middle lies from the wall's - the rim shares the wall's middle, the bridges do not.
+      let place: (built: WorkplaneShape, wall: SketchAnchor) => WorkplaneShape;
       if (single) {
         const stretch = sketchBodyStretch(single);
         outline = stretch ? stretchedSketchProfile(single.sketchProfile, stretch.x, stretch.z) : single.sketchProfile;
-        place = (built) => placeSketchShape(built, placementWorkplaneRef.current, single);
+        const quaternion = quaternionForShape(single);
+        const xAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(quaternion);
+        const zAxis = new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion);
+        const axes = { x: [xAxis.x, xAxis.y, xAxis.z] as const, z: [zAxis.x, zAxis.y, zAxis.z] as const };
+        place = (built, wall) => movedWithEditedOutline(placeSketchShape(built, placementWorkplaneRef.current, single), single, wall, { x: built.x, z: built.z }, axes);
       } else {
-        const found = await footprintOutline(targets);
+        const found = (await textCutterOutline(targets)) ?? (await footprintOutline(targets));
         if (!found) return fail(t("status.cookieCutterNoOutline"));
         outline = found.profile;
-        place = (built) => canonicalizeShape({ ...built, x: found.x, z: found.z, elevation: found.floor });
+        place = (built, wall) => canonicalizeShape({ ...built, x: found.x + built.x - wall.x, z: found.z + built.z - wall.z, elevation: found.floor });
       }
       const profiles = cookieCutterProfiles(outline, options);
       const color = targets[0].color;
-      const build = async (profile: SketchProfile, height: number, name: string) =>
-        canonicalizeShape({ ...place(await cadShapeFromSketchProfile(profile, height, single)), id: createLocalId("cutter"), name, color, hole: false });
+      const extrude = (profile: SketchProfile, height: number) => cadShapeFromSketchProfile(profile, height, null);
       // An outline with steps shorter than the edge's chamfer cannot take it; the cutter is built with a flat top then, and says so.
       let edgeLeftOut = false;
-      const wall = await build(profiles.wall, options.height, "Wall").catch((error: unknown) => {
+      const wallBuilt = await extrude(profiles.wall, options.height).catch((error: unknown) => {
         if (!(error instanceof Error && error.message === t("sketch.edgeFailed")) || !profiles.wall.stroke) throw error;
         edgeLeftOut = true;
         const { edge: _edge, ...flat } = profiles.wall.stroke;
-        return build({ ...profiles.wall, stroke: flat }, options.height, "Wall");
+        return extrude({ ...profiles.wall, stroke: flat }, options.height);
       });
-      const rim = await build(profiles.rim, options.rimHeight, "Rim");
+      const anchor = { x: wallBuilt.x, z: wallBuilt.z };
+      const finish = (built: WorkplaneShape, name: string) =>
+        canonicalizeShape({ ...place(built, anchor), id: createLocalId("cutter"), name, color, hole: false });
+      const parts = [finish(wallBuilt, "Wall"), finish(await extrude(profiles.rim, options.rimHeight), "Rim")];
+      // The bridges hold the walls round the holes; they stand on the rim's level, on the side the hand presses.
+      if (profiles.bridges) parts.push(finish(await extrude(profiles.bridges, options.bridgeHeight), "Bridges"));
       if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
         return fail(t("status.cookieCutterChanged"));
       }
-      const group = groupedShape([wall, rim]);
+      const group = groupedShape(parts);
       if (!group) return fail(t("status.cookieCutterNoOutline"));
       const cutter = withSelectionPivot(canonicalizeShape({ ...group, name: t("cookieCutter.name"), groupOperation: "bundle" }), activeRotationPivot);
       const consumed = new Set(targets.map((shape) => shape.id));
@@ -10854,7 +10902,7 @@ export function LayerlingEditor({
         const ids = new Set(mcpStringArray(params.ids));
         const targets = currentShapes().filter((shape) => ids.has(shape.id));
         if (!targets.length) throw new Error("Pass the ids of the objects to make a cookie cutter from");
-        const result = await makeCookieCutter({ wall: params.wall, height: params.height, rim: params.rim, rimHeight: params.rimHeight, edge: params.edge, mirror: params.mirror }, targets);
+        const result = await makeCookieCutter({ wall: params.wall, height: params.height, rim: params.rim, rimHeight: params.rimHeight, edge: params.edge, mirror: params.mirror, inner: params.inner, bridge: params.bridge, bridgeHeight: params.bridgeHeight }, targets);
         if (!result.ok) throw new Error(result.message);
         const cutter = currentShapes().find((shape) => shape.id === result.id);
         return { object: cutter ? mcpShapeSummary(cutter) : { id: result.id }, ...(result.edgeLeftOut ? { note: "The outline could not take the cutting edge; the wall has a flat top." } : {}) };
