@@ -90,13 +90,23 @@ function choose(select: HTMLSelectElement, value: string) {
 }
 
 describe("the surface texture card in a shape's settings", () => {
-  it("lists the fifteen patterns, knurling first chosen", () => {
+  it("lists the sixteen patterns, knurling first chosen", () => {
     const { panel } = mount(cylinder);
     const pattern = selectWith(panel, "knurl")!;
     expect(pattern.value).toBe("knurl");
     expect([...pattern.options].map((option) => option.textContent)).toEqual([
-      "Grooves", "Knurling", "Honeycomb", "Bumps", "Cells", "Bricks", "Knitting", "Rope", "Basket weave", "Bark", "Wood grain", "Grain", "Image", "Cracks (kintsugi)", "Text (stuck on)",
+      "Grooves", "Knurling", "Honeycomb", "Bumps", "Cells", "Bricks", "Knitting", "Rope", "Basket weave", "Carbon (twill)", "Bark", "Wood grain", "Grain", "Image", "Cracks (kintsugi)", "Text (stuck on)",
     ]);
+  });
+
+  it("lays carbon in twill: its weave, the bands' widths, and what Apply hands on", async () => {
+    const { panel, calls } = mount(cylinder);
+    choose(selectWith(panel, "knurl")!, "carbon");
+    expect(rangeNamed(panel, "Band width")?.value).toBe("2.50");
+    expect(rangeNamed(panel, "Crossing band width")).toBeTruthy();
+    choose(selectWith(panel, "twill22")!, "twill21");
+    await act(async () => button(panel, "Apply texture")!.click());
+    expect(calls.applied[0]).toMatchObject({ pattern: "carbon", carbonWeave: "twill21", carbonCross: 0, spacing: 2.5, depth: 0.4, width: 0.95, direction: "outward" });
   });
 
   it("starts a pattern from its own values, and hands the settings to the editor", async () => {
