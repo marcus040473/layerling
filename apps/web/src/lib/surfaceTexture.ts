@@ -93,7 +93,7 @@ import {
   type SurfaceTextureOwnImage,
 } from "@/lib/surfaceTextureImages";
 
-export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "bricks", "knit", "rope", "weave", "carbon", "bark", "wood", "grain", "image", "cracks", "text"] as const;
+export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "bricks", "knit", "rope", "weave", "bark", "wood", "carbon", "grain", "image", "cracks", "text"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
 /** round: a soft bell; pointed: a V (a cone on a bump); flat: a flat floor or top; dome: a half circle (half a ball on a bump). */
@@ -120,19 +120,19 @@ export const SURFACE_TEXTURE_CRACK_STARTS = ["top", "bottom", "rim", "anywhere"]
 export type SurfaceTextureCrackStart = (typeof SURFACE_TEXTURE_CRACK_STARTS)[number];
 
 /**
+ * How carbon fibre is woven: twill 2/2 (a band over two crossing bands, then under two - the even diagonal of most carbon
+ * parts), 2/1 and 3/1 (over two or three, under one: long floats one way, short ones the other).
+ */
+export const SURFACE_TEXTURE_CARBON_WEAVES = ["twill22", "twill21", "twill31"] as const;
+export type SurfaceTextureCarbonWeave = (typeof SURFACE_TEXTURE_CARBON_WEAVES)[number];
+
+/**
  * How bricks are laid: running (every course half a brick along), stack (the joints in one line), English (courses of
  * stretchers and of headers in turn), English cross (as English, every other course of stretchers half a brick along)
  * and Flemish (stretchers and headers in turn in every course). A header is half a stretcher long.
  */
 export const SURFACE_TEXTURE_BRICK_BONDS = ["running", "stack", "english", "englishCross", "flemish"] as const;
 export type SurfaceTextureBrickBond = (typeof SURFACE_TEXTURE_BRICK_BONDS)[number];
-
-/**
- * How carbon fibre is woven: twill 2/2 (a band over two crossing bands, then under two - the even diagonal of most carbon
- * parts), 2/1 and 3/1 (over two or three, under one: long floats one way, short ones the other).
- */
-export const SURFACE_TEXTURE_CARBON_WEAVES = ["twill22", "twill21", "twill31"] as const;
-export type SurfaceTextureCarbonWeave = (typeof SURFACE_TEXTURE_CARBON_WEAVES)[number];
 
 /** Bark: oak, pine, spruce, birch or beech (see surfaceTextureWood.ts). */
 export const SURFACE_TEXTURE_BARK_TYPES = BARK_KINDS;
@@ -272,6 +272,10 @@ export type SurfaceTextureSettings = {
   textTurn: number;
   /** Cells, grain, bark and wood: another number, another arrangement; bricks: other bricks lie deeper. */
   seed: number;
+  /** Carbon: the weave (the spacing is the width of the upright bands). */
+  carbonWeave: SurfaceTextureCarbonWeave;
+  /** Carbon: the width of the crossing bands, mm (0: as wide as the upright ones; else an uneven weave). */
+  carbonCross: number;
   /**
    * Bricks: the height of a course, mm, from joint to joint (the spacing is a brick's length). The courses are fitted to
    * the height the texture covers, so whole courses go from its bottom to its top.
@@ -282,10 +286,6 @@ export type SurfaceTextureSettings = {
   brickBond: SurfaceTextureBrickBond;
   /** Bricks: how unevenly they lie, 0 to 1 - at 1 a brick sinks by up to half the depth, each its own way. */
   brickVary: number;
-  /** Carbon: the weave (the spacing is the width of the upright bands). */
-  carbonWeave: SurfaceTextureCarbonWeave;
-  /** Carbon: the width of the crossing bands, mm (0: as wide as the upright ones; else an uneven weave). */
-  carbonCross: number;
   /** Bark: which tree's (the spacing is the size of its pieces or marks). */
   barkType: SurfaceTextureBarkType;
   /** Wood grain: which wood, and how the piece was cut from the trunk. */
@@ -364,12 +364,12 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   textTurn: 0,
   textOutline: [],
   seed: 1,
+  carbonWeave: "twill22",
+  carbonCross: 0,
   brickHeight: 4,
   brickJoint: 0.8,
   brickBond: "running",
   brickVary: 0,
-  carbonWeave: "twill22",
-  carbonCross: 0,
   barkType: "oak",
   woodType: "oak",
   woodCut: "log",
@@ -413,10 +413,10 @@ export const SURFACE_TEXTURE_LIMITS: Record<NumberKey, [number, number]> = {
   textHeight: [0, 100],
   textTurn: [-180, 180],
   seed: [1, 9999],
+  carbonCross: [0, 50],
   brickHeight: [0.5, 100],
   brickJoint: [0.1, 10],
   brickVary: [0, 1],
-  carbonCross: [0, 50],
   ringWidth: [0.3, 20],
   woodKnots: [0, 12],
   woodWobble: [0, 1],
@@ -434,8 +434,8 @@ const CHOICES = {
   detail: SURFACE_TEXTURE_DETAILS,
   crackStyle: SURFACE_TEXTURE_CRACK_STYLES,
   crackStart: SURFACE_TEXTURE_CRACK_STARTS,
-  brickBond: SURFACE_TEXTURE_BRICK_BONDS,
   carbonWeave: SURFACE_TEXTURE_CARBON_WEAVES,
+  brickBond: SURFACE_TEXTURE_BRICK_BONDS,
   barkType: SURFACE_TEXTURE_BARK_TYPES,
   woodType: SURFACE_TEXTURE_WOOD_TYPES,
   woodCut: SURFACE_TEXTURE_WOOD_CUTS,
@@ -2035,14 +2035,14 @@ function stripesAreCut(s: SurfaceTextureSettings) {
 }
 
 /**
- * What else shapes the pattern and so its refining: the cells' and the grain's seed, the image and its tiles, the bricks'
- * bond, joint and courses (not how unevenly they lie: that only moves their faces), the carbon's weave and crossing bands.
+ * What else shapes the pattern and so its refining: the cells' and the grain's seed, the image and its tiles, the carbon's
+ * weave and crossing bands, the bricks' bond, joint and courses (not how unevenly they lie: that only moves their faces).
  */
 function patternExtras(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   if (s.pattern === "cells" || s.pattern === "grain") return [s.seed];
+  if (s.pattern === "carbon") return [s.carbonWeave, s.carbonCross];
   if (s.pattern === "bricks") return [s.brickBond, s.brickJoint, layout.rowHeight ?? s.brickHeight, layout.rowOrigin ?? 0, layout.brickAxes ?? null, layout.capBricks ?? null];
   if (s.pattern === "bark") return [s.barkType, s.seed, s.ringWidth];
-  if (s.pattern === "carbon") return [s.carbonWeave, s.carbonCross];
   if (s.pattern === "wood") return [s.woodType, s.woodCut, s.ringWidth, s.woodKnots, s.woodWobble, s.seed];
   if (s.pattern === "image") return [s.image === "own" && s.imageOwn ? ownImageKey(s.imageOwn) : s.image, s.tileHeight, s.imageTurn, s.imageInvert, s.imageBlur, s.imageTiling];
   return null;

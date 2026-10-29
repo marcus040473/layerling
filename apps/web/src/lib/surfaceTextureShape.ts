@@ -19,8 +19,8 @@ import {
   normalizeSurfaceTexture,
   surfaceTexturePositions,
   SURFACE_TEXTURE_MAX_MASK_PLANES,
-  type SurfaceTextureBrickBond,
   type SurfaceTextureCarbonWeave,
+  type SurfaceTextureBrickBond,
   type SurfaceTextureBarkType,
   type SurfaceTextureCrackStart,
   type SurfaceTextureCrackStyle,
@@ -74,10 +74,10 @@ export const SURFACE_TEXTURE_LABELS: {
   mask: Record<SurfaceTextureMaskMode | "none", MessageKey>;
   crackStyle: Record<SurfaceTextureCrackStyle, MessageKey>;
   crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
-  brickBond: Record<SurfaceTextureBrickBond, MessageKey>;
-  brickBondHint: Record<SurfaceTextureBrickBond, MessageKey>;
   carbonWeave: Record<SurfaceTextureCarbonWeave, MessageKey>;
   carbonWeaveHint: Record<SurfaceTextureCarbonWeave, MessageKey>;
+  brickBond: Record<SurfaceTextureBrickBond, MessageKey>;
+  brickBondHint: Record<SurfaceTextureBrickBond, MessageKey>;
   barkType: Record<SurfaceTextureBarkType, MessageKey>;
   barkTypeHint: Record<SurfaceTextureBarkType, MessageKey>;
   woodType: Record<SurfaceTextureWoodType, MessageKey>;
@@ -116,6 +116,8 @@ export const SURFACE_TEXTURE_LABELS: {
   mask: { none: "surfaceTexture.maskNone", exclude: "surfaceTexture.maskExclude", only: "surfaceTexture.maskOnly" },
   crackStyle: { crack: "surfaceTexture.crackStyleCrack", lightning: "surfaceTexture.crackStyleLightning" },
   crackStart: { top: "surfaceTexture.crackStartTop", bottom: "surfaceTexture.crackStartBottom", rim: "surfaceTexture.crackStartRim", anywhere: "surfaceTexture.crackStartAnywhere" },
+  carbonWeave: { twill22: "surfaceTexture.carbonTwill22", twill21: "surfaceTexture.carbonTwill21", twill31: "surfaceTexture.carbonTwill31" },
+  carbonWeaveHint: { twill22: "surfaceTexture.carbonTwill22Hint", twill21: "surfaceTexture.carbonTwill21Hint", twill31: "surfaceTexture.carbonTwill31Hint" },
   brickBond: {
     running: "surfaceTexture.bondRunning",
     stack: "surfaceTexture.bondStack",
@@ -130,8 +132,6 @@ export const SURFACE_TEXTURE_LABELS: {
     englishCross: "surfaceTexture.bondEnglishCrossHint",
     flemish: "surfaceTexture.bondFlemishHint",
   },
-  carbonWeave: { twill22: "surfaceTexture.carbonTwill22", twill21: "surfaceTexture.carbonTwill21", twill31: "surfaceTexture.carbonTwill31" },
-  carbonWeaveHint: { twill22: "surfaceTexture.carbonTwill22Hint", twill21: "surfaceTexture.carbonTwill21Hint", twill31: "surfaceTexture.carbonTwill31Hint" },
   barkType: { oak: "surfaceTexture.barkOak", pine: "surfaceTexture.barkPine", spruce: "surfaceTexture.barkSpruce", birch: "surfaceTexture.barkBirch", beech: "surfaceTexture.barkBeech" },
   barkTypeHint: {
     oak: "surfaceTexture.barkOakHint",

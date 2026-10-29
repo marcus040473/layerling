@@ -95,7 +95,7 @@ describe("the surface texture card in a shape's settings", () => {
     const pattern = selectWith(panel, "knurl")!;
     expect(pattern.value).toBe("knurl");
     expect([...pattern.options].map((option) => option.textContent)).toEqual([
-      "Grooves", "Knurling", "Honeycomb", "Bumps", "Cells", "Bricks", "Knitting", "Rope", "Basket weave", "Carbon (twill)", "Bark", "Wood grain", "Grain", "Image", "Cracks (kintsugi)", "Text (stuck on)",
+      "Grooves", "Knurling", "Honeycomb", "Bumps", "Cells", "Bricks", "Knitting", "Rope", "Basket weave", "Bark", "Wood grain", "Carbon (twill)", "Grain", "Image", "Cracks (kintsugi)", "Text (stuck on)",
     ]);
   });
 
