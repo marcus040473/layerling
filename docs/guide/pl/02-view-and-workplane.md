@@ -13,7 +13,8 @@ Myszą:
 | klikasz prawym przyciskiem | na bryle menu z najczęstszymi poleceniami: duplikuj, otwór lub bryła, grupuj, ukryj, zablokuj, usuń i inne; na pustym miejscu Wklej i Zaznacz wszystko |
 | przeciągasz środkowym przyciskiem | przesuwasz widok |
 | kręcisz kółkiem myszy | przybliżasz i oddalasz |
-| trzymasz [[Ctrl]] / [[Cmd]] i przeciągasz lewym przyciskiem | też przesuwasz widok (na touchpadzie MacBooka: przytrzymaj [[Cmd]], dociśnij i przeciągnij) |
+| trzymasz [[Ctrl]] / [[Cmd]] i przeciągasz lewym przyciskiem | też przesuwasz widok (na touchpadzie MacBooka: przytrzymaj [[Cmd]], dociśnij i przeciągnij). Na Macu przytrzymanie zamiast tego Control obraca widok, bo Control-klik to na Macu prawy klik |
+| klikasz dwukrotnie pustą płaszczyznę roboczą albo obok płyty | przesuwasz widok tak, żeby to miejsce znalazło się na środku, a widok obraca się potem wokół niego |
 | klikasz dwukrotnie puste miejsce płaszczyzny roboczej albo obok płyty | przesuwasz widok tak, że to miejsce jest na środku; potem widok obraca się wokół niego |
 
 Szybkość przybliżania kółkiem ustawia {{ui:workspace.zoomSpeed}} w ustawieniach, w sekcji {{ui:workspace.appearance}}: suwak od 1 do 14, na początek 5. Ustawia on tylko kółko i touchpad: przyciski oraz klawisze [[+]] i [[−]] zawsze przybliżają tymi samymi małymi krokami. Jeden ząbek kółka myszy przybliża tak samo w każdej przeglądarce, a touchpad przybliża zależnie od tego, jak daleko przesuniesz palce.
@@ -89,13 +90,13 @@ Dopóki płaszczyzna robocza leży na ścianie, obok {{ui:camera.placeWorkplane}
 
 ## Siatka i przyciąganie
 
-Siatka pokazuje rozmiar płyty. W prawym dolnym rogu jest **krok przyciągania**: przesuwanie i skalowanie przyciągają się co tyle, na przykład co 1 mm. Zmniejsz go do precyzyjnej pracy, zwiększ do zgrubnego rozmieszczania. {{ui:editor.tool.snapToGrid}} na wstążce przesuwa potem zaznaczone kształty na najbliższe przecięcie siatki. Podczas przesuwania kształty przyciągają się też do innych kształtów, zobacz [Zaznaczanie i rozmieszczanie](chapter:select-and-arrange).
+Siatka pokazuje rozmiar płyty. W prawym dolnym rogu jest **krok przyciągania**: przesuwanie i skalowanie przyciągają się co tyle, na przykład co 1 mm. Zmniejsz go do precyzyjnej pracy, zwiększ do zgrubnego rozmieszczania. {{ui:editor.tool.snapToGrid}} na wstążce przesuwa potem zaznaczone kształty na najbliższe przecięcie siatki. Podczas przesuwania kształty przyciągają się też do innych kształtów, zobacz [Zaznaczanie i rozmieszczanie](chapter:select-and-arrange). Bez myszy: [[Alt]]+[[1]] do [[Alt]]+[[0]] wybierają tę pozycję menu ([[Alt]]+[[1]] wyłącza przyciąganie), a [[,]] i [[.]] zmieniają krok o jeden rozmiar na drobniejszy albo grubszy. Działa to też w szkicu.
 
 > **Wskazówka:** Gdy dokładnie dopasowujesz części, przestań obracać widok. Klawiszami cyfr przejdź do widoku na wprost z góry albo z przodu i naciśnij [[O]], aby włączyć płaski widok. Wtedy od razu widać, czy dwie krawędzie naprawdę są na równo.
 
 ### Okno ustawień
 
-Koło zębate na wstążce ({{ui:editor.workspaceSettings}}) otwiera ustawienia. Po lewej jest pięć sekcji: {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} i {{ui:workspace.history}}. Każda zmiana działa od razu. {{ui:workspace.makeDefault}} na dole zapisuje bieżące ustawienia jako domyślne, żeby nowy projekt z nimi zaczynał, a {{ui:workspace.close}} w prawym górnym rogu zamyka okno. Ta część omawia ustawienia po kolei.
+Koło zębate na wstążce ({{ui:editor.workspaceSettings}}) otwiera ustawienia. Po lewej jest pięć sekcji: {{ui:workspace.appearance}}, {{ui:workspace.measurement}}, {{ui:workspace.workplane}}, {{ui:workspace.shapeDefaults}} i {{ui:workspace.history}}. Każda zmiana działa od razu. {{ui:workspace.makeDefault}} na dole zapisuje bieżące ustawienia jako domyślne, żeby nowy projekt z nimi zaczynał. Otwierany plik przynosi własne ustawienia, a {{ui:workspace.useMyDefault}} obok nakłada na otwarty projekt Twoje zapisane kolory, siatkę i resztę, zachowując jego jednostki. Jeśli Twoje ustawienia domyślne mają drukarkę, przychodzi ona razem z rozmiarem swojego stołu, a bez niej projekt zachowuje swoją płytę i drukarkę. {{ui:workspace.close}} w prawym górnym rogu zamyka okno. Ta część omawia ustawienia po kolei.
 
 ### Wygląd: motyw, pasek narzędzi i kostka widoku
 
@@ -135,7 +136,7 @@ Widok szkicu ma własne kolory: {{ui:workspace.sketchBackground}} dla okna wokó
 
 ### Wygląd: światło i cienie
 
-{{ui:workspace.showShadows}} włącza i wyłącza rzucane cienie. Dwa suwaki ustawiają oświetlenie brył. {{ui:workspace.shadowStrength}} określa, jak ciemne są rzucane cienie, a {{ui:workspace.shadeContrast}} przenosi światło z równomiernego światła otoczenia na światło główne: w stronę „wyrazisty” zacienione boki ciemnieją, a cienie są lepiej widoczne, w stronę „łagodny” wszystko robi się bardziej płaskie. Na górnym końcu kontrast jest bardzo mocny, więc zacienione boki i cienie robią się naprawdę ciemne. {{ui:workspace.shadowSoftness}} zmiękcza krawędzie cieni zamiast zostawiać je ostre. {{ui:workspace.lightAzimuth}} obraca światło główne wokół płyty (0° od przodu, 90° z prawej), a {{ui:workspace.lightElevation}} je podnosi. Przy 90° stoi ono prosto nad płytą, jak w Tinkercadzie, a cienie padają dokładnie pod bryłami. {{ui:workspace.lightReset}} przywraca wszystko.
+{{ui:workspace.showShadows}} włącza i wyłącza rzucane cienie. Dwa suwaki ustawiają oświetlenie brył. {{ui:workspace.shadowStrength}} określa, jak ciemne są rzucane cienie, a {{ui:workspace.shadeContrast}} przenosi światło z równomiernego światła otoczenia na światło główne: w stronę „wyrazisty” zacienione boki ciemnieją, a cienie są lepiej widoczne, w stronę „łagodny” wszystko robi się bardziej płaskie. Na górnym końcu kontrast jest bardzo mocny, więc zacienione boki i cienie robią się naprawdę ciemne. {{ui:workspace.shadowSoftness}} zmiękcza krawędzie cieni zamiast zostawiać je ostre. {{ui:workspace.lightAzimuth}} obraca światło główne wokół płyty (0° od przodu, 90° z prawej), a {{ui:workspace.lightElevation}} je podnosi. Przy 90° stoi ono prosto nad płytą, jak w Tinkercadzie, a cienie padają dokładnie pod bryłami. {{ui:workspace.softLighting}} sprawia, że większość światła pada stamtąd, skąd patrzysz, i obraca się z widokiem: żadna ściana nie zostaje ciemna, a ciemna ściana zwrócona w górę nie jest już prześwietlona na biało. Światło główne zostaje trochę dla cieni, a suwak kontrastu nadal działa. Jeśli przy nisko ustawionym świetle wciąż widać jasny odblask, podnieś {{ui:workspace.lightElevation}} do 90°: wygląda to wtedy jak w Tinkercadzie. {{ui:workspace.lightReset}} przywraca wszystko.
 
 ### Wygląd: wymiary na płaszczyźnie roboczej
 
@@ -154,6 +155,8 @@ Widok szkicu ma własne kolory: {{ui:workspace.sketchBackground}} dla okna wokó
 ### Wygląd: widok
 
 {{ui:workspace.startInPerspective}}: edytor otwiera się wtedy w widoku perspektywicznym, a nie płaskim.
+
+{{ui:workspace.startView}} ustawia kąt, pod jakim otwiera się nowy projekt i do którego wraca {{ui:camera.home}}. Obróć i przybliż widok tak, jak lubisz, a potem kliknij {{ui:workspace.startViewUseCurrent}}. {{ui:workspace.startViewStandard}} przywraca zwykły widok z prawego przodu. Obowiązuje dla każdego projektu w tej przeglądarce. Projekt otwierany ponownie nadal otwiera się tak, jak go zostawiłeś.
 
 {{ui:workspace.zoomSpeed}} to suwak od wolno do szybko: jak szybko przybliżają kółko i touchpad. Przyciski i klawisze przybliżania zachowują własne małe kroki. {{ui:workspace.cameraInertia}}: gdy puścisz mysz, widok obraca się jeszcze przez chwilę i łagodnie zwalnia. Po wyłączeniu zatrzymuje się od razu, jak w Tinkercadzie i Fusion 360.
 

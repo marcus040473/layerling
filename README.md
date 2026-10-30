@@ -97,6 +97,7 @@ It is not a full CAD package: there is no parametric timeline and no assemblies.
 - **Chamfer and fillet** – break or round any edge of a solid, and remove or change the treatment again later.
 - **Sketches** – draw outlines with lines, curves and ready-made shapes, set lines by length and angle as you draw ("50<30", Shift snaps in 15° steps), type lengths, angles and sizes (sums like "60+12.5" work in every number field), round or chamfer corners, snap to the outlines of other bodies, draw construction lines to snap to, and extrude, revolve or sweep them along a path into exact bodies. A revolve with a pitch winds the outline up as one continuous helical strand instead of rings, like filament on a spool. A sketch can also be built as a stroke: a closed outline becomes a frame, inside, outside or centred on the line, and an open line a stripe with flat, square or round ends.
 - **Hollowing** – turn a body into walls of one thickness, open on any sides you choose (top, bottom, front, back, left, right, in any combination) or closed – for boxes, cups and cases.
+- **Lids** – the lid for a box, a pot or a tray that is open at the top, from its own outline, round or angular: pushed into the opening, put over the outside or laid flat on it, with a tight, normal or loose fit (0.1, 0.2 or 0.3 mm per side) or a gap of your own, lid thickness and the depth and wall of the lip. It comes out beside the body, turned over with its plate down, ready to print without support.
 - **Offset and cut out** – grow or shrink an exact body along all its faces by 0.01 to 10 mm, for the clearance of a press fit or a snap joint, or cut one part out of another with a gap all round in one step, the part staying where it is.
 - **Surface texture** – lay a relief onto any body, for grip or for looks: grooves, knurling, honeycomb, bumps, Voronoi cells, bricks, knitting, rope, basket weave, carbon fibre, tree bark, wood grain, cracks, a picture as a height map or text, around round bodies or flat along an axis.
 - **Delete face** – click the faces of a fillet, a hole or a boss and delete them: the faces around them grow to close the gap, and the body stays exact for more fillets and the STEP export.
@@ -424,7 +425,7 @@ server switches it on with an access token ([see below](#letting-an-ai-client-re
 
 The main tool names are `layerling_list_editors`, `layerling_read_scene`, `layerling_list_objects`,
 `layerling_create_shape`, `layerling_update_object`, `layerling_list_edges`, `layerling_apply_edge_treatment`,
-`layerling_hollow_object`, `layerling_offset_object`, `layerling_cut_out`, `layerling_array_objects`, `layerling_set_section_view` and `layerling_capture_image`.
+`layerling_hollow_object`, `layerling_make_lid`, `layerling_offset_object`, `layerling_cut_out`, `layerling_array_objects`, `layerling_set_section_view` and `layerling_capture_image`.
 
 ### Claude Code
 

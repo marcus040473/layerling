@@ -21,6 +21,7 @@ const MORE = [
   ["welcome.moreHullTitle", "welcome.moreHullBody"],
   ["welcome.moreCookieCutterTitle", "welcome.moreCookieCutterBody"],
   ["welcome.moreFlexiTitle", "welcome.moreFlexiBody"],
+  ["welcome.moreLidTitle", "welcome.moreLidBody"],
   ["welcome.moreLoftSketchesTitle", "welcome.moreLoftSketchesBody"],
   ["welcome.moreSketchTitle", "welcome.moreSketchBody"],
   ["welcome.moreLibraryTitle", "welcome.moreLibraryBody"],

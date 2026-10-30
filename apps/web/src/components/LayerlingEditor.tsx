@@ -20,6 +20,7 @@ import { DEFAULT_TEXT_LAYERS, layerTextKeyringArgument, placedKeyring, layerText
 import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textLetterSize, textLetterSizePatch, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
 import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, isIconLayerBody, normalizeIconTagCount } from "@/lib/iconTag";
 import { automaticFlexiJoints, FLEXI_DEFAULTS, normalizeFlexiOptions, type FlexiOptions } from "@/lib/flexiJoints";
+import { LID_DEFAULTS, normalizeLidOptions, type LidOptions } from "@/lib/lidTool";
 import { cookieCutterFillets, cookieCutterProfiles, normalizeCookieCutterOptions, outlineFromCurves, outlineFromLoops, sampledCurveLoop, unitedFootprint, type CookieCutterOptions, type CurveLoop } from "@/lib/cookieCutter";
 import type { IconLayerPatch, IconTagControls, ReferenceImageControls, TextLayerPatch } from "@/components/workplane/ShapeInspector";
 import { calibratedReferenceImage, dataUrlByteLength, isReferenceImage, LARGE_REFERENCE_IMAGE_BYTES, mirrorHidesReferenceImage, referenceImageOpacity, referenceImagePixelDistance, referenceImageShape } from "@/lib/referenceImage";
@@ -49,6 +50,7 @@ import { OffsetPanel } from "./workplane/OffsetPanel";
 import { CutOutPanel } from "./workplane/CutOutPanel";
 import { COOKIE_CUTTER_SETTINGS_DEFAULTS, CookieCutterPanel, type CookieCutterSettings } from "./workplane/CookieCutterPanel";
 import { FlexiPanel, type FlexiToolSettings } from "./workplane/FlexiPanel";
+import { LidPanel } from "./workplane/LidPanel";
 import { DeleteFacePanel } from "./workplane/DeleteFacePanel";
 import { MateFacesPanel } from "./workplane/MateFacesPanel";
 import { concentricMotion, mateMotion, type FacePick, type MateMode } from "@/lib/mateFaces";
@@ -189,7 +191,7 @@ import { FOOTPRINT_CUT_HEIGHT, footprintCutOffset, projectSectionPoint, SECTION_
 import type { AlignAxis, AlignHandleStatus, AlignTarget, EdgeTreatmentFeature, GridSize, ParametricSource, ProjectAsset, ProjectAttachment, ShapeAsset, ShapeCustomization, ShapeKind, SketchImage, SketchOperation, SketchPoint, SketchProfile, SketchRevolveSettings, SketchSegment, ShellEdges, ShellOpenings, ShellSide, SweepAnchor, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
 import { type Vec3, type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, meshReachAlong, appendMeshData, formatTriangleCount, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey, sameShapeApartFromPlacement } from "@/lib/editorMeshCore";
 import { meshPartCount } from "@/lib/meshPartCount";
-import { buildGroupedShapeOffThread, exportSolidVolumeOffThread, callOffFaceRead, faceReadInWorker, createFaceReadKeeper, faceReadPositionsOffThread, simplifyTrianglePositionsOffThread, splitShapesByPlaneOffThread, articulateShapesOffThread, subscribeGeometryBusy, warmGeometryWorker } from "@/lib/geometryWorker";
+import { buildGroupedShapeOffThread, exportSolidVolumeOffThread, callOffFaceRead, faceReadInWorker, createFaceReadKeeper, faceReadPositionsOffThread, simplifyTrianglePositionsOffThread, splitShapesByPlaneOffThread, articulateShapesOffThread, lidForShapesOffThread, subscribeGeometryBusy, warmGeometryWorker } from "@/lib/geometryWorker";
 import { roundedAlignedValue } from "@/lib/alignRounding";
 import { buildSketchLoftFromSelection, canSketchLoft } from "@/lib/sketchLoft";
 import { frameAabb, sizeAlignmentState, sizedShapesForSelection } from "@/lib/alignSize";
@@ -3068,6 +3070,8 @@ export function LayerlingEditor({
   const [cutOutTool, setCutOutTool] = useState<{ partId: string; hostId: string; clearance: number; busy: boolean; error: string | null } | null>(null);
   /** Flexi joints (Liane's mail, 29.10.2026): the bodies `targetIds` are cut into links with a joint at every cut. */
   const [flexiTool, setFlexiTool] = useState<(FlexiToolSettings & { targetIds: string[]; busy: boolean; error: string | null }) | null>(null);
+  /** A lid (#1009) for the bodies `targetIds`, open at the top; it comes out beside them. */
+  const [lidTool, setLidTool] = useState<(LidOptions & { targetIds: string[]; busy: boolean; error: string | null }) | null>(null);
   /** The cookie cutter's panel (#982): what it is made from and the settings it is built with, kept for the next cutter. */
   const [cookieCutterTool, setCookieCutterTool] = useState<(CookieCutterSettings & { targetIds: string[]; busy: boolean; error: string | null }) | null>(null);
   const [simplifyToolId, setSimplifyToolId] = useState<string | null>(null);
@@ -7502,6 +7506,66 @@ export function LayerlingEditor({
     setFlexiTool((current) => current && !current.busy && !(selectedIds.length === current.targetIds.length && current.targetIds.every((id) => selectedIds.includes(id))) ? null : current);
   }, [selectedIds]);
 
+  /**
+   * A lid for the selection (#1009): the solids joined and the holes among them cut away, then a lid made for the
+   * opening at the top and laid beside them, turned over, ready to print. The bodies stay. The same code the MCP action uses.
+   */
+  const makeLid = useCallback(async (given?: Partial<Record<keyof LidOptions, unknown>>, only?: readonly WorkplaneShape[]) => {
+    const fail = (message: string) => {
+      setNotice(message);
+      return { ok: false as const, message };
+    };
+    const targets = (only ?? selectedShapes).filter((shape) => !isNonSolidShape(shape));
+    if (!targets.some((shape) => !shape.hole)) return fail(t("lid.error.needsBody"));
+    const options = normalizeLidOptions(given);
+    const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
+    const sourceProjectId = projectInfoRef.current.projectId;
+    setNotice(t("lid.working"), true);
+    const result = await lidForShapesOffThread(targets, options);
+    if (!result.lid) return fail(result.error);
+    if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
+      return fail(t("lid.error.changed"));
+    }
+    const lid = result.lid;
+    commitShapes([...shapesRef.current, lid], lid.id, t("status.lidMade", { type: t(`lid.type.${options.type}`) }));
+    return { ok: true as const, id: lid.id, type: options.type };
+  }, [commitShapes, selectedShapes]);
+
+  const startLidTool = useCallback(() => {
+    if (lidTool) {
+      setLidTool(null);
+      return;
+    }
+    const targets = selectedShapes.filter((shape) => !isNonSolidShape(shape));
+    if (!targets.some((shape) => !shape.hole)) {
+      setNotice(t("lid.error.needsBody"));
+      return;
+    }
+    if (edgeModifier) invalidateCadModifierSession();
+    closeSplit();
+    setLidTool({ ...LID_DEFAULTS, targetIds: targets.map((shape) => shape.id), busy: false, error: null });
+  }, [closeSplit, edgeModifier, invalidateCadModifierSession, lidTool, selectedShapes]);
+
+  const applyLidTool = useCallback(() => {
+    if (!lidTool || lidTool.busy) return;
+    const targets = shapesRef.current.filter((shape) => lidTool.targetIds.includes(shape.id));
+    if (!targets.length) {
+      setLidTool(null);
+      return;
+    }
+    const { type, thickness, gap, depth, wall } = lidTool;
+    setLidTool((current) => current ? { ...current, busy: true, error: null } : current);
+    void makeLid({ type, thickness, gap, depth, wall }, targets).then((result) => {
+      if (result.ok) setLidTool(null);
+      else setLidTool((current) => current ? { ...current, busy: false, error: result.message } : current);
+    });
+  }, [lidTool, makeLid]);
+
+  // The panel belongs to the bodies it was opened for; another selection closes it.
+  useEffect(() => {
+    setLidTool((current) => current && !current.busy && !(selectedIds.length === current.targetIds.length && current.targetIds.every((id) => selectedIds.includes(id))) ? null : current);
+  }, [selectedIds]);
+
   const applyShellTool = useCallback(() => {
     if (!shellTool || shellTool.busy) return;
     const target = selectedShape;
@@ -9068,19 +9132,20 @@ export function LayerlingEditor({
       const anchor = { x: wallBuilt.x, z: wallBuilt.z };
       const finish = (built: WorkplaneShape, name: string) =>
         canonicalizeShape({ ...place(built, anchor), id: createLocalId("cutter"), name, color, hole: false });
-      const parts = [finish(wallBuilt, "Wall"), finish(await extrude(profiles.rim, options.rimHeight), "Rim")];
+      // The parts are named in the interface's language, as the editor's other tools name what they make (cyryllo, #1011).
+      const parts = [finish(wallBuilt, t("cookieCutter.part.wall")), finish(await extrude(profiles.rim, options.rimHeight), t("cookieCutter.part.rim"))];
       // The walls round the holes are a body of their own, so they can be lower than the outer wall and only press the inside
       // into the dough; the bridges hold them, standing on the rim's level, on the side the hand presses.
-      if (profiles.inner) parts.push(finish(await extrudeWall(profiles.inner, options.height - options.imprint), "Inner walls"));
-      if (profiles.bridges) parts.push(finish(await extrude(profiles.bridges, options.bridgeHeight), "Bridges"));
+      if (profiles.inner) parts.push(finish(await extrudeWall(profiles.inner, options.height - options.imprint), t("cookieCutter.part.innerWalls")));
+      if (profiles.bridges) parts.push(finish(await extrude(profiles.bridges, options.bridgeHeight), t("cookieCutter.part.bridges")));
       // Instead of the bridges, a plate over the whole outline on the side the hand presses (avxmw, #982).
-      if (profiles.plate) parts.push(finish(await extrude(profiles.plate, options.plate), "Plate"));
+      if (profiles.plate) parts.push(finish(await extrude(profiles.plate, options.plate), t("cookieCutter.part.plate")));
       // The fillets where the walls stand on the rim, the bridges or the plate: one mesh of fine steps, lifted to where it starts.
       const fillets = options.fillet > 0 ? cookieCutterFillets(await getManifoldRuntime(), profiles, options) : null;
-      const filletSource = canonicalizeShape({ id: createLocalId("cutter"), name: "Fillets", kind: "mesh", color, x: 0, z: 0, elevation: 0, size: 1, width: 1, depth: 1, height: 1, rotation: 0 });
+      const filletSource = canonicalizeShape({ id: createLocalId("cutter"), name: t("cookieCutter.part.fillets"), kind: "mesh", color, x: 0, z: 0, elevation: 0, size: 1, width: 1, depth: 1, height: 1, rotation: 0 });
       const filletBody = fillets ? shapeFromCadMesh(filletSource, fillets.positions, new Float32Array(0), fillets.indices, "") : null;
       if (filletBody) {
-        const placed = finish({ ...filletBody, cadBrep: undefined }, "Fillets");
+        const placed = finish({ ...filletBody, cadBrep: undefined }, t("cookieCutter.part.fillets"));
         parts.push(canonicalizeShape({ ...placed, elevation: (placed.elevation ?? 0) + (filletBody.elevation ?? 0) }));
       }
       if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
@@ -11101,6 +11166,16 @@ export function LayerlingEditor({
         if (!result.ok) throw new Error(result.message);
         const made = currentShapes().find((shape) => shape.id === result.id);
         return { object: made ? mcpShapeSummary(made) : { id: result.id }, joints: result.joints, links: result.links, swing: result.swing, axis: result.axis === "x" ? "X" : "Y" };
+      }
+
+      if (command.action === "make_lid") {
+        const ids = new Set(mcpStringArray(params.ids));
+        const targets = currentShapes().filter((shape) => ids.has(shape.id));
+        if (!targets.length) throw new Error("Pass the ids of the body to make a lid for");
+        const result = await makeLid({ type: params.type, thickness: params.thickness, gap: params.gap, depth: params.depth, wall: params.wall }, targets);
+        if (!result.ok) throw new Error(result.message);
+        const made = currentShapes().find((shape) => shape.id === result.id);
+        return { object: made ? mcpShapeSummary(made) : { id: result.id }, type: result.type };
       }
 
       if (command.action === "loft_sketches") {
@@ -13985,6 +14060,8 @@ export function LayerlingEditor({
         canCookieCutter={!selectionLocked && selectedShapes.some((shape) => !isNonSolidShape(shape))}
         canFlexi={!selectionLocked && selectedShapes.some((shape) => !shape.hole && !isNonSolidShape(shape))}
         flexiActive={Boolean(flexiTool)}
+        canLid={!selectionLocked && selectedShapes.some((shape) => !shape.hole && !isNonSolidShape(shape))}
+        lidActive={Boolean(lidTool)}
         canLoftSketches={!selectionLocked && canSketchLoft(selectedShapes)}
         canUngroup={!selectionLocked && selectedShapes.some((shape) => Boolean(shape.groupedShapes?.length) || wasGroupBeforeEdgeTreatments(shape))}
         canModifySelection={hasSelection && !selectionLocked}
@@ -14056,6 +14133,7 @@ export function LayerlingEditor({
         onHull={hullSelected}
         onCookieCutter={startCookieCutterTool}
         onFlexi={startFlexiTool}
+        onLid={startLidTool}
         onLoftSketches={() => void loftSketches()}
         onIntersectPreview={toggleIntersectPreview}
         intersectPreviewActive={Boolean(intersectPreviewIds)}
@@ -14603,6 +14681,18 @@ export function LayerlingEditor({
           />
         );
       })() : null}
+      {lidTool ? (
+        <LidPanel
+          targetName={shapesRef.current.filter((shape) => lidTool.targetIds.includes(shape.id)).map((shape) => shape.name).join(", ")}
+          settings={lidTool}
+          workspace={workspaceSettings}
+          busy={lidTool.busy}
+          error={lidTool.error}
+          onChange={(patch) => setLidTool((current) => current ? { ...current, ...patch, error: null } : current)}
+          onApply={applyLidTool}
+          onCancel={() => setLidTool(null)}
+        />
+      ) : null}
       {cutOutTool ? (
         <CutOutPanel
           partName={shapesRef.current.find((shape) => shape.id === cutOutTool.partId)?.name ?? ""}

@@ -182,7 +182,7 @@ import { textHasFill } from "@/lib/textFill";
 import { TEXT_FILL_CHOICES, textFillChoice, textLineSettingsInView, textStrokeForChoice, textStrokeWider, type TextFillChoice } from "@/lib/textFillChoice";
 import { MAX_TEXT_LAYERS, MAX_TEXT_LAYER_GROW, MIN_TEXT_LAYER_HEIGHT, nameTagKeyringAlongLimit, namesFromList, type NameTagKeyring, type TextLayer } from "@/lib/textLayers";
 import { iconKeyringAlongLimit } from "@/lib/sketchKeyring";
-import { DEFAULT_KEYRING_DIAMETER, MAX_TEXT_SPACING, MIN_KEYRING_DIAMETER, MIN_TEXT_SPACING, TEXT_KEYRING_SIDES } from "@/lib/textGeometry";
+import { DEFAULT_KEYRING_DIAMETER, curvedRadiusPatch, MAX_TEXT_SPACING, MIN_KEYRING_DIAMETER, MIN_TEXT_SPACING, TEXT_KEYRING_SIDES } from "@/lib/textGeometry";
 import { addTextLayer, MIN_LETTER_SIZE, MIN_NAME_TAG_LAYERS, NAME_TAG_GAP, NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, removeTextLayer, textBaselineKeepShift, textLetterSize, textLetterSizePatch, textSpacingPatch, type NameTagStack } from "@/lib/nameTag";
 import { FONT_MANAGER_OPTION, requestFontManager } from "@/lib/fontManagerEvents";
 import { FontPicker } from "@/components/workplane/FontPicker";
@@ -2612,7 +2612,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
           min: 5,
           max: 500,
           step: 1,
-          onChange: (textRadius) => onUpdate({ textRadius }),
+          // The letters stay where they sit; only their bend changes (#981).
+          onChange: (textRadius) => onUpdate(curvedRadiusPatch(shape, textRadius)),
         },
         {
           type: "toggle",

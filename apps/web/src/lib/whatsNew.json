@@ -1,5 +1,45 @@
 [
   {
+    "version": "1.121.1",
+    "items": [
+      {
+        "title": {
+          "de": "Passende Symbole, Polnisch wieder vollständig",
+          "en": "Matching icons, Polish complete again"
+        },
+        "body": {
+          "de": "Flexi-Gelenke, Ausstecher und Deckel haben in der Leiste Symbole bekommen, die zu den übrigen Werkzeugen passen. Die polnische Oberfläche und Anleitung sind wieder auf dem neuesten Stand, und die Teile eines Ausstechers (Wand, Rand, Innenwände, Stege, Platte) heißen jetzt in deiner Sprache.",
+          "en": "Flexi joints, Cookie cutter and Lid now have icons in the ribbon that match the other tools. The Polish interface and guide are up to date again, and the parts of a cookie cutter (wall, rim, inner walls, bridges, plate) are named in your language."
+        }
+      }
+    ]
+  },
+  {
+    "version": "1.121.0",
+    "items": [
+      {
+        "title": {
+          "de": "Neu: Das Menüband klappt Gruppen ein",
+          "en": "New: the ribbon folds groups away"
+        },
+        "body": {
+          "de": "Damit mehr Platz zum Bauen bleibt, ist das Menüband jetzt immer nur eine Zeile hoch. Passen nicht alle Gruppen ins Fenster, klappen die seltener gebrauchten zu einem Knopf zusammen; zeig mit der Maus darauf oder tippe ihn an, dann öffnen sich ihre Werkzeuge. Der Start-Knopf (das Haus) steht jetzt links neben „3D-Editor“, die Hilfe oben rechts. Lieber alles offen wie bisher? Klicke oben rechts auf die Stecknadel links neben der Lupe: Dann bleiben alle Gruppen offen, auch beim nächsten Mal. Ein zweiter Klick schaltet zurück.",
+          "en": "To leave more room for building, the ribbon now always stays one row high. When not all groups fit into the window, the ones used least fold into one button; point at it or tap it and its tools open. The Start button (the house) now sits left of \"3D editor\", the help at the top right. Prefer everything open as before? Click the pin left of the magnifying glass at the top right: all groups then stay open, next time too. A second click switches back."
+        }
+      },
+      {
+        "title": {
+          "de": "Neu: Deckel für Kisten und Töpfe",
+          "en": "New: lids for boxes and pots"
+        },
+        "body": {
+          "de": "Unter Bearbeiten macht „Deckel“ den passenden Deckel für einen Körper, der oben offen ist, etwa eine Kiste, die du mit offener Oberseite ausgehöhlt hast. Wähle eingesteckt, übergestülpt oder flach und die Passung: stramm, normal oder locker. Der Deckel folgt dem Umriss, auch einem runden, und liegt danach umgedreht neben dem Körper, fertig zum Drucken.",
+          "en": "Under Modify, \"Lid\" makes the matching lid for a body that is open at the top, such as a box you hollowed with its top open. Choose push in, over the top or flat, and the fit: tight, normal or loose. The lid follows the outline, a round one too, and lies turned over beside the body, ready to print."
+        }
+      }
+    ]
+  },
+  {
     "version": "1.120.2",
     "items": [
       {

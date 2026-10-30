@@ -1448,6 +1448,65 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .shell-openings-summary
   color: #595959;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-title-home {
+  color: #484848;
+  background: transparent;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-title-home:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.58);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-ribbon-pin {
+  color: #787878;
+  background: transparent;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-ribbon-pin:hover {
+  color: #484848;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-ribbon-pin.active {
+  color: #d07415;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .toolbar-ribbon-pin:hover {
+  color: #f1f1f1;
+  background: #3a3a3a;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-title-help {
+  --group-color: var(--group-help);
+  background: color-mix(in srgb, var(--group-color) 7%, var(--toolbar-tile));
+  border: 2px solid var(--group-color);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-title-help .action-icon-button {
+  color: #484848;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-title-help .action-icon-button .toolbar-search-icon,
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-title-help .action-icon-button .toolbar-vector-art-icon {
+  color: inherit;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-title-help .action-icon-button:hover,
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-title-help .action-icon-button.active {
+  color: var(--group-color);
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .toolbar-title-help .action-icon-button {
+  color: #d2d2d2;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .toolbar-title-help .action-icon-button:hover,
+html[data-theme="dark"]:where([data-palette="graphite"]) .toolbar-title-help .action-icon-button.active {
+  color: #f1f1f1;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-workspace-tabs button {
   color: #676767;
   background: transparent;
@@ -1572,6 +1631,18 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .shell-openings-summary
   border: 2px solid var(--group-color);
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-section[data-collapsed]:has(.visibility-hidden-badge, .attachments-indicator) .toolbar-collapse-trigger::after {
+  background: var(--group-color);
+  border: 1.5px solid var(--toolbar-tile);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-section[data-collapsed][data-open] > .toolbar-section-tools:not(.toolbar-collapse-box),
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-section[data-collapsed][data-open] > .action-buttons {
+  background: color-mix(in srgb, var(--group-color) 7%, var(--toolbar-tile));
+  border: 2px solid var(--group-color);
+  box-shadow: 0 14px 34px rgba(52, 52, 52, 0.22);
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-project-name-field {
   background: transparent;
 }
@@ -1614,6 +1685,10 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .shell-openings-summary
 :where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-icon:not(.disabled):hover {
   background: var(--toolbar-hover-bg);
   box-shadow: inset 0 0 0 1px var(--toolbar-hover-ring);
+  color: var(--toolbar-icon);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .toolbar-icon:not(.disabled):not(.active) > svg.lucide {
   color: var(--toolbar-icon);
 }
 
@@ -2431,6 +2506,15 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .sketch-shape-options .
 :where(html[data-theme="dark"][data-palette="graphite"]) .sketch-curve-handles circle {
   fill: #ffffff;
   stroke: #f08036;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .sketch-curve-handles circle.sketch-curve-handle-hit {
+  fill: transparent;
+  stroke: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .sketch-curve-handles .sketch-curve-handle:hover circle:not(.sketch-curve-handle-hit):not(.sketch-handle-selected) {
+  fill: #f08036;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .sketch-points circle {
@@ -5210,6 +5294,14 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .shape-menu-trigger:hov
 html[data-theme="dark"]:where([data-palette="graphite"]) .shape-menu-trigger.active,
 html[data-theme="dark"]:where([data-palette="graphite"]) .toolbar-workspace-tabs button:hover {
   color: #f1f1f1;
+  background: #3a3a3a;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .toolbar-title-home {
+  color: #d2d2d2;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .toolbar-title-home:hover:not(:disabled) {
   background: #3a3a3a;
 }
 

@@ -766,6 +766,23 @@ export const tools = [
     },
   },
   {
+    name: "layerling_make_lid",
+    description: "Make a lid for a body that is open at the top, like the editor's Lid button (#1009): a box hollowed with its top open, a pot, a tray. Solids among the ids are joined and holes among them cut away; the body is cut just below its rim, and the lid follows that outline and the opening inside it, round or angular. `type`: `plug` (default) a plate as large as the body with a lip below it that goes into the opening, `cap` a plate a wall wider than the body with a rim below it that goes over the outside, `flat` only the plate. Sizes in mm: `thickness` of the plate (2), `gap` per side between lid and body (0.2; 0.1 tight, 0.3 loose, up to 1), `depth` how far the lip or rim reaches down (4), `wall` its thickness (1.6). The lid is a new mesh beside the body, turned over with its plate down, ready to print; the body stays. A body without an opening at the top is refused for plug and cap (hollow it with `layerling_hollow_object` and the top open first).",
+    inputSchema: {
+      ...editorTargetSchema,
+      required: ["ids"],
+      properties: {
+        ...editorTargetSchema.properties,
+        ids: { type: "array", items: { type: "string" } },
+        type: { type: "string", enum: ["plug", "cap", "flat"] },
+        thickness: { type: "number" },
+        gap: { type: "number" },
+        depth: { type: "number" },
+        wall: { type: "number" },
+      },
+    },
+  },
+  {
     name: "layerling_loft_sketches",
     description: "Loft between two sketch bodies, like the editor's Loft sketches button: two extruded sketch or SVG bodies, each with one outline (a ring with holes in both is fine, as long as both have as many), become one exact body whose bottom is the outline of the lower body at its bottom and whose top is the outline of the upper body at its top, with straight walls between them - for a funnel, a transition piece or a tapered frame. Each outline is taken where its body stands, turned about the vertical and stretched as the body is; bodies tipped over are refused. The two bodies stay inside the result as a group with groupOperation loft: layerling_open_group opens them, and closing the group builds the loft again. Returns the new object.",
     inputSchema: {
