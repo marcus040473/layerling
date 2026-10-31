@@ -15,8 +15,8 @@
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (3836 passed, 6 skipped; new in `tests/unit/hingeGeometry.test.ts`: the lift-off hinge closed in two parts in every fold, with fingers and holes, the pin running to the end inside the sleeve's bore with nothing of the sleeve in its way, its exact parts; nut widths from the hole and as set, the exact volume of a pocket, the mix of countersink and nut, a pocket left out on a thin leaf, the prism cutters folding with B and turning with the hinge)
-- [x] `npm run test:e2e` (691 passed; new: STEP export of a lift-off hinge and of nut pockets on the pin and pinless styles, turned, folded and mirrored, within 1 % of the display mesh's volume, in `tests/e2e/stepRoundTrip.e2e.ts`; the style and the hole choices in the settings in `tests/e2e/hingeLeavesPanel.e2e.ts`)
+- [x] `npm test` (3897 passed, 4 skipped; new in `tests/unit/hingeGeometry.test.ts`: the lift-off hinge closed in two parts in every fold, with fingers and holes, the pin running to the end inside the sleeve's bore with nothing of the sleeve in its way, its exact parts; nut widths from the hole and as set, the exact volume of a pocket, the mix of countersink and nut, a pocket left out on a thin leaf, the prism cutters folding with B and turning with the hinge)
+- [x] `npm run test:e2e` (730 passed; new: STEP export of a lift-off hinge and of nut pockets on the pin and pinless styles, turned, folded and mirrored, within 1 % of the display mesh's volume, in `tests/e2e/stepRoundTrip.e2e.ts`; the style and the hole choices in the settings in `tests/e2e/hingeLeavesPanel.e2e.ts`)
 - [x] `npm run guide`, `npm run i18n:status`: no problems; the eight languages complete (Danish misses the same sentences as on main)
 - [x] Manually tested the affected workflow: in Chromium on the dev server of this branch, placed a hinge, set Lift-off, a 10 mm knuckle, a 3 mm leaf, two 4.5 mm holes with Countersunk + nut pocket and a corner radius: the knuckle rows went away, the nut row showed 7.3 mm and a 2.4 mm deep pocket, and the body followed. Separate Parts gave the two pieces. The fillet tool on the same hinge built it exactly (88 sharp edges, the pockets' hexagons where the mesh has them), no errors
 
@@ -26,7 +26,7 @@
 - The idea came from a reversible M4 hinge and a removable printer-door hinge a user showed me; nothing of their geometry is taken over.
 - A lift-off hinge always has its pin on the back leaf; for the other hand it is mirrored, as any other part.
 - The translations other than English and German are mine and worth a native reader.
-- Up to date with 1.124.2: your main is merged into the branch. It met the exact cone hinge (#1007) in `hingeGeometry.ts`, `hingeParts.ts`, the MCP tool, the skill and the tests; both are kept – the nut constants beside `CONE_OVERCUT`, a local part with a polygon's `sides` and a cone knuckle's `knuckle`, `hingeHasExactParts` gone as in your main. Where your main now gives the whole-length pin to the pin style only, the lift-off hinge gets it too (`plan.style === "pin" || plan.style === "liftOff"`); a test of the lift-off hinge's parts caught it.
+- Up to date with 1.127.0: your main is merged into the branch. It met the exact cone hinge (#1007, #1047) in `hingeGeometry.ts`, `hingeParts.ts`, the MCP tool, the skill and the tests; both are kept – the nut constants beside `CONE_OVERCUT`, a local part with a polygon's `sides` and a cone knuckle's `knuckle`, `hingeHasExactParts` gone as in your main. Where your main now gives the whole-length pin to the pin style only, the lift-off hinge gets it too (`plan.style === "pin" || plan.style === "liftOff"`); a test of the lift-off hinge's parts caught it. From 1.124.2 to 1.126.0 only lists both sides had added to met (the length-unit fields, the shape fields, the skill's line); all entries are kept.
 - No CHANGELOG or whatsNew in the diff, so it stays free of conflicts with yours.
 - Developed with the help of Claude Code.
 
