@@ -76,7 +76,7 @@ A {{ui:prop.torusTube}} adja meg, milyen vastag a cső felülről nézve. A maga
 
 - **A STEP-exportnál.** Az a kerek alakot írja ki, nem a sokszöget.
 - **Élletörésnél és lekerekítésnél** ({{ui:editor.tool.chamfer}}, {{ui:editor.tool.fillet}}), amíg az alakzat kerek marad. Ez akkor áll fenn, ha nem állítottál be oldalszámot, ha az oldalszám legalább az alakzat alapértéke, vagy ha a sokszög legfeljebb {{value:EXACT_ROUND_TOLERANCE}} mm-rel tér el a körtől. Az alapérték hengernél, ellipszisnél, csőnél és kúpnál {{value:ROUND_FROM_SIDES}} oldal, az {{ui:shape.roundRoof}} alakzatnál {{value:ROUND_FROM_ROOF_SIDES}}, a {{ui:shape.sphere}} alakzatnál {{value:ROUND_FROM_SPHERE_STEPS}} lépés, a {{ui:shape.halfSphere}} és a {{ui:shape.paraboloid}} alakzatnál {{value:ROUND_FROM_HALF_SPHERE_STEPS}}, a {{ui:shape.torus}} alakzatnál {{value:ROUND_FROM_TORUS_SIDES}} oldal és {{value:ROUND_FROM_TORUS_STEPS}} lépés, egy kerek {{ui:shape.bentTube}} alakzatnál pedig {{value:ROUND_FROM_BENT_TUBE_QUALITY}} a {{ui:prop.quality}}.
-- **Menetnél, rugónál vagy ferde fogazású fogaskeréknél.** Az élműveleti eszköz és a STEP-export a pontos testét veszi; a {{ui:prop.quality}} csak azt adja meg, milyen finoman rajzolódik.
+- **Menetnél, rugónál, ferde fogazású vagy nyílfogazású fogaskeréknél.** Az élműveleti eszköz és a STEP-export a pontos testét veszi; a {{ui:prop.quality}} csak azt adja meg, milyen finoman rajzolódik.
 
 **Ahol mégis számít**
 
@@ -109,7 +109,7 @@ Az illesztési lépés a szerkesztő jobb alsó sarkában van, és bármikor mó
 
 ## Másolás és másolatkészítés
 
-A {{ui:editor.tool.copy}}, a {{ui:editor.tool.paste}} és a {{ui:editor.tool.duplicate}} a szalagon van ({{ui:editor.group.clipboard}}). A [[Ctrl]]+[[D]] másolatot készít a kijelölésről. A layerling megjegyzi, hogyan mozgattad vagy forgattad legutóbb a másolatot, és a következő másolatnál ugyanezt alkalmazza újra. Így néhány billentyűleütéssel lyuksort vagy lépcsőt kapsz. Szabályos elrendezésekhez ott van még az ismétlés is, amelyről a [Kijelölés és elrendezés](chapter:select-and-arrange) fejezet szól.
+A {{ui:editor.tool.copy}}, a {{ui:editor.tool.paste}} és a {{ui:editor.tool.duplicate}} a szalagon van ({{ui:editor.group.clipboard}}). A [[Ctrl]]+[[D]] másolatot készít a kijelölésről. A layerling megjegyzi, hogyan mozgattad vagy forgattad legutóbb a másolatot, és a következő másolatnál ugyanezt alkalmazza újra. Így néhány billentyűleütéssel lyuksort vagy lépcsőt kapsz. Szabályos elrendezésekhez ott van még az ismétlés is, amelyről a [Kijelölés és elrendezés](chapter:select-and-arrange) fejezet szól. Ha a másolat méretét is megváltoztattad, minden további másolat ugyanazzal a szorzóval változik tovább, mint a Tinkercadben.
 
 > **Tipp:** Ha egy alakzat nem hajlandó felvenni a kívánt méretet, gyakran az új alakzatok határai az okai. A beállításokban az {{ui:workspace.shapeDefaults}} alatt döntöd el, hogyan induljon az egyes alakzat, és mekkora lehet.
 

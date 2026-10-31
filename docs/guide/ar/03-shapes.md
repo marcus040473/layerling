@@ -86,7 +86,7 @@ summary: مكتبة الأشكال، الأبعاد بالأرقام وبالم�
 
 - **لتصدير STEP.** يكتب الشكل الدائري، وليس المضلع.
 - **للشطف والتنعيم** ({{ui:editor.tool.chamfer}}، {{ui:editor.tool.fillet}}) طالما بقي الشكل دائريًا. يكون هذا هو الحال عندما لا تكون قد ضبطت عدد الأضلاع، عندما يكون العدد على الأقل الافتراضي للشكل، أو عندما ينحرف المضلع بما لا يتجاوز {{value:EXACT_ROUND_TOLERANCE}} مم عن الدائرة. الافتراضي هو {{value:ROUND_FROM_SIDES}} أضلاع للأسطوانة، البيضاوي، الأنبوب والمخروط، {{value:ROUND_FROM_ROOF_SIDES}} لـ{{ui:shape.roundRoof}}، {{value:ROUND_FROM_SPHERE_STEPS}} خطوات لـ{{ui:shape.sphere}}، {{value:ROUND_FROM_HALF_SPHERE_STEPS}} لـ{{ui:shape.halfSphere}} و{{ui:shape.paraboloid}}، {{value:ROUND_FROM_TORUS_SIDES}} أضلاع و{{value:ROUND_FROM_TORUS_STEPS}} خطوات لـ{{ui:shape.torus}}، و{{ui:prop.quality}} بـ{{value:ROUND_FROM_BENT_TUBE_QUALITY}} لـ{{ui:shape.bentTube}} دائرية.
-- **لسن لولبي أو نابض أو ترس حلزوني.** أداة الحافة وتصدير STEP يأخذان جسمه الدقيق؛ جودته {{ui:prop.quality}} تضبط فقط مدى دقة رسمه.
+- **لسن لولبي أو نابض أو ترس حلزوني أو ترس متعرج.** أداة الحافة وتصدير STEP يأخذان جسمه الدقيق؛ جودته {{ui:prop.quality}} تضبط فقط مدى دقة رسمه.
 
 **أين يهم مجددًا**
 
@@ -119,7 +119,7 @@ summary: مكتبة الأشكال، الأبعاد بالأرقام وبالم�
 
 ## النسخ والتكرار
 
-{{ui:editor.tool.copy}}، {{ui:editor.tool.paste}} و{{ui:editor.tool.duplicate}} موجودة في الشريط ({{ui:editor.group.clipboard}}). [[Ctrl]]+[[D]] يكرر التحديد. يتذكر layerling كيف حركت أو دورت النسخة آخر مرة ويطبّق الشيء نفسه مجددًا على التكرار التالي. ينتج هذا صفًا من الثقوب أو الدرجات في ضغطات مفاتيح قليلة. للترتيبات المنتظمة توجد أيضًا النمط، المشروح في [التحديد والترتيب](chapter:select-and-arrange).
+{{ui:editor.tool.copy}}، {{ui:editor.tool.paste}} و{{ui:editor.tool.duplicate}} موجودة في الشريط ({{ui:editor.group.clipboard}}). [[Ctrl]]+[[D]] يكرر التحديد. يتذكر layerling كيف حركت أو دورت النسخة آخر مرة ويطبّق الشيء نفسه مجددًا على التكرار التالي. ينتج هذا صفًا من الثقوب أو الدرجات في ضغطات مفاتيح قليلة. للترتيبات المنتظمة توجد أيضًا النمط، المشروح في [التحديد والترتيب](chapter:select-and-arrange). وإذا غيّرت حجم النسخة أيضًا، فإن كل نسخة تالية يتغير حجمها بالمعامل نفسه مرة أخرى، كما في Tinkercad.
 
 > **نصيحة:** إذا رفض شكل أخذ الحجم الذي تريد، غالبًا ما تكون الحدود للأشكال الجديدة هي السبب. تحت {{ui:workspace.shapeDefaults}} في الإعدادات تقرر كيف يبدأ كل شكل وكيف يمكن أن يمتد حجمًا.
 

@@ -86,7 +86,7 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 - **匯出 STEP 時。** 它寫出的是圓形，而不是多邊形。
 - **套用倒角與圓角時**（{{ui:editor.tool.chamfer}}、{{ui:editor.tool.fillet}}），只要形狀保持圓形。未設定邊數、邊數不少於該形狀的預設值，或多邊形與圓的偏差最多 {{value:EXACT_ROUND_TOLERANCE}} mm 時，就是這種情況。預設值為 {{value:ROUND_FROM_SIDES}} 邊（圓柱、橢圓、管與圓錐）、{{value:ROUND_FROM_ROOF_SIDES}} 邊的 {{ui:shape.roundRoof}}、{{value:ROUND_FROM_SPHERE_STEPS}} 段的 {{ui:shape.sphere}}、{{value:ROUND_FROM_HALF_SPHERE_STEPS}} 段的 {{ui:shape.halfSphere}} 與 {{ui:shape.paraboloid}}、{{value:ROUND_FROM_TORUS_SIDES}} 邊與 {{value:ROUND_FROM_TORUS_STEPS}} 段的 {{ui:shape.torus}}，以及 {{ui:prop.quality}} 為 {{value:ROUND_FROM_BENT_TUBE_QUALITY}} 的圓形 {{ui:shape.bentTube}}。
-- **螺紋、彈簧或斜齒輪。** 邊緣工具與 STEP 匯出採用它的精確實體；{{ui:prop.quality}} 只決定繪製得多精細。
+- **螺紋、彈簧、斜齒輪或人字齒輪。** 邊緣工具與 STEP 匯出採用它的精確實體；{{ui:prop.quality}} 只決定繪製得多精細。
 
 **邊數又變得重要的情況**
 
@@ -119,7 +119,7 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 ## 複製與重複
 
-{{ui:editor.tool.copy}}、{{ui:editor.tool.paste}} 與 {{ui:editor.tool.duplicate}} 位於功能區（{{ui:editor.group.clipboard}}）。[[Ctrl]]+[[D]] 會重複選取項。layerling 會記住你上次如何移動或旋轉副本，並在下次重複時再套用相同的方式。這樣幾個按鍵就能做出一排孔或一排階梯。規則排列還可以使用陣列，說明見[選取與排列](chapter:select-and-arrange)。
+{{ui:editor.tool.copy}}、{{ui:editor.tool.paste}} 與 {{ui:editor.tool.duplicate}} 位於功能區（{{ui:editor.group.clipboard}}）。[[Ctrl]]+[[D]] 會重複選取項。layerling 會記住你上次如何移動或旋轉副本，並在下次重複時再套用相同的方式。這樣幾個按鍵就能做出一排孔或一排階梯。規則排列還可以使用陣列，說明見[選取與排列](chapter:select-and-arrange)。 如果你也調整了副本的大小，之後的每個副本都會再按相同比例縮放，和 Tinkercad 一樣。
 
 > **提示：** 如果某個形狀不肯接受你想要的尺寸，通常是新形狀的限制所致。在設定中的 {{ui:workspace.shapeDefaults}} 下，你可以決定每種形狀如何開始，以及最大能有多大。
 

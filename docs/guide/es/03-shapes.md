@@ -86,7 +86,7 @@ Las formas redondas, como el cilindro, el cono, el tubo, la elipse o los taladro
 
 - **En la exportación STEP.** Guarda la forma redonda, no el polígono.
 - **En chaflanes y redondeos** ({{ui:editor.tool.chamfer}}, {{ui:editor.tool.fillet}}), mientras la forma siga siendo redonda. Lo es si no has fijado un número de lados, si el número es al menos el predeterminado de la forma o si el polígono se aparta como mucho {{value:EXACT_ROUND_TOLERANCE}} mm del círculo. El valor predeterminado es de {{value:ROUND_FROM_SIDES}} lados en el cilindro, la elipse, el tubo y el cono; {{value:ROUND_FROM_ROOF_SIDES}} en el {{ui:shape.roundRoof}}; {{value:ROUND_FROM_SPHERE_STEPS}} pasos en la {{ui:shape.sphere}}; {{value:ROUND_FROM_HALF_SPHERE_STEPS}} en la {{ui:shape.halfSphere}} y el {{ui:shape.paraboloid}}; {{value:ROUND_FROM_TORUS_SIDES}} lados y {{value:ROUND_FROM_TORUS_STEPS}} pasos en el {{ui:shape.torus}}, y una {{ui:prop.quality}} de {{value:ROUND_FROM_BENT_TUBE_QUALITY}} en un {{ui:shape.bentTube}} redondo.
-- **En una rosca, un muelle o un engranaje helicoidal.** La herramienta de aristas y la exportación STEP usan su cuerpo exacto; su {{ui:prop.quality}} solo decide con qué finura se dibuja.
+- **En una rosca, un muelle o un engranaje helicoidal o en espiga.** La herramienta de aristas y la exportación STEP usan su cuerpo exacto; su {{ui:prop.quality}} solo decide con qué finura se dibuja.
 
 **Dónde vuelve a importar**
 
@@ -119,7 +119,7 @@ El paso de ajuste está abajo a la derecha del editor y puedes cambiarlo en cual
 
 ## Copiar y duplicar
 
-{{ui:editor.tool.copy}}, {{ui:editor.tool.paste}} y {{ui:editor.tool.duplicate}} están en la cinta ({{ui:editor.group.clipboard}}). [[Ctrl]]+[[D]] duplica una selección. layerling recuerda cómo moviste o giraste la última copia y vuelve a aplicar lo mismo en el siguiente duplicado. Así sale una fila de orificios o de escalones con unas pocas pulsaciones. Para disposiciones regulares también está el patrón, que se explica en [Seleccionar y organizar](chapter:select-and-arrange).
+{{ui:editor.tool.copy}}, {{ui:editor.tool.paste}} y {{ui:editor.tool.duplicate}} están en la cinta ({{ui:editor.group.clipboard}}). [[Ctrl]]+[[D]] duplica una selección. layerling recuerda cómo moviste o giraste la última copia y vuelve a aplicar lo mismo en el siguiente duplicado. Así sale una fila de orificios o de escalones con unas pocas pulsaciones. Para disposiciones regulares también está el patrón, que se explica en [Seleccionar y organizar](chapter:select-and-arrange). Si además cambiaste el tamaño de la copia, cada copia siguiente vuelve a crecer en la misma proporción, como en Tinkercad.
 
 > **Consejo:** Si una forma se niega a tomar el tamaño que quieres, a menudo es por los límites de las formas nuevas. En los ajustes, en {{ui:workspace.shapeDefaults}}, decides cómo empieza cada forma y hasta qué tamaño puede llegar.
 

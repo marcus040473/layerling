@@ -384,6 +384,10 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
     if (kind === "tube" || kind === "ring") {
       entry.bevel = optionalShapeNumber(source.bevel, fallbackEntry?.bevel, 0.5, 20);
     }
+    // The switch came only from the panel: the AI bridge's tubeBoreHole fell away here and the bore never cut (#1067).
+    if (kind === "tube" || kind === "ring" || kind === "bentTube") {
+      entry.tubeBoreHole = typeof source.tubeBoreHole === "boolean" ? source.tubeBoreHole : fallbackEntry?.tubeBoreHole;
+    }
     if (kind === "star") {
       entry.starPoints = optionalShapeNumber(source.starPoints, fallbackEntry?.starPoints, 3, 32, true);
       entry.starInnerSize = optionalShapeNumber(source.starInnerSize, fallbackEntry?.starInnerSize, 0.1, MAX_CUSTOM_SHAPE_DIMENSION);
@@ -560,6 +564,9 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
         : source.springHand === "right" || source.springHand === "left"
           ? source.springHand
           : fallbackEntry?.springHand;
+      entry.springForm = source.springForm === "coil" || source.springForm === "flat" ? source.springForm : fallbackEntry?.springForm;
+      entry.springPattern = source.springPattern === "round" || source.springPattern === "zigzag" || source.springPattern === "square" ? source.springPattern : fallbackEntry?.springPattern;
+      entry.springEnds = source.springEnds === "eye" || source.springEnds === "tab" || source.springEnds === "none" ? source.springEnds : fallbackEntry?.springEnds;
     }
     if (kind === "thread") {
       entry.threadRole = source.threadRole === undefined

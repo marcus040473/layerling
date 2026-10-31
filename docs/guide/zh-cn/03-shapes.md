@@ -86,7 +86,7 @@ layerling 里的每个零件都从一个形状开始。用这些形状，你可�
 
 - **导出 STEP 时。** 它写出的是圆形形状，而不是多边形。
 - **使用倒角和圆角时**（{{ui:editor.tool.chamfer}}、{{ui:editor.tool.fillet}}），只要形状保持圆形。未设置边数、边数不少于该形状的默认值，或者多边形与圆的偏差最多 {{value:EXACT_ROUND_TOLERANCE}} mm 时，就是这种情况。默认值是：圆柱体、椭圆、管和圆锥为 {{value:ROUND_FROM_SIDES}} 条边，{{ui:shape.roundRoof}} 为 {{value:ROUND_FROM_ROOF_SIDES}}，{{ui:shape.sphere}} 为 {{value:ROUND_FROM_SPHERE_STEPS}} 段，{{ui:shape.halfSphere}} 和 {{ui:shape.paraboloid}} 为 {{value:ROUND_FROM_HALF_SPHERE_STEPS}} 段，{{ui:shape.torus}} 为 {{value:ROUND_FROM_TORUS_SIDES}} 条边和 {{value:ROUND_FROM_TORUS_STEPS}} 段，圆形 {{ui:shape.bentTube}} 的 {{ui:prop.quality}} 为 {{value:ROUND_FROM_BENT_TUBE_QUALITY}}。
-- **螺纹、弹簧或斜齿轮。** 边缘工具和 STEP 导出使用它的精确实体；它的 {{ui:prop.quality}} 只决定绘制得有多精细。
+- **螺纹、弹簧、斜齿轮或人字齿轮。** 边缘工具和 STEP 导出使用它的精确实体；它的 {{ui:prop.quality}} 只决定绘制得有多精细。
 
 **边数再次重要的情况**
 
@@ -119,7 +119,7 @@ layerling 里的每个零件都从一个形状开始。用这些形状，你可�
 
 ## 复制与重复
 
-{{ui:editor.tool.copy}}、{{ui:editor.tool.paste}} 和 {{ui:editor.tool.duplicate}} 位于功能区（{{ui:editor.group.clipboard}}）。[[Ctrl]]+[[D]] 复制选中项。layerling 会记住你上次如何移动或旋转副本，并在下次复制时再次应用。这样几下按键就能做出一排孔或一排台阶。规则排列还可以使用阵列，见[选择与排列](chapter:select-and-arrange)。
+{{ui:editor.tool.copy}}、{{ui:editor.tool.paste}} 和 {{ui:editor.tool.duplicate}} 位于功能区（{{ui:editor.group.clipboard}}）。[[Ctrl]]+[[D]] 复制选中项。layerling 会记住你上次如何移动或旋转副本，并在下次复制时再次应用。这样几下按键就能做出一排孔或一排台阶。规则排列还可以使用阵列，见[选择与排列](chapter:select-and-arrange)。 如果你还调整了副本的大小，之后的每个副本都会再按同样的比例缩放，和 Tinkercad 一样。
 
 > **提示：** 如果某个形状不肯接受你想要的尺寸，通常是新形状的限制所致。在设置的 {{ui:workspace.shapeDefaults}} 下，你可以决定每种形状如何开始，以及最大能有多大。
 

@@ -32,9 +32,10 @@ import { textFillComponents, textFillPieceGeometry, textHasFill } from "@/lib/te
 import { loadedManifoldRuntime } from "@/lib/manifoldHandle";
 import { threadBuildPlan, WHITWORTH_PROFILE_CONSTANTS } from "@/lib/threadGeometry";
 import { springBuildPlan, springRingSectionShare } from "@/lib/springGeometry";
+import { flatSpringProfileLoops } from "@/lib/flatSpringGeometry";
 import { gridfinityHasPieces, gridfinityPlan } from "@/lib/gridfinityGeometry";
 import { knurlCorners, knurlSettings, roundKnurlWave } from "@/lib/knurlGeometry";
-import { BEVEL_GEAR_TOP_SCALE, gearHelixTwist, gearOutlineCorners, internalGearMeasures, internalGearOutline, involuteFlankPoint, involuteGearMeasures, involuteOutlineStretch, involuteToothCentre, normalizeGearCenterHoleSize, normalizeGearProfile, normalizeGearToothSize, normalizeGearType, rackMeasures, rackOutlinePoints, rackToothArcs, roundGearMeasures, roundInternalMeasures, roundToothArcs, type GearOutlineOptions, type InternalGearOptions, type InvoluteGearMeasures, type RackOptions, type RoundWave } from "@/lib/gearGeometry";
+import { BEVEL_GEAR_TOP_SCALE, gearHelixTwist, gearOutlineCorners, gearTypeHasHelix, internalGearMeasures, internalGearOutline, involuteFlankPoint, involuteGearMeasures, involuteOutlineStretch, involuteToothCentre, normalizeGearCenterHoleSize, normalizeGearProfile, normalizeGearToothSize, normalizeGearType, rackMeasures, rackOutlinePoints, rackToothArcs, roundGearMeasures, roundInternalMeasures, roundToothArcs, type GearOutlineOptions, type InternalGearOptions, type InvoluteGearMeasures, type RackOptions, type RoundWave } from "@/lib/gearGeometry";
 
 /*
  * The outlines below follow the display geometry of each shape
@@ -48,7 +49,7 @@ type Point = { x: number; z: number };
 type Arc = { cx: number; cz: number; rx: number; rz: number; start: number; end: number };
 type Corner = { start: Point; end: Point; arc?: Arc };
 
-export const CAD_PROFILE_SHAPE_KINDS = new Set<WorkplaneShape["kind"]>(["polygon", "star", "heart", "crescent", "slot", "honeycomb", "gear", "knurl", "dovetail", "teardrop", "port", "counterbore", "countersink", "doubleCountersink", "ellipse", "cylinder", "tube", "ring", "halfSphere", "paraboloid", "sphere", "cone", "pyramid", "wedge", "roundRoof", "roundedBox", "text", "bentTube", "loft"]);
+export const CAD_PROFILE_SHAPE_KINDS = new Set<WorkplaneShape["kind"]>(["polygon", "star", "heart", "crescent", "slot", "honeycomb", "gear", "knurl", "dovetail", "teardrop", "port", "counterbore", "countersink", "doubleCountersink", "ellipse", "cylinder", "tube", "ring", "halfSphere", "paraboloid", "sphere", "cone", "pyramid", "wedge", "roundRoof", "roundedBox", "text", "bentTube", "loft", "spring"]);
 
 function shortestAngleDelta(from: number, to: number) {
   let delta = to - from;
@@ -1035,6 +1036,9 @@ export function cadProfileForShapeKind(shape: WorkplaneShape, designedRound = fa
       return { loops: slotProfileLoops(width, depth, shape.slotEndRatio) };
     case "honeycomb":
       return { loops: honeycombProfileLoops(width, depth, shape) };
+    case "spring":
+      // The flat spring (#1076) is an outline pushed up; the coil is built by springSolid.ts.
+      return shape.springForm === "flat" ? { loops: flatSpringProfileLoops({ ...shape, width, depth }) } : null;
     case "dovetail":
       return { loops: [polygonLoop(dovetailOutlineForShape(shape).map((point) => ({ x: point.x, z: point.y })))] };
     case "teardrop": {
@@ -1638,7 +1642,7 @@ export function cadModifierThreadForShape(shape: WorkplaneShape): CadModifierThr
  * `springSolid.ts` builds the body from them.
  */
 export function cadModifierSpringForShape(shape: WorkplaneShape): CadModifierSpringPart | null {
-  if (shape.kind !== "spring") return null;
+  if (shape.kind !== "spring" || shape.springForm === "flat") return null;
   if (shape.importedMesh || shape.groupedShapes?.length || shape.cadBrep || shape.imagePlate || shapeHasShapeDeform(shape)) return null;
   const width = shapeWidth(shape);
   const depth = shapeDepth(shape);
@@ -1756,9 +1760,10 @@ function turningReach(radius: number, angle: number, twist: number) {
  * turns the tooth ring by the helix angle from foot to top in `helixQuality`
  * steps and stretches all of it to width x depth; the body turns it evenly,
  * and stretches it by what the turning ring spans - the limit the steps
- * approach, so it is the same body at any quality. On an oval footprint the
- * mesh moves each corner along its own ellipse, which is no turn of the ring:
- * that gear stays a mesh.
+ * approach, so it is the same body at any quality. A herringbone gear turns
+ * its ring half as far, up to the middle and back, and is stretched by what
+ * that spans. On an oval footprint the mesh moves each corner along its own
+ * ellipse, which is no turn of the ring: that gear stays a mesh.
  */
 /**
  * Every corner of a helical ring becomes a twisted face of its own, so an involute ring -
@@ -1768,7 +1773,7 @@ function turningReach(radius: number, angle: number, twist: number) {
 const HELICAL_GEAR_CORNER_LIMIT = 480;
 
 export function cadModifierHelicalGearForShape(shape: WorkplaneShape): CadModifierHelicalGearPart | null {
-  if (shape.kind !== "gear" || normalizeGearType(shape.gearType) !== "helical") return null;
+  if (shape.kind !== "gear" || !gearTypeHasHelix(shape.gearType)) return null;
   if (shape.importedMesh || shape.groupedShapes?.length || shape.cadBrep || shape.imagePlate || shapeHasShapeDeform(shape)) return null;
   const width = shapeWidth(shape);
   const depth = shapeDepth(shape);
@@ -1779,13 +1784,15 @@ export function cadModifierHelicalGearForShape(shape: WorkplaneShape): CadModifi
   // Involute teeth keep their tip circle on width x depth instead of what the turn spans (#201).
   const involute = involuteOutlineStretch(width, depth, shape);
   if (involute && corners.length > HELICAL_GEAR_CORNER_LIMIT) return null;
+  const herringbone = normalizeGearType(shape.gearType) === "herringbone";
+  const turn = herringbone ? twist / 2 : twist;
   let minX = Infinity;
   let maxX = -Infinity;
   let minZ = Infinity;
   let maxZ = -Infinity;
   for (const { angle, radius } of corners) {
-    const x = turningReach(radius, angle, twist);
-    const z = turningReach(radius, angle - Math.PI / 2, twist);
+    const x = turningReach(radius, angle, turn);
+    const z = turningReach(radius, angle - Math.PI / 2, turn);
     minX = Math.min(minX, x.min);
     maxX = Math.max(maxX, x.max);
     minZ = Math.min(minZ, z.min);
@@ -1800,7 +1807,7 @@ export function cadModifierHelicalGearForShape(shape: WorkplaneShape): CadModifi
     const ring = corners.map(({ angle, radius }) => ({ x: Math.cos(angle) * radius, z: Math.sin(angle) * radius }));
     if (!(boreRadius < outlineClearance(ring) * Math.min(stretch.x, stretch.z) * 0.999)) return null;
   }
-  return { corners, twist, height: shape.height, stretch, boreRadius, transform: profileTransformForShape(shape) };
+  return { corners, twist, ...(herringbone ? { herringbone } : {}), height: shape.height, stretch, boreRadius, transform: profileTransformForShape(shape) };
 }
 
 /** A Hirth joint (#1016) as the exact body its display mesh draws, or null for one that has to stay its mesh. */
