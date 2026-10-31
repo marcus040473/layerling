@@ -183,7 +183,7 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 {{ui:surfaceTexture.bark}} 在原木上包一層樹皮：{{ui:surfaceTexture.barkOak}}、{{ui:surfaceTexture.barkPine}}、{{ui:surfaceTexture.barkSpruce}}、{{ui:surfaceTexture.barkBirch}} 或 {{ui:surfaceTexture.barkBeech}}，各有自己的大小和深度。{{ui:surfaceTexture.wood}} 把實體變成一塊木頭：在 {{ui:inspector.surfaceWoodType}} 下選橡木、白蠟木、山毛櫸、松木或胡桃木，在 {{ui:inspector.surfaceWoodCut}} 下選去皮原木或木板，弦切帶拱形花紋，徑切則是直紋。{{ui:inspector.surfaceRingWidth}} 讓木紋細或粗。選 {{ui:inspector.surfaceEndRings}} 時，原木兩端顯示年輪，並與側面的木紋對得上：年輪像真木頭一樣貫穿整個實體。在 {{ui:inspector.more}} 下加入 {{ui:inspector.surfaceWoodKnots}}，年輪會繞著它們彎曲。
 
-用 {{ui:surfaceTexture.text}} 圖案可以像壓貼標籤一樣把文字貼到實體上：表面在該位置周圍展開，所以字母在花瓶的鼓肚上、在斜壁上或跨過盒子的稜邊時都保持大小。「環繞」（0° 是正面，90° 是右側）和沿軸的「高度」（%）決定位置；軸設在 X 或 Y 時，0° 是頂部，這樣文字就落在平板上。{{ui:inspector.surfaceDirection}} 讓文字刻入或凸起。遇到真正的尖角時，它會像貼紙一樣撕開；狀態列會提示。{{ui:prop.textVertical}} 在這裡同樣讓字母由上往下排列。
+用 {{ui:surfaceTexture.text}} 圖案可以像壓貼標籤一樣把文字貼到實體上：表面在該位置周圍展開，所以字母在花瓶的鼓肚上、在斜壁上或跨過盒子的稜邊時都保持大小。「環繞」（0° 是正面，90° 是右側）和沿軸的「高度」（%）決定位置；軸設在 X 或 Y 時，0° 是頂部，這樣文字就落在平板上。{{ui:inspector.surfaceDirection}} 讓文字刻入或凸起。遇到真正的尖角時，它會像貼紙一樣撕開；狀態訊息會提示。{{ui:prop.textVertical}} 在這裡同樣讓字母由上往下排列。
 
 要讓實體的一部分保持光滑，或只給一部分加紋理，請用輔助實體：把盒子、圓柱或球放到相應位置，選取它，在 {{ui:inspector.surfaceMask}} 下選 {{ui:surfaceTexture.maskExclude}} 或 {{ui:surfaceTexture.maskOnly}}。它會變成透明，在另一個實體產生紋理時起作用，隱藏時也一樣。列印前請隱藏或刪除它。
 
@@ -195,7 +195,7 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 - {{ui:prop.vaseProfile}}：瓶形、鼓肚、帶頸的碗、桶形、圓柱或漏斗。高度和最大直徑是該形狀自己的尺寸：拖曳控制點，或輸入 {{ui:prop.vaseDiameter}} 和 {{ui:prop.height}}。
 - {{ui:prop.vaseSection}}：圓、圓角多邊形或波浪（柔和、尖形、拱形或鰭形）。{{ui:prop.vaseTwist}} 讓截面沿高度旋轉，{{ui:prop.vaseSway}} 讓它來回擺動。
-- {{ui:prop.vaseBody}}：{{ui:vase.bodySolid}} 用於切片軟體的花瓶模式（也叫螺旋化）：切片軟體以螺旋方式只列印一層壁，省去頂部和填充，因此實體畫成實心。{{ui:vase.bodyHollow}} 為一般列印產生真正的壁和底。
+- {{ui:prop.vaseBody}}：{{ui:vase.bodySolid}} 用於切片軟體的花瓶模式（也叫螺旋化）：切片軟體以螺旋方式只列印一層壁，省去頂部和填充，因此實體畫成實心。{{ui:vase.bodyHollow}} 為一般列印產生真正的壁和底。{{ui:prop.vaseBottom}} 設為 0 mm 時，空心花瓶沒有底：兩端開口的管子，適合喇叭口、吹嘴和管道。
 - {{ui:prop.vaseEffect}}：新花瓶是光面的。可選外側的凹槽、條紋、Voronoi 單元或切面（低多邊形），也可只放在高度上的一條帶裡；它們屬於花瓶，隨花瓶一起保持可編輯。
 
 {{ui:prop.vaseSection2}} 讓截面沿高度過渡到第二種截面，例如從底部的圓過渡到頂部的六邊形。

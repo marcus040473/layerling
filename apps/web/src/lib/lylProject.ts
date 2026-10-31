@@ -59,7 +59,7 @@ export const LYL_FILE_TYPES_FORMAT_VERSION = 4;
 /** The newest format this layerling reads. */
 export const LYL_NEWEST_READABLE_FORMAT_VERSION = LYL_FILE_TYPES_FORMAT_VERSION;
 export const LYL_OLDEST_READABLE_FORMAT_VERSION = 1;
-export const LYL_CREATED_WITH_VERSION = "1.128.0";
+export const LYL_CREATED_WITH_VERSION = "1.129.0";
 export const LYL_MEDIA_TYPE = "application/vnd.layerling.project+zip";
 
 export const LYL_LIMITS = {
@@ -1764,6 +1764,24 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
       if (value !== undefined && value !== "round" && value !== "rectangle" && value !== "polygon") {
         throw new Error(`${label}.${key} must be round, rectangle or polygon`);
       }
+    }
+    // Sections between the ends (#1034): a list of plain sections; the geometry sorts and clamps them.
+    if (definition.loftSections !== undefined) {
+      if (!Array.isArray(definition.loftSections)) throw new Error(`${label}.loftSections must be a list`);
+      definition.loftSections.forEach((section: unknown, index: number) => {
+        const at = `${label}.loftSections[${index}]`;
+        if (!section || typeof section !== "object") throw new Error(`${at} must be an object`);
+        const entry = section as Record<string, unknown>;
+        if (entry.outline !== "round" && entry.outline !== "rectangle" && entry.outline !== "polygon") throw new Error(`${at}.outline must be round, rectangle or polygon`);
+        for (const key of ["at", "width", "depth", "corner", "sides", "offsetX", "offsetZ"]) {
+          if (entry[key] === undefined && key !== "at" && key !== "width" && key !== "depth") continue;
+          const value = finiteNumber(entry[key], `${at}.${key}`);
+          if (Math.abs(value) > 1e6) throw new Error(`${at}.${key} is outside the supported range`);
+        }
+      });
+    }
+    if (definition.loftThrough !== undefined && definition.loftThrough !== "smooth" && definition.loftThrough !== "straight") {
+      throw new Error(`${label}.loftThrough must be smooth or straight`);
     }
   }
   if (kind === "dovetail") {

@@ -29,7 +29,7 @@ Den bliver åben eller lukket, som du lod den være, for hvert design, indtil du
 - Søgefeltet finder former på navn og type, så også "cylinder" eller "hul". Det kigger også inden i grupper, uanset hvor dybt: en gruppe der indeholder et match bliver i listen og folder sig åben for at vise de matchende dele og de grupper der fører til dem. En gruppe fundet på sit eget navn viser alle sine dele når du åbner den.
 - Pilen yderst til venstre på titellinjen folder listen ned til dens titellinje og tilbage igen.
 
-Listen sidder docket lige til højre for visningskuben. Træk den i dens titellinje for at placere den hvor som helst på arbejdsplanet; den passerer under visningskuben og kamerabjælken. Slip den tilbage ved siden af visningskuben, eller dobbeltklik titellinjen, og den docker igen. Hvor den var og om den var foldet huskes i denne browser.
+Listen sidder docket lige til højre for visningskuben. Træk den i dens titellinje for at placere den hvor som helst på arbejdsplanet; den passerer under visningskuben og visningsbjælken. Slip den tilbage ved siden af visningskuben, eller dobbeltklik titellinjen, og den docker igen. Hvor den var og om den var foldet huskes i denne browser.
 
 ## Tast en position
 
@@ -57,6 +57,12 @@ En form vendt i en vinkel, for eksempel med 45°, har sin kasse omkring sig at j
 
 Tasten er [[L]]. [[Esc]] annullerer.
 
+### Tilpas størrelser
+
+Hold [[Alt]] nede under justering, og punkterne bliver firkantede: et klik flytter ikke længere formerne, men ændrer deres størrelse. Et punkt på siden strækker hver form hen til den side, mens dens anden side bliver hvor den er, som om du havde trukket dens håndtag dertil. Punktet i midten lader hver form blive hvor den er og giver den bredden, længden eller höjden i den retning. Sådan kan du for eksempel bytte en kasse med en cylinder af samme størrelse, eller erstatte en brudt del af et mesh med en ren form. Flytter du over et punkt med [[Alt]] holdt, ser du på forhånd, hvor store formerne bliver.
+
+Referencen er den form, du klikkede på først; kun de andre ændres. Uden en reference strækker sidepunkterne alle former til den yderste side, og midtpunktet giver dem alle den størstes størrelse. En cylinder bliver rund, så den vokser i den anden retning også. En form vendt i en vinkel forbliver som den er; former vendt 90° virker.
+
 ## Spejling
 
 {{ui:editor.tool.mirror}} ([[M]], eller højreklik på markeringen og vælg den) vender markeringen over et plan: {{ui:mirror.leftRight}}, {{ui:mirror.frontBack}} eller {{ui:mirror.topBottom}}. Klik den tilsvarende akse-pil. Det er handy for symmetriske dele: byg én halvdel, kopier den og spejl kopien.
@@ -69,15 +75,15 @@ Vinklerne bliver ved formen. I dens indstillinger viser {{ui:inspector.rotation}
 
 ![En form vendt omkring to akser: dens vinkler står under den, og Rotationskortet i dens indstillinger tager dem som tal.](shot:rotation-card)
 
-Med **én form** valgt hører rotationspunktet til den form: vælg andre dele og kom tilbage, så er det stadig der. Det flytter, drejer og skalerer med formen, gemmes i projektet og kommer tilbage med Fortryd. Under {{ui:inspector.position}} har rotationspunktet sit eget X, Y og Z, som du kan taste eller skubbe, og {{ui:inspector.pivotRemove}} fjerner det. Du kan også trække rotationspunktets røde markør med musen: den glider hen over formernes overflade og snapper til hjørner, kantmidtpunkter og kanter, så en hængseltap lander præcis på et hjørne. Med flere former valgt er rotationspunktet kun for den markering, og en ny markering fjerner det. Grupperer eller bundter du dem, bevares det: gruppen får drejepunktet som sit eget, med X, Y og Z under {{ui:inspector.position}}. Hold Shift nede mens du trækker, så snapper den i stedet til midten af fladen under markøren - aksen på en rund flade, midten af en flad eller spidsen af en kegle - og ser gennem gennemsigtige former.
+Med **én legeme** valgt hører rotationspunktet til det legeme: vælg andre dele og kom tilbage, så er det stadig der. Det flytter, drejer og skalerer med legemet, gemmes i projektet og kommer tilbage med Fortryd. Under {{ui:inspector.position}} har rotationspunktet sit eget X, Y og Z, som du kan taste eller skubbe, og {{ui:inspector.pivotRemove}} fjerner det. Du kan også trække rotationspunktets røde markør med musen: den glider hen over legernes overflade og snapper til hjørner, kantmidtpunkter og kanter, så en hængseltap lander præcis på et hjørne. Med flere legemer valgt er rotationspunktet kun for den markering, og en ny markering fjerner det. Grupperer eller bundter du dem, bevares det: gruppen får rotationspunktet som sit eget, med X, Y og Z under {{ui:inspector.position}}. Hold Shift nede mens du trækker, så snapper den i stedet til midten af fladen under markøren - aksen på en rund flade, midten af en flad eller spidsen af en kegle - og ser gennem gennemsigtige former.
 
 ## Læg fladt på en flade
 
 Skal en del ligge på sin bedste side til printning? Vælg den, klik på {{ui:editor.tool.layFlat}} og klik så den flade der skal vende ned. Mens du flytter markøren over delen, lyser fladen under den op, så du ser hvilken du er ved at vælge; drej visningen for at tjekke de andre sider. Delen vender så den flade hviler på arbejdsplanet.
 
-To dele skal mødes flade mod flade, eller flugte? Vælg den del der skal flyttes, klik på {{ui:editor.tool.mateFaces}}, klik så dens flade og derefter den anden dels flade. I panelet lægger {{ui:mate.mode.against}} fladerne mod hinanden (ryg mod ryg, rørende), {{ui:mate.mode.flush}} lægger dem i ét plan side om side; {{ui:mate.gap}} efterlader plads mellem dem, for eksempel for frirum. {{ui:mate.apply}} flytter delen: den drejer den korteste vej indtil fladerne er parallelle - slet ikke hvis de allerede er det - og glider så kun mod den anden flade, så den beholder sin plads sideværts. Den anden del bliver hvor den er, og én Fortryd tager det hele tilbage.
+To dele skal mødes flade mod flade, eller flugte? Vælg den del der skal flyttes, klik på {{ui:editor.tool.mateFaces}}, klik så dens flade og derefter den anden dels flade. I vinduet lægger {{ui:mate.mode.against}} fladerne mod hinanden (ryg mod ryg, rørende), {{ui:mate.mode.flush}} lægger dem i ét plan side om side; {{ui:mate.gap}} efterlader plads mellem dem, for eksempel for frirum. {{ui:mate.apply}} flytter delen: den drejer den korteste vej indtil fladerne er parallelle - slet ikke hvis de allerede er det - og glider så kun mod den anden flade, så den beholder sin plads sideværts. Den anden del bliver hvor den er, og én Fortryd tager det hele tilbage.
 
-![Juster flader-panelet: den del der flyttes vælges, en flade på den anden del kommer næst, så flade mod flade eller flugtende, og en valgfri afstand.](shot:mate-faces)
+![Juster flader-vinduet: den del der flyttes vælges, en flade på den anden del kommer næst, så flade mod flade eller flugtende, og en valgfri afstand.](shot:mate-faces)
 
 **Huller på én akse:** {{ui:mate.mode.concentric}} retter i stedet runde flader ind: et hul over et hul, en tap i et hul, en skrue i sit gennemgangshul. Vælg det, før du klikker på fladerne. Klik så på den runde inderside af et hul (eller ydersiden af en tap) på den del, der skal flyttes, og på en rund flade på den anden del; hele den runde flade lyser op, mens du peger på den. {{ui:mate.apply}} drejer delen den korteste vej, til de to akser er parallelle, og skubber den på tværs over på den anden akse. Langs aksen bliver den, hvor den var, så en tap beholder sin højde; skub den ind bagefter. Det virker også på importerede mesh, så længe hullet består af facetter rundt om én akse.
 
@@ -100,6 +106,8 @@ Til hulgitre, boltecirkler og ringe af tænder er der {{ui:editor.tool.array}}. 
 
 Tip: sæt først rotationspunktet på en flade med {{ui:editor.tool.rotationPivot}}, så ligger cirklens centrum præcis der.
 
+Bagefter beholder stykkerne cirklens centrum som deres rotationspunkt, også når de er grupperet. Det er der, en anden del hører hjemme, en bold midt i tre ben for eksempel: midten af den kasse, stykkerne fylder, er ikke centrum, fordi tre ben fylder den bredere den ene vej end den anden. Højreklik på stykkerne og vælg {{ui:contextMenu.markPivot}}, så snapser midten af den del, du trækker, til det.
+
 ![Mønsteret i "Cirkel"-tilstand med stigning og radiusændring pr. kopi: kopierne klatrer op og bliver bredere som en spiral.](shot:pattern-spiral)
 
 Kopierne vises først som en forhåndsvisning. Kun {{ui:array.apply}} opretter dem. Hvis kopierne er huller, gruppér dem bagefter med den form de skal skære ind i.
@@ -108,7 +116,7 @@ Med {{ui:array.groupCopies}} sat i kryds grupperer {{ui:array.apply}} originalen
 
 ## Hulmønster på en flade
 
-Til udluftninger, højttalergitre, kurve og kabinetter spreder {{ui:holePattern.title}} huller jævnt over en flad flade. Du behøver ikke længere lave ét hul, gentage det og sætte det på væggen. Vælg præcis én form og klik på {{ui:holePattern.title}} i {{ui:editor.group.modify}}-gruppen af værktøjsbjælken, ved siden af mønsteret. Du kan også højreklikke på formen, eller finde den med [[Ctrl]]+[[K]].
+Til udluftninger, højttalergitre, kurve og kabinetter spreder {{ui:holePattern.title}} huller jævnt over en flad flade. Du behøver ikke længere lave ét hul, gentage det og sætte det på væggen. Vælg præcis én form og klik på {{ui:holePattern.title}} i {{ui:editor.group.modify}}-gruppen i båndet, ved siden af mønsteret. Du kan også højreklikke på formen, eller finde den med [[Ctrl]]+[[K]].
 
 1. Klik en flad flade af formen. Hele den flade flade omkring dit klik tæller, ikke kun trekanten under markøren. En krum flade virker ikke: du får et tip og klikker en flad i stedet. På en gruppe eller et bundt løber fladen videre på tværs af de dele der mødes, som på én form; på et bundt kun når der ikke er et hul blandt delene. Delene lægges sammen kort efter at værktøjet er åbnet; indtil da lyser kun én dels flade op under markøren, og et klik venter på at delene er lagt sammen. På en gruppe eller et bundt med tekst i lyser kun én dels flade op, og klikket lægger delene sammen.
 2. I vinduet sæt du hvordan hullerne ser ud og ligger:
@@ -129,7 +137,7 @@ En AI kan gøre det samme gennem MCP-broen med `layerling_perforate_face` (se ka
 
 ## Skub en flade ud eller ind
 
-Til en tykkere væg, et hævet stykke på en flade eller en lomme skåret ind i den arbejder {{ui:faceTool.title}} på én flad flade. Det virker også på en importeret STL, hvor der ingen skitse er at ændre. Vælg præcis én form og klik på {{ui:faceTool.title}} i {{ui:editor.group.modify}}-gruppen af værktøjsbjælken, ved siden af hulmønsteret. Du kan også højreklikke på formen, eller finde den med [[Ctrl]]+[[K]].
+Til en tykkere væg, et hævet stykke på en flade eller en lomme skåret ind i den arbejder {{ui:faceTool.title}} på én flad flade. Det virker også på en importeret STL, hvor der ingen skitse er at ændre. Vælg præcis én form og klik på {{ui:faceTool.title}} i {{ui:editor.group.modify}}-gruppen i båndet, ved siden af hulmønsteret. Du kan også højreklikke på formen, eller finde den med [[Ctrl]]+[[K]].
 
 1. Klik en flad flade af formen. Som med hulmønsteret tæller hele fladen omkring dit klik, ikke kun trekanten under markøren; en krum flade virker ikke. På en gruppe eller et bundt løber fladen videre på tværs af de dele der mødes, som med hulmønsteret.
 2. I vinduet:
