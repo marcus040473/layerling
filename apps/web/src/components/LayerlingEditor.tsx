@@ -14463,6 +14463,13 @@ export function LayerlingEditor({
         canModifySelection={hasSelection && !selectionLocked}
         hasClipboard={clipboard.length > 0 || systemClipboardSupported}
         hasSelection={hasSelection}
+        selectionFacts={{
+          count: selectedShapes.length,
+          locked: selectionLocked,
+          hasGroup: selectedShapes.some((shape) => Boolean(shape.groupedShapes?.length) || wasGroupBeforeEdgeTreatments(shape)),
+          isMesh: selectedShapes.length === 1 && offersMeshSimplify(selectedShape),
+          loftable: canSketchLoft(selectedShapes),
+        }}
         hiddenShapeCount={shapes.filter((shape) => shape.hidden).length}
         selectionHidden={hasSelection && selectedShapes.every((shape) => shape.hidden)}
         alignMode={alignMode}

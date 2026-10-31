@@ -1,5 +1,6 @@
 "use client";
 
+import { previewLabelSpot } from "@/lib/sketchPreviewLabel";
 import { AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignStartHorizontal, AlignStartVertical, Check, ChevronUp, CornerDownRight, Crop, Crosshair, Eye, EyeOff, FlipHorizontal2, FlipVertical2, Home, Layers, Link, Link2Off, LockKeyhole, LockKeyholeOpen, Magnet, Minus, Plus, Ruler, RulerDimensionLine, Scissors, Slash, Spline, Split, Trash2, WandSparkles, Waves, X } from "lucide-react";
 import { displayedHandle } from "@/lib/sketchBezierHandles";
 import { curveStretches } from "@/lib/sketchCurveThroughPoints";
@@ -2172,8 +2173,10 @@ export function SketchWorkspace({
             aria-label={t("camera.focusSelection")}
             aria-keyshortcuts="F Shift+F"
             title={t("camera.shortcut", { label: t("camera.focusSelection"), keys: "F" })}
-            disabled={!focusBounds}
-            onClick={() => focusSelection()}
+            // As F does: with nothing selected the whole sketch, never a greyed-out button (#1082).
+            onClick={() => {
+              if (!focusSelection()) resetView();
+            }}
           >
             <Crosshair size={24} strokeWidth={2.25} />
           </button>
@@ -2809,14 +2812,15 @@ export function SketchWorkspace({
             return <path className="sketch-preview-line" d={d} fill="none" pointerEvents="none" />;
           })() : null}
           {activePoint && previewEnd && !typedLine && pointerAction?.kind !== "bezier" && ["line", "bezier", "smooth"].includes(tool) ? (
-            <g className="sketch-segment-dimensions preview" pointerEvents="none" transform={`translate(${(activePoint.x + previewEnd.x) / 2} ${(activePoint.z + previewEnd.z) / 2 - labelOffset})`}>
+            <g className="sketch-segment-dimensions preview" pointerEvents="none">
               {(() => {
                 const pill = dimensionPillSize(previewLabel, screenUnit, 18);
+                const spot = previewLabelSpot(activePoint, previewEnd, pill, 8 * screenUnit);
                 return (
-                  <>
+                  <g transform={`translate(${spot.x} ${spot.z})`}>
                     <rect x={-pill.width / 2} y={-pill.height / 2} width={pill.width} height={pill.height} rx={pill.radius} />
                     <text y={5 * screenUnit} fontSize={13 * screenUnit}>{previewLabel}</text>
-                  </>
+                  </g>
                 );
               })()}
             </g>
