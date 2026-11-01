@@ -2,6 +2,7 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
@@ -72,7 +73,7 @@ export function ShellPanel({
   const openSides = shellOpenSides(openings);
   const title = t("shell.title");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -85,87 +86,89 @@ export function ShellPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span>{t("shell.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={targetName} detail={t("shell.help")} />
+        <EdgeFeatureHistory
+          appliedFeatureCount={appliedFeatureCount}
+          reversibleFeatureCount={reversibleFeatureCount}
+          historyOptions={historyOptions}
+          onRemoveFeature={onRemoveFeature}
+          onEditFeature={onEditFeature}
+        />
+      </ToolSection>
 
-      <EdgeFeatureHistory
-        appliedFeatureCount={appliedFeatureCount}
-        reversibleFeatureCount={reversibleFeatureCount}
-        historyOptions={historyOptions}
-        onRemoveFeature={onRemoveFeature}
-        onEditFeature={onEditFeature}
-      />
+      <ToolSection title={t("toolSidebar.settings")}>
+        <EdgeModifierSlider
+          label={t("shell.wall")}
+          value={thickness}
+          min={MIN_WALL}
+          max={Math.max(MIN_WALL, maxThickness)}
+          step={WALL_STEP}
+          workspace={workspace}
+          length
+          disabled={busy}
+          onChange={onThicknessChange}
+        />
 
-      <EdgeModifierSlider
-        label={t("shell.wall")}
-        value={thickness}
-        min={MIN_WALL}
-        max={Math.max(MIN_WALL, maxThickness)}
-        step={WALL_STEP}
-        workspace={workspace}
-        length
-        disabled={busy}
-        onChange={onThicknessChange}
-      />
-
-      <div className="edge-modifier-field shell-openings" role="group" aria-label={t("shell.openings")}>
-        <span>{t("shell.openings")}</span>
-        {/* Any set of sides; none at all seals the cavity. */}
-        <div className="shell-opening-options shell-side-options">
-          {SHELL_SIDES.map((side) => {
-            const open = openSides.includes(side);
-            return (
-              <button
-                key={side}
-                type="button"
-                aria-pressed={open}
-                className={open ? "active" : ""}
-                disabled={busy}
-                onClick={() => onOpeningsChange(shellOpeningsFor(open ? openSides.filter((other) => other !== side) : [...openSides, side]))}
-              >
-                {t(`shell.side.${side}`)}
-              </button>
-            );
-          })}
-        </div>
-        {/* No side open, in one click: the cavity sealed inside (#658). */}
-        <div className="shell-opening-options shell-closed-option">
-          <button
-            type="button"
-            aria-pressed={openSides.length === 0}
-            className={openSides.length === 0 ? "active" : ""}
-            disabled={busy}
-            onClick={() => onOpeningsChange(shellOpeningsFor([]))}
-          >
-            {t("shell.side.closed")}
-          </button>
-        </div>
-        <span className="shell-openings-summary">{openSides.length === 0 ? t("shell.sidesNone") : t("shell.sidesHint")}</span>
-      </div>
-
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("shell.edges")}>
-        <span>{t("shell.edges")}</span>
-        <div className="shell-opening-options">
-          {SHELL_EDGES.map((option) => (
+        <div className="edge-modifier-field shell-openings" role="group" aria-label={t("shell.openings")}>
+          <span>{t("shell.openings")}</span>
+          {/* Any set of sides; none at all seals the cavity. */}
+          <div className="shell-opening-options shell-side-options">
+            {SHELL_SIDES.map((side) => {
+              const open = openSides.includes(side);
+              return (
+                <button
+                  key={side}
+                  type="button"
+                  aria-pressed={open}
+                  className={open ? "active" : ""}
+                  disabled={busy}
+                  onClick={() => onOpeningsChange(shellOpeningsFor(open ? openSides.filter((other) => other !== side) : [...openSides, side]))}
+                >
+                  {t(`shell.side.${side}`)}
+                </button>
+              );
+            })}
+          </div>
+          {/* No side open, in one click: the cavity sealed inside (#658). */}
+          <div className="shell-opening-options shell-closed-option">
             <button
-              key={option}
               type="button"
-              role="radio"
-              aria-checked={edges === option}
-              className={edges === option ? "active" : ""}
+              aria-pressed={openSides.length === 0}
+              className={openSides.length === 0 ? "active" : ""}
               disabled={busy}
-              onClick={() => onEdgesChange(option)}
+              onClick={() => onOpeningsChange(shellOpeningsFor([]))}
             >
-              {t(`shell.edges.${option}`)}
+              {t("shell.side.closed")}
             </button>
-          ))}
+          </div>
+          <span className="shell-openings-summary">{openSides.length === 0 ? t("shell.sidesNone") : t("shell.sidesHint")}</span>
         </div>
-        <span className="shell-openings-summary">{t("shell.edgesHint")}</span>
-      </div>
+      </ToolSection>
 
-      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : null}
+      <ToolAdvanced tool="shell" summary={t("shell.edges") + ": " + t(`shell.edges.${edges}`)}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("shell.edges")}>
+          <span>{t("shell.edges")}</span>
+          <div className="shell-opening-options">
+            {SHELL_EDGES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={edges === option}
+                className={edges === option ? "active" : ""}
+                disabled={busy}
+                onClick={() => onEdgesChange(option)}
+              >
+                {t(`shell.edges.${option}`)}
+              </button>
+            ))}
+          </div>
+          <span className="shell-openings-summary">{t("shell.edgesHint")}</span>
+        </div>
+      </ToolAdvanced>
+
+      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("shell.working") : t("toolSidebar.ready")} />}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>

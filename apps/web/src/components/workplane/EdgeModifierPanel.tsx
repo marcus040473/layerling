@@ -2,6 +2,7 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Check, LoaderCircle, Minus, Pencil, Plus, RotateCcw, X } from "lucide-react";
 import { displayStepFromMillimeters, displayToMillimeters, formatMeasurementNumber, lengthDisplayUnit, millimetersToDisplay, parseMeasurementInput } from "@/lib/measurementUnits";
@@ -410,12 +411,11 @@ export function EdgeModifierPanel({
     if (panel) panel.scrollTop = panel.scrollHeight;
   }, [error]);
   return (
-    <MovableToolPanel className="edge-modifier-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel" ariaLabel={title} dock="alone">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
           <strong>{title}</strong>
-          <span>{edgeModifierSelectionStatus(prepared, selectedCount, availableCount)}</span>
         </div>
         <div className="panel-header-actions">
           <GuideHelpLink section="edgeTreatment" />
@@ -423,145 +423,142 @@ export function EdgeModifierPanel({
         </div>
       </div>
 
-      <div className={`edge-modifier-target ${groupedCount > 0 ? "grouped" : ""}`}>
-        <strong>{targetName}</strong>
-        <span>
-          {groupedCount > 0 ? t("edge.groupedObjects", { count: groupedCount }) : t("edge.singleObject")}
-          {appliedFeatureCount === 0
-            ? ""
-            : appliedFeatureCount === 1
-              ? t("edge.existingFeatureOne")
-              : t("edge.existingFeatureMany", { count: appliedFeatureCount })}
-        </span>
-      </div>
-
-      <div className="edge-modifier-selection-help">
-        {!prepared ? t("edge.loading") : busy ? t("edge.previewBusy") : t("edge.selectionHelp")}
-      </div>
-
-      <div className="edge-modifier-quick-actions" title={t("edge.quickAddHint")}>
-        <button type="button" className={activeQuickSelection.includes("all") ? "active" : ""} aria-pressed={activeQuickSelection.includes("all")} disabled={!prepared} onClick={onSelectAll}>{t("edge.allSharpEdges")}</button>
-        {onSelectTop ? <button type="button" className={activeQuickSelection.includes("top") ? "active" : ""} aria-pressed={activeQuickSelection.includes("top")} disabled={!prepared} title={t("edge.topEdgesHint")} onClick={(event) => onSelectTop(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.topEdges")}</button> : null}
-        {onSelectBottom ? <button type="button" className={activeQuickSelection.includes("bottom") ? "active" : ""} aria-pressed={activeQuickSelection.includes("bottom")} disabled={!prepared} title={t("edge.bottomEdgesHint")} onClick={(event) => onSelectBottom(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.bottomEdges")}</button> : null}
-        {onSelectVertical ? <button type="button" className={activeQuickSelection.includes("vertical") ? "active" : ""} aria-pressed={activeQuickSelection.includes("vertical")} disabled={!prepared} title={t("edge.verticalEdgesHint")} onClick={(event) => onSelectVertical(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.verticalEdges")}</button> : null}
-        {onSelectHorizontal ? <button type="button" className={activeQuickSelection.includes("horizontal") ? "active" : ""} aria-pressed={activeQuickSelection.includes("horizontal")} disabled={!prepared} title={t("edge.horizontalEdgesHint")} onClick={(event) => onSelectHorizontal(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.horizontalEdges")}</button> : null}
-        <button type="button" disabled={!prepared} onClick={onClear}>{t("edge.clear")}</button>
-      </div>
-
-      <EdgeFeatureHistory
-        appliedFeatureCount={appliedFeatureCount}
-        reversibleFeatureCount={reversibleFeatureCount}
-        historyOptions={historyOptions}
-        onRemoveFeature={onRemoveFeature}
-        onEditFeature={onEditFeature}
-      />
-
-      {(kind === "chamfer" || kind === "chamfillet") && onKindChange ? (
-        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("edge.chamferTitle")}>
-          <div className="shell-opening-options">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={kind === "chamfer"}
-              className={kind === "chamfer" ? "active" : ""}
-              disabled={!prepared}
-              onClick={() => onKindChange("chamfer")}
-            >
-              {t("editor.tool.chamfer")}
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={kind === "chamfillet"}
-              className={kind === "chamfillet" ? "active" : ""}
-              disabled={!prepared}
-              title={t("edge.chamfilletHint")}
-              onClick={() => onKindChange("chamfillet")}
-            >
-              {t("edge.chamfillet")}
-            </button>
-          </div>
-          {kind === "chamfillet" ? <span className="shell-openings-summary">{t("edge.chamfilletHint")}</span> : null}
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection
+          ready={selectedCount > 0}
+          text={edgeModifierSelectionStatus(prepared, selectedCount, availableCount)}
+          detail={(<>
+            {targetName}
+            {" · "}
+            {groupedCount > 0 ? t("edge.groupedObjects", { count: groupedCount }) : t("edge.singleObject")}
+            {appliedFeatureCount === 0 ? "" : appliedFeatureCount === 1 ? t("edge.existingFeatureOne") : t("edge.existingFeatureMany", { count: appliedFeatureCount })}
+          </>)}
+        />
+        <p className="edge-modifier-selection-help">{t("edge.selectionHelp")}</p>
+        <div className="edge-modifier-quick-actions" title={t("edge.quickAddHint")}>
+          <button type="button" className={activeQuickSelection.includes("all") ? "active" : ""} aria-pressed={activeQuickSelection.includes("all")} disabled={!prepared} onClick={onSelectAll}>{t("edge.allSharpEdges")}</button>
+          {onSelectTop ? <button type="button" className={activeQuickSelection.includes("top") ? "active" : ""} aria-pressed={activeQuickSelection.includes("top")} disabled={!prepared} title={t("edge.topEdgesHint")} onClick={(event) => onSelectTop(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.topEdges")}</button> : null}
+          {onSelectBottom ? <button type="button" className={activeQuickSelection.includes("bottom") ? "active" : ""} aria-pressed={activeQuickSelection.includes("bottom")} disabled={!prepared} title={t("edge.bottomEdgesHint")} onClick={(event) => onSelectBottom(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.bottomEdges")}</button> : null}
+          {onSelectVertical ? <button type="button" className={activeQuickSelection.includes("vertical") ? "active" : ""} aria-pressed={activeQuickSelection.includes("vertical")} disabled={!prepared} title={t("edge.verticalEdgesHint")} onClick={(event) => onSelectVertical(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.verticalEdges")}</button> : null}
+          {onSelectHorizontal ? <button type="button" className={activeQuickSelection.includes("horizontal") ? "active" : ""} aria-pressed={activeQuickSelection.includes("horizontal")} disabled={!prepared} title={t("edge.horizontalEdgesHint")} onClick={(event) => onSelectHorizontal(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.horizontalEdges")}</button> : null}
+          <button type="button" disabled={!prepared} onClick={onClear}>{t("edge.clear")}</button>
         </div>
-      ) : null}
+        <EdgeFeatureHistory
+          appliedFeatureCount={appliedFeatureCount}
+          reversibleFeatureCount={reversibleFeatureCount}
+          historyOptions={historyOptions}
+          onRemoveFeature={onRemoveFeature}
+          onEditFeature={onEditFeature}
+        />
+      </ToolSection>
 
-      {kind === "fillet" && onEndAmountChange ? (
-        <label className="edge-modifier-check" title={t("edge.variableRadiusHint")}>
-          <input type="checkbox" checked={variable} disabled={!prepared} onChange={(event) => onEndAmountChange(event.currentTarget.checked ? Number.NaN : null)} />
-          <span>{t("edge.variableRadius")}</span>
-        </label>
-      ) : null}
-
-      <EdgeModifierSlider
-        label={kind === "fillet" ? t(variable ? "edge.radiusStart" : "edge.radius") : t("edge.distance")}
-        value={amount}
-        min={amountMin}
-        max={amountMax}
-        step={EDGE_MODIFIER_AMOUNT_STEP}
-        coarse={{ step: lengthDisplayUnit(workspace).label === "in" ? 25.4 / 64 : EDGE_MODIFIER_SLIDER_STEP, max: EDGE_MODIFIER_SLIDER_MAX }}
-        workspace={workspace}
-        length
-        disabled={!prepared}
-        onChange={onAmountChange}
-      />
-
-      {variable && onEndAmountChange ? (
-        <>
-          <EdgeModifierSlider
-            label={t("edge.radiusEnd")}
-            value={endAmount ?? amount}
-            min={amountMin}
-            max={amountMax}
-            step={EDGE_MODIFIER_AMOUNT_STEP}
-            coarse={{ step: lengthDisplayUnit(workspace).label === "in" ? 25.4 / 64 : EDGE_MODIFIER_SLIDER_STEP, max: EDGE_MODIFIER_SLIDER_MAX }}
-            workspace={workspace}
-            length
-            disabled={!prepared}
-            onChange={onEndAmountChange}
-          />
-          <div className="edge-modifier-quick-actions">
-            <button type="button" disabled={!prepared || !onSwapEnds} title={t("edge.swapEndsHint")} onClick={onSwapEnds}>{t("edge.swapEnds")}</button>
+      <ToolSection title={t("toolSidebar.settings")}>
+        {(kind === "chamfer" || kind === "chamfillet") && onKindChange ? (
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("edge.chamferTitle")}>
+            <div className="shell-opening-options">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={kind === "chamfer"}
+                className={kind === "chamfer" ? "active" : ""}
+                disabled={!prepared}
+                onClick={() => onKindChange("chamfer")}
+              >
+                {t("editor.tool.chamfer")}
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={kind === "chamfillet"}
+                className={kind === "chamfillet" ? "active" : ""}
+                disabled={!prepared}
+                title={t("edge.chamfilletHint")}
+                onClick={() => onKindChange("chamfillet")}
+              >
+                {t("edge.chamfillet")}
+              </button>
+            </div>
+            {kind === "chamfillet" ? <span className="shell-openings-summary">{t("edge.chamfilletHint")}</span> : null}
           </div>
-          {selectedCount > 1 ? <p className="edge-modifier-note" role="note">{t("edge.variableOneEdge")}</p> : null}
-        </>
-      ) : null}
+        ) : null}
+        {kind === "fillet" && onEndAmountChange ? (
+          <label className="edge-modifier-check" title={t("edge.variableRadiusHint")}>
+            <input type="checkbox" checked={variable} disabled={!prepared} onChange={(event) => onEndAmountChange(event.currentTarget.checked ? Number.NaN : null)} />
+            <span>{t("edge.variableRadius")}</span>
+          </label>
+        ) : null}
+        <EdgeModifierSlider
+          label={kind === "fillet" ? t(variable ? "edge.radiusStart" : "edge.radius") : t("edge.distance")}
+          value={amount}
+          min={amountMin}
+          max={amountMax}
+          step={EDGE_MODIFIER_AMOUNT_STEP}
+          coarse={{ step: lengthDisplayUnit(workspace).label === "in" ? 25.4 / 64 : EDGE_MODIFIER_SLIDER_STEP, max: EDGE_MODIFIER_SLIDER_MAX }}
+          workspace={workspace}
+          length
+          disabled={!prepared}
+          onChange={onAmountChange}
+        />
+        {variable && onEndAmountChange ? (
+          <>
+            <EdgeModifierSlider
+              label={t("edge.radiusEnd")}
+              value={endAmount ?? amount}
+              min={amountMin}
+              max={amountMax}
+              step={EDGE_MODIFIER_AMOUNT_STEP}
+              coarse={{ step: lengthDisplayUnit(workspace).label === "in" ? 25.4 / 64 : EDGE_MODIFIER_SLIDER_STEP, max: EDGE_MODIFIER_SLIDER_MAX }}
+              workspace={workspace}
+              length
+              disabled={!prepared}
+              onChange={onEndAmountChange}
+            />
+            <div className="edge-modifier-quick-actions">
+              <button type="button" disabled={!prepared || !onSwapEnds} title={t("edge.swapEndsHint")} onClick={onSwapEnds}>{t("edge.swapEnds")}</button>
+            </div>
+            {selectedCount > 1 ? <p className="edge-modifier-note" role="note">{t("edge.variableOneEdge")}</p> : null}
+          </>
+        ) : null}
+        {kind === "chamfer" || kind === "chamfillet" ? <EdgeModifierSlider label={t("edge.angle")} value={chamferAngle} min={kind === "chamfillet" ? 15 : 5} max={kind === "chamfillet" ? 75 : 85} step={1} unit="°" workspace={workspace} disabled={!prepared} onChange={onChamferAngleChange} /> : null}
+        {impliedEdgeCount > 0 ? (
+          // The kernel always carries a chamfer or fillet on along edges that continue smoothly;
+          // the switch above only decides what a click picks, so say what will happen (#161).
+          <p className="edge-modifier-note" role="note">
+            {t(impliedEdgeCount === 1 ? "edge.tangentImpliedOne" : "edge.tangentImpliedMany", { count: impliedEdgeCount })}
+          </p>
+        ) : null}
+      </ToolSection>
 
-      {kind === "chamfer" || kind === "chamfillet" ? <EdgeModifierSlider label={t("edge.angle")} value={chamferAngle} min={kind === "chamfillet" ? 15 : 5} max={kind === "chamfillet" ? 75 : 85} step={1} unit="°" workspace={workspace} disabled={!prepared} onChange={onChamferAngleChange} /> : null}
+      <ToolAdvanced tool="edge" summary={t("edge.advancedSummary", { angle: sharpAngle, quality: t(quality === "draft" ? "edge.draft" : quality === "fine" ? "edge.fine" : "edge.standard") })}>
+        <EdgeModifierSlider label={t("edge.sharpThreshold")} value={sharpAngle} min={1} max={CAD_MODIFIER_MAX_SHARP_ANGLE} step={1} unit="°" workspace={workspace} disabled={!prepared} onChange={onSharpAngleChange} />
+        <label className="edge-modifier-check" title={t("edge.onlyVisibleEdgesHint")}>
+          <input type="checkbox" checked={onlyVisibleEdges} disabled={!prepared} onChange={(event) => onOnlyVisibleEdgesChange(event.currentTarget.checked)} />
+          <span>{t("edge.onlyVisibleEdges")}</span>
+        </label>
+        <label className="edge-modifier-check" title={t("edge.tangentChainsHint")}>
+          <input type="checkbox" checked={tangentChain} disabled={!prepared} onChange={(event) => onTangentChainChange(event.currentTarget.checked)} />
+          <span>{t("edge.tangentChains")}</span>
+        </label>
+        <label className="edge-modifier-check">
+          <input type="checkbox" checked={preserveEdgeSize} disabled={!prepared} onChange={(event) => onPreserveEdgeSizeChange(event.currentTarget.checked)} />
+          <span>{t("edge.keepSize")}</span>
+        </label>
+        <label className="edge-modifier-field">
+          <span>{t("edge.previewQuality")}</span>
+          <select value={quality} disabled={!prepared} onChange={(event) => onQualityChange(event.currentTarget.value as CadModifierQuality)}>
+            <option value="draft">{t("edge.draft")}</option>
+            <option value="standard">{t("edge.standard")}</option>
+            <option value="fine">{t("edge.fine")}</option>
+          </select>
+        </label>
+      </ToolAdvanced>
 
-      <EdgeModifierSlider label={t("edge.sharpThreshold")} value={sharpAngle} min={1} max={CAD_MODIFIER_MAX_SHARP_ANGLE} step={1} unit="°" workspace={workspace} disabled={!prepared} onChange={onSharpAngleChange} />
-
-      <label className="edge-modifier-check" title={t("edge.onlyVisibleEdgesHint")}>
-        <input type="checkbox" checked={onlyVisibleEdges} disabled={!prepared} onChange={(event) => onOnlyVisibleEdgesChange(event.currentTarget.checked)} />
-        <span>{t("edge.onlyVisibleEdges")}</span>
-      </label>
-
-      <label className="edge-modifier-check" title={t("edge.tangentChainsHint")}>
-        <input type="checkbox" checked={tangentChain} disabled={!prepared} onChange={(event) => onTangentChainChange(event.currentTarget.checked)} />
-        <span>{t("edge.tangentChains")}</span>
-      </label>
-      {impliedEdgeCount > 0 ? (
-        // The kernel always carries a chamfer or fillet on along edges that continue smoothly;
-        // the switch above only decides what a click picks, so say what will happen (#161).
-        <p className="edge-modifier-note" role="note">
-          {t(impliedEdgeCount === 1 ? "edge.tangentImpliedOne" : "edge.tangentImpliedMany", { count: impliedEdgeCount })}
-        </p>
-      ) : null}
-
-      <label className="edge-modifier-check">
-        <input type="checkbox" checked={preserveEdgeSize} disabled={!prepared} onChange={(event) => onPreserveEdgeSizeChange(event.currentTarget.checked)} />
-        <span>{t("edge.keepSize")}</span>
-      </label>
-
-      <label className="edge-modifier-field">
-        <span>{t("edge.previewQuality")}</span>
-        <select value={quality} disabled={!prepared} onChange={(event) => onQualityChange(event.currentTarget.value as CadModifierQuality)}>
-          <option value="draft">{t("edge.draft")}</option>
-          <option value="standard">{t("edge.standard")}</option>
-          <option value="fine">{t("edge.fine")}</option>
-        </select>
-      </label>
-
-      {error ? <div ref={errorRef} className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : null}
+      {error ? <div ref={errorRef} className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : (
+        <ToolStatus
+          state={!prepared || busy ? "working" : selectedCount === 0 ? "needed" : "ready"}
+          text={!prepared ? t("edge.loading") : busy ? t("edge.previewBusy") : selectedCount === 0 ? t("toolSidebar.pickEdges") : t("toolSidebar.ready")}
+        />
+      )}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t(selectedCount === 0 && !busy ? "edge.done" : "common.cancel")}</button>
         <button type="button" className="primary" disabled={!prepared || busy || selectedCount === 0 || Boolean(error)} onClick={onApply}>

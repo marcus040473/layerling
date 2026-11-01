@@ -6,6 +6,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
   LID_FITS,
   LID_MAGNET_SIZES,
@@ -68,8 +69,27 @@ export function LidPanel({
   const needed = lidThicknessForMagnets(settings);
   const tooThin = settings.magnets && settings.thickness < needed - 1e-9;
   const millimetres = (value: number) => value.toLocaleString(numberLocale());
+  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap", min: number, max: number, step: number) => (
+    <EdgeModifierSlider
+      label={label}
+      value={settings[key]}
+      min={min}
+      max={max}
+      step={step}
+      workspace={workspace}
+      length
+      disabled={busy}
+      onChange={(value) => (key === "magnetDiameter" || key === "magnetHeight" ? withMagnet({ [key]: value }) : onChange({ [key]: value }))}
+    />
+  );
+  const lipped = settings.type !== "flat";
+  // What the folded part holds, in a line: the gap and the lip or rim, and the magnet.
+  const summary = [
+    lipped ? t("lid.advancedSummary", { gap: millimetres(settings.gap), depth: millimetres(settings.depth), wall: millimetres(settings.wall) }) : "",
+    settings.magnets ? t("lid.advancedSummaryMagnet", { diameter: millimetres(settings.magnetDiameter), height: millimetres(settings.magnetHeight), play: millimetres(settings.magnetGap) }) : "",
+  ].filter(Boolean).join(" · ");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -82,169 +102,119 @@ export function LidPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span>{t("lid.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={targetName} detail={t("lid.help")} />
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.type")}>
-        <span>{t("lid.type")}</span>
-        <div className="shell-opening-options">
-          {LID_TYPES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.type === option}
-              className={settings.type === option ? "active" : ""}
-              title={t(`lid.type.${option}Hint`)}
-              disabled={busy}
-              onClick={() => onChange({ type: option })}
-            >
-              {t(`lid.type.${option}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-      <span className="shell-openings-summary">{t(`lid.type.${settings.type}Hint`)}</span>
-
-      <EdgeModifierSlider
-        label={t("lid.thickness")}
-        value={settings.thickness}
-        min={MIN_LID_THICKNESS}
-        max={MAX_LID_THICKNESS}
-        step={0.2}
-        workspace={workspace}
-        length
-        disabled={busy}
-        onChange={(value) => {
-          setRaised(false);
-          onChange({ thickness: value });
-        }}
-      />
-      {tooThin ? (
-        <span className="shell-openings-summary" role="status">{t("lid.error.magnetsThinLid", { thickness: millimetres(needed) })}</span>
-      ) : settings.magnets && raised ? (
-        <span className="shell-openings-summary" role="status">{t("lid.magnetsThicknessRaised", { thickness: millimetres(settings.thickness) })}</span>
-      ) : null}
-
-      {settings.type === "flat" ? null : (<>
-        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.fit")}>
-          <span>{t("lid.fit")}</span>
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.type")}>
+          <span>{t("lid.type")}</span>
           <div className="shell-opening-options">
-            {LID_FITS.map((fit, index) => (
+            {LID_TYPES.map((option) => (
               <button
-                key={fit}
+                key={option}
                 type="button"
                 role="radio"
-                aria-checked={Math.abs(settings.gap - fit) < 1e-9}
-                className={Math.abs(settings.gap - fit) < 1e-9 ? "active" : ""}
+                aria-checked={settings.type === option}
+                className={settings.type === option ? "active" : ""}
+                title={t(`lid.type.${option}Hint`)}
                 disabled={busy}
-                onClick={() => onChange({ gap: fit })}
+                onClick={() => onChange({ type: option })}
               >
-                {t((["lid.fit.tight", "lid.fit.normal", "lid.fit.loose"] as const)[index], { gap: fit.toLocaleString(numberLocale()) })}
+                {t(`lid.type.${option}`)}
               </button>
             ))}
           </div>
         </div>
+        <span className="shell-openings-summary">{t(`lid.type.${settings.type}Hint`)}</span>
+
         <EdgeModifierSlider
-          label={t("lid.gap")}
-          value={settings.gap}
-          min={0}
-          max={MAX_LID_GAP}
-          step={0.05}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={(value) => onChange({ gap: value })}
-        />
-        <EdgeModifierSlider
-          label={t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth")}
-          value={settings.depth}
-          min={MIN_LID_DEPTH}
-          max={MAX_LID_DEPTH}
-          step={0.5}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={(value) => onChange({ depth: value })}
-        />
-        <EdgeModifierSlider
-          label={t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall")}
-          value={settings.wall}
-          min={MIN_LID_WALL}
-          max={MAX_LID_WALL}
+          label={t("lid.thickness")}
+          value={settings.thickness}
+          min={MIN_LID_THICKNESS}
+          max={MAX_LID_THICKNESS}
           step={0.2}
           workspace={workspace}
           length
           disabled={busy}
-          onChange={(value) => onChange({ wall: value })}
+          onChange={(value) => {
+            setRaised(false);
+            onChange({ thickness: value });
+          }}
         />
-      </>)}
+        {tooThin ? (
+          <span className="shell-openings-summary" role="status">{t("lid.error.magnetsThinLid", { thickness: millimetres(needed) })}</span>
+        ) : settings.magnets && raised ? (
+          <span className="shell-openings-summary" role="status">{t("lid.magnetsThicknessRaised", { thickness: millimetres(settings.thickness) })}</span>
+        ) : null}
 
-      <label className="edge-modifier-field offset-copy">
-        <input type="checkbox" checked={settings.magnets} disabled={busy} onChange={(event) => withMagnet({ magnets: event.target.checked })} />
-        <span>{t("lid.magnets")}</span>
-      </label>
-      {settings.magnets ? (<>
-        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.magnetSize")}>
-          <span>{t("lid.magnetSize")}</span>
-          <div className="shell-opening-options">
-            {LID_MAGNET_SIZES.map(({ diameter, height }) => {
-              const active = Math.abs(settings.magnetDiameter - diameter) < 1e-9 && Math.abs(settings.magnetHeight - height) < 1e-9;
-              return (
+        {lipped ? (
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.fit")}>
+            <span>{t("lid.fit")}</span>
+            <div className="shell-opening-options">
+              {LID_FITS.map((fit, index) => (
                 <button
-                  key={`${diameter}x${height}`}
+                  key={fit}
                   type="button"
                   role="radio"
-                  aria-checked={active}
-                  className={active ? "active" : ""}
+                  aria-checked={Math.abs(settings.gap - fit) < 1e-9}
+                  className={Math.abs(settings.gap - fit) < 1e-9 ? "active" : ""}
                   disabled={busy}
-                  onClick={() => withMagnet({ magnetDiameter: diameter, magnetHeight: height })}
+                  onClick={() => onChange({ gap: fit })}
                 >
-                  {t("lid.magnetSizeOption", { diameter: millimetres(diameter), height: millimetres(height) })}
+                  {t((["lid.fit.tight", "lid.fit.normal", "lid.fit.loose"] as const)[index], { gap: fit.toLocaleString(numberLocale()) })}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
-        <EdgeModifierSlider
-          label={t("lid.magnetDiameter")}
-          value={settings.magnetDiameter}
-          min={MIN_MAGNET_DIAMETER}
-          max={MAX_MAGNET_DIAMETER}
-          step={0.5}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={(value) => withMagnet({ magnetDiameter: value })}
-        />
-        <EdgeModifierSlider
-          label={t("lid.magnetHeight")}
-          value={settings.magnetHeight}
-          min={MIN_MAGNET_HEIGHT}
-          max={MAX_MAGNET_HEIGHT}
-          step={0.5}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={(value) => withMagnet({ magnetHeight: value })}
-        />
-        <EdgeModifierSlider
-          label={t("lid.magnetGap")}
-          value={settings.magnetGap}
-          min={0}
-          max={MAX_MAGNET_GAP}
-          step={0.05}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={(value) => onChange({ magnetGap: value })}
-        />
-        <span className="shell-openings-summary">{t("lid.magnetsHint")}</span>
-      </>) : null}
+        ) : null}
 
-      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : null}
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={settings.magnets} disabled={busy} onChange={(event) => withMagnet({ magnets: event.target.checked })} />
+          <span>{t("lid.magnets")}</span>
+        </label>
+        {settings.magnets ? (
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.magnetSize")}>
+            <span>{t("lid.magnetSize")}</span>
+            <div className="shell-opening-options">
+              {LID_MAGNET_SIZES.map(({ diameter, height }) => {
+                const active = Math.abs(settings.magnetDiameter - diameter) < 1e-9 && Math.abs(settings.magnetHeight - height) < 1e-9;
+                return (
+                  <button
+                    key={`${diameter}x${height}`}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    className={active ? "active" : ""}
+                    disabled={busy}
+                    onClick={() => withMagnet({ magnetDiameter: diameter, magnetHeight: height })}
+                  >
+                    {t("lid.magnetSizeOption", { diameter: millimetres(diameter), height: millimetres(height) })}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="shell-openings-summary">{t("lid.magnetsHint")}</span>
+          </div>
+        ) : null}
+      </ToolSection>
+
+      {summary ? (
+        <ToolAdvanced tool="lid" summary={summary}>
+          {lipped ? (<>
+            {slider(t("lid.gap"), "gap", 0, MAX_LID_GAP, 0.05)}
+            {slider(t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth"), "depth", MIN_LID_DEPTH, MAX_LID_DEPTH, 0.5)}
+            {slider(t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall"), "wall", MIN_LID_WALL, MAX_LID_WALL, 0.2)}
+          </>) : null}
+          {settings.magnets ? (<>
+            {slider(t("lid.magnetDiameter"), "magnetDiameter", MIN_MAGNET_DIAMETER, MAX_MAGNET_DIAMETER, 0.5)}
+            {slider(t("lid.magnetHeight"), "magnetHeight", MIN_MAGNET_HEIGHT, MAX_MAGNET_HEIGHT, 0.5)}
+            {slider(t("lid.magnetGap"), "magnetGap", 0, MAX_MAGNET_GAP, 0.05)}
+          </>) : null}
+        </ToolAdvanced>
+      ) : null}
+
+      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("lid.working") : t("toolSidebar.ready")} />}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>

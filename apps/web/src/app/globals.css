@@ -15635,3 +15635,309 @@ html[data-theme="dark"] .guide-videos a:hover,
 html[data-theme="dark"] .interactive-help-more a:hover {
   color: #ffc784;
 }
+
+/*
+ * The right column for tools (the GUI concept, section 5): a tool lies docked where the object's properties are, with
+ * the tabs Object and Tool above it, and its parts in the same order every time - selection, settings, advanced folded
+ * away, a status line, the actions at the foot, which stay in view while the rest scrolls. Dragged away, a tool floats
+ * as before.
+ */
+.edge-modifier-panel.docked {
+  top: var(--editor-toolbar-height);
+  right: 0;
+  bottom: var(--editor-footer-height);
+  width: 320px;
+  max-height: none;
+  padding-top: 0;
+  background: rgba(248, 246, 244, 0.99);
+  border-width: 0 0 0 1px;
+  border-color: #e9e2d6;
+  border-radius: 0;
+  box-shadow: -2px 0 10px rgba(86, 62, 36, 0.08);
+  backdrop-filter: none;
+  zoom: var(--toolbar-scale);
+}
+
+.edge-modifier-panel.docked.show-object {
+  bottom: auto;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.edge-modifier-panel.docked.show-object .tool-sidebar-tabs {
+  margin-bottom: 0;
+}
+
+.edge-modifier-panel.show-object > :not(.tool-sidebar-tabs) {
+  display: none !important;
+}
+
+/* The object's properties under the tabs while a tool is docked. */
+.layerling-editor:has(.edge-modifier-panel.docked .tool-sidebar-tabs) .shape-inspector {
+  top: 45px;
+}
+
+/* Under the tool they are out of sight, and out of the way of the keyboard. */
+.layerling-editor:has(.edge-modifier-panel.docked:not(.show-object) .tool-sidebar-tabs) .shape-inspector {
+  visibility: hidden;
+}
+
+.tool-sidebar-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0 -14px 12px;
+  background: inherit;
+  border-bottom: 1px solid #e6dccd;
+}
+
+.tool-sidebar-tabs button {
+  min-height: 44px;
+  color: #8a7258;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.tool-sidebar-tabs button[aria-selected="true"] {
+  color: #6d3f0b;
+  border-bottom-color: #e08a2c;
+}
+
+.tool-sidebar-tabs button:focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: -3px;
+}
+
+.tool-section {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee7da;
+}
+
+.tool-section-title {
+  margin: 0;
+  color: #563e24;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tool-selection {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 9px 10px;
+  color: #563e24;
+  background: #fbf8f4;
+  border: 1px solid #e6dccd;
+  border-radius: 8px;
+}
+
+.tool-selection.ready {
+  background: #f1f7ef;
+  border-color: #cfe2c8;
+}
+
+.tool-selection.needed {
+  background: #fff6ea;
+  border-color: #f0cf9d;
+}
+
+.tool-selection-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: white;
+  background: #c08a4d;
+  border-radius: 50%;
+}
+
+.tool-selection.ready .tool-selection-mark {
+  background: #3f8a4b;
+}
+
+.tool-selection-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tool-selection-text strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.tool-selection-text small {
+  color: #7a6249;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tool-advanced {
+  margin-top: 12px;
+  border-top: 1px solid #eee7da;
+}
+
+.tool-advanced > summary {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 6px;
+  align-items: center;
+  padding: 11px 0 4px;
+  color: #563e24;
+  list-style: none;
+  cursor: pointer;
+}
+
+.tool-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tool-advanced-chevron {
+  transition: transform 120ms ease;
+}
+
+.tool-advanced[open] .tool-advanced-chevron {
+  transform: rotate(90deg);
+}
+
+/* Open, the values stand below: the line that sums them up gives way. */
+.tool-advanced[open] .tool-advanced-summary {
+  visibility: hidden;
+}
+
+.tool-advanced-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tool-advanced-summary {
+  overflow: hidden;
+  color: #8a7258;
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tool-advanced > summary:focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: 2px;
+}
+
+.tool-advanced-body {
+  display: grid;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.tool-status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0 0;
+  color: #6d5133;
+  font-size: 12px;
+}
+
+.tool-status-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: #3f8a4b;
+  border-radius: 50%;
+}
+
+.tool-status.working .tool-status-dot {
+  background: #e08a2c;
+}
+
+.tool-status.needed .tool-status-dot {
+  background: #b7a48f;
+}
+
+/* Docked, the actions stand at the foot of the column, in the same place for every tool, and stay in view while
+   the rest scrolls. */
+.edge-modifier-panel.docked:not(.show-object) {
+  display: flex;
+  flex-direction: column;
+}
+
+.edge-modifier-panel.docked:not(.show-object) > * {
+  flex: none;
+}
+
+.edge-modifier-panel.docked .edge-modifier-footer {
+  position: sticky;
+  bottom: -14px;
+  z-index: 3;
+  margin: auto -14px -14px;
+  padding: 12px 14px 14px;
+  background: rgba(248, 246, 244, 0.99);
+}
+
+html[data-theme="dark"] .edge-modifier-panel.docked,
+html[data-theme="dark"] .edge-modifier-panel.docked .edge-modifier-footer {
+  background: #281e14;
+}
+
+html[data-theme="dark"] .edge-modifier-panel.docked {
+  border-color: #534333;
+  box-shadow: -3px 0 14px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme="dark"] .tool-sidebar-tabs {
+  border-bottom-color: #53412f;
+}
+
+html[data-theme="dark"] .tool-sidebar-tabs button {
+  color: #b49c82;
+}
+
+html[data-theme="dark"] .tool-sidebar-tabs button[aria-selected="true"] {
+  color: #f3a452;
+}
+
+html[data-theme="dark"] .tool-section,
+html[data-theme="dark"] .tool-advanced {
+  border-top-color: #4a3b2b;
+}
+
+html[data-theme="dark"] .tool-section-title,
+html[data-theme="dark"] .tool-advanced > summary {
+  color: #f0e2cc;
+}
+
+html[data-theme="dark"] .tool-selection {
+  color: #ede4d4;
+  background: #2f2418;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .tool-selection.ready {
+  background: #22301f;
+  border-color: #3f6340;
+}
+
+html[data-theme="dark"] .tool-selection.needed {
+  background: #3a2c16;
+  border-color: #8a6326;
+}
+
+html[data-theme="dark"] .tool-selection-text small,
+html[data-theme="dark"] .tool-advanced-summary {
+  color: #c4ae95;
+}
+
+html[data-theme="dark"] .tool-status {
+  color: #d6c3ab;
+}
