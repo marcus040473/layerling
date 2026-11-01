@@ -852,6 +852,8 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "offset.working": "Décalage…",
   "offset.cancel": "Annuler le décalage",
   "offset.errorFailed": "Le corps n'a pas pu être agrandi ou réduit de cette distance. Choisis une distance plus petite.",
+  "offset.advancedSummary": "Coins extérieurs : {edges}",
+  "offset.advancedSummarySideways": "côtés seulement",
   "status.offsetGrown": "Agrandi de {size} mm",
   "status.offsetShrunk": "Réduit de {size} mm",
   "status.offsetCopy": "Corps décalé de {size} mm ajouté comme trou",

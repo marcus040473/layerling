@@ -4,6 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
+import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -67,8 +68,13 @@ export function OffsetPanel({
 }) {
   useLanguage();
   const title = t("offset.title");
+  // What the folded part holds, in a line: the outer corners, and the sides only when it is ticked.
+  const summary = [
+    t("offset.advancedSummary", { edges: t(`shell.edges.${edges}`) }),
+    sideways ? t("offset.advancedSummarySideways") : "",
+  ].filter(Boolean).join(" · ");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -81,81 +87,83 @@ export function OffsetPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span>{t("offset.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={targetName} detail={t("offset.help")} />
+        <EdgeFeatureHistory
+          appliedFeatureCount={appliedFeatureCount}
+          reversibleFeatureCount={reversibleFeatureCount}
+          historyOptions={historyOptions}
+          onRemoveFeature={onRemoveFeature}
+          onEditFeature={onEditFeature}
+        />
+      </ToolSection>
 
-      <EdgeFeatureHistory
-        appliedFeatureCount={appliedFeatureCount}
-        reversibleFeatureCount={reversibleFeatureCount}
-        historyOptions={historyOptions}
-        onRemoveFeature={onRemoveFeature}
-        onEditFeature={onEditFeature}
-      />
-
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("offset.direction")}>
-        <span>{t("offset.direction")}</span>
-        <div className="shell-opening-options">
-          {[false, true].map((option) => (
-            <button
-              key={String(option)}
-              type="button"
-              role="radio"
-              aria-checked={shrink === option}
-              className={shrink === option ? "active" : ""}
-              disabled={busy}
-              onClick={() => onShrinkChange(option)}
-            >
-              {t(option ? "offset.shrink" : "offset.grow")}
-            </button>
-          ))}
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("offset.direction")}>
+          <span>{t("offset.direction")}</span>
+          <div className="shell-opening-options">
+            {[false, true].map((option) => (
+              <button
+                key={String(option)}
+                type="button"
+                role="radio"
+                aria-checked={shrink === option}
+                className={shrink === option ? "active" : ""}
+                disabled={busy}
+                onClick={() => onShrinkChange(option)}
+              >
+                {t(option ? "offset.shrink" : "offset.grow")}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <EdgeModifierSlider
-        label={t("offset.distance")}
-        value={distance}
-        min={MIN_OFFSET}
-        max={MAX_OFFSET}
-        step={OFFSET_STEP}
-        workspace={workspace}
-        length
-        disabled={busy}
-        onChange={onDistanceChange}
-      />
+        <EdgeModifierSlider
+          label={t("offset.distance")}
+          value={distance}
+          min={MIN_OFFSET}
+          max={MAX_OFFSET}
+          step={OFFSET_STEP}
+          workspace={workspace}
+          length
+          disabled={busy}
+          onChange={onDistanceChange}
+        />
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("offset.edges")}>
-        <span>{t("offset.edges")}</span>
-        <div className="shell-opening-options">
-          {OFFSET_EDGES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={edges === option}
-              className={edges === option ? "active" : ""}
-              disabled={busy}
-              onClick={() => onEdgesChange(option)}
-            >
-              {t(`shell.edges.${option}`)}
-            </button>
-          ))}
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={keepCopy} disabled={busy} onChange={(event) => onKeepCopyChange(event.target.checked)} />
+          <span>{t("offset.copy")}</span>
+        </label>
+      </ToolSection>
+
+      <ToolAdvanced tool="offset" summary={summary}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("offset.edges")}>
+          <span>{t("offset.edges")}</span>
+          <div className="shell-opening-options">
+            {OFFSET_EDGES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={edges === option}
+                className={edges === option ? "active" : ""}
+                disabled={busy}
+                onClick={() => onEdgesChange(option)}
+              >
+                {t(`shell.edges.${option}`)}
+              </button>
+            ))}
+          </div>
+          <span className="shell-openings-summary">{t("offset.edgesHint")}</span>
         </div>
-        <span className="shell-openings-summary">{t("offset.edgesHint")}</span>
-      </div>
 
-      <label className="edge-modifier-field offset-copy">
-        <input type="checkbox" checked={sideways} disabled={busy} onChange={(event) => onSidewaysChange(event.target.checked)} />
-        <span>{t("offset.sideways")}</span>
-      </label>
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={sideways} disabled={busy} onChange={(event) => onSidewaysChange(event.target.checked)} />
+          <span>{t("offset.sideways")}</span>
+        </label>
+      </ToolAdvanced>
 
-      <label className="edge-modifier-field offset-copy">
-        <input type="checkbox" checked={keepCopy} disabled={busy} onChange={(event) => onKeepCopyChange(event.target.checked)} />
-        <span>{t("offset.copy")}</span>
-      </label>
-
-      {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : null}
+      {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("offset.working") : t("toolSidebar.ready")} />}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>

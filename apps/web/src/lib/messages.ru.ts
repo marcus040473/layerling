@@ -859,6 +859,8 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "offset.working": "Смещаю…",
   "offset.cancel": "Отменить смещение",
   "offset.errorFailed": "Тело не удалось увеличить или уменьшить на это расстояние. Выберите меньшее расстояние.",
+  "offset.advancedSummary": "Внешние углы: {edges}",
+  "offset.advancedSummarySideways": "только вбок",
   "status.offsetGrown": "Увеличено на {size} мм",
   "status.offsetShrunk": "Уменьшено на {size} мм",
   "status.offsetCopy": "Тело, смещённое на {size} мм, добавлено как отверстие",

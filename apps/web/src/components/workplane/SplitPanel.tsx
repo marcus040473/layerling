@@ -8,6 +8,7 @@ import { displayStepFromMillimeters, displayToMillimeters, formatMeasurementNumb
 import { SPLIT_AXIS_DISPLAY_ORDER, splitAxisLabel, splitRotationAxes, type SplitRotation } from "@/lib/modelSplit";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { selectWholeValue } from "@/lib/numberField";
@@ -103,7 +104,7 @@ export function SplitPanel({
   };
 
   return (
-    <MovableToolPanel className="split-panel" ariaLabel={t("split.title")} focusOnOpen>
+    <MovableToolPanel className="split-panel edge-modifier-panel" ariaLabel={t("split.title")} focusOnOpen dock="alone">
       {(handleProps) => (<>
       <div className="split-panel-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -116,117 +117,124 @@ export function SplitPanel({
         </div>
       </div>
 
-      <div className="split-panel-target">
-        <strong>{targetCount === 1 ? t("split.targetOne") : t("split.targetMany", { count: targetCount })}</strong>
-        <span>{t("split.targetHint")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={targetCount > 0} text={targetCount === 1 ? t("split.targetOne") : t("split.targetMany", { count: targetCount })} detail={t("split.targetHint")} />
+      </ToolSection>
 
-      <fieldset className="split-axis-control" disabled={busy}>
-        <legend>{t("split.orientation")}</legend>
-        <div>
-          {SPLIT_AXIS_DISPLAY_ORDER.map((candidate) => (
-            <button
-              type="button"
-              className={axis === candidate ? "active" : ""}
-              aria-pressed={axis === candidate}
-              key={candidate}
-              onClick={() => onAxisChange(candidate)}
-            >
-              {splitAxisLabel(candidate)}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <ToolSection title={t("toolSidebar.settings")}>
+        <fieldset className="split-axis-control" disabled={busy}>
+          <legend>{t("split.orientation")}</legend>
+          <div>
+            {SPLIT_AXIS_DISPLAY_ORDER.map((candidate) => (
+              <button
+                type="button"
+                className={axis === candidate ? "active" : ""}
+                aria-pressed={axis === candidate}
+                key={candidate}
+                onClick={() => onAxisChange(candidate)}
+              >
+                {splitAxisLabel(candidate)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
-      <fieldset className="split-axis-control split-workplane-control" disabled={busy}>
-        <legend>{t("split.workplane")}</legend>
-        <div>
-          {SPLIT_WORKPLANE_DIRECTIONS.map(({ direction, label, hint }) => (
-            <button type="button" key={direction} title={t(hint)} onClick={() => onAlignToWorkplane(direction)}>
-              {t(label)}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+        <fieldset className="split-axis-control split-workplane-control" disabled={busy}>
+          <legend>{t("split.workplane")}</legend>
+          <div>
+            {SPLIT_WORKPLANE_DIRECTIONS.map(({ direction, label, hint }) => (
+              <button type="button" key={direction} title={t(hint)} onClick={() => onAlignToWorkplane(direction)}>
+                {t(label)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
-      <div className="split-position-control">
-        <span>
-          <strong>{t("split.position")}</strong>
-          <span className="split-position-value">
-            <input
-              ref={positionInputRef}
-              type="text"
-              inputMode="decimal"
-              value={positionEditing ? positionDraft : formattedPosition}
-              aria-label={t("split.positionAria")}
-              aria-describedby="split-position-unit"
-              disabled={busy}
-              onFocus={(event) => {
-                positionWheelShownRef.current = null;
-                setPositionDraft(formattedPosition);
-                setPositionEditing(true);
-                selectWholeValue(event.currentTarget);
-              }}
-              onChange={(event) => {
-                positionWheelShownRef.current = null;
-                setPositionDraft(event.currentTarget.value);
-              }}
-              onBlur={commitPositionDraft}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  event.currentTarget.blur();
-                } else if (event.key === "Escape") {
-                  event.preventDefault();
-                  event.stopPropagation();
+        <div className="split-position-control">
+          <span>
+            <strong>{t("split.position")}</strong>
+            <span className="split-position-value">
+              <input
+                ref={positionInputRef}
+                type="text"
+                inputMode="decimal"
+                value={positionEditing ? positionDraft : formattedPosition}
+                aria-label={t("split.positionAria")}
+                aria-describedby="split-position-unit"
+                disabled={busy}
+                onFocus={(event) => {
+                  positionWheelShownRef.current = null;
                   setPositionDraft(formattedPosition);
-                  setPositionEditing(false);
-                }
-              }}
-            />
-            <small id="split-position-unit">{unit}</small>
-            <button
-              type="button"
-              className={`split-position-pick ${picking ? "active" : ""}`}
-              aria-pressed={picking}
-              aria-label={t("split.pickFace")}
-              title={t("split.pickFaceHint")}
-              disabled={busy}
-              onClick={onPickToggle}
-            >
-              <MousePointerClick size={17} />
-            </button>
+                  setPositionEditing(true);
+                  selectWholeValue(event.currentTarget);
+                }}
+                onChange={(event) => {
+                  positionWheelShownRef.current = null;
+                  setPositionDraft(event.currentTarget.value);
+                }}
+                onBlur={commitPositionDraft}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.currentTarget.blur();
+                  } else if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setPositionDraft(formattedPosition);
+                    setPositionEditing(false);
+                  }
+                }}
+              />
+              <small id="split-position-unit">{unit}</small>
+              <button
+                type="button"
+                className={`split-position-pick ${picking ? "active" : ""}`}
+                aria-pressed={picking}
+                aria-label={t("split.pickFace")}
+                title={t("split.pickFaceHint")}
+                disabled={busy}
+                onClick={onPickToggle}
+              >
+                <MousePointerClick size={17} />
+              </button>
+            </span>
           </span>
-        </span>
-        <input
-          type="range"
-          min={displayMin}
-          max={displayMax}
-          step={displayStep}
-          value={displayPosition}
-          aria-label={t("split.positionSliderAria")}
-          aria-valuetext={t("split.positionValue", { value: formattedPosition, unit })}
-          disabled={busy}
-          onChange={(event) => applyDisplayPosition(event.currentTarget.valueAsNumber)}
+          <input
+            type="range"
+            min={displayMin}
+            max={displayMax}
+            step={displayStep}
+            value={displayPosition}
+            aria-label={t("split.positionSliderAria")}
+            aria-valuetext={t("split.positionValue", { value: formattedPosition, unit })}
+            disabled={busy}
+            onChange={(event) => applyDisplayPosition(event.currentTarget.valueAsNumber)}
+          />
+        </div>
+
+        {rotationAxes.map((rotationAxis, index) => (
+          <SplitRotationControl
+            key={rotationAxis}
+            axisLabel={splitAxisLabel(rotationAxis)}
+            // A tilt about Y turns the right-handed way (#182): minus the inside turn about z.
+            rotation={rotationAxis === "z" ? -rotation[index] || 0 : rotation[index]}
+            busy={busy}
+            onChange={(value) => onRotationChange(index as 0 | 1, rotationAxis === "z" ? -value || 0 : value)}
+          />
+        ))}
+
+        <p className="split-panel-help">{t("split.help")}</p>
+      </ToolSection>
+
+      {error ? <div className="split-panel-error" role="alert">{error}</div> : (
+        <ToolStatus
+          state={busy ? "working" : max - min <= 0.0001 ? "needed" : "ready"}
+          text={busy ? t("split.applying") : max - min <= 0.0001 ? t("split.error.movePlane") : t("toolSidebar.ready")}
         />
-      </div>
+      )}
 
-      {rotationAxes.map((rotationAxis, index) => (
-        <SplitRotationControl
-          key={rotationAxis}
-          axisLabel={splitAxisLabel(rotationAxis)}
-          // A tilt about Y turns the right-handed way (#182): minus the inside turn about z.
-          rotation={rotationAxis === "z" ? -rotation[index] || 0 : rotation[index]}
-          busy={busy}
-          onChange={(value) => onRotationChange(index as 0 | 1, rotationAxis === "z" ? -value || 0 : value)}
-        />
-      ))}
-
-      <p className="split-panel-help">{t("split.help")}</p>
-      {error ? <div className="split-panel-error" role="alert">{error}</div> : null}
-
-      <div className="split-panel-footer">
+      <div className="split-panel-footer edge-modifier-footer">
         <button type="button" className="secondary" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy || max - min <= 0.0001} onClick={onApply}>
           {busy ? <LoaderCircle className="split-panel-spinner" size={17} /> : <Check size={17} />}

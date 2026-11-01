@@ -861,6 +861,8 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "offset.working": "Verschuiven…",
   "offset.cancel": "Offset annuleren",
   "offset.errorFailed": "Het lichaam kon niet over deze afstand worden vergroot of verkleind. Kies een kleinere afstand.",
+  "offset.advancedSummary": "Buitenhoeken: {edges}",
+  "offset.advancedSummarySideways": "alleen zijwaarts",
   "status.offsetGrown": "{size} mm vergroot",
   "status.offsetShrunk": "{size} mm verkleind",
   "status.offsetCopy": "Het met {size} mm verschoven lichaam als gat toegevoegd",

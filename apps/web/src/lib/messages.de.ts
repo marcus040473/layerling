@@ -861,6 +861,8 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "offset.working": "Versetze…",
   "offset.cancel": "Versatz abbrechen",
   "offset.errorFailed": "Der Körper ließ sich um diesen Abstand nicht vergrößern oder verkleinern. Bitte wähle einen kleineren Abstand.",
+  "offset.advancedSummary": "Außenecken: {edges}",
+  "offset.advancedSummarySideways": "nur seitlich",
   "status.offsetGrown": "Um {size} mm vergrößert",
   "status.offsetShrunk": "Um {size} mm verkleinert",
   "status.offsetCopy": "Den um {size} mm versetzten Körper als Loch hinzugefügt",

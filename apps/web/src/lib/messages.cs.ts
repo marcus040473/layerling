@@ -986,6 +986,8 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "offset.working": "Odsazuji…",
   "offset.cancel": "Zrušit odsazení",
   "offset.errorFailed": "Těleso nešlo o tuto vzdálenost zvětšit ani zmenšit. Zvol prosím menší vzdálenost.",
+  "offset.advancedSummary": "Vnější rohy: {edges}",
+  "offset.advancedSummarySideways": "jen do stran",
   "status.offsetGrown": "Zvětšeno o {size} mm",
   "status.offsetShrunk": "Zmenšeno o {size} mm",
   "status.offsetCopy": "Těleso odsazené o {size} mm přidáno jako díra",

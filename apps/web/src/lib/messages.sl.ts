@@ -705,6 +705,8 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "offset.working": "Odmikam…",
   "offset.cancel": "Prekliči odmik",
   "offset.errorFailed": "Telesa ni bilo mogoče povečati ali zmanjšati za to razdaljo. Izberi manjšo razdaljo.",
+  "offset.advancedSummary": "Zunanji vogali: {edges}",
+  "offset.advancedSummarySideways": "samo ob straneh",
   "status.offsetGrown": "Povečano za {size} mm",
   "status.offsetShrunk": "Zmanjšano za {size} mm",
   "status.offsetCopy": "Telo, odmaknjeno za {size} mm, dodano kot luknja",

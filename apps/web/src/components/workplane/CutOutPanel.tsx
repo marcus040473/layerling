@@ -4,6 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { ArrowLeftRight, Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -42,7 +43,7 @@ export function CutOutPanel({
   useLanguage();
   const title = t("cutOut.title");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -55,33 +56,33 @@ export function CutOutPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{partName} → {hostName}</strong>
-        <span>{t("cutOut.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={`${partName} → ${hostName}`} detail={t("cutOut.help")} />
+        <div className="edge-modifier-field">
+          <span>{t("cutOut.part")}: <strong>{partName}</strong></span>
+          <span>{t("cutOut.host")}: <strong>{hostName}</strong></span>
+          <button type="button" className="secondary" disabled={busy} onClick={onSwap}>
+            <ArrowLeftRight size={16} /> {t("cutOut.swap")}
+          </button>
+        </div>
+      </ToolSection>
 
-      <div className="edge-modifier-field">
-        <span>{t("cutOut.part")}: <strong>{partName}</strong></span>
-        <span>{t("cutOut.host")}: <strong>{hostName}</strong></span>
-        <button type="button" className="secondary" disabled={busy} onClick={onSwap}>
-          <ArrowLeftRight size={16} /> {t("cutOut.swap")}
-        </button>
-      </div>
+      <ToolSection title={t("toolSidebar.settings")}>
+        <EdgeModifierSlider
+          label={t("cutOut.clearance")}
+          value={clearance}
+          min={0}
+          max={MAX_CUT_OUT_CLEARANCE}
+          step={CUT_OUT_STEP}
+          workspace={workspace}
+          length
+          disabled={busy}
+          onChange={onClearanceChange}
+        />
+        <span className="shell-openings-summary">{t("cutOut.clearanceHint")}</span>
+      </ToolSection>
 
-      <EdgeModifierSlider
-        label={t("cutOut.clearance")}
-        value={clearance}
-        min={0}
-        max={MAX_CUT_OUT_CLEARANCE}
-        step={CUT_OUT_STEP}
-        workspace={workspace}
-        length
-        disabled={busy}
-        onChange={onClearanceChange}
-      />
-      <span className="shell-openings-summary">{t("cutOut.clearanceHint")}</span>
-
-      {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : null}
+      {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("cutOut.working") : t("toolSidebar.ready")} />}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>

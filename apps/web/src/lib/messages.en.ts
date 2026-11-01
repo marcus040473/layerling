@@ -862,6 +862,8 @@ export const MESSAGES_EN = {
   "offset.working": "Offsetting…",
   "offset.cancel": "Cancel offset",
   "offset.errorFailed": "The body could not be grown or shrunk by this distance. Please choose a smaller distance.",
+  "offset.advancedSummary": "Outer corners: {edges}",
+  "offset.advancedSummarySideways": "sides only",
   "status.offsetGrown": "Grown by {size} mm",
   "status.offsetShrunk": "Shrunk by {size} mm",
   "status.offsetCopy": "Added the body, offset by {size} mm, as a hole",

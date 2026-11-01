@@ -1510,6 +1510,8 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "offset.working": "Forskyder…",
   "offset.cancel": "Annuller forskydning",
   "offset.errorFailed": "Legemet kunne ikke gøres større eller mindre med denne afstand. Vælg en mindre afstand.",
+  "offset.advancedSummary": "Ydre hjørner: {edges}",
+  "offset.advancedSummarySideways": "kun til siderne",
   "status.offsetGrown": "Forstørret med {size} mm",
   "status.offsetShrunk": "Formindsket med {size} mm",
   "status.offsetCopy": "Legemet forskudt {size} mm tilføjet som hul",
