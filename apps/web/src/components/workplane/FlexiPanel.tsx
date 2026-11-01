@@ -4,9 +4,9 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolHint, ToolNote, ToolOutcome, ToolSection, ToolSelection, ToolStatus, ToolStepper } from "@/components/workplane/ToolPanelParts";
 import { MAX_FLEXI_CLEARANCE, MAX_FLEXI_JOINTS, MAX_FLEXI_SWING, MIN_FLEXI_CLEARANCE, MIN_FLEXI_SWING } from "@/lib/flexiJoints";
-import { numberLocale, t } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
@@ -54,13 +54,9 @@ export function FlexiPanel({
   useLanguage();
   const title = t("flexi.title");
   const endMax = Math.max(1, Math.round(length / 2));
-  const millimetres = (value: number) => value.toLocaleString(numberLocale());
   // What the folded part holds, in a line: the clearance, and the joint's size and the end links when set by hand.
-  const summary = [
-    t("flexi.advancedSummary", { clearance: millimetres(settings.clearance) }),
-    settings.autoSize ? "" : t("flexi.advancedSummarySize", { size: millimetres(settings.size) }),
-    settings.evenLinks ? "" : t("flexi.advancedSummaryEnds", { start: millimetres(Math.min(settings.start, endMax)), end: millimetres(Math.min(settings.end, endMax)) }),
-  ].filter(Boolean).join(" · ");
+  // Folded, Advanced names what it holds: the joint size and the end links.
+  const summary = [t("flexi.autoSize"), t("flexi.evenLinks")].join(", ");
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel flexi-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
@@ -100,15 +96,13 @@ export function FlexiPanel({
           </div>
         </div>
 
-        <EdgeModifierSlider
+        <ToolStepper
           label={t("flexi.joints")}
           value={settings.joints}
           min={1}
           max={MAX_FLEXI_JOINTS}
-          step={1}
-          workspace={workspace}
           disabled={busy}
-          onChange={(value) => onChange({ joints: Math.round(value) })}
+          onChange={(joints) => onChange({ joints })}
         />
 
         <EdgeModifierSlider
@@ -120,11 +114,10 @@ export function FlexiPanel({
           unit="°"
           workspace={workspace}
           disabled={busy}
+          primary
           onChange={(value) => onChange({ swing: value })}
         />
-      </ToolSection>
 
-      <ToolAdvanced tool="flexi" summary={summary}>
         <EdgeModifierSlider
           label={t("flexi.clearance")}
           value={settings.clearance}
@@ -136,8 +129,11 @@ export function FlexiPanel({
           disabled={busy}
           onChange={(value) => onChange({ clearance: value })}
         />
-        <span className="shell-openings-summary">{t("flexi.clearanceHint")}</span>
+        <ToolHint text={t("flexi.clearanceHint")} />
+        <ToolNote text={t("flexi.sizeNote")} />
+      </ToolSection>
 
+      <ToolAdvanced tool="flexi" summary={summary}>
         <label className="edge-modifier-field offset-copy">
           <input type="checkbox" checked={settings.autoSize} disabled={busy} onChange={(event) => onChange({ autoSize: event.target.checked })} />
           <span>{t("flexi.autoSize")}</span>
@@ -188,6 +184,7 @@ export function FlexiPanel({
 
       {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("flexi.working")} /> : null}
       <div className="edge-modifier-footer">
+        <ToolOutcome text={t("flexi.outcome", { name: targetName, links: settings.joints + 1 })} />
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>
           {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}

@@ -4,8 +4,8 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
-import { numberLocale, t } from "@/lib/i18n";
+import { ToolAdvanced, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
@@ -84,7 +84,7 @@ export function CookieCutterPanel({
               </button>
             ))}
           </div>
-          <span className="shell-openings-summary">{t(settings.support === "plate" ? "cookieCutter.supportPlateHint" : "cookieCutter.supportBridgesHint")}</span>
+          <ToolHint text={t(settings.support === "plate" ? "cookieCutter.supportPlateHint" : "cookieCutter.supportBridgesHint")} />
         </div>
 
         {settings.support === "plate" ? (
@@ -112,7 +112,7 @@ export function CookieCutterPanel({
           disabled={busy}
           onChange={(value) => onChange({ imprint: value })}
         />
-        <span className="shell-openings-summary">{t("cookieCutter.imprintHint")}</span>
+        <ToolHint text={t("cookieCutter.imprintHint")} />
 
         <label className="edge-modifier-field offset-copy">
           <input type="checkbox" checked={settings.mirror} disabled={busy} onChange={(event) => onChange({ mirror: event.target.checked })} />
@@ -120,7 +120,7 @@ export function CookieCutterPanel({
         </label>
       </ToolSection>
 
-      <ToolAdvanced tool="cookieCutter" summary={t("cookieCutter.advancedSummary", { fillet: settings.fillet.toLocaleString(numberLocale()) })}>
+      <ToolAdvanced tool="cookieCutter" summary={t("cookieCutter.fillet")}>
         <EdgeModifierSlider
           label={t("cookieCutter.fillet")}
           value={settings.fillet}
@@ -132,7 +132,7 @@ export function CookieCutterPanel({
           disabled={busy}
           onChange={(value) => onChange({ fillet: value })}
         />
-        <span className="shell-openings-summary">{t("cookieCutter.filletHint")}</span>
+        <ToolHint text={t("cookieCutter.filletHint")} />
       </ToolAdvanced>
 
       {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("cookieCutter.working")} /> : null}

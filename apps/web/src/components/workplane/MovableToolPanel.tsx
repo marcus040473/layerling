@@ -78,7 +78,7 @@ export function MovableToolPanel({
   return (
     <aside
       ref={movable.panelRef}
-      className={`${className} ${movable.moved ? "floating" : ""} ${docked ? "docked" : ""} ${docked && dock === "withObject" && tab === "object" ? "show-object" : ""} ${movable.dragging ? "moving" : ""}`}
+      className={`${className} ${dock ? "tool-column" : ""} ${movable.moved ? "floating" : ""} ${docked ? "docked" : ""} ${docked && dock === "withObject" && tab === "object" ? "show-object" : ""} ${movable.dragging ? "moving" : ""}`}
       style={movable.style}
       tabIndex={focusOnOpen ? -1 : undefined}
       aria-label={ariaLabel}

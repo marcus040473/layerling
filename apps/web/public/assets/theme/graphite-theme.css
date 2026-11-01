@@ -7286,7 +7286,7 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .interactive-help-more 
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .tool-section-title {
-  color: #636363;
+  color: #393939;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection {
@@ -7296,8 +7296,13 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .interactive-help-more 
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.neutral {
+  background: #f8f8f8;
+  border-color: #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.neutral .tool-selection-mark {
+  color: #565656;
   background: none;
-  border: 0;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.confirmed {
@@ -7398,8 +7403,12 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection {
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.neutral {
-  background: none;
-  border: 0;
+  background: #292929;
+  border-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.neutral .tool-selection-mark {
+  color: #adadad;
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.confirmed {
@@ -7509,6 +7518,201 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel .s
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel :is(button, input, select, summary):focus-visible {
   outline: 2px solid #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-scope {
+  color: #565656;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-action button {
+  color: #515151;
+  background: #fff;
+  border: 1px solid #c8c8c8;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-action button.active {
+  color: #8a4504;
+  background: #e6e6e6;
+  border-color: #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-links {
+  color: #565656;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-secondary-action {
+  color: #9a4a1c;
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-hint-more {
+  color: #b45f0b;
+  background: none;
+  border: 0;
+  text-decoration: underline;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-outcome {
+  color: #515151;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-outcome svg,
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-note svg {
+  color: #696969;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-note {
+  color: #515151;
+  background: #f4f4f4;
+  border: 1px solid #d3d3d3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-stepper-control {
+  background: #fff;
+  border: 1px solid #c9c9c9;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-stepper-control button {
+  color: #515151;
+  background: #f8f8f8;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-stepper-control button:disabled {
+  color: #b9b9b9;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-stepper-control input {
+  color: #454545;
+  background: transparent;
+  border: 0;
+  border-inline: 1px solid #dadada;
+  outline: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role:hover {
+  border-color: #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-swatch {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role-text small {
+  color: #565656;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-label {
+  color: #585858;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-trigger {
+  color: #454545;
+  background: #fff;
+  border: 1px solid #c9c9c9;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-thumbnail {
+  background: #e3e3e3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-popover {
+  background: #fff;
+  border: 1px solid #c9c9c9;
+  box-shadow: 0 12px 28px rgba(56, 56, 56, 0.22);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-search {
+  color: #636363;
+  border: 1px solid #d3d3d3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-search input {
+  color: #454545;
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-grid button {
+  color: #454545;
+  background: #f8f8f8;
+  border: 1px solid #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-grid button.selected {
+  background: #f0f0f0;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-grid button:focus-visible {
+  outline: 2px solid #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-check {
+  color: #fff;
+  background: #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-empty {
+  color: #636363;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-section-title {
+  color: #dedede;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection-action button,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-stepper-control,
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-trigger,
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-popover {
+  color: #e1e1e1;
+  background: #292929;
+  border-color: #4d4d4d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-stepper-control button,
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-grid button {
+  color: #e1e1e1;
+  background: #2d2d2d;
+  border-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-stepper-control input,
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-search input {
+  color: #e1e1e1;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-grid button.selected {
+  background: #333333;
+  border-color: #e08a2c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-note {
+  color: #d3d3d3;
+  background: #2d2d2d;
+  border-color: #4f4f4f;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-outcome,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection-links,
+html[data-theme="dark"]:where([data-palette="graphite"]) .cut-out-role-text small,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection-scope {
+  color: #c1c1c1;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-label {
+  color: #d3d3d3;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-search {
+  border-color: #4d4d4d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-hint-more {
+  color: #f3a452;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-welcome-hide {

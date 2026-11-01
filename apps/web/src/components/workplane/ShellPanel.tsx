@@ -2,7 +2,7 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
@@ -101,6 +101,7 @@ export function ShellPanel({
       <ToolSection title={t("toolSidebar.settings")}>
         <EdgeModifierSlider
           label={t("shell.wall")}
+          primary
           value={thickness}
           min={MIN_WALL}
           max={Math.max(MIN_WALL, maxThickness)}
@@ -147,7 +148,7 @@ export function ShellPanel({
         </div>
       </ToolSection>
 
-      <ToolAdvanced tool="shell" summary={t("shell.edges") + ": " + t(`shell.edges.${edges}`)}>
+      <ToolAdvanced tool="shell" summary={t("shell.edges")}>
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("shell.edges")}>
           <span>{t("shell.edges")}</span>
           <div className="shell-opening-options">
@@ -165,7 +166,7 @@ export function ShellPanel({
               </button>
             ))}
           </div>
-          <span className="shell-openings-summary">{t("shell.edgesHint")}</span>
+          <ToolHint text={t("shell.edgesHint")} />
         </div>
       </ToolAdvanced>
 

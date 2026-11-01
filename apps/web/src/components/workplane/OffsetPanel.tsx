@@ -4,7 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -69,10 +69,7 @@ export function OffsetPanel({
   useLanguage();
   const title = t("offset.title");
   // What the folded part holds, in a line: the outer corners, and the sides only when it is ticked.
-  const summary = [
-    t("offset.advancedSummary", { edges: t(`shell.edges.${edges}`) }),
-    sideways ? t("offset.advancedSummarySideways") : "",
-  ].filter(Boolean).join(" · ");
+  const summary = [t("offset.edges"), t("offset.sideways")].join(", ");
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
@@ -121,6 +118,7 @@ export function OffsetPanel({
 
         <EdgeModifierSlider
           label={t("offset.distance")}
+          primary
           value={distance}
           min={MIN_OFFSET}
           max={MAX_OFFSET}
@@ -155,7 +153,7 @@ export function OffsetPanel({
               </button>
             ))}
           </div>
-          <span className="shell-openings-summary">{t("offset.edgesHint")}</span>
+          <ToolHint text={t("offset.edgesHint")} />
         </div>
 
         <label className="edge-modifier-field offset-copy">

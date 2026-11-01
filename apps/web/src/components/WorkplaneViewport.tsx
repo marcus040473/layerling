@@ -182,6 +182,8 @@ type WorkplaneViewportProps = {
   onShapeContextMenu?: (request: { shapeId: string | null; clientX: number; clientY: number; stackIds: string[]; facePoint?: { x: number; y: number; z: number } }) => void;
   /** Bodies marked with an outline that shows through what stands in front: the one a row of "Select other" points at (#804). */
   highlightIds?: readonly string[];
+  /** Bodies a tool gives a role, each tinted and outlined in its role's colour (Cut out: the shaping body and the one that gets the cavity). */
+  roleHighlights?: readonly { id: string; color: string }[];
   onSetPlacementWorkplane: (workplane: PlacementWorkplane, source: "shape" | "base") => void;
   onToggleWorkplaneTool: () => void;
   onInteractionActiveChange?: (active: boolean) => void;
@@ -1420,6 +1422,7 @@ export function WorkplaneViewport({
   onSelectShape,
   onShapeContextMenu,
   highlightIds,
+  roleHighlights,
   onSetPlacementWorkplane,
   onToggleWorkplaneTool,
   onInteractionActiveChange,
@@ -5114,6 +5117,17 @@ export function WorkplaneViewport({
     if (!state) return;
     syncPickHighlight(state, highlightKey ? highlightKey.split("\0") : [], "menu-pick-highlight");
   }, [highlightKey, shapes]);
+  const roleKey = roleHighlights?.map((role) => `${role.id}\u0001${role.color}`).join("\0") ?? "";
+  useEffect(() => {
+    const state = threeRef.current;
+    if (!state) return;
+    // Two layers, so a body keeps its colour when the other's role changes; a role taken off clears its layer.
+    const roles = roleKey ? roleKey.split("\0").map((entry) => entry.split("\u0001")) : [];
+    for (let index = 0; index < 2; index += 1) {
+      const role = roles[index];
+      syncPickHighlight(state, role ? [role[0]] : [], `role-highlight-${index}`, role?.[1]);
+    }
+  }, [roleKey, shapes]);
   const pickOnlyPointer = usePickOnlyPointer(pickOnly, pickShape);
   useViewportKeyboardHooks(threeRef);
   const pickOnlyKey = pickOnly ? pickOnly.ids.join("\0") : null;

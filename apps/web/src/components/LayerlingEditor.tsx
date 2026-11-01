@@ -49,7 +49,7 @@ import { SketchWorkspace, type SketchMeasurement, type SketchPrimitive, type Ske
 import { EdgeModifierPanel } from "./workplane/EdgeModifierPanel";
 import { ShellPanel } from "./workplane/ShellPanel";
 import { OffsetPanel } from "./workplane/OffsetPanel";
-import { CutOutPanel } from "./workplane/CutOutPanel";
+import { CUT_OUT_ROLE_COLORS, CutOutPanel } from "./workplane/CutOutPanel";
 import { COOKIE_CUTTER_SETTINGS_DEFAULTS, CookieCutterPanel, type CookieCutterSettings } from "./workplane/CookieCutterPanel";
 import { FlexiPanel, type FlexiToolSettings } from "./workplane/FlexiPanel";
 import { LidPanel } from "./workplane/LidPanel";
@@ -14305,8 +14305,6 @@ export function LayerlingEditor({
   // `stack`: every body under the pointer, front to back; `listing`: the menu shows them for "Select other" (#804).
   const [shapeContextMenu, setShapeContextMenu] = useState<{ x: number; y: number; onShape: boolean; stack: string[]; listing?: boolean; facePoint?: { x: number; y: number; z: number } } | null>(null);
   const [menuHighlightIds, setMenuHighlightIds] = useState<string[]>([]);
-  // The body a row of Cut out points at, outlined in the view while the pointer is on the row.
-  const [cutOutHighlightId, setCutOutHighlightId] = useState<string | null>(null);
   const closeShapeContextMenu = useCallback(() => {
     setShapeContextMenu(null);
     setMenuHighlightIds([]);
@@ -14855,7 +14853,8 @@ export function LayerlingEditor({
           onMirrorSelection={mirrorSelectionAcross}
           onSelectShape={selectShape}
           onShapeContextMenu={historyViewState ? undefined : openShapeContextMenu}
-          highlightIds={cutOutTool && cutOutHighlightId ? [cutOutHighlightId] : menuHighlightIds}
+          highlightIds={menuHighlightIds}
+          roleHighlights={cutOutTool ? [{ id: cutOutTool.partId, color: CUT_OUT_ROLE_COLORS.part }, { id: cutOutTool.hostId, color: CUT_OUT_ROLE_COLORS.host }] : undefined}
           onSetPlacementWorkplane={setViewportPlacementWorkplane}
           onToggleWorkplaneTool={activateWorkplaneTool}
           onInteractionActiveChange={updateProjectInteractionActive}
@@ -15164,7 +15163,6 @@ export function LayerlingEditor({
           error={cutOutTool.error}
           onClearanceChange={(value) => setCutOutTool((current) => current ? { ...current, clearance: value, error: null } : current)}
           onSwap={() => setCutOutTool((current) => current ? { ...current, partId: current.hostId, hostId: current.partId, error: null } : current)}
-          onHighlight={(role) => setCutOutHighlightId(role === "part" ? cutOutTool.partId : role === "host" ? cutOutTool.hostId : null)}
           onApply={applyCutOutTool}
           onCancel={() => setCutOutTool(null)}
         />

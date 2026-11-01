@@ -155,6 +155,7 @@ export function EdgeModifierSlider({
   decimals,
   onEnter,
   onChange,
+  primary = false,
 }: {
   label: string;
   value: number;
@@ -177,6 +178,8 @@ export function EdgeModifierSlider({
   /** Enter takes the typed value and then calls this with it, for a window that applies on Enter (#760). */
   onEnter?: (value: number) => void;
   onChange: (value: number) => void;
+  /** A tool's main value keeps its slider in the column; the others are a field beside their label. */
+  primary?: boolean;
 }) {
   const safeMin = Number.isFinite(min) ? min : 0;
   const safeMax = Math.max(safeMin, Number.isFinite(max) ? max : safeMin);
@@ -243,7 +246,7 @@ export function EdgeModifierSlider({
   };
 
   return (
-    <label className="edge-modifier-field edge-modifier-slider range-property" style={{ "--slider-pos": `${position}%` } as CSSProperties}>
+    <label className={`edge-modifier-field edge-modifier-slider range-property${primary ? " primary" : ""}`} style={{ "--slider-pos": `${position}%` } as CSSProperties}>
       <span className="range-property-header">
         <span className="range-property-name">{label}</span>
         <span className="range-value-control">
@@ -490,6 +493,7 @@ export function EdgeModifierPanel({
         ) : null}
         <EdgeModifierSlider
           label={kind === "fillet" ? t(variable ? "edge.radiusStart" : "edge.radius") : t("edge.distance")}
+          primary
           value={amount}
           min={amountMin}
           max={amountMax}
@@ -530,7 +534,7 @@ export function EdgeModifierPanel({
         ) : null}
       </ToolSection>
 
-      <ToolAdvanced tool="edge" summary={t("edge.advancedSummary", { angle: sharpAngle, quality: t(quality === "draft" ? "edge.draft" : quality === "fine" ? "edge.fine" : "edge.standard") })}>
+      <ToolAdvanced tool="edge" summary={[t("edge.sharpThreshold"), t("edge.onlyVisibleEdges"), t("edge.tangentChains"), t("edge.keepSize"), t("edge.previewQuality")].join(", ")}>
         <EdgeModifierSlider label={t("edge.sharpThreshold")} value={sharpAngle} min={1} max={CAD_MODIFIER_MAX_SHARP_ANGLE} step={1} unit="°" workspace={workspace} disabled={!prepared} onChange={onSharpAngleChange} />
         <label className="edge-modifier-check" title={t("edge.onlyVisibleEdgesHint")}>
           <input type="checkbox" checked={onlyVisibleEdges} disabled={!prepared} onChange={(event) => onOnlyVisibleEdgesChange(event.currentTarget.checked)} />

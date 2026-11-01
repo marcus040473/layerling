@@ -4,8 +4,8 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
-import { numberLocale, t } from "@/lib/i18n";
+import { ToolAdvanced, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus, ToolStepper } from "@/components/workplane/ToolPanelParts";
+import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { ARRAY_MAX_COUNT, ARRAY_MIN_COUNT, arrayGroupsCopies, type ArrayMode, type ArraySettings } from "@/lib/shapeArray";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -60,7 +60,6 @@ export function ArrayPanel({
   useLanguage();
   const title = t("array.title");
   const halfPlate = Math.max(workspace.width, workspace.depth) / 2;
-  const millimetres = (value: number) => value.toLocaleString(numberLocale());
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel array-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
@@ -104,14 +103,12 @@ export function ArrayPanel({
           <span>{t("array.groupCopies")}</span>
         </label>
 
-        <EdgeModifierSlider
+        <ToolStepper
           label={t("array.count")}
           value={settings.count}
           min={ARRAY_MIN_COUNT}
           max={ARRAY_MAX_COUNT}
-          step={1}
-          workspace={workspace}
-          onChange={(value) => onChange({ count: Math.round(value) })}
+          onChange={(count) => onChange({ count })}
         />
 
         {settings.mode === "row" ? (
@@ -142,7 +139,7 @@ export function ArrayPanel({
             </div>
             {settings.fit && fitBody && fitGap !== null ? (
               <>
-                <span className="shell-openings-summary">{t("array.fitHint", { name: fitBody.name })}</span>
+                <ToolHint text={t("array.fitHint", { name: fitBody.name })} />
                 <EdgeModifierSlider
                   label={t("array.fitGap")}
                   value={Math.round(fitGap * 100) / 100}
@@ -155,7 +152,7 @@ export function ArrayPanel({
                 />
               </>
             ) : fitBody ? null : (
-              <span className="shell-openings-summary">{t("array.fitNone")}</span>
+              <ToolHint text={t("array.fitNone")} />
             )}
             {ROW_AXES.map(({ key, label }) => (
               <EdgeModifierSlider
@@ -228,7 +225,7 @@ export function ArrayPanel({
 
       {/* The screw and the spiral are the rarer part of a circle. */}
       {settings.mode === "row" ? null : (
-        <ToolAdvanced tool="array" summary={t("array.advancedSummary", { rise: millimetres(settings.rise), radius: millimetres(settings.radiusChange) })}>
+        <ToolAdvanced tool="array" summary={[t("array.rise"), t("array.radiusChange")].join(", ")}>
           <EdgeModifierSlider
             label={t("array.rise")}
             value={settings.rise}

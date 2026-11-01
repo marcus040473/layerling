@@ -4,7 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import {
@@ -124,6 +124,7 @@ export function HolePatternPanel({
 
         <EdgeModifierSlider
           label={sizeLabel}
+          primary
           value={settings.size}
           min={HOLE_PATTERN_MIN_SIZE}
           max={HOLE_PATTERN_MAX_SIZE / 2}
@@ -183,7 +184,7 @@ export function HolePatternPanel({
               : { spacing });
           }}
         />
-        <span className="shell-openings-summary">{t("holePattern.wallHint")}</span>
+        <ToolHint text={t("holePattern.wallHint")} />
 
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.arrangement")}>
           <span>{t("holePattern.arrangement")}</span>

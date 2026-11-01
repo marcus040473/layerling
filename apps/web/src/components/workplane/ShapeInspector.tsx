@@ -3,7 +3,8 @@
 import { displayY, displayYTurn, insideZ, insideZTurn } from "@/lib/displayAxes";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicker";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
 import { ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Layers, Link2, LoaderCircle, Lock, Minus, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Ruler, Split, Tags, Unlock, Waves, X } from "lucide-react";
@@ -5377,6 +5378,7 @@ export function SurfaceTextureCard({
       disabled={disabled || busy}
       onChange={onChange}
       onInteractionActiveChange={onInteractionActiveChange}
+      primary={id === "surfaceDepth"}
     />
   );
   const striped = settings.pattern === "grooves" || settings.pattern === "knurl";
@@ -5453,7 +5455,7 @@ export function SurfaceTextureCard({
       onChange={(value) => set({ axis: value as SurfaceTextureSettings["axis"] })}
     />
   );
-  // Docked, the selection box above says where the pattern goes; the card says it over its buttons.
+  // Where the pattern goes, with the buttons to pick faces (the card's own; docked, the selection line holds them).
   const facesPart = (withSummary: boolean) => text || !onFacePick ? null : (
                 <>
                   {withSummary ? <p className="cylinder-wrap-hint">{picked ? t("inspector.surfaceFacesSome", { count: settings.faces.length }) : t("inspector.surfaceFacesAll")}</p> : null}
@@ -5481,40 +5483,57 @@ export function SurfaceTextureCard({
                       <span>{t("inspector.surfaceFacesClear")}</span>
                     </button>
                   ) : null}
-                  {facePicking ? <p className="cylinder-wrap-hint">{t("inspector.surfaceFacesPickHint")}</p> : null}
+                  {facePicking ? <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceFacesPickHint")} /> : null}
                 </>
   );
   const patternLabel = (pattern: SurfaceTexturePattern) => t(SURFACE_TEXTURE_LABELS.pattern[pattern]);
   const title = t("inspector.surfaceTexture");
   const bodyId = `surface-texture-${shape.id}`;
-  const advancedSummary = [
-    projectionShown ? `${t("inspector.surfaceProjection")}: ${t(SURFACE_TEXTURE_LABELS.projection[settings.projection])}` : "",
-    text ? "" : `${t("inspector.surfaceDetail")}: ${t(SURFACE_TEXTURE_LABELS.detail[settings.detail])}`,
-  ].filter(Boolean).join(" · ");
+  // Folded, Advanced names what it holds for this pattern; the mask tip moved to "How it works".
+  const advancedSummary = (cracks
+    ? [t("inspector.surfaceCrackBranch"), t("inspector.surfaceCrackJag"), t("inspector.surfaceCrackRough"), t("inspector.surfaceCrackSeed")]
+    : bark || wood
+      ? [...(wood ? [t("inspector.surfaceWoodKnots"), t("inspector.surfaceWoodWobble")] : []), t("inspector.surfaceSeed")]
+      : image
+        ? [t("inspector.surfaceImageTurn"), t("inspector.surfaceImageBlur")]
+        : bricks
+          ? [t("inspector.surfaceBrickVary")]
+          : text || grain
+            ? []
+            : [t(SURFACE_COVERAGE_LABEL[settings.pattern] ?? "inspector.surfaceCoverage"), ...(settings.pattern === "bumps" ? [] : [t("inspector.surfaceProfile")])]
+  ).concat(text ? [] : [t("inspector.surfaceZones")], [t("inspector.surfaceFade"), t("inspector.surfaceDetail")]).join(", ");
   // What follows the direction: the gold of cracks, or what grain and wood say about where they lie.
   const afterDirection = cracks ? (
                 <>
                   {/* The gold: a part of its own in the notch, for a second filament. */}
                   <ToggleProperty label={t("inspector.surfaceCrackGold")} value={settings.crackGold} disabled={disabled || busy} onChange={(crackGold) => set({ crackGold, ...(crackGold ? { direction: "inward" as const } : {}) })} />
                   {settings.crackGold ? range("surfaceCrackRecess", t("inspector.surfaceCrackRecess"), settings.crackRecess, SURFACE_TEXTURE_LIMITS.crackRecess, 0.05, (crackRecess) => set({ crackRecess })) : null}
-                  {settings.crackGold ? <p className="cylinder-wrap-hint">{t("inspector.surfaceCrackGoldHint")}</p> : null}
+                  {settings.crackGold ? <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceCrackGoldHint")} /> : null}
                 </>
               ) : text ? null : grain ? (
-                <p className="cylinder-wrap-hint">{t("inspector.surfaceGrainHint")}</p>
+                <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceGrainHint")} />
               ) : wood ? (
-                <p className="cylinder-wrap-hint">{t("inspector.surfaceWoodHint")}</p>
+                <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceWoodHint")} />
   ) : null;
   // The pattern and what goes with it, and the rarer settings, are the same in the card and in the docked tool.
   const patternFields = (
     <>
-    <SelectProperty
-      type="select"
-      label={t("inspector.surfacePattern")}
-      value={settings.pattern}
-      options={options(SURFACE_TEXTURE_PATTERNS, (value) => t(SURFACE_TEXTURE_LABELS.pattern[value]))}
-      disabled={disabled || busy}
-      onChange={(value) => set(surfaceSettingsForPattern(settings, value as SurfaceTexturePattern))}
-    />
+    {host ? (
+      <SurfacePatternPicker
+        value={settings.pattern}
+        disabled={disabled || busy}
+        onChange={(value) => set(surfaceSettingsForPattern(settings, value))}
+      />
+    ) : (
+      <SelectProperty
+        type="select"
+        label={t("inspector.surfacePattern")}
+        value={settings.pattern}
+        options={options(SURFACE_TEXTURE_PATTERNS, (value) => t(SURFACE_TEXTURE_LABELS.pattern[value]))}
+        disabled={disabled || busy}
+        onChange={(value) => set(surfaceSettingsForPattern(settings, value as SurfaceTexturePattern))}
+      />
+    )}
     {cracks ? (
       <>
         <SelectProperty
@@ -5553,7 +5572,7 @@ export function SurfaceTextureCard({
         {range("surfaceTextAround", t("inspector.surfaceTextAround"), settings.textAround, SURFACE_TEXTURE_LIMITS.textAround, 1, (textAround) => set({ textAround }))}
         {range("surfaceTextHeight", t("inspector.surfaceTextHeight"), settings.textHeight, SURFACE_TEXTURE_LIMITS.textHeight, 1, (textHeight) => set({ textHeight }))}
         {range("surfaceTextTurn", t("inspector.surfaceTextTurn"), settings.textTurn, SURFACE_TEXTURE_LIMITS.textTurn, 1, (textTurn) => set({ textTurn }))}
-        <p className="cylinder-wrap-hint">{t("inspector.surfaceTextHint")}</p>
+        <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceTextHint")} />
       </>
     ) : (
       <>
@@ -5683,26 +5702,26 @@ export function SurfaceTextureCard({
               onChange={(value) => set({ imageTiling: value as SurfaceTextureSettings["imageTiling"] })}
             />
             <ToggleProperty label={t("inspector.surfaceImageInvert")} value={settings.imageInvert} disabled={disabled || busy} onChange={(imageInvert) => set({ imageInvert })} />
-            <p className="cylinder-wrap-hint">{t("inspector.surfaceImageHint")}</p>
+            <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceImageHint")} />
           </>
         ) : null}
         {carbon ? (
           <>
             {range("surfaceCarbonCross", t("inspector.surfaceCarbonCross"), settings.carbonCross, [SURFACE_TEXTURE_LIMITS.carbonCross[0], 10], 0.1, (carbonCross) => set({ carbonCross }))}
-            <p className="cylinder-wrap-hint">{t("inspector.surfaceCarbonHint")}</p>
+            <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceCarbonHint")} />
           </>
         ) : null}
         {bricks ? (
           <>
             {range("surfaceBrickHeight", t("inspector.surfaceBrickHeight"), settings.brickHeight, [SURFACE_TEXTURE_LIMITS.brickHeight[0], 30], 0.1, (brickHeight) => set({ brickHeight }))}
             {range("surfaceBrickJoint", t("inspector.surfaceBrickJoint"), settings.brickJoint, [SURFACE_TEXTURE_LIMITS.brickJoint[0], 5], 0.05, (brickJoint) => set({ brickJoint }))}
-            <p className="cylinder-wrap-hint">{t("inspector.surfaceBrickHint")}</p>
+            <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceBrickHint")} />
           </>
         ) : null}
         {settings.pattern === "cells" || grain ? (
           <>
             {range("surfaceSeed", t("inspector.surfaceSeed"), settings.seed, [1, 999], 1, (seed) => set({ seed }))}
-            <p className="cylinder-wrap-hint">{t("inspector.surfaceSeedHint")}</p>
+            <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceSeedHint")} />
           </>
         ) : null}
       </>
@@ -5746,14 +5765,14 @@ export function SurfaceTextureCard({
         {percent("surfaceCrackJag", t("inspector.surfaceCrackJag"), settings.crackJag, (crackJag) => set({ crackJag }))}
         {percent("surfaceCrackRough", t("inspector.surfaceCrackRough"), settings.crackRough, (crackRough) => set({ crackRough }))}
         {range("surfaceCrackSeed", t("inspector.surfaceCrackSeed"), settings.crackSeed, [0, 999], 1, (crackSeed) => set({ crackSeed }))}
-        <p className="cylinder-wrap-hint">{t("inspector.surfaceCrackSeedHint")}</p>
+        <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceCrackSeedHint")} />
       </>
     ) : bark || wood ? (
       <>
         {wood ? range("surfaceWoodKnots", t("inspector.surfaceWoodKnots"), settings.woodKnots, SURFACE_TEXTURE_LIMITS.woodKnots, 1, (woodKnots) => set({ woodKnots })) : null}
         {wood ? percent("surfaceWoodWobble", t("inspector.surfaceWoodWobble"), settings.woodWobble, (woodWobble) => set({ woodWobble })) : null}
         {range("surfaceSeed", t("inspector.surfaceSeed"), settings.seed, [1, 999], 1, (seed) => set({ seed }))}
-        <p className="cylinder-wrap-hint">{t(wood ? "inspector.surfaceWoodSeedHint" : "inspector.surfaceBarkSeedHint")}</p>
+        <ToolHint className="cylinder-wrap-hint" text={t(wood ? "inspector.surfaceWoodSeedHint" : "inspector.surfaceBarkSeedHint")} />
       </>
     ) : text || grain ? null : image ? (
       <>
@@ -5766,7 +5785,7 @@ export function SurfaceTextureCard({
         {settings.brickVary > 0 ? (
           <>
             {range("surfaceSeed", t("inspector.surfaceSeed"), settings.seed, [1, 999], 1, (seed) => set({ seed }))}
-            <p className="cylinder-wrap-hint">{t("inspector.surfaceBrickVaryHint")}</p>
+            <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceBrickVaryHint")} />
           </>
         ) : null}
       </>
@@ -5819,13 +5838,13 @@ export function SurfaceTextureCard({
               onChange={(value) => set({ capEdge: value as SurfaceTextureSettings["capEdge"] })}
             />
             {/* What the chosen edge does, one line under the whole row: the long label leaves the hint column too narrow. */}
-            <p className="cylinder-wrap-hint">{t(SURFACE_TEXTURE_LABELS.capEdgeHint[capEdgeShown])}</p>
+            <ToolHint className="cylinder-wrap-hint" text={t(SURFACE_TEXTURE_LABELS.capEdgeHint[capEdgeShown])} />
           </>
         ) : null}
         {grain || cracks || bricks || wood || bark ? null : (
           <>
             {range("surfaceFaceTurn", t("inspector.surfaceFaceTurn"), settings.faceTurn, SURFACE_TEXTURE_LIMITS.faceTurn, 1, (faceTurn) => set({ faceTurn }))}
-            <p className="cylinder-wrap-hint">{t("inspector.surfaceFaceTurnHint")}</p>
+            <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceFaceTurnHint")} />
           </>
         )}
         {/* Picked faces say where it goes: walls, top, bottom and the height band then do not count. */}
@@ -5843,7 +5862,7 @@ export function SurfaceTextureCard({
       </>
     )}
     {range("surfaceFade", t("inspector.surfaceFade"), settings.fade, SURFACE_TEXTURE_LIMITS.fade, 0.1, (fade) => set({ fade }))}
-    <p className="cylinder-wrap-hint">{t("inspector.surfaceFadeHint")}</p>
+    <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceFadeHint")} />
     <SelectProperty
       type="select"
       label={t("inspector.surfaceDetail")}
@@ -5852,7 +5871,7 @@ export function SurfaceTextureCard({
       disabled={disabled || busy}
       onChange={(value) => set({ detail: value as SurfaceTextureSettings["detail"] })}
     />
-    <p className="cylinder-wrap-hint">{t("inspector.surfaceMaskTip")}</p>
+    <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceMaskTip")} />
     </>
   );
   if (host) {
@@ -5882,32 +5901,63 @@ export function SurfaceTextureCard({
                     ready
                     confirm={picked}
                     text={shape.name}
-                    detail={appliedOnly ? t("inspector.surfaceApplied", { pattern: surfacePatternLabel(applied!.pattern) }) : text || !onFacePick ? undefined : picked ? t("inspector.surfaceFacesSome", { count: settings.faces.length }) : t("inspector.surfaceFacesAll")}
+                    scope={appliedOnly || text || !onFacePick ? undefined : picked ? t("toolSidebar.facesCount", { count: settings.faces.length }) : t("toolSidebar.allFaces")}
+                    detail={appliedOnly ? t("inspector.surfaceApplied", { pattern: surfacePatternLabel(applied!.pattern) }) : undefined}
+                    action={appliedOnly || text || !onFacePick ? undefined : (
+                      <button
+                        type="button"
+                        className={facePicking ? "active" : ""}
+                        aria-pressed={facePicking}
+                        disabled={disabled || busy}
+                        onClick={() => onFacePick(facePicking ? null : settings.faces, settings.edgeAngle)}
+                      >
+                        {t(facePicking ? "inspector.surfaceFacesDone" : "inspector.surfaceFacesPick")}
+                      </button>
+                    )}
                   />
-                  {appliedOnly ? null : facesPart(false)}
-                  {applied ? (
-                    <button className="inspector-action-button" type="button" disabled={disabled || busy} onClick={onRemove}>
-                      <Eraser size={17} strokeWidth={2.5} />
+                  {!appliedOnly && !text && onFacePick && (picked || facePicking) ? (
+                    <div className="tool-selection-links">
+                      {picked ? (
+                        <button
+                          type="button"
+                          className="tool-hint-more"
+                          disabled={disabled || busy}
+                          onClick={() => {
+                            set({ faces: [] });
+                            if (facePicking) onFacePick([], settings.edgeAngle);
+                          }}
+                        >
+                          {t("inspector.surfaceFacesClear")}
+                        </button>
+                      ) : null}
+                      {facePicking ? <span>{t("inspector.surfaceFacesPickHint")}</span> : null}
+                    </div>
+                  ) : null}
+                  {applied && onRemove ? (
+                    <button className="tool-secondary-action" type="button" disabled={disabled || busy} onClick={onRemove}>
+                      <Eraser size={15} strokeWidth={2.5} />
                       <span>{t("inspector.surfaceRemove")}</span>
                     </button>
                   ) : null}
+                  <ToolHelp>{applied ? t("inspector.surfaceChangeHint", { pattern: surfacePatternLabel(applied.pattern) }) : t("inspector.surfaceHint")} {t("inspector.surfaceMaskTip")}</ToolHelp>
                 </ToolSection>
                 {appliedOnly ? null : (<>
                   <ToolSection title={t("toolSidebar.settings")}>
-              {patternFields}
-              {afterDirection}
-                    {axisShown && axisInSettings ? axisField : null}
-                  </ToolSection>
-                  <ToolAdvanced tool="surface" summary={advancedSummary}>
+                    {patternFields}
+                    {afterDirection}
                     {projectionShown ? projectionField : null}
-                    {axisShown && !axisInSettings ? axisField : null}
-                  {moreFields}
-                  </ToolAdvanced>
-                  <p className="cylinder-wrap-hint">{applied ? t("inspector.surfaceChangeHint", { pattern: surfacePatternLabel(applied.pattern) }) : t("inspector.surfaceHint")}</p>
+                    {axisShown ? axisField : null}
+                  </ToolSection>
+                  {advancedSummary ? (
+                    <ToolAdvanced tool="surface" summary={advancedSummary}>
+                      {moreFields}
+                    </ToolAdvanced>
+                  ) : null}
                   {busy ? <ToolStatus state="working" text={t("inspector.surfaceWorking")} /> : null}
                 </>)}
               </div>
               <div className="edge-modifier-footer">
+                {appliedOnly ? null : <ToolOutcome text={t("inspector.surfaceOutcome")} />}
                 <button type="button" className="secondary" onClick={() => setOpen(false)}>{t("common.cancel")}</button>
                 {appliedOnly ? null : (
                   <button type="button" className="primary" disabled={disabled || busy} onClick={apply}>
@@ -6578,7 +6628,8 @@ function RangeProperty({
   formula,
   onFormula,
   onInteractionActiveChange,
-}: RangePropertyConfig & { workspace: WorkplaneWorkspaceSettings; disabled?: boolean; onReset?: () => void; onDefault?: () => void; formula?: string; onFormula?: (text: string | null | undefined) => void; onInteractionActiveChange?: (active: boolean) => void }) {
+  primary = false,
+}: RangePropertyConfig & { primary?: boolean; workspace: WorkplaneWorkspaceSettings; disabled?: boolean; onReset?: () => void; onDefault?: () => void; formula?: string; onFormula?: (text: string | null | undefined) => void; onInteractionActiveChange?: (active: boolean) => void }) {
   const holdInteraction = useInteractionHold(onInteractionActiveChange);
   const snapStepMm = useContext(SliderSnapContext);
   const draggingSliderRef = useRef(false);
@@ -6727,7 +6778,7 @@ function RangeProperty({
     setDraft(formatShown(next));
   };
   const row = (
-    <label className="range-property" style={{ "--slider-pos": `${position}%` } as CSSProperties}>
+    <label className={primary ? "range-property primary" : "range-property"} style={{ "--slider-pos": `${position}%` } as CSSProperties}>
       <span className="range-property-header">
         <span className="range-property-name">{label}{onReset ? <PropertyResetButton onClick={onReset} /> : null}</span>
         <span className="range-value-control">
@@ -6894,7 +6945,7 @@ function SelectProperty({ label, value, options, hint, fontSample, disabled, onC
           )
         ))}
       </select>
-      {hint ? <small className="select-property-hint">{hint}</small> : null}
+      {hint ? <ToolHint className="select-property-hint" text={hint} /> : null}
     </label>
   );
 }
