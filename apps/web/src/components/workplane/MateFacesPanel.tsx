@@ -3,6 +3,7 @@
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -40,8 +41,9 @@ export function MateFacesPanel({
 }) {
   useLanguage();
   const title = t("mate.title");
+  const stepText = t(mode === "concentric" ? `mate.stepRound.${step}` : `mate.step.${step}`);
   return (
-    <MovableToolPanel className="edge-modifier-panel mate-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel mate-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -54,42 +56,44 @@ export function MateFacesPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{t(mode === "concentric" ? `mate.stepRound.${step}` : `mate.step.${step}`)}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={step === "ready"} text={targetName} detail={stepText} />
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("mate.mode")}>
-        <span>{t("mate.mode")}</span>
-        <div className="shell-opening-options">
-          {MATE_MODES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={mode === option}
-              className={mode === option ? "active" : ""}
-              onClick={() => onModeChange(option)}
-            >
-              {t(`mate.mode.${option}`)}
-            </button>
-          ))}
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("mate.mode")}>
+          <span>{t("mate.mode")}</span>
+          <div className="shell-opening-options">
+            {MATE_MODES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={mode === option}
+                className={mode === option ? "active" : ""}
+                onClick={() => onModeChange(option)}
+              >
+                {t(`mate.mode.${option}`)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {mode === "concentric" ? null : (
-        <EdgeModifierSlider
-          label={t("mate.gap")}
-          value={gap}
-          min={0}
-          max={MAX_GAP}
-          step={0.1}
-          workspace={workspace}
-          length
-          onChange={onGapChange}
-        />
-      )}
+        {mode === "concentric" ? null : (
+          <EdgeModifierSlider
+            label={t("mate.gap")}
+            value={gap}
+            min={0}
+            max={MAX_GAP}
+            step={0.1}
+            workspace={workspace}
+            length
+            onChange={onGapChange}
+          />
+        )}
+      </ToolSection>
 
+      <ToolStatus state={step === "ready" ? "ready" : "needed"} text={step === "ready" ? t("toolSidebar.ready") : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={step !== "ready"} onClick={onApply}>

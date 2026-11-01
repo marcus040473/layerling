@@ -4,6 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import {
@@ -80,9 +81,12 @@ export function HolePatternPanel({
         ? t("holePattern.none")
         : t(holeCount === 1 ? "holePattern.count.one" : "holePattern.count.many", { count: holeCount });
   const maxDepth = Math.max(1, Math.ceil(thickness * 2) / 2);
+  // Holes fit and Create can make them. Their count stands with the face picked; a face still to pick, too many holes
+  // or none is said in the status line.
+  const fits = ready && !tooMany && holeCount > 0;
 
   return (
-    <MovableToolPanel className="edge-modifier-panel hole-pattern-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel hole-pattern-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -95,165 +99,167 @@ export function HolePatternPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{status}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={ready} text={targetName} detail={!ready || fits ? status : undefined} />
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.form")}>
-        <span>{t("holePattern.form")}</span>
-        <div className="shell-opening-options hole-pattern-forms">
-          {HOLE_FORMS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.form === option}
-              className={settings.form === option ? "active" : ""}
-              onClick={() => onChange({ form: option })}
-            >
-              {t(`holePattern.form.${option}`)}
-            </button>
-          ))}
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.form")}>
+          <span>{t("holePattern.form")}</span>
+          <div className="shell-opening-options hole-pattern-forms">
+            {HOLE_FORMS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={settings.form === option}
+                className={settings.form === option ? "active" : ""}
+                onClick={() => onChange({ form: option })}
+              >
+                {t(`holePattern.form.${option}`)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <EdgeModifierSlider
-        label={sizeLabel}
-        value={settings.size}
-        min={HOLE_PATTERN_MIN_SIZE}
-        max={HOLE_PATTERN_MAX_SIZE / 2}
-        step={0.5}
-        workspace={workspace}
-        length
-        onChange={(value) => onChange({ size: value })}
-      />
-      {twoSizes ? (
         <EdgeModifierSlider
-          label={t("holePattern.size.height")}
-          value={settings.height}
+          label={sizeLabel}
+          value={settings.size}
           min={HOLE_PATTERN_MIN_SIZE}
           max={HOLE_PATTERN_MAX_SIZE / 2}
           step={0.5}
           workspace={workspace}
           length
-          onChange={(value) => onChange({ height: value })}
+          onChange={(value) => onChange({ size: value })}
         />
-      ) : null}
-      <EdgeModifierSlider
-        label={t("holePattern.spacing")}
-        value={settings.spacing}
-        min={HOLE_PATTERN_MIN_SIZE}
-        max={HOLE_PATTERN_MAX_SPACING / 2}
-        step={0.5}
-        workspace={workspace}
-        length
-        onChange={(value) => onChange({ spacing: value })}
-      />
-      {/* A rectangle or slot spaces its rows on its own (#975): narrow holes close in the row, the rows clear of each other. */}
-      {holePatternHasRowSpacing(settings.form) ? (
+        {twoSizes ? (
+          <EdgeModifierSlider
+            label={t("holePattern.size.height")}
+            value={settings.height}
+            min={HOLE_PATTERN_MIN_SIZE}
+            max={HOLE_PATTERN_MAX_SIZE / 2}
+            step={0.5}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ height: value })}
+          />
+        ) : null}
         <EdgeModifierSlider
-          label={t("holePattern.rowSpacing")}
-          value={holePatternRowSpacing(settings)}
+          label={t("holePattern.spacing")}
+          value={settings.spacing}
           min={HOLE_PATTERN_MIN_SIZE}
           max={HOLE_PATTERN_MAX_SPACING / 2}
           step={0.5}
           workspace={workspace}
           length
-          onChange={(value) => onChange({ rowSpacing: value })}
+          onChange={(value) => onChange({ spacing: value })}
         />
-      ) : null}
-      {/* The same as the spacing, said as the wall left between two holes (#239): set one and the other follows. */}
-      <EdgeModifierSlider
-        label={t("holePattern.wall")}
-        value={Math.max(HOLE_PATTERN_MIN_WALL, holePatternWall(settings))}
-        min={HOLE_PATTERN_MIN_WALL}
-        max={HOLE_PATTERN_MAX_SPACING / 2}
-        step={0.1}
-        workspace={workspace}
-        length
-        onChange={(value) => {
-          const spacing = holePatternMinSpacing(settings, value);
-          onChange(holePatternHasRowSpacing(settings.form)
-            ? { spacing, rowSpacing: holePatternMinRowSpacing({ ...settings, spacing }, value) }
-            : { spacing });
-        }}
-      />
-
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.arrangement")}>
-        <span>{t("holePattern.arrangement")}</span>
-        <div className="shell-opening-options">
-          {ARRANGEMENTS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.arrangement === option}
-              className={settings.arrangement === option ? "active" : ""}
-              onClick={() => onChange({ arrangement: option })}
-            >
-              {t(`holePattern.arrangement.${option}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <EdgeModifierSlider
-        label={t("holePattern.margin")}
-        value={settings.margin}
-        min={0}
-        max={HOLE_PATTERN_MAX_MARGIN / 2}
-        step={0.5}
-        workspace={workspace}
-        length
-        onChange={(value) => onChange({ margin: value })}
-      />
-
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.depth")}>
-        <span>{t("holePattern.depth")}</span>
-        <div className="shell-opening-options">
-          {[true, false].map((through) => (
-            <button
-              key={String(through)}
-              type="button"
-              role="radio"
-              aria-checked={(settings.depth === null) === through}
-              className={(settings.depth === null) === through ? "active" : ""}
-              onClick={() => onChange({ depth: through ? null : Math.min(maxDepth, Math.max(1, Math.round(thickness / 2 * 2) / 2)) })}
-            >
-              {t(through ? "holePattern.depth.through" : "holePattern.depth.custom")}
-            </button>
-          ))}
-        </div>
-      </div>
-      {settings.depth !== null ? (
+        {/* A rectangle or slot spaces its rows on its own (#975): narrow holes close in the row, the rows clear of each other. */}
+        {holePatternHasRowSpacing(settings.form) ? (
+          <EdgeModifierSlider
+            label={t("holePattern.rowSpacing")}
+            value={holePatternRowSpacing(settings)}
+            min={HOLE_PATTERN_MIN_SIZE}
+            max={HOLE_PATTERN_MAX_SPACING / 2}
+            step={0.5}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ rowSpacing: value })}
+          />
+        ) : null}
+        {/* The same as the spacing, said as the wall left between two holes (#239): set one and the other follows. */}
         <EdgeModifierSlider
-          label={t("holePattern.depthValue")}
-          value={settings.depth}
-          min={0.5}
-          max={Math.max(maxDepth, settings.depth)}
+          label={t("holePattern.wall")}
+          value={Math.max(HOLE_PATTERN_MIN_WALL, holePatternWall(settings))}
+          min={HOLE_PATTERN_MIN_WALL}
+          max={HOLE_PATTERN_MAX_SPACING / 2}
+          step={0.1}
+          workspace={workspace}
+          length
+          onChange={(value) => {
+            const spacing = holePatternMinSpacing(settings, value);
+            onChange(holePatternHasRowSpacing(settings.form)
+              ? { spacing, rowSpacing: holePatternMinRowSpacing({ ...settings, spacing }, value) }
+              : { spacing });
+          }}
+        />
+
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.arrangement")}>
+          <span>{t("holePattern.arrangement")}</span>
+          <div className="shell-opening-options">
+            {ARRANGEMENTS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={settings.arrangement === option}
+                className={settings.arrangement === option ? "active" : ""}
+                onClick={() => onChange({ arrangement: option })}
+              >
+                {t(`holePattern.arrangement.${option}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <EdgeModifierSlider
+          label={t("holePattern.margin")}
+          value={settings.margin}
+          min={0}
+          max={HOLE_PATTERN_MAX_MARGIN / 2}
           step={0.5}
           workspace={workspace}
           length
-          onChange={(value) => onChange({ depth: value })}
+          onChange={(value) => onChange({ margin: value })}
         />
-      ) : null}
 
-      {ready && tooMany && !settings.allowMany ? (
-        <div className="edge-modifier-field">
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => {
-              // A clear warning first: far more holes make the cuts slow and the page can freeze (#941).
-              if (window.confirm(t("holePattern.allowManyAsk", { limit: HOLE_PATTERN_MAX_HOLES, many: HOLE_PATTERN_MANY_HOLES }))) onChange({ allowMany: true });
-            }}
-          >
-            {t("holePattern.allowMany")}
-          </button>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.depth")}>
+          <span>{t("holePattern.depth")}</span>
+          <div className="shell-opening-options">
+            {[true, false].map((through) => (
+              <button
+                key={String(through)}
+                type="button"
+                role="radio"
+                aria-checked={(settings.depth === null) === through}
+                className={(settings.depth === null) === through ? "active" : ""}
+                onClick={() => onChange({ depth: through ? null : Math.min(maxDepth, Math.max(1, Math.round(thickness / 2 * 2) / 2)) })}
+              >
+                {t(through ? "holePattern.depth.through" : "holePattern.depth.custom")}
+              </button>
+            ))}
+          </div>
         </div>
-      ) : null}
+        {settings.depth !== null ? (
+          <EdgeModifierSlider
+            label={t("holePattern.depthValue")}
+            value={settings.depth}
+            min={0.5}
+            max={Math.max(maxDepth, settings.depth)}
+            step={0.5}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ depth: value })}
+          />
+        ) : null}
 
+        {ready && tooMany && !settings.allowMany ? (
+          <div className="edge-modifier-field">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                // A clear warning first: far more holes make the cuts slow and the page can freeze (#941).
+                if (window.confirm(t("holePattern.allowManyAsk", { limit: HOLE_PATTERN_MAX_HOLES, many: HOLE_PATTERN_MANY_HOLES }))) onChange({ allowMany: true });
+              }}
+            >
+              {t("holePattern.allowMany")}
+            </button>
+          </div>
+        ) : null}
+      </ToolSection>
+
+      <ToolStatus state={busy ? "working" : fits ? "ready" : "needed"} text={busy ? t("cutOut.working") : fits ? t("toolSidebar.ready") : step === "ready" ? status : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>
           {ready ? t("holePattern.repick") : t("common.cancel")}

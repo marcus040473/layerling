@@ -4,7 +4,8 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { t } from "@/lib/i18n";
+import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
@@ -47,7 +48,7 @@ export function CookieCutterPanel({
   useLanguage();
   const title = t("editor.tool.cookieCutter");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel cookie-cutter-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel cookie-cutter-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -60,77 +61,80 @@ export function CookieCutterPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span>{t("cookieCutter.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={targetName} detail={t("cookieCutter.help")} />
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("cookieCutter.support")}>
-        <span>{t("cookieCutter.support")}</span>
-        <div className="shell-opening-options">
-          {SUPPORTS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.support === option}
-              className={settings.support === option ? "active" : ""}
-              disabled={busy}
-              onClick={() => onChange({ support: option })}
-            >
-              {t(`cookieCutter.support.${option}`)}
-            </button>
-          ))}
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("cookieCutter.support")}>
+          <span>{t("cookieCutter.support")}</span>
+          <div className="shell-opening-options">
+            {SUPPORTS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={settings.support === option}
+                className={settings.support === option ? "active" : ""}
+                disabled={busy}
+                onClick={() => onChange({ support: option })}
+              >
+                {t(`cookieCutter.support.${option}`)}
+              </button>
+            ))}
+          </div>
+          <span className="shell-openings-summary">{t(settings.support === "plate" ? "cookieCutter.supportPlateHint" : "cookieCutter.supportBridgesHint")}</span>
         </div>
-        <span className="shell-openings-summary">{t(settings.support === "plate" ? "cookieCutter.supportPlateHint" : "cookieCutter.supportBridgesHint")}</span>
-      </div>
 
-      {settings.support === "plate" ? (
+        {settings.support === "plate" ? (
+          <EdgeModifierSlider
+            label={t("cookieCutter.plate")}
+            value={settings.plate}
+            min={0.4}
+            max={5}
+            step={0.1}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ plate: value })}
+          />
+        ) : null}
+
         <EdgeModifierSlider
-          label={t("cookieCutter.plate")}
-          value={settings.plate}
-          min={0.4}
-          max={5}
+          label={t("cookieCutter.imprint")}
+          value={settings.imprint}
+          min={0}
+          max={12}
+          step={0.5}
+          workspace={workspace}
+          length
+          disabled={busy}
+          onChange={(value) => onChange({ imprint: value })}
+        />
+        <span className="shell-openings-summary">{t("cookieCutter.imprintHint")}</span>
+
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={settings.mirror} disabled={busy} onChange={(event) => onChange({ mirror: event.target.checked })} />
+          <span>{t("cookieCutter.mirror")}</span>
+        </label>
+      </ToolSection>
+
+      <ToolAdvanced tool="cookieCutter" summary={t("cookieCutter.advancedSummary", { fillet: settings.fillet.toLocaleString(numberLocale()) })}>
+        <EdgeModifierSlider
+          label={t("cookieCutter.fillet")}
+          value={settings.fillet}
+          min={0}
+          max={3}
           step={0.1}
           workspace={workspace}
           length
           disabled={busy}
-          onChange={(value) => onChange({ plate: value })}
+          onChange={(value) => onChange({ fillet: value })}
         />
-      ) : null}
+        <span className="shell-openings-summary">{t("cookieCutter.filletHint")}</span>
+      </ToolAdvanced>
 
-      <EdgeModifierSlider
-        label={t("cookieCutter.fillet")}
-        value={settings.fillet}
-        min={0}
-        max={3}
-        step={0.1}
-        workspace={workspace}
-        length
-        disabled={busy}
-        onChange={(value) => onChange({ fillet: value })}
-      />
-      <span className="shell-openings-summary">{t("cookieCutter.filletHint")}</span>
-
-      <EdgeModifierSlider
-        label={t("cookieCutter.imprint")}
-        value={settings.imprint}
-        min={0}
-        max={12}
-        step={0.5}
-        workspace={workspace}
-        length
-        disabled={busy}
-        onChange={(value) => onChange({ imprint: value })}
-      />
-      <span className="shell-openings-summary">{t("cookieCutter.imprintHint")}</span>
-
-      <label className="edge-modifier-field offset-copy">
-        <input type="checkbox" checked={settings.mirror} disabled={busy} onChange={(event) => onChange({ mirror: event.target.checked })} />
-        <span>{t("cookieCutter.mirror")}</span>
-      </label>
-
-      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : null}
+      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("cookieCutter.working") : t("toolSidebar.ready")} />}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>
