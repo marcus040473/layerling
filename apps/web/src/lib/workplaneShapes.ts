@@ -771,6 +771,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.screwHoleHeadDepth === b.screwHoleHeadDepth &&
     a.screwHoleAngle === b.screwHoleAngle &&
     a.portProfile === b.portProfile &&
+    a.portClearance === b.portClearance &&
     a.cornerFillet === b.cornerFillet &&
     a.topBottomFillet === b.topBottomFillet &&
     a.roundedBoxQuality === b.roundedBoxQuality &&
@@ -808,6 +809,9 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     JSON.stringify(a.textKeyring ?? null) === JSON.stringify(b.textKeyring ?? null) &&
     JSON.stringify(a.textEdge ?? null) === JSON.stringify(b.textEdge ?? null) &&
     qrSettingsEqual(a.qrCode, b.qrCode) &&
+    (a.sbcBoard?.board ?? null) === (b.sbcBoard?.board ?? null) &&
+    (a.sbcBoard?.clearance ?? 0) === (b.sbcBoard?.clearance ?? 0) &&
+    (a.sbcBoard?.reach ?? 0) === (b.sbcBoard?.reach ?? 0) &&
     a.importedMesh === b.importedMesh &&
     a.imagePlate === b.imagePlate &&
     a.sketchProfile === b.sketchProfile &&

@@ -125,7 +125,7 @@ import {
   DEFAULT_TEARDROP_WIDTH,
   teardropHeightForTipAngle,
 } from "@/lib/teardropGeometry";
-import { DEFAULT_PORT_DEPTH, DEFAULT_PORT_PRESET, normalizePortCorner, normalizePortProfile, PORT_PRESETS } from "@/lib/portGeometry";
+import { DEFAULT_PORT_DEPTH, DEFAULT_PORT_PRESET, normalizePortClearance, normalizePortCorner, normalizePortProfile, PORT_PRESETS } from "@/lib/portGeometry";
 import { DEFAULT_LOFT, loftFieldsFromMeasures, loftFrameSize, normalizeLoftMeasures } from "@/lib/loftGeometry";
 import { DEFAULT_VASE_SIZE, normalizeVaseSettings } from "@/lib/vaseSettings";
 import {
@@ -218,6 +218,7 @@ const SHAPE_LABEL_KEYS: Record<string, MessageKey> = {
   nameTag: "shape.nameTag",
   iconTag: "shape.iconTag",
   qrCode: "shape.qrCode",
+  sbcBoard: "shape.sbcBoard",
   "round-roof": "shape.roundRoof",
   "half-sphere": "shape.halfSphere",
   paraboloid: "shape.paraboloid",
@@ -328,11 +329,25 @@ export const qrCodeAsset: ToolbarShapeAsset = {
 };
 
 /**
- * What the shape library lists: the catalogue, with the name tag, the icon tag and the QR code after the text.
+ * The SBC board (#1098): a single-board computer true to size, to build a case around. The library
+ * entry places the default board; the kind only names its picture.
+ */
+export const sbcBoardAsset: ToolbarShapeAsset = {
+  id: "sbcBoard",
+  name: "SBC board",
+  src: "assets/editor/shape-icons-gray/sbcBoard.png",
+  menuIcon: "assets/editor/shape-icons-gray/sbcBoard.png",
+  kind: "box",
+  color: "#1f7a3a",
+};
+
+/**
+ * What the shape library lists: the catalogue, with the name tag, the icon tag and the QR code after the text,
+ * and the SBC board after the port opening.
  * The double countersink is not listed on its own: it is the countersink with "Both sides" switched on (#621). The
  * kind stays in the catalogue, so bodies that already are one, and the MCP, keep working.
  */
-export const libraryShapeAssets: ToolbarShapeAsset[] = toolbarShapeAssets.flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "doubleCountersink" ? [] : [asset]));
+export const libraryShapeAssets: ToolbarShapeAsset[] = toolbarShapeAssets.flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "port" ? [asset, sbcBoardAsset] : asset.id === "doubleCountersink" ? [] : [asset]));
 
 /**
  * The colour a new shape of this asset starts with: the asset's own, unless the shape
@@ -810,6 +825,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     screwHoleHeadDepth: shape.screwHoleHeadDepth,
     screwHoleAngle: shape.screwHoleAngle,
     portProfile: shape.portProfile,
+    portClearance: shape.portClearance,
     cornerFillet: shape.cornerFillet,
     topBottomFillet: shape.topBottomFillet,
     roundedBoxQuality: shape.roundedBoxQuality,
@@ -1150,6 +1166,7 @@ export function makeShapeFromAsset(
     cornerFillet: asset.kind === "roundedBox" ? normalizeCornerFillet(customization.cornerFillet ?? DEFAULT_ROUNDED_BOX_CORNER_FILLET, Math.min(width, depth) / 2)
       : asset.kind === "port" ? normalizePortCorner(customization.cornerFillet, width, height, customization.portProfile) : undefined,
     portProfile: asset.kind === "port" ? normalizePortProfile(customization.portProfile) : undefined,
+    portClearance: asset.kind === "port" && normalizePortClearance(customization.portClearance) > 0 ? normalizePortClearance(customization.portClearance) : undefined,
     topBottomFillet: asset.kind === "roundedBox" ? normalizeTopBottomFillet(customization.topBottomFillet ?? DEFAULT_ROUNDED_BOX_TOP_BOTTOM_FILLET, height / 2) : undefined,
     roundedBoxQuality: asset.kind === "roundedBox" ? normalizeRoundedBoxQuality(customization.roundedBoxQuality ?? DEFAULT_ROUNDED_BOX_QUALITY) : undefined,
     ...(bentTube ?? {}),
@@ -1181,6 +1198,7 @@ const GENERATED_NAME_KEYS: Record<string, MessageKey> = {
   "Icon tag": "shape.iconTag",
   "QR code": "shape.qrCode",
   "QR plate": "shape.qrPlate",
+  Board: "sbcBoard.board",
 };
 
 /**

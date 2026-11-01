@@ -19,6 +19,7 @@ import {
   attachmentsFormatVersion,
 } from "@/lib/projectAttachments";
 import { normalizeQrSettings } from "@/lib/qrCode";
+import { MAX_SBC_CLEARANCE, MAX_SBC_REACH, SBC_BOARD_ORDER } from "@/lib/sbcBoards";
 import { importedShapeFromStl } from "@/lib/stlImport";
 import { importedShapeFromSvg } from "@/lib/svgImport";
 import { importedShapeFrom3mf } from "@/lib/threemfImport";
@@ -59,7 +60,7 @@ export const LYL_FILE_TYPES_FORMAT_VERSION = 4;
 /** The newest format this layerling reads. */
 export const LYL_NEWEST_READABLE_FORMAT_VERSION = LYL_FILE_TYPES_FORMAT_VERSION;
 export const LYL_OLDEST_READABLE_FORMAT_VERSION = 1;
-export const LYL_CREATED_WITH_VERSION = "1.129.1";
+export const LYL_CREATED_WITH_VERSION = "1.130.0";
 export const LYL_MEDIA_TYPE = "application/vnd.layerling.project+zip";
 
 export const LYL_LIMITS = {
@@ -1407,6 +1408,19 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   if (definition.qrCode !== undefined && !normalizeQrSettings(definition.qrCode)) {
     throw new Error(`${label}.qrCode must hold the code's text`);
   }
+  // An SBC board's settings (#1098): a known board, a clearance of 0 to 2 mm and a reach of 0 to 10 mm. Old projects have none.
+  if (definition.sbcBoard !== undefined) {
+    const board = definition.sbcBoard as { board?: unknown; clearance?: unknown; reach?: unknown } | null;
+    if (!board || typeof board !== "object" || !SBC_BOARD_ORDER.includes(board.board as never)) {
+      throw new Error(`${label}.sbcBoard.board must be one of ${SBC_BOARD_ORDER.join(", ")}`);
+    }
+    if (board.clearance !== undefined && (typeof board.clearance !== "number" || !Number.isFinite(board.clearance) || board.clearance < 0 || board.clearance > MAX_SBC_CLEARANCE)) {
+      throw new Error(`${label}.sbcBoard.clearance is outside the supported range`);
+    }
+    if (board.reach !== undefined && (typeof board.reach !== "number" || !Number.isFinite(board.reach) || board.reach < 0 || board.reach > MAX_SBC_REACH)) {
+      throw new Error(`${label}.sbcBoard.reach is outside the supported range`);
+    }
+  }
   // The corners of a text's line (#215): a layer of a name tag can be bevelled or sharp now, so an
   // unknown corner is refused rather than read as sharp.
   const textJoin = (definition.textStroke as { join?: unknown } | undefined)?.join;
@@ -1816,6 +1830,10 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   }
   if (kind === "port" && definition.portProfile !== undefined && !PORT_PROFILES.includes(definition.portProfile as PortProfile)) {
     throw new Error(`${label}.portProfile is not supported`);
+  }
+  if (kind === "port" && definition.portClearance !== undefined) {
+    const portClearance = finiteNumber(definition.portClearance, `${label}.portClearance`);
+    if (portClearance < 0 || portClearance > 2) throw new Error(`${label}.portClearance is outside the supported range`);
   }
   if (kind === "port" && definition.cornerFillet !== undefined) {
     const cornerFillet = finiteNumber(definition.cornerFillet, `${label}.cornerFillet`);

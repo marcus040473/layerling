@@ -19,7 +19,7 @@ import { CAMERA_BAR_PANEL, CameraBarHandle } from "@/components/workplane/Camera
 import { AlignOverlay, MirrorOverlay, type AlignOverlayState, type MirrorOverlayState } from "@/components/workplane/ActionOverlays";
 import { MoveDimensionOverlay } from "@/components/workplane/MoveDimensionOverlay";
 import { OriginDimensionOverlay } from "@/components/workplane/OriginDimensionOverlay";
-import { SelectionInspector, ShapeInspector, SnapGridControl, type IconTagControls, type QrCodeControls, type ReferenceImageControls, type ShapeInspectorUpdateOptions, type TextLayerPatch } from "@/components/workplane/ShapeInspector";
+import { SelectionInspector, ShapeInspector, SnapGridControl, type IconTagControls, type QrCodeControls, type ReferenceImageControls, type SbcBoardControls, type ShapeInspectorUpdateOptions, type TextLayerPatch } from "@/components/workplane/ShapeInspector";
 import type { NameTagStack } from "@/lib/nameTag";
 import { WorkspaceSettingsModal } from "@/components/workplane/WorkspaceSettingsModal";
 import { appThemePalette, type AppThemePreference, type ResolvedAppTheme } from "@/lib/appTheme";
@@ -223,6 +223,8 @@ type WorkplaneViewportProps = {
   /** The icon tag card's wiring for the selected sketch body or icon tag. */
   iconTag?: IconTagControls | null;
   qrCode?: QrCodeControls | null;
+  /** The SBC board card's wiring (#1098). */
+  sbcBoard?: SbcBoardControls | null;
   /** The reference image card's wiring (#680). */
   referenceImage?: ReferenceImageControls | null;
   /**
@@ -1368,6 +1370,14 @@ const SECTION_PANEL: MovablePanelOptions = {
 
 function MovableSectionPanel({ children }: { children: (handleProps: ReturnType<typeof useMovablePanel>["handleProps"]) => ReactNode }) {
   const movable = useMovablePanel<HTMLDivElement>("layerling.editor.sectionPanelPosition", SECTION_PANEL);
+  const { currentPosition, moveTo, moved } = movable;
+  // The panel grows upwards from its button; with the bar moved up its title bar, and the close button with it,
+  // would lie above the work area. Then it opens lower down, for this time only (#1101).
+  useLayoutEffect(() => {
+    if (moved) return;
+    const at = currentPosition();
+    if (at && at.top < 0) moveTo({ left: at.left, top: 8 });
+  }, [currentPosition, moveTo, moved]);
   return (
     <div
       id="section-tool-popover"
@@ -1452,6 +1462,7 @@ export function WorkplaneViewport({
   textLayerStack,
   iconTag,
   qrCode,
+  sbcBoard,
   referenceImage,
   toolMemory,
   prepareNewShape,
@@ -8295,6 +8306,7 @@ export function WorkplaneViewport({
           textLayerStack={textLayerStack}
           iconTag={iconTag}
           qrCode={qrCode}
+          sbcBoard={sbcBoard}
           referenceImage={referenceImage}
           onInteractionActiveChange={onInteractionActiveChange}
           onSnapGridAwayChange={setInspectorSnapGridAway}

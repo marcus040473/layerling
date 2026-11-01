@@ -29,6 +29,8 @@ import { calibratedReferenceImage, dataUrlByteLength, isReferenceImage, LARGE_RE
 import { IconTagPanel } from "@/components/workplane/IconTagPanel";
 import { QrCodePanel } from "@/components/workplane/QrCodePanel";
 import { qrCodeOf, qrCodeShape, regeneratedQrCodeShape } from "@/lib/editorQrCode";
+import { regeneratedSbcBoardShape, sbcBoardOf, sbcBoardShape } from "@/lib/editorSbcBoard";
+import { DEFAULT_SBC_BOARD, MAX_SBC_CLEARANCE, MAX_SBC_REACH, SBC_BOARD_ORDER, type SbcBoardSettings, type SbcBoardType } from "@/lib/sbcBoards";
 import { DEFAULT_QR_WIDTH, MAX_QR_HEIGHT, MAX_QR_WIDTH, MIN_QR_HEIGHT, MIN_QR_WIDTH, QR_BYTE_CAPACITY, QR_ERROR_CORRECTIONS, QR_STYLES, normalizeQrSettings, qrByteLength, qrMatrix, qrModuleSize, qrModuleTooSmall, qrTextFits, type QrCodeSettings, type QrErrorCorrection, type QrStyle } from "@/lib/qrCode";
 import { iconSourceFromFile, PICTURE_FILE_ACCEPT, picturePixels, type IconSource } from "@/lib/pictureIcon";
 import { loadedManifoldRuntime, onManifoldReady } from "@/lib/manifoldHandle";
@@ -102,7 +104,7 @@ import { DEFAULT_OVERHANG_ANGLE, normalizeOverhangAngle, overhangArea } from "@/
 import { sectionMeasurement, sectionPointToWorld, snapSectionPoint } from "@/lib/sectionMeasure";
 import { DEFAULT_INFILL_PERCENT, DEFAULT_WALLS, PRINT_MATERIAL_DENSITY, PRINT_MATERIALS, FILAMENT_DIAMETER_MM, normalizePrintMaterial, printEstimate, printEstimateWithInfill } from "@/lib/printEstimate";
 import { matchingEdgeIds } from "@/lib/edgeMatching";
-import { CAD_MODIFIER_MAX_SHARP_ANGLE, CAD_MODIFIER_REQUEST_TIMEOUT_MS, CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT, cadModifierPrepareTimeoutMs, cadModifierTimeoutMessage, cadModifierUserErrorMessage, cadModifierWorkerFailureMessage, cadModifierCandidateEdge, defaultCadModifierTangentChain, rescueSharpAngleForEdges, selectableCadModifierEdge, type CadModifierRequestPhase } from "@/lib/cadModifierRuntime";
+import { CAD_MODIFIER_MAX_SHARP_ANGLE, CAD_MODIFIER_REQUEST_TIMEOUT_MS, CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT, cadModifierPrepareTimeoutMs, cadModifierTimeoutMessage, cadModifierUserErrorMessage, cadModifierWorkerFailureMessage, cadModifierCandidateEdge, cadModifierPresetValues, defaultCadModifierTangentChain, rescueSharpAngleForEdges, selectableCadModifierEdge, type CadModifierRequestPhase } from "@/lib/cadModifierRuntime";
 import { createCadPreviewQueue } from "@/lib/cadPreviewQueue";
 import { cloneWorkplaneShapeSnapshot, compactEdgeTreatmentHistory, edgeTreatmentAppliedFrame, groupBeforeEdgeTreatments, restoreShapeBeforeEdgeTreatment, tubeBeforeEdgeTreatments, wasGroupBeforeEdgeTreatments } from "@/lib/edgeTreatmentHistory";
 import { describeHistoryStep, historyStepsAround } from "@/lib/historyStepDescription";
@@ -141,9 +143,11 @@ import { useFileAccept } from "@/lib/fileAccept";
 import { exportLylProject, LYL_CREATED_WITH_VERSION, LYL_MEDIA_TYPE } from "@/lib/lylProject";
 import { isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
 import { ensureLylFileWritable, forgetLylFile, forgetStlFile, linkedLylFile, linkedStlFile, lylFileAccessSupported, pickLylFileToOpen, pickLylFileToSave, pickStlFileToSave, rememberLylFile, rememberStlFile, writeLylFile, type LylFileHandle } from "@/lib/lylFileAccess";
-import { clipboardShape, displayShapeName, hasOwnShapeName, iconTagAsset, qrCodeAsset, makeShapeFromAsset, nameTagAsset, shapeAssetLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
-import { PORT_PRESET_ORDER, PORT_PRESETS, type PortPreset } from "@/lib/portGeometry";
+import { clipboardShape, displayShapeName, hasOwnShapeName, iconTagAsset, qrCodeAsset, makeShapeFromAsset, nameTagAsset, sbcBoardAsset, shapeAssetLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
+import { PORT_PRESET_ORDER, PORT_PRESETS, portPresetSize, type PortPreset } from "@/lib/portGeometry";
 import { WASHER_SIZE_ORDER, isWasherSize, washerTubeFields } from "@/lib/washerSizes";
+import { isScrewHoleSize, screwHoleFields, screwHoleSizesFor } from "@/lib/screwHoleSizes";
+import { NUT_POCKET_SIZE_ORDER, isNutPocketSize, nutPocketFields } from "@/lib/nutPocketSizes";
 import { importedShapeFromStl } from "@/lib/stlImport";
 import { exportMeshesToStl } from "@/lib/stlExport";
 import { exportMeshesTo3mfAsync, THREE_MF_MEDIA_TYPE } from "@/lib/threemfExport";
@@ -3124,6 +3128,8 @@ export function LayerlingEditor({
   const missingThumbnailProjectRef = useRef<string | null>(null);
   const [thumbnailMissingCheck, setThumbnailMissingCheck] = useState(0);
   const shapesRef = useRef(shapes);
+  /** Builds an SBC board from the library (#1098); set once the commit is known, read by the library's clicks and drops. */
+  const placeSbcBoardRef = useRef<((point?: PlacementPoint, onFace?: PlacementWorkplane) => Promise<void>) | null>(null);
   const notesRef = useRef(notes);
   const projectAssetsRef = useRef(projectAssets);
   const projectAttachmentsRef = useRef(projectAttachments);
@@ -3367,13 +3373,13 @@ export function LayerlingEditor({
         setEdgeModifier((current) => {
           if (!current) return current;
           // Judged here and not on the ref: the answer can come before the session is drawn.
-          const presetEdgeIds = preset && current.kind === preset.kind ? preset.edgeIds.filter((edgeId) => existingEdgeIds.has(edgeId)) : [];
+          const { edgeIds: presetEdgeIds, values: presetValues } = cadModifierPresetValues(preset, current.kind, existingEdgeIds);
           return {
             ...current,
             edges: message.edges,
             sharpAngle: gesenkteSchwelle ?? current.sharpAngle,
             selectedEdgeIds: presetEdgeIds,
-            ...(preset && presetEdgeIds.length ? { amount: preset.amount, chamferAngle: preset.chamferAngle, endAmount: preset.endAmount ?? null } : {}),
+            ...(presetValues ?? {}),
             busy: presetEdgeIds.length > 0,
             prepared: true,
             preview: null,
@@ -3716,6 +3722,11 @@ export function LayerlingEditor({
     if (asset.id === qrCodeAsset.id) {
       setIconTagPanelOpen(false);
       setQrCodePanelOpen(true);
+      return;
+    }
+    // The SBC board (#1098) is built, not carried: it lands on the middle of the workplane.
+    if (asset.id === sbcBoardAsset.id) {
+      void placeSbcBoardRef.current?.();
       return;
     }
     closeSplit();
@@ -5904,6 +5915,11 @@ export function LayerlingEditor({
       if (asset.id === qrCodeAsset.id) {
         setIconTagPanelOpen(false);
         setQrCodePanelOpen(true);
+        return;
+      }
+      // The SBC board (#1098) is built where it was dropped.
+      if (asset.id === sbcBoardAsset.id) {
+        void placeSbcBoardRef.current?.(point, onFace);
         return;
       }
       const shape = makeShapeFromAsset(asset, undefined, workspaceSettingsRef.current.shapeCustomizations[asset.kind]);
@@ -10036,6 +10052,34 @@ export function LayerlingEditor({
     return settings ? { settings, onRegenerate: regenerateSelectedQrCode } : null;
   }, [regenerateSelectedQrCode, selectedShape, selectedShapes.length]);
 
+  /** The SBC board from the library (#1098): the default board, standing on the workplane at the point, selected. */
+  const placeSbcBoard = useCallback(async (point?: PlacementPoint, onFace?: PlacementWorkplane) => {
+    setNotice(t("sbcBoard.building"), true);
+    try {
+      const built = await sbcBoardShape({ board: DEFAULT_SBC_BOARD, clearance: 0, reach: 0 }, workspaceSettingsRef.current.booleanTriangleLimit);
+      const workplane = onFace ?? placementWorkplaneRef.current;
+      const shape = canonicalizeShape({ ...built, ...placementPatchForNewShape(built, workplane, point ?? workplane.origin) });
+      commitShapes([...shapesRef.current, shape], [shape.id], t("status.sbcBoardAdded", { name: shape.name }));
+    } catch (error) {
+      setNotice(error instanceof Error ? localizedError(error.message) : t("sbcBoard.failed"), true);
+    }
+  }, [commitShapes, setNotice]);
+  placeSbcBoardRef.current = placeSbcBoard;
+
+  /** The SBC board card: another board, clearance or reach, made again where the selected board stands. */
+  const regenerateSelectedSbcBoard = useCallback(async (settings: SbcBoardSettings) => {
+    const current = selectedShapes.length === 1 ? selectedShape : null;
+    if (!current || !sbcBoardOf(current)) return;
+    const next = await regeneratedSbcBoardShape(current, settings, workspaceSettingsRef.current.booleanTriangleLimit);
+    if (!shapesRef.current.some((shape) => shape.id === current.id)) return;
+    commitShapes(shapesRef.current.map((shape) => (shape.id === current.id ? next : shape)), [next.id], t("status.sbcBoardRegenerated", { name: next.name }));
+  }, [commitShapes, selectedShape, selectedShapes.length]);
+
+  const sbcBoardControls = useMemo(() => {
+    const settings = selectedShapes.length === 1 && !selectedShape?.locked ? sbcBoardOf(selectedShape) : null;
+    return settings ? { settings, onRegenerate: regenerateSelectedSbcBoard } : null;
+  }, [regenerateSelectedSbcBoard, selectedShape, selectedShapes.length]);
+
   /**
    * Reference images (#680): a picture laid on the plate or on the face the workplane stands on, to
    * line parts up on. Added from the import panel, made see-through and calibrated in its card.
@@ -10473,14 +10517,25 @@ export function LayerlingEditor({
         // Nur was ausdruecklich verlangt wurde: sonst gilt das Mass, mit dem der
         // Katalog diese Form auch von Hand auf die Ebene legt.
         // A port opening named by its socket takes that socket's opening, unless a size is given as well (#1049).
-        const portPreset = kind === "port" && typeof params.portPreset === "string" ? PORT_PRESETS[params.portPreset as PortPreset] : undefined;
+        // Extra room (portClearance) grows the socket's opening on every side, as the inspector does.
+        const portPreset = kind === "port" && typeof params.portPreset === "string" && PORT_PRESETS[params.portPreset as PortPreset]
+          ? portPresetSize(params.portPreset as PortPreset, params.portClearance) : undefined;
         if (kind === "port" && params.portPreset !== undefined && !portPreset) throw new Error(`portPreset must be one of ${PORT_PRESET_ORDER.join(", ")}`);
         // A tube named by a screw size is that size's washer (ISO 7089, #1052), unless a measure is given as well.
         const washer = kind === "tube" && isWasherSize(params.washer) ? washerTubeFields(params.washer) : undefined;
         if (kind === "tube" && params.washer !== undefined && !washer) throw new Error(`washer must be one of ${WASHER_SIZE_ORDER.join(", ")}`);
-        const requestedWidth = mcpOptionalNumber(params.width ?? params.size) ?? portPreset?.width ?? washer?.width;
-        const requestedDepth = mcpOptionalNumber(params.depth ?? params.size) ?? (rawKind === "cube" ? requestedWidth : undefined) ?? washer?.depth;
-        const requestedHeight = mcpOptionalNumber(params.height ?? params.size) ?? (rawKind === "cube" ? requestedWidth : undefined) ?? portPreset?.height ?? washer?.height;
+        // A counterbore or countersink named by a screw size takes its shaft, head and depth or angle (ISO 273,
+        // DIN 974-1, ISO 15065); a hexagon named by one is the pocket for its nut (ISO 4032). Measures given as well win.
+        const holeKind = kind === "counterbore" || kind === "countersink" || kind === "doubleCountersink" ? kind : undefined;
+        const screwHole = holeKind && isScrewHoleSize(params.screwSize, holeKind) ? screwHoleFields(holeKind, params.screwSize, height) : undefined;
+        if (holeKind && params.screwSize !== undefined && !screwHole) throw new Error(`screwSize must be one of ${screwHoleSizesFor(holeKind).join(", ")}`);
+        const nutPocket = kind === "polygon" && isNutPocketSize(params.nut) ? nutPocketFields(params.nut) : undefined;
+        if (kind === "polygon" && params.nut !== undefined && !nutPocket) throw new Error(`nut must be one of ${NUT_POCKET_SIZE_ORDER.join(", ")}`);
+        if (nutPocket && params.sides !== undefined && Math.round(Number(params.sides)) !== 6) throw new Error("nut needs a hexagon: leave sides out or set it to 6");
+        const sizePreset = washer ?? screwHole ?? nutPocket;
+        const requestedWidth = mcpOptionalNumber(params.width ?? params.size) ?? portPreset?.width ?? sizePreset?.width;
+        const requestedDepth = mcpOptionalNumber(params.depth ?? params.size) ?? (rawKind === "cube" ? requestedWidth : undefined) ?? sizePreset?.depth;
+        const requestedHeight = mcpOptionalNumber(params.height ?? params.size) ?? (rawKind === "cube" ? requestedWidth : undefined) ?? portPreset?.height ?? sizePreset?.height;
         // A body of no size cannot be built, and a design holding one would not open again.
         ([["width", requestedWidth], ["depth", requestedDepth], ["height", requestedHeight]] as const).forEach(([key, value]) => {
           if (value !== undefined && value <= 0) throw new Error(`${key} must be greater than 0`);
@@ -10516,7 +10571,18 @@ export function LayerlingEditor({
             { ...asset, name, color },
             { x, z, elevation },
             {
-              ...mcpShapeCustomization(asset.kind, portPreset ? { cornerFillet: portPreset.corner, portProfile: portPreset.profile, ...shapeParams } : washer ? { bevel: washer.bevel, ...shapeParams } : shapeParams),
+              ...mcpShapeCustomization(
+                asset.kind,
+                portPreset ? { cornerFillet: portPreset.corner, portProfile: portPreset.profile, ...shapeParams }
+                  : washer ? { bevel: washer.bevel, ...shapeParams }
+                  : screwHole ? {
+                    screwHoleShaft: screwHole.screwHoleShaft,
+                    ...(screwHole.screwHoleHeadDepth !== undefined ? { screwHoleHeadDepth: screwHole.screwHoleHeadDepth } : {}),
+                    ...(screwHole.screwHoleAngle !== undefined ? { screwHoleAngle: screwHole.screwHoleAngle } : {}),
+                    ...shapeParams,
+                  }
+                  : shapeParams,
+              ),
               width: requestedWidth,
               depth: requestedDepth,
               height: requestedHeight,
@@ -11431,6 +11497,28 @@ export function LayerlingEditor({
           moduleSize: Math.round(moduleSize * 1000) / 1000,
           ...(qrModuleTooSmall(moduleSize) ? { warning: `A module is ${Math.round(moduleSize * 100) / 100} mm, under the 0.8 mm rule of thumb for a readable print: make the code wider, the text shorter or the error correction lower` } : {}),
         };
+      }
+
+      if (command.action === "create_sbc_board") {
+        const board = params.board ?? DEFAULT_SBC_BOARD;
+        if (typeof board !== "string" || !SBC_BOARD_ORDER.includes(board as SbcBoardType)) throw new Error(`board must be one of ${SBC_BOARD_ORDER.join(", ")}`);
+        const clearance = params.clearance ?? 0;
+        if (typeof clearance !== "number" || !Number.isFinite(clearance) || clearance < 0 || clearance > MAX_SBC_CLEARANCE) throw new Error(`clearance must be 0 to ${MAX_SBC_CLEARANCE} mm`);
+        const reach = params.reach ?? 0;
+        if (typeof reach !== "number" || !Number.isFinite(reach) || reach < 0 || reach > MAX_SBC_REACH) throw new Error(`reach must be 0 to ${MAX_SBC_REACH} mm`);
+        for (const axis of ["x", "z"] as const) {
+          if (params[axis] !== undefined && (typeof params[axis] !== "number" || !Number.isFinite(params[axis]))) throw new Error(`${axis} must be a number`);
+        }
+        const built = await sbcBoardShape({ board: board as SbcBoardType, clearance, reach }, workspaceSettingsRef.current.booleanTriangleLimit);
+        const shape = canonicalizeShape({
+          ...built,
+          ...(typeof params.x === "number" ? { x: params.x } : {}),
+          ...(typeof params.z === "number" ? { z: params.z } : {}),
+          ...(params.asHole === true ? { hole: true } : {}),
+          ...(typeof params.name === "string" && params.name.trim() ? { name: params.name.trim().slice(0, 60) } : {}),
+        });
+        commitShapes([...currentShapes(), shape], shape.id, t("status.sbcBoardAdded", { name: shape.name }));
+        return { object: mcpShapeSummary(shape) };
       }
 
       if (command.action === "layer_icon") {
@@ -14946,6 +15034,7 @@ export function LayerlingEditor({
           textLayerStack={selectedNameTag}
           iconTag={historyViewState ? null : iconTagControls}
           qrCode={historyViewState ? null : qrCodeControls}
+          sbcBoard={historyViewState ? null : sbcBoardControls}
           referenceImage={referenceImageControls}
           toolMemory={viewportToolMemoryRef}
           prepareNewShape={prepareNewShape}
