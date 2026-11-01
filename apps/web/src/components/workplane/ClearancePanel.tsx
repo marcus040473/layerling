@@ -1,9 +1,10 @@
 "use client";
 
-import { AlertTriangle, CircleCheck, CircleSlash, LoaderCircle, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, CircleCheck, CircleSlash, RefreshCw, X } from "lucide-react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import type { ClearanceMark } from "@/components/workplane/ClearanceMarkOverlay";
 import { CLEARANCE_SEARCH_MM, clearancePairKey, type ClearanceBox, type ClearanceResult, type ClearanceVec3 } from "@/lib/clearanceCheck";
 import { formatEstimateNumber } from "@/lib/editorBooleans";
@@ -153,8 +154,9 @@ export function ClearancePanel({
           ["tight", result.tight.length],
           ["fine", result.fine.length],
         ] as const).filter(([, count]) => count > 0).map(([kind, count]) => t(`clearance.count.${kind}`, { count })).join(" · ");
+  // Docked alone in the right column, as every tool of this build: it checks no one object, so the object's tab stays away.
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel clearance-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel clearance-panel" ariaLabel={title} dock="alone" onClose={onClose}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -167,75 +169,70 @@ export function ClearancePanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{scope}</strong>
-        <span>{t("clearance.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={scope} />
+        <ToolHelp>{t("clearance.help")}</ToolHelp>
+      </ToolSection>
 
-      <EdgeModifierSlider
-        label={t("clearance.threshold")}
-        value={settings.threshold}
-        min={0.05}
-        max={2}
-        step={0.05}
-        decimals={2}
-        length
-        workspace={workspace}
-        onChange={(value) => onChange({ threshold: value })}
-      />
+      <ToolSection title={t("toolSidebar.settings")}>
+        <EdgeModifierSlider
+          label={t("clearance.threshold")}
+          value={settings.threshold}
+          min={0.05}
+          max={2}
+          step={0.05}
+          decimals={2}
+          length
+          workspace={workspace}
+          onChange={(value) => onChange({ threshold: value })}
+        />
+        <label className="edge-modifier-check">
+          <input type="checkbox" checked={settings.splitParts} disabled={running} onChange={(event) => onChange({ splitParts: event.currentTarget.checked })} />
+          <span>{t("clearance.splitParts")}</span>
+        </label>
+      </ToolSection>
 
-      <label className="edge-modifier-check">
-        <input type="checkbox" checked={settings.splitParts} disabled={running} onChange={(event) => onChange({ splitParts: event.currentTarget.checked })} />
-        <span>{t("clearance.splitParts")}</span>
-      </label>
-
-      {error ? <p className="edge-modifier-error" role="alert">{error}</p> : null}
-
-      <div className="clearance-status" role="status" aria-live="polite">
+      <ToolSection title={t("clearance.listLabel")}>
+        {error ? <p className="edge-modifier-error" role="alert">{error}</p> : null}
         {running ? (
-          <span><LoaderCircle className="edge-modifier-spinner" size={16} aria-hidden="true" />{t("clearance.running")}</span>
+          <ToolStatus state="working" text={t("clearance.running")} />
         ) : stale ? (
           <button type="button" className="clearance-stale" onClick={onCheck}><RefreshCw size={15} aria-hidden="true" />{t("clearance.stale")}</button>
         ) : summary ? (
-          <span>{summary}</span>
+          <ToolStatus state={problems > 0 || result?.tooFew ? "needed" : "ready"} text={summary} />
         ) : null}
-      </div>
-
-      {rows.length ? (
-        <ul className={`clearance-list${stale ? " stale" : ""}`} aria-label={t("clearance.listLabel")}>
-          {rows.map((row) => {
-            const Icon = ROW_ICON[row.kind];
-            return (
-              <li key={`${row.kind}-${row.key}`}>
-                <button
-                  type="button"
-                  className={`clearance-row ${row.kind}${activeRow === row.key ? " active" : ""}`}
-                  aria-pressed={activeRow === row.key}
-                  disabled={row.kind === "unchecked"}
-                  onClick={() => onRow(row.key)}
-                >
-                  <Icon size={16} aria-hidden="true" />
-                  <span className="clearance-row-text">
-                    <strong>{row.a} ↔ {row.b}</strong>
-                    <span>{t(`clearance.kind.${row.kind}`)} · {row.detail}</span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
-
-      {result && !result.tooFew ? (
-        <p className="clearance-hint">{t("clearance.hint", { search: formatClearanceLength(CLEARANCE_SEARCH_MM, workspace) })}</p>
-      ) : null}
+        {rows.length ? (
+          <ul className={`clearance-list${stale ? " stale" : ""}`} aria-label={t("clearance.listLabel")}>
+            {rows.map((row) => {
+              const Icon = ROW_ICON[row.kind];
+              return (
+                <li key={`${row.kind}-${row.key}`}>
+                  <button
+                    type="button"
+                    className={`clearance-row ${row.kind}${activeRow === row.key ? " active" : ""}`}
+                    aria-pressed={activeRow === row.key}
+                    disabled={row.kind === "unchecked"}
+                    onClick={() => onRow(row.key)}
+                  >
+                    <Icon size={16} aria-hidden="true" />
+                    <span className="clearance-row-text">
+                      <strong>{row.a} ↔ {row.b}</strong>
+                      <span>{t(`clearance.kind.${row.kind}`)} · {row.detail}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
+        {result && !result.tooFew ? (
+          <p className="clearance-hint">{t("clearance.hint", { search: formatClearanceLength(CLEARANCE_SEARCH_MM, workspace) })}</p>
+        ) : null}
+      </ToolSection>
 
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onClose}>{t("clearance.close")}</button>
-        <button type="button" className="primary" disabled={running} onClick={onCheck}>
-          <RefreshCw size={17} aria-hidden="true" />
-          {result ? t("clearance.checkAgain") : t("clearance.check")}
-        </button>
+        <ToolCancel label={t("clearance.close")} onClick={onClose} />
+        <ToolApply label={result ? t("clearance.checkAgain") : t("clearance.check")} busy={running} busyLabel={t("clearance.running")} disabled={running} onClick={onCheck} />
       </div>
       </>)}
     </MovableToolPanel>

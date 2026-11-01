@@ -9321,8 +9321,8 @@ export function LayerlingEditor({
     return () => window.clearTimeout(timer);
   }, [exitIntersectPreview, intersectPreviewIds, shapes]);
 
-  // Another tool opens its panel where this one stands, and what it applies changes the design anyway: the check gives way,
-  // and does not open over it.
+  // Another tool opens its panel where this one stands, and what it applies changes the design anyway: the check gives way.
+  // (Opened itself, it closes the tool before it, as every tool docked in the column does.)
   const otherToolPanelOpen = Boolean(
     arrayTool || scalePercentTool || simplifyToolId || holePatternTool || faceTool || mateTool || cookieCutterTool || flexiTool
     || lidTool || cutOutTool || shellTool || deleteFaceTool || splitSession || edgeModifier,
@@ -9360,10 +9360,6 @@ export function LayerlingEditor({
       closeClearanceCheck();
       return;
     }
-    if (otherToolPanelOpen) {
-      setNotice(t("clearance.otherTool"));
-      return;
-    }
     const scope = selectedShapes.length ? selectedShapes : shapes;
     if (!clearanceSourceShapes(scope).length) {
       setNotice(t("clearance.nothing"));
@@ -9372,7 +9368,7 @@ export function LayerlingEditor({
     const settings = readClearanceSettings();
     setClearanceTool({ settings, result: null, running: true, error: null, checked: null, scopeIds: null, activeRow: null, request: 0 });
     void runClearanceCheck(settings);
-  }, [clearanceTool, closeClearanceCheck, otherToolPanelOpen, runClearanceCheck, selectedShapes, shapes]);
+  }, [clearanceTool, closeClearanceCheck, runClearanceCheck, selectedShapes, shapes]);
 
   /** The threshold only moves the line between too tight and fine; the switch for separate parts checks again. */
   const changeClearanceSettings = useCallback((patch: Partial<ClearanceSettings>) => {
