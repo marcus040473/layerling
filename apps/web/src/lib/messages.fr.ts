@@ -1646,6 +1646,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "array.rotateCopies.yes": "Tourner avec un cercle",
   "array.rotateCopies.no": "Gardez votre orientation",
   "array.apply": "Créer",
+  "array.advancedSummary": "Augmentation {rise} · changement de rayon {radius} mm",
   "status.arrayStart": "Motif : définissez le nombre et l'espacement, l'aperçu affiche les copies",
   "status.arrayCancelled": "Modèle annulé",
   "status.arrayCreated": "Modèle créé : {count} copies",

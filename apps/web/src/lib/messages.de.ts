@@ -1658,6 +1658,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "array.rotateCopies.yes": "Mitdrehen",
   "array.rotateCopies.no": "Nicht drehen",
   "array.apply": "Erzeugen",
+  "array.advancedSummary": "Anstieg {rise} · Radiusänderung {radius} mm",
   "status.arrayStart": "Muster: Anzahl und Abstand einstellen, die Vorschau zeigt die Kopien",
   "status.arrayCancelled": "Muster abgebrochen",
   "status.arrayCreated": "Muster erzeugt: {count} Kopien",

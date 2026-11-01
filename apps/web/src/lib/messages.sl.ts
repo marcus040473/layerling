@@ -1339,6 +1339,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "array.rotateCopies.yes": "Vrtijo se s krogom",
   "array.rotateCopies.no": "Ohrani usmerjenost",
   "array.apply": "Ustvari",
+  "array.advancedSummary": "Dvig {rise} · sprememba polmera {radius} mm",
   "status.arrayStart": "Polje: nastavi število in razmak, predogled prikazuje kopije",
   "status.arrayCancelled": "Polje preklicano",
   "status.arrayCreated": "Polje ustvarjeno, kopij: {count}",

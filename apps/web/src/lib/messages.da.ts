@@ -2236,6 +2236,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "array.rotateCopies.yes": "Drej med cirklen",
   "array.rotateCopies.no": "Behold orientering",
   "array.apply": "Opret",
+  "array.advancedSummary": "Stigning {rise} · radiusændring {radius} mm",
   "status.arrayStart": "Mønster: indstil antal og afstand, forhåndsvisningen viser kopierne",
   "status.arrayCancelled": "Mønster annulleret",
   "status.arrayCreated": "Mønster oprettet: {count} kopier",

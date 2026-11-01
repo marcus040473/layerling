@@ -4,7 +4,8 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { t } from "@/lib/i18n";
+import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { ARRAY_MAX_COUNT, ARRAY_MIN_COUNT, arrayGroupsCopies, type ArrayMode, type ArraySettings } from "@/lib/shapeArray";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -59,8 +60,9 @@ export function ArrayPanel({
   useLanguage();
   const title = t("array.title");
   const halfPlate = Math.max(workspace.width, workspace.depth) / 2;
+  const millimetres = (value: number) => value.toLocaleString(numberLocale());
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel array-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel array-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -73,115 +75,159 @@ export function ArrayPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span>{t(settings.mode === "row" ? "array.helpRow" : pivotSet ? "array.helpCirclePivot" : "array.helpCircle")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={targetName} detail={t(settings.mode === "row" ? "array.helpRow" : pivotSet ? "array.helpCirclePivot" : "array.helpCircle")} />
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("array.mode")}>
-        <span>{t("array.mode")}</span>
-        <div className="shell-opening-options">
-          {ARRAY_MODES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.mode === option}
-              className={settings.mode === option ? "active" : ""}
-              onClick={() => onChange({ mode: option })}
-            >
-              {t(`array.mode.${option}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <label className="edge-modifier-check">
-        <input type="checkbox" checked={arrayGroupsCopies(settings)} onChange={(event) => onChange({ groupCopies: event.currentTarget.checked })} />
-        <span>{t("array.groupCopies")}</span>
-      </label>
-
-      <EdgeModifierSlider
-        label={t("array.count")}
-        value={settings.count}
-        min={ARRAY_MIN_COUNT}
-        max={ARRAY_MAX_COUNT}
-        step={1}
-        workspace={workspace}
-        onChange={(value) => onChange({ count: Math.round(value) })}
-      />
-
-      {settings.mode === "row" ? (
-        <>
-          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("array.fit")}>
-            <span>{t("array.fit")}</span>
-            <div className="shell-opening-options">
-              {FIT_OPTIONS.map((option) => {
-                const active = (settings.fit?.axis ?? null) === option;
-                return (
-                  <button
-                    key={option ?? "off"}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    className={active ? "active" : ""}
-                    disabled={option !== null && !fitBody}
-                    // Back to spacings, the row keeps the ones it was spread with.
-                    onClick={() => onChange(option && fitBody
-                      ? { fit: { axis: option, bodyId: fitBody.id } }
-                      : { fit: null, spacingX: settings.spacingX, spacingY: settings.spacingY, spacingZ: settings.spacingZ })}
-                  >
-                    {t(option ? `array.fit.${option}` : "array.fit.off")}
-                  </button>
-                );
-              })}
-            </div>
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("array.mode")}>
+          <span>{t("array.mode")}</span>
+          <div className="shell-opening-options">
+            {ARRAY_MODES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={settings.mode === option}
+                className={settings.mode === option ? "active" : ""}
+                onClick={() => onChange({ mode: option })}
+              >
+                {t(`array.mode.${option}`)}
+              </button>
+            ))}
           </div>
-          {settings.fit && fitBody && fitGap !== null ? (
-            <>
-              <span className="shell-openings-summary">{t("array.fitHint", { name: fitBody.name })}</span>
+        </div>
+
+        <label className="edge-modifier-check">
+          <input type="checkbox" checked={arrayGroupsCopies(settings)} onChange={(event) => onChange({ groupCopies: event.currentTarget.checked })} />
+          <span>{t("array.groupCopies")}</span>
+        </label>
+
+        <EdgeModifierSlider
+          label={t("array.count")}
+          value={settings.count}
+          min={ARRAY_MIN_COUNT}
+          max={ARRAY_MAX_COUNT}
+          step={1}
+          workspace={workspace}
+          onChange={(value) => onChange({ count: Math.round(value) })}
+        />
+
+        {settings.mode === "row" ? (
+          <>
+            <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("array.fit")}>
+              <span>{t("array.fit")}</span>
+              <div className="shell-opening-options">
+                {FIT_OPTIONS.map((option) => {
+                  const active = (settings.fit?.axis ?? null) === option;
+                  return (
+                    <button
+                      key={option ?? "off"}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      className={active ? "active" : ""}
+                      disabled={option !== null && !fitBody}
+                      // Back to spacings, the row keeps the ones it was spread with.
+                      onClick={() => onChange(option && fitBody
+                        ? { fit: { axis: option, bodyId: fitBody.id } }
+                        : { fit: null, spacingX: settings.spacingX, spacingY: settings.spacingY, spacingZ: settings.spacingZ })}
+                    >
+                      {t(option ? `array.fit.${option}` : "array.fit.off")}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {settings.fit && fitBody && fitGap !== null ? (
+              <>
+                <span className="shell-openings-summary">{t("array.fitHint", { name: fitBody.name })}</span>
+                <EdgeModifierSlider
+                  label={t("array.fitGap")}
+                  value={Math.round(fitGap * 100) / 100}
+                  min={0}
+                  max={Math.max(1, Math.floor(fitGapMax))}
+                  step={0.5}
+                  workspace={workspace}
+                  length
+                  onChange={onFitGap}
+                />
+              </>
+            ) : fitBody ? null : (
+              <span className="shell-openings-summary">{t("array.fitNone")}</span>
+            )}
+            {ROW_AXES.map(({ key, label }) => (
               <EdgeModifierSlider
-                label={t("array.fitGap")}
-                value={Math.round(fitGap * 100) / 100}
-                min={0}
-                max={Math.max(1, Math.floor(fitGapMax))}
+                key={key}
+                label={t(label)}
+                value={settings[key]}
+                min={-MAX_SPACING}
+                max={MAX_SPACING}
                 step={0.5}
                 workspace={workspace}
                 length
-                onChange={onFitGap}
+                // Spread over a body, the spacing follows the count and the gap.
+                disabled={Boolean(settings.fit && fitBody)}
+                onChange={(value) => onChange({ [key]: value })}
               />
-            </>
-          ) : fitBody ? null : (
-            <span className="shell-openings-summary">{t("array.fitNone")}</span>
-          )}
-          {ROW_AXES.map(({ key, label }) => (
+            ))}
+          </>
+        ) : (
+          <>
             <EdgeModifierSlider
-              key={key}
-              label={t(label)}
-              value={settings[key]}
-              min={-MAX_SPACING}
-              max={MAX_SPACING}
+              label={t("array.angle")}
+              value={settings.angle}
+              min={-360}
+              max={360}
+              step={1}
+              unit="°"
+              workspace={workspace}
+              onChange={(value) => onChange({ angle: value })}
+            />
+            <EdgeModifierSlider
+              label={t("array.centerX")}
+              value={settings.centerX}
+              min={-halfPlate}
+              max={halfPlate}
               step={0.5}
               workspace={workspace}
               length
-              // Spread over a body, the spacing follows the count and the gap.
-              disabled={Boolean(settings.fit && fitBody)}
-              onChange={(value) => onChange({ [key]: value })}
+              onChange={(value) => onChange({ centerX: value })}
             />
-          ))}
-        </>
-      ) : (
-        <>
-          <EdgeModifierSlider
-            label={t("array.angle")}
-            value={settings.angle}
-            min={-360}
-            max={360}
-            step={1}
-            unit="°"
-            workspace={workspace}
-            onChange={(value) => onChange({ angle: value })}
-          />
+            <EdgeModifierSlider
+              label={t("array.centerY")}
+              value={settings.centerY}
+              min={-halfPlate}
+              max={halfPlate}
+              step={0.5}
+              workspace={workspace}
+              length
+              onChange={(value) => onChange({ centerY: value })}
+            />
+            <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("array.rotateCopies")}>
+              <span>{t("array.rotateCopies")}</span>
+              <div className="shell-opening-options">
+                {[true, false].map((option) => (
+                  <button
+                    key={String(option)}
+                    type="button"
+                    role="radio"
+                    aria-checked={settings.rotateCopies === option}
+                    className={settings.rotateCopies === option ? "active" : ""}
+                    onClick={() => onChange({ rotateCopies: option })}
+                  >
+                    {t(option ? "array.rotateCopies.yes" : "array.rotateCopies.no")}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </ToolSection>
+
+      {/* The screw and the spiral are the rarer part of a circle. */}
+      {settings.mode === "row" ? null : (
+        <ToolAdvanced tool="array" summary={t("array.advancedSummary", { rise: millimetres(settings.rise), radius: millimetres(settings.radiusChange) })}>
           <EdgeModifierSlider
             label={t("array.rise")}
             value={settings.rise}
@@ -202,46 +248,10 @@ export function ArrayPanel({
             length
             onChange={(value) => onChange({ radiusChange: value })}
           />
-          <EdgeModifierSlider
-            label={t("array.centerX")}
-            value={settings.centerX}
-            min={-halfPlate}
-            max={halfPlate}
-            step={0.5}
-            workspace={workspace}
-            length
-            onChange={(value) => onChange({ centerX: value })}
-          />
-          <EdgeModifierSlider
-            label={t("array.centerY")}
-            value={settings.centerY}
-            min={-halfPlate}
-            max={halfPlate}
-            step={0.5}
-            workspace={workspace}
-            length
-            onChange={(value) => onChange({ centerY: value })}
-          />
-          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("array.rotateCopies")}>
-            <span>{t("array.rotateCopies")}</span>
-            <div className="shell-opening-options">
-              {[true, false].map((option) => (
-                <button
-                  key={String(option)}
-                  type="button"
-                  role="radio"
-                  aria-checked={settings.rotateCopies === option}
-                  className={settings.rotateCopies === option ? "active" : ""}
-                  onClick={() => onChange({ rotateCopies: option })}
-                >
-                  {t(option ? "array.rotateCopies.yes" : "array.rotateCopies.no")}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
+        </ToolAdvanced>
       )}
 
+      <ToolStatus state="ready" text={t("toolSidebar.ready")} />
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" onClick={onApply}>

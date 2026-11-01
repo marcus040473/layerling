@@ -1659,6 +1659,7 @@ export const MESSAGES_EN = {
   "array.rotateCopies.yes": "Turn with circle",
   "array.rotateCopies.no": "Keep orientation",
   "array.apply": "Create",
+  "array.advancedSummary": "Rise {rise} · radius change {radius} mm",
   "status.arrayStart": "Pattern: set count and spacing, the preview shows the copies",
   "status.arrayCancelled": "Pattern cancelled",
   "status.arrayCreated": "Pattern created: {count} copies",

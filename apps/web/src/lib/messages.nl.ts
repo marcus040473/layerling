@@ -1658,6 +1658,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "array.rotateCopies.yes": "Meedraaien met cirkel",
   "array.rotateCopies.no": "Oriëntatie behouden",
   "array.apply": "Maken",
+  "array.advancedSummary": "Stijging {rise} · straalverandering {radius} mm",
   "status.arrayStart": "Patroon: stel aantal en tussenafstand in, de voorbeeldweergave toont de kopieën",
   "status.arrayCancelled": "Patroon geannuleerd",
   "status.arrayCreated": "Patroon gemaakt: {count} kopieën",

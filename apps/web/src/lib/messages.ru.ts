@@ -1653,6 +1653,7 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "array.rotateCopies.yes": "Поворачивать по кругу",
   "array.rotateCopies.no": "Сохранять ориентацию",
   "array.apply": "Создать",
+  "array.advancedSummary": "Подъём {rise} · изменение радиуса {radius} мм",
   "status.arrayStart": "Массив: задайте количество и шаг, предпросмотр покажет копии",
   "status.arrayCancelled": "Массив отменён",
   "status.arrayCreated": "Массив создан, копий: {count}",

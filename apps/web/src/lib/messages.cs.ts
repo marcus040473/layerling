@@ -1761,6 +1761,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "array.rotateCopies.yes": "Otáčet podle kružnice",
   "array.rotateCopies.no": "Zachovat orientaci",
   "array.apply": "Vytvořit",
+  "array.advancedSummary": "Výškový posun {rise} · změna poloměru {radius} mm",
   "status.arrayStart": "Opakování: nastavte počet a rozteč; náhled ukazuje kopie",
   "status.arrayCancelled": "Opakování bylo zrušeno",
   "status.arrayCreated": "Opakování vytvořeno; počet kopií: {count}",

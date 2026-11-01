@@ -4,6 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { FACE_TOOL_MAX_DEPTH, FACE_TOOL_MAX_INSET, FACE_TOOL_MAX_RADIUS, FACE_TOOL_MIN_DEPTH, type FaceToolDirection, type FaceToolSettings } from "@/lib/faceTool";
@@ -50,7 +51,7 @@ export function FaceToolPanel({
   const maxDepth = settings.direction === "in" ? Math.max(FACE_TOOL_MIN_DEPTH, Math.floor(thickness * 10) / 10) : FACE_TOOL_MAX_DEPTH / 2;
 
   return (
-    <MovableToolPanel className="edge-modifier-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -63,65 +64,67 @@ export function FaceToolPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{status}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={ready} text={targetName} detail={t(ready ? "faceTool.step.ready" : "faceTool.step.pick")} />
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("faceTool.direction")}>
-        <span>{t("faceTool.direction")}</span>
-        <div className="shell-opening-options">
-          {DIRECTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.direction === option}
-              className={settings.direction === option ? "active" : ""}
-              onClick={() => onChange({ direction: option })}
-            >
-              {t(`faceTool.direction.${option}`)}
-            </button>
-          ))}
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("faceTool.direction")}>
+          <span>{t("faceTool.direction")}</span>
+          <div className="shell-opening-options">
+            {DIRECTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={settings.direction === option}
+                className={settings.direction === option ? "active" : ""}
+                onClick={() => onChange({ direction: option })}
+              >
+                {t(`faceTool.direction.${option}`)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <EdgeModifierSlider
-        label={t("faceTool.inset")}
-        value={settings.inset}
-        min={0}
-        max={FACE_TOOL_MAX_INSET / 2}
-        step={0.5}
-        workspace={workspace}
-        length
-        onChange={(value) => onChange({ inset: value })}
-      />
-      <EdgeModifierSlider
-        label={t("faceTool.radius")}
-        value={settings.radius}
-        min={0}
-        max={FACE_TOOL_MAX_RADIUS / 2}
-        step={0.5}
-        workspace={workspace}
-        length
-        onChange={(value) => onChange({ radius: value })}
-      />
-      <EdgeModifierSlider
-        label={t("faceTool.depth")}
-        value={settings.depth}
-        min={FACE_TOOL_MIN_DEPTH}
-        max={maxDepth}
-        step={0.2}
-        workspace={workspace}
-        length
-        onChange={(value) => onChange({ depth: value })}
-      />
+        <EdgeModifierSlider
+          label={t("faceTool.inset")}
+          value={settings.inset}
+          min={0}
+          max={FACE_TOOL_MAX_INSET / 2}
+          step={0.5}
+          workspace={workspace}
+          length
+          onChange={(value) => onChange({ inset: value })}
+        />
+        <EdgeModifierSlider
+          label={t("faceTool.radius")}
+          value={settings.radius}
+          min={0}
+          max={FACE_TOOL_MAX_RADIUS / 2}
+          step={0.5}
+          workspace={workspace}
+          length
+          onChange={(value) => onChange({ radius: value })}
+        />
+        <EdgeModifierSlider
+          label={t("faceTool.depth")}
+          value={settings.depth}
+          min={FACE_TOOL_MIN_DEPTH}
+          max={maxDepth}
+          step={0.2}
+          workspace={workspace}
+          length
+          onChange={(value) => onChange({ depth: value })}
+        />
 
-      <label className="edge-modifier-check" title={t("faceTool.separateHint")}>
-        <input type="checkbox" checked={settings.separate} onChange={(event) => onChange({ separate: event.currentTarget.checked })} />
-        <span>{t("faceTool.separate")}</span>
-      </label>
+        <label className="edge-modifier-check" title={t("faceTool.separateHint")}>
+          <input type="checkbox" checked={settings.separate} onChange={(event) => onChange({ separate: event.currentTarget.checked })} />
+          <span>{t("faceTool.separate")}</span>
+        </label>
+      </ToolSection>
 
+      <ToolStatus state={busy ? "working" : ready && !empty ? "ready" : "needed"} text={busy ? t("cookieCutter.working") : ready && !empty ? t("toolSidebar.ready") : status} />
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>
           {ready ? t("faceTool.repick") : t("common.cancel")}
