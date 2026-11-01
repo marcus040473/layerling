@@ -56,8 +56,14 @@ function mount(fields: Partial<WorkplaneShape> = {}) {
   return { panel: container, calls, shape };
 }
 
-const headers = (panel: HTMLElement) => [...panel.querySelectorAll<HTMLButtonElement>(".property-card-header")].map((header) => header.textContent?.trim());
-const header = (panel: HTMLElement, name: string) => [...panel.querySelectorAll<HTMLButtonElement>(".property-card-header")].find((entry) => entry.textContent?.trim() === name)!;
+// A folded card names what is chosen in it beside its title (Print · PLA); the title is the rest.
+const title = (header: HTMLElement) => [...header.childNodes]
+  .filter((node) => !(node instanceof HTMLElement && node.classList.contains("property-card-summary")))
+  .map((node) => node.textContent)
+  .join("")
+  .trim();
+const headers = (panel: HTMLElement) => [...panel.querySelectorAll<HTMLButtonElement>(".property-card-header")].map(title);
+const header = (panel: HTMLElement, name: string) => [...panel.querySelectorAll<HTMLButtonElement>(".property-card-header")].find((entry) => title(entry) === name)!;
 const selectNamed = (panel: HTMLElement, name: string) => [...panel.querySelectorAll<HTMLLabelElement>("label.select-property")]
   .find((row) => row.querySelector("span")?.textContent === name)
   ?.querySelector("select") ?? undefined;
@@ -82,6 +88,7 @@ describe("a vase in its settings", () => {
   it("has its form, its bottom and wall, its accessories and printing on cards of their own", () => {
     const { panel } = mount();
     expect(headers(panel)).toEqual(expect.arrayContaining(["Form and pattern", "Bottom and wall", "Accessories", "Print"]));
+    expect(header(panel, "Print").querySelector(".property-card-summary")?.textContent).toBe("PLA");
     expect(selectNamed(panel, "Body form")?.value).toBe("flasche");
     expect([...panel.querySelectorAll("button")].some((button) => button.textContent === "Draw the vase")).toBe(true);
   });
