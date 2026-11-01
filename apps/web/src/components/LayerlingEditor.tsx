@@ -5407,6 +5407,21 @@ export function LayerlingEditor({
     sketchImageInputRef.current?.click();
   }, [chooseSketchTool, sketchTool]);
 
+  // A drawn house to try Trace and the magnetic lasso on, put under the sketch like a picture of one's own.
+  const addSketchImageFileRef = useRef(addSketchImageFile);
+  addSketchImageFileRef.current = addSketchImageFile;
+  const addSketchExamplePicture = useCallback(async () => {
+    if (sketchTool !== "select") chooseSketchTool("select");
+    try {
+      const response = await fetch("assets/editor/trace-example/house.webp");
+      if (!response.ok) throw new Error(String(response.status));
+      const blob = await response.blob();
+      await addSketchImageFileRef.current(new File([blob], `${t("sketch.examplePictureName")}.webp`, { type: "image/webp" }));
+    } catch (error) {
+      setNotice(t("status.surfaceImageFailed", { error: error instanceof Error ? error.message : String(error) }));
+    }
+  }, [chooseSketchTool, sketchTool]);
+
   const copySketchSelectionToClipboard = useCallback(() => {
     const copied = copySketchSelection(sketchProfile, sketchSelection);
     if (!copied) {
@@ -14545,6 +14560,7 @@ export function LayerlingEditor({
         sketchShapeOptions={sketchShapeOptions}
         onSketchShapeOptions={setSketchShapeOptions}
         onSketchImage={openSketchImagePicker}
+        onSketchExample={addSketchExamplePicture}
         onSketchCopy={copySketchSelectionToClipboard}
         onSketchPaste={pasteSketchSelection}
         onSketchDuplicate={duplicateSketchSelection}
