@@ -176,7 +176,7 @@ import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { SURFACE_TEXTURE_OWN_IMAGE_SIZE, surfaceTextureOwnImage } from "@/lib/surfaceTextureImages";
 import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
-import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, surfaceTextureEntry } from "@/lib/surfaceTextureShape";
+import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, surfaceTextureEntry, surfaceTextureLayerPlaced } from "@/lib/surfaceTextureShape";
 import { LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, type VaseSettings } from "@/lib/vaseSettings";
 import { vaseShapePatchOffThread } from "@/lib/vaseShape";
@@ -3346,7 +3346,8 @@ export function ShapeInspector({
   /** Wraps this body around a cylinder of the given diameter (#106). */
   onWrapAroundCylinder?: (diameter: number, inward: boolean) => void;
   /** Lays a surface texture onto this body; resolves when it is on (or could not be made). */
-  onSurfaceTexture?: (settings: SurfaceTextureSettings) => Promise<void> | void;
+  /** Makes the texture: the first layer and the further ones (see WorkplaneShape.surfaceTextureLayers). */
+  onSurfaceTexture?: (settings: SurfaceTextureSettings, layers?: SurfaceTextureSettings[]) => Promise<void> | void;
   onRemoveSurfaceTexture?: () => void;
   /** Whether the surface texture card is open, when the editor holds it (the toolbar opens it too). */
   surfaceTextureOpen?: boolean;
@@ -5267,6 +5268,9 @@ const SURFACE_COVERAGE_LABEL: Partial<Record<SurfaceTexturePattern, MessageKey>>
  * weave, grain, an image) gets them, and leaving one gives the next the plain defaults back, so a knitted stitch's 5 mm
  * do not become knurling's spacing. Bumps start as half balls: the V the grooves have by default would make them cones.
  */
+/** How many patterns one body can carry, the first included (see WorkplaneShape.surfaceTextureLayers). */
+const SURFACE_TEXTURE_MAX_LAYERS = 6;
+
 function surfaceSettingsForPattern(current: SurfaceTextureSettings, pattern: SurfaceTexturePattern): Partial<SurfaceTextureSettings> {
   const leaving = current.pattern === "bumps" ? null : SURFACE_TEXTURE_STARTERS[current.pattern];
   // A bark brings its own size and depth: leaving it gives them back too.
@@ -5322,7 +5326,7 @@ export function SurfaceTextureCard({
   shape: WorkplaneShape;
   workspace: WorkplaneWorkspaceSettings;
   disabled: boolean;
-  onApply: (settings: SurfaceTextureSettings) => Promise<void> | void;
+  onApply: (settings: SurfaceTextureSettings, layers?: SurfaceTextureSettings[]) => Promise<void> | void;
   /** Takes the texture off; given while the body keeps what was under it. */
   onRemove?: () => void;
   /** Open or closed as the editor holds it, so the button under "Modify" shows and changes the same; else the card's own. */
@@ -5346,23 +5350,62 @@ export function SurfaceTextureCard({
   }, [open]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [settings, setSettings] = useState(() => normalizeSurfaceTexture(shape.surfaceTexture ?? {}));
+  // The layers of the texture (see WorkplaneShape.surfaceTextureLayers): the first, and more patterns on faces of their
+  // own. The card shows one of them at a time; its fields and the faces picked belong to that one.
+  const layersOf = (body: WorkplaneShape) => [normalizeSurfaceTexture(body.surfaceTexture ?? {}), ...(body.surfaceTextureLayers ?? []).map((layer) => normalizeSurfaceTexture(layer))];
+  const [layers, setLayers] = useState(() => layersOf(shape));
+  const [layerIndex, setLayerIndex] = useState(0);
+  const shownLayer = Math.min(layerIndex, layers.length - 1);
+  const settings = layers[shownLayer];
+  // The layer the faces picked in the view belong to: the one shown when picking began or went on.
+  const pickedLayer = useRef(shownLayer);
+  const setSettings = (next: SurfaceTextureSettings | ((current: SurfaceTextureSettings) => SurfaceTextureSettings)) =>
+    setLayers((all) => all.map((layer, index) => (index === shownLayer ? (typeof next === "function" ? next(layer) : next) : layer)));
   const set = (patch: Partial<SurfaceTextureSettings>) => setSettings((current) => normalizeSurfaceTexture({ ...current, ...patch }));
   const applied = shape.surfaceTexture;
   // A texture made or changed elsewhere (by an assistant, by redo, in a project opened again) shows its own settings;
   // one taken off leaves the card as it was, to apply again.
-  const appliedKey = applied
-    ? JSON.stringify({ ...applied, masks: applied.masks.length, textOutline: applied.textOutline.length, imageOwn: applied.imageOwn ? applied.imageOwn.data.length : 0 })
-    : "";
+  const keyOf = (layer: SurfaceTextureSettings) => ({ ...layer, masks: layer.masks.length, textOutline: layer.textOutline.length, imageOwn: layer.imageOwn ? layer.imageOwn.data.length : 0 });
+  const appliedKey = applied ? JSON.stringify([keyOf(applied), ...(shape.surfaceTextureLayers ?? []).map(keyOf)]) : "";
   const [shownKey, setShownKey] = useState(appliedKey);
   if (appliedKey !== shownKey) {
     setShownKey(appliedKey);
-    if (applied) setSettings(normalizeSurfaceTexture(applied));
+    if (applied) {
+      setLayers(layersOf(shape));
+      setLayerIndex(0);
+      pickedLayer.current = 0;
+    }
   }
-  // Each click in the view comes back as the faces picked so far.
+  // Each click in the view comes back as the faces picked so far, for the layer shown.
   useEffect(() => {
-    if (pickedFaces) setSettings((current) => normalizeSurfaceTexture({ ...current, faces: pickedFaces }));
+    if (pickedFaces) setLayers((all) => all.map((layer, index) => (index === pickedLayer.current ? normalizeSurfaceTexture({ ...layer, faces: pickedFaces }) : layer)));
   }, [pickedFaces]);
+  /** Shows another layer: picking faces goes on with that layer's faces. */
+  const showLayer = (index: number) => {
+    pickedLayer.current = index;
+    setLayerIndex(index);
+    if (facePicking) onFacePick?.(layers[index].faces, layers[index].edgeAngle);
+  };
+  const addLayer = () => {
+    // A new layer starts on no faces and asks for them: it goes only where it is picked.
+    const next = normalizeSurfaceTexture({ pattern: "knurl" });
+    const index = layers.length;
+    setLayers((all) => [...all, next]);
+    pickedLayer.current = index;
+    setLayerIndex(index);
+    onFacePick?.([], next.edgeAngle);
+  };
+  const removeLayer = (index: number) => {
+    if (index === 0) return;
+    setLayers((all) => all.filter((_, at) => at !== index));
+    const shown = Math.max(0, index - 1);
+    pickedLayer.current = shown;
+    setLayerIndex(shown);
+    if (facePicking) onFacePick?.(null, settings.edgeAngle);
+  };
+  // A further layer needs faces of its own; the first, picking none, takes the faces left over.
+  const layerWithoutFaces = layers.findIndex((layer, index) => index > 0 && !surfaceTextureLayerPlaced(layer));
+  const needsFaces = shownLayer > 0 && !surfaceTextureLayerPlaced(settings);
   // A texture that keeps the body under it shows its settings to change; one that does not only says what it is.
   const changeable = Boolean(applied && onRemove && surfaceTextureEntry(shape));
   const options = <T extends string>(values: readonly T[], label: (value: T) => string) => values.map((value) => ({ value, label: label(value) }));
@@ -5419,7 +5462,7 @@ export function SurfaceTextureCard({
     if (facePicking) onFacePick?.(null, settings.edgeAngle);
     setBusy(true);
     try {
-      await onApply(settings);
+      await onApply(layers[0], layers.slice(1));
     } finally {
       setBusy(false);
     }
@@ -5879,7 +5922,7 @@ export function SurfaceTextureCard({
       <div className="property-card collapsed surface-texture-card" ref={cardRef}>
         <button className="property-card-header" type="button" aria-expanded={open} aria-controls={open ? bodyId : undefined} onClick={() => setOpen(!open)}>
           <span>{title}</span>
-          {applied ? <small className="property-card-summary">{patternLabel(applied.pattern)}</small> : null}
+          {applied ? <small className="property-card-summary">{[applied.pattern, ...(shape.surfaceTextureLayers ?? []).map((layer) => layer.pattern)].map(patternLabel).join(" + ")}</small> : null}
           <ChevronRight size={22} strokeWidth={2.6} />
         </button>
         {open ? createPortal(
@@ -5897,12 +5940,37 @@ export function SurfaceTextureCard({
               </div>
               <div className="tool-panel-body" id={bodyId}>
                 <ToolSection title={t("toolSidebar.selection")}>
+                  {/* Several patterns on one body: a tab per layer, the first taking the faces the others leave. */}
+                  {!appliedOnly && onFacePick ? (
+                    <div className="surface-layers" role="tablist" aria-label={t("inspector.surfaceLayers")}>
+                      {layers.map((layer, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          role="tab"
+                          aria-selected={index === shownLayer}
+                          className={`${index === shownLayer ? "active" : ""} ${index > 0 && !surfaceTextureLayerPlaced(layer) ? "needed" : ""}`}
+                          disabled={busy}
+                          onClick={() => showLayer(index)}
+                        >
+                          <span className="surface-layer-number">{index + 1}</span>
+                          {patternLabel(layer.pattern)}
+                        </button>
+                      ))}
+                      {layers.length < SURFACE_TEXTURE_MAX_LAYERS ? (
+                        <button type="button" className="surface-layer-add" title={t("inspector.surfaceLayerAdd")} aria-label={t("inspector.surfaceLayerAdd")} disabled={disabled || busy} onClick={addLayer}>
+                          <Plus size={14} strokeWidth={2.6} aria-hidden="true" />
+                          {t("inspector.surfaceLayerAddShort")}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <ToolSelection
-                    ready
+                    ready={!needsFaces}
                     confirm={picked}
                     text={shape.name}
-                    scope={appliedOnly || text || !onFacePick ? undefined : picked ? t("toolSidebar.facesCount", { count: settings.faces.length }) : t("toolSidebar.allFaces")}
-                    detail={appliedOnly ? t("inspector.surfaceApplied", { pattern: surfacePatternLabel(applied!.pattern) }) : undefined}
+                    scope={appliedOnly || text || !onFacePick ? undefined : picked ? (settings.faces.length === 1 ? t("toolSidebar.facesOne") : t("toolSidebar.facesCount", { count: settings.faces.length })) : layers.length > 1 && shownLayer === 0 ? t("inspector.surfaceLayerRest") : needsFaces ? undefined : t("toolSidebar.allFaces")}
+                    detail={appliedOnly ? t("inspector.surfaceApplied", { pattern: surfacePatternLabel(applied!.pattern) }) : needsFaces ? t("inspector.surfaceLayerNeedsFaces") : undefined}
                     action={appliedOnly || text || !onFacePick ? undefined : (
                       <button
                         type="button"
@@ -5915,9 +5983,14 @@ export function SurfaceTextureCard({
                       </button>
                     )}
                   />
-                  {!appliedOnly && !text && onFacePick && (picked || facePicking) ? (
+                  {!appliedOnly && onFacePick && ((!text && (picked || facePicking)) || shownLayer > 0) ? (
                     <div className="tool-selection-links">
-                      {picked ? (
+                      {shownLayer > 0 ? (
+                        <button type="button" className="tool-hint-more" disabled={disabled || busy} onClick={() => removeLayer(shownLayer)}>
+                          {t("inspector.surfaceLayerRemove")}
+                        </button>
+                      ) : null}
+                      {picked && shownLayer === 0 ? (
                         <button
                           type="button"
                           className="tool-hint-more"
@@ -5930,7 +6003,7 @@ export function SurfaceTextureCard({
                           {t("inspector.surfaceFacesClear")}
                         </button>
                       ) : null}
-                      {facePicking ? <span>{t("inspector.surfaceFacesPickHint")}</span> : null}
+                      {facePicking && !text ? <span>{t("inspector.surfaceFacesPickHint")}</span> : null}
                     </div>
                   ) : null}
                   {applied && onRemove ? (
@@ -5939,7 +6012,7 @@ export function SurfaceTextureCard({
                       <span>{t("inspector.surfaceRemove")}</span>
                     </button>
                   ) : null}
-                  <ToolHelp>{applied ? t("inspector.surfaceChangeHint", { pattern: surfacePatternLabel(applied.pattern) }) : t("inspector.surfaceHint")} {t("inspector.surfaceMaskTip")}</ToolHelp>
+                  <ToolHelp>{applied ? t("inspector.surfaceChangeHint", { pattern: surfacePatternLabel(applied.pattern) }) : t("inspector.surfaceHint")} {t("inspector.surfaceLayersHint")} {t("inspector.surfaceMaskTip")}</ToolHelp>
                 </ToolSection>
                 {appliedOnly ? null : (<>
                   <ToolSection title={t("toolSidebar.settings")}>
@@ -5953,14 +6026,14 @@ export function SurfaceTextureCard({
                       {moreFields}
                     </ToolAdvanced>
                   ) : null}
-                  {busy ? <ToolStatus state="working" text={t("inspector.surfaceWorking")} /> : null}
+                  {busy ? <ToolStatus state="working" text={t("inspector.surfaceWorking")} /> : layerWithoutFaces > 0 ? <ToolStatus state="needed" text={t("inspector.surfaceLayerNeedsFacesNumber", { number: layerWithoutFaces + 1 })} /> : null}
                 </>)}
               </div>
               <div className="edge-modifier-footer">
                 {appliedOnly ? null : <ToolOutcome text={t("inspector.surfaceOutcome")} />}
                 <button type="button" className="secondary" onClick={() => setOpen(false)}>{t("common.cancel")}</button>
                 {appliedOnly ? null : (
-                  <button type="button" className="primary" disabled={disabled || busy} onClick={apply}>
+                  <button type="button" className="primary" disabled={disabled || busy || layerWithoutFaces > 0} onClick={apply}>
                     {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Waves size={17} />}
                     {t(busy ? "inspector.surfaceWorking" : applied ? "inspector.surfaceChange" : "inspector.surfaceApply")}
                   </button>
