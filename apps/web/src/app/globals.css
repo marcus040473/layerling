@@ -9139,7 +9139,8 @@ html[data-theme="dark"] .rotation-angle-badge {
 }
 
 .shape-inspector .edit-sketch-button,
-.shape-inspector .inspector-action-button {
+.shape-inspector .inspector-action-button,
+.surface-panel .inspector-action-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9159,14 +9160,16 @@ html[data-theme="dark"] .rotation-angle-badge {
 }
 
 .shape-inspector .edit-sketch-button:hover:not(:disabled),
-.shape-inspector .inspector-action-button:hover:not(:disabled) {
+.shape-inspector .inspector-action-button:hover:not(:disabled),
+.surface-panel .inspector-action-button:hover:not(:disabled) {
   color: #98540d;
   background: #f8f4ed;
   border-color: #d1995e;
 }
 
 .shape-inspector .edit-sketch-button:disabled,
-.shape-inspector .inspector-action-button:disabled {
+.shape-inspector .inspector-action-button:disabled,
+.surface-panel .inspector-action-button:disabled {
   opacity: 0.45;
   cursor: default;
 }
@@ -12829,14 +12832,16 @@ html[data-theme="dark"] .shape-inspector.floating {
 }
 
 html[data-theme="dark"] .shape-inspector .edit-sketch-button,
-html[data-theme="dark"] .shape-inspector .inspector-action-button {
+html[data-theme="dark"] .shape-inspector .inspector-action-button,
+html[data-theme="dark"] .surface-panel .inspector-action-button {
   color: #ede3d2;
   background: #231a11;
   border-color: #5c4b3a;
 }
 
 html[data-theme="dark"] .shape-inspector .edit-sketch-button:hover:not(:disabled),
-html[data-theme="dark"] .shape-inspector .inspector-action-button:hover:not(:disabled) {
+html[data-theme="dark"] .shape-inspector .inspector-action-button:hover:not(:disabled),
+html[data-theme="dark"] .surface-panel .inspector-action-button:hover:not(:disabled) {
   color: #f5efe5;
   background: #3b2c1d;
   border-color: #81684f;
@@ -15940,4 +15945,51 @@ html[data-theme="dark"] .tool-advanced-summary {
 
 html[data-theme="dark"] .tool-status {
   color: #d6c3ab;
+}
+
+/* Surface texture as a tool in the right column: under a tool opened later, and its fields with the label above, so
+   long choices and their hints have the column's width. In the object's properties, its card only opens the tool and
+   says which pattern the body carries. */
+.edge-modifier-panel.docked.surface-panel {
+  z-index: 45;
+}
+
+.surface-panel .select-property {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+}
+
+/* Labels as small as in the other tools. */
+.surface-panel .select-property,
+.surface-panel .range-property,
+.surface-panel .check-property {
+  font-size: 13px;
+}
+
+.surface-panel .select-property select {
+  font-size: 14px;
+}
+
+.surface-panel .select-property-hint {
+  grid-column: 1;
+  margin-top: 0;
+}
+
+.surface-panel .tool-panel-body > .cylinder-wrap-hint {
+  margin: 12px 0 0;
+}
+
+.property-card-summary {
+  flex: 1;
+  margin: 0 8px 0 12px;
+  overflow: hidden;
+  color: #8a7258;
+  font-size: 13px;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+html[data-theme="dark"] .property-card-summary {
+  color: #c4ae95;
 }

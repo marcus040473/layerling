@@ -3732,14 +3732,16 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .rotation-angle-badge {
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .edit-sketch-button,
-:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .inspector-action-button {
+:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .inspector-action-button,
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-panel .inspector-action-button {
   color: #4c4c4c;
   background: #ffffff;
   border: 1px solid #c4c4c4;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .edit-sketch-button:hover:not(:disabled),
-:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .inspector-action-button:hover:not(:disabled) {
+:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .inspector-action-button:hover:not(:disabled),
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-panel .inspector-action-button:hover:not(:disabled) {
   color: #98540d;
   background: #f3f3f3;
   border-color: #d1995e;
@@ -5665,14 +5667,16 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector.floati
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .edit-sketch-button,
-html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .inspector-action-button {
+html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .inspector-action-button,
+html[data-theme="dark"]:where([data-palette="graphite"]) .surface-panel .inspector-action-button {
   color: #e0e0e0;
   background: #202020;
   border-color: #4c4c4c;
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .edit-sketch-button:hover:not(:disabled),
-html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .inspector-action-button:hover:not(:disabled) {
+html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .inspector-action-button:hover:not(:disabled),
+html[data-theme="dark"]:where([data-palette="graphite"]) .surface-panel .inspector-action-button:hover:not(:disabled) {
   color: #ededed;
   background: #313131;
   border-color: #5c5c5c;
@@ -7405,6 +7409,14 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .tool-advanced-summary 
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status {
   color: #c1c1c1;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .property-card-summary {
+  color: #636363;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .property-card-summary {
+  color: #adadad;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-welcome-hide {
