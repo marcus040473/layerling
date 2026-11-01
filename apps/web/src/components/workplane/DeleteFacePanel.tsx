@@ -76,7 +76,7 @@ export function DeleteFacePanel({
       {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : (
         <ToolStatus
           state={preparing || busy ? "working" : faceCount === 0 ? "needed" : "ready"}
-          text={preparing ? t("deleteFace.preparing") : busy ? t("deleteFace.working") : faceCount === 0 ? t("deleteFace.countNone") : t("toolSidebar.ready")}
+          text={preparing ? t("deleteFace.preparing") : busy ? t("deleteFace.working") : faceCount === 0 ? t("toolSidebar.waiting") : t("toolSidebar.ready")}
         />
       )}
       <div className="edge-modifier-footer">

@@ -124,7 +124,7 @@ export function FaceToolPanel({
         </label>
       </ToolSection>
 
-      <ToolStatus state={busy ? "working" : ready && !empty ? "ready" : "needed"} text={busy ? t("cookieCutter.working") : ready && !empty ? t("toolSidebar.ready") : status} />
+      <ToolStatus state={busy ? "working" : ready && !empty ? "ready" : "needed"} text={busy ? t("cookieCutter.working") : ready && !empty ? t("toolSidebar.ready") : ready ? status : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>
           {ready ? t("faceTool.repick") : t("common.cancel")}

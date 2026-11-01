@@ -259,7 +259,7 @@ export function HolePatternPanel({
         ) : null}
       </ToolSection>
 
-      <ToolStatus state={busy ? "working" : fits ? "ready" : "needed"} text={busy ? t("cutOut.working") : fits ? t("toolSidebar.ready") : status} />
+      <ToolStatus state={busy ? "working" : fits ? "ready" : "needed"} text={busy ? t("cutOut.working") : fits ? t("toolSidebar.ready") : step === "ready" ? status : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>
           {ready ? t("holePattern.repick") : t("common.cancel")}

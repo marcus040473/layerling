@@ -16005,3 +16005,30 @@ html[data-theme="dark"] .property-card-summary {
   grid-template-columns: minmax(0, 1fr);
   gap: 5px;
 }
+
+/* Cut out: the part and the body to cut each on a line of their own, then the button that swaps them. */
+.cut-out-roles {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+
+.cut-out-roles button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  padding: 6px 11px;
+  color: #6d5133;
+  font: inherit;
+  background: #fff;
+  border: 1px solid #daccbe;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+html[data-theme="dark"] .cut-out-roles button {
+  color: #ddccb9;
+  background: #35281b;
+  border-color: #5e4c3a;
+}

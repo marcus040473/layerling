@@ -153,6 +153,8 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "toolSidebar.advanced": "Avanceret",
   "toolSidebar.ready": "Klar til at anvende",
   "toolSidebar.pickEdges": "Klik på kanter i modellen",
+  "toolSidebar.waiting": "Venter på dit valg i modellen",
+  "toolSidebar.nothingToApply": "Intet at ændre endnu",
   "lid.advancedSummary": "Spalte {gap} · læbe {depth} × {wall} mm",
   "lid.advancedSummaryMagnet": "magnet {diameter} × {height} mm, spillerum {play}",
   "edge.advancedSummary": "Tærskel {angle}° · forhåndsvisning {quality}",

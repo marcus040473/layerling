@@ -93,7 +93,7 @@ export function MateFacesPanel({
         )}
       </ToolSection>
 
-      <ToolStatus state={step === "ready" ? "ready" : "needed"} text={step === "ready" ? t("toolSidebar.ready") : stepText} />
+      <ToolStatus state={step === "ready" ? "ready" : "needed"} text={step === "ready" ? t("toolSidebar.ready") : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={step !== "ready"} onClick={onApply}>

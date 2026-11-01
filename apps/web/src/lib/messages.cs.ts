@@ -876,6 +876,8 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "toolSidebar.advanced": "Rozšířené",
   "toolSidebar.ready": "Připraveno k použití",
   "toolSidebar.pickEdges": "Klikni na hrany v modelu",
+  "toolSidebar.waiting": "Čeká na tvůj výběr v modelu",
+  "toolSidebar.nothingToApply": "Zatím není co změnit",
   "lid.advancedSummary": "Spára {gap} · lem {depth} × {wall} mm",
   "lid.advancedSummaryMagnet": "magnet {diameter} × {height} mm, vůle {play}",
   "edge.advancedSummary": "Práh {angle}° · náhled {quality}",

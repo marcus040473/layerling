@@ -750,6 +750,8 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "toolSidebar.advanced": "Geavanceerd",
   "toolSidebar.ready": "Klaar om toe te passen",
   "toolSidebar.pickEdges": "Klik randen in het model aan",
+  "toolSidebar.waiting": "Wacht op je keuze in het model",
+  "toolSidebar.nothingToApply": "Nog niets te wijzigen",
   "lid.advancedSummary": "Speling {gap} · lip {depth} × {wall} mm",
   "lid.advancedSummaryMagnet": "magneet {diameter} × {height} mm, speling {play}",
   "edge.advancedSummary": "Drempel {angle}° · voorbeeld {quality}",

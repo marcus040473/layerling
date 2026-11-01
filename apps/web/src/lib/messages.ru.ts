@@ -750,6 +750,8 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "toolSidebar.advanced": "Дополнительно",
   "toolSidebar.ready": "Готово к применению",
   "toolSidebar.pickEdges": "Щёлкни рёбра в модели",
+  "toolSidebar.waiting": "Ждёт твоего выбора в модели",
+  "toolSidebar.nothingToApply": "Пока нечего менять",
   "lid.advancedSummary": "Зазор {gap} · губа {depth} × {wall} мм",
   "lid.advancedSummaryMagnet": "магнит {diameter} × {height} мм, зазор {play}",
   "edge.advancedSummary": "Порог {angle}° · просмотр {quality}",

@@ -618,6 +618,8 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "toolSidebar.advanced": "Napredno",
   "toolSidebar.ready": "Pripravljeno za uporabo",
   "toolSidebar.pickEdges": "Klikni robove v modelu",
+  "toolSidebar.waiting": "Čaka na tvojo izbiro v modelu",
+  "toolSidebar.nothingToApply": "Zaenkrat ni ničesar za spremeniti",
   "lid.advancedSummary": "Reža {gap} · ustnica {depth} × {wall} mm",
   "lid.advancedSummaryMagnet": "magnet {diameter} × {height} mm, zračnost {play}",
   "edge.advancedSummary": "Prag {angle}° · predogled {quality}",

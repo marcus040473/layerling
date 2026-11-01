@@ -7419,6 +7419,18 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .property-card-summary 
   color: #adadad;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-roles button {
+  color: #515151;
+  background: #fff;
+  border: 1px solid #cccccc;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .cut-out-roles button {
+  color: #cbcbcb;
+  background: #2d2d2d;
+  border-color: #4d4d4d;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-welcome-hide {
   color: #717171;
   background: transparent;

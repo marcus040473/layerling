@@ -99,7 +99,7 @@ export function ScalePercentPanel({
       {error ? <p className="edge-modifier-error" role="alert">{error}</p> : (
         <ToolStatus
           state={isUnchangedPercent(settings.percent) ? "needed" : "ready"}
-          text={isUnchangedPercent(settings.percent) ? t("scalePercent.help") : t("toolSidebar.ready")}
+          text={isUnchangedPercent(settings.percent) ? t("toolSidebar.nothingToApply") : t("toolSidebar.ready")}
         />
       )}
 

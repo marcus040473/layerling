@@ -750,6 +750,8 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "toolSidebar.advanced": "Erweitert",
   "toolSidebar.ready": "Bereit zum Anwenden",
   "toolSidebar.pickEdges": "Kanten im Modell anklicken",
+  "toolSidebar.waiting": "Wartet auf deine Auswahl im Modell",
+  "toolSidebar.nothingToApply": "Noch nichts zu ändern",
   "lid.advancedSummary": "Spalt {gap} · Lippe {depth} × {wall} mm",
   "lid.advancedSummaryMagnet": "Magnet {diameter} × {height} mm, Spiel {play}",
   "edge.advancedSummary": "Schwelle {angle}° · Vorschau {quality}",

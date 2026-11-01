@@ -751,6 +751,8 @@ export const MESSAGES_EN = {
   "toolSidebar.advanced": "Advanced",
   "toolSidebar.ready": "Ready to apply",
   "toolSidebar.pickEdges": "Click edges in the model",
+  "toolSidebar.waiting": "Waiting for your pick in the model",
+  "toolSidebar.nothingToApply": "Nothing to change yet",
   "lid.advancedSummary": "Gap {gap} · lip {depth} × {wall} mm",
   "lid.advancedSummaryMagnet": "magnet {diameter} × {height} mm, play {play}",
   "edge.advancedSummary": "Threshold {angle}° · preview {quality}",

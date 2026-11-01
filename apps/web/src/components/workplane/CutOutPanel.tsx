@@ -58,7 +58,7 @@ export function CutOutPanel({
 
       <ToolSection title={t("toolSidebar.selection")}>
         <ToolSelection ready text={`${partName} → ${hostName}`} detail={t("cutOut.help")} />
-        <div className="edge-modifier-field">
+        <div className="edge-modifier-field cut-out-roles">
           <span>{t("cutOut.part")}: <strong>{partName}</strong></span>
           <span>{t("cutOut.host")}: <strong>{hostName}</strong></span>
           <button type="button" className="secondary" disabled={busy} onClick={onSwap}>
