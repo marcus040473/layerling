@@ -15993,3 +15993,15 @@ html[data-theme="dark"] .tool-status {
 html[data-theme="dark"] .property-card-summary {
   color: #c4ae95;
 }
+
+/* A choice's hint under the whole row, not squeezed into the field's column. */
+.shape-inspector .select-property-hint {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+}
+
+/* A vase's choices are long ("Solid (vase mode)"): the label stands above the field, which takes the card's width. */
+.vase-card .select-property {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+}

@@ -4332,9 +4332,10 @@ export function ShapeInspector({
       ) : null}
       {shape.kind === "vase" ? (
         <>
-          <div className={`property-card ${vaseFormOpen ? "" : "collapsed"}`}>
+          <div className={`property-card vase-card ${vaseFormOpen ? "" : "collapsed"}`}>
             <button className="property-card-header" type="button" aria-expanded={vaseFormOpen} aria-controls={`vase-form-${shape.id}`} onClick={() => setVaseFormOpen((open) => !open)}>
               <span>{t("inspector.vaseForm")}</span>
+              {vaseFormOpen ? null : <small className="property-card-summary">{chosenSummary(vaseFormProperties, ["profile", "section", "body", "effect"])}</small>}
               <ChevronUp className={vaseFormOpen ? "" : "collapsed"} size={25} strokeWidth={2.8} />
             </button>
             {vaseFormOpen ? (
@@ -4343,9 +4344,10 @@ export function ShapeInspector({
               </div>
             ) : null}
           </div>
-          <div className={`property-card ${vaseFloorOpen ? "" : "collapsed"}`}>
+          <div className={`property-card vase-card ${vaseFloorOpen ? "" : "collapsed"}`}>
             <button className="property-card-header" type="button" aria-expanded={vaseFloorOpen} aria-controls={`vase-floor-${shape.id}`} onClick={() => setVaseFloorOpen((open) => !open)}>
               <span>{t("inspector.vaseFloor")}</span>
+              {vaseFloorOpen ? null : <small className="property-card-summary">{chosenSummary(vaseFloorProperties, ["cutout", "reinforce", "lamp"])}</small>}
               <ChevronUp className={vaseFloorOpen ? "" : "collapsed"} size={25} strokeWidth={2.8} />
             </button>
             {vaseFloorOpen ? (
@@ -4354,9 +4356,10 @@ export function ShapeInspector({
               </div>
             ) : null}
           </div>
-          <div className={`property-card ${vasePartsOpen ? "" : "collapsed"}`}>
+          <div className={`property-card vase-card ${vasePartsOpen ? "" : "collapsed"}`}>
             <button className="property-card-header" type="button" aria-expanded={vasePartsOpen} aria-controls={`vase-parts-${shape.id}`} onClick={() => setVasePartsOpen((open) => !open)}>
               <span>{t("inspector.vaseParts")}</span>
+              {vasePartsOpen ? null : <small className="property-card-summary">{chosenSummary(vasePartProperties, ["legMode", "saucerMode", "insertMode", "lidMode"])}</small>}
               <ChevronUp className={vasePartsOpen ? "" : "collapsed"} size={25} strokeWidth={2.8} />
             </button>
             {vasePartsOpen ? (
@@ -4374,9 +4377,10 @@ export function ShapeInspector({
               </div>
             ) : null}
           </div>
-          <div className={`property-card ${vasePrintOpen ? "" : "collapsed"}`}>
+          <div className={`property-card vase-card ${vasePrintOpen ? "" : "collapsed"}`}>
             <button className="property-card-header" type="button" aria-expanded={vasePrintOpen} aria-controls={`vase-print-${shape.id}`} onClick={() => setVasePrintOpen((open) => !open)}>
               <span>{t("inspector.vasePrint")}</span>
+              {vasePrintOpen ? null : <small className="property-card-summary">{chosenSummary(vasePrintProperties, ["material"])}</small>}
               <ChevronUp className={vasePrintOpen ? "" : "collapsed"} size={25} strokeWidth={2.8} />
             </button>
             {vasePrintOpen ? (
@@ -6894,6 +6898,22 @@ function ToggleProperty({ label, value, area, disabled, onChange, onReset }: Omi
       <span>{label}{onReset ? <PropertyResetButton onClick={onReset} /> : null}</span>
     </label>
   );
+}
+
+/** Choices that mean "nothing chosen": a folded card's line leaves them out. */
+const NO_CHOICE = new Set(["keine", "keiner", "kein", "none"]);
+
+/**
+ * The line a folded card shows beside its title (the GUI concept, 5.4): what is chosen in it, named by the choices'
+ * keys in order (the part after the last dot of a property's id), leaving out the ones that mean nothing chosen.
+ */
+function chosenSummary(properties: ShapePropertyConfig[], keys: string[]) {
+  return keys
+    .map((key) => properties.find((property) => property.id.endsWith(`.${key}`)))
+    .filter((property): property is SelectPropertyConfig => property?.type === "select" && !NO_CHOICE.has(property.value))
+    .map((property) => property.options.find((option) => option.value === property.value)?.label ?? "")
+    .filter(Boolean)
+    .join(" · ");
 }
 
 /** Holt eine Auswahl aus der Merkmalsliste heraus, um sie woanders zu zeichnen. */
