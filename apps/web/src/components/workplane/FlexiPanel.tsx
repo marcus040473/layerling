@@ -4,8 +4,9 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { MAX_FLEXI_CLEARANCE, MAX_FLEXI_JOINTS, MAX_FLEXI_SWING, MIN_FLEXI_CLEARANCE, MIN_FLEXI_SWING } from "@/lib/flexiJoints";
-import { t } from "@/lib/i18n";
+import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
@@ -53,8 +54,15 @@ export function FlexiPanel({
   useLanguage();
   const title = t("flexi.title");
   const endMax = Math.max(1, Math.round(length / 2));
+  const millimetres = (value: number) => value.toLocaleString(numberLocale());
+  // What the folded part holds, in a line: the clearance, and the joint's size and the end links when set by hand.
+  const summary = [
+    t("flexi.advancedSummary", { clearance: millimetres(settings.clearance) }),
+    settings.autoSize ? "" : t("flexi.advancedSummarySize", { size: millimetres(settings.size) }),
+    settings.evenLinks ? "" : t("flexi.advancedSummaryEnds", { start: millimetres(Math.min(settings.start, endMax)), end: millimetres(Math.min(settings.end, endMax)) }),
+  ].filter(Boolean).join(" · ");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel flexi-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel flexi-panel" ariaLabel={title} dock="withObject">
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -67,114 +75,117 @@ export function FlexiPanel({
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span>{t("flexi.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={targetName} detail={t("flexi.help")} />
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("flexi.axis")}>
-        <span>{t("flexi.axis")}</span>
-        <div className="shell-opening-options">
-          {AXES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.axis === option}
-              className={settings.axis === option ? "active" : ""}
-              disabled={busy}
-              onClick={() => onChange({ axis: option })}
-            >
-              {t(`flexi.axis.${option}`)}
-            </button>
-          ))}
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("flexi.axis")}>
+          <span>{t("flexi.axis")}</span>
+          <div className="shell-opening-options">
+            {AXES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={settings.axis === option}
+                className={settings.axis === option ? "active" : ""}
+                disabled={busy}
+                onClick={() => onChange({ axis: option })}
+              >
+                {t(`flexi.axis.${option}`)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <EdgeModifierSlider
-        label={t("flexi.joints")}
-        value={settings.joints}
-        min={1}
-        max={MAX_FLEXI_JOINTS}
-        step={1}
-        workspace={workspace}
-        disabled={busy}
-        onChange={(value) => onChange({ joints: Math.round(value) })}
-      />
-
-      <EdgeModifierSlider
-        label={t("flexi.clearance")}
-        value={settings.clearance}
-        min={MIN_FLEXI_CLEARANCE}
-        max={MAX_FLEXI_CLEARANCE}
-        step={0.05}
-        workspace={workspace}
-        length
-        disabled={busy}
-        onChange={(value) => onChange({ clearance: value })}
-      />
-      <span className="shell-openings-summary">{t("flexi.clearanceHint")}</span>
-
-      <EdgeModifierSlider
-        label={t("flexi.swing")}
-        value={settings.swing}
-        min={MIN_FLEXI_SWING}
-        max={MAX_FLEXI_SWING}
-        step={1}
-        unit="°"
-        workspace={workspace}
-        disabled={busy}
-        onChange={(value) => onChange({ swing: value })}
-      />
-
-      <label className="edge-modifier-field offset-copy">
-        <input type="checkbox" checked={settings.autoSize} disabled={busy} onChange={(event) => onChange({ autoSize: event.target.checked })} />
-        <span>{t("flexi.autoSize")}</span>
-      </label>
-      {settings.autoSize ? null : (
         <EdgeModifierSlider
-          label={t("flexi.size")}
-          value={settings.size}
-          min={4}
-          max={30}
-          step={0.5}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={(value) => onChange({ size: value })}
-        />
-      )}
-
-      <label className="edge-modifier-field offset-copy">
-        <input type="checkbox" checked={settings.evenLinks} disabled={busy} onChange={(event) => onChange({ evenLinks: event.target.checked })} />
-        <span>{t("flexi.evenLinks")}</span>
-      </label>
-      {settings.evenLinks ? null : (<>
-        <EdgeModifierSlider
-          label={t("flexi.start")}
-          value={Math.min(settings.start, endMax)}
+          label={t("flexi.joints")}
+          value={settings.joints}
           min={1}
-          max={endMax}
-          step={0.5}
+          max={MAX_FLEXI_JOINTS}
+          step={1}
           workspace={workspace}
-          length
           disabled={busy}
-          onChange={(value) => onChange({ start: value })}
+          onChange={(value) => onChange({ joints: Math.round(value) })}
         />
-        <EdgeModifierSlider
-          label={t("flexi.end")}
-          value={Math.min(settings.end, endMax)}
-          min={1}
-          max={endMax}
-          step={0.5}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={(value) => onChange({ end: value })}
-        />
-      </>)}
 
-      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : null}
+        <EdgeModifierSlider
+          label={t("flexi.swing")}
+          value={settings.swing}
+          min={MIN_FLEXI_SWING}
+          max={MAX_FLEXI_SWING}
+          step={1}
+          unit="°"
+          workspace={workspace}
+          disabled={busy}
+          onChange={(value) => onChange({ swing: value })}
+        />
+      </ToolSection>
+
+      <ToolAdvanced tool="flexi" summary={summary}>
+        <EdgeModifierSlider
+          label={t("flexi.clearance")}
+          value={settings.clearance}
+          min={MIN_FLEXI_CLEARANCE}
+          max={MAX_FLEXI_CLEARANCE}
+          step={0.05}
+          workspace={workspace}
+          length
+          disabled={busy}
+          onChange={(value) => onChange({ clearance: value })}
+        />
+        <span className="shell-openings-summary">{t("flexi.clearanceHint")}</span>
+
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={settings.autoSize} disabled={busy} onChange={(event) => onChange({ autoSize: event.target.checked })} />
+          <span>{t("flexi.autoSize")}</span>
+        </label>
+        {settings.autoSize ? null : (
+          <EdgeModifierSlider
+            label={t("flexi.size")}
+            value={settings.size}
+            min={4}
+            max={30}
+            step={0.5}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ size: value })}
+          />
+        )}
+
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={settings.evenLinks} disabled={busy} onChange={(event) => onChange({ evenLinks: event.target.checked })} />
+          <span>{t("flexi.evenLinks")}</span>
+        </label>
+        {settings.evenLinks ? null : (<>
+          <EdgeModifierSlider
+            label={t("flexi.start")}
+            value={Math.min(settings.start, endMax)}
+            min={1}
+            max={endMax}
+            step={0.5}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ start: value })}
+          />
+          <EdgeModifierSlider
+            label={t("flexi.end")}
+            value={Math.min(settings.end, endMax)}
+            min={1}
+            max={endMax}
+            step={0.5}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ end: value })}
+          />
+        </>)}
+      </ToolAdvanced>
+
+      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("flexi.working") : t("toolSidebar.ready")} />}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>
