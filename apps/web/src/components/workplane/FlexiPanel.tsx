@@ -4,7 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { MAX_FLEXI_CLEARANCE, MAX_FLEXI_JOINTS, MAX_FLEXI_SWING, MIN_FLEXI_CLEARANCE, MIN_FLEXI_SWING } from "@/lib/flexiJoints";
 import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -62,7 +62,7 @@ export function FlexiPanel({
     settings.evenLinks ? "" : t("flexi.advancedSummaryEnds", { start: millimetres(Math.min(settings.start, endMax)), end: millimetres(Math.min(settings.end, endMax)) }),
   ].filter(Boolean).join(" · ");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel flexi-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel flexi-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -76,7 +76,8 @@ export function FlexiPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready text={targetName} detail={t("flexi.help")} />
+        <ToolSelection ready text={targetName} />
+        <ToolHelp>{t("flexi.help")}</ToolHelp>
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
@@ -185,7 +186,7 @@ export function FlexiPanel({
         </>)}
       </ToolAdvanced>
 
-      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("flexi.working") : t("toolSidebar.ready")} />}
+      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("flexi.working")} /> : null}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>

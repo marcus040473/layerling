@@ -43,7 +43,7 @@ export function MateFacesPanel({
   const title = t("mate.title");
   const stepText = t(mode === "concentric" ? `mate.stepRound.${step}` : `mate.step.${step}`);
   return (
-    <MovableToolPanel className="edge-modifier-panel mate-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel mate-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -57,7 +57,7 @@ export function MateFacesPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready={step === "ready"} text={targetName} detail={stepText} />
+        <ToolSelection ready={step === "ready"} confirm text={targetName} detail={stepText} />
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>

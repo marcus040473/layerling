@@ -21,7 +21,7 @@ import { canApplySketchCornerTreatment } from "@/lib/sketchFilletChamfer";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { useMovablePanel, type MovablePanelOptions } from "@/lib/useMovablePanel";
-import { currentLengthUnitLabel, formatLengthMm, lengthDisplayUnit, parseLengthMm, parseMeasurementInput, resolveLengthMm, setLengthUnit } from "@/lib/measurementUnits";
+import { currentLengthUnitLabel, formatLengthMm, lengthDisplayUnit, localDecimals, parseLengthMm, parseMeasurementInput, resolveLengthMm, setLengthUnit } from "@/lib/measurementUnits";
 import { applySegmentDimension, SEGMENT_DIMENSION_CENTER } from "@/lib/sketchDimensions";
 import { applyCornerAngle, sketchCornerAt, type CornerTurn, type SketchCorner } from "@/lib/sketchAngles";
 import { isSegmentCurved } from "@/lib/sketchSegmentCurve";
@@ -290,7 +290,7 @@ function formatDimension(value: number, accuracy: 1 | 2 | 3) {
 
 function formatPlainNumber(value: number, accuracy: 1 | 2 | 3) {
   const threshold = 0.5 * 10 ** -accuracy;
-  return (Math.abs(value) < threshold ? 0 : value).toFixed(accuracy);
+  return localDecimals((Math.abs(value) < threshold ? 0 : value).toFixed(accuracy));
 }
 
 function formatWholeNumber(value: number) {

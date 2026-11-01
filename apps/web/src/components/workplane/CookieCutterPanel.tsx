@@ -4,7 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -48,7 +48,7 @@ export function CookieCutterPanel({
   useLanguage();
   const title = t("editor.tool.cookieCutter");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel cookie-cutter-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel cookie-cutter-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -62,7 +62,8 @@ export function CookieCutterPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready text={targetName} detail={t("cookieCutter.help")} />
+        <ToolSelection ready text={targetName} />
+        <ToolHelp>{t("cookieCutter.help")}</ToolHelp>
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
@@ -134,7 +135,7 @@ export function CookieCutterPanel({
         <span className="shell-openings-summary">{t("cookieCutter.filletHint")}</span>
       </ToolAdvanced>
 
-      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("cookieCutter.working") : t("toolSidebar.ready")} />}
+      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("cookieCutter.working")} /> : null}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>

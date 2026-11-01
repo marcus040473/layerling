@@ -4,7 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -74,7 +74,7 @@ export function OffsetPanel({
     sideways ? t("offset.advancedSummarySideways") : "",
   ].filter(Boolean).join(" · ");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -88,7 +88,8 @@ export function OffsetPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready text={targetName} detail={t("offset.help")} />
+        <ToolSelection ready text={targetName} />
+        <ToolHelp>{t("offset.help")}</ToolHelp>
         <EdgeFeatureHistory
           appliedFeatureCount={appliedFeatureCount}
           reversibleFeatureCount={reversibleFeatureCount}
@@ -163,7 +164,7 @@ export function OffsetPanel({
         </label>
       </ToolAdvanced>
 
-      {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("offset.working") : t("toolSidebar.ready")} />}
+      {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : busy ? <ToolStatus state="working" text={t("offset.working")} /> : null}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>
