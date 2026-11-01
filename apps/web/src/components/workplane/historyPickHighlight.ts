@@ -30,7 +30,7 @@ export function syncHistoryPickHighlight(state: ThreeState, ids: readonly string
  * The same marking in a layer of its own, so two uses do not clear each other: the History view's,
  * and the body a row of "Select other" points at (#804).
  */
-export function syncPickHighlight(state: ThreeState, ids: readonly string[], name: string) {
+export function syncPickHighlight(state: ThreeState, ids: readonly string[], name: string, color = PICK_COLOR) {
   let layers = highlightLayers.get(state);
   if (!layers) {
     layers = new Map();
@@ -47,7 +47,7 @@ export function syncPickHighlight(state: ThreeState, ids: readonly string[], nam
 
   if (ids.length > 0) {
     const tint = new THREE.MeshBasicMaterial({
-      color: PICK_COLOR,
+      color,
       transparent: true,
       opacity: PICK_TINT_OPACITY,
       depthWrite: false,
@@ -59,7 +59,7 @@ export function syncPickHighlight(state: ThreeState, ids: readonly string[], nam
     tint.toneMapped = false;
     const rect = state.renderer.domElement.getBoundingClientRect();
     const outline = new LineMaterial({
-      color: PICK_COLOR,
+      color,
       linewidth: PICK_OUTLINE_PX,
       worldUnits: false,
       transparent: true,

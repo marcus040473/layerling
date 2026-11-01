@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { ArrowLeftRight, Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolHelp, ToolSection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -19,6 +17,9 @@ const CUT_OUT_STEP = 0.05;
  * Cut out (#927): two solids, one of them a part that has to fit into the other (a shaft in a collar, a
  * bolt in a case). A copy of the part, grown by the clearance, is cut out of the other body; the part stays.
  */
+/** The colours of the two roles, in the rows and on the bodies in the view. */
+export const CUT_OUT_ROLE_COLORS = { part: "#14a3a8", host: "#8b5cf6" } as const;
+
 export function CutOutPanel({
   partName,
   hostName,
@@ -30,7 +31,6 @@ export function CutOutPanel({
   onSwap,
   onApply,
   onCancel,
-  onHighlight,
 }: {
   partName: string;
   hostName: string;
@@ -42,22 +42,18 @@ export function CutOutPanel({
   onSwap: () => void;
   onApply: () => void;
   onCancel: () => void;
-  /** Outlines the body of a role in the view while the pointer is on its row; null takes it off. */
-  onHighlight?: (role: "part" | "host" | null) => void;
 }) {
   useLanguage();
   const title = t("cutOut.title");
-  const highlightRef = useRef(onHighlight);
-  highlightRef.current = onHighlight;
-  useEffect(() => () => highlightRef.current?.(null), []);
-  const role = (which: "part" | "host", label: string, name: string) => (
-    <div
-      className={`cut-out-role ${which}`}
-      onMouseEnter={() => onHighlight?.(which)}
-      onMouseLeave={() => onHighlight?.(null)}
-    >
-      <span className="cut-out-role-label">{label}</span>
-      <strong>{name}</strong>
+  // Each role in its colour, here and on its body in the view, as long as the tool is open.
+  const role = (which: "part" | "host", label: string, name: string, note: string) => (
+    <div className={`cut-out-role ${which}`}>
+      <span className="cut-out-swatch" style={{ background: CUT_OUT_ROLE_COLORS[which] }} aria-hidden="true" />
+      <span className="cut-out-role-text">
+        <span className="cut-out-role-label">{label}</span>
+        <strong>{name}</strong>
+        <small>{note}</small>
+      </span>
     </div>
   );
   return (
@@ -76,8 +72,8 @@ export function CutOutPanel({
 
       <ToolSection title={t("toolSidebar.selection")}>
         <div className="cut-out-roles">
-          {role("part", t("cutOut.part"), partName)}
-          {role("host", t("cutOut.host"), hostName)}
+          {role("part", t("cutOut.part"), partName, t("cutOut.partNote"))}
+          {role("host", t("cutOut.host"), hostName, t("cutOut.hostNote"))}
           <button type="button" className="cut-out-swap" disabled={busy} onClick={onSwap}>
             <ArrowLeftRight size={16} /> {t("cutOut.swap")}
           </button>
@@ -97,11 +93,12 @@ export function CutOutPanel({
           disabled={busy}
           onChange={onClearanceChange}
         />
-        <span className="shell-openings-summary">{t("cutOut.clearanceHint")}</span>
+        <ToolHint text={t("cutOut.clearanceHint")} />
       </ToolSection>
 
       {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : busy ? <ToolStatus state="working" text={t("cutOut.working")} /> : null}
       <div className="edge-modifier-footer">
+        <ToolOutcome text={t("cutOut.outcome", { host: hostName, part: partName })} />
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>
           {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}

@@ -109,6 +109,7 @@ export function FaceToolPanel({
         />
         <EdgeModifierSlider
           label={t("faceTool.depth")}
+          primary
           value={settings.depth}
           min={FACE_TOOL_MIN_DEPTH}
           max={maxDepth}

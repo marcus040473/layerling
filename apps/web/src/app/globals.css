@@ -15727,21 +15727,18 @@ html[data-theme="dark"] .interactive-help-more a:hover {
   border-top: 1px solid #eee7da;
 }
 
-/* Small capitals, like the names of the toolbar's groups: they order the column without taking its height. */
 .tool-section-title {
   margin: 0;
-  color: #8a7258;
-  font-size: 11px;
+  color: #4a3520;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .tool-selection {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
-  align-items: start;
+  align-items: center;
   padding: 7px 9px;
   color: #563e24;
   background: #fbf8f4;
@@ -15749,12 +15746,15 @@ html[data-theme="dark"] .interactive-help-more a:hover {
   border-radius: 8px;
 }
 
-/* The body chosen before the tool opened: plain text, no box. */
+/* The body chosen before the tool opened: a quiet box in one line, the body's icon, its name and how much of it. */
 .tool-selection.neutral {
-  grid-template-columns: minmax(0, 1fr);
-  padding: 0;
+  background: #fbf8f4;
+  border-color: #e6dccd;
+}
+
+.tool-selection.neutral .tool-selection-mark {
+  color: #7a6249;
   background: none;
-  border: 0;
 }
 
 /* A pick the tool has checked (edges, a face): green, as a confirmation. */
@@ -15941,8 +15941,12 @@ html[data-theme="dark"] .tool-selection {
 }
 
 html[data-theme="dark"] .tool-selection.neutral {
-  background: none;
-  border: 0;
+  background: #2f2418;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .tool-selection.neutral .tool-selection-mark {
+  color: #c4ae95;
 }
 
 html[data-theme="dark"] .tool-selection.confirmed {
@@ -16177,4 +16181,408 @@ html[data-theme="dark"] .edge-modifier-panel .split-axis-control button.active {
 
 .edge-modifier-panel button:disabled {
   cursor: not-allowed;
+}
+
+/* ---- The GUI examples A–G: a compact column ---- */
+
+/* A tool's main value keeps its slider; the other numbers are a field beside their label. */
+.tool-column .range-property:not(.primary) > .range-control {
+  display: none;
+}
+
+.tool-column .range-property:not(.primary) {
+  margin-top: 8px;
+}
+
+.tool-column .range-property .range-property-name {
+  white-space: normal;
+}
+
+.tool-column .range-value-control {
+  min-width: 112px;
+}
+
+.tool-column .range-value-control input {
+  flex: 1;
+  width: 64px;
+}
+
+/* Options side by side in one row, as many as there are. */
+.tool-column .shell-opening-options {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tool-column .shell-opening-options button {
+  flex: 1 1 0;
+  min-width: max-content;
+}
+
+.tool-selection-scope {
+  color: #7a6249;
+  font-weight: 600;
+}
+
+.tool-selection-action button {
+  min-height: 28px;
+  padding: 0 10px;
+  color: #6d5133;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #fff;
+  border: 1px solid #d8c8b7;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.tool-selection-action button.active {
+  color: #8a4504;
+  background: #ffe7cc;
+  border-color: #d97813;
+}
+
+.tool-selection-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: #7a6249;
+  font-size: 12px;
+}
+
+.tool-secondary-action {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-self: start;
+  padding: 4px 0;
+  color: #9a4a1c;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* "More" after a hint's first sentence. */
+.tool-hint-more {
+  padding: 0;
+  color: #b45f0b;
+  font: inherit;
+  font-weight: 700;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* What applying will do: a line over the actions at the foot. */
+.edge-modifier-panel .edge-modifier-footer {
+  flex-wrap: wrap;
+}
+
+.tool-outcome {
+  display: flex;
+  flex: 1 0 100%;
+  gap: 7px;
+  align-items: flex-start;
+  margin: 0 0 2px;
+  color: #6d5133;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tool-outcome svg,
+.tool-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: #a07a4f;
+}
+
+.tool-note {
+  display: flex;
+  gap: 7px;
+  margin: 2px 0 0;
+  padding: 8px 9px;
+  color: #6d5133;
+  font-size: 12px;
+  line-height: 1.4;
+  background: #fff6ea;
+  border: 1px solid #f0d9b5;
+  border-radius: 8px;
+}
+
+/* A count with − and +. */
+.tool-stepper {
+  display: flex !important;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tool-stepper-control {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #d8c9ba;
+  border-radius: 6px;
+}
+
+.tool-stepper-control button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  color: #6d5133;
+  background: #fbf8f4;
+  border: 0;
+  cursor: pointer;
+}
+
+.tool-stepper-control button:disabled {
+  color: #c9bba9;
+  cursor: not-allowed;
+}
+
+.tool-stepper-control input {
+  width: 46px;
+  height: 31px;
+  padding: 0;
+  color: #57432f;
+  font: 750 14px/1 var(--font-ui);
+  text-align: center;
+  background: transparent;
+  border: 0;
+  border-inline: 1px solid #e6dccd;
+  outline: 0;
+}
+
+/* Advanced: its title, and under it what it holds. */
+.tool-advanced > summary {
+  grid-template-columns: auto 1fr;
+  row-gap: 1px;
+}
+
+.tool-advanced-summary {
+  grid-column: 2;
+  text-align: left;
+}
+
+/* Cut out's roles, each with its colour. */
+.cut-out-role {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+
+.cut-out-role:hover {
+  border-color: #e6dccd;
+}
+
+.cut-out-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.cut-out-role-text {
+  display: grid;
+  min-width: 0;
+}
+
+.cut-out-role-text small {
+  color: #7a6249;
+  font-size: 11px;
+}
+
+.cut-out-swap {
+  justify-self: stretch;
+  justify-content: center;
+}
+
+/* The pattern, chosen by its picture. */
+.pattern-picker {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.pattern-picker-label {
+  color: #6e5841;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pattern-picker-trigger {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  padding: 4px 9px 4px 4px;
+  color: #57432f;
+  font: 700 14px/1.2 var(--font-ui);
+  text-align: left;
+  background: #fff;
+  border: 1px solid #d8c9ba;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.pattern-thumbnail {
+  display: block;
+  width: 44px;
+  height: 33px;
+  object-fit: cover;
+  background: #ebe4da;
+  border-radius: 4px;
+}
+
+.pattern-picker-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #d8c9ba;
+  border-radius: 9px;
+  box-shadow: 0 12px 28px rgba(74, 53, 30, 0.22);
+}
+
+.pattern-picker-search {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 8px;
+  color: #8a7258;
+  border: 1px solid #e0d4c6;
+  border-radius: 7px;
+}
+
+.pattern-picker-search input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  color: #57432f;
+  font: 600 13px/1 var(--font-ui);
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+.pattern-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 330px;
+  overflow-y: auto;
+}
+
+.pattern-picker-grid button {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  padding: 4px;
+  color: #57432f;
+  font: 650 12px/1.2 var(--font-ui);
+  text-align: left;
+  background: #fbf8f4;
+  border: 1px solid #e6dccd;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.pattern-picker-grid button.selected {
+  background: #fff1e0;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+.pattern-picker-grid button:focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: 1px;
+}
+
+.pattern-picker-check {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  padding: 1px;
+  color: #fff;
+  background: #d97813;
+  border-radius: 50%;
+}
+
+.pattern-picker-empty {
+  grid-column: 1 / -1;
+  margin: 6px 2px;
+  color: #8a7258;
+  font-size: 12px;
+}
+
+html[data-theme="dark"] .tool-section-title {
+  color: #f0e2cc;
+}
+
+html[data-theme="dark"] .tool-selection-action button,
+html[data-theme="dark"] .tool-stepper-control,
+html[data-theme="dark"] .pattern-picker-trigger,
+html[data-theme="dark"] .pattern-picker-popover {
+  color: #ede4d4;
+  background: #2f2418;
+  border-color: #5e4c3a;
+}
+
+html[data-theme="dark"] .tool-stepper-control button,
+html[data-theme="dark"] .pattern-picker-grid button {
+  color: #ede4d4;
+  background: #35281b;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .tool-stepper-control input,
+html[data-theme="dark"] .pattern-picker-search input {
+  color: #ede4d4;
+}
+
+html[data-theme="dark"] .pattern-picker-grid button.selected {
+  background: #4a3214;
+  border-color: #e08a2c;
+}
+
+html[data-theme="dark"] .tool-note {
+  color: #e7d6bf;
+  background: #3a2c16;
+  border-color: #6b5230;
+}
+
+html[data-theme="dark"] .tool-outcome,
+html[data-theme="dark"] .tool-selection-links,
+html[data-theme="dark"] .cut-out-role-text small,
+html[data-theme="dark"] .tool-selection-scope {
+  color: #d6c3ab;
+}
+
+html[data-theme="dark"] .pattern-picker-label {
+  color: #e7d6bf;
+}
+
+html[data-theme="dark"] .pattern-picker-search {
+  border-color: #5e4c3a;
+}
+
+html[data-theme="dark"] .tool-hint-more {
+  color: #f3a452;
 }

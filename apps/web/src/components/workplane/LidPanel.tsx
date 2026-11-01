@@ -6,7 +6,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
   LID_FITS,
   LID_MAGNET_SIZES,
@@ -83,11 +83,11 @@ export function LidPanel({
     />
   );
   const lipped = settings.type !== "flat";
-  // What the folded part holds, in a line: the gap and the lip or rim, and the magnet.
+  // Folded, Advanced names what it holds: the gap and the lip or rim, and the magnet's size and play.
   const summary = [
-    lipped ? t("lid.advancedSummary", { gap: millimetres(settings.gap), depth: millimetres(settings.depth), wall: millimetres(settings.wall) }) : "",
-    settings.magnets ? t("lid.advancedSummaryMagnet", { diameter: millimetres(settings.magnetDiameter), height: millimetres(settings.magnetHeight), play: millimetres(settings.magnetGap) }) : "",
-  ].filter(Boolean).join(" · ");
+    ...(lipped ? [t("lid.gap"), t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth"), t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall")] : []),
+    ...(settings.magnets ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
+  ].join(", ");
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
@@ -127,10 +127,11 @@ export function LidPanel({
             ))}
           </div>
         </div>
-        <span className="shell-openings-summary">{t(`lid.type.${settings.type}Hint`)}</span>
+        <ToolHint text={t(`lid.type.${settings.type}Hint`)} />
 
         <EdgeModifierSlider
           label={t("lid.thickness")}
+          primary
           value={settings.thickness}
           min={MIN_LID_THICKNESS}
           max={MAX_LID_THICKNESS}
@@ -195,7 +196,7 @@ export function LidPanel({
                 );
               })}
             </div>
-            <span className="shell-openings-summary">{t("lid.magnetsHint")}</span>
+            <ToolHint text={t("lid.magnetsHint")} />
           </div>
         ) : null}
       </ToolSection>
@@ -217,6 +218,7 @@ export function LidPanel({
 
       {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("lid.working")} /> : null}
       <div className="edge-modifier-footer">
+        <ToolOutcome text={t("lid.outcome")} />
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>
           {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
