@@ -2,10 +2,10 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Check, LoaderCircle, Minus, Pencil, Plus, RotateCcw, X } from "lucide-react";
-import { displayStepFromMillimeters, displayToMillimeters, formatMeasurementNumber, lengthDisplayUnit, millimetersToDisplay, parseMeasurementInput } from "@/lib/measurementUnits";
+import { displayStepFromMillimeters, displayToMillimeters, formatMeasurementNumber, lengthDisplayUnit, localDecimals, millimetersToDisplay, parseMeasurementInput } from "@/lib/measurementUnits";
 import type { CadModifierKind, CadModifierQuality } from "@/lib/cadModifierTypes";
 import { CAD_MODIFIER_MAX_SHARP_ANGLE, cadModifierUserErrorMessage, edgeModifierSelectionStatus } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
@@ -27,7 +27,7 @@ function clamp(value: number, min: number, max: number) {
 
 function formatSliderValue(value: number, accuracy: WorkplaneWorkspaceSettings["accuracy"], step: number, decimals?: number) {
   // A field that keeps decimals shows them only where the value has them: 102.5, but 120 (#817).
-  if (decimals !== undefined) return String(Math.round(value * 10 ** decimals) / 10 ** decimals);
+  if (decimals !== undefined) return localDecimals(String(Math.round(value * 10 ** decimals) / 10 ** decimals));
   if (step >= 1) return String(Math.round(value));
   return formatMeasurementNumber(value, accuracy, step);
 }
@@ -411,7 +411,7 @@ export function EdgeModifierPanel({
     if (panel) panel.scrollTop = panel.scrollHeight;
   }, [error]);
   return (
-    <MovableToolPanel className="edge-modifier-panel" ariaLabel={title} dock="alone">
+    <MovableToolPanel className="edge-modifier-panel" ariaLabel={title} dock="alone" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -426,6 +426,7 @@ export function EdgeModifierPanel({
       <ToolSection title={t("toolSidebar.selection")}>
         <ToolSelection
           ready={selectedCount > 0}
+          confirm
           text={edgeModifierSelectionStatus(prepared, selectedCount, availableCount)}
           detail={(<>
             {targetName}
@@ -434,7 +435,7 @@ export function EdgeModifierPanel({
             {appliedFeatureCount === 0 ? "" : appliedFeatureCount === 1 ? t("edge.existingFeatureOne") : t("edge.existingFeatureMany", { count: appliedFeatureCount })}
           </>)}
         />
-        <p className="edge-modifier-selection-help">{t("edge.selectionHelp")}</p>
+        <ToolHelp>{t("edge.selectionHelp")}</ToolHelp>
         <div className="edge-modifier-quick-actions" title={t("edge.quickAddHint")}>
           <button type="button" className={activeQuickSelection.includes("all") ? "active" : ""} aria-pressed={activeQuickSelection.includes("all")} disabled={!prepared} onClick={onSelectAll}>{t("edge.allSharpEdges")}</button>
           {onSelectTop ? <button type="button" className={activeQuickSelection.includes("top") ? "active" : ""} aria-pressed={activeQuickSelection.includes("top")} disabled={!prepared} title={t("edge.topEdgesHint")} onClick={(event) => onSelectTop(event.shiftKey || event.ctrlKey || event.metaKey)}>{t("edge.topEdges")}</button> : null}

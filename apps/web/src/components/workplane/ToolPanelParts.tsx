@@ -11,7 +11,7 @@ import { advancedOpen, rememberAdvancedOpen, setToolSidebarTab, type ToolSidebar
  */
 
 /** The two tabs over the right column while a tool is docked there: the object's properties, or the tool. */
-export function ToolSidebarTabs({ tab }: { tab: ToolSidebarTab }) {
+export function ToolSidebarTabs({ tab, objectHidden = false }: { tab: ToolSidebarTab; objectHidden?: boolean }) {
   const tabs: ToolSidebarTab[] = ["object", "tool"];
   return (
     <div
@@ -20,6 +20,7 @@ export function ToolSidebarTabs({ tab }: { tab: ToolSidebarTab }) {
       aria-label={t("toolSidebar.tabs")}
       onKeyDown={(event) => {
         if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+        if (objectHidden) return;
         // The arrows switch the tab here; they must not move the selected object as well.
         event.preventDefault();
         event.stopPropagation();
@@ -34,9 +35,13 @@ export function ToolSidebarTabs({ tab }: { tab: ToolSidebarTab }) {
           type="button"
           role="tab"
           data-tab={option}
-          aria-selected={tab === option}
-          tabIndex={tab === option ? 0 : -1}
-          onClick={() => setToolSidebarTab(option)}
+          aria-selected={objectHidden ? option === "tool" : tab === option}
+          tabIndex={(objectHidden ? option === "tool" : tab === option) ? 0 : -1}
+          // Some tools hide the object's properties while they work (Fillet picks edges, Split a plane): the tab stays,
+          // so every tool has the same head, but it says why it cannot be opened.
+          aria-disabled={objectHidden && option === "object" ? true : undefined}
+          title={objectHidden && option === "object" ? t("toolSidebar.objectHidden") : undefined}
+          onClick={() => (objectHidden ? undefined : setToolSidebarTab(option))}
         >
           {t(option === "object" ? "toolSidebar.object" : "toolSidebar.tool")}
         </button>
@@ -55,16 +60,35 @@ export function ToolSection({ title, children }: { title: string; children: Reac
   );
 }
 
-/** What the tool works on, and whether that is enough: a tick, or what to pick still. */
-export function ToolSelection({ ready, text, detail }: { ready: boolean; text: string; detail?: ReactNode }) {
+/**
+ * What the tool works on. A body chosen before the tool opened is the normal case and reads as plain text; only what
+ * still has to be picked (amber) or a pick the tool has checked, such as edges or a face (green, `confirm`), is marked.
+ */
+export function ToolSelection({ ready, confirm = false, text, detail }: { ready: boolean; confirm?: boolean; text: string; detail?: ReactNode }) {
+  const state = !ready ? "needed" : confirm ? "confirmed" : "neutral";
   return (
-    <div className={`tool-selection ${ready ? "ready" : "needed"}`} role="status">
-      <span className="tool-selection-mark" aria-hidden="true">{ready ? <Check size={16} /> : <MousePointerClick size={16} />}</span>
+    <div className={`tool-selection ${state}`} role="status">
+      {state === "neutral" ? null : (
+        <span className="tool-selection-mark" aria-hidden="true">{state === "confirmed" ? <Check size={15} /> : <MousePointerClick size={15} />}</span>
+      )}
       <span className="tool-selection-text">
         <strong>{text}</strong>
         {detail ? <small>{detail}</small> : null}
       </span>
     </div>
+  );
+}
+
+/** How the tool works, in full: folded away under the selection, so the settings start near the top. */
+export function ToolHelp({ children }: { children: ReactNode }) {
+  return (
+    <details className="tool-help">
+      <summary>
+        <ChevronRight className="tool-advanced-chevron" size={14} aria-hidden="true" />
+        <span>{t("toolSidebar.howItWorks")}</span>
+      </summary>
+      <div className="tool-help-body">{children}</div>
+    </details>
   );
 }
 

@@ -6,7 +6,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
   LID_FITS,
   LID_MAGNET_SIZES,
@@ -89,7 +89,7 @@ export function LidPanel({
     settings.magnets ? t("lid.advancedSummaryMagnet", { diameter: millimetres(settings.magnetDiameter), height: millimetres(settings.magnetHeight), play: millimetres(settings.magnetGap) }) : "",
   ].filter(Boolean).join(" · ");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -103,7 +103,8 @@ export function LidPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready text={targetName} detail={t("lid.help")} />
+        <ToolSelection ready text={targetName} />
+        <ToolHelp>{t("lid.help")}</ToolHelp>
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
@@ -214,7 +215,7 @@ export function LidPanel({
         </ToolAdvanced>
       ) : null}
 
-      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("lid.working") : t("toolSidebar.ready")} />}
+      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("lid.working")} /> : null}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>

@@ -4,7 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeFeatureHistory, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
-import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -46,7 +46,7 @@ export function DeleteFacePanel({
   const title = t("deleteFace.title");
   const count = faceCount === 0 ? t("deleteFace.countNone") : faceCount === 1 ? t("deleteFace.countOne") : t("deleteFace.countMany", { count: faceCount });
   return (
-    <MovableToolPanel className="edge-modifier-panel delete-face-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel delete-face-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -60,8 +60,8 @@ export function DeleteFacePanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready={faceCount > 0} text={preparing ? t("deleteFace.preparing") : count} detail={targetName} />
-        <p className="edge-modifier-selection-help">{t("deleteFace.help")}</p>
+        <ToolSelection ready={faceCount > 0} confirm text={preparing ? t("deleteFace.preparing") : count} detail={targetName} />
+        <ToolHelp>{t("deleteFace.help")}</ToolHelp>
         <div className="edge-modifier-quick-actions">
           <button type="button" disabled={busy || faceCount === 0} onClick={onClear}>{t("edge.clear")}</button>
         </div>

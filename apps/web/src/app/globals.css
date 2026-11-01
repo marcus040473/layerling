@@ -15679,7 +15679,7 @@ html[data-theme="dark"] .interactive-help-more a:hover {
 
 /* The object's properties under the tabs while a tool is docked. */
 .layerling-editor:has(.edge-modifier-panel.docked .tool-sidebar-tabs) .shape-inspector {
-  top: 45px;
+  top: 37px;
 }
 
 /* Under the tool they are out of sight, and out of the way of the keyboard. */
@@ -15693,13 +15693,13 @@ html[data-theme="dark"] .interactive-help-more a:hover {
   z-index: 3;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  margin: 0 -14px 12px;
+  margin: 0 -14px 6px;
   background: inherit;
   border-bottom: 1px solid #e6dccd;
 }
 
 .tool-sidebar-tabs button {
-  min-height: 44px;
+  min-height: 36px;
   color: #8a7258;
   font-size: 13px;
   font-weight: 700;
@@ -15721,17 +15721,20 @@ html[data-theme="dark"] .interactive-help-more a:hover {
 
 .tool-section {
   display: grid;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
+  gap: 7px;
+  margin-top: 9px;
+  padding-top: 9px;
   border-top: 1px solid #eee7da;
 }
 
+/* Small capitals, like the names of the toolbar's groups: they order the column without taking its height. */
 .tool-section-title {
   margin: 0;
-  color: #563e24;
-  font-size: 13px;
+  color: #8a7258;
+  font-size: 11px;
   font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .tool-selection {
@@ -15739,14 +15742,23 @@ html[data-theme="dark"] .interactive-help-more a:hover {
   grid-template-columns: auto 1fr;
   gap: 8px;
   align-items: start;
-  padding: 9px 10px;
+  padding: 7px 9px;
   color: #563e24;
   background: #fbf8f4;
   border: 1px solid #e6dccd;
   border-radius: 8px;
 }
 
-.tool-selection.ready {
+/* The body chosen before the tool opened: plain text, no box. */
+.tool-selection.neutral {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+/* A pick the tool has checked (edges, a face): green, as a confirmation. */
+.tool-selection.confirmed {
   background: #f1f7ef;
   border-color: #cfe2c8;
 }
@@ -15759,14 +15771,14 @@ html[data-theme="dark"] .interactive-help-more a:hover {
 .tool-selection-mark {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   color: white;
   background: #c08a4d;
   border-radius: 50%;
 }
 
-.tool-selection.ready .tool-selection-mark {
+.tool-selection.confirmed .tool-selection-mark {
   background: #3f8a4b;
 }
 
@@ -15777,7 +15789,7 @@ html[data-theme="dark"] .interactive-help-more a:hover {
 }
 
 .tool-selection-text strong {
-  font-size: 13px;
+  font-size: 14px;
   overflow-wrap: anywhere;
 }
 
@@ -15928,7 +15940,12 @@ html[data-theme="dark"] .tool-selection {
   border-color: #53412f;
 }
 
-html[data-theme="dark"] .tool-selection.ready {
+html[data-theme="dark"] .tool-selection.neutral {
+  background: none;
+  border: 0;
+}
+
+html[data-theme="dark"] .tool-selection.confirmed {
   background: #22301f;
   border-color: #3f6340;
 }
@@ -15954,11 +15971,6 @@ html[data-theme="dark"] .tool-status {
   z-index: 45;
 }
 
-.surface-panel .select-property {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 5px;
-}
-
 /* Labels as small as in the other tools. */
 .surface-panel .select-property,
 .surface-panel .range-property,
@@ -15971,8 +15983,8 @@ html[data-theme="dark"] .tool-status {
 }
 
 .surface-panel .select-property-hint {
-  grid-column: 1;
-  margin-top: 0;
+  grid-column: 1 / -1;
+  margin-top: -3px;
 }
 
 .surface-panel .tool-panel-body > .cylinder-wrap-hint {
@@ -16000,35 +16012,169 @@ html[data-theme="dark"] .property-card-summary {
   margin-top: -4px;
 }
 
-/* A vase's choices are long ("Solid (vase mode)"): the label stands above the field, which takes the card's width. */
-.vase-card .select-property {
+/* A long choice ("Solid (vase mode)") takes the row's width, with its label above it; short ones stay beside it. */
+.select-property.long {
   grid-template-columns: minmax(0, 1fr);
   gap: 5px;
 }
 
-/* Cut out: the part and the body to cut each on a line of their own, then the button that swaps them. */
-.cut-out-roles {
-  display: grid;
-  gap: 4px;
-  justify-items: start;
+.select-property.long .select-property-hint {
+  grid-column: 1;
 }
 
-.cut-out-roles button {
+/* Cut out: the body that gives the shape and the one that gets the cavity, each in a row of its own that outlines it
+   in the view under the pointer, then the button that swaps them. */
+.cut-out-roles {
+  display: grid;
+  gap: 6px;
+}
+
+.cut-out-role {
+  display: grid;
+  gap: 1px;
+  padding: 6px 9px;
+  background: #fbf8f4;
+  border: 1px solid #e6dccd;
+  border-radius: 8px;
+}
+
+.cut-out-role:hover {
+  border-color: #e08a2c;
+}
+
+.cut-out-role-label {
+  color: #8a7258;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cut-out-role strong {
+  font-size: 13px;
+}
+
+.cut-out-swap {
   display: inline-flex;
   gap: 6px;
   align-items: center;
-  margin-top: 4px;
+  justify-self: start;
   padding: 6px 11px;
   color: #6d5133;
   font: inherit;
+  font-size: 12px;
+  font-weight: 700;
   background: #fff;
   border: 1px solid #daccbe;
   border-radius: 8px;
   cursor: pointer;
 }
 
-html[data-theme="dark"] .cut-out-roles button {
+html[data-theme="dark"] .cut-out-role {
+  background: #2f2418;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .cut-out-swap {
   color: #ddccb9;
   background: #35281b;
   border-color: #5e4c3a;
+}
+
+/* How a tool works, folded under its selection. */
+.tool-help > summary {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: #8a6a45;
+  font-size: 12px;
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+
+.tool-help > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tool-help[open] .tool-advanced-chevron {
+  transform: rotate(90deg);
+}
+
+.tool-help-body {
+  margin-top: 5px;
+  color: #7a6249;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+html[data-theme="dark"] .tool-help > summary {
+  color: #e7c896;
+}
+
+html[data-theme="dark"] .tool-help-body {
+  color: #c4ae95;
+}
+
+/* The docked head, lower: the settings start nearer the top. */
+.edge-modifier-panel.docked .edge-modifier-header,
+.edge-modifier-panel.docked .split-panel-header {
+  padding-top: 4px;
+  padding-bottom: 8px;
+}
+
+.edge-modifier-panel.docked .edge-modifier-header strong,
+.edge-modifier-panel.docked .split-panel-header strong {
+  font-size: 15px;
+}
+
+/* A field the keyboard moves to is scrolled clear of the tabs above and the actions below. */
+.edge-modifier-panel.docked {
+  scroll-padding-top: 44px;
+  scroll-padding-bottom: 76px;
+}
+
+/* An Object tab that cannot open while the tool works. */
+.tool-sidebar-tabs button[aria-disabled="true"] {
+  color: #c3b4a3;
+  cursor: not-allowed;
+}
+
+html[data-theme="dark"] .tool-sidebar-tabs button[aria-disabled="true"] {
+  color: #6f5f4f;
+}
+
+/* One look for a chosen option in every tool: the same fill and a firm orange border, whether it is a side to open,
+   a quick selection or the split plane's axis. */
+.edge-modifier-panel .shell-opening-options button.active,
+.edge-modifier-panel .edge-modifier-quick-actions button.active,
+.edge-modifier-panel .split-axis-control button.active {
+  color: #8a4504;
+  background: #ffe7cc;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+html[data-theme="dark"] .edge-modifier-panel .shell-opening-options button.active,
+html[data-theme="dark"] .edge-modifier-panel .edge-modifier-quick-actions button.active,
+html[data-theme="dark"] .edge-modifier-panel .split-axis-control button.active {
+  color: #ffc27a;
+  background: #4a3214;
+  border-color: #e08a2c;
+  box-shadow: inset 0 0 0 1px #e08a2c;
+}
+
+/* Ticks in the theme's orange, not the browser's blue. */
+.edge-modifier-panel input[type="checkbox"],
+.edge-modifier-panel input[type="radio"],
+.shape-inspector input[type="checkbox"] {
+  accent-color: #d97813;
+}
+
+/* Where the keyboard is, the same ring everywhere in a tool. */
+.edge-modifier-panel :is(button, input, select, summary):focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: 2px;
+}
+
+.edge-modifier-panel button:disabled {
+  cursor: not-allowed;
 }

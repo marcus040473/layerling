@@ -2681,6 +2681,18 @@ function withSelectionPivot(shape: WorkplaneShape, pivot: PivotPoint | null): Wo
 /** Where the cookie cutter panel keeps its settings for the next cutter (#982). */
 const COOKIE_CUTTER_SETTINGS_STORAGE_KEY = "layerling.cookieCutterSettings";
 
+/**
+ * A body's name in Cut out. Two of the same name ("Box" and "Box") are told apart by a number from their order in the
+ * scene, so each keeps its number when the two are swapped.
+ */
+function cutOutName(shapes: WorkplaneShape[], id: string, otherId: string) {
+  const index = shapes.findIndex((shape) => shape.id === id);
+  const otherIndex = shapes.findIndex((shape) => shape.id === otherId);
+  const shape = shapes[index];
+  if (!shape) return "";
+  return otherIndex >= 0 && shapes[otherIndex].name === shape.name ? `${shape.name} ${index < otherIndex ? 1 : 2}` : shape.name;
+}
+
 export function LayerlingEditor({
   initialAssets = [],
   initialAttachments,
@@ -14293,6 +14305,8 @@ export function LayerlingEditor({
   // `stack`: every body under the pointer, front to back; `listing`: the menu shows them for "Select other" (#804).
   const [shapeContextMenu, setShapeContextMenu] = useState<{ x: number; y: number; onShape: boolean; stack: string[]; listing?: boolean; facePoint?: { x: number; y: number; z: number } } | null>(null);
   const [menuHighlightIds, setMenuHighlightIds] = useState<string[]>([]);
+  // The body a row of Cut out points at, outlined in the view while the pointer is on the row.
+  const [cutOutHighlightId, setCutOutHighlightId] = useState<string | null>(null);
   const closeShapeContextMenu = useCallback(() => {
     setShapeContextMenu(null);
     setMenuHighlightIds([]);
@@ -14841,7 +14855,7 @@ export function LayerlingEditor({
           onMirrorSelection={mirrorSelectionAcross}
           onSelectShape={selectShape}
           onShapeContextMenu={historyViewState ? undefined : openShapeContextMenu}
-          highlightIds={menuHighlightIds}
+          highlightIds={cutOutTool && cutOutHighlightId ? [cutOutHighlightId] : menuHighlightIds}
           onSetPlacementWorkplane={setViewportPlacementWorkplane}
           onToggleWorkplaneTool={activateWorkplaneTool}
           onInteractionActiveChange={updateProjectInteractionActive}
@@ -15142,14 +15156,15 @@ export function LayerlingEditor({
       ) : null}
       {cutOutTool ? (
         <CutOutPanel
-          partName={shapesRef.current.find((shape) => shape.id === cutOutTool.partId)?.name ?? ""}
-          hostName={shapesRef.current.find((shape) => shape.id === cutOutTool.hostId)?.name ?? ""}
+          partName={cutOutName(shapesRef.current, cutOutTool.partId, cutOutTool.hostId)}
+          hostName={cutOutName(shapesRef.current, cutOutTool.hostId, cutOutTool.partId)}
           clearance={cutOutTool.clearance}
           workspace={workspaceSettings}
           busy={cutOutTool.busy}
           error={cutOutTool.error}
           onClearanceChange={(value) => setCutOutTool((current) => current ? { ...current, clearance: value, error: null } : current)}
           onSwap={() => setCutOutTool((current) => current ? { ...current, partId: current.hostId, hostId: current.partId, error: null } : current)}
+          onHighlight={(role) => setCutOutHighlightId(role === "part" ? cutOutTool.partId : role === "host" ? cutOutTool.hostId : null)}
           onApply={applyCutOutTool}
           onCancel={() => setCutOutTool(null)}
         />

@@ -4,7 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
 import { Check, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { ARRAY_MAX_COUNT, ARRAY_MIN_COUNT, arrayGroupsCopies, type ArrayMode, type ArraySettings } from "@/lib/shapeArray";
@@ -62,7 +62,7 @@ export function ArrayPanel({
   const halfPlate = Math.max(workspace.width, workspace.depth) / 2;
   const millimetres = (value: number) => value.toLocaleString(numberLocale());
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel array-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel shell-panel array-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -76,7 +76,8 @@ export function ArrayPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready text={targetName} detail={t(settings.mode === "row" ? "array.helpRow" : pivotSet ? "array.helpCirclePivot" : "array.helpCircle")} />
+        <ToolSelection ready text={targetName} />
+        <ToolHelp>{t(settings.mode === "row" ? "array.helpRow" : pivotSet ? "array.helpCirclePivot" : "array.helpCircle")}</ToolHelp>
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
@@ -251,7 +252,6 @@ export function ArrayPanel({
         </ToolAdvanced>
       )}
 
-      <ToolStatus state="ready" text={t("toolSidebar.ready")} />
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" onClick={onApply}>

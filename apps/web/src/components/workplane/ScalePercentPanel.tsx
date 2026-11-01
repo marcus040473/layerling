@@ -4,7 +4,7 @@ import { Check, X } from "lucide-react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { isUnchangedPercent, type ScaleByPercentMode } from "@/lib/scaleByPercent";
 import { useLanguage } from "@/lib/useLanguage";
@@ -42,7 +42,7 @@ export function ScalePercentPanel({
   useLanguage();
   const title = t("scalePercent.title");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel scale-percent-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel shell-panel scale-percent-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -56,7 +56,8 @@ export function ScalePercentPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready={count > 0} text={targetName} detail={t("scalePercent.help")} />
+        <ToolSelection ready={count > 0} text={targetName} />
+        <ToolHelp>{t("scalePercent.help")}</ToolHelp>
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
@@ -96,12 +97,9 @@ export function ScalePercentPanel({
         ) : null}
       </ToolSection>
 
-      {error ? <p className="edge-modifier-error" role="alert">{error}</p> : (
-        <ToolStatus
-          state={isUnchangedPercent(settings.percent) ? "needed" : "ready"}
-          text={isUnchangedPercent(settings.percent) ? t("toolSidebar.nothingToApply") : t("toolSidebar.ready")}
-        />
-      )}
+      {error ? <p className="edge-modifier-error" role="alert">{error}</p> : isUnchangedPercent(settings.percent) ? (
+        <ToolStatus state="needed" text={t("toolSidebar.nothingToApply")} />
+      ) : null}
 
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>

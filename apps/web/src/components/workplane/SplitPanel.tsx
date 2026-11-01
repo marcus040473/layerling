@@ -8,7 +8,7 @@ import { displayStepFromMillimeters, displayToMillimeters, formatMeasurementNumb
 import { SPLIT_AXIS_DISPLAY_ORDER, splitAxisLabel, splitRotationAxes, type SplitRotation } from "@/lib/modelSplit";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { selectWholeValue } from "@/lib/numberField";
@@ -104,7 +104,7 @@ export function SplitPanel({
   };
 
   return (
-    <MovableToolPanel className="split-panel edge-modifier-panel" ariaLabel={t("split.title")} focusOnOpen dock="alone">
+    <MovableToolPanel className="split-panel edge-modifier-panel" ariaLabel={t("split.title")} focusOnOpen dock="alone" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="split-panel-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -224,15 +224,15 @@ export function SplitPanel({
           />
         ))}
 
-        <p className="split-panel-help">{t("split.help")}</p>
+        <ToolHelp>{t("split.help")}</ToolHelp>
       </ToolSection>
 
-      {error ? <div className="split-panel-error" role="alert">{error}</div> : (
+      {error ? <div className="split-panel-error" role="alert">{error}</div> : busy || max - min <= 0.0001 ? (
         <ToolStatus
-          state={busy ? "working" : max - min <= 0.0001 ? "needed" : "ready"}
-          text={busy ? t("split.applying") : max - min <= 0.0001 ? t("split.error.movePlane") : t("toolSidebar.ready")}
+          state={busy ? "working" : "needed"}
+          text={busy ? t("split.applying") : t("split.error.movePlane")}
         />
-      )}
+      ) : null}
 
       <div className="split-panel-footer edge-modifier-footer">
         <button type="button" className="secondary" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button>

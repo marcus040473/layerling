@@ -7286,7 +7286,7 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .interactive-help-more 
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .tool-section-title {
-  color: #404040;
+  color: #636363;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection {
@@ -7295,7 +7295,12 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .interactive-help-more 
   border: 1px solid #dadada;
 }
 
-:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.ready {
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.neutral {
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.confirmed {
   background: #f1f7ef;
   border-color: #cfe2c8;
 }
@@ -7310,7 +7315,7 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .interactive-help-more 
   background: #767676;
 }
 
-:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.ready .tool-selection-mark {
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.confirmed .tool-selection-mark {
   background: #3f8a4b;
 }
 
@@ -7392,7 +7397,12 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection {
   border-color: #434343;
 }
 
-html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.ready {
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.neutral {
+  background: none;
+  border: 0;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.confirmed {
   background: #22301f;
   border-color: #3f6340;
 }
@@ -7419,16 +7429,86 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .property-card-summary 
   color: #adadad;
 }
 
-:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-roles button {
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role {
+  background: #f8f8f8;
+  border: 1px solid #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role:hover {
+  border-color: #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role-label {
+  color: #636363;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-swap {
   color: #515151;
   background: #fff;
   border: 1px solid #cccccc;
 }
 
-html[data-theme="dark"]:where([data-palette="graphite"]) .cut-out-roles button {
+html[data-theme="dark"]:where([data-palette="graphite"]) .cut-out-role {
+  background: #292929;
+  border-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .cut-out-swap {
   color: #cbcbcb;
   background: #2d2d2d;
   border-color: #4d4d4d;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-help > summary {
+  color: #5b5b5b;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-help-body {
+  color: #565656;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-help > summary {
+  color: #bfbfbf;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-help-body {
+  color: #adadad;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-sidebar-tabs button[aria-disabled="true"] {
+  color: #b3b3b3;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-sidebar-tabs button[aria-disabled="true"] {
+  color: #545454;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel .shell-opening-options button.active,
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel .edge-modifier-quick-actions button.active,
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel .split-axis-control button.active {
+  color: #8a4504;
+  background: #e6e6e6;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel .shell-opening-options button.active,
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel .edge-modifier-quick-actions button.active,
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel .split-axis-control button.active {
+  color: #ffc27a;
+  background: #333333;
+  border-color: #e08a2c;
+  box-shadow: inset 0 0 0 1px #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel input[type="checkbox"],
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel input[type="radio"],
+:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector input[type="checkbox"] {
+  accent-color: #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel :is(button, input, select, summary):focus-visible {
+  outline: 2px solid #e08a2c;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-welcome-hide {

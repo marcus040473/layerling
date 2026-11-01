@@ -86,7 +86,7 @@ export function HolePatternPanel({
   const fits = ready && !tooMany && holeCount > 0;
 
   return (
-    <MovableToolPanel className="edge-modifier-panel hole-pattern-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel hole-pattern-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -100,7 +100,7 @@ export function HolePatternPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready={ready} text={targetName} detail={!ready || fits ? status : undefined} />
+        <ToolSelection ready={ready} confirm text={targetName} detail={!ready || fits ? status : undefined} />
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
@@ -183,6 +183,7 @@ export function HolePatternPanel({
               : { spacing });
           }}
         />
+        <span className="shell-openings-summary">{t("holePattern.wallHint")}</span>
 
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.arrangement")}>
           <span>{t("holePattern.arrangement")}</span>

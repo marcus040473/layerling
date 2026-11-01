@@ -51,7 +51,7 @@ export function FaceToolPanel({
   const maxDepth = settings.direction === "in" ? Math.max(FACE_TOOL_MIN_DEPTH, Math.floor(thickness * 10) / 10) : FACE_TOOL_MAX_DEPTH / 2;
 
   return (
-    <MovableToolPanel className="edge-modifier-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -65,7 +65,7 @@ export function FaceToolPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready={ready} text={targetName} detail={t(ready ? "faceTool.step.ready" : "faceTool.step.pick")} />
+        <ToolSelection ready={ready} confirm text={targetName} detail={t(ready ? "faceTool.step.ready" : "faceTool.step.pick")} />
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>

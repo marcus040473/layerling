@@ -2,7 +2,7 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolAdvanced, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { Check, LoaderCircle, X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
@@ -73,7 +73,7 @@ export function ShellPanel({
   const openSides = shellOpenSides(openings);
   const title = t("shell.title");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel" ariaLabel={title} dock="withObject">
+    <MovableToolPanel className="edge-modifier-panel shell-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -87,7 +87,8 @@ export function ShellPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready text={targetName} detail={t("shell.help")} />
+        <ToolSelection ready text={targetName} />
+        <ToolHelp>{t("shell.help")}</ToolHelp>
         <EdgeFeatureHistory
           appliedFeatureCount={appliedFeatureCount}
           reversibleFeatureCount={reversibleFeatureCount}
@@ -168,7 +169,7 @@ export function ShellPanel({
         </div>
       </ToolAdvanced>
 
-      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("shell.working") : t("toolSidebar.ready")} />}
+      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <ToolStatus state="working" text={t("shell.working")} /> : null}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
         <button type="button" className="primary" disabled={busy} onClick={onApply}>

@@ -167,7 +167,7 @@ import {
   minBentTubeBendRadius,
   normalizedBentTubeFields,
 } from "@/lib/bentTubeGeometry";
-import { displayStepFromMillimeters, formatFractionalInches, showsInchFractions, displayToMillimeters, formatMeasurementNumber, lengthDisplayUnit, measurementOptionLabel, millimetersToDisplay, parseMeasurementInput, resolveMeasurementInput } from "@/lib/measurementUnits";
+import { displayStepFromMillimeters, formatFractionalInches, showsInchFractions, displayToMillimeters, formatMeasurementNumber, lengthDisplayUnit, localDecimals, measurementOptionLabel, millimetersToDisplay, parseMeasurementInput, resolveMeasurementInput } from "@/lib/measurementUnits";
 import { numberLocale, t, type MessageKey } from "@/lib/i18n";
 import { localizedError } from "@/lib/userErrors";
 import { displayShapeName, makeShapeFromAsset, renamedShapeName, shapeAssetDefaultDimensions } from "@/lib/shapeCatalog";
@@ -5867,7 +5867,7 @@ export function SurfaceTextureCard({
           <ChevronRight size={22} strokeWidth={2.6} />
         </button>
         {open ? createPortal(
-          <MovableToolPanel className="edge-modifier-panel shell-panel surface-panel" ariaLabel={title} dock="withObject">
+          <MovableToolPanel className="edge-modifier-panel shell-panel surface-panel" ariaLabel={title} dock="withObject" onClose={() => setOpen(false)}>
             {(handleProps) => (<>
               <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
                 <div>
@@ -5883,6 +5883,7 @@ export function SurfaceTextureCard({
                 <ToolSection title={t("toolSidebar.selection")}>
                   <ToolSelection
                     ready
+                    confirm={picked}
                     text={shape.name}
                     detail={appliedOnly ? t("inspector.surfaceApplied", { pattern: surfacePatternLabel(applied!.pattern) }) : text || !onFacePick ? undefined : picked ? t("inspector.surfaceFacesSome", { count: settings.faces.length }) : t("inspector.surfaceFacesAll")}
                   />
@@ -5906,7 +5907,7 @@ export function SurfaceTextureCard({
                   {moreFields}
                   </ToolAdvanced>
                   <p className="cylinder-wrap-hint">{applied ? t("inspector.surfaceChangeHint", { pattern: surfacePatternLabel(applied.pattern) }) : t("inspector.surfaceHint")}</p>
-                  <ToolStatus state={busy ? "working" : "ready"} text={busy ? t("inspector.surfaceWorking") : t("toolSidebar.ready")} />
+                  {busy ? <ToolStatus state="working" text={t("inspector.surfaceWorking")} /> : null}
                 </>)}
               </div>
               <div className="edge-modifier-footer">
@@ -6603,13 +6604,13 @@ function RangeProperty({
   const sliderValue = clamp(controlValue, controlMin, controlMax);
   const position = ((sliderValue - controlMin) / Math.max(Number.EPSILON, controlMax - controlMin)) * 100;
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(ROTATION_PROPERTY_IDS.has(id) ? String(Number(controlValue.toFixed(2))) : formatPropertyNumber(controlValue, accuracy, controlStep));
+  const [draft, setDraft] = useState(ROTATION_PROPERTY_IDS.has(id) ? localDecimals(String(Number(controlValue.toFixed(2)))) : formatPropertyNumber(controlValue, accuracy, controlStep));
   const unit = isLength ? lengthDisplayUnit(workspace).label : ROTATION_PROPERTY_IDS.has(id) ? "°" : null;
   // Inches read as fractions (1⅝), like similar tools; the slider and typed decimals stay exact.
   // An angle keeps two decimals (11.25 stays 11.25, #552); the other whole-step fields show whole numbers.
   const formatShown = (shown: number) => (unit === "in" && showsInchFractions(workspace)
     ? formatFractionalInches(shown)
-    : ROTATION_PROPERTY_IDS.has(id) ? String(Number(shown.toFixed(2))) : formatPropertyNumber(shown, accuracy, controlStep));
+    : ROTATION_PROPERTY_IDS.has(id) ? localDecimals(String(Number(shown.toFixed(2)))) : formatPropertyNumber(shown, accuracy, controlStep));
   const toModelValue = (nextValue: number) => isLength ? displayToMillimeters(nextValue, workspace) : nextValue;
   // The calculation the field was last set from comes back when it is entered (#180), as long as
   // the value still equals it; a value changed by a handle or the slider shows the number again.
@@ -6859,6 +6860,9 @@ function TextProperty({ label, value, disabled, maxLength = 24, onChange, onInte
   );
 }
 
+/** A chosen entry longer than this many characters does not fit beside its label in the column. */
+const LONG_CHOICE = 14;
+
 function SelectProperty({ label, value, options, hint, fontSample, disabled, onChange, onReset }: Omit<SelectPropertyConfig, "id"> & { id?: string } & { disabled?: boolean; onReset?: () => void }) {
   if (fontSample !== undefined) return <FontPicker label={label} value={value} options={options} sample={fontSample} disabled={disabled} onChange={onChange} />;
   // Aufeinanderfolgende Eintraege mit derselben Ueberschrift werden zu einem
@@ -6869,8 +6873,12 @@ function SelectProperty({ label, value, options, hint, fontSample, disabled, onC
     if (last && last.group === option.group) last.items.push(option);
     else blocks.push({ group: option.group, items: [option] });
   });
+  // A long choice ("Solid (vase mode)") would be cut off beside its label: while one is chosen, the field takes the
+  // row's width, with the label above it. Short ones stay beside their label, so more of them fit on the screen; the
+  // open list shows every choice in full either way.
+  const long = (options.find((option) => option.value === value)?.label.length ?? 0) > LONG_CHOICE;
   return (
-    <label className="select-property">
+    <label className={long ? "select-property long" : "select-property"}>
       <span>{label}{onReset ? <PropertyResetButton onClick={onReset} /> : null}</span>
       <select value={value} disabled={disabled} onChange={(event) => onChange(event.currentTarget.value)}>
         {blocks.map((block) => (
