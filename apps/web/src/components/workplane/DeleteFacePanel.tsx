@@ -2,9 +2,9 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, LoaderCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 import { EdgeFeatureHistory, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
-import { ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -80,11 +80,8 @@ export function DeleteFacePanel({
         />
       )}
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={busy || preparing || faceCount === 0} onClick={onApply}>
-          {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
-          {busy ? t("deleteFace.working") : t("deleteFace.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("deleteFace.apply")} busy={busy} busyLabel={t("deleteFace.working")} danger disabled={busy || preparing || faceCount === 0} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

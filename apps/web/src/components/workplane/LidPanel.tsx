@@ -4,9 +4,9 @@ import { useState } from "react";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, LoaderCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolGroup, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
   LID_FITS,
   LID_MAGNET_SIZES,
@@ -171,11 +171,14 @@ export function LidPanel({
           </div>
         ) : null}
 
-        <label className="edge-modifier-field offset-copy">
-          <input type="checkbox" checked={settings.magnets} disabled={busy} onChange={(event) => withMagnet({ magnets: event.target.checked })} />
-          <span>{t("lid.magnets")}</span>
-        </label>
-        {settings.magnets ? (
+        <ToolGroup
+          tool="lid-magnets"
+          label={t("lid.magnets")}
+          checked={settings.magnets}
+          disabled={busy}
+          summary={`${t("lid.magnetSizeOption", { diameter: millimetres(settings.magnetDiameter), height: millimetres(settings.magnetHeight) })} mm`}
+          onCheck={(magnets) => withMagnet({ magnets })}
+        >
           <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.magnetSize")}>
             <span>{t("lid.magnetSize")}</span>
             <div className="shell-opening-options">
@@ -198,7 +201,7 @@ export function LidPanel({
             </div>
             <ToolHint text={t("lid.magnetsHint")} />
           </div>
-        ) : null}
+        </ToolGroup>
       </ToolSection>
 
       {summary ? (
@@ -219,11 +222,8 @@ export function LidPanel({
       {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("lid.working")} /> : null}
       <div className="edge-modifier-footer">
         <ToolOutcome text={t("lid.outcome")} />
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={busy} onClick={onApply}>
-          {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
-          {busy ? t("lid.working") : t("lid.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("lid.apply")} busy={busy} busyLabel={t("lid.working")} disabled={busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

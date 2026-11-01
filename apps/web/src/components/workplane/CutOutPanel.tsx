@@ -2,9 +2,9 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ArrowLeftRight, Check, LoaderCircle, X } from "lucide-react";
+import { ArrowLeftRight, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolApply, ToolCancel, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -99,11 +99,8 @@ export function CutOutPanel({
       {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : busy ? <ToolStatus state="working" text={t("cutOut.working")} /> : null}
       <div className="edge-modifier-footer">
         <ToolOutcome text={t("cutOut.outcome", { host: hostName, part: partName })} />
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={busy} onClick={onApply}>
-          {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
-          {busy ? t("cutOut.working") : t("cutOut.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("cutOut.apply")} busy={busy} busyLabel={t("cutOut.working")} disabled={busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

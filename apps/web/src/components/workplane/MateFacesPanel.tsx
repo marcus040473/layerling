@@ -1,9 +1,9 @@
 "use client";
 
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolApply, ToolCancel, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -95,11 +95,8 @@ export function MateFacesPanel({
 
       <ToolStatus state={step === "ready" ? "ready" : "needed"} text={step === "ready" ? t("toolSidebar.ready") : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={step !== "ready"} onClick={onApply}>
-          <Check size={17} />
-          {t("mate.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("mate.apply")} disabled={step !== "ready"} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

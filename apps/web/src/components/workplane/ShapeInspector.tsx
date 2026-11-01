@@ -3,11 +3,11 @@
 import { displayY, displayYTurn, insideZ, insideZTurn } from "@/lib/displayAxes";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolAdvanced, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicker";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
-import { ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Layers, Link2, LoaderCircle, Lock, Minus, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Ruler, Split, Tags, Unlock, Waves, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Layers, Link2, Lock, Minus, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Ruler, Split, Tags, Unlock, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import {
@@ -5958,12 +5958,9 @@ export function SurfaceTextureCard({
               </div>
               <div className="edge-modifier-footer">
                 {appliedOnly ? null : <ToolOutcome text={t("inspector.surfaceOutcome")} />}
-                <button type="button" className="secondary" onClick={() => setOpen(false)}>{t("common.cancel")}</button>
+                <ToolCancel onClick={() => setOpen(false)} />
                 {appliedOnly ? null : (
-                  <button type="button" className="primary" disabled={disabled || busy} onClick={apply}>
-                    {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Waves size={17} />}
-                    {t(busy ? "inspector.surfaceWorking" : applied ? "inspector.surfaceChange" : "inspector.surfaceApply")}
-                  </button>
+                  <ToolApply label={t(applied ? "inspector.surfaceChange" : "inspector.surfaceApply")} busy={busy} busyLabel={t("inspector.surfaceWorking")} disabled={disabled || busy} onClick={apply} />
                 )}
               </div>
             </>)}
@@ -6015,7 +6012,7 @@ export function SurfaceTextureCard({
                 <GuideHelpLink section="surfaceTexture" className="inspector-help-link" />
               </p>
               <button className="inspector-action-button" type="button" disabled={disabled || busy} onClick={apply}>
-                <Waves size={17} strokeWidth={2.5} />
+                <Check size={17} strokeWidth={2.5} aria-hidden="true" />
                 <span>{t(busy ? "inspector.surfaceWorking" : applied ? "inspector.surfaceChange" : "inspector.surfaceApply")}</span>
               </button>
               {applied ? (

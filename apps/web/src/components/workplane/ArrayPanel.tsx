@@ -2,9 +2,9 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolAdvanced, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus, ToolStepper } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus, ToolStepper } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { ARRAY_MAX_COUNT, ARRAY_MIN_COUNT, arrayGroupsCopies, type ArrayMode, type ArraySettings } from "@/lib/shapeArray";
@@ -250,11 +250,8 @@ export function ArrayPanel({
       )}
 
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" onClick={onApply}>
-          <Check size={17} />
-          {t("array.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("array.apply")} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

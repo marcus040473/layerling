@@ -2,8 +2,8 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolAdvanced, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
-import { Check, LoaderCircle, X } from "lucide-react";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
@@ -172,11 +172,8 @@ export function ShellPanel({
 
       {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <ToolStatus state="working" text={t("shell.working")} /> : null}
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={busy} onClick={onApply}>
-          {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
-          {busy ? t("shell.working") : t("shell.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("shell.apply")} busy={busy} busyLabel={t("shell.working")} disabled={busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Box, Check, ChevronRight, Info, Minus, MousePointerClick, Plus } from "lucide-react";
+import { ArrowLeft, Box, Check, ChevronRight, CircleCheck, Info, LoaderCircle, Minus, MousePointerClick, Plus, Trash2, TriangleAlert, X } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { advancedOpen, rememberAdvancedOpen, setToolSidebarTab, type ToolSidebarTab } from "@/lib/toolSidebar";
 
@@ -247,12 +247,123 @@ export function ToolAdvanced({ tool, summary, children }: { tool: string; summar
   );
 }
 
-/** One line on where the tool stands, always in the same place above its actions. */
+/**
+ * One line on where the tool stands, always in the same place above its actions. Each state has its own colour and
+ * its own shape, so it reads without reading the words and without telling the colours apart: a warning sign for what
+ * is still missing, a turning circle while it works, a tick when it is ready.
+ */
 export function ToolStatus({ state, text }: { state: "ready" | "working" | "needed"; text: string }) {
   return (
     <p className={`tool-status ${state}`} role="status" aria-live="polite">
-      <span className="tool-status-dot" aria-hidden="true" />
+      {state === "needed" ? (
+        <TriangleAlert className="tool-status-icon" size={15} aria-hidden="true" />
+      ) : state === "working" ? (
+        <LoaderCircle className="tool-status-icon edge-modifier-spinner" size={15} aria-hidden="true" />
+      ) : (
+        <CircleCheck className="tool-status-icon" size={15} aria-hidden="true" />
+      )}
       {text}
     </p>
+  );
+}
+
+/**
+ * Leaves the tool without applying it: grey, with a cross, in the same place in every tool. `back` is for the tools
+ * where it first goes back a step (another face), with an arrow instead.
+ */
+export function ToolCancel({ label, back = false, disabled = false, onClick }: {
+  label?: string;
+  back?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className="secondary" disabled={disabled} onClick={onClick}>
+      {back ? <ArrowLeft size={16} aria-hidden="true" /> : <X size={16} aria-hidden="true" />}
+      {label ?? t("common.cancel")}
+    </button>
+  );
+}
+
+/**
+ * The tool's main action, the same in every tool: one word (Apply) in orange with a tick, so it is found without
+ * reading the tool's own verb; the line above it says what it will do. Deleting is red with a bin and keeps its name.
+ * While the tool works, a turning circle and what it is doing.
+ */
+export function ToolApply({ label, busy = false, busyLabel, danger = false, disabled = false, onClick }: {
+  label: string;
+  busy?: boolean;
+  busyLabel?: string;
+  danger?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className={danger ? "primary danger" : "primary"} disabled={disabled} onClick={onClick}>
+      {busy ? (
+        <LoaderCircle className="edge-modifier-spinner" size={17} aria-hidden="true" />
+      ) : danger ? (
+        <Trash2 size={16} aria-hidden="true" />
+      ) : (
+        <Check size={17} aria-hidden="true" />
+      )}
+      {busy && busyLabel ? busyLabel : label}
+    </button>
+  );
+}
+
+/**
+ * An optional part of a tool (the lid's magnets): its tick switches it on, and switched on it folds to one line that
+ * says what is set in it ("Magnets in the corners · 6 × 2 mm"), so the tool stays short until it is needed. Ticked on,
+ * it opens; left open or folded, it stays so for that tool in this browser.
+ */
+export function ToolGroup({ tool, label, checked, disabled = false, summary, onCheck, children }: {
+  tool: string;
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  summary?: string;
+  onCheck: (checked: boolean) => void;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => setOpen(advancedOpen(tool)), [tool]);
+  const fold = (next: boolean) => {
+    setOpen(next);
+    rememberAdvancedOpen(tool, next);
+  };
+  const id = `tool-optional-${tool}`;
+  return (
+    <div className={`tool-optional${checked ? " on" : ""}`}>
+      <div className="tool-optional-head">
+        <label className="edge-modifier-field offset-copy tool-optional-check">
+          <input
+            type="checkbox"
+            checked={checked}
+            disabled={disabled}
+            onChange={(event) => {
+              const next = event.target.checked;
+              onCheck(next);
+              if (next) fold(true);
+            }}
+          />
+          <span>{label}</span>
+        </label>
+        {checked ? (
+          <button
+            type="button"
+            className="tool-optional-toggle"
+            aria-expanded={open}
+            aria-controls={id}
+            aria-label={summary ? `${label} · ${summary}` : label}
+            onClick={() => fold(!open)}
+          >
+            {summary ? <span className="tool-optional-summary">{summary}</span> : null}
+            <ChevronRight className="tool-advanced-chevron" size={16} aria-hidden="true" />
+          </button>
+        ) : null}
+      </div>
+      {checked && open ? <div className="tool-optional-body" id={id}>{children}</div> : null}
+    </div>
   );
 }
