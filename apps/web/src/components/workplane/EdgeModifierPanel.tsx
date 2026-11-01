@@ -2,9 +2,9 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolAdvanced, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Check, LoaderCircle, Minus, Pencil, Plus, RotateCcw, X } from "lucide-react";
+import { Minus, Pencil, Plus, RotateCcw, X } from "lucide-react";
 import { displayStepFromMillimeters, displayToMillimeters, formatMeasurementNumber, lengthDisplayUnit, localDecimals, millimetersToDisplay, parseMeasurementInput } from "@/lib/measurementUnits";
 import type { CadModifierKind, CadModifierQuality } from "@/lib/cadModifierTypes";
 import { CAD_MODIFIER_MAX_SHARP_ANGLE, cadModifierUserErrorMessage, edgeModifierSelectionStatus } from "@/lib/cadModifierRuntime";
@@ -565,11 +565,8 @@ export function EdgeModifierPanel({
         />
       )}
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t(selectedCount === 0 && !busy ? "edge.done" : "common.cancel")}</button>
-        <button type="button" className="primary" disabled={!prepared || busy || selectedCount === 0 || Boolean(error)} onClick={onApply}>
-          {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
-          {t("edge.apply")}
-        </button>
+        <ToolCancel label={t(selectedCount === 0 && !busy ? "edge.done" : "common.cancel")} onClick={onCancel} />
+        <ToolApply label={t("edge.apply")} busy={busy} disabled={!prepared || busy || selectedCount === 0 || Boolean(error)} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

@@ -7348,16 +7348,44 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .interactive-help-more 
   color: #515151;
 }
 
-:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status-dot {
-  background: #3f8a4b;
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status-icon {
+  color: #3f8a4b;
 }
 
-:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status.working .tool-status-dot {
-  background: #e08a2c;
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status.working .tool-status-icon {
+  color: #636363;
 }
 
-:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status.needed .tool-status-dot {
-  background: #8f8f8f;
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status.needed {
+  color: #85560a;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status.needed .tool-status-icon {
+  color: #c98a12;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-footer .primary.danger {
+  background: #c23a2f;
+  border-color: #a72e24;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-footer .primary.danger:hover:not(:disabled) {
+  background: #a72e24;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-optional-toggle {
+  color: #636363;
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-optional-toggle:hover {
+  color: #404040;
+  background: #e5e5e5;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-optional-toggle:focus-visible {
+  outline: 2px solid #e08a2c;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel.docked .edge-modifier-footer {
@@ -7428,6 +7456,41 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .tool-advanced-summary 
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status {
   color: #c1c1c1;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status-icon {
+  color: #7cc184;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status.working .tool-status-icon {
+  color: #adadad;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status.needed {
+  color: #f0c46a;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status.needed .tool-status-icon {
+  color: #f0b13c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-footer .primary.danger {
+  color: white;
+  background: #b83a30;
+  border-color: #d3564b;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-footer .primary.danger:hover:not(:disabled) {
+  background: #cf4a3f;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-optional-toggle {
+  color: #adadad;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-optional-toggle:hover {
+  color: #dedede;
+  background: #353535;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .property-card-summary {

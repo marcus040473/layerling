@@ -2,9 +2,9 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolApply, ToolCancel, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { FACE_TOOL_MAX_DEPTH, FACE_TOOL_MAX_INSET, FACE_TOOL_MAX_RADIUS, FACE_TOOL_MIN_DEPTH, type FaceToolDirection, type FaceToolSettings } from "@/lib/faceTool";
@@ -127,13 +127,8 @@ export function FaceToolPanel({
 
       <ToolStatus state={busy ? "working" : ready && !empty ? "ready" : "needed"} text={busy ? t("cookieCutter.working") : ready && !empty ? t("toolSidebar.ready") : ready ? status : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>
-          {ready ? t("faceTool.repick") : t("common.cancel")}
-        </button>
-        <button type="button" className="primary" disabled={!ready || empty || busy} onClick={onApply}>
-          <Check size={17} />
-          {t("faceTool.apply")}
-        </button>
+        <ToolCancel back={ready} label={ready ? t("faceTool.repick") : undefined} onClick={ready ? onRepick : onCancel} />
+        <ToolApply label={t("faceTool.apply")} disabled={!ready || empty || busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

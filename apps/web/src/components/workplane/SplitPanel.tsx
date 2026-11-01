@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, LoaderCircle, MousePointerClick, X } from "lucide-react";
+import { MousePointerClick, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useWheelField } from "@/lib/useWheelField";
 import { wheelBaseStep, wheelNextValue } from "@/lib/wheelValueStep";
@@ -8,7 +8,7 @@ import { displayStepFromMillimeters, displayToMillimeters, formatMeasurementNumb
 import { SPLIT_AXIS_DISPLAY_ORDER, splitAxisLabel, splitRotationAxes, type SplitRotation } from "@/lib/modelSplit";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { selectWholeValue } from "@/lib/numberField";
@@ -235,11 +235,8 @@ export function SplitPanel({
       ) : null}
 
       <div className="split-panel-footer edge-modifier-footer">
-        <button type="button" className="secondary" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={busy || max - min <= 0.0001} onClick={onApply}>
-          {busy ? <LoaderCircle className="split-panel-spinner" size={17} /> : <Check size={17} />}
-          {busy ? t("split.applying") : t("split.apply")}
-        </button>
+        <ToolCancel disabled={busy} onClick={onCancel} />
+        <ToolApply label={t("split.apply")} busy={busy} busyLabel={t("split.applying")} disabled={busy || max - min <= 0.0001} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

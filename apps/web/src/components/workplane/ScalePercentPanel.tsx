@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { isUnchangedPercent, type ScaleByPercentMode } from "@/lib/scaleByPercent";
 import { useLanguage } from "@/lib/useLanguage";
@@ -102,11 +102,8 @@ export function ScalePercentPanel({
       ) : null}
 
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={isUnchangedPercent(settings.percent)} onClick={() => onApply()}>
-          <Check size={17} />
-          {t("scalePercent.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("scalePercent.apply")} disabled={isUnchangedPercent(settings.percent)} onClick={() => onApply()} />
       </div>
       </>)}
     </MovableToolPanel>

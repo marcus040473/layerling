@@ -2,9 +2,9 @@
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { ToolApply, ToolCancel, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import {
@@ -263,13 +263,8 @@ export function HolePatternPanel({
 
       <ToolStatus state={busy ? "working" : fits ? "ready" : "needed"} text={busy ? t("cutOut.working") : fits ? t("toolSidebar.ready") : step === "ready" ? status : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>
-          {ready ? t("holePattern.repick") : t("common.cancel")}
-        </button>
-        <button type="button" className="primary" disabled={!ready || holeCount === 0 || tooMany || busy} onClick={onApply}>
-          <Check size={17} />
-          {t("holePattern.apply")}
-        </button>
+        <ToolCancel back={ready} label={ready ? t("holePattern.repick") : undefined} onClick={ready ? onRepick : onCancel} />
+        <ToolApply label={t("holePattern.apply")} disabled={!ready || holeCount === 0 || tooMany || busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

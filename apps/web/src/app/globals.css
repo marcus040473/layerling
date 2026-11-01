@@ -15866,20 +15866,107 @@ html[data-theme="dark"] .interactive-help-more a:hover {
   font-size: 12px;
 }
 
-.tool-status-dot {
+/* Each state of the status line has its own colour and its own shape (a tick, a turning circle, a warning sign), so it
+   reads without the words and without telling the colours apart. */
+.tool-status-icon {
   flex: none;
-  width: 8px;
-  height: 8px;
-  background: #3f8a4b;
-  border-radius: 50%;
+  color: #3f8a4b;
 }
 
-.tool-status.working .tool-status-dot {
-  background: #e08a2c;
+.tool-status.working .tool-status-icon {
+  color: #8a7258;
 }
 
-.tool-status.needed .tool-status-dot {
-  background: #b7a48f;
+.tool-status.needed {
+  color: #85560a;
+}
+
+.tool-status.needed .tool-status-icon {
+  color: #c98a12;
+}
+
+/* Every action at a tool's foot has its symbol: a cross to leave, an arrow to go back a step, a tick to apply, a bin
+   to delete. Deleting is red, the one action that is not orange. */
+.edge-modifier-footer .secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.edge-modifier-footer .primary.danger {
+  background: #c23a2f;
+  border-color: #a72e24;
+}
+
+.edge-modifier-footer .primary.danger:hover:not(:disabled) {
+  background: #a72e24;
+}
+
+/* An optional part of a tool, switched on by its tick and folded to one line that says what is set in it. */
+.tool-optional-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tool-optional {
+  margin-top: 11px;
+}
+
+.tool-optional-head .tool-optional-check {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.tool-optional-head .tool-optional-check input {
+  margin-top: 0;
+}
+
+.tool-optional-toggle {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+  align-items: center;
+  max-width: 55%;
+  padding: 2px 4px;
+  color: #8a7258;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tool-optional-toggle:hover {
+  color: #563e24;
+  background: #f3e7d8;
+}
+
+.tool-optional-toggle:focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: 2px;
+}
+
+.tool-optional-toggle[aria-expanded="true"] .tool-advanced-chevron {
+  transform: rotate(90deg);
+}
+
+.tool-optional-summary {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tool-optional-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding-left: 22px;
 }
 
 /* Docked, the actions stand at the foot of the column, in the same place for every tool, and stay in view while
@@ -15966,6 +16053,41 @@ html[data-theme="dark"] .tool-advanced-summary {
 
 html[data-theme="dark"] .tool-status {
   color: #d6c3ab;
+}
+
+html[data-theme="dark"] .tool-status-icon {
+  color: #7cc184;
+}
+
+html[data-theme="dark"] .tool-status.working .tool-status-icon {
+  color: #c4ae95;
+}
+
+html[data-theme="dark"] .tool-status.needed {
+  color: #f0c46a;
+}
+
+html[data-theme="dark"] .tool-status.needed .tool-status-icon {
+  color: #f0b13c;
+}
+
+html[data-theme="dark"] .edge-modifier-footer .primary.danger {
+  color: white;
+  background: #b83a30;
+  border-color: #d3564b;
+}
+
+html[data-theme="dark"] .edge-modifier-footer .primary.danger:hover:not(:disabled) {
+  background: #cf4a3f;
+}
+
+html[data-theme="dark"] .tool-optional-toggle {
+  color: #c4ae95;
+}
+
+html[data-theme="dark"] .tool-optional-toggle:hover {
+  color: #f0e2cc;
+  background: #43331f;
 }
 
 /* Surface texture as a tool in the right column: under a tool opened later, and its fields with the label above, so

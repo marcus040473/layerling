@@ -105,7 +105,7 @@ describe("the surface texture card in a shape's settings", () => {
     expect(rangeNamed(panel, "Band width")?.value).toBe("2.50");
     expect(rangeNamed(panel, "Crossing band width")).toBeTruthy();
     choose(selectWith(panel, "twill22")!, "twill21");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "carbon", carbonWeave: "twill21", carbonCross: 0, spacing: 2.5, depth: 0.4, width: 0.95, direction: "outward" });
   });
 
@@ -113,7 +113,7 @@ describe("the surface texture card in a shape's settings", () => {
     const { panel, calls } = mount(cylinder);
     choose(selectWith(panel, "knurl")!, "knit");
     expect(rangeNamed(panel, "Stitch width")?.value).toBe("5.00");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied).toHaveLength(1);
     expect(calls.applied[0]).toMatchObject({ pattern: "knit", spacing: 5, depth: 1.2, direction: "outward", profile: "round" });
     // Leaving it gives the next pattern the plain values back: knurling's spacing, not a stitch's.
@@ -141,7 +141,7 @@ describe("the surface texture card in a shape's settings", () => {
     expect(rangeNamed(panel, "Course height")?.value).toBe("4.00");
     expect(rangeNamed(panel, "Joint width")?.value).toBe("0.80");
     choose(bond, "english");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "bricks", brickBond: "english", spacing: 12, brickHeight: 4, brickJoint: 0.8, depth: 0.6, profile: "flat" });
     // Leaving bricks gives the next pattern its own spacing and profile back.
     choose(selectWith(panel, "bricks")!, "knurl");
@@ -176,7 +176,7 @@ describe("the surface texture card in a shape's settings", () => {
     choose(wood, "pine");
     expect(rangeNamed(panel, "Ring width")?.value).toBe("4.00");
     choose(selectWith(panel, "flatSawn")!, "flatSawn");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "wood", woodType: "pine", woodCut: "flatSawn", ringWidth: 4, topFree: 0, bottomFree: 0 });
   });
 
@@ -186,7 +186,7 @@ describe("the surface texture card in a shape's settings", () => {
     const { panel, calls } = mount(textured);
     expect(selectWith(panel, "knurl")?.value).toBe("grooves");
     expect(rangeNamed(panel, "Spacing")?.value).toBe("4.00");
-    await act(async () => button(panel, "Change texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "grooves", spacing: 4, depth: 0.5 });
     act(() => button(panel, "Remove texture")!.click());
     expect(calls.removed).toBe(1);
@@ -203,10 +203,10 @@ describe("the surface texture card in a shape's settings", () => {
     expect(card(panel).textContent).toContain("Picked faces: 1. Only they get the pattern.");
     expect(button(panel, "Done picking")).toBeDefined();
     // Picked faces say where it goes: the smooth top and bottom and the height band leave the card.
-    act(() => button(panel, "More")!.click());
+    act(() => card(panel).querySelector<HTMLButtonElement>(".name-tag-more")!.click());
     expect(rangeNamed(panel, "Top smooth to (°)")).toBeUndefined();
     expect(rangeNamed(panel, "Fade in over")).toBeDefined();
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.picks.at(-1)).toBeNull();
     expect(calls.applied[0].faces).toEqual([top]);
     // Every face again: none picked, and picking starts over from none.
