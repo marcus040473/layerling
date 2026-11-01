@@ -43,9 +43,11 @@ type Calls = { applied: SurfaceTextureSettings[]; layers: SurfaceTextureSettings
  * The settings panel for this shape, with the surface texture card open as the editor holds it. `render` draws it again
  * with the editor's face picking as given.
  */
-function mount(shape: WorkplaneShape) {
+function mount(shape: WorkplaneShape, inEditor = false) {
   const calls: Calls = { applied: [], layers: [], removed: 0, updates: [], picks: [] };
   container = document.createElement("div");
+  // Inside an editor the texture docks as a tool in the right column (this build's tool column).
+  if (inEditor) container.className = "layerling-editor";
   document.body.appendChild(container);
   root = createRoot(container);
   const render = (picking: { surfaceFacePicking?: boolean; surfacePickedFaces?: SurfaceTextureFace[] | null } = {}) => act(() => {
@@ -227,29 +229,40 @@ describe("the surface texture card in a shape's settings", () => {
     expect(calls.updates.at(-1)).toEqual({ surfaceTextureMask: "exclude", transparent: true });
   });
 
+  // In this build the texture is a tool docked in the editor's right column: inside an editor, the tabs and the faces
+  // are in the tool, its selection line says where the shown layer goes.
+  const docked = (shape: WorkplaneShape) => {
+    const mounted = mount(shape, true);
+    return { ...mounted, line: () => card(mounted.panel).querySelector(".tool-selection")!.textContent ?? "" };
+  };
+
   it("puts a second pattern on faces of its own: a tab per layer, its faces asked for, every layer handed to the editor", async () => {
-    const { panel, calls, render } = mount(cylinder);
+    const { panel, calls, render, line } = docked(cylinder);
     const tabs = () => [...card(panel).querySelectorAll<HTMLButtonElement>(".surface-layers [role=tab]")];
-    const apply = () => button(panel, "Apply texture")!;
+    // The foot of the tool lies below its body, in the panel.
+    const apply = () => panel.querySelector<HTMLButtonElement>(".surface-panel .edge-modifier-footer button.primary")!;
+    // The docked tool picks its pattern by picture.
+    const trigger = () => card(panel).querySelector<HTMLButtonElement>(".pattern-picker-trigger")!;
     expect(tabs()).toHaveLength(1);
-    choose(selectWith(panel, "knurl")!, "grooves");
+    act(() => trigger().click());
+    act(() => [...card(panel).querySelectorAll<HTMLButtonElement>(".pattern-picker-grid [role=option]")].find((tile) => tile.textContent === "Grooves")!.click());
     // A new layer asks for its faces at once: picking starts with none.
-    act(() => button(panel, "Layer")!.click());
+    act(() => card(panel).querySelector<HTMLButtonElement>(".surface-layer-add")!.click());
     expect(tabs().map((tab) => tab.textContent)).toEqual(["1Grooves", "2Knurling"]);
     expect(tabs()[1].getAttribute("aria-selected")).toBe("true");
     expect(calls.picks.at(-1)).toEqual([]);
     render({ surfaceFacePicking: true, surfacePickedFaces: [] });
-    expect(card(panel).textContent).toContain("Pick the faces for this layer");
+    expect(line()).toContain("Pick the faces for this layer");
     expect(card(panel).textContent).toContain("Layer 2 has no faces yet");
     expect(apply().disabled).toBe(true);
     // The top clicked in the view belongs to the second layer; the first now takes the faces left over.
     const top: SurfaceTextureFace = { at: [0.5, 1, 0.5], normal: [0, 1, 0] };
     render({ surfaceFacePicking: true, surfacePickedFaces: [top] });
-    expect(card(panel).textContent).toContain("Picked faces: 1. Only they get the pattern.");
+    expect(line()).toContain("1 face");
     expect(apply().disabled).toBe(false);
     act(() => tabs()[0].click());
-    expect(card(panel).textContent).toContain("The pattern goes on the faces the other layers leave free.");
-    expect(selectWith(panel, "knurl")?.value).toBe("grooves");
+    expect(line()).toContain("the other faces");
+    expect(trigger().textContent).toContain("Grooves");
     await act(async () => apply().click());
     expect(calls.applied[0]).toMatchObject({ pattern: "grooves", faces: [] });
     expect(calls.layers[0]).toHaveLength(1);
@@ -260,12 +273,12 @@ describe("the surface texture card in a shape's settings", () => {
     const grooves = normalizeSurfaceTexture({ pattern: "grooves" });
     const knurl = normalizeSurfaceTexture({ pattern: "knurl", faces: [{ at: [0.5, 1, 0.5], normal: [0, 1, 0] }] });
     const textured = surfaceTexturedShape(cylinder, textureSurfacePositions(surfaceTextureInput(cylinder), grooves, 150_000).positions, grooves, Date.now(), [knurl])!;
-    const { panel } = mount(textured);
+    const { panel, line } = docked(textured);
     const tabs = () => [...card(panel).querySelectorAll<HTMLButtonElement>(".surface-layers [role=tab]")];
     expect(tabs().map((tab) => tab.textContent)).toEqual(["1Grooves", "2Knurling"]);
     expect(card(panel).textContent).toContain("Grooves + Knurling");
     act(() => tabs()[1].click());
-    expect(card(panel).textContent).toContain("Picked faces: 1. Only they get the pattern.");
+    expect(line()).toContain("1 face");
     act(() => button(panel, "Remove this layer")!.click());
     expect(tabs().map((tab) => tab.textContent)).toEqual(["1Grooves"]);
   });
