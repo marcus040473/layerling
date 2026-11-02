@@ -1531,6 +1531,11 @@ a.install-app-hint-button {
   transform: translateX(-50%);
 }
 
+/* Above the control its top is the bubble's bottom edge, so a one-line name sits as close as a long one. */
+.pen-hover-tip.pen-hover-tip-above {
+  transform: translate(-50%, -100%);
+}
+
 /* On a tablet over https both cards can float at once (install and tablet): the tablet card steps up. */
 body:has(.install-app-hint-floating:not(.tablet-hint)) .install-app-hint.install-app-hint-floating.tablet-hint {
   bottom: 230px;
@@ -4263,6 +4268,33 @@ html[data-theme="dark"] .toolbar-title-help .action-icon-button.active {
 
 .toolbar-section[data-collapsed][data-open] .toolbar-collapse-trigger::before {
   transform: translateX(-50%) scaleY(-1);
+}
+
+/* History's folded button is Undo itself (#1148): the tab is then a button of its own under it, a little larger than it
+   looks so it is easy to hit, and only it opens the group. */
+.toolbar-collapse-box:has(.toolbar-collapse-tab) {
+  position: relative;
+}
+
+/* It stays above the opened tools, whose frame it touches, so a second click on it closes them; it ends above the first
+   tool's top edge. */
+.toolbar-section[data-collapsed] .toolbar-collapse-tab {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  z-index: 71;
+  width: 30px;
+  height: 13px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transform: translateX(-50%);
+}
+
+.toolbar-section[data-collapsed] .toolbar-collapse-tab::before {
+  top: 1px;
+  bottom: auto;
 }
 
 /* What the tools would show at a glance - something hidden, files attached - shows on the folded button as a dot. */
@@ -9593,6 +9625,17 @@ html[data-theme="dark"] .rotation-angle-badge {
   color: #7d6b58;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Dragging the name changes the value; the panel still scrolls up and down under a finger. */
+.range-property-name.scrubbable {
+  cursor: ew-resize;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.range-property-name.scrubbable .property-reset {
+  cursor: pointer;
 }
 
 .property-reset {

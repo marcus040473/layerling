@@ -39,6 +39,8 @@ export type EdgeHistoryOption = {
   amount: number;
   /** Only for a variable fillet (#687): the radius at the edge's end. */
   endAmount?: number;
+  /** Only for a concave fillet (#1160). */
+  concave?: boolean;
   edgeCount: number;
   /** Only for a deletion of faces. */
   faceCount?: number;
@@ -58,6 +60,9 @@ function edgeHistoryLabel(option: EdgeHistoryOption) {
   if (option.kind === "surfaceTexture") return t("edge.revertSurfaceTexture", { size });
   if (option.kind === "deleteFace") {
     return option.faceCount === 1 ? t("edge.revertDeleteFaceOne") : t("edge.revertDeleteFaceMany", { count: option.faceCount ?? 0 });
+  }
+  if (option.kind === "fillet" && option.concave) {
+    return option.edgeCount === 1 ? t("edge.revertConcaveOne", { size }) : t("edge.revertConcaveMany", { size, count: option.edgeCount });
   }
   if (option.edgeCount === 1) {
     return t(option.kind === "fillet" ? "edge.revertFilletOne" : option.kind === "chamfillet" ? "edge.revertChamfilletOne" : "edge.revertChamferOne", { size });
@@ -328,6 +333,8 @@ export function EdgeModifierPanel({
   error,
   onAmountChange,
   endAmount = null,
+  concave = false,
+  onConcaveChange,
   onEndAmountChange,
   onSwapEnds,
   onChamferAngleChange,
@@ -377,6 +384,9 @@ export function EdgeModifierPanel({
   endAmount?: number | null;
   /** null switches the variable radius off; NaN switches it on at a starting value. */
   onEndAmountChange?: (value: number | null) => void;
+  /** A fillet that scoops the edge out instead of rounding it (#1160). */
+  concave?: boolean;
+  onConcaveChange?: (value: boolean) => void;
   onSwapEnds?: () => void;
   onChamferAngleChange: (value: number) => void;
   onKindChange?: (kind: "chamfer" | "chamfillet") => void;
@@ -485,7 +495,13 @@ export function EdgeModifierPanel({
             {kind === "chamfillet" ? <span className="shell-openings-summary">{t("edge.chamfilletHint")}</span> : null}
           </div>
         ) : null}
-        {kind === "fillet" && onEndAmountChange ? (
+        {kind === "fillet" && onConcaveChange ? (
+          <label className="edge-modifier-check" title={t("edge.concaveHint")}>
+            <input type="checkbox" checked={concave} disabled={!prepared} onChange={(event) => onConcaveChange(event.currentTarget.checked)} />
+            <span>{t("edge.concave")}</span>
+          </label>
+        ) : null}
+        {kind === "fillet" && onEndAmountChange && !concave ? (
           <label className="edge-modifier-check" title={t("edge.variableRadiusHint")}>
             <input type="checkbox" checked={variable} disabled={!prepared} onChange={(event) => onEndAmountChange(event.currentTarget.checked ? Number.NaN : null)} />
             <span>{t("edge.variableRadius")}</span>
