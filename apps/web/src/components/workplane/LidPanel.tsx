@@ -9,8 +9,12 @@ import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolGroup, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
   LID_FITS,
+  LID_HINGE_TYPES,
   LID_MAGNET_SIZES,
   LID_TYPES,
+  MAX_HINGE_GAP,
+  MAX_HINGE_KNUCKLES,
+  MAX_HINGE_PIN,
   MAX_LID_DEPTH,
   MAX_LID_GAP,
   MAX_LID_THICKNESS,
@@ -18,12 +22,16 @@ import {
   MAX_MAGNET_DIAMETER,
   MAX_MAGNET_GAP,
   MAX_MAGNET_HEIGHT,
+  MIN_HINGE_GAP,
+  MIN_HINGE_PIN,
   MIN_LID_DEPTH,
   MIN_LID_THICKNESS,
   MIN_LID_WALL,
   MIN_MAGNET_DIAMETER,
   MIN_MAGNET_HEIGHT,
+  hingeKnuckleRadius,
   lidThicknessForMagnets,
+  normalizeLidOptions,
   type LidOptions,
 } from "@/lib/lidTool";
 import { numberLocale, t } from "@/lib/i18n";
@@ -33,7 +41,8 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 /**
  * A lid for a body open at the top (#1009): pushed into the opening, put over the outside, gripping the wall from both
  * sides (#1062) or laid flat on it. It comes out as a body of its own beside the one it closes, ready to print. With
- * magnets, it holds by four round magnets in the corners, in pockets in the body's rim and in the lid.
+ * magnets, it holds by four round magnets in the corners, in pockets in the body's rim and in the lid. With a hinge, it
+ * swings open about a pin along the body's back.
  */
 export function LidPanel({
   targetName,
@@ -69,7 +78,7 @@ export function LidPanel({
   const needed = lidThicknessForMagnets(settings);
   const tooThin = settings.magnets && settings.thickness < needed - 1e-9;
   const millimetres = (value: number) => value.toLocaleString(numberLocale());
-  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap", min: number, max: number, step: number) => (
+  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap" | "hingeGap", min: number, max: number, step: number) => (
     <EdgeModifierSlider
       label={label}
       value={settings[key]}
@@ -83,10 +92,14 @@ export function LidPanel({
     />
   );
   const lipped = settings.type !== "flat";
-  // Folded, Advanced names what it holds: the gap and the lip or rim, and the magnet's size and play.
+  // A rim round the outside would hit the back wall as the lid swings open: the hinge goes with a lip or a flat lid.
+  const hingeFits = LID_HINGE_TYPES.includes(settings.type);
+  const hinged = settings.hinge && hingeFits;
+  // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's play.
   const summary = [
     ...(lipped ? [t("lid.gap"), t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth"), t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall")] : []),
     ...(settings.magnets ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
+    ...(hinged ? [t("lid.hingeGap")] : []),
   ].join(", ");
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
@@ -202,6 +215,44 @@ export function LidPanel({
             <ToolHint text={t("lid.magnetsHint")} />
           </div>
         </ToolGroup>
+
+        <ToolGroup
+          tool="lid-hinge"
+          label={t("lid.hinge")}
+          checked={hinged}
+          disabled={busy || !hingeFits}
+          summary={`Ø ${millimetres(settings.hingePin)} mm`}
+          onCheck={(hinge) => onChange({ hinge })}
+        >
+          <EdgeModifierSlider
+            label={t("lid.hingePin")}
+            value={settings.hingePin}
+            min={MIN_HINGE_PIN}
+            max={MAX_HINGE_PIN}
+            step={0.05}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ hingePin: value })}
+          />
+          <EdgeModifierSlider
+            label={t("lid.hingeKnuckles")}
+            value={settings.hingeKnuckles}
+            min={0}
+            max={MAX_HINGE_KNUCKLES}
+            step={1}
+            workspace={workspace}
+            decimals={0}
+            disabled={busy}
+            onChange={(value) => onChange({ hingeKnuckles: normalizeLidOptions({ hingeKnuckles: value }).hingeKnuckles })}
+          />
+          <label className="edge-modifier-field offset-copy">
+            <input type="checkbox" checked={settings.hingePrintPin} disabled={busy} onChange={(event) => onChange({ hingePrintPin: event.target.checked })} />
+            <span>{t("lid.hingePrintPin")}</span>
+          </label>
+          <ToolHint text={t("lid.hingeHint", { diameter: millimetres(Math.round(2 * hingeKnuckleRadius(settings) * 10) / 10) })} />
+        </ToolGroup>
+        {!hingeFits ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
       </ToolSection>
 
       {summary ? (
@@ -216,6 +267,7 @@ export function LidPanel({
             {slider(t("lid.magnetHeight"), "magnetHeight", MIN_MAGNET_HEIGHT, MAX_MAGNET_HEIGHT, 0.5)}
             {slider(t("lid.magnetGap"), "magnetGap", 0, MAX_MAGNET_GAP, 0.05)}
           </>) : null}
+          {hinged ? slider(t("lid.hingeGap"), "hingeGap", MIN_HINGE_GAP, MAX_HINGE_GAP, 0.05) : null}
         </ToolAdvanced>
       ) : null}
 
