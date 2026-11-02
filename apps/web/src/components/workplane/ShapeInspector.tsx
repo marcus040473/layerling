@@ -573,7 +573,7 @@ function scrollingAncestor(element: HTMLElement): HTMLElement | null {
 }
 
 function propertyUsesLengthUnit(key: string) {
-  return ["textLineWidth", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "torusTube", "sketchLineWidth", "sketchCuttingEdge", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "headDiameter", "collarHeight", "collarDiameter", "driveSize", "driveDepth", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "portClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "hingeCornerRadius", "hingeScrewDiameter", "hingeScrewSpacing", "hingeScrewAcross", "hingeNutWidth", "screwHoleShaft", "screwHoleHeadDepth", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "loftSectionHeight", "loftSectionWidth", "loftSectionDepth", "loftSectionCorner", "loftSectionOffsetX", "loftSectionOffsetZ", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityWallThickness", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityCornerRadius", "gridfinityBinCornerRadius", "gridfinityDividerThickness", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "gridfinityOpeningCornerSize", "gridfinityOpeningDepthBack", "gridfinityOpeningDepthFront", "gridfinityOpeningDepthLeft", "gridfinityOpeningDepthRight", "gridfinityOpeningWidthBack", "gridfinityOpeningWidthFront", "gridfinityOpeningWidthLeft", "gridfinityOpeningWidthRight", "gridfinityOpeningDistanceBack", "gridfinityOpeningDistanceFront", "gridfinityOpeningDistanceLeft", "gridfinityOpeningDistanceRight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "surfaceCarbonCross", "surfaceBrickHeight", "surfaceBrickJoint", "surfaceRingWidth", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.lidHeight", "vaseParts.lidJoint", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
+  return ["textLineWidth", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "torusTube", "sketchLineWidth", "sketchCuttingEdge", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "headDiameter", "collarHeight", "collarDiameter", "driveSize", "driveDepth", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "portClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "hingeCornerRadius", "hingeScrewDiameter", "hingeScrewSpacing", "hingeScrewAcross", "hingeNutWidth", "screwHoleShaft", "screwHoleHeadDepth", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "loftSectionHeight", "loftSectionWidth", "loftSectionDepth", "loftSectionCorner", "loftSectionOffsetX", "loftSectionOffsetZ", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityWallThickness", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityCornerRadius", "gridfinityBinCornerRadius", "gridfinityDividerThickness", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "gridfinityOpeningCornerSize", "gridfinityOpeningDepthBack", "gridfinityOpeningDepthFront", "gridfinityOpeningDepthLeft", "gridfinityOpeningDepthRight", "gridfinityOpeningWidthBack", "gridfinityOpeningWidthFront", "gridfinityOpeningWidthLeft", "gridfinityOpeningWidthRight", "gridfinityOpeningDistanceBack", "gridfinityOpeningDistanceFront", "gridfinityOpeningDistanceLeft", "gridfinityOpeningDistanceRight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "surfaceCarbonCross", "surfaceBrickHeight", "surfaceBrickJoint", "surfaceRingWidth", "surfaceTileHeight", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.lidHeight", "vaseParts.lidJoint", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
 }
 
 /**
@@ -5805,6 +5805,9 @@ export function SurfaceTextureCard({
   };
   // A text goes where it is put: what stays smooth for a pattern all over does not hold it back, so those fields go.
   const text = settings.pattern === "text";
+  // So does an image pressed on once (#1176): it is placed as a text is.
+  const once = image && settings.imageTiling === "once";
+  const placedHere = text || once;
   const picked = settings.faces.length > 0;
   const percent = (id: string, label: string, value: number, onChange: (value: number) => void) => range(id, label, Math.round(value * 100), [0, 100], 1, (share) => onChange(share / 100));
   const apply = async () => {
@@ -5824,9 +5827,9 @@ export function SurfaceTextureCard({
   useEffect(() => setHost(cardRef.current?.closest<HTMLElement>(".layerling-editor") ?? null), []);
   const appliedOnly = Boolean(applied && !changeable);
   // Where the pattern is laid on, and the axis that goes with it, are set less often: docked, they are under Advanced.
-  const projectionShown = !cracks && !text && !grain && !wood;
-  const axisShown = !grain && !(wood && settings.woodCut !== "log") && (cracks || text || wood || settings.projection !== "allRound");
-  const axisInSettings = cracks || text || wood;
+  const projectionShown = !cracks && !placedHere && !grain && !wood;
+  const axisShown = !grain && !(wood && settings.woodCut !== "log") && (cracks || placedHere || wood || settings.projection !== "allRound");
+  const axisInSettings = cracks || placedHere || wood;
   const projectionField = (
   <SelectProperty
     type="select"
@@ -5849,7 +5852,7 @@ export function SurfaceTextureCard({
     />
   );
   // Where the pattern goes, with the buttons to pick faces (the card's own; docked, the selection line holds them).
-  const facesPart = (withSummary: boolean) => text || !onFacePick ? null : (
+  const facesPart = (withSummary: boolean) => placedHere || !onFacePick ? null : (
                 <>
                   {withSummary ? <p className="cylinder-wrap-hint">{picked ? t("inspector.surfaceFacesSome", { count: settings.faces.length }) : t("inspector.surfaceFacesAll")}</p> : null}
                   <button
@@ -5888,13 +5891,13 @@ export function SurfaceTextureCard({
     : bark || wood
       ? [...(wood ? [t("inspector.surfaceWoodKnots"), t("inspector.surfaceWoodWobble")] : []), t("inspector.surfaceSeed")]
       : image
-        ? [t("inspector.surfaceImageTurn"), t("inspector.surfaceImageBlur")]
+        ? (once ? [t("inspector.surfaceImageBlur")] : [t("inspector.surfaceImageTurn"), t("inspector.surfaceImageBlur")])
         : bricks
           ? [t("inspector.surfaceBrickVary")]
           : text || grain
             ? []
             : [t(SURFACE_COVERAGE_LABEL[settings.pattern] ?? "inspector.surfaceCoverage"), ...(settings.pattern === "bumps" ? [] : [t("inspector.surfaceProfile")])]
-  ).concat(text ? [] : [t("inspector.surfaceZones")], [t("inspector.surfaceFade"), t("inspector.surfaceDetail")]).join(", ");
+  ).concat(placedHere ? [] : [t("inspector.surfaceZones")], [t("inspector.surfaceFade"), t("inspector.surfaceDetail")]).join(", ");
   // What follows the direction: the gold of cracks, or what grain and wood say about where they lie.
   const afterDirection = cracks ? (
                 <>
@@ -5903,7 +5906,7 @@ export function SurfaceTextureCard({
                   {settings.crackGold ? range("surfaceCrackRecess", t("inspector.surfaceCrackRecess"), settings.crackRecess, SURFACE_TEXTURE_LIMITS.crackRecess, 0.05, (crackRecess) => set({ crackRecess })) : null}
                   {settings.crackGold ? <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceCrackGoldHint")} /> : null}
                 </>
-              ) : text ? null : grain ? (
+              ) : placedHere ? null : grain ? (
                 <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceGrainHint")} />
               ) : wood ? (
                 <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceWoodHint")} />
@@ -6065,7 +6068,7 @@ export function SurfaceTextureCard({
         ) : (
           range(
             "surfaceSpacing",
-            t(SURFACE_SPACING_LABEL[settings.pattern] ?? "inspector.surfaceSpacing"),
+            t(once ? "inspector.surfaceImageWidth" : (SURFACE_SPACING_LABEL[settings.pattern] ?? "inspector.surfaceSpacing")),
             settings.spacing,
             [SURFACE_TEXTURE_LIMITS.spacing[0], image ? SURFACE_TEXTURE_LIMITS.spacing[1] : 50],
             0.1,
@@ -6085,17 +6088,22 @@ export function SurfaceTextureCard({
         ) : null}
         {image ? (
           <>
-            {range("surfaceTileHeight", t("inspector.surfaceTileHeight"), settings.tileHeight, SURFACE_TEXTURE_LIMITS.tileHeight, 0.5, (tileHeight) => set({ tileHeight }))}
+            {range("surfaceTileHeight", t(once ? "inspector.surfaceImageHeight" : "inspector.surfaceTileHeight"), settings.tileHeight, SURFACE_TEXTURE_LIMITS.tileHeight, 0.5, (tileHeight) => set({ tileHeight }))}
             <SelectProperty
               type="select"
               label={t("inspector.surfaceImageTiling")}
               value={settings.imageTiling}
               options={options(SURFACE_TEXTURE_TILINGS, (value) => t(SURFACE_TEXTURE_LABELS.tiling[value]))}
               disabled={disabled || busy}
-              onChange={(value) => set({ imageTiling: value as SurfaceTextureSettings["imageTiling"] })}
+              // Once starts no wider than 40 mm: a tile is often wider than the body it goes on.
+              onChange={(value) => set({ imageTiling: value as SurfaceTextureSettings["imageTiling"], ...(value === "once" && settings.spacing > 40 ? { spacing: 40 } : {}) })}
             />
+            {/* Once: where its middle goes, as for a text; it turns with the image's own turn. */}
+            {once ? range("surfaceTextAround", t("inspector.surfaceTextAround"), settings.textAround, SURFACE_TEXTURE_LIMITS.textAround, 1, (textAround) => set({ textAround })) : null}
+            {once ? range("surfaceTextHeight", t("inspector.surfaceTextHeight"), settings.textHeight, SURFACE_TEXTURE_LIMITS.textHeight, 1, (textHeight) => set({ textHeight })) : null}
+            {once ? range("surfaceImageTurn", t("inspector.surfaceImageTurn"), settings.imageTurn, SURFACE_TEXTURE_LIMITS.imageTurn, 1, (imageTurn) => set({ imageTurn })) : null}
             <ToggleProperty label={t("inspector.surfaceImageInvert")} value={settings.imageInvert} disabled={disabled || busy} onChange={(imageInvert) => set({ imageInvert })} />
-            <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceImageHint")} />
+            <ToolHint className="cylinder-wrap-hint" text={t(once ? "inspector.surfaceImageOnceHint" : "inspector.surfaceImageHint")} />
           </>
         ) : null}
         {carbon ? (
@@ -6169,7 +6177,7 @@ export function SurfaceTextureCard({
       </>
     ) : text || grain ? null : image ? (
       <>
-        {range("surfaceImageTurn", t("inspector.surfaceImageTurn"), settings.imageTurn, SURFACE_TEXTURE_LIMITS.imageTurn, 1, (imageTurn) => set({ imageTurn }))}
+        {once ? null : range("surfaceImageTurn", t("inspector.surfaceImageTurn"), settings.imageTurn, SURFACE_TEXTURE_LIMITS.imageTurn, 1, (imageTurn) => set({ imageTurn }))}
         {range("surfaceImageBlur", t("inspector.surfaceImageBlur"), settings.imageBlur, SURFACE_TEXTURE_LIMITS.imageBlur, 1, (imageBlur) => set({ imageBlur }))}
       </>
     ) : bricks ? (
@@ -6192,7 +6200,7 @@ export function SurfaceTextureCard({
         (share) => set({ width: share / 100 }),
       )
     )}
-    {text ? null : (
+    {placedHere ? null : (
       <>
         {settings.pattern === "bumps" || grain || image || bark || wood ? null : (
           <SelectProperty
@@ -6319,9 +6327,9 @@ export function SurfaceTextureCard({
                     ready={!needsFaces}
                     confirm={picked}
                     text={shape.name}
-                    scope={appliedOnly || text || !onFacePick ? undefined : picked ? (settings.faces.length === 1 ? t("toolSidebar.facesOne") : t("toolSidebar.facesCount", { count: settings.faces.length })) : layers.length > 1 && shownLayer === 0 ? t("inspector.surfaceLayerRest") : needsFaces ? undefined : t("toolSidebar.allFaces")}
+                    scope={appliedOnly || placedHere || !onFacePick ? undefined : picked ? (settings.faces.length === 1 ? t("toolSidebar.facesOne") : t("toolSidebar.facesCount", { count: settings.faces.length })) : layers.length > 1 && shownLayer === 0 ? t("inspector.surfaceLayerRest") : needsFaces ? undefined : t("toolSidebar.allFaces")}
                     detail={appliedOnly ? t("inspector.surfaceApplied", { pattern: appliedPatterns }) : needsFaces ? t("inspector.surfaceLayerNeedsFaces") : undefined}
-                    action={appliedOnly || text || !onFacePick ? undefined : (
+                    action={appliedOnly || placedHere || !onFacePick ? undefined : (
                       <button
                         type="button"
                         className={facePicking ? "active" : ""}
@@ -6333,7 +6341,7 @@ export function SurfaceTextureCard({
                       </button>
                     )}
                   />
-                  {!appliedOnly && onFacePick && ((!text && (picked || facePicking)) || shownLayer > 0) ? (
+                  {!appliedOnly && onFacePick && ((!placedHere && (picked || facePicking)) || shownLayer > 0) ? (
                     <div className="tool-selection-links">
                       {shownLayer > 0 ? (
                         <button type="button" className="tool-hint-more" disabled={disabled || busy} onClick={() => removeLayer(shownLayer)}>
@@ -6353,7 +6361,7 @@ export function SurfaceTextureCard({
                           {t("inspector.surfaceFacesClear")}
                         </button>
                       ) : null}
-                      {facePicking && !text ? <span>{t("inspector.surfaceFacesPickHint")}</span> : null}
+                      {facePicking && !placedHere ? <span>{t("inspector.surfaceFacesPickHint")}</span> : null}
                     </div>
                   ) : null}
                   {applied && onRemove ? (
