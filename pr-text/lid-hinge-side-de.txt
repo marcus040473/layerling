@@ -1,0 +1,20 @@
+Titel: Deckel: Seite für das Scharnier wählen
+
+Zusammenfassung
+Das Scharnier kam immer an die Rückseite, egal wie lang sie ist. Bei einer Kiste, die länger als breit ist, landete es deshalb an der kurzen Seite (gewünscht in #1220). Im Deckel-Fenster gibt es jetzt unter „Scharnier“ die „Scharnierseite“: Hinten (voreingestellt, bestehende Entwürfe ändern sich nicht), Rechts, Vorne oder Links, wie in der Startansicht, mit denselben Seitennamen wie beim Aushöhlen.
+
+- Das Scharnier wird so berechnet, als läge die gewählte Seite hinten, und Knöchel, Steg und Stiftloch werden danach zurückgedreht. So ist es an jeder Seite dasselbe Scharnier: Knöchel nach der Länge dieser Seite, die Schräge unter den Knöcheln des Körpers, das Spiel, der gedruckte Stift. Der Deckel liegt weiter neben dem Körper, mit Abstand zu den Knöcheln.
+- „Scharnier hinten“ heißt jetzt nur „Scharnier“; die Statuszeile sagt nicht mehr „hinten“, und die Meldung für eine Seite ohne gerades Stück spricht von der gewählten Seite.
+- MCP: make_lid nimmt hingeSide (back, right, front, left) und meldet es unter hinge zurück.
+- Texte in 14 Sprachen (die Seitennamen sind die vom Aushöhlen), ein Satz in Kapitel 6 der Anleitung in den neun Sprachen, die das Scharnier beschreiben, SKILL-Kopien.
+
+Bilder: eine Kiste, 40 breit und 80 tief, mit dem Scharnier rechts, an der langen Seite.
+
+Tests
+- npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
+- tests/e2e/lidHinge.e2e.ts: Für die rechte, vordere und linke Seite der 60 × 40-Kiste sind die Knöchel genau die der Kiste, die mit dieser Seite nach hinten gedreht wurde, zurückgedreht; der Deckel ist dieser Deckel, ebenso gedreht; die Knöchel stehen außerhalb dieser Seite, wachsen als ein Stück aus der Wand, und der Deckel liegt frei daneben. Anzahl der Knöchel nach Länge der Seite (3 an den 40-mm-Seiten, 5 an der 60-mm-Vorderseite). Der Test schlägt fehl, wenn die Drehung falsch herum geht.
+- tests/e2e/lidPanelHinge.e2e.ts: die vier Seiten in Reihenfolge, „Hinten“ voreingestellt, ein Klick gibt die Seite weiter. tests/unit/lidTool.test.ts: hingeSide wird geprüft, Unbekanntes bleibt hinten.
+- Im Browser: Kiste 40 × 80 × 30 mm, oben offen ausgehöhlt, Deckel → Scharnier → Rechts → Deckel machen: sieben Knöchel an der 80-mm-Seite, der Deckel daneben.
+
+Hinweise
+- lid.hinge heißt jetzt in allen 14 Sprachen „Scharnier“ statt „Scharnier hinten“; lid.hingeSide ist neu.
