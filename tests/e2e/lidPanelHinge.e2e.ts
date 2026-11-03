@@ -57,6 +57,11 @@ describe("the lid's panel with a hinge", () => {
     const on = mount({ hinge: true });
     for (const label of ["Hinge side", "Pin diameter", "Hinge clearance", "Knuckles (0 = automatic)"]) expect(texts(on.panel)).toContain(label);
     expect(checkbox(on.panel, "Print the pin too")).not.toBeNull();
+    // Teardrop holes are on to start with, and can be turned off.
+    const teardrop = checkbox(on.panel, "Teardrop pin holes (no droop when printed)")!;
+    expect(teardrop.checked).toBe(true);
+    act(() => teardrop.click());
+    expect(on.changes.at(-1)).toEqual({ hingeTeardrop: false });
     // The hint shows its first sentence; the pin and the knuckles' size are behind its More.
     expect(texts(on.panel)).toContain("with a hole for the pin through all of them.");
     const more = [...on.panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more")]
