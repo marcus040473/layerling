@@ -9,6 +9,7 @@ import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolGroup, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
   LID_FITS,
+  LID_HINGE_SIDES,
   LID_HINGE_TYPES,
   LID_MAGNET_SIZES,
   LID_TYPES,
@@ -221,9 +222,28 @@ export function LidPanel({
           label={t("lid.hinge")}
           checked={hinged}
           disabled={busy || !hingeFits}
-          summary={`Ø ${millimetres(settings.hingePin)} mm`}
+          summary={`${t(`shell.side.${settings.hingeSide}`)} · Ø ${millimetres(settings.hingePin)} mm`}
           onCheck={(hinge) => onChange({ hinge })}
         >
+          {/* The side it goes along, as in the starting view (the view cube's Front faces you). */}
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.hingeSide")}>
+            <span>{t("lid.hingeSide")}</span>
+            <div className="shell-opening-options">
+              {LID_HINGE_SIDES.map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.hingeSide === side}
+                  className={settings.hingeSide === side ? "active" : ""}
+                  disabled={busy}
+                  onClick={() => onChange({ hingeSide: side })}
+                >
+                  {t(`shell.side.${side}`)}
+                </button>
+              ))}
+            </div>
+          </div>
           <EdgeModifierSlider
             label={t("lid.hingePin")}
             value={settings.hingePin}
