@@ -1,20 +1,28 @@
-Titel: Deckel: Seite für das Scharnier wählen
+Titel: Deckel-Scharnier: Seite wählen, tropfenförmige Stiftlöcher und runde Dosen
 
 Zusammenfassung
-Das Scharnier kam immer an die Rückseite, egal wie lang sie ist. Bei einer Kiste, die länger als breit ist, landete es deshalb an der kurzen Seite (gewünscht in #1220). Im Deckel-Fenster gibt es jetzt unter „Scharnier“ die „Scharnierseite“: Hinten (voreingestellt, bestehende Entwürfe ändern sich nicht), Rechts, Vorne oder Links, wie in der Startansicht, mit denselben Seitennamen wie beim Aushöhlen.
+Drei Punkte aus #1220, nachdem das Scharnier in 1.135.0 erschienen war:
 
-- Das Scharnier wird so berechnet, als läge die gewählte Seite hinten, und Knöchel, Steg und Stiftloch werden danach zurückgedreht. So ist es an jeder Seite dasselbe Scharnier: Knöchel nach der Länge dieser Seite, die Schräge unter den Knöcheln des Körpers, das Spiel, der gedruckte Stift. Der Deckel liegt weiter neben dem Körper, mit Abstand zu den Knöcheln.
-- „Scharnier hinten“ heißt jetzt nur „Scharnier“; die Statuszeile sagt nicht mehr „hinten“, und die Meldung für eine Seite ohne gerades Stück spricht von der gewählten Seite.
-- MCP: make_lid nimmt hingeSide (back, right, front, left) und meldet es unter hinge zurück.
-- Texte in 14 Sprachen (die Seitennamen sind die vom Aushöhlen), ein Satz in Kapitel 6 der Anleitung in den neun Sprachen, die das Scharnier beschreiben, SKILL-Kopien.
+Scharnierseite. Das Scharnier kam immer an die Rückseite, bei einer Kiste, die länger als breit ist, also an die kurze Seite. Im Deckel-Fenster gibt es jetzt unter „Scharnier“ die „Scharnierseite“: Hinten (voreingestellt, bestehende Entwürfe ändern sich nicht), Rechts, Vorne oder Links, wie in der Startansicht, mit denselben Seitennamen wie beim Aushöhlen. Das Scharnier wird so berechnet, als läge die Seite hinten, und danach zurückgedreht – an jeder Seite dasselbe Scharnier; der Deckel liegt weiter neben dem Körper, mit Abstand zu den Knöcheln.
 
-Bilder: eine Kiste, 40 breit und 80 tief, mit dem Scharnier rechts, an der langen Seite.
+Tropfenförmige Stiftlöcher (anfangs an, „Tropfenförmige Stiftlöcher (hängen beim Druck nicht durch)“). Das Stiftloch liegt beim Drucken waagerecht; der obere Rand eines runden Lochs ist ein Überhang, der durchhängen und den Stift klemmen kann. Die Löcher jedes Teils bekommen jetzt oben eine 45°-Spitze, so wie das Teil gedruckt wird: nach oben im Körper, der aufrecht steht, und zur Innenseite im Deckel, der umgedreht liegt. Die Spitze wird flach abgeschnitten, wo sie weniger als 0,8 mm vom Knöchel übrig ließe (dicke Stifte). Der Stift dreht sich im runden Teil, mit demselben Spiel wie bisher. Ein mitgedruckter Stift liegt jetzt auf einer flachen Seite, ein Zehntel seines Durchmessers breit, und rollt nicht weg.
+
+Runde Seiten (Dose, Rohr). Eine Seite ohne gerades Stück für drei Knöchel wurde bisher abgelehnt. Jetzt läuft das Scharnier dort, wo die Wand höchstens einen Knöchel-Radius hinter der Scharnierlinie zurückbleibt; die Knöchel des Körpers stehen auf einem Block, der bis in die Wand reicht, unten mit derselben 45°-Schräge wie bisher und aus der Öffnung herausgehalten, und der Steg des Deckels reicht bis an seinen gebogenen Rand. Ist eine Seite zu kurz oder zu stark gekrümmt für drei Knöchel, kommt weiter eine Meldung, die das jetzt so sagt.
+
+Außerdem: „Scharnier hinten“ heißt jetzt nur „Scharnier“, die Statuszeile sagt nicht mehr „hinten“. MCP: make_lid nimmt hingeSide und hingeTeardrop und meldet die Seite zurück. Texte in 14 Sprachen, Kapitel 6 der Anleitung in neun Sprachen, SKILL-Kopien.
+
+Bilder: lange Kiste mit Scharnier rechts; Tropfenlöcher an der stehenden Kiste und am liegenden Deckel; runde Dose (60 mm) mit Scharnier hinten, von hinten gesehen.
 
 Tests
 - npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
-- tests/e2e/lidHinge.e2e.ts: Für die rechte, vordere und linke Seite der 60 × 40-Kiste sind die Knöchel genau die der Kiste, die mit dieser Seite nach hinten gedreht wurde, zurückgedreht; der Deckel ist dieser Deckel, ebenso gedreht; die Knöchel stehen außerhalb dieser Seite, wachsen als ein Stück aus der Wand, und der Deckel liegt frei daneben. Anzahl der Knöchel nach Länge der Seite (3 an den 40-mm-Seiten, 5 an der 60-mm-Vorderseite). Der Test schlägt fehl, wenn die Drehung falsch herum geht.
-- tests/e2e/lidPanelHinge.e2e.ts: die vier Seiten in Reihenfolge, „Hinten“ voreingestellt, ein Klick gibt die Seite weiter. tests/unit/lidTool.test.ts: hingeSide wird geprüft, Unbekanntes bleibt hinten.
-- Im Browser: Kiste 40 × 80 × 30 mm, oben offen ausgehöhlt, Deckel → Scharnier → Rechts → Deckel machen: sieben Knöchel an der 80-mm-Seite, der Deckel daneben.
+- tests/e2e/lidHinge.e2e.ts:
+  - rechts, vorne und links an der 60 × 40-Kiste genau das Scharnier der gedrehten Kiste, zurückgedreht; Knöchel außerhalb dieser Seite, ein Stück mit dem Körper, der Deckel frei daneben; Anzahl nach Länge der Seite; der Test schlägt fehl, wenn die Drehung falsch herum geht;
+  - Tropfenlöcher: gleich jenseits des runden Lochs ist im Körper oben und im geschlossenen Deckel unten kein Material, mit abgeschalteter Option schon; der runde Teil ist beide Male gleich;
+  - runde Dose (40 mm): drei Knöchel auf etwa 19 mm, ein Stück mit der Dose und nichts davon innen, der Deckel ein Stück, geschlossen ohne Überlappung, von 10° bis 170° aufgeklappt ohne Berührung, 1,75-mm-Filament durch alle Löcher; am äußeren Ende eines Knöchels füllt der Block den Raum bis zur Wand, und mit fünf Knöcheln reicht der Steg des Deckels bis an seinen gebogenen Rand (beides schlägt ohne fehl); eine Dose mit 8 mm wird abgelehnt;
+  - der mitgedruckte Stift liegt auf seiner flachen Seite, 2,7 mm hoch bei 3 mm Stift.
+- tests/e2e/lidPanelHinge.e2e.ts: die vier Seiten, „Hinten“ voreingestellt; Tropfenlöcher anfangs an, ein Klick gibt hingeTeardrop: false weiter. tests/unit/lidTool.test.ts: hingeSide und hingeTeardrop geprüft.
+- Im Browser: Kiste 40 × 80 × 30 mm mit Scharnier rechts (sieben Knöchel an der 80-mm-Seite); runde Dose 60 × 40 mm, oben offen ausgehöhlt, Deckel → Scharnier → Deckel machen (drei Knöchel hinten auf ihren Blöcken); Knöchel einer kleinen Kiste von der Seite, die Spitzen der Löcher oben, so wie jedes Teil liegt.
 
 Hinweise
-- lid.hinge heißt jetzt in allen 14 Sprachen „Scharnier“ statt „Scharnier hinten“; lid.hingeSide ist neu.
+- lid.hinge heißt jetzt in allen 14 Sprachen „Scharnier“; lid.hingeSide und lid.hingeTeardrop sind neu; lid.error.hingeNoBack sagt, dass die Seite zu kurz oder zu stark gekrümmt ist.
+- Ein übergestülpter Deckel (Rand außen herum) kann weiterhin kein Scharnier bekommen, rund oder gerade: Er würde beim Öffnen an die Wand stoßen.
