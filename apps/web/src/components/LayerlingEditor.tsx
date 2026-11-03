@@ -17,7 +17,7 @@ import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentT
 import { gridfinityListPatch, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlateToWorld } from "@/lib/gridfinityGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
-import { curvedTextPatch, MAX_TEXT_SPACING, MIN_TEXT_SPACING } from "@/lib/textGeometry";
+import { curvedTextPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING } from "@/lib/textGeometry";
 import { normalizeTextEdge } from "@/lib/textEdge";
 import { DEFAULT_TEXT_LAYERS, layerTextKeyringArgument, placedKeyring, layerTextLayersError, nameTagOffsets, normalizeTextLayers, type NameTagKeyring } from "@/lib/textLayers";
 import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textLetterSize, textLetterSizePatch, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
@@ -153,6 +153,7 @@ import { useFileAccept } from "@/lib/fileAccept";
 import { exportLylProject, LYL_CREATED_WITH_VERSION, LYL_MEDIA_TYPE } from "@/lib/lylProject";
 import { isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
 import { ensureLylFileWritable, forgetLylFile, forgetStlFile, linkedLylFile, linkedStlFile, lylFileAccessSupported, pickLylFileToOpen, pickLylFileToSave, pickStlFileToSave, rememberLylFile, rememberStlFile, writeLylFile, type LylFileHandle } from "@/lib/lylFileAccess";
+import { copyNamePatterns, shapeNamesIn, withCopyName } from "@/lib/shapeCopyName";
 import { clipboardShape, displayShapeName, hasOwnShapeName, iconTagAsset, qrCodeAsset, makeShapeFromAsset, nameTagAsset, sbcBoardAsset, shapeAssetLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
 import { storeRecentShape } from "@/lib/shapeLibrarySections";
 import { PORT_PRESET_ORDER, PORT_PRESETS, portPresetSize, type PortPreset } from "@/lib/portGeometry";
@@ -234,6 +235,7 @@ import { debugShapeSummary, mcpPivotRequest, compactShapeSummary, mcpShapeSummar
 import { sweepAnchorFromParams, sweepPathFromParams, sweepSectionFromParams, sweepSketchProfile } from "@/lib/sweepSketch";
 import { emptySketchProfile, cadShapeFromSketchProfile, cadShapeFromSketchSweep, revolveBuildProfile, shapeFromRevolvedSketchProfile, shapeFromCadMesh, sketchBodyAsOperation, sketchBodyOperation, sketchProfileLeftOfAxis, sketchReferenceShapeOnWorkplane, defaultMcpSketchProfile, type SketchMirrorAbout } from "@/lib/editorSketchCad";
 import { drawingLabelsInLanguage } from "@/lib/drawingLabels";
+import { DEFAULT_TEXT_BLOCK_GAP, offersTextBlock, TEXT_BLOCK_ALIGNS, textBlockFor, textBlockLines, type TextBlockAlign, type TextBlockOptions } from "@/lib/textBlock";
 import { offersTextLayers, textLayerStack, layeredTextShape, nameTagSource, nameTagsFor, offersIconLayers, iconLayerStack, iconTagArea, layeredIconShape, iconTagCopies, svgIconArea, iconTagFromSvg, keyringTabShape, keyringTabTag, keyringTabAt, keyringTabPlace, textFreeKeyring, textFreeKeyringPlace, iconFreeKeyring, iconFreeKeyringPlace } from "@/lib/editorTextTags";
 import { DEFAULT_KEYRING_DIAMETER } from "@/lib/textGeometry";
 import { TopPanel, DirectExportFormat, SvgExportView, DxfExportView, ViewImageOptions, LylHistoryLimit, LylExportTarget, TopActionPanel } from "./workplane/TopActionPanel";
@@ -6419,13 +6421,14 @@ export function LayerlingEditor({
       const continuing = chain?.chainId === shape.id;
       const movedSinceCreation = continuing ? shapeMoveDeltaBetween(chain.baseline, shapeTransformSnapshot(shape)) : ZERO_MOVE_DELTA;
       const delta = continuing && isZeroMoveDelta(movedSinceCreation) ? chain.delta : movedSinceCreation;
-      const duplicate = applyShapeMoveDelta(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), delta);
+      const duplicate = applyShapeMoveDelta(withCopyName(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), shapeNamesIn(shapes), copyNamePatterns()), delta);
       commitShapes([...shapes, duplicate], [duplicate.id], t("status.duplicatedOne"));
       smartDuplicateRef.current = { chainId: duplicate.id, baseline: shapeTransformSnapshot(duplicate), delta };
       return;
     }
     smartDuplicateRef.current = null;
-    const duplicates = selectedShapes.map((shape) => cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"));
+    const takenNames = shapeNamesIn(shapes);
+    const duplicates = selectedShapes.map((shape) => withCopyName(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), takenNames, copyNamePatterns()));
     commitShapes([...shapes, ...duplicates], duplicates.map((shape) => shape.id), t("status.duplicatedMany", { count: duplicates.length }));
   }, [commitShapes, hasSelection, selectedShapes, shapes]);
 
@@ -6536,15 +6539,16 @@ export function LayerlingEditor({
   const duplicateShapeAt = useCallback((id: string, position: { x: number; z: number }) => {
     const shape = shapesRef.current.find((entry) => entry.id === id);
     if (!shape) return;
-    const duplicate = { ...cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), x: position.x, z: position.z };
+    const duplicate = { ...withCopyName(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), shapeNamesIn(shapesRef.current), copyNamePatterns()), x: position.x, z: position.z };
     commitShapes([...shapesRef.current, duplicate], [duplicate.id], t("status.duplicatedOne"));
   }, [commitShapes]);
 
   /** Alt-drag: copies of the dragged shapes at the place they were dropped, selected like the drag was. */
   const duplicateShapesMoved = useCallback((ids: string[], delta: { dx: number; dz: number; delevation: number }) => {
+    const takenNames = shapeNamesIn(shapesRef.current);
     const duplicates = ids.flatMap((id) => {
       const shape = shapesRef.current.find((entry) => entry.id === id);
-      return shape ? [applyShapeMoveDelta(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), { ...ZERO_MOVE_DELTA, ...delta })] : [];
+      return shape ? [applyShapeMoveDelta(withCopyName(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), takenNames, copyNamePatterns()), { ...ZERO_MOVE_DELTA, ...delta })] : [];
     });
     if (duplicates.length === 0) return;
     smartDuplicateRef.current = null;
@@ -6592,7 +6596,8 @@ export function LayerlingEditor({
       clipboardCopiedAtRef.current = newest.copiedAt;
       setClipboard(sourceClipboard);
     }
-    const copies = sourceClipboard.map((shape) => cloneWorkplaneShapeTreeWithFreshIds(shape, "paste"));
+    const takenNames = shapeNamesIn(shapesRef.current);
+    const copies = sourceClipboard.map((shape) => withCopyName(cloneWorkplaneShapeTreeWithFreshIds(shape, "paste"), takenNames, copyNamePatterns(), true));
     // With "Paste in the middle and drop" the parts come together to the middle of the workplane and stand on it,
     // wherever the other program had them (#876); else each is moved a little from where it was.
     const centering = workspaceSettings.pasteCentered ? pasteCenteringShift(copies, placementWorkplaneRef.current) : null;
@@ -10599,6 +10604,20 @@ export function LayerlingEditor({
     );
   }, [commitShapes, selectedShape, selectedShapes.length]);
 
+  /**
+   * The text block (#1207): the selected text becomes the first of several lines, each a text of its own under the
+   * one above, aligned left, centred or right. All of them are selected afterwards, so they move as one.
+   */
+  const makeTextBlock = useCallback((lines: string[], options: TextBlockOptions) => {
+    if (selectedShapes.length !== 1 || !offersTextBlock(selectedShape) || lines.length === 0) return;
+    const block = textBlockFor(selectedShape, lines, options);
+    if (!block.length) return;
+    const index = shapesRef.current.findIndex((shape) => shape.id === selectedShape.id);
+    const next = [...shapesRef.current];
+    next.splice(index < 0 ? next.length : index, index < 0 ? 0 : 1, ...block);
+    commitShapes(next, block.map((line) => line.id), t("status.textBlockMade", { count: block.length }));
+  }, [commitShapes, selectedShape, selectedShapes.length]);
+
   /** The selected icon tag, or a sketch body that can become one, as its card shows it. */
   const selectedIconStack = useMemo(
     () => (selectedShapes.length === 1 && selectedShape && offersIconLayers(selectedShape) ? iconLayerStack(selectedShape) : null),
@@ -11545,6 +11564,12 @@ export function LayerlingEditor({
             if (!Number.isFinite(spacing) || spacing < MIN_TEXT_SPACING || spacing > MAX_TEXT_SPACING) throw new Error(`spacing must be a number from ${MIN_TEXT_SPACING} to ${MAX_TEXT_SPACING} (per cent of the letter size)`);
             Object.assign(patch, textSpacingPatch({ ...target, ...patch } as WorkplaneShape, spacing));
           }
+          // Curved text (#1196): how wide the letters are drawn, in per cent of their own width; the box follows in curvedTextPatch.
+          if (params.letterWidth !== undefined) {
+            const letterWidth = Number(params.letterWidth);
+            if (!Number.isFinite(letterWidth) || letterWidth < MIN_TEXT_LETTER_WIDTH || letterWidth > MAX_TEXT_LETTER_WIDTH) throw new Error(`letterWidth must be a number from ${MIN_TEXT_LETTER_WIDTH} to ${MAX_TEXT_LETTER_WIDTH} (per cent of the letters' own width)`);
+            patch.textLetterWidth = letterWidth === 100 ? undefined : letterWidth;
+          }
           // The top edge of the letters (#225): { kind: "round" | "chamfer", size } or null for none.
           if (params.letterEdge !== undefined) {
             if (params.letterEdge === null || params.letterEdge === false) {
@@ -11998,6 +12023,28 @@ export function LayerlingEditor({
         const bundle = canonicalizeShape({ ...group, name: "Bundle", groupOperation: "bundle" });
         commitShapes([...currentShapes().filter((shape) => !ids.has(shape.id)), bundle], bundle.id, t("status.mcpBundled", { count: parts.length }));
         return { object: mcpShapeSummary(bundle) };
+      }
+
+      if (command.action === "text_block") {
+        const id = typeof params.id === "string" ? params.id : null;
+        const target = id ? currentShapes().find((shape) => shape.id === id) : null;
+        if (!target) throw new Error("text_block needs the id of a text");
+        if (target.locked) throw new Error("Unlock the object first");
+        if (!offersTextBlock(target)) throw new Error("Only a plain straight text can become a text block: not curved, not stacked top to bottom, without a key ring");
+        const lines = Array.isArray(params.lines) ? textBlockLines(mcpStringArray(params.lines).join(String.fromCharCode(10))) : [];
+        if (!lines.length) throw new Error("lines needs at least one line of text");
+        const align = typeof params.align === "string" ? params.align : "center";
+        if (!TEXT_BLOCK_ALIGNS.includes(align as TextBlockAlign)) throw new Error("align must be left, center or right");
+        const block = textBlockFor(target, lines, {
+          align: align as TextBlockAlign,
+          gap: typeof params.gap === "number" ? params.gap : DEFAULT_TEXT_BLOCK_GAP,
+          step: typeof params.step === "number" ? params.step : 100,
+        });
+        const index = currentShapes().findIndex((shape) => shape.id === target.id);
+        const next = [...currentShapes()];
+        next.splice(index, 1, ...block);
+        commitShapes(next, block.map((line) => line.id), t("status.textBlockMade", { count: block.length }));
+        return { objects: block.map(mcpShapeSummary) };
       }
 
       if (command.action === "layer_text") {
@@ -15908,6 +15955,7 @@ export function LayerlingEditor({
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !selectedShape.locked ? () => layOutVaseAccessories(selectedShape.id) : undefined}
           onLayerText={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? layerSelectedText : undefined}
           onTextTags={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? makeTextTags : undefined}
+          onTextBlock={selectedShapes.length === 1 && offersTextBlock(selectedShape) && !historyViewState ? makeTextBlock : undefined}
           onFixKeyringTab={selectedShapes.length === 1 && selectedShape?.keyringTab && !historyViewState ? () => void fixKeyringTab() : undefined}
           onPortPresetWithScrewHoles={selectedShapes.length === 1 && selectedShape?.kind === "port" && !historyViewState ? choosePortPresetWithScrewHoles : undefined}
           textLayerStack={selectedNameTag}
