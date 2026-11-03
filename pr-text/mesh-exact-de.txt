@@ -1,0 +1,22 @@
+Titel: Exakt machen: importierte Netze als exakte Körper, und Kanten beim Vereinfachen behalten
+
+Zusammenfassung
+Eine STL, OBJ oder 3MF besteht nur aus Dreiecken, auch wenn sie im CAD mit ebenen Flächen und runden Bohrungen gezeichnet wurde. Deshalb verweigern die Kantenwerkzeuge sie über 4.000 Dreiecken, darunter ist der Rand einer Bohrung Dutzende kurze Kanten, „Fläche löschen“ findet keine Flächen, und der STEP-Export lässt sie weg. Der PR bringt:
+- Exakt machen (Anpassen → Oberfläche, Rechtsklickmenü, KI-Befehl layerling_make_exact): findet die Ebenen, Zylinder, Kegel, Kugeln und Tori, aus denen das Netz gemacht war, und baut daraus einen exakten Körper. Danach verhält er sich wie ein STEP-Import: Rundung und Fase folgen einer sauberen Kante, „Fläche löschen“ nimmt eine ganze Rundung oder die Wand einer Bohrung weg, STEP trägt die echten Flächen. Die Statuszeile sagt, was gefunden wurde. Was zu keiner Fläche passt, bleibt kleine ebene Facetten, die Meldung nennt ihren Anteil. Ein Rückgängig-Schritt holt das Netz zurück.
+- Ein überwiegend freiförmiges Netz (Figur, modellierte Form) wird erkannt, bevor etwas gebaut wird, und bleibt ein Netz – mit dem Anteil, der doch passt. Ein Netz mit Lücken bekommt eine eigene Meldung. Bis 400.000 Dreiecke.
+- Ein Netz, das nach dem Export noch einmal unterteilt wurde, hat seine neuen Punkte auf den geraden Sehnen, ein paar tausendstel Millimeter neben dem Zylinder. Dann wird es mit 4- und 16-facher Toleranz noch einmal versucht; das gröbere Ergebnis zählt nur, wenn beide übereinstimmen – so wird keine Freiform zufällig „getroffen“.
+- Kantenwerkzeug: Ein kleines Netz mit runden Flächen (bis zur bestehenden Grenze von 4.000 Dreiecken) wird beim Abrunden genauso neu gebaut, in höchstens 6 Sekunden. Über der Grenze weist die Meldung jetzt auf „Exakt machen“ hin.
+- STEP-Export: Importierte Netze gehen exakt gemacht mit (bis 200.000 Dreiecke je Netz, 60 Sekunden für alle); ein Freiform-Netz bleibt mit eigenem Grund draußen.
+- Netz vereinfachen → „Kanten und Bohrungen beibehalten“ (anfangs an, wird gemerkt): Scharfe Kanten (mehr als 30°) dürfen nur entlang gerader Stücke schrumpfen, Punkte, an denen eine Kante abbiegt (Bohrungsrand) oder Kanten sich treffen, bleiben fest, runde Flächen dürfen sich höchstens um 0,05 % der Teilgröße bewegen. Ebene Flächen verlieren trotzdem die meisten Dreiecke.
+- Texte in 14 Sprachen (der STEP-Hinweis „Netze gehen als STL“ auch in Ungarisch, Japanisch, Portugiesisch und Türkisch berichtigt), Anleitungsabschnitt in Kapitel 12 in 15 Sprachen, MCP-Tabelle, SKILL-Kopien, READMEs.
+[Bilder: Halterung – Rundung verweigert, „Exakt gemacht“, gerundet; Vereinfachen mit und ohne die Option; dazu die STL zum Ausprobieren]
+
+Tests
+- Typprüfung, alle Tests, e2e-Tests, Anleitung, Übersetzungsstand
+- Neue Tests: Flächen-Anpassung, Zerlegung in Flächen (Quader, Zylinder, Kegel, Kugel, Ring; Knoten als Freiform; offenes Netz), Vereinfachen mit Kanten (alle 192 Randpunkte und 8 Ecken bleiben); e2e: neun Teile aus dem CAD-Kern mit gleichem Volumen und gleichen Flächen, Bohrung als ein Zylinder mit Rundung, Lochplatte mit 36 Bohrungen, unterteiltes Netz, Freiform verweigert, offenes Netz; der Weg über den CAD-Worker; STEP-Export mit Zylinderfläche, Knoten übersprungen.
+- Im Browser (Deutsch und Englisch): die Halterung, „Exakt machen“ über den Knopf und über MCP, Rundung an 18 Kanten, Vereinfachen mit und ohne Option.
+
+Hinweise
+- Neue Dateien: meshSurfaceFit.ts, meshSurfaceSegments.ts, meshSurfaceTopology.ts, cadMeshExact.ts, cadMeshExactMessages.ts.
+- Der neue Knopf hält Stefans Breitenschwellen der Werkzeugleiste ein (gemessen).
+- Grenzen: Freiform bleibt Netz. Ein Netz, das ein anderes Programm schon vereinfacht hat, kann dort Facetten behalten, wo eine runde Fläche weich in eine ebene übergeht.
