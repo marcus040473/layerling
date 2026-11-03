@@ -7,10 +7,10 @@ import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus, ToolStepper } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
-import { ARRAY_MAX_COUNT, ARRAY_MIN_COUNT, arrayGroupsCopies, type ArrayMode, type ArraySettings } from "@/lib/shapeArray";
+import { ARRAY_MAX_COUNT, ARRAY_MIN_COUNT, arrayGridSize, arrayGroupsCopies, type ArrayMode, type ArraySettings } from "@/lib/shapeArray";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
-const ARRAY_MODES: readonly ArrayMode[] = ["row", "circle"];
+const ARRAY_MODES: readonly ArrayMode[] = ["row", "grid", "circle"];
 /** Spread the row over a body along X or Y, or not (null). */
 const FIT_OPTIONS = [null, "x", "y"] as const;
 const MAX_SPACING = 300;
@@ -23,7 +23,7 @@ const ROW_AXES = [
 ] as const;
 
 /**
- * Repeating the selection n times in a row or around a circle. The copies
+ * Repeating the selection n times in a row, a grid or around a circle. The copies
  * show on the workplane while the numbers change and only land in the design
  * with "Create".
  */
@@ -60,6 +60,8 @@ export function ArrayPanel({
   useLanguage();
   const title = t("array.title");
   const halfPlate = Math.max(workspace.width, workspace.depth) / 2;
+  const grid = settings.mode === "grid" ? arrayGridSize(settings) : null;
+  const help = settings.mode === "row" ? "array.helpRow" : grid ? "array.helpGrid" : pivotSet ? "array.helpCirclePivot" : "array.helpCircle";
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel array-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
@@ -76,7 +78,7 @@ export function ArrayPanel({
 
       <ToolSection title={t("toolSidebar.selection")}>
         <ToolSelection ready text={targetName} />
-        <ToolHelp>{t(settings.mode === "row" ? "array.helpRow" : pivotSet ? "array.helpCirclePivot" : "array.helpCircle")}</ToolHelp>
+        <ToolHelp>{t(help)}</ToolHelp>
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
@@ -103,15 +105,57 @@ export function ArrayPanel({
           <span>{t("array.groupCopies")}</span>
         </label>
 
-        <ToolStepper
-          label={t("array.count")}
-          value={settings.count}
-          min={ARRAY_MIN_COUNT}
-          max={ARRAY_MAX_COUNT}
-          onChange={(count) => onChange({ count })}
-        />
+        {grid ? null : (
+          <ToolStepper
+            label={t("array.count")}
+            value={settings.count}
+            min={ARRAY_MIN_COUNT}
+            max={ARRAY_MAX_COUNT}
+            onChange={(count) => onChange({ count })}
+          />
+        )}
 
-        {settings.mode === "row" ? (
+        {grid ? (
+          <>
+            <ToolStepper
+              label={t("array.columns")}
+              value={grid.columns}
+              min={1}
+              max={ARRAY_MAX_COUNT}
+              onChange={(count) => onChange({ count })}
+            />
+            <EdgeModifierSlider
+              label={t("array.spacingX")}
+              value={settings.spacingX}
+              min={-MAX_SPACING}
+              max={MAX_SPACING}
+              step={0.5}
+              workspace={workspace}
+              length
+              onChange={(value) => onChange({ spacingX: value })}
+            />
+            <ToolStepper
+              label={t("array.rows")}
+              value={settings.rows ?? 1}
+              min={1}
+              max={ARRAY_MAX_COUNT}
+              onChange={(rows) => onChange({ rows })}
+            />
+            <EdgeModifierSlider
+              label={t("array.spacingY")}
+              value={settings.rowSpacing ?? 0}
+              min={-MAX_SPACING}
+              max={MAX_SPACING}
+              step={0.5}
+              workspace={workspace}
+              length
+              onChange={(value) => onChange({ rowSpacing: value })}
+            />
+            <span className="shell-openings-summary">
+              {t(grid.capped ? "array.gridCapped" : "array.gridTotal", { columns: grid.columns, rows: grid.rows, count: grid.columns * grid.rows, max: ARRAY_MAX_COUNT })}
+            </span>
+          </>
+        ) : settings.mode === "row" ? (
           <>
             <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("array.fit")}>
               <span>{t("array.fit")}</span>
