@@ -1,0 +1,25 @@
+Titel: Kantenwerkzeug: spitze Innenecken zuerst runden, wenn die gewählten Kanten sonst nicht daran vorbeikommen
+
+Zusammenfassung
+Gruppiert man ein paar überlappende Scheiben zu einer Wolke, wählt die oberen Kanten und rundet, verweigert das Werkzeug selbst bei 0,5 mm: „Die gewählten Kanten können bei dieser Größe nicht zusammen verrundet werden.“ Die Bögen treffen sich in spitzen Innenecken, Kerben, in denen die rollende Kugel bei keiner Größe Platz hat – deshalb lehnt der Rechenkern die ganze Auswahl ab. Rundet man diese Ecken zuerst ein wenig, ist die Kerbe weg und die Kanten gehen durch.
+
+Wenn eine Rundung oder Fase scheitert und auch der bestehende zweite Versuch mit den kurzen Eckkanten (#1178) nicht hilft, macht der Hintergrundrechner jetzt Folgendes:
+- Er sieht sich die Kanten an, die an den Enden der gewählten Kanten anstoßen, und behält die, um die der Körper mehr als eine halbe Drehung herumreicht (eine Kerbe, keine Außenecke – Außenecken bleiben Sache des Nutzers).
+- Er versucht sie zusammen mit den gewählten Kanten in derselben Größe. Klappt das nicht, rundet er sie zuerst mit der Hälfte, dann mit einem Viertel der Größe, findet die gewählten Kanten am gerundeten Körper wieder und behandelt sie wie gewünscht.
+- Die Statuszeile sagt es: „Innenecken zuerst gerundet (7 mit 1.00 mm): An den spitzen Ecken, wo die Kanten sich treffen, hat die Rundung sonst keinen Platz.“ Eine Fase fast die Ecken und sagt das.
+
+Sicherungen, weil der Rechenkern, an so einer Ecke vorbeigezwungen, einen Körper mit sich durchdringenden Flächen liefern und ihn trotzdem für gültig halten kann, oder abstürzt:
+- Nichts wird versucht, wenn eine gewählte oder anstoßende Kante kürzer als die Größe ist (eine Scheibe, die zwischen zwei anderen kaum herausschaut) – dann bleibt die Ablehnung wie bisher.
+- Ein Ergebnis zählt nur, wenn es ein Körper ist und sein Netz geschlossen ist.
+- Höchstens 4 Sekunden, und nur für eine einfache Rundung (nicht variabel, nicht konkav) oder eine Fase.
+
+Das MCP-Ergebnis des Kantenwerkzeugs enthält dann innerCorners: { count, amount }. Texte in 14 Sprachen, ein Satz in Kapitel 6 der Anleitung in 15 Sprachen.
+
+Tests
+- npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
+- Neu: tests/e2e/cadInnerCorners.e2e.ts – der Hintergrundrechner an einer Wolke aus fünf gruppierten Scheiben: obere Kanten mit 0,5, 1 und 2 mm gerundet (7 Innenecken zuerst gerundet), mit 1 mm gefast; Scheiben in einer Reihe, bei der eine kaum herausschaut, behalten die Ablehnung; eine einzelne Scheibe geht ohne das durch. tests/unit/cadCornerEdges.test.ts: edgesTouchingEnds.
+- Im Browser: fünf Zylinder gruppiert, Kanten verrunden → Obere Kanten → 2 mm: vorher abgelehnt; jetzt kommt die Vorschau mit der Meldung oben, Anwenden ergibt einen geschlossenen Körper (STL geprüft: keine offenen Kanten, die Oberseite bleibt flach).
+
+Hinweise
+- Neue Datei lib/cadInnerCorners.ts; edgesTouchingEnds in lib/cadCornerEdges.ts.
+- Passt dieselbe Größe nicht, bekommen die Ecken eine kleinere Rundung als die gewählten Kanten; die Meldung nennt die Größe, die sie bekommen haben.
