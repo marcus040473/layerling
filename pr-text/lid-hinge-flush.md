@@ -1,4 +1,4 @@
-Title: Lid hinge: flush in the wall, or a pivot lid on two pins
+Title: Lid hinge: flush in the wall, a pivot lid on two pins, and the pin's play to set
 
 ## Summary
 
@@ -14,9 +14,11 @@ The hinge sits behind the back wall, so the knuckles make the box deeper (about 
   - A ledge round the other sides holds it level; its underside steps back at 45°.
   - It opens to about 95° and stays open against the back wall. **Print the pin too** makes both pins.
 
+**Pin play** ([#1220](https://github.com/henmedia/layerling/discussions/1220)): two people printed the hinge with a 3 mm pin and had to force it in. The pin's play per side was a fixed 0.15 mm; it is now **Pin play (per side)** under **Hinge**, from 0.05 to 0.5 mm, 0.2 mm to begin with, for every hinge type, and the knuckles keep their 1.6 mm wall round the wider hole (5.35 mm across with a 1.75 mm pin, 5.25 before).
+
 Flush and pivot need a straight side (Hinge side picks which), and go without magnets, which would sit where the slots and pins are; both say so if asked for. The body's slots and pin holes are one hole grouped with it, as the magnets' pockets are.
 
-MCP: `make_lid` takes `hingeStyle` (`outside`, `flush`, `pivot`) and reports it. Texts in en, de, fr, nl, ru, cs, sl, da, es, it, pl, ar, zh-cn and zh-tw, guide chapter 6 in the nine languages that describe the hinge, SKILL copies.
+MCP: `make_lid` takes `hingeStyle` (`outside`, `flush`, `pivot`) and reports it, and `hingePinPlay`. Texts in en, de, fr, nl, ru, cs, sl, da, es, it, pl, ar, zh-cn and zh-tw, guide chapter 6 in the nine languages that describe the hinge types (the pin play in all 15 that describe the hinge), SKILL copies.
 
 Flush: the box keeps its 60 × 40 mm, seven knuckles in the back wall:
 
@@ -39,7 +41,7 @@ Pivot pins: the lid with its round bar beside the box, a pin hole in the side wa
   - flush: the box with knuckles and slots stays 60 × 40 and one piece; the lid, closed, is as large as the box and overlaps nothing; swung about the axis in 5° steps it touches nothing up to 140°; a 1.75 mm filament goes through all knuckles without touching;
   - pivot: the box stays its size; the lid closed in the opening overlaps nothing and rests on the ledge (0.3 mm lower it would sit in it); a filament pin from outside through each side wall into the bar touches nothing; it opens to 95°; printed pins are two, each 7.8 mm; on the right side the pins go through the front and back walls;
   - flush or pivot with magnets is refused, flush on a round pot and pivot on a round pot too.
-- `tests/e2e/lidPanelHinge.e2e.ts`: the three types in order, Outside checked by default, a click hands on the type; the knuckle count is hidden for pivot pins. `tests/unit/lidTool.test.ts`: `hingeStyle` normalised.
+- `tests/e2e/lidPanelHinge.e2e.ts`: the three types in order, Outside checked by default, a click hands on the type; the knuckle count is hidden for pivot pins. `tests/unit/lidTool.test.ts`: `hingeStyle` and `hingePinPlay` normalised. `tests/e2e/lidHinge.e2e.ts`: the pin's holes widen with the play asked for (at 1.125 mm from the axis the knuckle is solid with 0.1 mm, open with 0.4 mm).
 - In the browser: a 60 × 40 × 30 mm box hollowed with the top open, Lid → Hinge → Flush (seven knuckles, the box stays 60 × 40) and Pivot pins (lid in the opening, two pin holes), pictures above.
 
 ## Notes

@@ -1,4 +1,4 @@
-Titel: Deckel-Scharnier: bündig in der Wand oder Drehdeckel auf zwei Stiften
+Titel: Deckel-Scharnier: bündig in der Wand, Drehdeckel auf zwei Stiften und einstellbares Spiel am Stift
 
 Zusammenfassung
 Das Scharnier sitzt hinter der Rückwand, die Knöchel machen die Kiste also tiefer (etwa 5,5 mm bei einem 1,75-mm-Stift). In der Facebook-Gruppe wollte jemand es lieber innen haben, und in #1220 ging es auch um den Platz des Scharniers. Im Deckel-Fenster gibt es jetzt unter „Scharnier“ die „Scharnier-Art“:
@@ -15,7 +15,9 @@ Das Scharnier sitzt hinter der Rückwand, die Knöchel machen die Kiste also tie
 
 Bündig und Drehzapfen brauchen eine gerade Seite (welche, wählt „Scharnierseite“) und gehen ohne Magnete, die dort säßen, wo Schlitze und Stifte sind; beides wird mit einer Meldung abgelehnt. Die Schlitze und Stiftlöcher der Kiste sind ein Loch, das mit ihr gruppiert wird, so wie die Magnettaschen.
 
-MCP: make_lid nimmt hingeStyle (outside, flush, pivot) und meldet es zurück. Texte in 14 Sprachen, Kapitel 6 der Anleitung in den neun Sprachen, die das Scharnier beschreiben, SKILL-Kopien.
+Spiel am Stift (#1220): Zwei Leute haben das Scharnier mit einem 3-mm-Stift gedruckt und mussten ihn hineinzwingen. Das Spiel pro Seite war fest 0,15 mm; jetzt gibt es unter „Scharnier“ das Feld „Spiel am Stift (pro Seite)“, 0,05 bis 0,5 mm, anfangs 0,2 mm, für jede Scharnier-Art. Die Knöchel behalten ihre 1,6-mm-Wand um das weitere Loch (5,35 mm Durchmesser bei 1,75-mm-Stift, vorher 5,25).
+
+MCP: make_lid nimmt hingeStyle (outside, flush, pivot) und meldet es zurück, dazu hingePinPlay. Texte in 14 Sprachen, Kapitel 6 der Anleitung in den neun Sprachen, die die Scharnier-Arten beschreiben (das Stift-Spiel in allen 15, die das Scharnier beschreiben), SKILL-Kopien.
 
 Bilder: bündig – die Kiste behält 60 × 40 mm, sieben Knöchel in der Rückwand, von hinten gesehen bündig; Drehzapfen – der Deckel mit seiner runden Leiste neben der Kiste, das Stiftloch in der Seitenwand.
 
@@ -25,7 +27,7 @@ Tests
   - bündig: Kiste mit Knöcheln und Schlitzen bleibt 60 × 40 und ein Stück; der geschlossene Deckel ist so groß wie die Kiste und überlappt nichts; in 5°-Schritten aufgeklappt berührt er bis 140° nichts; ein 1,75-mm-Filament geht ohne Berührung durch alle Knöchel;
   - Drehzapfen: Kiste behält ihr Maß; der Deckel in der Öffnung überlappt nichts und liegt auf der Auflage (0,3 mm tiefer säße er darin); ein Filament-Stift von außen durch jede Seitenwand in die Leiste berührt nichts; öffnet bis 95°; mitgedruckte Stifte sind zwei, je 7,8 mm; an der rechten Seite gehen die Stifte durch Vorder- und Rückwand;
   - bündig oder Drehzapfen mit Magneten wird abgelehnt, bündig und Drehzapfen an einer runden Dose auch.
-- tests/e2e/lidPanelHinge.e2e.ts: die drei Arten, „Außen“ voreingestellt, ein Klick gibt die Art weiter; die Knöchel-Anzahl ist beim Drehdeckel ausgeblendet. tests/unit/lidTool.test.ts: hingeStyle geprüft.
+- tests/e2e/lidPanelHinge.e2e.ts: die drei Arten, „Außen“ voreingestellt, ein Klick gibt die Art weiter; die Knöchel-Anzahl ist beim Drehdeckel ausgeblendet. tests/unit/lidTool.test.ts: hingeStyle und hingePinPlay geprüft. tests/e2e/lidHinge.e2e.ts: Die Stiftlöcher werden mit dem Spiel weiter (1,125 mm neben der Achse ist der Knöchel bei 0,1 mm voll, bei 0,4 mm offen).
 - Im Browser: Kiste 60 × 40 × 30 mm, oben offen ausgehöhlt, Deckel → Scharnier → Bündig (sieben Knöchel, Kiste bleibt 60 × 40) und Drehzapfen (Deckel in der Öffnung, zwei Stiftlöcher), Bilder oben.
 
 Hinweise

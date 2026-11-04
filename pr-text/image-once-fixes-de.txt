@@ -1,0 +1,18 @@
+Titel: Bild-Muster „Einmal“: keine Löcher an runden Körpern, und es geht auf die gewählten Flächen
+
+Zusammenfassung
+Zwei Meldungen zum einmal aufgedrückten Bild (#1188):
+- Teile einer Kugel fehlten (#1268). Stefan hat es aufgespürt: Beim Bild „Einmal“ wurden die Flanken am Ende von refined() noch verfeinert, nachdem die Werte pro Punkt schon ausgerechnet waren. Die neuen Punkte hatten keinen Wert, bewegten sich um NaN, fielen später weg, und lange Dreiecke schlossen die Lücke quer durch den Körper. An einer abgerundeten Platte gab das eine Spitze und machte das Speichern unmöglich („Could not save design shapes“, #1206): Das NaN kam bis in die gespeicherten Formen. Text und Bild „Einmal“ überspringen jetzt die Flanken-Verfeinerung und den Wulst-Schnitt, wie es der Text schon tat (Stefans !text → !stuckOn(s), für beide Schritte).
+- Mit gewählten Flächen geht es auf diese (#1206, #1176). „Einmal“ hat seine Mitte nur nach „Rundherum“ und „Höhe“ gesetzt. Mit der Oberseite einer Platte gewählt und Höhe 100 % traf der Strahl die Vorderwand oben – eine nicht gewählte Fläche, die glatt bleibt –, also wurde nur die Kante zur Oberseite eingedrückt. Jetzt landet ein Text oder ein Bild „Einmal“ bei gewählten Flächen immer auf ihnen: Wo „Rundherum“ und „Höhe“ daneben zielen, geht die Mitte auf die gewählten Flächen, von der Seite gesehen, in die sie gemeinsam zeigen (sonst auf den Punkt, der ihrer Mitte am nächsten ist). Wo „Rundherum“ und „Höhe“ eine gewählte Fläche treffen, ändert sich nichts.
+
+Der Hinweis zu „Einmal“ sagt das, in den 15 Sprachen, die ihn haben, ebenso die Sätze der Anleitung zu „Einmal“ und zum Text-Etikett in Kapitel 3, in den 15 Sprachen, die sie haben.
+
+Tests
+- npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
+- Neu in tests/unit/surfaceTextureImageOnce.test.ts:
+  - eine 100-mm-Kugel mit einem Quadrat- und einem weißen Bild, eingeprägt und erhaben, bleibt geschlossen, jeder Punkt endlich, keine Kante über 15 mm (ohne die Änderung: Punkte nicht endlich);
+  - eine Platte mit gewählter Oberseite und Höhe 100 % bekommt das Bild nur in die Oberseite gedrückt, um ihre Mitte (schlägt ohne die Änderung fehl).
+
+Hinweise
+- nearestSurfacePoint (surfaceTextureUnfold.ts) nimmt optional eine Maske der Dreiecke, die zählen.
+- Stefans zweite Idee aus #1268 – der dunkelste Ton eines eigenen Bildes als 0, damit ein fast schwarzer Hintergrund nicht 0,2 mm einschneidet – ist nicht in diesem PR.

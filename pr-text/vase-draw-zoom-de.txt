@@ -1,0 +1,14 @@
+Titel: Vasen-Zeichnung: Die Ansicht behält ihren Zoom, wenn ein Punkt losgelassen wird, und ein Doppelklick auf die Linie fügt wieder einen Punkt ein
+
+Zusammenfassung
+Zwei Dinge im Fenster der Vasen-Zeichnung, beide in den Discussions gemeldet:
+- Hineingezoomt bleibt die Ansicht, wo sie ist (#1278). Nach dem Loslassen eines Punkts oder Griffs hat die Zeichnung die ganze Vase wieder eingepasst, sobald die Vase über die Ansicht hinausreichte – und hineingezoomt tut sie das immer. Wer ein Profil Punkt für Punkt fein einstellt, flog nach jedem Punkt wieder heraus. Jetzt folgt die Ansicht nur noch, wenn sie vor dem Ziehen die ganze Vase zeigte und die Vase darüber hinausgewachsen ist.
+- Ein Doppelklick auf die Linie fügt einen Punkt ein (#1252). Der Doppelklick wurde an der Linie selbst abgefragt, die ihn nie bekam: Das Drücken auf die Linie startet ein Verschieben der Ansicht, die Zeichenfläche übernimmt den Zeiger, also gehen Klick und Doppelklick an die Zeichenfläche – und der erste Klick hatte die Linie ohnehin schon neu gezeichnet. Jetzt fängt die Zeichenfläche den Doppelklick ab und fügt dort einen Punkt ein, wenn der Klick davor auf der Linie war, so wie die Hinweise es sagen. Genauso bei Körperform, Querschnitt und Verdrehung.
+
+Tests
+- npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
+- Neu tests/unit/vaseDrawingZoom.test.ts: vier Stufen hineingezoomt, ein Punkt in der Ansicht verschoben – die Ansicht bleibt; mit der ganzen Vase im Blick und einem weit herausgezogenen Punkt folgt sie. Schlägt ohne die Änderung fehl.
+- Neu tests/unit/vaseDrawingDoubleClick.test.ts: Doppelklick auf die Linie zwischen den zwei untersten Punkten fügt dort einen Punkt ein und wählt ihn; einer neben der Linie fügt keinen ein. Schlägt ohne die Änderung fehl.
+
+Hinweise
+- Nur apps/web/src/lib/vase/vase-editors.mjs; keine Texte geändert.
