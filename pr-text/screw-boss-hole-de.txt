@@ -1,0 +1,14 @@
+Titel: Schraubdom: als Loch gruppiert schneidet er nur sein Loch, die Tasche für den Einsatz
+
+Zusammenfassung
+In #1288 hat ein Schraubdom, als Loch gesetzt und mit einem Block gruppiert, den ganzen Pfosten herausgeschnitten: Ein Ring ging in den Block, ein Kern blieb darin stehen – gewollt war ein Sackloch für einen Gewindeeinsatz, so wie man eigene Abstandshalter und Blöcke baut und das Loch für den Einsatz hineinschneidet.
+
+Als Loch gesetzt ist der Schraubdom jetzt nur noch sein Loch: die Tasche vom Boden des Lochs (oder vom Fuß des Schraubdoms, wenn das Loch durchgeht) bis oben, mit der Einführfase an der Öffnung, so breit und tief wie die Größenliste es vorgibt (M3: 4,0 mm, 6,7 mm tief). Pfosten und Rippen spielen dann keine Rolle. In der Ansicht wird er auch so gezeigt, und der Abschnitt zum Schraubdom in der Anleitung sagt es in den 15 Sprachen, die ihn haben.
+
+Tests
+- npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
+- Neu tests/e2e/screwBossHole.e2e.ts (echter Rechenkern): ein Block 20 × 20 × 10 mm mit dem M3-Schraubdom als Loch in der Mitte, oben bündig; der gruppierte Körper ist der Block weniger genau der Tasche (etwa 81 mm³). Ohne die Änderung verliert er rund 410 mm³ (den Ring des Pfostens).
+- tests/unit/enclosureParts.test.ts: Die Tasche allein ist geschlossen, 6,7 mm tief von oben, nicht breiter als Loch und Fase, auch mit Rippen eingestellt; durchgehend, wenn so tief wie der Schraubdom; der Editor baut einen als Loch markierten Schraubdom so.
+
+Hinweise
+- Neu screwBossCavityMesh in lib/screwBoss.ts; createScrewBossGeometry nimmt es für ein Loch. Die Geometrie-Schlüssel in viewportShapeObjects.ts nehmen beim Schraubdom das Loch-Kennzeichen auf, damit die Ansicht beim Umschalten neu zeichnet.
