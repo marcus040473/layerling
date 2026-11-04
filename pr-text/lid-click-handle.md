@@ -15,7 +15,7 @@ Two wishes for the lid tool, both left to me in Discussions:
 
 MCP: `make_lid` takes `clickBumps` and `handle` and reports them. Texts in en, de, fr, nl, ru, cs, sl, da, es, it, pl, ar, zh-cn and zh-tw, a paragraph in guide chapter 6 in 15 languages, SKILL copies.
 
-This builds on #1291 (the hinge types and pin play); it is up to date with it.
+It builds on #1291 (the hinge types and pin play), which is in main now.
 
 ## Testing
 

@@ -13,7 +13,7 @@ Zwei Wünsche fürs Deckel-Werkzeug, beide in den Discussions mir überlassen:
 
 MCP: make_lid nimmt clickBumps und handle und meldet sie. Texte in 14 Sprachen, ein Absatz in Kapitel 6 der Anleitung in 15 Sprachen, SKILL-Kopien.
 
-Baut auf #1291 auf (Scharnier-Arten und Stift-Spiel) und ist auf dessen Stand.
+Baut auf #1291 auf (Scharnier-Arten und Stift-Spiel), das jetzt in main ist.
 
 Tests
 - npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
