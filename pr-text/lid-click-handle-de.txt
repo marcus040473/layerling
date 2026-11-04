@@ -1,0 +1,25 @@
+Titel: Deckel: Rastnoppen, die den Deckel einschnappen lassen, und eine Grifflasche oder Griffmulde
+
+Zusammenfassung
+Zwei Wünsche fürs Deckel-Werkzeug, beide in den Discussions mir überlassen:
+- Rastnoppen (#1234, dazu die Verschluss-Wünsche in #1220 und #1273): kleine halbe Noppen an der Lippe des Deckels (oder am Rand einer Kappe, nach innen) rasten in Mulden in der Wand des Körpers ein, so schnappt der Deckel ohne Magnete oder Zusatzteile fest.
+  - Eine Noppe ist eine 1,5-mm-Kugel auf halber Höhe der Lippe, sie ragt Spalt plus 0,4 mm über die Fläche; die Mulde ist eine 1,6-mm-Kugel am selben Mittelpunkt, 0,1 mm Spiel an der Spitze, und lässt immer 0,4 mm Wand stehen.
+  - Eine in der Mitte jeder geraden Seite ab 12 mm, zwei bei Seiten über 80 mm, vier gleichmäßig um eine runde Dose. Keine auf der Scharnier-Seite, neben einer Griffmulde oder an einer Trennwand, die für Mulden von beiden Seiten zu dünn ist.
+  - Die Mulden gehen als ein Loch zum Körper, mit ihm gruppiert, wie die Schlitze des Scharniers. Nicht bei flachem Deckel oder Drehzapfen (das wird gesagt).
+- Ein Griff (#1230): unter „Griff“ Keiner, Grifflasche oder Griffmulde, vorn oder gegenüber dem Scharnier.
+  - Grifflasche: 20 mm breit (höchstens die halbe Platte), 6 mm über die Kante der Platte hinaus, Ecken mit 3 mm gerundet, so dick wie die Platte, damit der Deckel weiter umgedreht ohne Stützen druckt.
+  - Griffmulde: eine 16 mm breite halbrunde Mulde in der Wand knapp unter der Deckelkante, höchstens 5 mm tief, nie weniger als 0,8 mm Wand.
+  - Abgelehnt beim Drehdeckel und wo die Seite zu kurz oder die Wand zu dünn ist, jeweils mit Grund.
+
+MCP: make_lid nimmt clickBumps und handle und meldet sie. Texte in 14 Sprachen, ein Absatz in Kapitel 6 der Anleitung in 15 Sprachen, SKILL-Kopien.
+
+Baut auf #1291 auf (Scharnier-Arten und Stift-Spiel) und ist auf dessen Stand.
+
+Tests
+- npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
+- Neu tests/e2e/lidClickHandle.e2e.ts (14 Tests, echter Rechenkern): Noppen und Mulden per Proben gefunden, vier Kappen à 1,41 mm³ und sonst nichts dazu, unter 0,01 mm³ Überlappung bei geschlossenem Deckel ohne die Schnitte; 6 Noppen an einer 100-mm-Kiste; Dose, Kappe, Trennwände; keine auf der Scharnier-Seite (hinten und rechts); Lasche: 6 mm, Breite, Höhe, Volumen, gegenüber einem Scharnier und an einer Kappe; Mulde: 0,8 mm Wand, runde Enden, Höhe bei Lippe und Kappe, bei vorderem Scharnier hinten; alle Ablehnungen. Gegenproben: ohne Noppen, Lasche, Scharnier-Ausnahme, Muldenwand oder mit kleineren Mulden schlagen jeweils 2 bis 5 Tests fehl.
+- tests/unit/lidTool.test.ts: Voreinstellungen, Prüfung der Werte, die Passt-Prüfungen, Noppen-Plätze an Kisten, einer Netz-Seite, einer abgerundeten Kiste, runden Dosen und einem Loch. tests/e2e/lidPanelHinge.e2e.ts: die zwei neuen Bedienelemente.
+
+Hinweise
+- Neu in lib/lidTool.ts: clickBumpPlaces, lidClickBumpsFit, lidHandleFits, LID_HANDLES; lidForSolid gibt clickBumps und handle zurück, lidForShapes macht aus ihren Schnitten Loch-Formen.
+- Ein Deckel mit Noppen oder Lasche wird als Netz gebaut, nicht als exakter CAD-Deckel.
