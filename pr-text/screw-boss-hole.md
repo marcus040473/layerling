@@ -9,7 +9,7 @@ Set as a hole, the boss is now its hole alone: the pocket from the hole's floor 
 ## Testing
 
 - `npm run typecheck`, `npm test`, `npm run test:e2e`, `npm run guide`, `npm run i18n:status`
-- New `tests/e2e/screwBossHole.e2e.ts` (real Manifold kernel): a 20 × 20 × 10 mm block with the M3 boss as a hole in its middle, top flush; the grouped body is the block less exactly the pocket (about 81 mm³). Without the change it loses some 410 mm³ (the post's ring).
+- New `tests/e2e/screwBossHole.e2e.ts` (real Manifold kernel): a 20 × 20 × 10 mm block with the M3 boss as a hole in its middle, top flush; the grouped body is the block less exactly the pocket (about 81 mm³). Without the change it loses about 415 mm³ (the post's ring).
 - `tests/unit/enclosureParts.test.ts`: the pocket alone is closed, 6.7 mm deep from the top, no wider than the hole and its chamfer, with gussets set too; through when as deep as the boss; the editor builds a boss marked as a hole that way.
 
 ## Notes

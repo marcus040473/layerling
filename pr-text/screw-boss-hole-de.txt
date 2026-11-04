@@ -7,7 +7,7 @@ Als Loch gesetzt ist der Schraubdom jetzt nur noch sein Loch: die Tasche vom Bod
 
 Tests
 - npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
-- Neu tests/e2e/screwBossHole.e2e.ts (echter Rechenkern): ein Block 20 × 20 × 10 mm mit dem M3-Schraubdom als Loch in der Mitte, oben bündig; der gruppierte Körper ist der Block weniger genau der Tasche (etwa 81 mm³). Ohne die Änderung verliert er rund 410 mm³ (den Ring des Pfostens).
+- Neu tests/e2e/screwBossHole.e2e.ts (echter Rechenkern): ein Block 20 × 20 × 10 mm mit dem M3-Schraubdom als Loch in der Mitte, oben bündig; der gruppierte Körper ist der Block weniger genau der Tasche (etwa 81 mm³). Ohne die Änderung verliert er rund 415 mm³ (den Ring des Pfostens).
 - tests/unit/enclosureParts.test.ts: Die Tasche allein ist geschlossen, 6,7 mm tief von oben, nicht breiter als Loch und Fase, auch mit Rippen eingestellt; durchgehend, wenn so tief wie der Schraubdom; der Editor baut einen als Loch markierten Schraubdom so.
 
 Hinweise
