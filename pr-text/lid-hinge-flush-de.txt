@@ -1,0 +1,33 @@
+Titel: Deckel-Scharnier: bündig in der Wand oder Drehdeckel auf zwei Stiften
+
+Zusammenfassung
+Das Scharnier sitzt hinter der Rückwand, die Knöchel machen die Kiste also tiefer (etwa 5,5 mm bei einem 1,75-mm-Stift). In der Facebook-Gruppe wollte jemand es lieber innen haben, und in #1220 ging es auch um den Platz des Scharniers. Im Deckel-Fenster gibt es jetzt unter „Scharnier“ die „Scharnier-Art“:
+
+- Außen (voreingestellt, wie bisher): hinter der Seite, der Deckel klappt ganz auf.
+- Bündig: Die Knöchel sitzen in der Rückwand, bündig mit ihrer Außenseite und der Deckel-Oberseite – die Kiste behält ihr Maß.
+  - Sie laufen von Ecke zu Ecke. Wo sie bei einer dünnen Wand in die Öffnung ragen, wachsen die der Kiste mit einer 45°-Schräge aus der Innenseite der Wand, so druckt die Kiste weiter stehend ohne Stützen.
+  - Die Wand ist um die Knöchel des Deckels ausgespart, die Platte des Deckels um die der Kiste, jeweils mit dem Scharnier-Spiel. Hinter der Achse bleiben nur die runden Knöchel, und die Lippe des Deckels endet vor den Knöcheln.
+  - Er öffnet bis etwa 140°.
+- Drehzapfen: Der Deckel liegt in der Öffnung, oben bündig mit dem Rand, und dreht sich auf zwei Stiften durch die Seitenwände – die Kiste behält ihr Maß.
+  - Seine hintere Kante ist eine runde Leiste; von außen geht durch jede Seitenwand ein Stift in das Ende der Leiste (Tropfenlöcher, jeweils mit der Spitze nach oben, wie das Teil gedruckt wird).
+  - Eine Auflage an den anderen Seiten hält ihn waagerecht; ihre Unterseite tritt in 45°-Stufen zurück.
+  - Er öffnet bis etwa 95° und bleibt offen an der Rückwand stehen. „Stift mitdrucken“ macht beide Stifte.
+
+Bündig und Drehzapfen brauchen eine gerade Seite (welche, wählt „Scharnierseite“) und gehen ohne Magnete, die dort säßen, wo Schlitze und Stifte sind; beides wird mit einer Meldung abgelehnt. Die Schlitze und Stiftlöcher der Kiste sind ein Loch, das mit ihr gruppiert wird, so wie die Magnettaschen.
+
+MCP: make_lid nimmt hingeStyle (outside, flush, pivot) und meldet es zurück. Texte in 14 Sprachen, Kapitel 6 der Anleitung in den neun Sprachen, die das Scharnier beschreiben, SKILL-Kopien.
+
+Bilder: bündig – die Kiste behält 60 × 40 mm, sieben Knöchel in der Rückwand, von hinten gesehen bündig; Drehzapfen – der Deckel mit seiner runden Leiste neben der Kiste, das Stiftloch in der Seitenwand.
+
+Tests
+- npm run typecheck, npm test, npm run test:e2e, npm run guide, npm run i18n:status
+- Neu tests/e2e/lidHingeStyles.e2e.ts (echter Manifold-Kern, Kiste 60 × 40 × 30 mm mit 2-mm-Wänden):
+  - bündig: Kiste mit Knöcheln und Schlitzen bleibt 60 × 40 und ein Stück; der geschlossene Deckel ist so groß wie die Kiste und überlappt nichts; in 5°-Schritten aufgeklappt berührt er bis 140° nichts; ein 1,75-mm-Filament geht ohne Berührung durch alle Knöchel;
+  - Drehzapfen: Kiste behält ihr Maß; der Deckel in der Öffnung überlappt nichts und liegt auf der Auflage (0,3 mm tiefer säße er darin); ein Filament-Stift von außen durch jede Seitenwand in die Leiste berührt nichts; öffnet bis 95°; mitgedruckte Stifte sind zwei, je 7,8 mm; an der rechten Seite gehen die Stifte durch Vorder- und Rückwand;
+  - bündig oder Drehzapfen mit Magneten wird abgelehnt, bündig und Drehzapfen an einer runden Dose auch.
+- tests/e2e/lidPanelHinge.e2e.ts: die drei Arten, „Außen“ voreingestellt, ein Klick gibt die Art weiter; die Knöchel-Anzahl ist beim Drehdeckel ausgeblendet. tests/unit/lidTool.test.ts: hingeStyle geprüft.
+- Im Browser: Kiste 60 × 40 × 30 mm, oben offen ausgehöhlt, Deckel → Scharnier → Bündig (sieben Knöchel, Kiste bleibt 60 × 40) und Drehzapfen (Deckel in der Öffnung, zwei Stiftlöcher), Bilder oben.
+
+Hinweise
+- Neu: pivotPlan und acrossAt in lib/lidTool.ts; hingePlan legt die Achse für bündig; LidHinge trägt cuts (Schlitze oder Stiftlöcher) und style.
+- Die Winkel (140°, 95°) gelten für die 2-mm-Platte und den 1,75-mm-Stift im Test; eine dickere Platte oder ein dickerer Stift ändert sie etwas.
