@@ -45,6 +45,7 @@ import { canApplySketchCornerTreatment } from "@/lib/sketchFilletChamfer";
 import { SKETCH_POLYGON_DEFAULT_SIDES, SKETCH_STAR_DEFAULT_INNER_PERCENT, sketchPrimitiveGeometry, sketchPrimitiveStartSize } from "@/lib/sketchPrimitives";
 import { cloneSketchProfile, orderedSketchPaths, sketchWithPointMode, withSmoothHandlesAfterRemoval, withSmoothSketchHandles } from "@/lib/sketchSmoothHandles";
 import { curveThroughPoints } from "@/lib/sketchCurveThroughPoints";
+import { addFreehandStroke, FREEHAND_CLOSE_PX, FREEHAND_TOLERANCE_PX, freehandStroke } from "@/lib/sketchFreehand";
 import { changesLockedOutline, setSketchPointsLocked, sketchLockState } from "@/lib/sketchLock";
 import { curveSketchSegment, isSegmentCurved, straightenSketchSegment } from "@/lib/sketchSegmentCurve";
 import { chordHandles, withBezierHandles, withBezierStartHandle } from "@/lib/sketchBezierHandles";
@@ -5469,6 +5470,7 @@ export function LayerlingEditor({
       arc: t("status.sketchTool.arc"),
       bezier: t("status.sketchTool.bezier"),
       smooth: t("status.sketchTool.smooth"),
+      freehand: t("status.sketchTool.freehand"),
       rectangle: t("status.sketchTool.rectangle"),
       circle: t("status.sketchTool.circle"),
       ellipse: t("status.sketchTool.ellipse"),
@@ -5621,6 +5623,25 @@ export function LayerlingEditor({
       setSketchSelection(null);
     },
     [commitSketchProfile, sketchConstruction, sketchProfile, workspaceSettings],
+  );
+
+  /** Freehand (#1280): a drawn stroke as sketch points - few, a corner where it turned sharply, closed when it ended at its start. */
+  const addSketchFreehand = useCallback(
+    (samples: Array<{ x: number; z: number }>, screenUnit: number) => {
+      const stroke = freehandStroke(samples, {
+        tolerance: FREEHAND_TOLERANCE_PX * screenUnit,
+        closeReach: FREEHAND_CLOSE_PX * screenUnit,
+        construction: sketchConstruction,
+      }, createLocalId);
+      if (!stroke) return;
+      // A stroke that starts or ends at an open end carries that line on (#1280).
+      const added = addFreehandStroke(sketchProfile, stroke, FREEHAND_CLOSE_PX * screenUnit);
+      const count = String(added.points);
+      commitSketchProfile(added.profile, added.closed ? t("status.sketchFreehandClosed", { count }) : t("status.sketchFreehandAdded", { count }));
+      setSketchActivePointId(null);
+      setSketchSelection(null);
+    },
+    [commitSketchProfile, sketchConstruction, sketchProfile],
   );
 
   const addSketchPrimitive = useCallback(
@@ -6050,7 +6071,7 @@ export function LayerlingEditor({
   const toggleSketchConstruction = useCallback(() => {
     const next = !sketchConstruction;
     setSketchConstruction(next);
-    if (next && !["line", "bezier", "smooth"].includes(sketchTool)) setActiveSketchTool("line");
+    if (next && !["line", "bezier", "smooth", "freehand"].includes(sketchTool)) setActiveSketchTool("line");
     setNotice(t(next ? "status.sketchConstructionOn" : "status.sketchConstructionOff"));
   }, [setActiveSketchTool, sketchConstruction, sketchTool]);
 
@@ -15956,8 +15977,9 @@ export function LayerlingEditor({
     setShapeContextMenu(null);
     setMenuHighlightIds([]);
   }, []);
-  const openShapeContextMenu = useCallback((request: { shapeId: string | null; clientX: number; clientY: number; stackIds: string[]; facePoint?: { x: number; y: number; z: number } }) => {
-    setShapeContextMenu({ x: request.clientX, y: request.clientY, onShape: Boolean(request.shapeId), stack: request.stackIds, facePoint: request.facePoint });
+  const openShapeContextMenu = useCallback((request: { shapeId: string | null; clientX: number; clientY: number; stackIds: string[]; inSelection?: boolean; facePoint?: { x: number; y: number; z: number } }) => {
+    // Empty space inside the selection frame counts as the selection, so it gets the full menu too (#1282).
+    setShapeContextMenu({ x: request.clientX, y: request.clientY, onShape: Boolean(request.shapeId) || Boolean(request.inSelection), stack: request.stackIds, facePoint: request.facePoint });
     setMenuHighlightIds([]);
   }, []);
   // Locking (Ctrl+L, the outliner, the inspector) while a tool is open puts the tool down,
@@ -16407,6 +16429,7 @@ export function LayerlingEditor({
             fromMiddle={sketchFromMiddle}
             onAddPrimitive={addSketchPrimitive}
             onAddArc={addSketchArc}
+            onFreehandStroke={addSketchFreehand}
             onPointPress={pressSketchPoint}
             onFinishLine={() => setSketchActivePointId(null)}
             onSelectSegment={(id) => {
