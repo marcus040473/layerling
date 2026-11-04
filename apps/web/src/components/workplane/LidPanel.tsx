@@ -10,6 +10,7 @@ import { ToolAdvanced, ToolApply, ToolCancel, ToolGroup, ToolHelp, ToolHint, Too
 import {
   LID_FITS,
   LID_HINGE_SIDES,
+  LID_HINGE_STYLES,
   LID_HINGE_TYPES,
   LID_MAGNET_SIZES,
   LID_TYPES,
@@ -222,9 +223,29 @@ export function LidPanel({
           label={t("lid.hinge")}
           checked={hinged}
           disabled={busy || !hingeFits}
-          summary={`${t(`shell.side.${settings.hingeSide}`)} · Ø ${millimetres(settings.hingePin)} mm`}
+          summary={`${t(`lid.hingeStyle.${settings.hingeStyle}`)} · ${t(`shell.side.${settings.hingeSide}`)} · Ø ${millimetres(settings.hingePin)} mm`}
           onCheck={(hinge) => onChange({ hinge })}
         >
+          {/* Where it sits: behind the back, in the wall (the box keeps its size), or a lid that turns on two pins. */}
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.hingeStyle")}>
+            <span>{t("lid.hingeStyle")}</span>
+            <div className="shell-opening-options">
+              {LID_HINGE_STYLES.map((style) => (
+                <button
+                  key={style}
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.hingeStyle === style}
+                  className={settings.hingeStyle === style ? "active" : ""}
+                  disabled={busy}
+                  onClick={() => onChange({ hingeStyle: style })}
+                >
+                  {t(`lid.hingeStyle.${style}`)}
+                </button>
+              ))}
+            </div>
+            <ToolHint text={t(`lid.hingeStyleHint.${settings.hingeStyle}`)} />
+          </div>
           {/* The side it goes along, as in the starting view (the view cube's Front faces you). */}
           <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.hingeSide")}>
             <span>{t("lid.hingeSide")}</span>
@@ -255,17 +276,20 @@ export function LidPanel({
             disabled={busy}
             onChange={(value) => onChange({ hingePin: value })}
           />
-          <EdgeModifierSlider
-            label={t("lid.hingeKnuckles")}
-            value={settings.hingeKnuckles}
-            min={0}
-            max={MAX_HINGE_KNUCKLES}
-            step={1}
-            workspace={workspace}
-            decimals={0}
-            disabled={busy}
-            onChange={(value) => onChange({ hingeKnuckles: normalizeLidOptions({ hingeKnuckles: value }).hingeKnuckles })}
-          />
+          {/* A pivot lid turns on two pins and has no knuckles to count. */}
+          {settings.hingeStyle === "pivot" ? null : (
+            <EdgeModifierSlider
+              label={t("lid.hingeKnuckles")}
+              value={settings.hingeKnuckles}
+              min={0}
+              max={MAX_HINGE_KNUCKLES}
+              step={1}
+              workspace={workspace}
+              decimals={0}
+              disabled={busy}
+              onChange={(value) => onChange({ hingeKnuckles: normalizeLidOptions({ hingeKnuckles: value }).hingeKnuckles })}
+            />
+          )}
           <label className="edge-modifier-field offset-copy">
             <input type="checkbox" checked={settings.hingeTeardrop} disabled={busy} onChange={(event) => onChange({ hingeTeardrop: event.target.checked })} />
             <span>{t("lid.hingeTeardrop")}</span>
