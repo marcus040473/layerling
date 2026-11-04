@@ -9,6 +9,7 @@ import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolGroup, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
   LID_FITS,
+  LID_HANDLES,
   LID_HINGE_SIDES,
   LID_HINGE_STYLES,
   LID_HINGE_TYPES,
@@ -34,6 +35,8 @@ import {
   MIN_MAGNET_DIAMETER,
   MIN_MAGNET_HEIGHT,
   hingeKnuckleRadius,
+  lidClickBumpsFit,
+  lidHandleFits,
   lidThicknessForMagnets,
   normalizeLidOptions,
   type LidOptions,
@@ -99,6 +102,10 @@ export function LidPanel({
   // A rim round the outside would hit the back wall as the lid swings open: the hinge goes with a lip or a flat lid.
   const hingeFits = LID_HINGE_TYPES.includes(settings.type);
   const hinged = settings.hinge && hingeFits;
+  // Click bumps stand on a lip or a rim; a pivot lid has neither, nor an edge for a tab or a finger.
+  const bumpsFit = lidClickBumpsFit(settings);
+  const handleFits = lidHandleFits(settings);
+  const handle = handleFits ? settings.handle : "none";
   // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's and the pin's play.
   const summary = [
     ...(lipped ? [t("lid.gap"), t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth"), t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall")] : []),
@@ -303,6 +310,39 @@ export function LidPanel({
           <ToolHint text={t("lid.hingeHint", { diameter: millimetres(Math.round(2 * hingeKnuckleRadius(settings) * 10) / 10) })} />
         </ToolGroup>
         {!hingeFits ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
+
+        <ToolGroup
+          tool="lid-click"
+          label={t("lid.clickBumps")}
+          checked={settings.clickBumps && bumpsFit}
+          disabled={busy || !bumpsFit}
+          onCheck={(clickBumps) => onChange({ clickBumps })}
+        >
+          <ToolHint text={t("lid.clickBumpsHint")} />
+        </ToolGroup>
+        {/* Refused for a flat lid or pivot pins: the reason first, where the hint folds after one sentence. */}
+        {!bumpsFit ? <ToolHint text={t("lid.error.clickBumpsNoLip")} /> : null}
+
+        {/* On the side the lid opens at: the front, or opposite the hinge. */}
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.handle")}>
+          <span>{t("lid.handle")}</span>
+          <div className="shell-opening-options">
+            {LID_HANDLES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={handle === option}
+                className={handle === option ? "active" : ""}
+                disabled={busy || (!handleFits && option !== "none")}
+                onClick={() => onChange({ handle: option })}
+              >
+                {t(`lid.handle.${option}`)}
+              </button>
+            ))}
+          </div>
+          {!handleFits ? <ToolHint text={t("lid.error.handlePivot")} /> : handle !== "none" ? <ToolHint text={t(`lid.handleHint.${handle}`)} /> : null}
+        </div>
       </ToolSection>
 
       {summary ? (
