@@ -8501,9 +8501,9 @@ export function LayerlingEditor({
       setLidTool(null);
       return;
     }
-    const { type, thickness, gap, depth, wall, magnets, magnetDiameter, magnetHeight, magnetGap, hinge, hingePin, hingeGap, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle } = lidTool;
+    const { type, thickness, gap, depth, wall, magnets, magnetDiameter, magnetHeight, magnetGap, hinge, hingePin, hingeGap, hingePinPlay, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle } = lidTool;
     setLidTool((current) => current ? { ...current, busy: true, error: null } : current);
-    void makeLid({ type, thickness, gap, depth, wall, magnets, magnetDiameter, magnetHeight, magnetGap, hinge, hingePin, hingeGap, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle }, targets).then((result) => {
+    void makeLid({ type, thickness, gap, depth, wall, magnets, magnetDiameter, magnetHeight, magnetGap, hinge, hingePin, hingeGap, hingePinPlay, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle }, targets).then((result) => {
       if (result.ok) setLidTool(null);
       else setLidTool((current) => current ? { ...current, busy: false, error: result.message } : current);
     });
@@ -12881,6 +12881,7 @@ export function LayerlingEditor({
           hinge: params.hinge,
           hingePin: params.hingePin,
           hingeGap: params.hingeGap,
+          hingePinPlay: params.hingePinPlay,
           hingeKnuckles: params.hingeKnuckles,
           hingePrintPin: params.hingePrintPin,
           hingeSide: params.hingeSide,

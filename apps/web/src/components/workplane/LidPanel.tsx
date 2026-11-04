@@ -17,6 +17,7 @@ import {
   MAX_HINGE_GAP,
   MAX_HINGE_KNUCKLES,
   MAX_HINGE_PIN,
+  MAX_HINGE_PIN_PLAY,
   MAX_LID_DEPTH,
   MAX_LID_GAP,
   MAX_LID_THICKNESS,
@@ -26,6 +27,7 @@ import {
   MAX_MAGNET_HEIGHT,
   MIN_HINGE_GAP,
   MIN_HINGE_PIN,
+  MIN_HINGE_PIN_PLAY,
   MIN_LID_DEPTH,
   MIN_LID_THICKNESS,
   MIN_LID_WALL,
@@ -80,7 +82,7 @@ export function LidPanel({
   const needed = lidThicknessForMagnets(settings);
   const tooThin = settings.magnets && settings.thickness < needed - 1e-9;
   const millimetres = (value: number) => value.toLocaleString(numberLocale());
-  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap" | "hingeGap", min: number, max: number, step: number) => (
+  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap" | "hingeGap" | "hingePinPlay", min: number, max: number, step: number) => (
     <EdgeModifierSlider
       label={label}
       value={settings[key]}
@@ -97,11 +99,11 @@ export function LidPanel({
   // A rim round the outside would hit the back wall as the lid swings open: the hinge goes with a lip or a flat lid.
   const hingeFits = LID_HINGE_TYPES.includes(settings.type);
   const hinged = settings.hinge && hingeFits;
-  // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's play.
+  // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's and the pin's play.
   const summary = [
     ...(lipped ? [t("lid.gap"), t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth"), t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall")] : []),
     ...(settings.magnets ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
-    ...(hinged ? [t("lid.hingeGap")] : []),
+    ...(hinged ? [t("lid.hingeGap"), t("lid.hingePinPlay")] : []),
   ].join(", ");
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
@@ -316,6 +318,7 @@ export function LidPanel({
             {slider(t("lid.magnetGap"), "magnetGap", 0, MAX_MAGNET_GAP, 0.05)}
           </>) : null}
           {hinged ? slider(t("lid.hingeGap"), "hingeGap", MIN_HINGE_GAP, MAX_HINGE_GAP, 0.05) : null}
+          {hinged ? slider(t("lid.hingePinPlay"), "hingePinPlay", MIN_HINGE_PIN_PLAY, MAX_HINGE_PIN_PLAY, 0.05) : null}
         </ToolAdvanced>
       ) : null}
 
