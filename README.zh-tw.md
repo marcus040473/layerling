@@ -48,6 +48,7 @@ layerling 比 Tinkercad 再往 Fusion 360 靠近一步：操作方式相同，�
 - **孔陣列。** 點擊平面，把圓孔、方孔、矩形孔、六角孔或長圓孔鋪滿它，可排成網格或交錯排列，並設定間距、邊距與深度——通風口、喇叭網罩和籃子一步完成。
 - **按百分比縮放。** 把一個或多個零件按百分比放大或縮小——可整體縮放，讓排列跟著變大，也可各自原地縮放。
 - **匹配尺寸。** 在對齊點上按住 Alt，零件會拉伸而不是移動：拉到另一個零件的側面，或拉到它的寬度、長度或高度——例如把盒子換成同樣大小的圓柱。
+- **等間距。** 把大小不同的零件分布開，讓它們之間的間距處處相同：在最外側的兩個零件之間、在板上並讓邊緣留出同樣的間距，或者逐行分布，例如插板拼圖；也可以直接輸入間距。
 - **量測與看進內部。** 捲尺、標尺、能把模型切開的剖視圖，以及可回看先前狀態的歷史記錄滑桿。
 - **底層是真正的幾何。** layerling 保留精確的 CAD 形狀，而不只是一堆網格，所以圓角始終是圓角——一路保留到供完整 CAD 程式使用的 STEP 檔。
 
@@ -79,7 +80,7 @@ layerling 比 Tinkercad 再往 Fusion 360 靠近一步：操作方式相同，�
 - **懸垂與線材**——「顯示懸垂」會用剖面線標出所有比 45°（或你印表機的角度）更陡、需要支撐的面，匯出視窗會在切片前顯示體積、重量和線材公尺數。
 - **形狀庫**——長方體、圓柱、膠囊體（需要時一端可以更小，例如做皮帶罩）、球體、圓錐、彎曲圓錐（喇叭形或圓頂形）、角錐、楔形、文字、屋頂、半球、圓環、管、從一個輪廓放樣到另一個輪廓（例如方形到圓形，實心或帶壁，直的或平滑外擴，扭轉或頂部傾斜）、三到二十四邊的多邊形柱體、螺旋彈簧和扁平彈簧（圓波、鋸齒或方形，兩端帶吊環或凸片）、可直接列印的鉸鏈、用於熱熔螺母或自攻螺絲的螺絲柱（M2 到 M5、#2-56 到 1/4-20）、帶卡座的卡扣、加強肋和三角補強板、Gridfinity 收納盒和底板、滾花握把（直紋、交叉紋或圓紋）等等。
 - **花瓶、花盆與燈罩** – 專門的花瓶形狀：瓶身形狀、截面（也可手繪）並可過渡到第二種截面、旋轉、圖案、排水孔、底腳、托盤和蓋子，可做實心（用於切片軟體的花瓶模式）或空心。茶壺蓋就是花瓶自己的頂部，凹槽和扭轉會越過接縫繼續。由 @marcus040473 貢獻。
-- **能配合的螺紋**——螺桿、帶內六角、沉頭、六角、方頭、法蘭、蝶形頭或星形旋鈕的螺絲（頭部和螺紋之間還可以加一個凸肩）、六角、方形、法蘭、蝶形和星形旋鈕螺帽、沉頭螺絲用的裝飾墊圈，以及攻牙孔。從 M2 到 M12、從 #4 到一英吋的 UNC/UNF，以及 G1/16 到 G4 的惠氏管螺紋（ISO 228-1），選一下就有；也可以自己設直徑和螺距，還支援左旋；英制或 G 規格會用每英吋牙數取代公釐。端部可以倒角，而攻牙孔是切割體：把它放進零件裡組成群組，出來的孔就帶螺紋。
+- **能配合的螺紋**——螺桿、帶內六角、沉頭、六角、方頭、法蘭、蝶形頭或星形旋鈕的螺絲（頭部和螺紋之間還可以加一個凸肩）、六角、方形、法蘭、蝶形和星形旋鈕螺帽、沉頭螺絲用的裝飾墊圈，以及攻牙孔。從 M2 到 M12、從 #4 到一英吋的 UNC/UNF，以及 G1/16 到 G4 的惠氏管螺紋（ISO 228-1）以及 1/16" 到 4" 的 NPT 錐管螺紋（ASME B1.20.1），選一下就有；也可以自己設直徑和螺距，還支援左旋；英制或 G 規格會用每英吋牙數取代公釐。端部可以倒角，而攻牙孔是切割體：把它放進零件裡組成群組，出來的孔就帶螺紋。
 - **能齧合的齒輪**——正齒輪、斜齒輪、人字齒輪和傘齒輪，以及內齒輪和齒條，採用漸開線齒形，像齒輪產生器一樣按模數和齒數設定，並可設定壓力角和列印用背隙——也可以使用圓齒，在小尺寸列印齒輪上更寬容，在旋鈕上握感滑順。選取兩個齒輪，面板會給出它們齧合的中心距。
 - **Hirth 端齒聯軸** – 一個帶有從中心向外延伸的 V 形齒的圓盤：翻轉的副本可以依任意整數個齒的角度與之嚙合並自動定心，適用於可調鉸鏈、三腳架雲台和分度旋鈕。可設定齒數、齒高和內孔；它是精確實體，可用於邊緣工具和 STEP。
 - **實體與孔**——把形狀變成切割體，再組成群組形成最終幾何。編輯群組（**E**）會把群組的零件攤開放置以便修改，完成後按「完成」重新建立——群組裡再套群組也可以，無論設計巢狀多深。
@@ -153,7 +154,7 @@ layerling 比 Tinkercad 再往 Fusion 360 靠近一步：操作方式相同，�
 - [I Tried Layerling After Tinkercad… Is It REALLY Better?](https://youtu.be/5DpOxdoNwqs) – Maker Mates Studio 3D Printing（英語）。一位 Tinkercad 使用者試用 layerling，並比較兩者。
 - [Print by Layer](https://www.youtube.com/playlist?list=PLejZBz4L7CGQ) – Print N Repeat（英語）。一個關於 layerling 的播放清單，目前收錄「The EASIEST Way to Design Hinges in Layerling」和「The EASIEST Way to 3D Model Threads!」。
 - [Tinkercad Too Basic? Fusion 360 Too Much? Meet Layerling for 3D Printing](https://youtu.be/kzV7fQ3rXhw) – 3D Jesus | 3D Printing & Design（英語）。在完全沒有手冊的情況下初次試用 layerling：圓角與倒角、抽殼、螺紋、草圖、旋轉實體、陣列、匯入與印表機設定。
-- [Layerling en español: el CAD gratis que reemplaza a Tinkercad (2026)](https://youtu.be/iroftGBX-0Y) – Random Maker（西班牙語）。一位多年使用 Tinkercad 的使用者的初次體驗：介面感受如何、有哪些不同、layerling 能做哪些在 Tinkercad 中很難或做不到的事，以及適合哪些人。
+- [Layerling en español | Del primer contacto al proyecto completo](https://www.youtube.com/playlist?list=PLVWA8wsStnyw) – Random Maker（西班牙語）。一個西班牙語播放清單，從初次接觸 layerling 到完整專案：它與 Tinkercad 有何不同、逐項比較，以及如何在兩者之間遷移專案。
 - [Proyectos en Layerling](https://www.youtube.com/playlist?list=PLTEdmvVC2bxs) – Fulcro 1900（西班牙語）。一個 layerling 專案播放清單，目前包括把 layerling 介紹為比 Tinkercad 更完整的免費工具、桌面配件（三個模型）、手機殼，以及螺桿、螺帽和螺絲。
 - [Layerling](https://www.youtube.com/playlist?list=PLQuXPoMXTnRQ) – Werkplaats Marc（荷蘭語）。一個關於 layerling 的播放清單，目前收錄給 Tinkercad 使用者的初探（「Layerling - De Gratis Tussenstap van Tinkercad naar Fusion 360」）和草圖教學：描摹照片、旋轉與沿路徑掃掠（「Schetsen Uitgelegd」）。
 <!-- videos:end -->
