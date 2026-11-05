@@ -26,6 +26,7 @@ U složitého modelu pomůže seznam všech tvarů: {{ui:editor.tool.showOutline
 - {{ui:outliner.rename}} přiřadí vlastní název. Stejně funguje tužka nahoře v nastavení vybraného tvaru. Smysluplné názvy usnadňují práci ve velkém projektu.
 - Tlačítko A–Z v záhlaví ({{ui:outliner.sortByName}}) seřadí pojmenované tvary abecedně, čísla počítá jako čísla (Díl 2 před Dílem 10). Tvary s výchozím názvem zůstanou pod nimi v pořadí přidání, nejnovější na konci, a díly ve skupinách se řadí stejně. Mění se jen seznam, nikdy projekt. Druhé kliknutí ukáže vše znovu v pořadí přidání a prohlížeč si volbu zapamatuje.
 - Úchyt na levé straně řádku (šest teček) přesune tvar v seznamu: přetáhněte jej nahoru nebo dolů, nebo na něj přejděte a stiskněte [[↑]] nebo [[↓]]. Tím se mění vlastní pořadí návrhu, ke kterému se seznam vrací bez řazení A–Z, a Zpět to vrátí. Při řazení A–Z nebo vyhledávání jsou úchyty skryté.
+- Chcete-li tvar vložit do skupiny, rozbalte skupinu šipkou a přetáhněte tvar za úchyt na díly skupiny; skupina dostane oranžový rámeček. Tvar zůstane, kde je, a ponechá si název, stejně jako skupina: skupina se s ním znovu sloučí, svazek ho jen přijme. Díly rozbalené skupiny mají vlastní úchyt: vytažený ze skupiny leží díl opět samostatně, na místě seznamu, kde ho pustíte, nebo ho pusťte na jinou rozbalenou skupinu a přesune se do ní. Skupina, které zůstane jediný díl, zanikne a zůstane po ní ten díl. Zpět vrátí každý z těchto kroků najednou. Během úprav skupiny to nejde.
 - Vyhledávání používá názvy i typy, například válec nebo výřez, a prochází libovolně vnořená sloučení. Nadřazené celky zůstanou v seznamu a rozbalí cestu k nalezeným částem. Celek nalezený vlastním názvem po rozbalení ukazuje všechny části.
 - Šipka vlevo v záhlaví sbalí seznam na záhlaví a znovu jej rozbalí.
 
@@ -63,7 +64,7 @@ Vedle prostředního bodu každé čáry stojí širší bod s čárkou na každ
 
 Je-li mezi vybranými tvary deska, která je v tomto směru delší než všechny ostatní, tvary se rozmístí na ní: mezera k jejím okrajům je stejná jako mezi tvary a jediný tvar přijde doprostřed. Tvary v několika řadách, jako zvířátka vkládací skládačky, se rozmístí řadu po řadě; tvary, jejichž kvádry se překrývají napříč směrem, tvoří jednu řadu. Kde tvary nestojí v čistých sloupcích, jako zvířátka zepředu dozadu, posouvají se tvary stojící vedle sebe místo toho jako celá řada.
 
-Bez desky nejdřív klikněte na volné místo podložky: podložka je pak pevný tvar, stejné mezery rozmístí tvary po celé podložce se stejnou mezerou k jejím okrajům a ostatní body je zarovnají k jejím okrajům nebo středu. Další klik na volnou podložku ji uvolní.
+Bez desky nejdřív se stisknutým [[Shift]] klikněte na volné místo podložky: podložka je pak pevný tvar, stejné mezery rozmístí tvary po celé podložce se stejnou mezerou k jejím okrajům a ostatní body je zarovnají k jejím okrajům nebo středu. Další klik se [[Shift]] na volnou podložku ji uvolní. Klik do prázdna bez [[Shift]] zarovnání ukončí, stejně jako [[L]] a [[Esc]].
 
 Podržte [[Alt]] a klikněte na bod, chcete-li mezeru zadat sami, třeba 5 mm: tvary se seřadí v této vzdálenosti, od prvního tvaru nebo od toho, na který jste klikli jako první; na desce přijde řada doprostřed. Zamčený tvar zůstane na místě, takže jeden mezi krajními tvary stejným mezerám zabrání.
 

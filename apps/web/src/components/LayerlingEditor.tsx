@@ -122,6 +122,7 @@ import { bodyOverhang, overhangBodies, overhangFigures, overhangFiguresText, typ
 import { sectionMeasurement, sectionPointToWorld, snapSectionPoint } from "@/lib/sectionMeasure";
 import { DEFAULT_INFILL_PERCENT, DEFAULT_WALLS, PRINT_MATERIAL_DENSITY, PRINT_MATERIALS, FILAMENT_DIAMETER_MM, normalizePrintMaterial, printEstimate, printEstimateWithInfill } from "@/lib/printEstimate";
 import { matchingEdgeIds } from "@/lib/edgeMatching";
+import { readEdgeModifierSettings, rememberEdgeModifierSetting, startingEdgeModifierAmount, type EdgeModifierSettings } from "@/lib/edgeModifierMemory";
 import { CAD_MODIFIER_MAX_SHARP_ANGLE, CAD_MODIFIER_REQUEST_TIMEOUT_MS, CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT, cadModifierPrepareTimeoutMs, cadModifierTimeoutMessage, cadModifierUserErrorMessage, cadModifierWorkerFailureMessage, cadModifierCandidateEdge, cadModifierPresetValues, defaultCadModifierTangentChain, rescueSharpAngleForEdges, selectableCadModifierEdge, type CadModifierRequestPhase } from "@/lib/cadModifierRuntime";
 import { isThinFace, thinFacesWith } from "@/lib/cadThinFaces";
 import { createCadPreviewQueue } from "@/lib/cadPreviewQueue";
@@ -251,6 +252,7 @@ import { emptySketchProfile, cadShapeFromSketchProfile, cadShapeFromSketchSweep,
 import { drawingLabelsInLanguage } from "@/lib/drawingLabels";
 import { DEFAULT_TEXT_BLOCK_GAP, offersTextBlock, TEXT_BLOCK_ALIGNS, textBlockFor, textBlockLines, type TextBlockAlign, type TextBlockOptions } from "@/lib/textBlock";
 import { offersTextLayers, textLayerStack, layeredTextShape, nameTagSource, nameTagsFor, offersIconLayers, iconLayerStack, iconTagArea, layeredIconShape, iconTagCopies, svgIconArea, iconTagFromSvg, keyringTabShape, keyringTabTag, keyringTabAt, keyringTabPlace, textFreeKeyring, textFreeKeyringPlace, iconFreeKeyring, iconFreeKeyringPlace } from "@/lib/editorTextTags";
+import { isNonTextControl, isTypingTarget } from "@/lib/editorKeyTargets";
 import { DEFAULT_KEYRING_DIAMETER } from "@/lib/textGeometry";
 import { TopPanel, DirectExportFormat, SvgExportView, DxfExportView, ViewImageOptions, LylHistoryLimit, LylExportTarget, TopActionPanel } from "./workplane/TopActionPanel";
 import { ToolbarMode, SketchShapeOptions, SecondaryToolbar } from "./workplane/SecondaryToolbar";
@@ -7487,6 +7489,12 @@ export function LayerlingEditor({
     setNotice(t("status.edgeCancelled"));
   }, [invalidateCadModifierSession]);
 
+  // A setting the user changed in the edge panel stays for the next start of the same tool (#1342).
+  const keepEdgeSetting = useCallback((patch: EdgeModifierSettings) => {
+    const current = edgeModifierRef.current;
+    if (current?.prepared) rememberEdgeModifierSetting(current.kind, patch);
+  }, []);
+
   const startEdgeModifier = useCallback((kind: CadModifierKind) => {
     setShellTool(null);
     if (refuseBodyLockedSelection()) return;
@@ -7587,7 +7595,14 @@ export function LayerlingEditor({
         return;
       }
     }
-    const amount = Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(1, shapeWidth(selectedShape) / 6, shapeDepth(selectedShape) / 6, selectedShape.height / 6));
+    // The settings last chosen for this tool in this browser, so Apply, Undo and the next start keep them (#1342).
+    const kept = readEdgeModifierSettings(kind);
+    const largestDimension = Math.max(shapeWidth(selectedShape), shapeDepth(selectedShape), selectedShape.height);
+    const amount = startingEdgeModifierAmount(
+      kept,
+      Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(1, shapeWidth(selectedShape) / 6, shapeDepth(selectedShape) / 6, selectedShape.height / 6)),
+      Math.max(MIN_EDGE_MODIFIER_AMOUNT, largestDimension * 0.99),
+    );
     cadModifierBaseShapeRef.current = selectedShape;
     cadModifierBaseFingerprintRef.current = projectShapesFingerprint([selectedShape]);
     cadModifierSourcePartsRef.current = sourceParts;
@@ -7600,10 +7615,12 @@ export function LayerlingEditor({
       edges: [],
       selectedEdgeIds: [],
       amount,
-      sharpAngle: 25,
-      chamferAngle: 45,
-      quality: "standard",
+      sharpAngle: kept.sharpAngle ?? 25,
+      chamferAngle: kept.chamferAngle ?? 45,
+      quality: kept.quality ?? "standard",
       tangentChain: defaultCadModifierTangentChain(appliedEdgeTreatmentCount),
+      ...(kept.onlyVisibleEdges !== undefined ? { onlyVisibleEdges: kept.onlyVisibleEdges } : {}),
+      ...(kind === "fillet" && kept.concave !== undefined ? { concave: kept.concave } : {}),
       preserveEdgeSize: selectedShape.edgeResizeMode === "preserve",
       busy: true,
       prepared: false,
@@ -10689,6 +10706,41 @@ export function LayerlingEditor({
     return { ok: true, message, groupId: session.original.id };
   }, [commitOpenGroupTransition, refuseOpenGroupStep]);
 
+  /**
+   * A group built again from these parts, as Done builds an opened one: the same group, not a new one - its id stays,
+   * so anything holding it (MCP, the object list, the level around it) still finds it, with its name, see-through,
+   * hidden, solid or hole, its own colour and its pivot (#807). Adding to or taking from it in the list does the same (#1338).
+   */
+  const rebuildGroupFromParts = useCallback(async (original: WorkplaneShape, parts: WorkplaneShape[]): Promise<{ group: WorkplaneShape; mergeWarning: string } | { group: null; failure: string }> => {
+    const operation = original.groupOperation === "intersection" || original.groupOperation === "hull" || original.groupOperation === "bundle" || original.groupOperation === "loft" ? original.groupOperation : "group";
+    const result = operation === "intersection"
+      ? await buildIntersectionShapeFromSelection(parts, workspaceSettingsRef.current.booleanTriangleLimit)
+      : operation === "hull"
+        ? await buildHullShapeFromSelection(parts, workspaceSettingsRef.current.booleanTriangleLimit)
+        : operation === "loft"
+        ? await buildSketchLoftFromSelection(parts)
+        : operation === "bundle"
+        ? { group: groupedShape(parts) }
+        : await buildGroupedShapeOffThread(parts, workspaceSettingsRef.current.booleanTriangleLimit, geometryAbortRef.current?.signal);
+    if (!result.group) {
+      return { group: null, failure: "failureNotice" in result && result.failureNotice ? result.failureNotice : t("status.groupChanged") };
+    }
+    // Its colour stays if it had been given one apart from its first part.
+    const firstSolid = original.groupedShapes?.find((child) => !child.hole) ?? original.groupedShapes?.[0];
+    const ownColour = Boolean(firstSolid && firstSolid.color !== original.color);
+    const rebuilt = canonicalizeShape({ ...result.group, groupOperation: operation });
+    const group = canonicalizeShape(carryShapePivot(original, withHoleMode({
+      ...rebuilt,
+      id: original.id,
+      name: original.name,
+      color: ownColour ? original.color : rebuilt.color,
+      transparent: original.transparent,
+      hidden: original.hidden,
+    }, Boolean(original.hole))));
+    const mergeWarning = "mergeWarning" in result && typeof result.mergeWarning === "string" ? result.mergeWarning : "";
+    return { group, mergeWarning };
+  }, []);
+
   const finishOpenGroup = useCallback(async (): Promise<OpenGroupOutcome> => {
     const levels = openGroupsRef.current;
     const session = levels.at(-1);
@@ -10722,16 +10774,7 @@ export function LayerlingEditor({
     openGroupBusyRef.current = true;
     setOpenGroupBusy(true);
     try {
-      const operation = original.groupOperation === "intersection" || original.groupOperation === "hull" || original.groupOperation === "bundle" || original.groupOperation === "loft" ? original.groupOperation : "group";
-      const result = operation === "intersection"
-        ? await buildIntersectionShapeFromSelection(parts, workspaceSettingsRef.current.booleanTriangleLimit)
-        : operation === "hull"
-          ? await buildHullShapeFromSelection(parts, workspaceSettingsRef.current.booleanTriangleLimit)
-          : operation === "loft"
-          ? await buildSketchLoftFromSelection(parts)
-          : operation === "bundle"
-          ? { group: groupedShape(parts) }
-          : await buildGroupedShapeOffThread(parts, workspaceSettingsRef.current.booleanTriangleLimit, geometryAbortRef.current?.signal);
+      const result = await rebuildGroupFromParts(original, parts);
       if (
         projectInfoRef.current.projectId !== sourceProjectId ||
         projectShapesFingerprint(shapesRef.current) !== sourceFingerprint ||
@@ -10739,28 +10782,10 @@ export function LayerlingEditor({
       ) {
         return refuseOpenGroupStep(t("status.groupChanged"));
       }
-      if (!result.group) {
-        return refuseOpenGroupStep("failureNotice" in result && result.failureNotice ? result.failureNotice : t("status.groupChanged"));
-      }
-      // The group keeps what was its own: name, solid or hole, see-through, hidden -
-      // and its colour, if it had been given one apart from its first part.
-      const firstSolid = original.groupedShapes?.find((child) => !child.hole) ?? original.groupedShapes?.[0];
-      const ownColour = Boolean(firstSolid && firstSolid.color !== original.color);
-      const rebuilt = canonicalizeShape({ ...result.group, groupOperation: operation });
-      // The same group, not a new one: its id stays, so anything holding that id
-      // (MCP, the object list, the level around it) still finds it.
-      // Its own pivot stays on the same spot, however the parts moved while it was open (#807).
-      const regrouped = canonicalizeShape(carryShapePivot(original, withHoleMode({
-        ...rebuilt,
-        id: original.id,
-        name: original.name,
-        color: ownColour ? original.color : rebuilt.color,
-        transparent: original.transparent,
-        hidden: original.hidden,
-      }, Boolean(original.hole))));
+      if (!result.group) return refuseOpenGroupStep(result.failure);
+      const regrouped = result.group;
       const partIds = new Set(parts.map((shape) => shape.id));
-      const mergeWarning = "mergeWarning" in result && typeof result.mergeWarning === "string" ? result.mergeWarning : "";
-      const message = mergeWarning || t("status.groupClosed", { name: displayShapeName(regrouped) });
+      const message = result.mergeWarning || t("status.groupClosed", { name: displayShapeName(regrouped) });
       commitOpenGroupTransition(
         openGroupsRef.current.slice(0, -1),
         [...shapesRef.current.filter((shape) => !partIds.has(shape.id)), regrouped],
@@ -10772,7 +10797,117 @@ export function LayerlingEditor({
       openGroupBusyRef.current = false;
       setOpenGroupBusy(false);
     }
-  }, [commitNotes, commitOpenGroupTransition, endOpenGroupLevelsWithoutStep, refuseOpenGroupStep]);
+  }, [commitNotes, commitOpenGroupTransition, endOpenGroupLevelsWithoutStep, refuseOpenGroupStep, rebuildGroupFromParts]);
+
+  /** Why a part cannot go into or out of a group from the object list right now, or null (Discussion #1338). */
+  const groupPartsStepRefused = useCallback((): string | null => {
+    if (historyViewStateRef.current) return t("status.historyViewBlocksEdits");
+    if (openGroupBusyRef.current) return t("group.busy");
+    const open = openGroupsRef.current.at(-1);
+    return open ? t("group.finishOpenFirst", { name: displayShapeName(open.original) }) : null;
+  }, []);
+
+  /**
+   * Commits a part put into or taken out of a group, or says why not: a group holding a part of locked shape keeps
+   * its size (#1277), and the commit would refuse it without a word to the caller. `amendNewest` joins the step before.
+   */
+  const commitGroupPartsStep = useCallback((next: WorkplaneShape[], selection: string, message: string, amendNewest = false): string | null => {
+    const held = shapeLockBroken(shapesRef.current, next.map(canonicalizeShape));
+    if (held) return t("status.shapeLockHeld", { name: displayShapeName(held) });
+    commitShapes(next, selection, message, undefined, amendNewest);
+    return shapesRef.current.some((shape) => shape.id === selection) ? null : t("status.groupChanged");
+  }, [commitShapes]);
+
+  /**
+   * Loose shapes dragged onto an expanded group in the object list go into it (Discussion #1338): the group is built
+   * again with them, as Done builds an opened one, so it keeps its id, name and pivot, and the parts keep theirs.
+   */
+  const addShapesToGroup = useCallback(async (shapeIds: string[], groupId: string, amendNewest = false): Promise<OpenGroupOutcome> => {
+    const refused = groupPartsStepRefused();
+    if (refused) return refuseOpenGroupStep(refused);
+    const group = shapesRef.current.find((shape) => shape.id === groupId);
+    if (!group?.groupedShapes?.length) return refuseOpenGroupStep(t("status.selectGroupFirst"));
+    if (groupHeld(group)) return refuseOpenGroupStep(t("status.objectLocked"));
+    const wanted = new Set(shapeIds.filter((id) => id !== groupId));
+    const added = shapesRef.current.filter((shape) => wanted.has(shape.id));
+    if (!added.length || added.length !== wanted.size) return refuseOpenGroupStep(t("status.selectShapeFirst"));
+    // A part of locked shape may join a group, as it may be grouped; a locked one stays where it is.
+    if (added.some((shape) => shape.locked)) return refuseOpenGroupStep(t("status.objectLocked"));
+    if (added.some((shape) => isNonSolidShape(shape))) return refuseOpenGroupStep(t("status.rulerNotSolid"));
+    const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
+    const sourceProjectId = projectInfoRef.current.projectId;
+    openGroupBusyRef.current = true;
+    setOpenGroupBusy(true);
+    try {
+      const result = await rebuildGroupFromParts(group, [...restoreGroupedChildren(group), ...added]);
+      if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
+        return refuseOpenGroupStep(t("status.groupChanged"));
+      }
+      if (!result.group) return refuseOpenGroupStep(result.failure);
+      const regrouped = result.group;
+      const message = result.mergeWarning || (added.length === 1
+        ? t("status.addedToGroup", { name: displayShapeName(added[0]), group: displayShapeName(regrouped) })
+        : t("status.addedManyToGroup", { count: added.length, group: displayShapeName(regrouped) }));
+      // The group stays where it stood in the list.
+      const held = commitGroupPartsStep(
+        shapesRef.current.filter((shape) => !wanted.has(shape.id)).map((shape) => (shape.id === group.id ? regrouped : shape)),
+        regrouped.id,
+        message,
+        amendNewest,
+      );
+      if (held) return refuseOpenGroupStep(held);
+      return { ok: true, message, groupId: regrouped.id };
+    } finally {
+      openGroupBusyRef.current = false;
+      setOpenGroupBusy(false);
+    }
+  }, [commitGroupPartsStep, groupPartsStepRefused, rebuildGroupFromParts, refuseOpenGroupStep]);
+
+  /**
+   * One part dragged out of an expanded group in the object list (Discussion #1338) lies loose again where it was,
+   * in front of `beforeId` (null: last); the group is built again without it. A group left with one part is that part.
+   */
+  const takePartOutOfGroup = useCallback(async (groupId: string, partId: string, beforeId: string | null): Promise<OpenGroupOutcome> => {
+    const refused = groupPartsStepRefused();
+    if (refused) return refuseOpenGroupStep(refused);
+    const group = shapesRef.current.find((shape) => shape.id === groupId);
+    if (!group?.groupedShapes?.length) return refuseOpenGroupStep(t("status.selectGroupFirst"));
+    if (groupHeld(group)) return refuseOpenGroupStep(t("status.objectLocked"));
+    const index = group.groupedShapes.findIndex((part) => part.id === partId);
+    if (index < 0) return refuseOpenGroupStep(t("status.groupChanged"));
+    const parts = restoreGroupedChildren(group);
+    const taken = parts[index];
+    const rest = parts.filter((_, at) => at !== index);
+    // A group left with one part is that part, under another id: in front of the group is in front of it.
+    const before = beforeId === group.id && rest.length < 2 ? (rest[0]?.id ?? null) : beforeId;
+    const place = (list: WorkplaneShape[]) => [...moveShapeBefore([...list, taken], taken.id, before)];
+    const message = t("status.takenOutOfGroup", { name: displayShapeName(taken), group: displayShapeName(group) });
+    if (rest.length < 2) {
+      // Nothing left to group: the other part takes the group's place.
+      const left = rest[0];
+      const held = commitGroupPartsStep(place(shapesRef.current.flatMap((shape) => (shape.id === group.id ? (left ? [left] : []) : [shape]))), taken.id, `${message} ${t("status.groupOnePartLeft")}`);
+      if (held) return refuseOpenGroupStep(held);
+      return { ok: true, message, partIds: left ? [taken.id, left.id] : [taken.id] };
+    }
+    const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
+    const sourceProjectId = projectInfoRef.current.projectId;
+    openGroupBusyRef.current = true;
+    setOpenGroupBusy(true);
+    try {
+      const result = await rebuildGroupFromParts(group, rest);
+      if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
+        return refuseOpenGroupStep(t("status.groupChanged"));
+      }
+      if (!result.group) return refuseOpenGroupStep(result.failure);
+      const regrouped = result.group;
+      const held = commitGroupPartsStep(place(shapesRef.current.map((shape) => (shape.id === group.id ? regrouped : shape))), taken.id, result.mergeWarning || message);
+      if (held) return refuseOpenGroupStep(held);
+      return { ok: true, message, partIds: [taken.id], groupId: regrouped.id };
+    } finally {
+      openGroupBusyRef.current = false;
+      setOpenGroupBusy(false);
+    }
+  }, [commitGroupPartsStep, groupPartsStepRefused, rebuildGroupFromParts, refuseOpenGroupStep]);
 
   // Undo past an opening brings that group back, and deleting every part leaves
   // nothing to close: in both cases that level is over, with every level inside it.
@@ -12173,6 +12308,27 @@ export function LayerlingEditor({
         if (!outcome.ok) throw new Error(outcome.message);
         const group = outcome.groupId ? findShape(outcome.groupId) : null;
         return { message: outcome.message, object: group ? mcpShapeSummary(group) : null, partIds: outcome.partIds ?? [] };
+      }
+
+      if (command.action === "add_to_group") {
+        if (typeof params.groupId !== "string") throw new Error("add_to_group needs groupId");
+        const ids = mcpStringArray(params.ids);
+        if (!ids.length) throw new Error("add_to_group needs the ids of the objects to put into the group");
+        const outcome = await addShapesToGroup(ids, params.groupId);
+        if (!outcome.ok) throw new Error(outcome.message);
+        const group = outcome.groupId ? findShape(outcome.groupId) : null;
+        return { message: outcome.message, object: group ? mcpShapeSummary(group) : null };
+      }
+
+      if (command.action === "take_out_of_group") {
+        if (typeof params.groupId !== "string" || typeof params.partId !== "string") throw new Error("take_out_of_group needs groupId and partId");
+        const outcome = await takePartOutOfGroup(params.groupId, params.partId, typeof params.beforeId === "string" ? params.beforeId : null);
+        if (!outcome.ok) throw new Error(outcome.message);
+        const part = outcome.partIds?.[0] ? findShape(outcome.partIds[0]) : null;
+        const group = outcome.groupId ? findShape(outcome.groupId) : null;
+        // A group left with one part is gone: that part comes back in its place.
+        const left = !group && outcome.partIds?.[1] ? findShape(outcome.partIds[1]) : null;
+        return { message: outcome.message, object: part ? mcpShapeSummary(part) : null, group: group ? mcpShapeSummary(group) : null, ...(left ? { remainingPart: mcpShapeSummary(left) } : {}) };
       }
 
       if (command.action === "mate_faces") {
@@ -14413,6 +14569,8 @@ export function LayerlingEditor({
     cancelOpenGroup,
     commitShapes,
     moveShapeInList,
+    addShapesToGroup,
+    takePartOutOfGroup,
     finishOpenGroup,
     initialSnap,
     openGroupForEditing,
@@ -15720,21 +15878,9 @@ export function LayerlingEditor({
   }, [refuseLockedSelection, activeRotationPivot, commitShapes, hasSelection, placementWorkplane, selectedIds, selectedShapes, shapes]);
 
   useEffect(() => {
-    const isTypingTarget = (target: EventTarget | null) => {
-      if (!(target instanceof HTMLElement)) {
-        return false;
-      }
-      return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
-    };
-    // A slider, checkbox or list keeps the focus after it was used but has no text to undo, so
-    // Ctrl+Z there is meant for the project (#243). A slider holds the current action while it has
-    // the focus: leave it first (that closes the history step), then run the key as if nothing had it.
-    const isNonTextControl = (target: EventTarget | null) =>
-      target instanceof HTMLSelectElement ||
-      (target instanceof HTMLInputElement && ["range", "checkbox", "radio", "color", "button"].includes(target.type));
-
     const handleKeyDown = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase();
+      // Chrome sends keydown without a key when an autofill suggestion is picked.
+      const key = (event.key ?? "").toLowerCase();
       const shortcut = event.ctrlKey || event.metaKey;
 
       // Save works from anywhere in the editor, a field too; the browser's own "save page" has
@@ -16636,6 +16782,8 @@ export function LayerlingEditor({
             onToggleHidden={toggleShapeHiddenById}
             onRenameShape={renameShapeById}
             onMoveShape={moveShapeInList}
+            onAddToGroup={addShapesToGroup}
+            onTakeOutOfGroup={takePartOutOfGroup}
             onOpenGroup={openGroupForEditing}
             onOpenGroupPart={openGroupPartForEditing}
             openGroupPartIds={openGroup?.childIds}
@@ -17322,18 +17470,18 @@ export function LayerlingEditor({
           error={edgeModifier.error}
           // The same value again changes nothing: dropping the preview for it left Apply
           // waiting on a computation nobody started (#204).
-          onAmountChange={(value) => setEdgeModifier((current) => {
+          onAmountChange={(value) => { keepEdgeSetting({ amount: value }); setEdgeModifier((current) => {
             if (!current?.prepared) return current;
             const amount = Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(edgeModifierMaxAmount, value));
             return amount === current.amount ? current : { ...current, amount, preview: null, busy: current.selectedEdgeIds.length > 0, error: null };
-          })}
+          }); }}
           endAmount={edgeModifier.endAmount ?? null}
           concave={edgeModifier.concave === true}
-          onConcaveChange={(value) => setEdgeModifier((current) => {
+          onConcaveChange={(value) => { keepEdgeSetting({ concave: value }); setEdgeModifier((current) => {
             if (!current?.prepared || (current.concave === true) === value) return current;
             // A scoop has one radius: the variable one goes out with it.
             return { ...current, concave: value, endAmount: value ? null : current.endAmount, preview: null, busy: current.selectedEdgeIds.length > 0, error: null };
-          })}
+          }); }}
           // Switching it on starts the end at twice the start, so the change shows at once (#687).
           onEndAmountChange={(value) => setEdgeModifier((current) => {
             if (!current?.prepared) return current;
@@ -17344,18 +17492,18 @@ export function LayerlingEditor({
             if (!current?.prepared || current.endAmount == null || current.endAmount === current.amount) return current;
             return { ...current, amount: current.endAmount, endAmount: current.amount, preview: null, busy: current.selectedEdgeIds.length > 0, error: null };
           })}
-          onChamferAngleChange={(value) => setEdgeModifier((current) => {
+          onChamferAngleChange={(value) => { keepEdgeSetting({ chamferAngle: value }); setEdgeModifier((current) => {
             if (!current?.prepared) return current;
             const chamferAngle = Math.max(current.kind === "chamfillet" ? 15 : 5, Math.min(current.kind === "chamfillet" ? 75 : 85, value));
             return chamferAngle === current.chamferAngle ? current : { ...current, chamferAngle, preview: null, busy: current.selectedEdgeIds.length > 0, error: null };
-          })}
+          }); }}
           onKindChange={(kind) => setEdgeModifier((current) => {
             if (!current?.prepared || current.kind === kind) return current;
             const chamferAngle = kind === "chamfillet" ? Math.max(15, Math.min(75, current.chamferAngle)) : current.chamferAngle;
             return { ...current, kind, chamferAngle, preview: null, busy: current.selectedEdgeIds.length > 0, error: null };
           })}
-          onQualityChange={(quality) => setEdgeModifier((current) => !current?.prepared || quality === current.quality ? current : { ...current, quality, preview: null, busy: current.selectedEdgeIds.length > 0, error: null })}
-          onSharpAngleChange={(sharpAngle) => setEdgeModifier((current) => {
+          onQualityChange={(quality) => { keepEdgeSetting({ quality }); setEdgeModifier((current) => !current?.prepared || quality === current.quality ? current : { ...current, quality, preview: null, busy: current.selectedEdgeIds.length > 0, error: null }); }}
+          onSharpAngleChange={(sharpAngle) => { keepEdgeSetting({ sharpAngle: Math.max(1, Math.min(CAD_MODIFIER_MAX_SHARP_ANGLE, sharpAngle)) }); setEdgeModifier((current) => {
             if (!current?.prepared) return current;
             const nextAngle = Math.max(1, Math.min(CAD_MODIFIER_MAX_SHARP_ANGLE, sharpAngle));
             const availableIds = new Set(current.edges
@@ -17370,9 +17518,9 @@ export function LayerlingEditor({
               busy: selectedEdgeIds.length > 0,
               error: availableIds.size === 0 ? t("edge.noEdgeAtThreshold") : selectedEdgeIds.length ? null : t("edge.selectAtLeastOne"),
             };
-          })}
+          }); }}
           onTangentChainChange={(tangentChain) => setEdgeModifier((current) => current?.prepared ? { ...current, tangentChain } : current)}
-          onOnlyVisibleEdgesChange={(onlyVisibleEdges) => setEdgeModifier((current) => current?.prepared ? { ...current, onlyVisibleEdges } : current)}
+          onOnlyVisibleEdgesChange={(onlyVisibleEdges) => { keepEdgeSetting({ onlyVisibleEdges }); setEdgeModifier((current) => current?.prepared ? { ...current, onlyVisibleEdges } : current); }}
           onPreserveEdgeSizeChange={(preserveEdgeSize) => setEdgeModifier((current) => current?.prepared ? { ...current, preserveEdgeSize } : current)}
           onSelectAll={() => setEdgeModifier((current) => current?.prepared ? { ...current, selectedEdgeIds: modifierAvailableEdgeIds, preview: null, busy: modifierAvailableEdgeIds.length > 0, error: modifierAvailableEdgeIds.length ? null : current.error } : current)}
           onSelectTop={(add) => selectQuickEdges("top", topCadModifierEdgeIds, "edge.noTopEdges", add)}
