@@ -1,7 +1,7 @@
 "use client";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { ArrowLeftRight, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolApply, ToolCancel, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolStatus } from "@/components/workplane/ToolPanelParts";
@@ -65,6 +65,7 @@ export function CutOutPanel({
           <span>{t("cutOut.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="cutOut" />
           <button type="button" aria-label={t("cutOut.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>

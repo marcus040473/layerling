@@ -4731,4 +4731,6 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "notice.movedToRoot": "نُقل {name} إلى المستوى الأعلى.",
   "notice.importing": "جارٍ استيراد {index} من {total}: {name}",
   "notice.importProjectFailed": "تعذر إنشاء تصميم للملفات المستوردة",
+  "toolSidebar.float": "فصل كنافذة حرة",
+  "toolSidebar.dock": "إرساء في العمود الأيمن",
 };

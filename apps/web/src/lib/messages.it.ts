@@ -4700,4 +4700,6 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "notice.movedToRoot": "{name} spostato al livello superiore.",
   "notice.importing": "Importazione di {index} su {total}: {name}",
   "notice.importProjectFailed": "Impossibile creare un progetto dai file importati",
+  "toolSidebar.float": "Staccare come finestra libera",
+  "toolSidebar.dock": "Agganciare alla colonna di destra",
 };

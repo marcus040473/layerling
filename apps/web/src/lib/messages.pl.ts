@@ -4728,4 +4728,6 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "notice.movedToRoot": "Przeniesiono {name} na najwyższy poziom.",
   "notice.importing": "Importowanie {index} z {total}: {name}",
   "notice.importProjectFailed": "Nie udało się utworzyć projektu dla zaimportowanych plików",
+  "toolSidebar.float": "Odłącz jako wolne okno",
+  "toolSidebar.dock": "Przypnij w prawej kolumnie",
 };

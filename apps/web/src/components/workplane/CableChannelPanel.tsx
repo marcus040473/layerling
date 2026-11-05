@@ -1,7 +1,7 @@
 "use client";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { Check, LoaderCircle, MousePointerClick, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { MAX_CABLE_BEND, MAX_CABLE_DIAMETER, MAX_CABLE_WALL, MIN_CABLE_DIAMETER, MIN_CABLE_WALL, type CableChannelOptions } from "@/lib/cableChannel";
@@ -76,6 +76,7 @@ export function CableChannelPanel({
           <span>{t("cable.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="cableChannel" />
           <button type="button" aria-label={t("cable.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>

@@ -4725,4 +4725,6 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "notice.movedToRoot": "{name} se ha movido al nivel superior.",
   "notice.importing": "Importando {index} de {total}: {name}",
   "notice.importProjectFailed": "No se ha podido crear un diseño para los archivos importados",
+  "toolSidebar.float": "Separar como ventana libre",
+  "toolSidebar.dock": "Acoplar en la columna derecha",
 };

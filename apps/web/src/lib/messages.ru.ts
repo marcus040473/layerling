@@ -786,6 +786,8 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "lid.magnetsHint": "Гнёзда в углах тела и крышки, столбик там, где стенка слишком тонкая. Зазор 0,1 мм — чтобы запрессовать магниты, больше — чтобы вклеить; подробнее в руководстве.",
   "lid.outcome": "Крышка появится рядом с телом, перевёрнутой для печати.",
   "toolSidebar.tabs": "Объект или инструмент",
+  "toolSidebar.float": "Открепить как отдельное окно",
+  "toolSidebar.dock": "Закрепить в правой колонке",
   "toolSidebar.object": "Объект",
   "toolSidebar.tool": "Инструмент",
   "toolSidebar.selection": "Выбор",

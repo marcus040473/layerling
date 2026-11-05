@@ -916,6 +916,8 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "lid.magnetsHint": "Kapsy v rozích tělesa a víka, sloupek tam, kde je stěna příliš tenká. Vůle 0,1 mm k zalisování magnetů, větší k vlepení; více v návodu.",
   "lid.outcome": "Víko se objeví vedle tělesa, otočené pro tisk.",
   "toolSidebar.tabs": "Objekt nebo nástroj",
+  "toolSidebar.float": "Uvolnit jako samostatné okno",
+  "toolSidebar.dock": "Ukotvit v pravém sloupci",
   "toolSidebar.object": "Objekt",
   "toolSidebar.tool": "Nástroj",
   "toolSidebar.selection": "Výběr",

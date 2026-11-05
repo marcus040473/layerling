@@ -777,6 +777,8 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "lid.magnetsHint": "Des cavités dans les coins du corps et du couvercle, un pilier là où la paroi est trop fine. 0,1 mm de jeu pour insérer les aimants en force, plus pour les coller ; plus dans le guide.",
   "lid.outcome": "Le couvercle apparaît à côté du corps, retourné pour l’impression.",
   "toolSidebar.tabs": "Objet ou outil",
+  "toolSidebar.float": "Détacher en fenêtre libre",
+  "toolSidebar.dock": "Ancrer dans la colonne de droite",
   "toolSidebar.object": "Objet",
   "toolSidebar.tool": "Outil",
   "toolSidebar.selection": "Sélection",

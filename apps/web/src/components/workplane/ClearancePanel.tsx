@@ -3,7 +3,7 @@
 import { AlertTriangle, CircleCheck, CircleSlash, RefreshCw, X } from "lucide-react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import type { ClearanceMark } from "@/components/workplane/ClearanceMarkOverlay";
 import { CLEARANCE_SEARCH_MM, clearancePairKey, type ClearanceBox, type ClearanceResult, type ClearanceVec3 } from "@/lib/clearanceCheck";
@@ -164,6 +164,7 @@ export function ClearancePanel({
           <span>{t("clearance.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="clearanceCheck" />
           <button type="button" aria-label={t("clearance.close")} onClick={onClose}><X size={20} /></button>
         </div>

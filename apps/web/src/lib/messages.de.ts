@@ -786,6 +786,8 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "lid.magnetsHint": "Taschen in den Ecken von Körper und Deckel, ein Pfeiler, wo die Wand zu dünn ist. 0,1 mm Spiel zum Einpressen, mehr zum Einkleben; mehr in der Anleitung.",
   "lid.outcome": "Der Deckel kommt neben den Körper, zum Drucken umgedreht.",
   "toolSidebar.tabs": "Objekt oder Werkzeug",
+  "toolSidebar.float": "Als freies Fenster lösen",
+  "toolSidebar.dock": "Rechts in der Spalte andocken",
   "toolSidebar.object": "Objekt",
   "toolSidebar.tool": "Werkzeug",
   "toolSidebar.selection": "Auswahl",

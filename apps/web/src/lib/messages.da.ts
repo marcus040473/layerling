@@ -184,6 +184,8 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "lid.magnetsHint": "Lommer i hjørnerne af legemet og låget, og en søjle hvor væggen er for tynd. 0,1 mm spillerum for at trykke magneterne ind, mere for at lime dem; mere i vejledningen.",
   "lid.outcome": "Låget kommer ud ved siden af legemet, vendt til print.",
   "toolSidebar.tabs": "Objekt eller værktøj",
+  "toolSidebar.float": "Løsn som frit vindue",
+  "toolSidebar.dock": "Fastgør i højre kolonne",
   "toolSidebar.object": "Objekt",
   "toolSidebar.tool": "Værktøj",
   "toolSidebar.selection": "Valg",

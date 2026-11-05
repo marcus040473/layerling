@@ -786,6 +786,8 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "lid.magnetsHint": "Kuiltjes in de hoeken van vorm en deksel, een pijler waar de wand te dun is. 0,1 mm speling om de magneten erin te drukken, meer om ze te lijmen; meer in de handleiding.",
   "lid.outcome": "Het deksel komt naast het lichaam, omgedraaid om te printen.",
   "toolSidebar.tabs": "Object of gereedschap",
+  "toolSidebar.float": "Losmaken als vrij venster",
+  "toolSidebar.dock": "Vastzetten in de rechterkolom",
   "toolSidebar.object": "Object",
   "toolSidebar.tool": "Gereedschap",
   "toolSidebar.selection": "Selectie",

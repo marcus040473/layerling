@@ -1,6 +1,6 @@
 "use client";
 
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolApply, ToolCancel, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
@@ -51,6 +51,7 @@ export function MateFacesPanel({
           <span>{t("mate.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="layFlat" />
           <button type="button" aria-label={t("mate.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>

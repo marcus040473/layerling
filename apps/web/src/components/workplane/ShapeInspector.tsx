@@ -2,7 +2,7 @@
 
 import { displayY, displayYTurn, insideZ, insideZTurn } from "@/lib/displayAxes";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicker";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
@@ -6692,6 +6692,7 @@ export function SurfaceTextureCard({
                   <span>{shape.name}</span>
                 </div>
                 <div className="panel-header-actions">
+                  <ToolDockToggle />
                   <GuideHelpLink section="surfaceTexture" />
                   <button type="button" aria-label={t("common.cancel")} onClick={() => setOpen(false)}><X size={20} /></button>
                 </div>

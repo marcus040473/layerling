@@ -787,6 +787,8 @@ export const MESSAGES_EN = {
   "lid.magnetsHint": "Pockets in the corners of the body and the lid, and a post where the wall is too thin. 0.1 mm play to press the magnets in, more to glue them; more in the guide.",
   "lid.outcome": "The lid comes out beside the body, turned over for printing.",
   "toolSidebar.tabs": "Object or tool",
+  "toolSidebar.float": "Detach as a free window",
+  "toolSidebar.dock": "Dock in the right column",
   "toolSidebar.object": "Object",
   "toolSidebar.tool": "Tool",
   "toolSidebar.selection": "Selection",

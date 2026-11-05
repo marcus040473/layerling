@@ -654,6 +654,8 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "lid.magnetsHint": "Žepi v kotih telesa in pokrova, steber, kjer je stena pretanka. 0,1 mm zračnosti za vtiskanje magnetov, več za lepljenje; več v navodilih.",
   "lid.outcome": "Pokrov se pojavi ob telesu, obrnjen za tisk.",
   "toolSidebar.tabs": "Objekt ali orodje",
+  "toolSidebar.float": "Odpni kot prosto okno",
+  "toolSidebar.dock": "Pripni v desni stolpec",
   "toolSidebar.object": "Objekt",
   "toolSidebar.tool": "Orodje",
   "toolSidebar.selection": "Izbira",

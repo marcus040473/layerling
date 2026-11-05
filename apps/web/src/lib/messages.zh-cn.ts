@@ -4704,4 +4704,6 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "notice.movedToRoot": "{name} 已移到顶层。",
   "notice.importing": "正在导入第 {index}/{total} 个：{name}",
   "notice.importProjectFailed": "无法为导入的文件创建设计",
+  "toolSidebar.float": "分离为浮动窗口",
+  "toolSidebar.dock": "停靠到右侧栏",
 };
