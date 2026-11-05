@@ -126,6 +126,8 @@ describe("the hinge's leaves in its settings", () => {
     expect(patches).toEqual([{ hingeLeafStyle: "raised" }, { hingeAngle: -90 }]);
     const raised = mount({ hingeLeafStyle: "raised" });
     expect(select(raised, "raised").value).toBe("raised");
+    // In this build the hint shows its first sentence; the supports are behind its More.
+    act(() => raised.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(raised.textContent).toContain("Print it with supports under the raised leaf.");
     expect(field(mount({ hingeAngle: -500 }), "Opening angle").value).toBe("-180");
   });

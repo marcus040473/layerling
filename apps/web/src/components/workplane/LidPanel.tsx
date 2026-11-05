@@ -15,6 +15,7 @@ import {
   LID_HINGE_TYPES,
   LID_MAGNET_SIZES,
   LID_TYPES,
+  MAX_CLICK_BUMP_HEIGHT,
   MAX_HINGE_GAP,
   MAX_HINGE_KNUCKLES,
   MAX_HINGE_PIN,
@@ -26,6 +27,7 @@ import {
   MAX_MAGNET_DIAMETER,
   MAX_MAGNET_GAP,
   MAX_MAGNET_HEIGHT,
+  MIN_CLICK_BUMP_HEIGHT,
   MIN_HINGE_GAP,
   MIN_HINGE_PIN,
   MIN_HINGE_PIN_PLAY,
@@ -49,7 +51,7 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
  * A lid for a body open at the top (#1009): pushed into the opening, put over the outside, gripping the wall from both
  * sides (#1062) or laid flat on it. It comes out as a body of its own beside the one it closes, ready to print. With
  * magnets, it holds by four round magnets in the corners, in pockets in the body's rim and in the lid. With a hinge, it
- * swings open about a pin along the body's back.
+ * swings open about a pin along the body's back, tight in the body's knuckles and turning in the lid's.
  */
 export function LidPanel({
   targetName,
@@ -85,7 +87,7 @@ export function LidPanel({
   const needed = lidThicknessForMagnets(settings);
   const tooThin = settings.magnets && settings.thickness < needed - 1e-9;
   const millimetres = (value: number) => value.toLocaleString(numberLocale());
-  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap" | "hingeGap" | "hingePinPlay", min: number, max: number, step: number) => (
+  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap" | "hingeGap" | "hingePinPlay" | "clickBumpHeight", min: number, max: number, step: number) => (
     <EdgeModifierSlider
       label={label}
       value={settings[key]}
@@ -320,6 +322,9 @@ export function LidPanel({
           onCheck={(clickBumps) => onChange({ clickBumps })}
         >
           <ToolHint text={t("lid.clickBumpsHint")} />
+          {/* How far they reach into the body's wall: a small box or a stiff lip wants less (#1220). */}
+          {slider(t("lid.clickBumpHeight"), "clickBumpHeight", MIN_CLICK_BUMP_HEIGHT, MAX_CLICK_BUMP_HEIGHT, 0.05)}
+          <ToolHint text={t("lid.clickBumpHeightHint")} />
         </ToolGroup>
         {/* Refused for a flat lid or pivot pins: the reason first, where the hint folds after one sentence. */}
         {!bumpsFit ? <ToolHint text={t("lid.error.clickBumpsNoLip")} /> : null}
@@ -360,6 +365,8 @@ export function LidPanel({
           </>) : null}
           {hinged ? slider(t("lid.hingeGap"), "hingeGap", MIN_HINGE_GAP, MAX_HINGE_GAP, 0.05) : null}
           {hinged ? slider(t("lid.hingePinPlay"), "hingePinPlay", MIN_HINGE_PIN_PLAY, MAX_HINGE_PIN_PLAY, 0.05) : null}
+          {/* The play is only in the lid's holes: in the body's the pin sits tight, so it does not slide out (#1220). */}
+          {hinged ? <ToolHint text={t("lid.hingePinPlayHint")} /> : null}
         </ToolAdvanced>
       ) : null}
 
