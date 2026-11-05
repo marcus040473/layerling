@@ -216,9 +216,9 @@ import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { angleAtVertex, angleBetweenFaces, formatFaceAngles, formatProtractorAngle } from "@/lib/protractor";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_FACE_NAMES, normalizeSurfaceTextureFaces, surfaceTextureFacePick, surfaceTexturePickedFaceIds, toggleSurfaceTexturePickedFace, type SurfaceTextureFace, type SurfaceTextureFacePick, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { useToolForBody } from "@/lib/toolSidebar";
 import { normalizeSurfaceTextureOwnImage, SURFACE_TEXTURE_OWN_IMAGE_SIZE } from "@/lib/surfaceTextureImages";
 import { SURFACE_TEXT_FONTS, surfaceTextOutline } from "@/lib/surfaceTextOutline";
-import { useInspectorCard } from "@/lib/inspectorCards";
 import { canChangeSurfaceTexture, canTextureSurface, offersSurfaceTexture, offersSurfaceTextureMask, sceneWithSurfaceBody, shapeUnderSurfaceTexture, surfaceTextureEntry, surfaceTextureGoldShape, surfacePatternLabel, surfaceTexturedShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, surfaceTextureLayersToMake, surfaceTextureLayerPlaced, mergedSurfaceTextureStats, mergedSurfaceTextureFill, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
@@ -10855,6 +10855,10 @@ export function LayerlingEditor({
     );
   }, [commitShapes, cylinderWrapErrorText, selectedShape, selectedShapes.length, shapes]);
 
+  // The surface texture tool, opened and closed by the button under "Modify" as by its own header. In this build it is a
+  // tool in the right column, so it is open only for the body it was started for (see useToolForBody).
+  const { open: surfaceTextureOpen, setOpen: setSurfaceTextureOpen, follow: followSurfaceTextureTool } = useToolForBody(selectedIds.length === 1 ? selectedIds[0] : null);
+
   /**
    * Lays a surface texture onto the selected body. The texture is computed on its worker; when the
    * body changed meanwhile, the result is for something else and is dropped.
@@ -10951,7 +10955,8 @@ export function LayerlingEditor({
     const message = notes.length ? `${done}. ${notes.join(" ")}` : done;
     // The gold of cracks made before gives way; new gold comes in as a part of its own.
     commitShapes(sceneWithSurfaceBody(shapesRef.current, current.id, textured, gold), [textured.id], message);
-  }, [commitShapes, selectedShape, selectedShapes.length]);
+    followSurfaceTextureTool(current.id, textured.id);
+  }, [commitShapes, selectedShape, selectedShapes.length, followSurfaceTextureTool]);
 
   /** Takes the texture off the selected body: the body under it comes back, where the textured one stands. */
   const removeSelectedSurfaceTexture = useCallback(() => {
@@ -10967,7 +10972,8 @@ export function LayerlingEditor({
     }
     const pattern = surfacePatternLabel(selectedShape.surfaceTexture?.pattern ?? "knurl");
     commitShapes(sceneWithSurfaceBody(shapesRef.current, selectedShape.id, under, null), [under.id], t("status.surfaceRemoved", { pattern }));
-  }, [commitShapes, selectedShape, selectedShapes.length]);
+    followSurfaceTextureTool(selectedShape.id, under.id);
+  }, [commitShapes, selectedShape, selectedShapes.length, followSurfaceTextureTool]);
 
   /**
    * A Swallowtail plate's keys (#1061), laid flat in a row in front of it, 4 mm apart, as sketch bodies ready to print: one for
@@ -11329,9 +11335,6 @@ export function LayerlingEditor({
     };
   }, [commitShapes, historyViewState, imageCalibration, selectedReferenceImage]);
 
-  // The surface texture card, opened and closed by the button under "Modify" as by its own header; like the other
-  // cards it stays open for the next body until it is closed.
-  const [surfaceTextureOpen, setSurfaceTextureOpen] = useInspectorCard("surfaceTexture", false);
   // Picking faces ends with the card closed, another selection, or the body changed (moved, resized, textured).
   useEffect(() => {
     if (!surfaceFacePick) return;
@@ -11339,7 +11342,7 @@ export function LayerlingEditor({
     if (!surfaceTextureOpen || selectedIds.length !== 1 || selectedIds[0] !== surfaceFacePick.shapeId || body !== surfaceFacePick.shape) setSurfaceFacePick(null);
   }, [selectedIds, shapes, surfaceFacePick, surfaceTextureOpen]);
   const canSurfaceTexture = selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) && !bodyLocked(selectedShape);
-  const toggleSurfaceTextureTool = useCallback(() => setSurfaceTextureOpen((open) => !open), [setSurfaceTextureOpen]);
+  const toggleSurfaceTextureTool = useCallback(() => setSurfaceTextureOpen(!surfaceTextureOpen), [setSurfaceTextureOpen, surfaceTextureOpen]);
 
   const simplifyToolShape = simplifyToolId && selectedShapes.length === 1 && selectedShape?.id === simplifyToolId && offersMeshSimplify(selectedShape)
     ? selectedShape
