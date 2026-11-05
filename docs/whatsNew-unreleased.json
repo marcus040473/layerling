@@ -1,22 +1,12 @@
 [
   {
     "title": {
-      "de": "GT2-Riemenscheiben",
-      "en": "GT2 pulleys"
+      "de": "Gruppieren ohne dünne Häute",
+      "en": "Grouping without thin skins"
     },
     "body": {
-      "de": "Neu bei den Formen unter Mechanik: eine Riemenscheibe für GT2-Zahnriemen mit der echten GT2-Zahnform. Zähnezahl frei von 10 bis 200, dazu Riemenbreite, Bordscheiben, Nabe und Bohrung.",
-      "en": "New among the shapes under Mechanics: a pulley for GT2 timing belts with the true GT2 tooth shape. Any number of teeth from 10 to 200, with belt width, flanges, hub and bore."
-    }
-  },
-  {
-    "title": {
-      "de": "Hirth-Verzahnung mit Sägezähnen",
-      "en": "Hirth joint with saw teeth"
-    },
-    "body": {
-      "de": "Die Hirth-Verzahnung kann jetzt Sägezähne wie eine Ratsche haben: Eine Flanke steht steil, bis 90°, die andere flach, auf Wunsch auf der anderen Seite. Eine umgedrehte Kopie greift weiter hinein. Die Zahnhöhe reicht jetzt bis zum Boden.",
-      "en": "The Hirth joint can now have saw teeth like a ratchet: one flank steep, up to 90°, the other gentle, on either side. A copy turned over still locks into it. The tooth height now goes all the way down to the bottom."
+      "de": "Schnitt ein Loch durch einen Quader und ein importiertes oder ausgehöhltes Teil dahinter, blieb an der Fuge manchmal eine Haut ohne Dicke stehen, die als dünne Wand zu sehen war. Jetzt treffen sich die Teile genau, und das Loch geht sauber durch.",
+      "en": "When a hole cut through a box and an imported or hollowed part behind it, a skin of no thickness sometimes stayed at the joint and showed as a thin wall. Now the parts meet exactly and the hole goes cleanly through."
     }
   }
 ]
