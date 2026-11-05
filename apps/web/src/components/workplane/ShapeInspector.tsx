@@ -22,12 +22,14 @@ import {
   MIN_GEAR_HELIX_QUALITY,
   gearCenterHoleLimits,
   normalizeGearHelixAngle,
+  normalizeBevelHelixAngle,
   normalizeGearHelixQuality,
   normalizeGearCenterHoleSize,
   normalizeGearToothSize,
   normalizeGearToothWidth,
   normalizeGearType,
   gearTypeHasHelix,
+  bevelGearIsSpiral,
   gearToothPitch,
   DEFAULT_GEAR_BACKLASH,
   involuteGearModule,
@@ -201,7 +203,7 @@ import { MAX_TEXT_LAYERS, MAX_TEXT_LAYER_GROW, MIN_TEXT_LAYER_HEIGHT, nameTagKey
 import { iconKeyringAlongLimit } from "@/lib/sketchKeyring";
 import { DEFAULT_KEYRING_DIAMETER, curvedRadiusPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_KEYRING_DIAMETER, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING, TEXT_KEYRING_SIDES } from "@/lib/textGeometry";
 import { DEFAULT_TEXT_BLOCK_GAP, MAX_TEXT_BLOCK_GAP, MAX_TEXT_BLOCK_LINES, MAX_TEXT_BLOCK_STEP, MIN_TEXT_BLOCK_STEP, TEXT_BLOCK_ALIGNS, textBlockLines, type TextBlockAlign, type TextBlockOptions } from "@/lib/textBlock";
-import { addTextLayer, MIN_LETTER_SIZE, MIN_NAME_TAG_LAYERS, NAME_TAG_GAP, NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, removeTextLayer, textBaselineKeepShift, textLetterSize, textLetterSizePatch, textSpacingPatch, type NameTagStack } from "@/lib/nameTag";
+import { addTextLayer, MIN_LETTER_SIZE, MIN_NAME_TAG_LAYERS, NAME_TAG_GAP, NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, removeTextLayer, textBaselineKeepShift, textLetterSize, textLetterSizePatch, textKerningPatch, textSpacingPatch, type NameTagStack } from "@/lib/nameTag";
 import { FONT_MANAGER_OPTION, requestFontManager } from "@/lib/fontManagerEvents";
 import { FontPicker } from "@/components/workplane/FontPicker";
 import { QR_BYTE_CAPACITY, qrByteLength, qrTextFits, type QrCodeSettings } from "@/lib/qrCode";
@@ -300,6 +302,8 @@ import { hingeLargestConeSize, hingeLargestCornerRadius, MAX_HINGE_ANGLE, MAX_HI
 import { useLanguage } from "@/lib/useLanguage";
 import { useMovablePanel, type MovablePanelOptions } from "@/lib/useMovablePanel";
 import { meshAabb } from "@/lib/editorMeshCore";
+import { undersideOffset } from "@/lib/positionUnderside";
+import { plateOffsetOfShape } from "@/lib/buildPlates";
 import { isNonSolidShape, resizedShapeSize, shapeDepth, shapeHasTaper, shapeOverallFootprintDimensions, shapeSupportsTaper, shapeTaperDimensions, shapeWidth } from "@/lib/workplaneShapes";
 import { tubeBeforeEdgeTreatments } from "@/lib/edgeTreatmentHistory";
 import { MAX_SKETCH_REVOLVE_TURNS, normalizeSketchRevolveSettings } from "@/lib/sketchRevolve";
@@ -3402,6 +3406,20 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         step: 1,
         onChange: (helixAngle) => onUpdate({ helixAngle }),
       });
+    }
+    // A bevel gear's teeth can turn while they taper, a spiral bevel gear (Discussion #1299); 0 keeps them straight.
+    if (normalizeGearType(shape.gearType) === "bevel") {
+      properties.push({
+        id: "bevelHelixAngle",
+        label: t("prop.helixAngle"),
+        value: normalizeBevelHelixAngle(shape.bevelHelixAngle),
+        min: MIN_GEAR_HELIX_ANGLE,
+        max: MAX_GEAR_HELIX_ANGLE,
+        step: 1,
+        onChange: (bevelHelixAngle) => onUpdate({ bevelHelixAngle: bevelHelixAngle || undefined }),
+      });
+    }
+    if (gearTypeHasHelix(shape.gearType) || (normalizeGearType(shape.gearType) === "bevel" && bevelGearIsSpiral(shape.bevelHelixAngle))) {
       properties.push({
         id: "quality",
       label: t("prop.quality"),
@@ -3475,6 +3493,14 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         hint: t("prop.textSpacingHint"),
         onChange: (spacing: number) => onUpdate(textSpacingPatch(shape, spacing)),
       },
+      // Automatic kerning (#1297): pairs such as AY or To move closer; the letters keep their size and the box follows.
+      ...(shape.textVertical ? [] : [{
+        type: "toggle",
+        id: "textKerning",
+        label: t("prop.textKerning"),
+        value: Boolean(shape.textKerning),
+        onChange: (kerning: boolean) => onUpdate(textKerningPatch(shape, kerning)),
+      } satisfies ShapePropertyConfig]),
       // The letters stacked top to bottom (#981). Straight: the box turns upright and the letters keep their size. Curved: the
       // column runs along the circle at its left side, the letters standing upright; the box follows in curvedTextPatch.
       {
@@ -3964,7 +3990,7 @@ export function ShapeInspector({
     ? properties.filter((property) => ["gearProfile", "teeth", "gearModule", "gearPressureAngle", "gearBacklash", "gearRim", "toothSize", "toothWidth"].includes(property.id))
     : [];
   const gearHelixProperties = shape.kind === "gear"
-    ? properties.filter((property) => ["helixAngle", "quality"].includes(property.id))
+    ? properties.filter((property) => ["helixAngle", "bevelHelixAngle", "quality"].includes(property.id))
     : [];
   const taper = shapeTaperDimensions(shape);
   const taperDimensionMax = shapeDimensionLimit(workspace, shape.kind, DEFAULT_TAPER_DIMENSION_MAX);
@@ -4165,15 +4191,19 @@ export function ShapeInspector({
    * Arbeitsflaeche), Z als Hoehe seiner Unterkante. Die Regler reichen so weit
    * wie das Ziehen, eine Plattengroesse ueber jeden Rand.
    */
+  const undersideBelow = useMemo(() => undersideOffset(shape), [shape]);
+  const plateOffsetX = useMemo(() => plateOffsetOfShape(workspace, shape), [shape, workspace]);
   const reachX = workspace.width * 1.5;
   const reachY = workspace.depth * 1.5;
   // Up, the slider reaches as far as the plate does and the printer is high; any number can be typed (#425).
   const reachZ = positionReach(workspace, printerPresetById(workspace.printer)?.height);
   const positionProperties: RangePropertyConfig[] = [
-    { id: "positionX", label: t("prop.positionX"), value: shape.x, min: -reachX, max: reachX, step: 0.5, onChange: (x) => onUpdate({ x }) },
+    // X counts from the middle of the body's own build plate (Discussion #456); on the first plate, as always.
+    { id: "positionX", label: t("prop.positionX"), value: shape.x - plateOffsetX, min: -reachX, max: reachX, step: 0.5, onChange: (x) => onUpdate({ x: x + plateOffsetX }) },
     // Y counts towards the back, right-handed (#182); inside, z runs towards the viewer.
     { id: "positionY", label: t("prop.positionY"), value: displayY(shape.z), min: -reachY, max: reachY, step: 0.5, onChange: (y) => onUpdate({ z: insideZ(y) }) },
-    { id: "positionZ", label: t("prop.positionZ"), value: shape.elevation ?? 0, min: -Math.max(180, reachZ), max: reachZ, step: 0.5, onChange: (elevation) => onUpdate({ elevation }) },
+    // Z is the height of the underside as the body stands, also tilted (Discussion #1303).
+    { id: "positionZ", label: t("prop.positionZ"), value: (shape.elevation ?? 0) + undersideBelow, min: -Math.max(180, reachZ), max: reachZ, step: 0.5, onChange: (z) => onUpdate({ elevation: z - undersideBelow }) },
   ];
   // The body's turn about X, Y and Z, as it is drawn. A new angle turns it
   // about its centre, or about its own pivot if it has one.
@@ -4225,7 +4255,7 @@ export function ShapeInspector({
     ? positionProperties.map((property): RangePropertyConfig => {
         if (property.id === "positionX") {
           const offset = shape.x - edges.minX;
-          return { ...property, label: t("prop.positionXEdge"), value: edges.minX, onChange: (x) => onUpdate({ x: x + offset }) };
+          return { ...property, label: t("prop.positionXEdge"), value: edges.minX - plateOffsetX, onChange: (x) => onUpdate({ x: x + plateOffsetX + offset }) };
         }
         if (property.id === "positionY") {
           // Y runs towards the back, so the front edge is the smaller Y.
@@ -4976,7 +5006,7 @@ export function ShapeInspector({
           ) : null}
         </div>
       ) : null}
-      {gearTypeHasHelix(gearType ?? undefined) ? (
+      {gearHelixProperties.length ? (
         <div className={`property-card ${gearHelixOpen ? "" : "collapsed"}`}>
           <button
             className="property-card-header"
