@@ -216,6 +216,8 @@ export type ShapeCustomization = {
   /** Rod and screw: how much thinner (in diameter) the bolt comes out, for a metal nut. */
   threadBoltClearance?: number;
   threadAxialClearance?: number;
+  /** Starts (#1348): threads side by side, each a pitch from the next; 1 when absent. */
+  threadStarts?: number;
   /** Own profile: the thread depth in mm (outer minus core radius) and the included flank angle in degrees. */
   threadDepth?: number;
   threadFlankAngle?: number;
@@ -1091,6 +1093,8 @@ export type WorkplaneShape = {
   /** Rod and screw: how much thinner (in diameter) the bolt comes out, for a metal nut. */
   threadBoltClearance?: number;
   threadAxialClearance?: number;
+  /** Starts (#1348): threads side by side, each a pitch from the next; 1 when absent. */
+  threadStarts?: number;
   /** Own profile: the thread depth in mm (outer minus core radius) and the included flank angle in degrees. */
   threadDepth?: number;
   threadFlankAngle?: number;
@@ -1612,7 +1616,7 @@ export type QrErrorCorrection = "L" | "M" | "Q" | "H";
 export type QrStyle = "code" | "raised" | "engraved";
 /** What a QR body keeps so it can be made again from the inspector (#553). */
 /** The single-board computers the SBC board shape knows (#1098). */
-export type SbcBoardType = "pi5" | "pi4" | "pi3bPlus" | "zero2w" | "bttPi12" | "xiaoEsp32c6" | "esp32c3SuperMini" | "esp32c6SuperMini";
+export type SbcBoardType = "pi5" | "pi4" | "pi3bPlus" | "zero2w" | "bttPi12" | "xiaoEsp32c6" | "esp32c3SuperMini" | "esp32c6SuperMini" | "featherEsp32s3" | "arduinoUno" | "arduinoNano" | "wemosD1Mini";
 
 export type SbcBoardSettings = {
   board: SbcBoardType;
@@ -1628,6 +1632,8 @@ export type SbcBoardSettings = {
   gpioUp?: boolean;
   /** How far in mm the openings going up reach above their part, 20 to 100 (default 20). */
   upReach?: number;
+  /** How far in mm the buttons reach the way they are pressed (up through a lid, or out of a side), 0 to 100; missing is 0. */
+  buttonReach?: number;
 };
 
 export type QrCodeSettings = {

@@ -306,7 +306,6 @@ describe("the tape measure snaps to centres (Discussion #610)", () => {
       startPointId: null,
       hover: null,
     };
-    // In this build the label names the body that moves (tapeLengthMoverOf): the pin, at the second point.
     expect(tapeLengthMoverOf(model, "tape-segment-3", { shapes, selectedIds: [] })).toEqual({ shapeId: "pin", movesEnd: true });
     const shift = tapeLengthShift(tapePointWorld(state, model.points[0]), tapePointWorld(state, model.points[1]), 25, true)!;
     // What the field does with the typed length: the pin goes along the line, up or down as well.
