@@ -23,6 +23,8 @@ import {
   MAX_LID_DEPTH,
   MAX_LID_GAP,
   MAX_LID_THICKNESS,
+  MAX_LID_THREAD_PITCH,
+  MAX_LID_THREAD_TURNS,
   MAX_LID_WALL,
   MAX_MAGNET_DIAMETER,
   MAX_MAGNET_GAP,
@@ -33,13 +35,17 @@ import {
   MIN_HINGE_PIN_PLAY,
   MIN_LID_DEPTH,
   MIN_LID_THICKNESS,
+  MIN_LID_THREAD_PITCH,
+  MIN_LID_THREAD_TURNS,
   MIN_LID_WALL,
   MIN_MAGNET_DIAMETER,
   MIN_MAGNET_HEIGHT,
   hingeKnuckleRadius,
   lidClickBumpsFit,
   lidHandleFits,
+  lidTakesExtras,
   lidThicknessForMagnets,
+  lidThread,
   normalizeLidOptions,
   type LidOptions,
 } from "@/lib/lidTool";
@@ -54,7 +60,9 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
  * sides (#1062) or laid flat on it. It comes out as a body of its own beside the one it closes, ready to print. With
  * magnets, it holds by four round magnets in the corners, in pockets in the body's rim and in the lid. With a hinge, it
  * swings open about a pin along the body's back, tight in the body's knuckles and turning in the lid's; a flush hinge can
- * have end plugs that close the pin's hole flush with the body's outside (Discussion #1387).
+ * have end plugs that close the pin's hole flush with the body's outside (Discussion #1387). A screw lid (Discussion #1393)
+ * is a cap with a thread inside its rim for a round body, which gets the matching thread on the outside of its top; it
+ * holds by that alone.
  */
 export function LidPanel({
   targetName,
@@ -113,10 +121,16 @@ export function LidPanel({
   const bumpsFit = lidClickBumpsFit(settings);
   const handleFits = lidHandleFits(settings);
   const handle = handleFits ? settings.handle : "none";
+  // A screw lid holds by its thread: the magnets, hinge, click bumps and handle stay switched off, with one line saying why.
+  const extras = lidTakesExtras(settings);
+  const screw = settings.type === "screw";
+  const thread = lidThread(settings);
+  const depthLabel = t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth");
+  const wallLabel = t(settings.type === "cap" || screw ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall");
   // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's and the pin's play.
   const summary = [
-    ...(lipped ? [t("lid.gap"), t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth"), t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall")] : []),
-    ...(settings.magnets ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
+    ...(lipped ? [t("lid.gap"), ...(screw ? [] : [depthLabel]), wallLabel] : []),
+    ...(settings.magnets && extras ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
     ...(hinged ? [t("lid.hingeGap"), t("lid.hingePinPlay")] : []),
   ].join(", ");
   return (
@@ -203,11 +217,39 @@ export function LidPanel({
           </div>
         ) : null}
 
+        {/* A screw lid's rim reaches down as far as its thread goes: the pitch times the turns. */}
+        {screw ? (<>
+          <EdgeModifierSlider
+            label={t("lid.threadPitch")}
+            value={settings.threadPitch}
+            min={MIN_LID_THREAD_PITCH}
+            max={MAX_LID_THREAD_PITCH}
+            step={0.5}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ threadPitch: value })}
+          />
+          <EdgeModifierSlider
+            label={t("lid.threadTurns")}
+            value={settings.threadTurns}
+            min={MIN_LID_THREAD_TURNS}
+            max={MAX_LID_THREAD_TURNS}
+            step={0.5}
+            workspace={workspace}
+            decimals={1}
+            disabled={busy}
+            onChange={(value) => onChange({ threadTurns: value })}
+          />
+          <ToolHint text={t("lid.screwHint", { depth: millimetres(Math.round(thread.depth * 100) / 100), height: millimetres(Math.round(thread.height * 10) / 10) })} />
+        </>) : null}
+
+        {!extras ? <span className="shell-openings-summary" role="status">{t("lid.error.screwExtras")}</span> : null}
         <ToolGroup
           tool="lid-magnets"
           label={t("lid.magnets")}
-          checked={settings.magnets}
-          disabled={busy}
+          checked={settings.magnets && extras}
+          disabled={busy || !extras}
           summary={`${t("lid.magnetSizeOption", { diameter: millimetres(settings.magnetDiameter), height: millimetres(settings.magnetHeight) })} mm`}
           onCheck={(magnets) => withMagnet({ magnets })}
         >
@@ -325,7 +367,7 @@ export function LidPanel({
           </>) : null}
           <ToolHint text={t("lid.hingeHint", { diameter: millimetres(Math.round(2 * hingeKnuckleRadius(settings) * 10) / 10) })} />
         </ToolGroup>
-        {!hingeFits ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
+        {!hingeFits && extras ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
 
         <ToolGroup
           tool="lid-click"
@@ -340,7 +382,7 @@ export function LidPanel({
           <ToolHint text={t("lid.clickBumpHeightHint")} />
         </ToolGroup>
         {/* Refused for a flat lid or pivot pins: the reason first, where the hint folds after one sentence. */}
-        {!bumpsFit ? <ToolHint text={t("lid.error.clickBumpsNoLip")} /> : null}
+        {!bumpsFit && extras ? <ToolHint text={t("lid.error.clickBumpsNoLip")} /> : null}
 
         {/* On the side the lid opens at: the front, or opposite the hinge. */}
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.handle")}>
@@ -360,7 +402,7 @@ export function LidPanel({
               </button>
             ))}
           </div>
-          {!handleFits ? <ToolHint text={t("lid.error.handlePivot")} /> : handle !== "none" ? <ToolHint text={t(`lid.handleHint.${handle}`)} /> : null}
+          {!handleFits && !extras ? null : !handleFits ? <ToolHint text={t("lid.error.handlePivot")} /> : handle !== "none" ? <ToolHint text={t(`lid.handleHint.${handle}`)} /> : null}
         </div>
       </ToolSection>
 
@@ -369,10 +411,10 @@ export function LidPanel({
           {lipped ? (<>
             {slider(t("lid.gap"), "gap", 0, MAX_LID_GAP, 0.05)}
             {fromPrinterPlay("lid.gap", settings.gap, printerPlay) ? <ToolHint text={t("printerPlay.fromFitTest")} /> : null}
-            {slider(t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth"), "depth", MIN_LID_DEPTH, MAX_LID_DEPTH, 0.5)}
-            {slider(t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall"), "wall", MIN_LID_WALL, MAX_LID_WALL, 0.2)}
+            {screw ? null : slider(depthLabel, "depth", MIN_LID_DEPTH, MAX_LID_DEPTH, 0.5)}
+            {slider(wallLabel, "wall", MIN_LID_WALL, MAX_LID_WALL, 0.2)}
           </>) : null}
-          {settings.magnets ? (<>
+          {settings.magnets && extras ? (<>
             {slider(t("lid.magnetDiameter"), "magnetDiameter", MIN_MAGNET_DIAMETER, MAX_MAGNET_DIAMETER, 0.5)}
             {slider(t("lid.magnetHeight"), "magnetHeight", MIN_MAGNET_HEIGHT, MAX_MAGNET_HEIGHT, 0.5)}
             {slider(t("lid.magnetGap"), "magnetGap", 0, MAX_MAGNET_GAP, 0.05)}
