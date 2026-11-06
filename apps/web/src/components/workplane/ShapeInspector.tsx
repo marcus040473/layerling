@@ -6937,7 +6937,8 @@ export function SurfaceTextureCard({
             {range("surfaceTimberHeight", t("inspector.surfaceTimberHeight"), settings.timberHeight, [SURFACE_TEXTURE_LIMITS.timberHeight[0], 100], 0.5, (timberHeight) => set({ timberHeight }))}
             {range("surfaceTimberBeam", t("inspector.surfaceTimberBeam"), settings.timberBeam, [SURFACE_TEXTURE_LIMITS.timberBeam[0], 10], 0.1, (timberBeam) => set({ timberBeam }))}
             {range("surfaceTimberRails", t("inspector.surfaceTimberRails"), settings.timberRails, SURFACE_TEXTURE_LIMITS.timberRails, 1, (timberRails) => set({ timberRails }))}
-            <ToggleProperty label={t("inspector.surfaceTimberGrain")} value={settings.timberGrain} disabled={disabled || busy} onChange={(timberGrain) => set({ timberGrain })} />
+            {percent("surfaceTimberGrain", t("inspector.surfaceTimberGrain"), settings.timberGrain, (timberGrain) => set({ timberGrain }))}
+            <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceTimberGrainHint")} />
             <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceTimberHint")} />
           </>
         ) : null}
