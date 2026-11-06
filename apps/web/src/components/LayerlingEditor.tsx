@@ -26,7 +26,7 @@ import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textKerningPatch, textLetterSize
 import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, isIconLayerBody, normalizeIconTagCount } from "@/lib/iconTag";
 import { automaticFlexiJoints, automaticFoldJoints, DEFAULT_FLEXI_FOLD, FLEXI_DEFAULTS, normalizeFlexiOptions, type FlexiOptions } from "@/lib/flexiJoints";
 import { groupedWithMagnets, lidClickBumpsFit, lidDefaults, lidHandleFits, lidTakesExtras, magnetPocketDepth, normalizeLidOptions, type LidOptions } from "@/lib/lidTool";
-import { FIT_TEST_CLEARANCES, getPrinterPlay, MAX_PRINTER_PLAY, MIN_PRINTER_PLAY, normalizePrinterPlay, PRINTER_PLAY_SETTINGS, printerPlayStart, setPrinterPlay, withPrinterPlay } from "@/lib/printerPlay";
+import { FIT_TEST_CLEARANCES, getPrinterPlay, MAX_PRINTER_PLAY, MIN_PRINTER_PLAY, normalizePrinterPlay, PRINTER_PLAY_SETTINGS, printerPlayPrinter, printerPlaySource, printerPlayStart, setPrinterPlay, setPrinterPlayPrinter, withPrinterPlay } from "@/lib/printerPlay";
 import { FIT_TEST_PIN_DIAMETER, fitTestHoles, fitTestShape, fitTestSpot } from "@/lib/fitTest";
 import { CABLE_DEFAULTS, cableChannelShapeFields, cableEndNear, cableGrid, findCableChannel, normalizeCableOptions, type CableChannelError, type CableChannelOptions, type CableChannelResult, type CableEnd, type CableGrid, type Vec3 as CableVec3 } from "@/lib/cableChannel";
 import { CableChannelPanel, type CableChannelEndName, type CableChannelPanelResult } from "./workplane/CableChannelPanel";
@@ -3881,6 +3881,11 @@ export function LayerlingEditor({
   useEffect(() => {
     workspaceSettingsRef.current = workspaceSettings;
   }, [workspaceSettings]);
+
+  // The tools start from the play of the printer this design prints on (Discussion #1406).
+  useEffect(() => {
+    setPrinterPlayPrinter(workspaceSettings.printer);
+  }, [workspaceSettings.printer]);
 
   useEffect(() => {
     snapGridRef.current = snapGrid;
@@ -8728,8 +8733,8 @@ export function LayerlingEditor({
     }
     const { type, thickness, gap, depth, wall, magnets, magnetDiameter, magnetHeight, magnetGap, hinge, hingePin, hingeGap, hingePinPlay, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle, hingeEndPlugs, clickBumps, clickBumpHeight, handle, threadPitch, threadTurns } = lidTool;
     setLidTool((current) => current ? { ...current, busy: true, error: null } : current);
-    // Click bumps, a handle and end plugs the panel does not show (a flat lid, a pivot lid, a hinge not flush) are not
-    // asked for, nor magnets and a hinge with a screw lid.
+    // Click bumps, a handle and end plugs the panel does not show (a flat lid, a pivot lid, a hinge not flush)
+    // are not asked for, nor magnets and a hinge with a screw lid.
     const extras = lidTakesExtras(lidTool);
     void makeLid({
       type, thickness, gap, depth, wall, magnets: magnets && extras, magnetDiameter, magnetHeight, magnetGap, hinge: hinge && extras, hingePin, hingeGap, hingePinPlay, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle,
@@ -9782,6 +9787,8 @@ export function LayerlingEditor({
     setHolePatternTool(null);
     faceToolPickRunRef.current += 1;
     setFaceTool(null);
+    supportRibPickRunRef.current += 1;
+    setSupportRibTool(null);
     setAlignMode(false);
     setMirrorMode(false);
     setPivotPickMode(false);
@@ -9869,12 +9876,12 @@ export function LayerlingEditor({
     if (
       !source || !canPaintShape(source)
       || selectedIds.length !== 1 || selectedIds[0] !== paintTool.sourceId
-      || mateTool || layFlatPickMode || pivotPickMode || arrayTool || scalePercentTool || holePatternTool || faceTool
+      || mateTool || layFlatPickMode || pivotPickMode || arrayTool || scalePercentTool || holePatternTool || faceTool || supportRibTool
       || shellTool || deleteFaceTool || edgeModifier || splitSession || simplifyToolId
     ) {
       setPaintTool(null);
     }
-  }, [arrayTool, deleteFaceTool, edgeModifier, faceTool, holePatternTool, layFlatPickMode, mateTool, paintTool, pivotPickMode, scalePercentTool, selectedIds, shapes, shellTool, simplifyToolId, splitSession]);
+  }, [arrayTool, deleteFaceTool, edgeModifier, faceTool, holePatternTool, layFlatPickMode, mateTool, paintTool, pivotPickMode, scalePercentTool, selectedIds, shapes, shellTool, simplifyToolId, splitSession, supportRibTool]);
 
   /** The colours the panel offers: those of the design's bodies and of their paint, the one chosen now included. */
   const paintPalette = useMemo(() => {
@@ -13889,9 +13896,14 @@ export function LayerlingEditor({
           };
         }
         const play = getPrinterPlay();
+        // One play per printer (Discussion #1406): the design's printer, and whether the play is its own.
+        const printerId = printerPlayPrinter();
+        const preset = printerPresetById(printerId);
         return {
           play,
           measured: play !== null,
+          printer: preset ? { id: preset.id, name: `${preset.vendor} ${preset.model}` } : null,
+          playOf: printerPlaySource(printerId) === "printer" ? "printer" : play === null ? null : "noPrinter",
           testedValues: [...FIT_TEST_CLEARANCES],
           settings: PRINTER_PLAY_SETTINGS.map((setting) => ({
             setting: setting.id,
@@ -13899,7 +13911,7 @@ export function LayerlingEditor({
             startsAt: printerPlayStart(setting.id, play),
           })),
           ...(fitTest ? { fitTest } : {}),
-          note: "play is per side in mm, kept in this browser; null means not measured. New uses of the settings with takes perSide start from it, those with total from twice it (startsAt, before each tool holds it within its own field); takes own keeps its built-in start. Shapes already in a design never change.",
+          note: "play is per side in mm, kept in this browser; null means not measured. It is the play of the printer chosen in the design's workspace settings (printer): playOf printer means that printer has a play of its own, noPrinter that it uses the play kept without a printer (setting play then gives the printer its own; clear takes away what is shown). New uses of the settings with takes perSide start from it, those with total from twice it (startsAt, before each tool holds it within its own field); takes own keeps its built-in start. Shapes already in a design never change.",
         };
       }
 
