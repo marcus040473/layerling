@@ -9184,12 +9184,22 @@ export function LayerlingEditor({
     );
   }, [commitShapes, selectedIds, shapes]);
 
-  // The shield in the object list takes a part's shape lock off (#1277).
-  const unlockShapeLockById = useCallback((id: string) => {
+  // The shield in the object list puts a part's shape lock on and takes it off (#1277). Lock refuses
+  // the change as it does in the settings; taking the shape lock off a locked part stays possible.
+  const toggleShapeLockOfShapeById = useCallback((id: string) => {
     const target = shapes.find((s) => s.id === id);
-    if (!target?.shapeLocked) return;
-    commitShapes(shapes.map((s) => (s.id === id ? { ...s, shapeLocked: undefined } : s)), selectedIds, t("status.shapeLockOff"));
-  }, [commitShapes, selectedIds, shapes]);
+    if (!target) return;
+    const shouldLock = !target.shapeLocked;
+    if (shouldLock && target.locked) {
+      setNotice(t("status.objectLocked"));
+      return;
+    }
+    commitShapes(
+      shapes.map((s) => (s.id === id ? { ...s, shapeLocked: shouldLock || undefined } : s)),
+      selectedIds,
+      shouldLock ? t("status.shapeLockOn") : t("status.shapeLockOff"),
+    );
+  }, [commitShapes, selectedIds, setNotice, shapes]);
 
   const toggleShapeHiddenById = useCallback((id: string) => {
     const target = shapes.find((s) => s.id === id);
@@ -17134,7 +17144,7 @@ export function LayerlingEditor({
             selectedIds={historyViewState ? [] : selectedIds}
             onSelectShape={selectShape}
             onToggleLock={toggleShapeLockById}
-            onUnlockShapeLock={unlockShapeLockById}
+            onToggleShapeLock={toggleShapeLockOfShapeById}
             onToggleHidden={toggleShapeHiddenById}
             onRenameShape={renameShapeById}
             onMoveShape={moveShapeInList}
