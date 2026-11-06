@@ -6,6 +6,8 @@ import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import type { ClearanceMark } from "@/components/workplane/ClearanceMarkOverlay";
+import { fromPrinterPlay } from "@/lib/printerPlay";
+import { usePrinterPlay } from "@/lib/usePrinterPlay";
 import { CLEARANCE_SEARCH_MM, clearancePairKey, type ClearanceBox, type ClearanceResult, type ClearanceVec3 } from "@/lib/clearanceCheck";
 import { formatEstimateNumber } from "@/lib/editorBooleans";
 import { t } from "@/lib/i18n";
@@ -139,6 +141,8 @@ export function ClearancePanel({
   onClose: () => void;
 }) {
   useLanguage();
+  // The minimum gap says when it is still the one the printer's play gave it (printerPlay.ts).
+  const printerPlay = usePrinterPlay();
   const title = t("clearance.title");
   const rows = result ? clearanceRows(result, workspace) : [];
   const problems = result ? result.overlaps.length + result.touching.length + result.tight.length : 0;
@@ -187,6 +191,7 @@ export function ClearancePanel({
           workspace={workspace}
           onChange={(value) => onChange({ threshold: value })}
         />
+      {fromPrinterPlay("clearance.threshold", settings.threshold, printerPlay) ? <span className="shell-openings-summary">{t("printerPlay.fromFitTest")}</span> : null}
         <label className="edge-modifier-check">
           <input type="checkbox" checked={settings.splitParts} disabled={running} onChange={(event) => onChange({ splitParts: event.currentTarget.checked })} />
           <span>{t("clearance.splitParts")}</span>

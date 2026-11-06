@@ -44,7 +44,9 @@ import {
   type LidOptions,
 } from "@/lib/lidTool";
 import { numberLocale, t } from "@/lib/i18n";
+import { fromPrinterPlay } from "@/lib/printerPlay";
 import { useLanguage } from "@/lib/useLanguage";
+import { usePrinterPlay } from "@/lib/usePrinterPlay";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
 /**
@@ -73,6 +75,8 @@ export function LidPanel({
   onCancel: () => void;
 }) {
   useLanguage();
+  // The gap and the pin's play say when they are still what the printer's play gave them (printerPlay.ts).
+  const printerPlay = usePrinterPlay();
   const title = t("lid.title");
   // A magnet needs its pocket and a skin above it in the plate: a thinner plate is made thick enough for it.
   // Raised, it says so under the plate's thickness until that is set by hand; set thinner by hand, it says what is needed.
@@ -355,6 +359,7 @@ export function LidPanel({
         <ToolAdvanced tool="lid" summary={summary}>
           {lipped ? (<>
             {slider(t("lid.gap"), "gap", 0, MAX_LID_GAP, 0.05)}
+            {fromPrinterPlay("lid.gap", settings.gap, printerPlay) ? <ToolHint text={t("printerPlay.fromFitTest")} /> : null}
             {slider(t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth"), "depth", MIN_LID_DEPTH, MAX_LID_DEPTH, 0.5)}
             {slider(t(settings.type === "cap" ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall"), "wall", MIN_LID_WALL, MAX_LID_WALL, 0.2)}
           </>) : null}
@@ -365,6 +370,7 @@ export function LidPanel({
           </>) : null}
           {hinged ? slider(t("lid.hingeGap"), "hingeGap", MIN_HINGE_GAP, MAX_HINGE_GAP, 0.05) : null}
           {hinged ? slider(t("lid.hingePinPlay"), "hingePinPlay", MIN_HINGE_PIN_PLAY, MAX_HINGE_PIN_PLAY, 0.05) : null}
+          {hinged && fromPrinterPlay("lid.hingePinPlay", settings.hingePinPlay, printerPlay) ? <ToolHint text={t("printerPlay.fromFitTest")} /> : null}
           {/* The play is only in the lid's holes: in the body's the pin sits tight, so it does not slide out (#1220). */}
           {hinged ? <ToolHint text={t("lid.hingePinPlayHint")} /> : null}
         </ToolAdvanced>
