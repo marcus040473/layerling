@@ -77,7 +77,7 @@ import { FaceToolPanel } from "./workplane/FaceToolPanel";
 import { DEFAULT_FACE_TOOL, faceToolSettingsOn, normalizeFaceTool, type FaceToolSettings } from "@/lib/faceTool";
 import { faceToolBody } from "@/lib/faceToolBody";
 import { DEFAULT_HOLE_PATTERN, normalizeHolePattern, type HolePatternSettings } from "@/lib/holePattern";
-import { holePatternCustomFootprint, holePatternScrewPatch, holePatternScrewSizes, holePatternShapes, readPerforableFace, type PerforableFace } from "@/lib/holePatternShapes";
+import { holePatternCustomFootprint, holePatternScrewPatch, holePatternScrewSizes, holePatternShapes, isRoundWallFace, readHolePatternFace, readPerforableFace, type HolePatternFace, type PerforableFace } from "@/lib/holePatternShapes";
 import { honeycombReplacementParts } from "@/lib/honeycombMigration";
 import { groupNeedsThreadRecut, placeRecutGroup, threadRecutParts } from "@/lib/groupThreadRecut";
 import { groupsStretchedInstead, groupsToKeepParts, keptPartsForResize, placeKeptPartsGroup } from "@/lib/groupKeepParts";
@@ -2945,6 +2945,20 @@ function holePatternCustomShape(shapes: readonly WorkplaneShape[], sourceId: str
   return id ? holePatternCustomChoices(shapes, sourceId).find((shape) => shape.id === id) ?? null : null;
 }
 
+/** The shapes with the selected, unlocked ones moved by (dx, dy, dz): y is up. */
+function translateSelectedShapes(shapes: WorkplaneShape[], selected: Set<string>, dx: number, dy: number, dz: number) {
+  return shapes.map((shape) =>
+    selected.has(shape.id) && !shape.locked
+      ? {
+          ...shape,
+          x: cleanNearZero(shape.x + dx),
+          z: cleanNearZero(shape.z + dz),
+          elevation: cleanNearZero((shape.elevation ?? 0) + dy),
+        }
+      : shape,
+  );
+}
+
 export function LayerlingEditor({
   initialAssets = [],
   initialAttachments,
@@ -3228,11 +3242,11 @@ export function LayerlingEditor({
     mode: MateMode;
     gap: number;
   } | null>(null);
-  // "Hole pattern": a flat face of the selected body, then the holes that fit it (#223).
+  // "Hole pattern": a flat face or a round wall (#1393) of the selected body, then the holes that fit it (#223).
   const [holePatternTool, setHolePatternTool] = useState<{
     sourceId: string;
     step: "pick" | "ready";
-    face: PerforableFace | null;
+    face: HolePatternFace | null;
     settings: HolePatternSettings;
     busy: boolean;
   } | null>(null);
@@ -9388,7 +9402,7 @@ export function LayerlingEditor({
   }, [refuseLockedSelection, commitShapes, hasSelection, selectedIds, selectedShapes, shapes, refuseBodyLockedSelection]);
 
   const raiseSelected = useCallback(
-    (delta: number) => {
+    (delta: number, live = false) => {
       if (!hasSelection) {
         return;
       }
@@ -9401,17 +9415,15 @@ export function LayerlingEditor({
         true,
       );
       // As last committed: a held Ctrl+arrow moves once a frame (keyRepeatBatch).
+      const next = translateSelectedShapes(shapesRef.current, selected, normal.x * delta, normal.y * delta, normal.z * delta);
+      if (live) {
+        shapesRef.current = next;
+        liveRunRef.current = true;
+        setShapes(next);
+        return;
+      }
       commitShapes(
-        shapesRef.current.map((shape) =>
-          selected.has(shape.id) && !shape.locked
-            ? {
-                ...shape,
-                x: cleanNearZero(shape.x + normal.x * delta),
-                z: cleanNearZero(shape.z + normal.z * delta),
-                elevation: cleanNearZero((shape.elevation ?? 0) + normal.y * delta),
-              }
-            : shape,
-        ),
+        next,
         selectedIds,
         t(delta > 0 ? "status.selectionRaisedBy" : "status.selectionLoweredBy", { distance: `${formatLengthMm(Math.abs(delta), workspaceSettingsRef.current.accuracy)} ${lengthDisplayUnit(workspaceSettingsRef.current).label}` }),
         `move:${selectedIds.join(",")}`,
@@ -9602,15 +9614,22 @@ export function LayerlingEditor({
       if (holePatternPickRunRef.current === run) setNotice(localizedError(error instanceof Error ? error.message : String(error)), true);
       return;
     }
-    const read = readPerforableFace(triangles, pick.point, pick.normal);
+    const read = readHolePatternFace(triangles, pick.point, pick.normal);
     const latest = shapesRef.current.find((shape) => shape.id === source.id);
     if (holePatternPickRunRef.current !== run || !latest || projectShapesFingerprint([latest]) !== fingerprint) return;
     if (!read.ok) {
       setNotice(t(read.reason === "curved" ? "status.holePatternCurved" : "status.holePatternMissed"));
       return;
     }
-    setHolePatternTool((current) => current && current.sourceId === source.id && current.step === "pick" ? { ...current, step: "ready", face: read.face } : current);
-    setNotice(t("status.holePatternReady"));
+    const round = isRoundWallFace(read.face);
+    setHolePatternTool((current) => {
+      if (!current || current.sourceId !== source.id || current.step !== "pick") return current;
+      // A ring along the edge is a flat face's arrangement; round a wall the holes are spread staggered instead.
+      const settings = round && current.settings.arrangement === "perimeter" ? normalizeHolePattern({ ...current.settings, arrangement: "staggered" }) : current.settings;
+      holePatternSettingsRef.current = settings;
+      return { ...current, step: "ready", face: read.face, settings };
+    });
+    setNotice(t(round ? "status.holePatternRoundReady" : "status.holePatternReady"));
   }, [faceReadForClick, holePatternTool]);
 
   const changeHolePatternSettings = useCallback((patch: Partial<HolePatternSettings>) => {
@@ -12861,8 +12880,10 @@ export function LayerlingEditor({
         // Taken before the face is read: joining a group's or bundle's parts takes a moment, and the scene may change meanwhile.
         const sourceFingerprint = projectShapesFingerprint(currentShapes());
         const sourceProjectId = projectInfoRef.current.projectId;
-        const read = readPerforableFace(await faceReadPositionsOffThread(target, geometryAbortRef.current?.signal), point, normal);
-        if (!read.ok) throw new Error(read.reason === "curved" ? "That face is curved; perforate_face needs a flat face" : "perforate_face found no flat face there");
+        // A flat face, or the round wall of a cylinder, tube or bore (#1393).
+        const read = readHolePatternFace(await faceReadPositionsOffThread(target, geometryAbortRef.current?.signal), point, normal);
+        if (!read.ok) throw new Error(read.reason === "curved" ? "That face is curved but not a round wall; perforate_face needs a flat face or the wall of a cylinder, tube or bore" : "perforate_face found no face there");
+        if (isRoundWallFace(read.face) && arrangement === "perimeter") throw new Error("arrangement perimeter needs a flat face; on a round wall use grid or staggered");
         const plan = holePatternShapes(read.face, settings, t("holePattern.holeName"), undefined, custom);
         if (plan.tooMany) throw new Error("That would be too many holes; make them bigger or the spacing wider");
         if (plan.holes.length === 0) throw new Error("No hole fits on that face with this size and margin");
@@ -12882,6 +12903,15 @@ export function LayerlingEditor({
           holes: plan.holes.length,
           settings,
           ...(plan.ring ? { ring: { length: Number(plan.ring.length.toFixed(2)), onCorners: plan.ring.onCorners } } : {}),
+          ...(plan.wall ? {
+            wall: {
+              diameter: Number(plan.wall.diameter.toFixed(2)),
+              closed: plan.wall.closed,
+              outside: isRoundWallFace(read.face) ? read.face.round.outside : true,
+              thickness: Number(read.face.thickness.toFixed(2)),
+              ...(plan.wall.columns !== undefined ? { columns: plan.wall.columns, spacing: Number((plan.wall.spacing ?? 0).toFixed(2)) } : {}),
+            },
+          } : {}),
           normal: [normal.x, normal.y, normal.z].map((value) => Number(value.toFixed(4))),
         };
       }
@@ -16219,7 +16249,7 @@ export function LayerlingEditor({
   }, []);
 
   const nudgeSelected = useCallback(
-    (deltaX: number, deltaZ: number, rise = 0) => {
+    (deltaX: number, deltaZ: number, rise = 0, live = false) => {
       if (!hasSelection) {
         return;
       }
@@ -16242,17 +16272,18 @@ export function LayerlingEditor({
       window.layerlingFollowMove?.(movedIds, translation);
       // The shapes as last committed, not as last drawn: a held key moves once a
       // frame, and the next move may come before React has drawn the last one.
+      const next = translateSelectedShapes(shapesRef.current, selected, translation.x, translation.y, translation.z);
+      if (live) {
+        // A held arrow key: show the move as a mouse drag does, and let the key's
+        // release write it to the history (finishLiveRun), so the scene is not rebuilt
+        // and committed on every repeat.
+        shapesRef.current = next;
+        liveRunRef.current = true;
+        setShapes(next);
+        return;
+      }
       commitShapes(
-        shapesRef.current.map((shape) =>
-          selected.has(shape.id) && !shape.locked
-            ? {
-                ...shape,
-                x: cleanNearZero(shape.x + translation.x),
-                z: cleanNearZero(shape.z + translation.z),
-                elevation: cleanNearZero((shape.elevation ?? 0) + translation.y),
-              }
-            : shape,
-        ),
+        next,
         selectedIds,
         selectedShapes.length === 1 ? t("status.movedOneBy", { distance }) : t("status.movedManyBy", { count: selectedShapes.length, distance }),
         `move:${selectedIds.join(",")}`,
@@ -16265,9 +16296,29 @@ export function LayerlingEditor({
   nudgeSelectedRef.current = nudgeSelected;
   const raiseSelectedRef = useRef(raiseSelected);
   raiseSelectedRef.current = raiseSelected;
+  // A held arrow key moves the selection live (no history step per repeat). liveRun is
+  // true while such moves are waiting for their history step; finishLiveRun writes it
+  // as one step, amending the step the key's first press made, so one Undo takes the
+  // whole run back.
+  const liveRunRef = useRef(false);
+  const finishLiveRun = useCallback(() => {
+    if (!liveRunRef.current) return;
+    liveRunRef.current = false;
+    commitShapes(shapesRef.current, selectedIdsRef.current, undefined, undefined, true);
+  }, [commitShapes]);
+  const finishLiveRunRef = useRef(finishLiveRun);
+  finishLiveRunRef.current = finishLiveRun;
   // Repeats of a held arrow key move once a frame, by their sum (#1042).
   const keyRepeatBatchRef = useRef<ReturnType<typeof createKeyRepeatBatch> | null>(null);
-  keyRepeatBatchRef.current ??= createKeyRepeatBatch(({ x, z, rise }) => {
+  keyRepeatBatchRef.current ??= createKeyRepeatBatch(({ x, z, rise }, live) => {
+    if (live) {
+      // A repeat of a held key: shown at once, committed when the key comes up.
+      if (x || z) nudgeSelectedRef.current(x, z, rise, true);
+      else raiseSelectedRef.current(rise, true);
+      return;
+    }
+    // A fresh press starts a new history step: first the last run is written.
+    finishLiveRunRef.current();
     // Drawn at once, as a key press is: otherwise the effect that keeps
     // shapesRef in step could run late with the shapes before this move,
     // and the next frame's move would start from there and lose this one.
@@ -16277,7 +16328,10 @@ export function LayerlingEditor({
     });
   });
   useEffect(() => {
-    const flush = () => keyRepeatBatchRef.current?.flush();
+    const flush = () => {
+      keyRepeatBatchRef.current?.flush();
+      finishLiveRunRef.current();
+    };
     window.addEventListener("keyup", flush);
     window.addEventListener("blur", flush);
     return () => {
@@ -17459,7 +17513,7 @@ export function LayerlingEditor({
           mateFacePick={mateTool && mateTool.step !== "ready"
             ? { shapeIds: mateTool.step === "source" ? [mateTool.sourceId] : shapes.filter((shape) => shape.id !== mateTool.sourceId && !shape.hidden).map((shape) => shape.id), round: mateTool.mode === "concentric" }
             : holePatternTool?.step === "pick"
-              ? { shapeIds: [holePatternTool.sourceId], joined: faceJoinPositions }
+              ? { shapeIds: [holePatternTool.sourceId], joined: faceJoinPositions, round: "either" }
               : faceTool?.step === "pick"
                 ? { shapeIds: [faceTool.sourceId], joined: faceJoinPositions }
                 : null}
@@ -17674,6 +17728,7 @@ export function LayerlingEditor({
           holeCount={holePatternPreview?.holes.length ?? 0}
           tooMany={Boolean(holePatternPreview?.tooMany)}
           ring={holePatternPreview?.ring}
+          wall={holePatternTool.face && isRoundWallFace(holePatternTool.face) ? holePatternPreview?.wall ?? { diameter: holePatternTool.face.round.radius * 2, closed: holePatternTool.face.round.outline.closed } : undefined}
           customChoices={holePatternCustomChoices(shapes, holePatternTool.sourceId).map((shape) => ({ id: shape.id, name: displayShapeName(shape) }))}
           customIsHole={Boolean(holePatternCustom?.hole)}
           busy={holePatternTool.busy}

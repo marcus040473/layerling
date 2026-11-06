@@ -5,7 +5,7 @@ import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/Movable
 import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolApply, ToolCancel, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
-import { t } from "@/lib/i18n";
+import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import {
   HOLE_PATTERN_MANY_HOLES,
@@ -52,6 +52,7 @@ export function HolePatternPanel({
   holeCount,
   tooMany,
   ring,
+  wall,
   customChoices,
   customIsHole,
   busy,
@@ -70,6 +71,8 @@ export function HolePatternPanel({
   tooMany: boolean;
   /** Holes round the edge (#1232): the length of the line they go round on, and whether they sit on its corners. */
   ring?: { length: number; onCorners: boolean };
+  /** A round wall picked (#1393): its diameter, and round a closed one how many holes a row holds at what step. */
+  wall?: { diameter: number; closed: boolean; columns?: number; spacing?: number };
   /** Own shape (#1235): the other objects of the scene that can be repeated, and whether the chosen one is a hole. */
   customChoices: { id: string; name: string }[];
   customIsHole: boolean;
@@ -111,6 +114,14 @@ export function HolePatternPanel({
           ? t(holeCount === 1 ? "holePattern.countPieces.one" : "holePattern.countPieces.many", { count: holeCount })
           : t(holeCount === 1 ? "holePattern.count.one" : "holePattern.count.many", { count: holeCount });
   const maxDepth = Math.max(1, Math.ceil(thickness * 2) / 2);
+  // Round a wall the holes go in rows round it; a ring along the edge is a flat face's arrangement.
+  const arrangements = wall ? ARRANGEMENTS.filter((option) => option !== "perimeter") : ARRANGEMENTS;
+  const millimetres = (value: number) => (Math.round(value * 10) / 10).toLocaleString(numberLocale());
+  const wallNote = wall
+    ? wall.closed && wall.columns
+      ? t("holePattern.roundWallClosed", { diameter: millimetres(wall.diameter), columns: wall.columns, spacing: millimetres(wall.spacing ?? settings.spacing) })
+      : t("holePattern.roundWallPart", { diameter: millimetres(wall.diameter) })
+    : null;
 
   // Holes fit and Create can make them. Their count stands with the face picked; a face still to pick, too many holes
   // or none is said in the status line.
@@ -133,6 +144,7 @@ export function HolePatternPanel({
 
       <ToolSection title={t("toolSidebar.selection")}>
         <ToolSelection ready={ready} confirm text={targetName} detail={!ready || fits ? status : undefined} />
+        {ready && wallNote ? <span className="shell-openings-summary">{wallNote}</span> : null}
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
@@ -293,7 +305,7 @@ export function HolePatternPanel({
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.arrangement")}>
           <span>{t("holePattern.arrangement")}</span>
           <div className="shell-opening-options">
-            {ARRANGEMENTS.map((option) => (
+            {arrangements.map((option) => (
               <button
                 key={option}
                 type="button"
@@ -309,7 +321,7 @@ export function HolePatternPanel({
         </div>
 
         {/* Round the edge (#1232): by spacing or by number, a hole on every corner, or from a start point along the edge. */}
-        {perimeter ? (
+        {perimeter && !wall ? (
           <>
             <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.perimeterBy")}>
               <span>{t("holePattern.perimeterBy")}</span>
@@ -386,7 +398,7 @@ export function HolePatternPanel({
                 className={(settings.depth === null) === through ? "active" : ""}
                 onClick={() => onChange({ depth: through ? null : Math.min(maxDepth, Math.max(1, Math.round(thickness / 2 * 2) / 2)) })}
               >
-                {t(through ? "holePattern.depth.through" : "holePattern.depth.custom")}
+                {t(through ? (wall ? "holePattern.depth.throughWall" : "holePattern.depth.through") : "holePattern.depth.custom")}
               </button>
             ))}
           </div>
