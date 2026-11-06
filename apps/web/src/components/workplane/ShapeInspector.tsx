@@ -182,10 +182,10 @@ import { numberLocale, t, type MessageKey } from "@/lib/i18n";
 import { localizedError } from "@/lib/userErrors";
 import { displayShapeName, makeShapeFromAsset, renamedShapeName, shapeAssetDefaultDimensions } from "@/lib/shapeCatalog";
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { SURFACE_TEXTURE_OWN_IMAGE_SIZE, surfaceTextureOwnImage } from "@/lib/surfaceTextureImages";
 import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
-import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternLabel, surfaceTextureEntry, surfaceTextureLayerPlaced } from "@/lib/surfaceTextureShape";
+import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternColor, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureEntry, surfaceTextureLayerPlaced } from "@/lib/surfaceTextureShape";
 import { LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
 import { vaseShapePatchOffThread } from "@/lib/vaseShape";
@@ -6412,6 +6412,8 @@ export function SurfaceTextureCard({
   const setSettings = (next: SurfaceTextureSettings | ((current: SurfaceTextureSettings) => SurfaceTextureSettings)) =>
     setLayers((all) => all.map((layer, index) => (index === shownLayer ? (typeof next === "function" ? next(layer) : next) : layer)));
   const set = (patch: Partial<SurfaceTextureSettings>) => setSettings((current) => normalizeSurfaceTexture({ ...current, ...patch }));
+  // The pattern as a part of its own is a choice for the whole texture: the first layer holds it, whichever is shown.
+  const setFirst = (patch: Partial<SurfaceTextureSettings>) => setLayers((all) => all.map((layer, index) => (index === 0 ? normalizeSurfaceTexture({ ...layer, ...patch }) : layer)));
   const applied = shape.surfaceTexture;
   // A texture made or changed elsewhere (by an assistant, by redo, in a project opened again) shows its own settings;
   // one taken off leaves the card as it was, to apply again.
@@ -6513,6 +6515,11 @@ export function SurfaceTextureCard({
   const once = image && settings.imageTiling === "once";
   const placedHere = text || once;
   const picked = settings.faces.length > 0;
+  // The pattern as a part of its own (Discussion #1347): which way it goes with these layers, and its colour - the one
+  // chosen, else the one the pattern part has, the one chosen last, or one that stands out against the body.
+  const patternPart = layers[0].patternPart;
+  const patternWay = surfacePatternPartWay(layers[0], layers.slice(1));
+  const patternColor = layers[0].patternColor || surfacePatternPartOf(shape)?.color || surfacePatternColor(layers[0], shape.color);
   const percent = (id: string, label: string, value: number, onChange: (value: number) => void) => range(id, label, Math.round(value * 100), [0, 100], 1, (share) => onChange(share / 100));
   const apply = async () => {
     // The faces picked so far are in the settings already; picking ends with the texture made.
@@ -6606,7 +6613,13 @@ export function SurfaceTextureCard({
   const afterDirection = cracks ? (
                 <>
                   {/* The gold: a part of its own in the notch, for a second filament. */}
-                  <ToggleProperty label={t("inspector.surfaceCrackGold")} value={settings.crackGold} disabled={disabled || busy} onChange={(crackGold) => set({ crackGold, ...(crackGold ? { direction: "inward" as const } : {}) })} />
+                  <ToggleProperty
+                    label={t("inspector.surfaceCrackGold")}
+                    value={settings.crackGold}
+                    disabled={disabled || busy}
+                    // The gold is the cracks' part of its own: the first layer's gold and the pattern part go one or the other.
+                    onChange={(crackGold) => set({ crackGold, ...(crackGold ? { direction: "inward" as const, ...(shownLayer === 0 ? { patternPart: false } : {}) } : {}) })}
+                  />
                   {settings.crackGold ? range("surfaceCrackRecess", t("inspector.surfaceCrackRecess"), settings.crackRecess, SURFACE_TEXTURE_LIMITS.crackRecess, 0.05, (crackRecess) => set({ crackRecess })) : null}
                   {settings.crackGold ? <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceCrackGoldHint")} /> : null}
                 </>
@@ -6615,25 +6628,42 @@ export function SurfaceTextureCard({
               ) : wood ? (
                 <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceWoodHint")} />
   ) : null;
+  // The pattern as a part of its own, in a colour of its own: a bundle of the body and the pattern (Discussion #1347).
+  const patternPartFields = (
+    <>
+      <ToggleProperty
+        label={t("inspector.surfacePatternPart")}
+        value={patternPart}
+        disabled={disabled || busy}
+        onChange={(on) => setFirst({ patternPart: on, ...(on ? { crackGold: false } : {}) })}
+      />
+      {patternPart ? (
+        <>
+          {/* As the colour card's own colour: the picker in a pill with the colour's code, beside its name. */}
+          <label className="select-property surface-pattern-color">
+            <span>{t("inspector.surfacePatternColor")}</span>
+            <span className={disabled || busy ? "custom-color disabled" : "custom-color"}>
+              <CustomColorInput color={patternColor} disabled={disabled || busy} onCommit={(color) => setFirst({ patternColor: color })} onInteractionActiveChange={onInteractionActiveChange} />
+              <span>{patternColor.toUpperCase()}</span>
+            </span>
+          </label>
+          <ToolHint
+            className="cylinder-wrap-hint"
+            text={t(patternWay === "outward" ? "inspector.surfacePatternRaisedHint" : patternWay === "inward" ? "inspector.surfacePatternCutHint" : "inspector.surfacePatternWayHint")}
+          />
+        </>
+      ) : null}
+    </>
+  );
   // The pattern and what goes with it, and the rarer settings, are the same in the card and in the docked tool.
   const patternFields = (
     <>
-    {host ? (
-      <SurfacePatternPicker
-        value={settings.pattern}
-        disabled={disabled || busy}
-        onChange={(value) => set(surfaceSettingsForPattern(settings, value))}
-      />
-    ) : (
-      <SelectProperty
-        type="select"
-        label={t("inspector.surfacePattern")}
-        value={settings.pattern}
-        options={options(SURFACE_TEXTURE_PATTERNS, (value) => t(SURFACE_TEXTURE_LABELS.pattern[value]))}
-        disabled={disabled || busy}
-        onChange={(value) => set(surfaceSettingsForPattern(settings, value as SurfaceTexturePattern))}
-      />
-    )}
+    {/* The patterns by their pictures, in the card as in the docked tool. */}
+    <SurfacePatternPicker
+      value={settings.pattern}
+      disabled={disabled || busy}
+      onChange={(value) => set(surfaceSettingsForPattern(settings, value))}
+    />
     {cracks ? (
       <>
         <SelectProperty
@@ -7092,6 +7122,7 @@ export function SurfaceTextureCard({
                     {afterDirection}
                     {projectionShown ? projectionField : null}
                     {axisShown ? axisField : null}
+                    {patternPartFields}
                   </ToolSection>
                   {advancedSummary ? (
                     <ToolAdvanced tool="surface" summary={advancedSummary}>
@@ -7141,6 +7172,7 @@ export function SurfaceTextureCard({
               {projectionShown ? projectionField : afterDirection}
               {/* A board's pith runs along its longest side: only a log asks for its axis. */}
               {axisShown ? axisField : null}
+              {patternPartFields}
               {/* Where it goes: every face, or only the faces clicked in the view (a text goes where it is put). */}
               {facesPart(true)}
               <button className="name-tag-more" type="button" aria-expanded={moreOpen} onClick={() => setMoreOpen((current) => !current)}>
