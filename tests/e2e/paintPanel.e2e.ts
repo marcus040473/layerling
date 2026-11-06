@@ -57,7 +57,7 @@ describe("the paint tool's window", () => {
     const modes = [...panel.querySelectorAll<HTMLButtonElement>("[role=radiogroup] [role=radio]")].filter((entry) => entry.textContent);
     expect(modes.map((entry) => entry.textContent)).toEqual(["Fill", "Circle", "Lasso"]);
     expect(modes.map((entry) => entry.getAttribute("aria-checked"))).toEqual(["true", "false", "false"]);
-    expect(panel.querySelector("[role=status]")?.textContent).toBe("Click a face to fill it up to its sharp edges.");
+    expect(panel.querySelector("[role=status] small")?.textContent).toBe("Click a face to fill it up to its sharp edges.");
     expect(panel.textContent).toContain("Stop at edges sharper than");
     expect(panel.textContent).not.toContain("Diameter");
     click(modes[1]);
@@ -69,7 +69,7 @@ describe("the paint tool's window", () => {
     const { panel } = mount({ settings: { mode: "circle", erase: true } });
     expect(panel.textContent).toContain("Diameter");
     expect(panel.textContent).not.toContain("Stop at edges sharper than");
-    expect(panel.querySelector("[role=status]")?.textContent).toBe("Eraser: click where a round patch of paint should come off.");
+    expect(panel.querySelector("[role=status] small")?.textContent).toBe("Eraser: click where a round patch of paint should come off.");
     expect(button(panel, "Eraser")?.getAttribute("aria-pressed")).toBe("true");
     // With the eraser on, no colour is the one chosen.
     expect(panel.querySelectorAll(".color-grid .selected")).toHaveLength(0);
@@ -101,6 +101,8 @@ describe("the paint tool's window", () => {
     expect(button(empty.panel, "Clear all")?.disabled).toBe(true);
     act(() => root?.unmount());
     const painted = mount({ strokes: 3, wholeFaces: true });
+    // The docked panel folds a hint after its first sentence: unfold them to read them whole.
+    act(() => painted.panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(painted.panel.textContent).toContain("Strokes on this body: 3. Undo takes the last one back.");
     expect(painted.panel.textContent).toContain("This mesh is not closed: circles and lassos follow its triangles.");
     click(button(painted.panel, "Clear all"));
@@ -114,6 +116,6 @@ describe("the paint tool's window", () => {
     const { panel } = mount({ settings: { mode: "lasso" } });
     expect(panel.textContent).toContain("Bemalen");
     expect([...panel.querySelectorAll("[role=radio]")].map((entry) => entry.textContent).filter(Boolean)).toEqual(["Füllen", "Kreis", "Lasso"]);
-    expect(panel.querySelector("[role=status]")?.textContent).toBe("Halte die Maustaste gedrückt und umfahre den Bereich.");
+    expect(panel.querySelector("[role=status] small")?.textContent).toBe("Halte die Maustaste gedrückt und umfahre den Bereich.");
   });
 });

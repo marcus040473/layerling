@@ -2,9 +2,10 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useRef } from "react";
-import { Check, Eraser, X } from "lucide-react";
+import { Eraser, X } from "lucide-react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolApply, ToolHint, ToolSection, ToolSelection } from "@/components/workplane/ToolPanelParts";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { t } from "@/lib/i18n";
 import { PAINT_MAX_ANGLE, PAINT_MIN_ANGLE, PAINT_MIN_DIAMETER, type PaintMode, type PaintToolSettings } from "@/lib/paint";
@@ -63,7 +64,7 @@ export function PaintPanel({
   const hint = settings.erase ? t(`paint.hint.erase.${settings.mode}`) : t(`paint.hint.${settings.mode}`);
 
   return (
-    <MovableToolPanel className="edge-modifier-panel paint-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel paint-panel" ariaLabel={title} dock="withObject" onClose={onClose}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -71,16 +72,17 @@ export function PaintPanel({
           <span>{t("paint.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="paint" />
           <button type="button" aria-label={t("paint.close")} onClick={onClose}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{hint}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready confirm text={targetName} detail={hint} />
+      </ToolSection>
 
+      <ToolSection title={t("toolSidebar.settings")}>
       <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("paint.mode")}>
         <span>{t("paint.mode")}</span>
         <div className="shell-opening-options">
@@ -160,21 +162,19 @@ export function PaintPanel({
           onChange={(value) => onChange({ diameter: value })}
         />
       ) : null}
-      {settings.mode === "fill" ? <p className="cylinder-wrap-hint">{t("paint.angleHint")}</p> : null}
+      {settings.mode === "fill" ? <ToolHint text={t("paint.angleHint")} /> : null}
 
-      {wholeFaces ? <p className="cylinder-wrap-hint">{t("paint.wholeFaces")}</p> : null}
+      {wholeFaces ? <ToolHint text={t("paint.wholeFaces")} /> : null}
       <p className="cylinder-wrap-hint paint-count">
         {strokes ? t("paint.strokes", { count: strokes }) : t("paint.noStrokes")}
       </p>
+      </ToolSection>
 
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" disabled={!strokes} onClick={onClear}>
           {t("paint.clear")}
         </button>
-        <button type="button" className="primary" onClick={onClose}>
-          <Check size={17} />
-          {t("paint.done")}
-        </button>
+        <ToolApply label={t("paint.done")} onClick={onClose} />
       </div>
       </>)}
     </MovableToolPanel>
