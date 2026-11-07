@@ -6,6 +6,7 @@ import { MCP_SHAPE_SETTING_KEYS } from "@/lib/mcpShapeSettings";
 import { THREAD_SIZES } from "@/lib/threadGeometry";
 import { THREAD_PROFILES } from "@/lib/threadProfiles";
 import { LID_DEFAULTS } from "@/lib/lidTool";
+import { LID_THREAD_STANDARDS, LID_TYPES } from "@/lib/lidTool";
 
 /*
  * Die Formenliste steht an zwei Stellen: im Katalog, aus dem das Formenmenü und
@@ -145,5 +146,13 @@ describe("the lid tool over MCP", () => {
     const properties = toolByName("layerling_make_lid").inputSchema.properties ?? {};
     expect(Object.keys(LID_DEFAULTS).filter((key) => !(key in properties))).toEqual([]);
     expect(properties.tether).toMatchObject({ type: "boolean" });
+  });
+});
+
+describe("the lid tool the MCP bridge offers", () => {
+  it("takes the lid's kinds and its screw lid's threads, the same lists as the editor's", () => {
+    const properties = toolByName("layerling_make_lid").inputSchema.properties as Record<string, { enum?: string[] }>;
+    expect(properties.type.enum).toEqual([...LID_TYPES]);
+    expect(properties.threadStandard.enum).toEqual([...LID_THREAD_STANDARDS]);
   });
 });

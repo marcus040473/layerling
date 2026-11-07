@@ -14,6 +14,8 @@ import {
   LID_HINGE_STYLES,
   LID_HINGE_TYPES,
   LID_MAGNET_SIZES,
+  LID_THREAD_STANDARDS,
+  LID_THREAD_STANDARD_SPECS,
   LID_TYPES,
   MAX_BAYONET_AXIAL_GAP,
   MAX_BAYONET_DEPTH,
@@ -57,6 +59,7 @@ import {
   lidFlipTopFits,
   lidHandleFits,
   lidTakesExtras,
+  lidStandardThread,
   lidTetherFits,
   lidThicknessForMagnets,
   lidThread,
@@ -76,7 +79,7 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
  * swings open about a pin along the body's back, tight in the body's knuckles and turning in the lid's; a flush hinge can
  * have end plugs that close the pin's hole flush with the body's outside (Discussion #1387). A screw lid (Discussion #1393)
  * is a cap with a thread inside its rim for a round body, which gets the matching thread on the outside of its top; it
- * holds by that alone. A bayonet lid (Discussion #1424) is a cap for a round body too, with an L-shaped slot inside its
+ * holds by that alone; its thread can be a standard bottle's or jar's instead, so the cap fits that bottle. A bayonet lid (Discussion #1424) is a cap for a round body too, with an L-shaped slot inside its
  * rim for each of the lugs on the outside of the body's top: pushed down and turned, it locks, as far as its lugs give or as far as set, up to a quarter turn. Either can
  * have a tether that keeps the cap with the body when it is off (asked in the Layerling User Group on Facebook),
  * and either cap can be a flip-top: a flap in its plate opens a round opening to pour from.
@@ -144,6 +147,8 @@ export function LidPanel({
   const screw = settings.type === "screw";
   const bayonet = settings.type === "bayonet";
   const thread = lidThread(settings);
+  // A standard's thread sets its own pitch and turns: their sliders give way to what the standard is and what it takes.
+  const standard = screw && settings.threadStandard !== "own" ? lidStandardThread(settings.threadStandard) : null;
   const depthLabel = t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth");
   const wallLabel = t(settings.type === "cap" || screw || bayonet ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall");
   // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's and the pin's play.
@@ -197,6 +202,30 @@ export function LidPanel({
         </div>
         <ToolHint text={t(`lid.type.${settings.type}Hint`)} />
 
+        {/* A screw lid's thread is its own or a standard bottle's or jar's. */}
+        {screw ? (
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.threadStandard")}>
+            <span>{t("lid.threadStandard")}</span>
+            <div className="shell-opening-options">
+              {LID_THREAD_STANDARDS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.threadStandard === option}
+                  className={settings.threadStandard === option ? "active" : ""}
+                  title={option === "own" ? undefined : t(`lid.threadStandardHint.${option}`)}
+                  disabled={busy}
+                  onClick={() => onChange({ threadStandard: option })}
+                >
+                  {option === "own" ? t("lid.threadStandard.own") : LID_THREAD_STANDARD_SPECS[option].name}
+                </button>
+              ))}
+            </div>
+            {settings.threadStandard === "own" ? null : <ToolHint text={t(`lid.threadStandardHint.${settings.threadStandard}`)} />}
+          </div>
+        ) : null}
+
         <EdgeModifierSlider
           label={t("lid.thickness")}
           primary
@@ -239,8 +268,8 @@ export function LidPanel({
           </div>
         ) : null}
 
-        {/* A screw lid's rim reaches down as far as its thread goes: the pitch times the turns. */}
-        {screw ? (<>
+        {/* A screw lid's rim reaches down as far as its own thread goes: the pitch times the turns. */}
+        {screw && !standard ? (<>
           <EdgeModifierSlider
             label={t("lid.threadPitch")}
             value={settings.threadPitch}
@@ -264,7 +293,12 @@ export function LidPanel({
             onChange={(value) => onChange({ threadTurns: value })}
           />
           <ToolHint text={t("lid.screwHint", { depth: millimetres(Math.round(thread.depth * 100) / 100), height: millimetres(Math.round(thread.height * 10) / 10) })} />
-        </>) : null}
+        </>) : standard ? (
+          <ToolHint text={t("lid.screwStandardHint", {
+            standard: standard.name, major: millimetres(standard.major), pitch: millimetres(standard.pitch), depth: millimetres(standard.capDepth),
+            from: millimetres(Math.round(standard.neckFrom * 100) / 100), to: millimetres(Math.round(standard.neckTo * 100) / 100),
+          })} />
+        ) : null}
 
         {/* A bayonet lid: how many lugs, how far the cap's rim reaches down over them, its room along the axis above the
             ledge, and the rib behind each locked lug, which it clicks past. */}
