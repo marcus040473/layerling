@@ -53,6 +53,7 @@ import {
   lidClickBumpsFit,
   lidHandleFits,
   lidTakesExtras,
+  lidTetherFits,
   lidThicknessForMagnets,
   lidThread,
   normalizeLidOptions,
@@ -72,7 +73,8 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
  * have end plugs that close the pin's hole flush with the body's outside (Discussion #1387). A screw lid (Discussion #1393)
  * is a cap with a thread inside its rim for a round body, which gets the matching thread on the outside of its top; it
  * holds by that alone. A bayonet lid (Discussion #1424) is a cap for a round body too, with an L-shaped slot inside its
- * rim for each of the lugs on the outside of the body's top: pushed down and turned, it locks, as far as its lugs give or as far as set, up to a quarter turn.
+ * rim for each of the lugs on the outside of the body's top: pushed down and turned, it locks, as far as its lugs give or as far as set, up to a quarter turn. Either can
+ * have a tether that keeps the cap with the body when it is off (asked in the Layerling User Group on Facebook).
  */
 export function LidPanel({
   targetName,
@@ -319,6 +321,14 @@ export function LidPanel({
           />
           <ToolHint text={t("lid.bayonetDetentHint")} />
           <ToolHint text={t("lid.bayonetHint", { count: settings.bayonetLugs, turn: millimetres(settings.bayonetTurn || bayonetTurn(settings.bayonetLugs)) })} />
+        </>) : null}
+        {/* A cap that is turned off can stay tied to the body: two rings and a strap, printed beside it. */}
+        {lidTetherFits(settings) ? (<>
+          <label className="edge-modifier-field offset-copy">
+            <input type="checkbox" checked={settings.tether} disabled={busy} onChange={(event) => onChange({ tether: event.target.checked })} />
+            <span>{t("lid.tether")}</span>
+          </label>
+          {settings.tether ? <ToolHint text={t("lid.tetherHint")} /> : null}
         </>) : null}
 
         {!extras ? <span className="shell-openings-summary" role="status">{t(bayonet ? "lid.error.bayonetExtras" : "lid.error.screwExtras")}</span> : null}
