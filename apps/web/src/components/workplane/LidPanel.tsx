@@ -60,6 +60,7 @@ import {
   lidFlipTopFits,
   lidHandleFits,
   lidTakesExtras,
+  lidTakesMagnets,
   lidStandardThread,
   lidTetherFits,
   lidThicknessForMagnets,
@@ -85,7 +86,9 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
  * inside the body's opening. A bayonet lid (Discussion #1424) is a cap for a round body too, with an L-shaped slot inside its
  * rim for each of the lugs on the outside of the body's top: pushed down and turned, it locks, as far as its lugs give or as far as set, up to a quarter turn. Either can
  * have a tether that keeps the cap with the body when it is off (asked in the Layerling User Group on Facebook),
- * and either cap can be a flip-top: a flap in its plate opens a round opening to pour from.
+ * and either cap can be a flip-top: a flap in its plate opens a round opening to pour from. A slide-in lid (Discussion
+ * #1443) is a plate for a box that slides in through the wall picked, its edges in grooves in the other three, like a
+ * pencil box's; its click bump and finger grip are its own.
  */
 export function LidPanel({
   targetName,
@@ -121,7 +124,9 @@ export function LidPanel({
     onChange(raise ? { ...patch, thickness } : patch);
   };
   const needed = lidThicknessForMagnets(settings);
-  const tooThin = settings.magnets && settings.thickness < needed - 1e-9;
+  // A slide-in lid takes no magnets: its plate lies between the walls, with no rim under it for their pockets.
+  const magnetsFit = lidTakesMagnets(settings);
+  const tooThin = settings.magnets && magnetsFit && settings.thickness < needed - 1e-9;
   const millimetres = (value: number) => value.toLocaleString(numberLocale());
   const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap" | "hingeGap" | "hingePinPlay" | "clickBumpHeight", min: number, max: number, step: number) => (
     <EdgeModifierSlider
@@ -150,15 +155,17 @@ export function LidPanel({
   const screw = settings.type === "screw";
   const screwIn = settings.type === "screwIn";
   const bayonet = settings.type === "bayonet";
+  const slide = settings.type === "slide";
   const thread = lidThread(settings);
   // A standard's thread sets its own pitch and turns: their sliders give way to what the standard is and what it takes.
   const standard = screw && settings.threadStandard !== "own" ? lidStandardThread(settings.threadStandard) : null;
   const depthLabel = t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth");
   const wallLabel = t(screwIn ? "lid.wallPlug" : settings.type === "cap" || screw || bayonet ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall");
   // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's and the pin's play.
+  // A slide-in lid has neither lip nor rim: only its gap.
   const summary = [
-    ...(lipped ? [t("lid.gap"), ...(screw || screwIn || bayonet ? [] : [depthLabel]), wallLabel] : []),
-    ...(settings.magnets && extras ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
+    ...(lipped ? [t("lid.gap"), ...(screw || screwIn || bayonet || slide ? [] : [depthLabel]), ...(slide ? [] : [wallLabel])] : []),
+    ...(settings.magnets && magnetsFit ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
     ...(hinged ? [t("lid.hingeGap"), t("lid.hingePinPlay")] : []),
   ].join(", ");
   // A flip-top's flap and hinge need a plate thick enough for them: thinner, it says how thick.
@@ -247,7 +254,7 @@ export function LidPanel({
         />
         {tooThin ? (
           <span className="shell-openings-summary" role="status">{t("lid.error.magnetsThinLid", { thickness: millimetres(needed) })}</span>
-        ) : settings.magnets && raised ? (
+        ) : settings.magnets && magnetsFit && raised ? (
           <span className="shell-openings-summary" role="status">{t("lid.magnetsThicknessRaised", { thickness: millimetres(settings.thickness) })}</span>
         ) : null}
 
@@ -373,6 +380,28 @@ export function LidPanel({
           <ToolHint text={t("lid.bayonetDetentHint")} />
           <ToolHint text={t("lid.bayonetHint", { count: settings.bayonetLugs, turn: millimetres(settings.bayonetTurn || bayonetTurn(settings.bayonetLugs)) })} />
         </>) : null}
+        {/* A slide-in lid: the wall it slides in through, as in the starting view (the view cube's Front faces you). */}
+        {slide ? (<>
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.slideSide")}>
+            <span>{t("lid.slideSide")}</span>
+            <div className="shell-opening-options">
+              {LID_HINGE_SIDES.map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.slideSide === side}
+                  className={settings.slideSide === side ? "active" : ""}
+                  disabled={busy}
+                  onClick={() => onChange({ slideSide: side })}
+                >
+                  {t(`shell.side.${side}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ToolHint text={t("lid.slideHint")} />
+        </>) : null}
         {/* A cap that is turned off can stay tied to the body: two rings and a strap, printed beside it. */}
         {lidTetherFits(settings) ? (<>
           <label className="edge-modifier-field offset-copy">
@@ -406,12 +435,12 @@ export function LidPanel({
           </>) : null}
         </>) : null}
 
-        {!extras ? <span className="shell-openings-summary" role="status">{t(bayonet ? "lid.error.bayonetExtras" : "lid.error.screwExtras")}</span> : null}
+        {!extras || slide ? <span className="shell-openings-summary" role="status">{t(slide ? "lid.error.slideExtras" : bayonet ? "lid.error.bayonetExtras" : "lid.error.screwExtras")}</span> : null}
         <ToolGroup
           tool="lid-magnets"
           label={t("lid.magnets")}
-          checked={settings.magnets && extras}
-          disabled={busy || !extras}
+          checked={settings.magnets && magnetsFit}
+          disabled={busy || !magnetsFit}
           summary={`${t("lid.magnetSizeOption", { diameter: millimetres(settings.magnetDiameter), height: millimetres(settings.magnetHeight) })} mm`}
           onCheck={(magnets) => withMagnet({ magnets })}
         >
@@ -529,7 +558,7 @@ export function LidPanel({
           </>) : null}
           <ToolHint text={t("lid.hingeHint", { diameter: millimetres(Math.round(2 * hingeKnuckleRadius(settings) * 10) / 10) })} />
         </ToolGroup>
-        {!hingeFits && extras ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
+        {!hingeFits && extras && !slide ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
 
         <ToolGroup
           tool="lid-click"
@@ -538,15 +567,16 @@ export function LidPanel({
           disabled={busy || !bumpsFit}
           onCheck={(clickBumps) => onChange({ clickBumps })}
         >
-          <ToolHint text={t("lid.clickBumpsHint")} />
+          {/* A slide-in lid's is one bump under its end, which clicks past the cut wall; it says what its height is. */}
+          <ToolHint text={t(slide ? "lid.slideBumpHint" : "lid.clickBumpsHint")} />
           {/* How far they reach into the body's wall: a small box or a stiff lip wants less (#1220). */}
           {slider(t("lid.clickBumpHeight"), "clickBumpHeight", MIN_CLICK_BUMP_HEIGHT, MAX_CLICK_BUMP_HEIGHT, 0.05)}
-          <ToolHint text={t("lid.clickBumpHeightHint")} />
+          {slide ? null : <ToolHint text={t("lid.clickBumpHeightHint")} />}
         </ToolGroup>
         {/* Refused for a flat lid or pivot pins: the reason first, where the hint folds after one sentence. */}
         {!bumpsFit && extras ? <ToolHint text={t("lid.error.clickBumpsNoLip")} /> : null}
 
-        {/* On the side the lid opens at: the front, or opposite the hinge. */}
+        {/* On the side the lid opens at: the front, or opposite the hinge; a slide-in lid's on its end at the cut wall. */}
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.handle")}>
           <span>{t("lid.handle")}</span>
           <div className="shell-opening-options">
@@ -564,7 +594,7 @@ export function LidPanel({
               </button>
             ))}
           </div>
-          {!handleFits && !extras ? null : !handleFits ? <ToolHint text={t("lid.error.handlePivot")} /> : handle !== "none" ? <ToolHint text={t(`lid.handleHint.${handle}`)} /> : null}
+          {!handleFits && !extras ? null : !handleFits ? <ToolHint text={t("lid.error.handlePivot")} /> : handle !== "none" ? <ToolHint text={t(slide ? (handle === "tab" ? "lid.handleHint.tabSlide" : "lid.handleHint.notchSlide") : `lid.handleHint.${handle}`)} /> : null}
         </div>
       </ToolSection>
 
@@ -573,10 +603,11 @@ export function LidPanel({
           {lipped ? (<>
             {slider(t("lid.gap"), "gap", 0, MAX_LID_GAP, 0.05)}
             {fromPrinterPlay("lid.gap", settings.gap, printerPlay) ? <ToolHint text={t("printerPlay.fromFitTest")} /> : null}
-            {screw || screwIn || bayonet ? null : slider(depthLabel, "depth", MIN_LID_DEPTH, MAX_LID_DEPTH, 0.5)}
-            {slider(wallLabel, "wall", MIN_LID_WALL, MAX_LID_WALL, 0.2)}
+            {screw || screwIn || bayonet || slide ? null : slider(depthLabel, "depth", MIN_LID_DEPTH, MAX_LID_DEPTH, 0.5)}
+            {/* A slide-in lid has neither lip nor rim: its tongues follow the walls' grooves. */}
+            {slide ? null : slider(wallLabel, "wall", MIN_LID_WALL, MAX_LID_WALL, 0.2)}
           </>) : null}
-          {settings.magnets && extras ? (<>
+          {settings.magnets && magnetsFit ? (<>
             {slider(t("lid.magnetDiameter"), "magnetDiameter", MIN_MAGNET_DIAMETER, MAX_MAGNET_DIAMETER, 0.5)}
             {slider(t("lid.magnetHeight"), "magnetHeight", MIN_MAGNET_HEIGHT, MAX_MAGNET_HEIGHT, 0.5)}
             {slider(t("lid.magnetGap"), "magnetGap", 0, MAX_MAGNET_GAP, 0.05)}

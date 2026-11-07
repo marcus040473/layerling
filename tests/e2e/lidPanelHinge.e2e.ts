@@ -233,7 +233,7 @@ describe("the lid's panel with a screw lid (Discussion #1393)", () => {
     const { panel, changes } = mount();
     const group = panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Kind"]')!;
     const kinds = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
-    expect(kinds.map((button) => button.textContent)).toEqual(["Push in", "Over the top", "Both sides", "Flat", "Screw on", "Screw in", "Bayonet"]);
+    expect(kinds.map((button) => button.textContent)).toEqual(["Push in", "Over the top", "Both sides", "Flat", "Screw on", "Screw in", "Bayonet", "Slide-in"]);
     expect(group.querySelector('[aria-checked="true"]')?.textContent).toBe("Push in");
     act(() => kinds[4].click());
     expect(changes.at(-1)).toEqual({ type: "screw" });
@@ -385,7 +385,7 @@ describe("the lid's panel with a bayonet lid (Discussion #1424)", () => {
 
 describe("the lid's panel with a tether (asked in the Layerling User Group on Facebook)", () => {
   it("offers a tether for a screw or bayonet lid only, and says what it is and what to print it in once ticked", () => {
-    for (const type of ["plug", "cap", "both", "flat", "screwIn"] as const) {
+    for (const type of ["plug", "cap", "both", "flat", "screwIn", "slide"] as const) {
       const { panel } = mount({ type, tether: true });
       expect(checkbox(panel, "Tether"), type).toBeNull();
       expect(texts(panel), type).not.toContain("Keeps the cap with the body");
@@ -415,7 +415,7 @@ describe("the lid's panel with a tether (asked in the Layerling User Group on Fa
 
 describe("the lid's panel with a flip-top", () => {
   it("offers a flip-top with a screw lid and a bayonet lid only, off to begin with", () => {
-    for (const type of ["plug", "cap", "both", "flat", "screwIn"] as const) {
+    for (const type of ["plug", "cap", "both", "flat", "screwIn", "slide"] as const) {
       expect(checkbox(mount({ type }).panel, "Flip-top"), type).toBeNull();
       act(() => root?.unmount());
     }
@@ -470,7 +470,7 @@ describe("the lid's panel with a standard bottle's or jar's thread", () => {
     expect(changes.at(-1)).toEqual({ threadStandard: "pco1881" });
     act(() => root?.unmount());
     // Only a screw lid has a thread to choose.
-    for (const type of ["plug", "cap", "screwIn", "bayonet"] as const) {
+    for (const type of ["plug", "cap", "screwIn", "bayonet", "slide"] as const) {
       expect(thread(mount({ type, threadStandard: "gl45" }).panel), type).toBeNull();
       act(() => root?.unmount());
     }
@@ -556,5 +556,66 @@ describe("the lid's panel with a screw-in lid (Discussion #1432)", () => {
     expect(texts(panel).split("A screw lid holds by its thread: magnets, a hinge, click bumps and a handle do not go with it.").length).toBe(2);
     expect(texts(panel)).not.toContain("A hinge goes with a lid that pushes in or a flat one.");
     expect(texts(panel)).not.toContain("Magnet diameter");
+  });
+});
+
+describe("the lid's panel with a slide-in lid (Discussion #1443)", () => {
+  it("offers a slide-in lid as an eighth kind, the push-in lid still the one to begin with", () => {
+    const { panel, changes } = mount();
+    const group = panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Kind"]')!;
+    const kinds = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
+    expect(kinds[7].textContent).toBe("Slide-in");
+    expect(kinds[7].title).toContain("like on a wooden pencil box");
+    expect(group.querySelector('[aria-checked="true"]')?.textContent).toBe("Push in");
+    act(() => kinds[7].click());
+    expect(changes.at(-1)).toEqual({ type: "slide" });
+  });
+
+  it("asks for the wall it slides in through, the front to begin with, instead of a depth and a wall, and keeps thickness and gap", () => {
+    const { panel, changes } = mount({ type: "slide" });
+    const group = panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Slides in from"]')!;
+    expect(group).not.toBeNull();
+    const sides = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
+    expect(sides.map((button) => button.textContent)).toEqual(["Back", "Right", "Front", "Left"]);
+    expect(group.querySelector('[aria-checked="true"]')?.textContent).toBe("Front");
+    act(() => sides[1].click());
+    expect(changes.at(-1)).toEqual({ slideSide: "right" });
+    expect(slider(panel, "Lid thickness")).not.toBeNull();
+    expect(slider(panel, "Gap per side")).not.toBeNull();
+    for (const name of ["Lip depth", "Rim depth", "Lip wall", "Rim wall", "Thread pitch", "Lugs"]) expect(slider(panel, name), name).toBeNull();
+    // The hints are folded in the docked panel: unfold them before reading.
+    act(() => panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
+    expect(texts(panel)).toContain("The lid's edges run in grooves in three walls; the fourth is cut down to the lid's underside");
+    act(() => root?.unmount());
+    const back = mount({ type: "slide", slideSide: "back" }).panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Slides in from"]')!;
+    expect(back.querySelector('[aria-checked="true"]')?.textContent).toBe("Back");
+  });
+
+  it("switches off magnets and the hinge and says once why, but keeps click bumps and the handle, saying what they are on this lid", () => {
+    const { panel, changes } = mount({ type: "slide", magnets: true, hinge: true });
+    for (const name of ["Magnets in the corners", "Hinge"]) {
+      const box = checkbox(panel, name)!;
+      expect(box.checked, name).toBe(false);
+      expect(box.disabled, name).toBe(true);
+    }
+    expect(texts(panel).split("A slide-in lid holds in its grooves: magnets and a hinge do not go with it.").length).toBe(2);
+    expect(texts(panel)).not.toContain("Magnet diameter");
+    expect(texts(panel)).not.toContain("A hinge goes with a lid that pushes in or a flat one.");
+    expect(texts(panel)).not.toContain("Lid thickness raised");
+    const bumps = checkbox(panel, "Click bumps")!;
+    expect(bumps.disabled).toBe(false);
+    act(() => bumps.click());
+    expect(changes.at(-1)).toEqual({ clickBumps: true });
+    act(() => root?.unmount());
+    const on = mount({ type: "slide", clickBumps: true, handle: "notch" }).panel;
+    expect(slider(on, "Bump height")).not.toBeNull();
+    expect(texts(on)).toContain("A small bump under the lid's end clicks past the inner edge of the cut wall");
+    expect(texts(on)).not.toContain("snap into dimples in the body");
+    expect(texts(on)).toContain("Four grooves across the lid's top near its end at the cut wall, for a thumb to push it out.");
+    expect(texts(on)).not.toContain("A recess in the body's front wall");
+    const handles = on.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Handle"]')!;
+    expect([...handles.querySelectorAll<HTMLButtonElement>('[role="radio"]')].every((button) => !button.disabled)).toBe(true);
+    act(() => root?.unmount());
+    expect(texts(mount({ type: "slide", handle: "tab" }).panel)).toContain("A tab as thick as the plate, 6 mm out from the lid's end at the cut wall, to pull it out by.");
   });
 });
