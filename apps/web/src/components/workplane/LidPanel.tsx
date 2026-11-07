@@ -15,6 +15,10 @@ import {
   LID_HINGE_TYPES,
   LID_MAGNET_SIZES,
   LID_TYPES,
+  MAX_BAYONET_AXIAL_GAP,
+  MAX_BAYONET_DEPTH,
+  MAX_BAYONET_DETENT,
+  MAX_BAYONET_LUGS,
   MAX_CLICK_BUMP_HEIGHT,
   MAX_HINGE_GAP,
   MAX_HINGE_KNUCKLES,
@@ -29,6 +33,9 @@ import {
   MAX_MAGNET_DIAMETER,
   MAX_MAGNET_GAP,
   MAX_MAGNET_HEIGHT,
+  MIN_BAYONET_AXIAL_GAP,
+  MIN_BAYONET_DEPTH,
+  MIN_BAYONET_LUGS,
   MIN_CLICK_BUMP_HEIGHT,
   MIN_HINGE_GAP,
   MIN_HINGE_PIN,
@@ -40,6 +47,7 @@ import {
   MIN_LID_WALL,
   MIN_MAGNET_DIAMETER,
   MIN_MAGNET_HEIGHT,
+  bayonetTurn,
   hingeKnuckleRadius,
   lidClickBumpsFit,
   lidHandleFits,
@@ -62,7 +70,8 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
  * swings open about a pin along the body's back, tight in the body's knuckles and turning in the lid's; a flush hinge can
  * have end plugs that close the pin's hole flush with the body's outside (Discussion #1387). A screw lid (Discussion #1393)
  * is a cap with a thread inside its rim for a round body, which gets the matching thread on the outside of its top; it
- * holds by that alone.
+ * holds by that alone. A bayonet lid (Discussion #1424) is a cap for a round body too, with an L-shaped slot inside its
+ * rim for each of the lugs on the outside of the body's top: pushed down and turned, it locks.
  */
 export function LidPanel({
   targetName,
@@ -121,15 +130,17 @@ export function LidPanel({
   const bumpsFit = lidClickBumpsFit(settings);
   const handleFits = lidHandleFits(settings);
   const handle = handleFits ? settings.handle : "none";
-  // A screw lid holds by its thread: the magnets, hinge, click bumps and handle stay switched off, with one line saying why.
+  // A screw lid holds by its thread and a bayonet lid by its lugs: the magnets, hinge, click bumps and handle stay switched
+  // off, with one line saying why.
   const extras = lidTakesExtras(settings);
   const screw = settings.type === "screw";
+  const bayonet = settings.type === "bayonet";
   const thread = lidThread(settings);
   const depthLabel = t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth");
-  const wallLabel = t(settings.type === "cap" || screw ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall");
+  const wallLabel = t(settings.type === "cap" || screw || bayonet ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall");
   // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's and the pin's play.
   const summary = [
-    ...(lipped ? [t("lid.gap"), ...(screw ? [] : [depthLabel]), wallLabel] : []),
+    ...(lipped ? [t("lid.gap"), ...(screw || bayonet ? [] : [depthLabel]), wallLabel] : []),
     ...(settings.magnets && extras ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
     ...(hinged ? [t("lid.hingeGap"), t("lid.hingePinPlay")] : []),
   ].join(", ");
@@ -244,7 +255,58 @@ export function LidPanel({
           <ToolHint text={t("lid.screwHint", { depth: millimetres(Math.round(thread.depth * 100) / 100), height: millimetres(Math.round(thread.height * 10) / 10) })} />
         </>) : null}
 
-        {!extras ? <span className="shell-openings-summary" role="status">{t("lid.error.screwExtras")}</span> : null}
+        {/* A bayonet lid: how many lugs, how far the cap's rim reaches down over them, its room along the axis above the
+            ledge, and the rib behind each locked lug, which it clicks past. */}
+        {bayonet ? (<>
+          <EdgeModifierSlider
+            label={t("lid.bayonetLugs")}
+            value={settings.bayonetLugs}
+            min={MIN_BAYONET_LUGS}
+            max={MAX_BAYONET_LUGS}
+            step={1}
+            workspace={workspace}
+            decimals={0}
+            disabled={busy}
+            onChange={(value) => onChange({ bayonetLugs: normalizeLidOptions({ bayonetLugs: value }).bayonetLugs })}
+          />
+          <EdgeModifierSlider
+            label={t("lid.depthCap")}
+            value={settings.bayonetDepth}
+            min={MIN_BAYONET_DEPTH}
+            max={MAX_BAYONET_DEPTH}
+            step={0.5}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ bayonetDepth: value })}
+          />
+          <EdgeModifierSlider
+            label={t("lid.bayonetAxialGap")}
+            value={settings.bayonetAxialGap}
+            min={MIN_BAYONET_AXIAL_GAP}
+            max={MAX_BAYONET_AXIAL_GAP}
+            step={0.05}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ bayonetAxialGap: value })}
+          />
+          <EdgeModifierSlider
+            label={t("lid.bayonetDetent")}
+            value={settings.bayonetDetent}
+            min={0}
+            max={MAX_BAYONET_DETENT}
+            step={0.05}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ bayonetDetent: value })}
+          />
+          <ToolHint text={t("lid.bayonetDetentHint")} />
+          <ToolHint text={t("lid.bayonetHint", { count: settings.bayonetLugs, turn: millimetres(bayonetTurn(settings.bayonetLugs)) })} />
+        </>) : null}
+
+        {!extras ? <span className="shell-openings-summary" role="status">{t(bayonet ? "lid.error.bayonetExtras" : "lid.error.screwExtras")}</span> : null}
         <ToolGroup
           tool="lid-magnets"
           label={t("lid.magnets")}
@@ -411,7 +473,7 @@ export function LidPanel({
           {lipped ? (<>
             {slider(t("lid.gap"), "gap", 0, MAX_LID_GAP, 0.05)}
             {fromPrinterPlay("lid.gap", settings.gap, printerPlay) ? <ToolHint text={t("printerPlay.fromFitTest")} /> : null}
-            {screw ? null : slider(depthLabel, "depth", MIN_LID_DEPTH, MAX_LID_DEPTH, 0.5)}
+            {screw || bayonet ? null : slider(depthLabel, "depth", MIN_LID_DEPTH, MAX_LID_DEPTH, 0.5)}
             {slider(wallLabel, "wall", MIN_LID_WALL, MAX_LID_WALL, 0.2)}
           </>) : null}
           {settings.magnets && extras ? (<>
