@@ -233,7 +233,7 @@ describe("the lid's panel with a screw lid (Discussion #1393)", () => {
     const { panel, changes } = mount();
     const group = panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Kind"]')!;
     const kinds = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
-    expect(kinds.map((button) => button.textContent)).toEqual(["Push in", "Over the top", "Both sides", "Flat", "Screw on", "Bayonet"]);
+    expect(kinds.map((button) => button.textContent)).toEqual(["Push in", "Over the top", "Both sides", "Flat", "Screw on", "Screw in", "Bayonet"]);
     expect(group.querySelector('[aria-checked="true"]')?.textContent).toBe("Push in");
     act(() => kinds[4].click());
     expect(changes.at(-1)).toEqual({ type: "screw" });
@@ -297,10 +297,10 @@ describe("the lid's panel with a bayonet lid (Discussion #1424)", () => {
     const { panel, changes } = mount();
     const group = panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Kind"]')!;
     const kinds = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
-    expect(kinds[5].textContent).toBe("Bayonet");
-    expect(kinds[5].title).toContain("turned to lock");
+    expect(kinds[6].textContent).toBe("Bayonet");
+    expect(kinds[6].title).toContain("turned to lock");
     expect(group.querySelector('[aria-checked="true"]')?.textContent).toBe("Push in");
-    act(() => kinds[5].click());
+    act(() => kinds[6].click());
     expect(changes.at(-1)).toEqual({ type: "bayonet" });
   });
 
@@ -385,7 +385,7 @@ describe("the lid's panel with a bayonet lid (Discussion #1424)", () => {
 
 describe("the lid's panel with a tether (asked in the Layerling User Group on Facebook)", () => {
   it("offers a tether for a screw or bayonet lid only, and says what it is and what to print it in once ticked", () => {
-    for (const type of ["plug", "cap", "both", "flat"] as const) {
+    for (const type of ["plug", "cap", "both", "flat", "screwIn"] as const) {
       const { panel } = mount({ type, tether: true });
       expect(checkbox(panel, "Tether"), type).toBeNull();
       expect(texts(panel), type).not.toContain("Keeps the cap with the body");
@@ -415,7 +415,7 @@ describe("the lid's panel with a tether (asked in the Layerling User Group on Fa
 
 describe("the lid's panel with a flip-top", () => {
   it("offers a flip-top with a screw lid and a bayonet lid only, off to begin with", () => {
-    for (const type of ["plug", "cap", "both", "flat"] as const) {
+    for (const type of ["plug", "cap", "both", "flat", "screwIn"] as const) {
       expect(checkbox(mount({ type }).panel, "Flip-top"), type).toBeNull();
       act(() => root?.unmount());
     }
@@ -470,7 +470,7 @@ describe("the lid's panel with a standard bottle's or jar's thread", () => {
     expect(changes.at(-1)).toEqual({ threadStandard: "pco1881" });
     act(() => root?.unmount());
     // Only a screw lid has a thread to choose.
-    for (const type of ["plug", "cap", "bayonet"] as const) {
+    for (const type of ["plug", "cap", "screwIn", "bayonet"] as const) {
       expect(thread(mount({ type, threadStandard: "gl45" }).panel), type).toBeNull();
       act(() => root?.unmount());
     }
@@ -497,5 +497,64 @@ describe("the lid's panel with a standard bottle's or jar's thread", () => {
     expect(texts(jar)).toContain("try the cap on your jar first");
     expect(texts(jar)).toContain("85.85 mm across its thread, 6.35 mm a turn; it reaches 13 mm down");
     expect(texts(jar)).toContain("(81.25 to 82.45 mm)");
+  });
+});
+
+describe("the lid's panel with a screw-in lid (Discussion #1432)", () => {
+  it("offers a screw-in lid beside the screw lid, the push-in lid still the one to begin with", () => {
+    const { panel, changes } = mount();
+    const group = panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Kind"]')!;
+    const kinds = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
+    expect(kinds[5].textContent).toBe("Screw in");
+    expect(kinds[5].title).toContain("threaded plug below it that screws into the same thread inside the body's opening");
+    expect(group.querySelector('[aria-checked="true"]')?.textContent).toBe("Push in");
+    act(() => kinds[5].click());
+    expect(changes.at(-1)).toEqual({ type: "screwIn" });
+  });
+
+  it("asks for the screw lid's pitch and turns and the plug's wall, keeps the gap, and says how deep and long the thread is and how thick the plug's wall", () => {
+    const { panel, changes } = mount({ type: "screwIn" });
+    expect(slider(panel, "Thread pitch")!.value).toBe("3");
+    expect(slider(panel, "Turns")!.value).toBe("2");
+    expect(slider(panel, "Gap per side")).not.toBeNull();
+    expect(slider(panel, "Plug wall")!.value).toBe("1.6");
+    expect(slider(panel, "Rim wall")).toBeNull();
+    expect(slider(panel, "Lip wall")).toBeNull();
+    expect(slider(panel, "Lip depth")).toBeNull();
+    expect(slider(panel, "Rim depth")).toBeNull();
+    // 3 mm pitch: 0.9 mm deep; two turns: 6 mm of plug. The hints are folded in the docked panel: unfold them before reading.
+    const unfold = (shown: HTMLElement) => act(() => shown.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
+    unfold(panel);
+    expect(texts(panel)).toContain("The body gets a thread 0.9 mm deep inside its opening, the lid the same one on a plug below its plate, which reaches 6 mm down. Where there is room, the plug is a ring with a 1.6 mm wall.");
+    expect(texts(panel)).toContain("A plate on the rim with a threaded plug below it");
+    expect(texts(panel)).not.toContain("on the outside of its top");
+    const turns = slider(panel, "Turns")!;
+    act(() => {
+      const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+      setValue.call(turns, "3");
+      turns.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(changes.at(-1)).toEqual({ threadTurns: 3 });
+    act(() => root?.unmount());
+    // A coarse pitch, and a wall thinner than the plug keeps: 0.8 mm at least.
+    const coarse = mount({ type: "screwIn", threadPitch: 6, threadTurns: 1.5, wall: 0.4 });
+    unfold(coarse.panel);
+    expect(texts(coarse.panel)).toContain("a thread 1.5 mm deep inside its opening");
+    expect(texts(coarse.panel)).toContain("which reaches 9 mm down");
+    expect(texts(coarse.panel)).toContain("a ring with a 0.8 mm wall");
+  });
+
+  it("switches off magnets, hinge, click bumps and handle and says once why, as for a screw lid", () => {
+    const { panel } = mount({ type: "screwIn", magnets: true, hinge: true, clickBumps: true, handle: "notch" });
+    for (const name of ["Magnets in the corners", "Hinge", "Click bumps"]) {
+      const box = checkbox(panel, name)!;
+      expect(box.checked, name).toBe(false);
+      expect(box.disabled, name).toBe(true);
+    }
+    const handles = panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Handle"]')!;
+    expect(handles.querySelector('[aria-checked="true"]')?.textContent).toBe("None");
+    expect(texts(panel).split("A screw lid holds by its thread: magnets, a hinge, click bumps and a handle do not go with it.").length).toBe(2);
+    expect(texts(panel)).not.toContain("A hinge goes with a lid that pushes in or a flat one.");
+    expect(texts(panel)).not.toContain("Magnet diameter");
   });
 });
