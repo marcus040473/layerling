@@ -21,6 +21,7 @@ import {
   MAX_BAYONET_LUGS,
   MAX_BAYONET_TURN,
   MAX_CLICK_BUMP_HEIGHT,
+  MAX_FLIP_TOP_OPENING,
   MAX_HINGE_GAP,
   MAX_HINGE_KNUCKLES,
   MAX_HINGE_PIN,
@@ -38,6 +39,7 @@ import {
   MIN_BAYONET_DEPTH,
   MIN_BAYONET_LUGS,
   MIN_CLICK_BUMP_HEIGHT,
+  MIN_FLIP_TOP_OPENING,
   MIN_HINGE_GAP,
   MIN_HINGE_PIN,
   MIN_HINGE_PIN_PLAY,
@@ -49,8 +51,10 @@ import {
   MIN_MAGNET_DIAMETER,
   MIN_MAGNET_HEIGHT,
   bayonetTurn,
+  flipTopThickness,
   hingeKnuckleRadius,
   lidClickBumpsFit,
+  lidFlipTopFits,
   lidHandleFits,
   lidTakesExtras,
   lidTetherFits,
@@ -74,7 +78,8 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
  * is a cap with a thread inside its rim for a round body, which gets the matching thread on the outside of its top; it
  * holds by that alone. A bayonet lid (Discussion #1424) is a cap for a round body too, with an L-shaped slot inside its
  * rim for each of the lugs on the outside of the body's top: pushed down and turned, it locks, as far as its lugs give or as far as set, up to a quarter turn. Either can
- * have a tether that keeps the cap with the body when it is off (asked in the Layerling User Group on Facebook).
+ * have a tether that keeps the cap with the body when it is off (asked in the Layerling User Group on Facebook),
+ * and either cap can be a flip-top: a flap in its plate opens a round opening to pour from.
  */
 export function LidPanel({
   targetName,
@@ -147,6 +152,9 @@ export function LidPanel({
     ...(settings.magnets && extras ? [t("lid.magnetDiameter"), t("lid.magnetHeight"), t("lid.magnetGap")] : []),
     ...(hinged ? [t("lid.hingeGap"), t("lid.hingePinPlay")] : []),
   ].join(", ");
+  // A flip-top's flap and hinge need a plate thick enough for them: thinner, it says how thick.
+  const flipTopFits = lidFlipTopFits(settings);
+  const flipTopNeeds = flipTopThickness(settings);
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
@@ -329,6 +337,30 @@ export function LidPanel({
             <span>{t("lid.tether")}</span>
           </label>
           {settings.tether ? <ToolHint text={t("lid.tetherHint")} /> : null}
+        </>) : null}
+        {/* A cap that stays on can open in its plate: a flap over a round opening, on a strip that bends as its hinge. */}
+        {flipTopFits ? (<>
+          <label className="edge-modifier-field offset-copy">
+            <input type="checkbox" checked={settings.flipTop} disabled={busy} onChange={(event) => onChange({ flipTop: event.target.checked })} />
+            <span>{t("lid.flipTop")}</span>
+          </label>
+          {settings.flipTop ? (<>
+            <EdgeModifierSlider
+              label={t("lid.flipTopOpening")}
+              value={settings.flipTopOpening}
+              min={MIN_FLIP_TOP_OPENING}
+              max={MAX_FLIP_TOP_OPENING}
+              step={0.5}
+              workspace={workspace}
+              length
+              disabled={busy}
+              onChange={(value) => onChange({ flipTopOpening: value })}
+            />
+            {settings.thickness < flipTopNeeds - 1e-9 ? (
+              <span className="shell-openings-summary" role="status">{t("lid.error.flipTopThin", { thickness: millimetres(flipTopNeeds) })}</span>
+            ) : null}
+            <ToolHint text={t("lid.flipTopHint")} />
+          </>) : null}
         </>) : null}
 
         {!extras ? <span className="shell-openings-summary" role="status">{t(bayonet ? "lid.error.bayonetExtras" : "lid.error.screwExtras")}</span> : null}
