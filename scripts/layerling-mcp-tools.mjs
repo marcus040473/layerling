@@ -762,7 +762,7 @@ export const tools = [
   },
   {
     name: "layerling_support_rib",
-    description: "Stand a thin support rib under the lower face of a part printed tilted on one edge - the editor's Support rib tool (Discussion #1385). A part standing at 45 degrees on an edge needs no slicer supports but can fall over; the rib holds it: a thin triangle under the face a gap away (its slope parallel to the face, its back upright, its foot on the bed), on an oval foot plate, rounded where it meets the plate and at its top, and small bridges, each one layer high and one line wide and lying exactly on a layer of the print, reaching across the gap into the part so it cannot tip the other way. The face must look down, slope between 15 and 75 degrees and reach down to the bed straight down its slope from the point; the part must stand on the bed (the layers count from there); the rib must not run into the part anywhere - else the command refuses and says why. Name the part and a side of its own box (targetFace, snapped to the nearest real face; the point is the face's middle) or give point and normal on the face. Thickness (two lines), gap (half a line), bridge width (one line) and foot thickness (first layer plus one) follow nozzle and layers unless set. The rib is a mesh body; bundled with the part unless bundle is false. The answer gives the rib, its height and the bridges' heights. One undo step.",
+    description: "Stand a thin support rib under the lower face of a part printed tilted on one edge - the editor's Support rib tool (Discussion #1385). A part standing at 45 degrees on an edge needs no slicer supports but can fall over; the rib holds it: a thin triangle under the face a gap away (its slope parallel to the face, its back upright, its foot on the bed), on an oval foot plate, rounded where it meets the plate and at its top, and small bridges, each one layer high and one line wide and lying exactly on a layer of the print, reaching across the gap into the part so it cannot tip the other way. The face must look down, slope between 15 and 75 degrees and reach down to the bed straight down its slope from the point, or stop at most 3 mm above it at a rounded or chamfered bottom edge (click the flat face above the rounding); the part must stand on the bed (the layers count from there); the rib must not run into the part anywhere - else the command refuses and says why. Name the part and a side of its own box (targetFace, snapped to the nearest real face; the point is the face's middle) or give point and normal on the face. Thickness (two lines), gap (half a line), bridge width (one line) and foot thickness (first layer plus one) follow nozzle and layers unless set. The rib is a mesh body; bundled with the part unless bundle is false. The answer gives the rib, its height and the bridges' heights. One undo step.",
     inputSchema: {
       ...editorTargetSchema,
       properties: {
@@ -784,6 +784,21 @@ export const tools = [
         filletRadius: { type: "number", minimum: 0, maximum: 20, description: "Rounding where the rib meets the foot, mm (default 1.5; 0 for none)." },
         topRadius: { type: "number", minimum: 0, maximum: 20, description: "Rounding of the rib's top corner, mm (default 1; 0 for none)." },
         bundle: { type: "boolean", description: "Bundle the rib with the part, so they move together (default true)." },
+      },
+    },
+  },
+  {
+    name: "layerling_stencil_bridges",
+    description: "Hold the parts of a stencil that would fall out - the editor's Stencil bridges tool (Discussion #1438). A plate with text cut through it loses the middle of letters like o, a and b; seen from above (as the SVG export sees it), every part lying inside a hole gets bridges: boxes count per part, width wide, straight across the gap to the material round it, never touching another outline, parts that only hold each other tied to the plate too (the same bridges as the DXF/SVG export's). The boxes are as high as the plate (or height, at the bottom, in the middle or at the top of it) and are grouped with it, so the result is one group in place of the given objects; each bridge is an ordinary box that can be moved or deleted in the group. Give the plate grouped with its text hole, or the plate and the text hole not grouped yet (they are grouped first, so the text cuts the plate and not the bridges). Run on a group it made before, it puts new bridges in place of its own. A text engraved but not cut through is whole from above and gets none; nothing to hold, or no bridge that fits at the width, is refused. The answer counts the parts, the bridges and the parts no bridge reaches. One undo step.",
+    inputSchema: {
+      ...editorTargetSchema,
+      properties: {
+        ...editorTargetSchema.properties,
+        ids: { type: "array", items: { type: "string" }, description: "The plate with the text cut through (a group), or the plate and its text hole. If omitted, the selection (targetId or id for one object also work)." },
+        width: { type: "number", minimum: 0.5, maximum: 5, description: "Width of each bridge in mm (default 1.5)." },
+        count: { type: "number", minimum: 1, maximum: 4, description: "Bridges per part (default 2)." },
+        height: { type: "number", minimum: 0.2, description: "Height of the bridges in mm (default the plate's whole height)." },
+        position: { type: "string", enum: ["bottom", "middle", "top"], description: "Where bridges lower than the plate sit: flush with its bottom, in the middle, or flush with its top (default bottom)." },
       },
     },
   },
