@@ -923,6 +923,7 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "holePattern.size.corners": "Diâmetro entre vértices opostos (Ø)",
   "holePattern.size.width": "Largura",
   "holePattern.size.height": "Altura",
+  "holePattern.holeAngle": "Ângulo dos furos",
   "holePattern.spacing": "Distância entre centros",
   "holePattern.wall": "Parede entre os furos",
   "holePattern.arrangement": "Disposição",
@@ -2617,4 +2618,7 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "workspace.appLimits": "Limites da aplicação",
   "workspace.savedHistory": "Histórico guardado",
   "shape.pulley": "Polia GT2",
+  "aria.cornerRulerArmsToPlate": "Tornar os braços tão compridos como a base de impressão",
+  "ruler.armsToPlate": "Braços tão compridos como a base de impressão (arrasta a ponta de um braço para mudar o comprimento)",
+  "ruler.armEnd": "Braço de {length}: arrasta a ponta para o alongar ou encurtar",
 };
