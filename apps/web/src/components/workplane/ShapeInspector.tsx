@@ -6679,7 +6679,7 @@ export function SurfaceTextureCard({
     />
   );
   // Where the pattern goes, with the buttons to pick faces (the card's own; docked, the selection line holds them).
-  const facesPart = (withSummary: boolean) => placedHere || !onFacePick ? null : (
+  const facesPart = (withSummary: boolean) => text || !onFacePick ? null : (
                 <>
                   {withSummary ? <p className="cylinder-wrap-hint">{picked ? t("inspector.surfaceFacesSome", { count: settings.faces.length }) : t("inspector.surfaceFacesAll")}</p> : null}
                   <button
@@ -7219,9 +7219,9 @@ export function SurfaceTextureCard({
                     ready={!needsFaces}
                     confirm={picked}
                     text={shape.name}
-                    scope={appliedOnly || placedHere || !onFacePick ? undefined : picked ? (settings.faces.length === 1 ? t("toolSidebar.facesOne") : t("toolSidebar.facesCount", { count: settings.faces.length })) : layers.length > 1 && shownLayer === 0 ? t("inspector.surfaceLayerRest") : needsFaces ? undefined : t("toolSidebar.allFaces")}
+                    scope={appliedOnly || text || !onFacePick ? undefined : picked ? (settings.faces.length === 1 ? t("toolSidebar.facesOne") : t("toolSidebar.facesCount", { count: settings.faces.length })) : layers.length > 1 && shownLayer === 0 ? t("inspector.surfaceLayerRest") : needsFaces ? undefined : t("toolSidebar.allFaces")}
                     detail={appliedOnly ? t("inspector.surfaceApplied", { pattern: appliedPatterns }) : needsFaces ? t("inspector.surfaceLayerNeedsFaces") : undefined}
-                    action={appliedOnly || placedHere || !onFacePick ? undefined : (
+                    action={appliedOnly || text || !onFacePick ? undefined : (
                       <button
                         type="button"
                         className={facePicking ? "active" : ""}
