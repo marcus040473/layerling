@@ -37,6 +37,7 @@ import {
   MAX_MAGNET_DIAMETER,
   MAX_MAGNET_GAP,
   MAX_MAGNET_HEIGHT,
+  MAX_SLIDE_FRAME,
   MIN_BAYONET_AXIAL_GAP,
   MIN_BAYONET_DEPTH,
   MIN_BAYONET_LUGS,
@@ -66,6 +67,7 @@ import {
   lidThicknessForMagnets,
   lidThread,
   normalizeLidOptions,
+  slideFrameNeeded,
   type LidOptions,
 } from "@/lib/lidTool";
 import { numberLocale, t } from "@/lib/i18n";
@@ -171,6 +173,8 @@ export function LidPanel({
   // A flip-top's flap and hinge need a plate thick enough for them: thinner, it says how thick.
   const flipTopFits = lidFlipTopFits(settings);
   const flipTopNeeds = flipTopThickness(settings);
+  // A slide-in lid's frame must leave the wall whole above the slot: thinner, it says how much is needed.
+  const frameNeeds = slideFrameNeeded(settings);
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
@@ -400,7 +404,22 @@ export function LidPanel({
               ))}
             </div>
           </div>
-          <ToolHint text={t("lid.slideHint")} />
+          <ToolHint text={t(settings.slideFrame > 0 ? "lid.slideHintFrame" : "lid.slideHint")} />
+          {/* How far below the rim the lid sits, framed by the walls (Discussion #1443): 0 is flush, the wall cut down. */}
+          <EdgeModifierSlider
+            label={t("lid.slideFrame")}
+            value={settings.slideFrame}
+            min={0}
+            max={MAX_SLIDE_FRAME}
+            step={0.2}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={(value) => onChange({ slideFrame: value })}
+          />
+          {settings.slideFrame > 0 && settings.slideFrame < frameNeeds - 1e-9 ? (
+            <span className="shell-openings-summary" role="status">{t("lid.error.slideThinFrame", { frame: millimetres(frameNeeds) })}</span>
+          ) : <ToolHint text={t("lid.slideFrameHint")} />}
         </>) : null}
         {/* A cap that is turned off can stay tied to the body: two rings and a strap, printed beside it. */}
         {lidTetherFits(settings) ? (<>

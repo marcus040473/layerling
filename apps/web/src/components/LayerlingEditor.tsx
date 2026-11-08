@@ -8801,7 +8801,9 @@ export function LayerlingEditor({
         ...(turnFitted !== null ? [t("status.lidBayonetTurnFitted", { asked: millimetres(turnFitted), turn: millimetres(bayonet.turn) })] : []),
       ].join(" ")
       : slide
-      ? t("status.lidMadeSlide", { depth: millimetres(slide.depth) })
+      ? slide.frame > 0
+        ? t("status.lidMadeSlideFrame", { depth: millimetres(slide.depth), frame: millimetres(slide.frame) })
+        : t("status.lidMadeSlide", { depth: millimetres(slide.depth) })
       : hinge
       ? hinge.style === "pivot"
         ? t("status.lidMadePivot", { pin })
@@ -8830,7 +8832,7 @@ export function LayerlingEditor({
       ...(flipTop ? { flipTop: {
         opening: flipTop.opening, flapDiameter: Math.round(flipTop.flap * 1000) / 1000, hingeWidth: Math.round(flipTop.hingeWidth * 1000) / 1000, hingeLength: flipTop.hingeLength, hingeThickness: flipTop.hingeThickness,
       } } : {}),
-      ...(slide ? { slide: { side: slide.side, grooveDepth: Math.round(slide.depth * 1000) / 1000, wall: Math.round(slide.wall * 1000) / 1000 } } : {}),
+      ...(slide ? { slide: { side: slide.side, grooveDepth: Math.round(slide.depth * 1000) / 1000, wall: Math.round(slide.wall * 1000) / 1000, ...(slide.frame > 0 ? { frame: slide.frame } : {}) } } : {}),
     };
   }, [commitShapes, exactLid, selectedShapes]);
 
@@ -8857,7 +8859,7 @@ export function LayerlingEditor({
       setLidTool(null);
       return;
     }
-    const { type, thickness, gap, depth, wall, magnets, magnetDiameter, magnetHeight, magnetGap, hinge, hingePin, hingeGap, hingePinPlay, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle, hingeEndPlugs, clickBumps, clickBumpHeight, handle, threadPitch, threadTurns, threadStandard, bayonetLugs, bayonetDepth, bayonetAxialGap, bayonetDetent, bayonetTurn, tether, flipTop, flipTopOpening, slideSide } = lidTool;
+    const { type, thickness, gap, depth, wall, magnets, magnetDiameter, magnetHeight, magnetGap, hinge, hingePin, hingeGap, hingePinPlay, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle, hingeEndPlugs, clickBumps, clickBumpHeight, handle, threadPitch, threadTurns, threadStandard, bayonetLugs, bayonetDepth, bayonetAxialGap, bayonetDetent, bayonetTurn, tether, flipTop, flipTopOpening, slideSide, slideFrame } = lidTool;
     setLidTool((current) => current ? { ...current, busy: true, error: null } : current);
     // Click bumps, a handle and end plugs the panel does not show (a flat lid, a pivot lid, a hinge not flush)
     // are not asked for, nor magnets and a hinge where it shows them switched off (a screw, screw-in, bayonet or slide-in
@@ -8867,7 +8869,7 @@ export function LayerlingEditor({
       type, thickness, gap, depth, wall, magnets: magnets && lidTakesMagnets(lidTool), magnetDiameter, magnetHeight, magnetGap, hinge: hinge && LID_HINGE_TYPES.includes(type), hingePin, hingeGap, hingePinPlay, hingeKnuckles, hingePrintPin, hingeSide, hingeTeardrop, hingeStyle,
       hingeEndPlugs: hingeEndPlugs && hingeStyle === "flush",
       clickBumps: clickBumps && lidClickBumpsFit(lidTool), clickBumpHeight, handle: lidHandleFits(lidTool) ? handle : "none", threadPitch, threadTurns, threadStandard,
-      bayonetLugs, bayonetDepth, bayonetAxialGap, bayonetDetent, bayonetTurn, tether: tether && lidTetherFits(lidTool), flipTop: flipTop && lidFlipTopFits(lidTool), flipTopOpening, slideSide,
+      bayonetLugs, bayonetDepth, bayonetAxialGap, bayonetDetent, bayonetTurn, tether: tether && lidTetherFits(lidTool), flipTop: flipTop && lidFlipTopFits(lidTool), flipTopOpening, slideSide, slideFrame,
     }, targets).then((result) => {
       if (result.ok) setLidTool(null);
       else setLidTool((current) => current ? { ...current, busy: false, error: result.message } : current);
@@ -14533,6 +14535,7 @@ export function LayerlingEditor({
           flipTop: params.flipTop,
           flipTopOpening: params.flipTopOpening,
           slideSide: params.slideSide,
+          slideFrame: params.slideFrame,
         }, targets);
         if (!result.ok) throw new Error(result.message);
         const made = currentShapes().find((shape) => shape.id === result.id);
