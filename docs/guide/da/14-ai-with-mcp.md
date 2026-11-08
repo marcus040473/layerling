@@ -82,10 +82,12 @@ AI'en arbejder med de samme funktioner som dig, gennem den samme vej som din han
 | Værktøj | Hvad det gør |
 | --- | --- |
 | `layerling_list_editors` | lister de åbne editor-faner |
+| `layerling_rename_project` | giver projektet et navn, som blyanten ved siden af projektnavnet |
 | `layerling_open_editor` | åbner en ny editor-fane i din standardbrowser og venter indtil den har forbundet (kun på din egen computer) |
 | `layerling_read_scene` | læser scene, markering, enheder og de nøjagtige dimensioner af alle objekter |
 | `layerling_list_objects` | lister alle objekter med dimensioner, position, rotation og id |
 | `layerling_select_objects` | vælger objekter |
+| `layerling_hide_others` | skjuler alt undtagen markeringen eller de angivne objekter, i ét fortryd-trin |
 | `layerling_delete_objects` | sletter objekter |
 | `layerling_move_object` | flytter et objekt til et andet sted i objektlisten |
 | `layerling_create_shape` | skaber en form: kasse, cylinder, tekst (også buet), gevind, tandhjul, skitseform og alle de andre |

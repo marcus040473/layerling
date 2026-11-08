@@ -78,10 +78,12 @@ De AI werkt met dezelfde functies als jij, via dezelfde weg als jouw bediening i
 | Gereedschap | Wat het doet |
 | --- | --- |
 | `layerling_list_editors` | somt de geopende editortabbladen op |
+| `layerling_rename_project` | geeft het project een naam, zoals het potlood naast de projectnaam |
 | `layerling_open_editor` | opent een nieuw editortabblad in je standaardbrowser en wacht tot het verbonden is (alleen op je eigen computer) |
 | `layerling_read_scene` | leest scène, selectie, eenheden en de exacte maten van alle objecten |
 | `layerling_list_objects` | somt alle objecten op met maten, positie, rotatie en id |
 | `layerling_select_objects` | selecteert objecten |
+| `layerling_hide_others` | verbergt alles behalve de selectie of de opgegeven objecten, in één ongedaan-stap |
 | `layerling_delete_objects` | verwijdert objecten |
 | `layerling_move_object` | verplaatst een object naar een andere plek in de objectenlijst |
 | `layerling_create_shape` | maakt een vorm: blok, cilinder, tekst (ook gebogen), schroefdraad, tandwiel, schetslichaam en alle andere |

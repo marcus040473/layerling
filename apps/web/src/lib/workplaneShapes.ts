@@ -83,6 +83,9 @@ export function shapeWithParametricSource(shape: WorkplaneShape): WorkplaneShape
     slopeEnd: source.slopeEnd,
     slopeSide: source.slopeSide,
     slopeCurve: source.slopeCurve,
+    slopeFrom: source.slopeFrom,
+    sideDrop: source.sideDrop,
+    sideCurve: source.sideCurve,
     narrowEnd: source.narrowEnd,
     narrowSide: source.narrowSide,
     narrowCurve: source.narrowCurve,
@@ -668,6 +671,12 @@ export function sketchStrokesEqual(a: SketchStroke | undefined, b: SketchStroke 
   return a.width === b.width && a.align === b.align && a.join === b.join && a.cap === b.cap;
 }
 
+/** Two lists of numbers that hold the same values (a missing list equals only a missing one). */
+function sameNumberList(a: readonly number[] | undefined, b: readonly number[] | undefined) {
+  if (!a || !b) return a === b;
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
 export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
   return (
     a.id === b.id &&
@@ -733,6 +742,9 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.slopeEnd === b.slopeEnd &&
     a.slopeSide === b.slopeSide &&
     a.slopeCurve === b.slopeCurve &&
+    a.slopeFrom === b.slopeFrom &&
+    a.sideDrop === b.sideDrop &&
+    a.sideCurve === b.sideCurve &&
     a.narrowEnd === b.narrowEnd &&
     a.narrowSide === b.narrowSide &&
     a.narrowCurve === b.narrowCurve &&
@@ -916,7 +928,9 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.portProfile === b.portProfile &&
     a.portClearance === b.portClearance &&
     a.cornerFillet === b.cornerFillet &&
+    sameNumberList(a.cornerFillets, b.cornerFillets) &&
     a.topBottomFillet === b.topBottomFillet &&
+    a.bottomFillet === b.bottomFillet &&
     a.roundedBoxQuality === b.roundedBoxQuality &&
     a.bentTubeProfile === b.bentTubeProfile &&
     a.bentTubeInnerProfile === b.bentTubeInnerProfile &&
