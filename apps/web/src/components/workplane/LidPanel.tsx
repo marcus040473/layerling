@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
-import { X } from "lucide-react";
+import { LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolGroup, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
@@ -60,6 +60,8 @@ import {
   lidClickBumpsFit,
   lidFlipTopFits,
   lidHandleFits,
+  lidNeckDiameter,
+  lidNeckFit,
   lidTakesExtras,
   lidTakesMagnets,
   lidStandardThread,
@@ -101,6 +103,7 @@ export function LidPanel({
   onChange,
   onApply,
   onCancel,
+  neck = null,
 }: {
   targetName: string;
   settings: LidOptions;
@@ -110,6 +113,12 @@ export function LidPanel({
   onChange: (patch: Partial<LidOptions>) => void;
   onApply: () => void;
   onCancel: () => void;
+  /**
+   * With a standard's thread (issue #1482), the body's top as Make lid measures it (`lidTopForShapes`): undefined while
+   * it is measured, null when it is not round. `fit` is the diameter "Fit the body to the neck" makes it, null for a
+   * body that button cannot resize (`lidNeckFitPatch`); `fitting` while it does.
+   */
+  neck?: { top: { outer: number; inner: number } | null | undefined; fit: number | null; fitting: boolean; onFit: () => void } | null;
 }) {
   useLanguage();
   // The gap and the pin's play say when they are still what the printer's play gave them (printerPlay.ts).
@@ -160,7 +169,11 @@ export function LidPanel({
   const slide = settings.type === "slide";
   const thread = lidThread(settings);
   // A standard's thread sets its own pitch and turns: their sliders give way to what the standard is and what it takes.
-  const standard = screw && settings.threadStandard !== "own" ? lidStandardThread(settings.threadStandard) : null;
+  const neckStandard = screw && settings.threadStandard !== "own" ? settings.threadStandard : null;
+  const standard = neckStandard ? lidStandardThread(neckStandard) : null;
+  // Whether the body's top is the standard's neck, said before the lid is made, as Make lid will find it (lidNeckFit).
+  const neckTop = neckStandard && neck ? neck.top : undefined;
+  const neckMiss = neckStandard && neckTop !== undefined ? lidNeckFit(neckStandard, neckTop) : null;
   const depthLabel = t(settings.type === "cap" ? "lid.depthCap" : settings.type === "both" ? "lid.depthBoth" : "lid.depth");
   const wallLabel = t(screwIn ? "lid.wallPlug" : settings.type === "cap" || screw || bayonet ? "lid.wallCap" : settings.type === "both" ? "lid.wallBoth" : "lid.wall");
   // Folded, Advanced names what it holds: the gap and the lip or rim, the magnet's size and play, and the hinge's and the pin's play.
@@ -238,6 +251,32 @@ export function LidPanel({
               ))}
             </div>
             {settings.threadStandard === "own" ? null : <ToolHint text={t(`lid.threadStandardHint.${settings.threadStandard}`)} />}
+          </div>
+        ) : null}
+        {/* The body measured against the neck, before the lid is made, and a button that resizes it to fit (issue #1482). */}
+        {standard && neck ? (
+          <div className="lid-neck-fit">
+            <span className="shell-openings-summary" role="status">
+              {neckTop === undefined
+                ? t("lid.neckMeasuring")
+                : neckTop === null
+                  ? t("lid.neckNotRound")
+                  : t(neckMiss ? "lid.neckSize" : "lid.neckFits", {
+                    measured: millimetres(Math.round(200 * neckTop.outer) / 100), standard: standard.name,
+                    from: millimetres(Math.round(standard.neckFrom * 100) / 100), to: millimetres(Math.round(standard.neckTo * 100) / 100),
+                  })}
+            </span>
+            {neckTop !== undefined && (neckTop === null || neckMiss) ? (
+              neck.fit !== null ? (<>
+                <button type="button" className="secondary lid-neck-fit-button" disabled={busy || neck.fitting} onClick={neck.onFit}>
+                  {neck.fitting ? <LoaderCircle className="edge-modifier-spinner" size={15} /> : null}
+                  {neck.fitting ? t("lid.neckFitting") : t("lid.neckFit")}
+                </button>
+                <ToolHint text={t("lid.neckFitHint", { diameter: millimetres(neck.fit) })} />
+              </>) : neckTop !== null ? (
+                <ToolHint text={t("lid.neckFitByHand", { diameter: millimetres(lidNeckDiameter(neckStandard!)) })} />
+              ) : null
+            ) : null}
           </div>
         ) : null}
 
@@ -643,7 +682,8 @@ export function LidPanel({
       <div className="edge-modifier-footer">
         <ToolOutcome text={t("lid.outcome")} />
         <ToolCancel onClick={onCancel} />
-        <ToolApply label={t("lid.apply")} busy={busy} busyLabel={t("lid.working")} disabled={busy} onClick={onApply} />
+        {/* Not while the body is fitted to the neck: the lid would be made for it as it was. */}
+        <ToolApply label={t("lid.apply")} busy={busy} busyLabel={t("lid.working")} disabled={busy || Boolean(neck?.fitting)} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>
