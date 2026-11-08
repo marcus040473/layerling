@@ -162,6 +162,8 @@ import {
   MIN_ROUNDED_BOX_QUALITY,
   MAX_ROUNDED_BOX_QUALITY,
   normalizeCornerFillet,
+  normalizeCornerFillets,
+  normalizeEndFillets,
   normalizeTopBottomFillet,
   normalizeRoundedBoxQuality,
 } from "@/lib/roundedBoxGeometry";
@@ -359,7 +361,7 @@ import {
 import { regularPolygonAspect } from "@/lib/regularPolygonFootprint";
 import { DEFAULT_TAPER_DIMENSION_MAX, MAX_HIGH_RESOLUTION_SIDES, MAX_HIGH_RESOLUTION_STEPS, POSITION_TYPED_LIMIT, RULER_MAX_LENGTH, customSnapGridLabel, positionReach, shapeDimensionLimit, snapGridStep } from "@/lib/workplaneSettings";
 import { printerPresetById } from "@/lib/printBed";
-import { narrowCrossWidth, narrowEndWidth, normalizeNarrowStart, normalizeSlopeCurve, normalizeSlopeSide, shapeSupportsNarrow, shapeSupportsSlope, SLOPE_MIN_END, slopeAlongWidth, slopeEndHeight, slopeSidesFor } from "@/lib/slopeAlong";
+import { maxSideDrop, narrowCrossWidth, narrowEndWidth, normalizeNarrowStart, normalizeSlopeCurve, normalizeSlopeFrom, normalizeSlopeSide, shapeSupportsNarrow, shapeSupportsSlope, SLOPE_MIN_END, slopeAlongWidth, slopeEndHeight, slopeSidesFor } from "@/lib/slopeAlong";
 import type { BentTubeInnerProfile, BentTubeProfile, CustomSnapGrid, GearType, GridfinityCompartmentLabel, GridfinityType, GridSize, MeasurementAccuracy, ShapeCustomization, SketchProfile, SketchStroke, SketchStrokeAlign, SketchStrokeJoin, ThreadDrive, ThreadHead, ThreadProfile, ThreadRole, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
 import { selectWholeValue } from "@/lib/numberField";
 import { formulaMatchesValue, formulaToRemember, withFieldFormula, type FieldFormulas } from "@/lib/fieldFormulas";
@@ -801,9 +803,10 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     patch.depth = patch.width ?? value;
     onUpdate(patch, { resizeAxis: "width" });
   };
+  // A radius is a circle's: width and length both follow it (#1476); before, only the width did and the cone went oval.
   const setBaseRadius = (value: number) => {
     const diameter = value * 2;
-    onUpdate({ baseRadius: value, width: diameter, size: resizedShapeSize(diameter, baseDepth) }, { resizeAxis: "width" });
+    onUpdate({ baseRadius: value, width: diameter, depth: diameter, size: resizedShapeSize(diameter, diameter) }, { resizeAxis: "width" });
   };
   const setHeight = (height: number) => onUpdate({ height }, { resizeAxis: "height" });
 
@@ -1099,25 +1102,84 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     const roundedBoxQuality = shape.roundedBoxQuality ?? DEFAULT_ROUNDED_BOX_QUALITY;
     const maxCornerFillet = Math.max(1, Math.min(width, depth) / 2);
     const maxTopBottomFillet = Math.max(1, shape.height / 2);
+    // Top and bottom on their own: each can go as far as the other one leaves room for.
+    const endsSeparate = shape.bottomFillet !== undefined;
+    const [topFillet, bottomFillet] = normalizeEndFillets(topBottomFillet, shape.bottomFillet, shape.height);
+    const endRows: ShapePropertyConfig[] = endsSeparate
+      ? [
+          {
+            id: "topFillet",
+            label: t("prop.topFillet"),
+            value: topFillet,
+            min: 0,
+            max: Math.max(1, shape.height - bottomFillet),
+            step: 0.05,
+            onChange: (value) => onUpdate({ topBottomFillet: normalizeEndFillets(value, bottomFillet, shape.height)[0] }),
+          },
+          {
+            id: "bottomFillet",
+            label: t("prop.bottomFillet"),
+            value: bottomFillet,
+            min: 0,
+            max: Math.max(1, shape.height - topFillet),
+            step: 0.05,
+            onChange: (value) => onUpdate({ bottomFillet: normalizeEndFillets(topFillet, value, shape.height)[1] }),
+          },
+        ]
+      : [{
+          id: "topBottomFillet",
+          label: t("prop.topBottomFillet"),
+          value: topBottomFillet,
+          min: 0,
+          max: maxTopBottomFillet,
+          step: 0.05,
+          onChange: (value) => onUpdate({ topBottomFillet: normalizeTopBottomFillet(value, shape.height / 2) }),
+        }];
+
+    // Own radii for each corner: with flat ends only (rounded ends round every corner alike).
+    const flatEnds = topBottomFillet <= 1e-4;
+    const ownCorners = flatEnds ? normalizeCornerFillets(shape.cornerFillets, Math.min(width, depth) / 2) : undefined;
+    const sharedRadius = normalizeCornerFillet(cornerFillet, Math.min(width, depth) / 2);
+    const cornerRows: ShapePropertyConfig[] = ownCorners
+      ? (["backLeft", "backRight", "frontRight", "frontLeft"] as const).map((name, index) => ({
+          id: `cornerFillet-${name}`,
+          label: t(`prop.corner.${name}`),
+          value: ownCorners[index],
+          min: 0,
+          max: maxCornerFillet,
+          step: 0.05,
+          onChange: (value: number) => onUpdate({ cornerFillets: ownCorners.map((radius, at) => (at === index ? normalizeCornerFillet(value, Math.min(width, depth) / 2) : radius)) as [number, number, number, number] }),
+        }))
+      : [{
+          id: "cornerFillet",
+          label: t("prop.cornerFillet"),
+          value: cornerFillet,
+          min: 0,
+          max: maxCornerFillet,
+          step: 0.05,
+          onChange: (value: number) => onUpdate({ cornerFillet: normalizeCornerFillet(value, Math.min(width, depth) / 2) }),
+        }];
 
     return [
+      ...cornerRows,
       {
-        id: "cornerFillet",
-        label: t("prop.cornerFillet"),
-        value: cornerFillet,
-        min: 0,
-        max: maxCornerFillet,
-        step: 0.05,
-        onChange: (value) => onUpdate({ cornerFillet: normalizeCornerFillet(value, Math.min(width, depth) / 2) }),
+        type: "toggle",
+        id: "cornerSeparate",
+        label: t("prop.cornerSeparate"),
+        value: Boolean(ownCorners),
+        disabled: !flatEnds,
+        onChange: (separate) => onUpdate({ cornerFillets: separate ? [sharedRadius, sharedRadius, sharedRadius, sharedRadius] : undefined }),
       },
+      ...endRows,
       {
-        id: "topBottomFillet",
-        label: t("prop.topBottomFillet"),
-        value: topBottomFillet,
-        min: 0,
-        max: maxTopBottomFillet,
-        step: 0.05,
-        onChange: (value) => onUpdate({ topBottomFillet: normalizeTopBottomFillet(value, shape.height / 2) }),
+        type: "toggle" as const,
+        id: "endsSeparate",
+        label: t("prop.endsSeparate"),
+        value: endsSeparate,
+        // On, the bottom starts as the top was, so nothing changes shape; off, both take the top's radius again.
+        onChange: (value: boolean) => onUpdate(value
+          ? { bottomFillet: normalizeTopBottomFillet(topBottomFillet, shape.height / 2) }
+          : { topBottomFillet: normalizeTopBottomFillet(topFillet, shape.height / 2), bottomFillet: undefined }),
       },
       {
         id: "roundedBoxQuality",
@@ -2504,7 +2566,16 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
 
   if (shape.kind === "cone") {
     return [
-      { id: "topRadius", label: t("prop.topRadius"), value: shape.topRadius ?? 0, min: 0, max: 40, onChange: (topRadius) => onUpdate({ topRadius }) },
+      {
+        id: "topRadius",
+        label: t("prop.topRadius"),
+        value: shape.topRadius ?? 0,
+        min: 0,
+        max: 40,
+        onChange: (topRadius) => onUpdate({ topRadius }),
+        // Width and length are the base circle's; a top wider than the base reaches past them (#1477).
+        ...((shape.topRadius ?? 0) > (shape.baseRadius ?? baseWidth / 2) ? { hint: t("prop.coneTopRadiusHint") } : {}),
+      },
       { id: "baseRadius", label: t("prop.baseRadius"), value: shape.baseRadius ?? baseWidth / 2, min: MIN_SHAPE_SIZE, max: 80, onChange: setBaseRadius },
       { id: "length", label: t("prop.length"), value: depth, min: MIN_SHAPE_SIZE, max: 160, onChange: setDepth },
       { id: "width", label: t("prop.width"), value: width, min: MIN_SHAPE_SIZE, max: 160, onChange: setConeWidth },
@@ -4107,7 +4178,7 @@ function getShapeProperties(shape: WorkplaneShape, onUpdate: ShapeInspectorUpdat
   if (customLimit === undefined) return properties;
   return properties.map((property) => {
     if (property.type === "text" || property.type === "select") return property;
-    if (["length", "width", "height", "threadLength"].includes(property.id)) return { ...property, max: customLimit };
+    if (["length", "width", "height", "diameter", "threadLength"].includes(property.id)) return { ...property, max: customLimit };
     if (["topRadius", "baseRadius"].includes(property.id)) return { ...property, max: customLimit / 2 };
     return property;
   });
@@ -4389,8 +4460,11 @@ export function ShapeInspector({
   const slopeSide = normalizeSlopeSide(shape.kind, shape.slopeSide);
   const slopeLength = slopeAlongWidth(slopeSide) ? shapeWidth(shape) : shapeDepth(shape);
   const slopeEndValue = slopeEndHeight(shape);
-  const slopeAngle = (Math.atan2(shape.height - slopeEndValue, Math.max(1e-6, slopeLength)) * 180) / Math.PI;
-  const slopeMaxAngle = (Math.atan2(shape.height - Math.min(SLOPE_MIN_END, shape.height), Math.max(1e-6, slopeLength)) * 180) / Math.PI;
+  const slopeFrom = normalizeSlopeFrom(shape.slopeFrom);
+  // From the middle the angle is the line's from the middle to an end: over half the length.
+  const slopeRun = slopeFrom === "middle" ? slopeLength / 2 : slopeLength;
+  const slopeAngle = (Math.atan2(shape.height - slopeEndValue, Math.max(1e-6, slopeRun)) * 180) / Math.PI;
+  const slopeMaxAngle = (Math.atan2(shape.height - Math.min(SLOPE_MIN_END, shape.height), Math.max(1e-6, slopeRun)) * 180) / Math.PI;
   const slopeProperties: ShapePropertyConfig[] = !slopeShown ? [] : [
     {
       type: "select",
@@ -4399,6 +4473,15 @@ export function ShapeInspector({
       value: slopeSide,
       options: slopeSidesFor(shape.kind).map((side) => ({ value: side, label: t(`slope.side.${side}`) })),
       onChange: (value) => onUpdate({ slopeSide: normalizeSlopeSide(shape.kind, value), slopeEnd: shape.slopeEnd ?? shape.height }),
+    },
+    {
+      type: "select",
+      id: "slopeFrom",
+      label: t("prop.slopeFrom"),
+      value: slopeFrom,
+      hint: slopeFrom === "arch" ? t("slope.fromArchHint") : t("slope.fromHint"),
+      options: [{ value: "end", label: t("slope.from.end") }, { value: "middle", label: t("slope.from.middle") }, { value: "arch", label: t("slope.from.arch") }],
+      onChange: (value) => onUpdate({ slopeFrom: normalizeSlopeFrom(value), slopeEnd: shape.slopeEnd ?? shape.height, slopeSide: shape.slopeSide ?? slopeSide }),
     },
     {
       id: "slopeEnd",
@@ -4418,7 +4501,7 @@ export function ShapeInspector({
       max: Math.floor(slopeMaxAngle * 100) / 100,
       step: 0.5,
       onChange: (angle) => {
-        const drop = Math.tan((Math.min(89.9, Math.max(0, angle)) * Math.PI) / 180) * slopeLength;
+        const drop = Math.tan((Math.min(89.9, Math.max(0, angle)) * Math.PI) / 180) * slopeRun;
         onUpdate({ slopeEnd: Math.max(Math.min(SLOPE_MIN_END, shape.height), shape.height - drop), slopeSide: shape.slopeSide ?? slopeSide });
       },
     },
@@ -4432,8 +4515,28 @@ export function ShapeInspector({
       hint: t("slope.curveHint"),
       onChange: (percent) => onUpdate({ slopeCurve: normalizeSlopeCurve(percent / 100), slopeEnd: shape.slopeEnd ?? shape.height, slopeSide: shape.slopeSide ?? slopeSide }),
     },
+    {
+      id: "sideDrop",
+      label: t("prop.sideDrop"),
+      value: Math.min(maxSideDrop(shape.height), Math.max(0, shape.sideDrop ?? 0)),
+      min: 0,
+      max: Math.floor(maxSideDrop(shape.height) * 100) / 100,
+      step: 0.1,
+      hint: t("slope.sideDropHint"),
+      onChange: (sideDrop) => onUpdate({ sideDrop: Math.min(maxSideDrop(shape.height), Math.max(0, sideDrop)) }),
+    },
+    {
+      id: "sideCurve",
+      label: t("prop.sideCurve"),
+      value: Math.round(normalizeSlopeCurve(shape.sideCurve) * 100),
+      min: -100,
+      max: 100,
+      step: 1,
+      hint: t("slope.sideCurveHint"),
+      onChange: (percent) => onUpdate({ sideCurve: normalizeSlopeCurve(percent / 100) }),
+    },
   ];
-  const slopeDefaults: PropertyDefaultValues = new Map<string, number | string | boolean>([["slopeEnd", shape.height], ["slopeAngle", 0], ["slopeCurve", 0]]);
+  const slopeDefaults: PropertyDefaultValues = new Map<string, number | string | boolean>([["slopeEnd", shape.height], ["slopeAngle", 0], ["slopeCurve", 0], ["sideDrop", 0], ["sideCurve", 0], ["slopeFrom", "end"]]);
   /*
    * Narrow along (slopeAlong.ts): seen from above, both long sides run in towards one
    * end - its width, where along the length it starts and how much the sides curve.
@@ -7983,7 +8086,8 @@ function RangeProperty({
     window.clearTimeout(sliderReleaseTimerRef.current);
     sliderReleaseTimerRef.current = window.setTimeout(() => { draggingSliderRef.current = false; }, 120);
   };
-  const allowsAboveSliderMax = ["length", "width", "height", "outerDiameter", "innerDiameter", "starOuterSize", "starInnerSize", "crescentThickness", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "bentTubeSize", "bentTubeBendRadius"].includes(id) || id.endsWith("Length") || id.endsWith("Width");
+  // A cylinder's diameter and a cone's radii too (drucktipps3d forum: a cylinder of 198 mm was cut to 160).
+  const allowsAboveSliderMax = ["length", "width", "height", "diameter", "baseRadius", "topRadius", "outerDiameter", "innerDiameter", "starOuterSize", "starInnerSize", "crescentThickness", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "bentTubeSize", "bentTubeBendRadius"].includes(id) || id.endsWith("Length") || id.endsWith("Width");
   const isLength = propertyUsesLengthUnit(id);
   const accuracy = workspace.accuracy;
   // A position can be typed beyond the slider, on both sides (#425).

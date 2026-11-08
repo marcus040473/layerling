@@ -1,6 +1,6 @@
 "use client";
 import { deleteSketchDraft, loadSketchDraft, saveSketchDraft, sketchHasWork, type SketchDraft } from "@/lib/sketchDraftStore";
-import { normalizeNarrowStart, normalizeSlopeCurve, normalizeSlopeSide, shapeSupportsNarrow, shapeSupportsSlope } from "@/lib/slopeAlong";
+import { normalizeNarrowStart, normalizeSlopeCurve, normalizeSlopeFrom, normalizeSlopeSide, shapeSupportsNarrow, shapeSupportsSlope } from "@/lib/slopeAlong";
 import { AlertTriangle, X } from "lucide-react";
 import { bodyLocked, groupHeld, holdsShapeLock, patchFitsShapeLock, shapeLockBroken } from "@/lib/shapeLock";
 import { ObjectListPanel } from "@/components/workplane/ObjectListPanel";
@@ -231,6 +231,7 @@ import { projectedEdgesPath } from "@/lib/sketchEdges";
 import { useRememberedFlag } from "@/lib/useRememberedFlag";
 import { BUG_REPORT_FILE, bugReportText, rememberBugReportEvent, type BugReportEvent } from "@/lib/bugReport";
 import { formatLengthMm, lengthDisplayUnit } from "@/lib/measurementUnits";
+import { tightBendShown } from "@/lib/cadTightBends";
 import { angleAtVertex, angleBetweenFaces, formatFaceAngles, formatProtractorAngle } from "@/lib/protractor";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_TIMBER_BRACINGS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_FACE_NAMES, normalizeSurfaceTextureFaces, surfaceTextureFacePick, surfaceTexturePickedFaceIds, toggleSurfaceTexturePickedFace, type SurfaceTextureFace, type SurfaceTextureFacePick, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
@@ -332,6 +333,11 @@ type OpenGroupOutcome = { ok: boolean; message: string; partIds?: string[]; grou
 type WithoutRequestId<T> = T extends unknown ? Omit<T, "requestId"> : never;
 type CadModifierWorkerPayload = WithoutRequestId<CadModifierWorkerRequest>;
 type CadPreviewPayload = Extract<CadModifierWorkerPayload, { type: "preview" }>;
+/** A fillet refused at a curve bending tighter than its radius (lib/cadTightBends.ts, #1473), in the user's unit. */
+function tightBendError(bend: number, workspace: WorkplaneWorkspaceSettings) {
+  return t("edge.errorTightBend", { bend: `${formatLengthMm(tightBendShown(bend), workspace.accuracy)} ${lengthDisplayUnit(workspace).label}` });
+}
+
 /** What the status line says when the sharp inner corners at the picked edges were treated first (lib/cadInnerCorners.ts). */
 function innerCornersNotice(corners: { count: number; amount: number }, kind: CadModifierKind | undefined, workspace: WorkplaneWorkspaceSettings) {
   const size = `${formatLengthMm(corners.amount, workspace.accuracy)} ${lengthDisplayUnit(workspace).label}`;
@@ -1152,6 +1158,9 @@ function parametricSourceForBake(shape: WorkplaneShape): ParametricSource | unde
     slopeEnd: shape.slopeEnd,
     slopeSide: shape.slopeSide,
     slopeCurve: shape.slopeCurve,
+    slopeFrom: shape.slopeFrom,
+    sideDrop: shape.sideDrop,
+    sideCurve: shape.sideCurve,
     narrowEnd: shape.narrowEnd,
     narrowSide: shape.narrowSide,
     narrowCurve: shape.narrowCurve,
@@ -1195,6 +1204,9 @@ function rebuiltParametricShape(shape: WorkplaneShape, patch: Partial<WorkplaneS
     slopeEnd: source.slopeEnd,
     slopeSide: source.slopeSide,
     slopeCurve: source.slopeCurve,
+    slopeFrom: source.slopeFrom,
+    sideDrop: source.sideDrop,
+    sideCurve: source.sideCurve,
     narrowEnd: source.narrowEnd,
     narrowSide: source.narrowSide,
     narrowCurve: source.narrowCurve,
@@ -1308,6 +1320,9 @@ function bakeShapeTransformIntoMesh(shape: WorkplaneShape): WorkplaneShape {
     slopeEnd: undefined,
     slopeSide: undefined,
     slopeCurve: undefined,
+    slopeFrom: undefined,
+    sideDrop: undefined,
+    sideCurve: undefined,
     narrowEnd: undefined,
     narrowSide: undefined,
     narrowCurve: undefined,
@@ -2738,6 +2753,9 @@ function mcpSlopePatch(shape: WorkplaneShape, params: Record<string, unknown>): 
   if (typeof params.slopeSide === "string") patch.slopeSide = normalizeSlopeSide(shape.kind, params.slopeSide);
   if (typeof params.slopeCurve === "number") patch.slopeCurve = normalizeSlopeCurve(params.slopeCurve);
   if (typeof params.slopeEnd === "number" && Number.isFinite(params.slopeEnd)) patch.slopeEnd = Math.max(0, params.slopeEnd);
+  if (typeof params.slopeFrom === "string") patch.slopeFrom = normalizeSlopeFrom(params.slopeFrom);
+  if (typeof params.sideDrop === "number" && Number.isFinite(params.sideDrop)) patch.sideDrop = Math.max(0, params.sideDrop);
+  if (typeof params.sideCurve === "number") patch.sideCurve = normalizeSlopeCurve(params.sideCurve);
   if (!shapeSupportsNarrow(shape)) return patch;
   if (typeof params.narrowSide === "string") patch.narrowSide = normalizeSlopeSide(shape.kind, params.narrowSide);
   if (typeof params.narrowCurve === "number") patch.narrowCurve = normalizeSlopeCurve(params.narrowCurve);
@@ -3758,8 +3776,13 @@ export function LayerlingEditor({
           ...current,
           busy: false,
           preview: null,
-          error: cadModifierUserErrorMessage(message.message) ?? message.message,
-          failedEdgeIds: message.failedEdgeIds ? conflictEdgeIds(current, message.failedEdgeIds) : [],
+          error: message.tightestBend !== undefined
+            ? tightBendError(message.tightestBend, workspaceSettingsRef.current)
+            : cadModifierUserErrorMessage(message.message) ?? message.message,
+          // The edges with the tight bend are the cause, whichever edge was picked last.
+          failedEdgeIds: message.tightestBend !== undefined
+            ? message.failedEdgeIds ?? []
+            : message.failedEdgeIds ? conflictEdgeIds(current, message.failedEdgeIds) : [],
         } : current);
         // Ein zu grosser Radius scheitert - der inzwischen gewaehlte kleinere darf es trotzdem versuchen.
         if (cadPreviewQueueRef.current.settle(message.requestId).status !== "sent") {
@@ -3913,6 +3936,12 @@ export function LayerlingEditor({
   useEffect(() => {
     projectInfoRef.current = { projectId: projectId ?? null, projectName, projectCreatedAt };
   }, [projectCreatedAt, projectId, projectName]);
+
+  // The MCP bridge renames the project the way the pencil beside its name does (Discussion #1483).
+  const onProjectNameChangeRef = useRef(onProjectNameChange);
+  useEffect(() => {
+    onProjectNameChangeRef.current = onProjectNameChange;
+  }, [onProjectNameChange]);
 
   useEffect(() => {
     historyIndexRef.current = historyIndex;
@@ -12747,6 +12776,19 @@ export function LayerlingEditor({
         return { selectedIds: validIds, objects: currentShapes().filter((shape) => validIds.includes(shape.id)).map(mcpShapeSummary) };
       }
 
+      if (command.action === "rename_project") {
+        // As the pencil beside the project name does (Discussion #1483): trimmed, at most 80 characters, never empty.
+        const name = typeof params.name === "string" ? params.name.trim().slice(0, 80) : "";
+        if (!name) throw new Error("Give the project a name that is not empty");
+        const rename = onProjectNameChangeRef.current;
+        if (!rename || !projectInfoRef.current.projectId) throw new Error("This editor has no project to rename");
+        const previousName = projectInfoRef.current.projectName ?? null;
+        if (name !== previousName) rename(name);
+        // Seen at once by layerling_list_editors and get_scene, before the new name comes back down as a prop.
+        projectInfoRef.current = { ...projectInfoRef.current, projectName: name };
+        return { projectId: projectInfoRef.current.projectId, previousName, projectName: name };
+      }
+
       if (command.action === "hide_others") {
         // Hide others (Discussion #1472), through the editor's own command: one undo step.
         const requestedIds = mcpStringArray(params.ids ?? params.id);
@@ -16652,8 +16694,12 @@ export function LayerlingEditor({
             fileHandle = await pickLylFileToSave(projectExportFileName(exportName, "lyl"));
             pickedNewFile = true;
           }
-          // Closed without a choice: nothing to do.
-          if (!fileHandle) return;
+          // Closed without a choice: nothing is written, and the status line says so (a browser also reports a
+          // dialog it could not use as closed; staying silent left people wondering where the file went).
+          if (!fileHandle) {
+            setNotice(t("status.saveNothingChosen"));
+            return;
+          }
         } catch {
           // No dialog here (a frame, a policy): the download still works.
           fileHandle = null;
@@ -18926,7 +18972,7 @@ export function LayerlingEditor({
           workspace={workspaceSettings}
           busy={shellTool.busy}
           error={shellTool.error}
-          roundedEdgesHint={selectedShape.kind === "roundedBox" && (selectedShape.topBottomFillet ?? 0) > 0}
+          roundedEdgesHint={selectedShape.kind === "roundedBox" && ((selectedShape.topBottomFillet ?? 0) > 0 || (selectedShape.bottomFillet ?? 0) > 0)}
           appliedFeatureCount={selectedEdgeFeatureCount}
           reversibleFeatureCount={selectedReversibleEdgeFeatureCount}
           historyOptions={selectedEdgeHistoryOptions}

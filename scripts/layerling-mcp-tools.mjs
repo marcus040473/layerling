@@ -102,6 +102,9 @@ export const shapeSettingSchema = {
   slopeEnd: { type: "number", description: "Box, roundedBox, cylinder, ellipse, polygon, tube, ring, wedge and roundRoof only: slope along - the height of the top at the lower end, in mm (0.2 up to the body's height); the other end keeps the body's height. Equal to the height means no slope." },
   slopeSide: { type: "string", enum: ["back", "front", "left", "right"], description: "Where slopeEnd applies: which end goes down (a round roof or a wedge slopes front or back only)." },
   slopeCurve: { type: "number", description: "Slope along only, where slopeEnd applies: how the top runs down to slopeEnd, -1 to 1: 0 straight, above 0 bulging up (level at the high end), below 0 sagging (level at the low end)." },
+  slopeFrom: { type: "string", enum: ["end", "middle", "arch"], description: "Slope along only, where slopeEnd applies: where the top line starts - at one end (the default, the other end low), in the middle (both ends low, symmetric; slopeSide then only picks the axis) or \"arch\" (the slope stays and slopeCurve arches it evenly around its own middle)." },
+  sideDrop: { type: "number", description: "Box, roundedBox, cylinder, ellipse, polygon, tube, ring, wedge and roundRoof only: side drop - how many mm the two longer sides are lowered at their edges, evenly, with the middle keeping the full height (0 for none, up to the height minus 0.2). Adds to a slope." },
+  sideCurve: { type: "number", description: "Side drop only, where sideDrop applies: how the top runs from the middle to the edges, -1 to 1: 0 straight, above 0 bulging up (a dome, level in the middle), below 0 sagging (level at the edges)." },
   narrowEnd: { type: "number", description: "Box, roundedBox, cylinder, ellipse, polygon, wedge and roundRoof only (not tube or ring): narrow along - seen from above, the width of the narrow end in mm (0 for a point, up to the full width); both long sides run in evenly so the end stays in the middle. The full width means no narrowing." },
   narrowSide: { type: "string", enum: ["back", "front", "left", "right"], description: "Where narrowEnd applies: which end narrows (a round roof or a wedge narrows front or back only)." },
   narrowCurve: { type: "number", description: "Narrow along only, where narrowEnd applies: how the sides run in to narrowEnd, -1 to 1: 0 straight, above 0 bulging out (a rounded bow), below 0 drawn in." },
@@ -346,7 +349,8 @@ export const shapeSettingSchema = {
   portProfile: { type: "string", enum: ["rounded", "hdmi", "miniHdmi", "microHdmi", "displayPort", "miniDisplayPort", "xt60", "xt30", "mt60", "dsub9"], description: "Port opening only: rounded corners (default), or the lower corners cut off at a slant as on an HDMI, Mini HDMI, Micro HDMI or Mini DisplayPort socket, or only the lower left one as on DisplayPort; xt60 and xt30 a lying outline with one end narrowed by two cut corners, mt60 a rounded triangle, dsub9 the D-Sub's trapezoid - these four have every corner rounded by cornerFillet. The cut grows with width and height." },
   portClearance: { type: "number", description: "Port opening only: extra room in mm (0 to 2, default 0) on every side, on top of the room a portPreset has already. Together with portPreset when creating, it makes the opening wider and taller by twice this and its corners rounder by it. On its own it does not change the size; it records the extra room, so the inspector still shows the preset." },
   cornerFillet: { type: "number", description: "Rounded box and port opening only. Rounded box: fillet radius of vertical corners in mm. Port opening: radius of the opening's four corners in mm, at most half its width or height (half the height gives fully round ends, as on USB-C)." },
-  topBottomFillet: { type: "number", description: "Rounded box only: fillet radius of top and bottom edges in mm." },
+  topBottomFillet: { type: "number", description: "Rounded box only: fillet radius of top and bottom edges in mm (the top edge only, when bottomFillet is given)." },
+  bottomFillet: { type: "number", description: "Rounded box only: fillet radius of the bottom edge in mm, on its own; left out, the bottom takes topBottomFillet. Top and bottom together cannot exceed the height." },
   roundedBoxQuality: { type: "number", description: "Rounded box only: quality / segment count for fillet rounding (1 to 32; 1 gives chamfered corners)." },
   bentTubeProfile: { type: "string", enum: ["round", "square", "hexagon", "octagon"], description: "Bent tube only: outer cross-section." },
   bentTubeInnerProfile: { type: "string", enum: ["none", "round", "square", "hexagon", "octagon"], description: "Bent tube only: inner cross-section; \"none\" makes a solid tube." },
@@ -387,6 +391,18 @@ export const tools = [
     name: "layerling_list_editors",
     description: "List Layerling editor tabs that are currently open and heartbeating, including editorNumber and projectName.",
     inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "layerling_rename_project",
+    description: "Give the editor's project a name, as the pencil beside the project name does (Discussion #1483), so a design is easy to find in the project list later, e.g. \"HDD case 5x WD Elements v3\". Leading and trailing spaces are dropped and the name is cut to 80 characters; an empty name is refused. Returns projectId, previousName and projectName. layerling_list_editors and layerling_read_scene report the project's name, so check it there before changing a design: it tells which project an editor tab has open.",
+    inputSchema: {
+      ...editorTargetSchema,
+      properties: {
+        ...editorTargetSchema.properties,
+        name: { type: "string", description: "The project's new name, at most 80 characters." },
+      },
+      required: ["name"],
+    },
   },
   {
     name: "layerling_open_editor",

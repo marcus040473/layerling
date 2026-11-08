@@ -125,7 +125,11 @@ export type ShapeCustomization = {
   height?: number;
   maxDimension?: number;
   cornerFillet?: number;
+  /** Rounded box with flat top and bottom: an own radius for each corner (back left, back right, front right, front left); wins over cornerFillet. */
+  cornerFillets?: [number, number, number, number];
   topBottomFillet?: number;
+  /** Rounded box only: the bottom edge on its own; left out, the bottom takes the top's radius. */
+  bottomFillet?: number;
   roundedBoxQuality?: number;
   steps?: number;
   sides?: number;
@@ -918,6 +922,9 @@ export type ParametricSource = {
   slopeEnd?: number;
   slopeSide?: "back" | "front" | "left" | "right";
   slopeCurve?: number;
+  slopeFrom?: "end" | "middle" | "arch";
+  sideDrop?: number;
+  sideCurve?: number;
   narrowEnd?: number;
   narrowSide?: "back" | "front" | "left" | "right";
   narrowCurve?: number;
@@ -1049,6 +1056,12 @@ export type WorkplaneShape = {
   slopeSide?: "back" | "front" | "left" | "right";
   /** Slope along: -1 to 1, 0 a straight top, above 0 bulging up, below 0 sagging. */
   slopeCurve?: number;
+  /** Slope along: where the top line starts: at one end ("end", the default) or in the middle ("middle": both ends low, symmetric). */
+  slopeFrom?: "end" | "middle" | "arch";
+  /** Side drop: how many mm the two longer sides are lowered at their edges, evenly; missing or 0 means none. */
+  sideDrop?: number;
+  /** Side drop: -1 to 1, 0 a straight line from the middle to the edge, above 0 bulging up, below 0 sagging. */
+  sideCurve?: number;
   /**
    * Narrow along: seen from above, the width of the narrow end in mm,
    * both long sides running in evenly. Missing or the full width means no narrowing.
@@ -1372,7 +1385,10 @@ export type WorkplaneShape = {
   /** Port opening: extra room in mm on every side on top of the preset's, already in width and height; it lets the preset be recognised. */
   portClearance?: number;
   cornerFillet?: number;
+  /** Rounded box with flat top and bottom: an own radius for each corner (back left, back right, front right, front left); wins over cornerFillet. */
+  cornerFillets?: [number, number, number, number];
   topBottomFillet?: number;
+  bottomFillet?: number;
   roundedBoxQuality?: number;
   bentTubeProfile?: BentTubeProfile;
   bentTubeInnerProfile?: BentTubeInnerProfile;
