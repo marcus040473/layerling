@@ -433,6 +433,8 @@ export type ShapeCustomization = {
   loftOffsetZ?: number;
   /** Transition: wall thickness in mm; 0 is a solid body, more a tube open at both ends. */
   loftWall?: number;
+  /** Transition: the wall at the top end in mm, when it differs from loftWall (Forum 624069); left out, it is loftWall. */
+  loftTopWall?: number;
   /** Transition: degrees the section turns from bottom to top (#205). */
   loftTwist?: number;
   /** Transition: 0 to 1, how much of an S-curve the sides take between the ends (#271). */
@@ -458,6 +460,10 @@ export type ShapeCustomization = {
    * countersink take it while they are holes. The height still counts to the shoulder, the tip lies below it.
    */
   drillPointAngle?: number;
+  /** Counterbore, countersink and double countersink: a slotted hole (Discussion #1531), as on the shape. */
+  screwHoleSlot?: boolean;
+  /** Countersink and double countersink: how far in mm the head sits below the face (Discussion #1531), as on the shape. */
+  screwHoleRecess?: number;
   /** Port opening: rounded corners, or the lower ones cut off as on an HDMI or DisplayPort socket. */
   portProfile?: PortProfile;
   /** Port opening: extra room in mm on every side on top of the preset's, already in width and height; it lets the preset be recognised. */
@@ -522,6 +528,11 @@ export type WorkplaneWorkspaceSettings = {
   edgeColor: string;
   /** Holes drawn darker and denser, with a line round them, so they stand out among see-through bodies (#662). */
   strongHoles: boolean;
+  /**
+   * How solid holes are drawn, 10 to 90 percent, so one can see better where a hole meets a body (#1566).
+   * 0 is automatic: 52 %, or 72 % with Show holes more clearly, as before the slider.
+   */
+  holeOpacity: number;
   showShadows: boolean;
   /** The camera keeps turning for a moment after you let go, and slows down. */
   cameraInertia: boolean;
@@ -566,6 +577,8 @@ export type WorkplaneWorkspaceSettings = {
   objectSnap: boolean;
   /** An STL leaves as a plain download each time, which the browser numbers (name (1).stl), instead of writing into one linked file (#731). */
   stlAsDownload: boolean;
+  /** Export > LYL, Ctrl+S and Save as leave as a plain download, without the browser's save dialog (Discussion #1449). */
+  lylAsDownload: boolean;
   /** The browser asks "Leave site?" when a design is open and the tab is closed or reloaded; off by default (#683 mail). */
   confirmTabClose: boolean;
   dimensionsAlwaysVisible: boolean;
@@ -575,7 +588,11 @@ export type WorkplaneWorkspaceSettings = {
   showRotationAngles: boolean;
   /** The editor opens a design with the view's scrollbars shown (Discussion #1241); the view bar still switches them. */
   startWithScrollbars: boolean;
+  /** A folded view bar opens while the mouse is over its arrow and folds again once the mouse has left it (Discussion #1552). */
+  viewBarOpensOnHover: boolean;
   zoomSpeed: number;
+  /** How fast shifting the 3D view follows the mouse, a slider from 1 to 9; at 5 the grabbed point stays under the cursor (#1553). */
+  panSpeed: number;
   /**
    * Which mouse buttons steer the view (#1013): layerling's own (right turns, middle shifts, a left drag on empty space draws
    * a selection box) or as in Bambu Studio and OrcaSlicer (a left drag on empty space turns, the right button shifts,
@@ -787,11 +804,19 @@ export type FlatSpringEnds = "eye" | "tab" | "none";
  */
 export type ThreadProfile = "v" | "trapezoidal" | "round" | "whitworth" | "custom";
 
+/** A finer cut of an exact revolved body than the usual: see SketchRevolveSettings.smoothness. */
+export type SketchRevolveSmoothness = "fine" | "extraFine";
+
 export type SketchRevolveSettings = {
   startAngle: number;
   sweepAngle: number;
   sides: number;
   quality: number;
+  /**
+   * How finely an exact revolved body is cut into facets (Discussion #1426): left out the usual fineness of a sketch body,
+   * finer for a large round pot whose facets showed on the print. More triangles, so only where they are wanted.
+   */
+  smoothness?: SketchRevolveSmoothness;
   /**
    * How far the profile climbs per full turn, in mm. Left out or 0 the profile turns into rings; above
    * 0 it winds up as one continuous strand (a coil, a filament spool) and the sweep may run past a
@@ -1347,6 +1372,8 @@ export type WorkplaneShape = {
   loftOffsetZ?: number;
   /** Transition: wall thickness in mm; 0 is a solid body, more a tube open at both ends. */
   loftWall?: number;
+  /** Transition: the wall at the top end in mm, when it differs from loftWall (Forum 624069); left out, it is loftWall. */
+  loftTopWall?: number;
   /** Transition: degrees the section turns from bottom to top (#205). */
   loftTwist?: number;
   /** Transition: 0 to 1, how much of an S-curve the sides take between the ends (#271). */
@@ -1380,6 +1407,18 @@ export type WorkplaneShape = {
    * countersink take it while they are holes. The height still counts to the shoulder, the tip lies below it.
    */
   drillPointAngle?: number;
+  /**
+   * Counterbore, countersink and double countersink: a slotted hole (Discussion #1531). The head and the shaft run
+   * along a slot instead of standing round, so the part can still be moved a little before the screw is tightened.
+   * The shorter of width and depth is the head's diameter, the difference the slot's length, along the longer one.
+   * Missing or false: the round hole, stretched into an oval when width and depth differ, as always.
+   */
+  screwHoleSlot?: boolean;
+  /**
+   * Countersink and double countersink: how far in mm the screw head sits below the face (Discussion #1531) - a
+   * straight pocket as wide as the head above the cone, on the double countersink at both ends. Missing or 0: flush.
+   */
+  screwHoleRecess?: number;
   /** Port opening: rounded corners, or the lower ones cut off as on an HDMI or DisplayPort socket. */
   portProfile?: PortProfile;
   /** Port opening: extra room in mm on every side on top of the preset's, already in width and height; it lets the preset be recognised. */

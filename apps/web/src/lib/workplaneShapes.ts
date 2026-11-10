@@ -637,6 +637,8 @@ export function canonicalizeShape(unrepaired: WorkplaneShape): WorkplaneShape {
       sides: shape.sketchRevolve.sides,
       quality: shape.sketchRevolve.quality,
       ...(shape.sketchRevolve.pitch ? { pitch: shape.sketchRevolve.pitch } : {}),
+      // Kept with the body, or a revolve set smoother came back as standard in its panel and lost it on saving (Discussion #1426).
+      ...(shape.sketchRevolve.smoothness === "fine" || shape.sketchRevolve.smoothness === "extraFine" ? { smoothness: shape.sketchRevolve.smoothness } : {}),
     };
   }
   if (shape.edgeTreatmentHistory) {
@@ -912,6 +914,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.loftOffsetX === b.loftOffsetX &&
     a.loftOffsetZ === b.loftOffsetZ &&
     a.loftWall === b.loftWall &&
+    a.loftTopWall === b.loftTopWall &&
     a.loftTwist === b.loftTwist &&
     a.loftSmooth === b.loftSmooth &&
     a.loftSegments === b.loftSegments &&
@@ -925,6 +928,8 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.screwHoleHeadDepth === b.screwHoleHeadDepth &&
     a.screwHoleAngle === b.screwHoleAngle &&
     a.drillPointAngle === b.drillPointAngle &&
+    Boolean(a.screwHoleSlot) === Boolean(b.screwHoleSlot) &&
+    (a.screwHoleRecess ?? 0) === (b.screwHoleRecess ?? 0) &&
     a.portProfile === b.portProfile &&
     a.portClearance === b.portClearance &&
     a.cornerFillet === b.cornerFillet &&

@@ -23,7 +23,10 @@ import {
   MAX_BAYONET_LUGS,
   MAX_BAYONET_TURN,
   MAX_CLICK_BUMP_HEIGHT,
+  LID_TOP_EDGES,
   MAX_FLIP_TOP_OPENING,
+  MAX_LID_TOP_EDGE,
+  MIN_LID_TOP_EDGE,
   MAX_HINGE_GAP,
   MAX_HINGE_KNUCKLES,
   MAX_HINGE_PIN,
@@ -68,6 +71,8 @@ import {
   lidTetherFits,
   lidThicknessForMagnets,
   lidThread,
+  lidTopEdgeFits,
+  lidTopEdgeSize,
   normalizeLidOptions,
   slideFrameNeeded,
   type LidOptions,
@@ -492,6 +497,44 @@ export function LidPanel({
             <ToolHint text={t("lid.flipTopHint")} />
           </>) : null}
         </>) : null}
+        {/* A cap's top rim rounded or chamfered as it is made: afterwards it is one mesh with its thread, too large for the edge tool (Discussion #1426). */}
+        {lidTopEdgeFits(settings) ? (<>
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.topEdge")}>
+            <span>{t("lid.topEdge")}</span>
+            <div className="shell-opening-options">
+              {LID_TOP_EDGES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.topEdge === option}
+                  className={settings.topEdge === option ? "active" : ""}
+                  disabled={busy}
+                  onClick={() => onChange({ topEdge: option })}
+                >
+                  {t(`lid.topEdge.${option}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          {settings.topEdge !== "square" ? (<>
+            <EdgeModifierSlider
+              label={t("lid.topEdgeSize")}
+              value={settings.topEdgeSize}
+              min={MIN_LID_TOP_EDGE}
+              max={MAX_LID_TOP_EDGE}
+              step={0.1}
+              workspace={workspace}
+              length
+              disabled={busy}
+              onChange={(value) => onChange({ topEdgeSize: value })}
+            />
+            {lidTopEdgeSize(settings) < settings.topEdgeSize - 1e-9 ? (
+              <span className="shell-openings-summary" role="status">{t("lid.topEdgeThin", { size: millimetres(lidTopEdgeSize(settings)) })}</span>
+            ) : null}
+            <ToolHint text={t("lid.topEdgeHint")} />
+          </>) : null}
+        </>) : null}
 
         {!extras || slide ? <span className="shell-openings-summary" role="status">{t(slide ? "lid.error.slideExtras" : bayonet ? "lid.error.bayonetExtras" : "lid.error.screwExtras")}</span> : null}
         <ToolGroup
@@ -682,6 +725,7 @@ export function LidPanel({
       <div className="edge-modifier-footer">
         <ToolOutcome text={t("lid.outcome")} />
         <ToolCancel onClick={onCancel} />
+        {/* Not while the body is fitted to the neck: the lid would be made for it as it was. */}
         {/* Not while the body is fitted to the neck: the lid would be made for it as it was. */}
         <ToolApply label={t("lid.apply")} busy={busy} busyLabel={t("lid.working")} disabled={busy || Boolean(neck?.fitting)} onClick={onApply} />
       </div>

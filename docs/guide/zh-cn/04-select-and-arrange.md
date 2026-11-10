@@ -104,6 +104,8 @@ summary: 选择形状、在对象列表中查找它们、对齐、镜像、旋�
 
 同样简单的还有 {{ui:editor.tool.dropToWorkplane}}（[[D]]），它把选择落到工作平面上，以及 {{ui:editor.tool.centerOnWorkplane}}。
 
+[[Alt]]+[[D]] 把多个部件作为整体放下：它们都下移同样的距离，因此彼此之间的高度保持不变；而 [[D]] 会把每个部件分别放下。
+
 [[C]] 会拾起选择，就像 Tinkercad 中的 Cruise：它跟随鼠标指针，并平放在你正悬停的另一个实体的面上，斜面也可以。单击即可放下，[[Esc]] 则让它留在原处。其底面随后贴在该面上，像新建形状一样与面的边缘对齐；它保留自身绕竖直轴的旋转。多个零件会一起移动并保持间距。在空白平台上，[[C]] 会让倾斜的零件重新竖直立在工作平面上。没有键盘时，长按菜单中有 {{ui:contextMenu.carry}} 可达到同样效果。
 
 ## 阵列：直线与圆周
@@ -129,15 +131,16 @@ summary: 选择形状、在对象列表中查找它们、对齐、镜像、旋�
 
 ## 在面上制作孔阵列
 
-对于通风口、扬声器格栅、篮子和外壳，{{ui:holePattern.title}} 会在平面上均匀分布孔。你不必再先做一个孔、重复它，再把它放到壁上。只选中一个实体，然后单击 {{ui:holePattern.title}}，它位于功能区的 {{ui:editor.group.modify}} 组中、阵列旁边。也可以右键单击实体，或用 [[Ctrl]]+[[K]] 找到它。
+对于通风口、扬声器格栅、篮子和外壳，{{ui:holePattern.title}} 会在平面上均匀分布孔。你不必再先做一个孔、重复它，再把它放到壁上。只选中一个实体，然后单击 {{ui:holePattern.title}}，它位于功能区的 {{ui:editor.section.mirrorPattern}} 组中、阵列旁边。也可以右键单击实体，或用 [[Ctrl]]+[[K]] 找到它。
 
 1. 单击实体的一个平面。你单击处周围的整个平面都算数，而不只是指针下的三角形。圆柱、圆管或孔的圆形侧壁也可以，见下文；其他曲面不行：会给出提示，请改选一个平面。
 2. 在窗口中设置孔的外观和排布：
    - **{{ui:holePattern.form}}：** {{ui:holePattern.form.round}}、{{ui:holePattern.form.square}}、{{ui:holePattern.form.rectangle}}、{{ui:holePattern.form.hexagon}} 或 {{ui:holePattern.form.slot}}。
    - **大小：** 圆孔用 {{ui:holePattern.size.diameter}}，方孔用 {{ui:holePattern.size.side}}，矩形和槽孔用 {{ui:holePattern.size.width}} 与 {{ui:holePattern.size.height}}。六边形的大小是 {{ui:holePattern.size.corners}}。
    - **{{ui:holePattern.holeAngle}}：** 仅限矩形和槽孔：把每个孔在面内转过这么多度，面向该面看为逆时针，范围 -90 到 90。行保持笔直；如果转过的孔彼此太近（斜向也算），layerling 会加大间距和行距，让孔之间留有壁。
+   - **{{ui:holePattern.holeTilt}}：** 仅限平面，不能与沉头孔、埋头孔或自定形状同用：让每个孔斜穿墙壁，范围 -60 到 60 度。在竖立的墙上，正值让孔的内端更高，雨水会流回外面。尺寸仍是孔本身的截面，所以在面上看起来略长；每个孔的两端都保持边距。只有当壁厚乘以 sin(角度) 不小于孔的高度时，倾斜才能挡住看向内部的视线，因此需要用低矮的槽孔或更厚的墙。
    - **{{ui:holePattern.form.custom}}：** 用场景中的一个形状代替孔来重复：铆钉、凸点，或花纹板上的花纹。在 {{ui:holePattern.customShape}} 中选择它。它的宽度和深度就是它占用的位置；它按原样竖立在面上，不带自身的旋转。实体会放到面上并与之合并，孔则按其高度切入。形状本身保持原位。
-   - **{{ui:holePattern.holeType}}：** 仅限圆孔。{{ui:holePattern.holeType.plain}} 是直孔，{{ui:shape.counterbore}} 为圆柱头螺钉的头部加一个沉台，{{ui:shape.countersink}} 为沉头螺钉加一个 90° 锥面。此时大小就是 {{ui:prop.screwHoleShaft}}；{{ui:prop.screwHoleHead}} 以及沉台的 {{ui:prop.screwHoleHeadDepth}} 设定头部。{{ui:prop.screwHoleSize}} 会按公制螺钉填好所有值。
+   - **{{ui:holePattern.holeType}}：** 仅限圆孔。{{ui:holePattern.holeType.plain}} 是直孔，{{ui:shape.counterbore}} 为圆柱头螺钉的头部加一个沉台，{{ui:shape.countersink}} 为沉头螺钉加一个 90° 锥面。此时大小就是 {{ui:prop.screwHoleShaft}}；{{ui:prop.screwHoleHead}} 以及沉台的 {{ui:prop.screwHoleHeadDepth}} 设定头部。{{ui:prop.screwHoleSize}} 会按公制螺钉填好所有值。 选锥形沉孔时，它还提供英制规格 #2 至 #14，其锥角为 82°。
    - **{{ui:holePattern.spacing}}：** 从一个孔的中心到下一个孔中心的距离。如果它小于孔所允许的最小值，layerling 会将其提高到最小可能值，以便孔之间保留壁。对于矩形和槽孔，它沿一行从左到右计算。
    - **{{ui:holePattern.rowSpacing}}：** 仅限矩形和槽孔：从一行到下一行的距离。这样窄而高的孔可以紧挨着并排，而各行之间保持距离。一个宽 2 mm、高 14 mm 的孔，在壁厚 2 mm 时，沿行需要 4 mm，行与行之间需要 16 mm。
    - **{{ui:holePattern.wall}}：** 同一距离的另一种说法：相邻两个孔之间留下的壁，也就是打印件中的壁厚。设定它，中心距会随之变化（矩形和槽孔的行距也一样），反之亦然。对于六边形、矩形和槽孔，layerling 测量它们边缘之间的最短距离。
@@ -156,7 +159,7 @@ AI 可以通过 MCP 桥接使用 `layerling_perforate_face` 完成同样的事�
 
 ## 将面推出或推入
 
-要加厚壁、在面上加凸台或在面上挖凹槽，可使用 {{ui:faceTool.title}} 工具处理一个平面。它也可用于导入的 STL，那里没有草图可改。只选中一个实体，然后单击 {{ui:faceTool.title}}，它位于功能区的 {{ui:editor.group.modify}} 组中、孔阵列旁边。也可以右键单击实体，或用 [[Ctrl]]+[[K]] 找到它。
+要加厚壁、在面上加凸台或在面上挖凹槽，可使用 {{ui:faceTool.title}} 工具处理一个平面。它也可用于导入的 STL，那里没有草图可改。只选中一个实体，然后单击 {{ui:faceTool.title}}，它位于功能区的 {{ui:editor.section.mirrorPattern}} 组中、孔阵列旁边。也可以右键单击实体，或用 [[Ctrl]]+[[K]] 找到它。
 
 1. 单击实体的一个平面。与孔阵列一样，你单击处周围的整个平面都算数；曲面在这里不行，圆柱侧壁也不行。
 2. 在窗口中：

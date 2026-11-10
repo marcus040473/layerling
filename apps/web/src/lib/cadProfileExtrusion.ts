@@ -23,7 +23,7 @@ import { loftProfileLoops } from "@/lib/loftGeometry";
 import { teardropExactSection } from "@/lib/teardropGeometry";
 import { isPolygonPortProfile, normalizePortCorner, portChamfer, portPolygonCorners } from "@/lib/portGeometry";
 import { normalizePyramidTop, pyramidOutline } from "@/lib/pyramidGeometry";
-import { screwHoleProfile } from "@/lib/screwHoleGeometry";
+import { screwHoleProfile, screwHoleSlotMeasures } from "@/lib/screwHoleGeometry";
 import { shapeDrillPointAngle, shapeDrillPointLength } from "@/lib/drillPoint";
 import { curvedConeSection } from "@/lib/curvedCone";
 import { finishingWasherMeasures } from "@/lib/finishingWasherGeometry";
@@ -901,7 +901,7 @@ export function textGlyphProfiles(shape: WorkplaneShape) {
  * `local` maps the solid the profile builds (extruded along +y from y = 0, or
  * turned around the Z axis) into the shape's local frame.
  */
-type ProfileFrame = { kind: "extrusion" | "revolution" | "sweep"; height: number; local: THREE.Matrix4; path?: CadModifierSweepPiece[] };
+type ProfileFrame = { kind: "extrusion" | "revolution" | "sweep"; height: number; local: THREE.Matrix4; path?: CadModifierSweepPiece[]; slot?: CadModifierProfilePart["slot"] };
 
 /**
  * The bent tube: its cross-section swept along straight runs and true
@@ -1220,14 +1220,19 @@ export function cadProfileForShapeKind(shape: WorkplaneShape, designedRound = fa
     case "counterbore":
     case "countersink":
     case "doubleCountersink": {
+      // A slotted hole (Discussion #1531) is the round one as wide as its head, turned at both ends of the slot and
+      // pushed along it in between (screwHoleSlotMeasures); it has no drill point.
+      const slot = shape.screwHoleSlot ? screwHoleSlotMeasures(width, depth) : null;
       // Only a round hole is a body of revolution; stretched along z it stays a mesh.
-      if (Math.abs(width - depth) > 1e-6) return null;
-      const points = screwHoleProfile({ kind: shape.kind, width, height: shape.height, screwHoleShaft: shape.screwHoleShaft, screwHoleHeadDepth: shape.screwHoleHeadDepth, screwHoleAngle: shape.screwHoleAngle, drillPointAngle: shapeDrillPointAngle(shape) })
+      if (!slot && Math.abs(width - depth) > 1e-6) return null;
+      const points = screwHoleProfile({ kind: shape.kind, width: slot ? slot.head : width, height: shape.height, screwHoleShaft: shape.screwHoleShaft, screwHoleHeadDepth: shape.screwHoleHeadDepth, screwHoleAngle: shape.screwHoleAngle, screwHoleRecess: shape.screwHoleRecess, drillPointAngle: shapeDrillPointAngle(shape) })
         .map(({ r, y }) => ({ x: r, z: y }));
       // A drill point's tip (Discussion #621) lies on the axis already; the loop leaves out the edge of no length to it.
       const section = [{ x: 0, z: points[0].z }, ...points, { x: 0, z: points[points.length - 1].z }];
-      // solid (x, y, z) -> local (x, z, -y): the turned body stands along z, the shape's height runs along y
-      return { loops: [polygonLoop(section)], frame: { kind: "revolution", height: shape.height, local: new THREE.Matrix4().makeRotationX(-Math.PI / 2) } };
+      // solid (x, y, z) -> local (x, z, -y): the turned body stands along z, the shape's height runs along y, and a
+      // slot along the solid's y runs along the shape's depth, one along its x along the width.
+      const along = slot && slot.length > 1e-6 ? { slot: { length: slot.length, alongX: slot.alongX } } : {};
+      return { loops: [polygonLoop(section)], frame: { kind: "revolution", height: shape.height, local: new THREE.Matrix4().makeRotationX(-Math.PI / 2), ...along } };
     }
     case "finishingWasher": {
       // createFinishingWasherGeometry: the bottom, the rim, the dome as its true quarter ellipse, the seat and the
@@ -1429,9 +1434,16 @@ function slopedProfile(shape: WorkplaneShape, width: number, depth: number, desi
 function trimmedUprightProfile(shape: WorkplaneShape, width: number, depth: number, designedRound?: boolean): CadModifierProfilePart | null {
   // A round cylinder is an analytic primitive without an outline of its own: as an ellipse it gets the circle.
   const base = cadProfileForShapeKind(shape.kind === "cylinder" ? { ...shape, kind: "ellipse" } : shape, designedRound);
-  if (!base || base.frame || base.capFillet || base.capFilletBottom !== undefined || base.capChamfer || base.grow) return null;
+  if (!base || base.frame || base.capChamfer || base.grow) return null;
   const side = normalizeSlopeSide(shape.kind, shape.slopeSide);
   const curve = slopeCurveForShape(shape);
+  // A rounded box keeps its rounded top and bottom edges (Discussion #1544): rounded after the top is cut, so the
+  // round runs along the sloping top. Where the low end is too short for both rounds the display mesh stays.
+  const topRound = base.capFillet ?? 0;
+  const bottomRound = base.capFilletBottom ?? topRound;
+  if (topRound + bottomRound > Math.min(curve.end, curve.control.y) - 1e-3) {
+    if (topRound > 1e-4 || bottomRound > 1e-4) return null;
+  }
   const alongWidth = slopeAlongWidth(side);
   const half = (alongWidth ? width : depth) / 2;
   const keepAt = keptEndAt(side, half);
@@ -1460,6 +1472,8 @@ function trimmedUprightProfile(shape: WorkplaneShape, width: number, depth: numb
     height: shape.height,
     transform: profileTransformForShape(shape),
     trim: { loops: [{ ...start, segments }], height: across, frame: cadTransformFromMatrix(frame.local) },
+    ...(base.capFillet !== undefined ? { capFillet: base.capFillet } : {}),
+    ...(base.capFilletBottom !== undefined ? { capFilletBottom: base.capFilletBottom } : {}),
   };
   validateCadProfile(part);
   return part;
@@ -1616,6 +1630,7 @@ export function cadModifierProfileForShape(shape: WorkplaneShape, options: { des
       transform: profileTransformForShape(shape, profile.frame?.local),
     };
     if (profile.frame?.path) part.path = profile.frame.path;
+    if (profile.frame?.slot) part.slot = profile.frame.slot;
     if (profile.capFillet) part.capFillet = profile.capFillet;
     if (profile.capFilletBottom !== undefined) part.capFilletBottom = profile.capFilletBottom;
     if (profile.capChamfer) part.capChamfer = profile.capChamfer;

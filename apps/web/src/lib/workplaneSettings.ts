@@ -48,6 +48,18 @@ export function booleanTriangleLimitPreset(limit: number): BooleanTriangleLimitP
   return BOOLEAN_TRIANGLE_LIMIT_PRESETS.find((preset) => preset.limit === limit)?.id ?? null;
 }
 
+/** The hole opacity slider's range in percent (#1566); 0 stands for automatic. */
+export const HOLE_OPACITY_MIN = 10;
+export const HOLE_OPACITY_MAX = 90;
+/** What automatic means: holes as they were drawn before the slider, plain and with Show holes more clearly. */
+export const HOLE_OPACITY_AUTO = 52;
+export const HOLE_OPACITY_AUTO_STRONG = 72;
+
+/** The hole opacity in percent the view uses, with automatic resolved. */
+export function effectiveHoleOpacity(workspace: Pick<WorkplaneWorkspaceSettings, "holeOpacity" | "strongHoles">) {
+  return workspace.holeOpacity || (workspace.strongHoles ? HOLE_OPACITY_AUTO_STRONG : HOLE_OPACITY_AUTO);
+}
+
 export const DEFAULT_WORKPLANE_WORKSPACE: WorkplaneWorkspaceSettings = {
   width: 200,
   depth: 200,
@@ -66,6 +78,7 @@ export const DEFAULT_WORKPLANE_WORKSPACE: WorkplaneWorkspaceSettings = {
   edgeLines: false,
   edgeColor: DEFAULT_EDGE_LINE_COLOR,
   strongHoles: false,
+  holeOpacity: 0,
   showShadows: true,
   cameraInertia: true,
   fastMode: false,
@@ -89,12 +102,15 @@ export const DEFAULT_WORKPLANE_WORKSPACE: WorkplaneWorkspaceSettings = {
   doubleClickCentersView: true,
   objectSnap: true,
   stlAsDownload: false,
+  lylAsDownload: false,
   confirmTabClose: false,
   dimensionsAlwaysVisible: true,
   dimensionAxisColors: false,
   showRotationAngles: true,
   startWithScrollbars: false,
+  viewBarOpensOnHover: false,
   zoomSpeed: 5,
+  panSpeed: 5,
   mouseScheme: "layerling",
   units: "Metric (Default)",
   inchFormat: "fraction",
@@ -130,6 +146,23 @@ export function orbitControlsZoomSpeed(slider: number): number {
     : DEFAULT_WORKPLANE_WORKSPACE.zoomSpeed;
   const slowest = DEFAULT_ORBIT_ZOOM_SPEED / ZOOM_SPEED_STEP ** (DEFAULT_WORKPLANE_WORKSPACE.zoomSpeed - ZOOM_SPEED_SLIDER_MIN);
   return slowest * ZOOM_SPEED_STEP ** (position - ZOOM_SPEED_SLIDER_MIN);
+}
+
+const PAN_SPEED_SLIDER_MIN = 1;
+export const PAN_SPEED_SLIDER_MAX = 9;
+/** Each pan slider step changes the rate by this factor: the left end is half the middle, the right end twice. */
+const PAN_SPEED_STEP = 2 ** (1 / 4);
+
+/**
+ * Maps the pan slider onto OrbitControls.panSpeed (#1553).
+ * At 1 the point you grab at the depth of the view's centre stays under the cursor; the middle of the
+ * slider gives that. It was fixed at 0.65 before, so the view moved slower than the mouse.
+ */
+export function orbitControlsPanSpeed(slider: number): number {
+  const position = Number.isFinite(slider)
+    ? Math.min(PAN_SPEED_SLIDER_MAX, Math.max(PAN_SPEED_SLIDER_MIN, slider))
+    : DEFAULT_WORKPLANE_WORKSPACE.panSpeed;
+  return PAN_SPEED_STEP ** (position - DEFAULT_WORKPLANE_WORKSPACE.panSpeed);
 }
 
 /**
@@ -307,6 +340,12 @@ function numberOrDefault(value: unknown, fallback: number) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+/** A hole's opacity in percent, 10 to 90, or 0 for automatic (#1566). */
+function holeOpacityOrAuto(value: unknown, fallback: number) {
+  const percent = Math.round(numberOrDefault(value, fallback));
+  return percent <= 0 ? 0 : Math.max(HOLE_OPACITY_MIN, Math.min(HOLE_OPACITY_MAX, percent));
+}
+
 function stringOrDefault(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value : fallback;
 }
@@ -426,6 +465,13 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.screwHoleHeadDepth = optionalShapeNumber(source.screwHoleHeadDepth, fallbackEntry?.screwHoleHeadDepth, 0.1, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.screwHoleAngle = optionalShapeNumber(source.screwHoleAngle, fallbackEntry?.screwHoleAngle, 30, 150);
     }
+    if (kind === "counterbore" || kind === "countersink" || kind === "doubleCountersink") {
+      // A slotted hole and a recessed head (Discussion #1531), so a shape made through the AI bridge keeps them.
+      entry.screwHoleSlot = typeof source.screwHoleSlot === "boolean" ? source.screwHoleSlot : fallbackEntry?.screwHoleSlot;
+    }
+    if (kind === "countersink" || kind === "doubleCountersink") {
+      entry.screwHoleRecess = optionalShapeNumber(source.screwHoleRecess, fallbackEntry?.screwHoleRecess, 0, MAX_CUSTOM_SHAPE_DIMENSION);
+    }
     if (kind === "cylinder" || kind === "counterbore" || kind === "countersink") {
       // A drill point at the bottom of a blind hole (Discussion #621); 0 or less stands for a flat bottom, so a patch can switch it back.
       entry.drillPointAngle = typeof source.drillPointAngle === "number" && source.drillPointAngle <= 0
@@ -522,7 +568,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       for (const key of ["loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth"] as const) {
         entry[key] = optionalShapeNumber(source[key], fallbackEntry?.[key], 1, MAX_CUSTOM_SHAPE_DIMENSION);
       }
-      for (const key of ["loftBottomCorner", "loftTopCorner", "loftWall"] as const) {
+      for (const key of ["loftBottomCorner", "loftTopCorner", "loftWall", "loftTopWall"] as const) {
         entry[key] = optionalShapeNumber(source[key], fallbackEntry?.[key], 0, MAX_CUSTOM_SHAPE_DIMENSION / 2);
       }
       entry.loftTwist = optionalShapeNumber(source.loftTwist, fallbackEntry?.loftTwist, -360, 360);
@@ -843,6 +889,7 @@ export function normalizeWorkspaceSettings(value: unknown, fallback: WorkplaneWo
     edgeLines: booleanOrDefault(candidate.edgeLines, fallback.edgeLines),
     edgeColor: colorOrDefault(candidate.edgeColor, fallback.edgeColor),
     strongHoles: booleanOrDefault(candidate.strongHoles, fallback.strongHoles),
+    holeOpacity: holeOpacityOrAuto(candidate.holeOpacity, fallback.holeOpacity),
     showShadows: booleanOrDefault(candidate.showShadows, fallback.showShadows),
     cameraInertia: booleanOrDefault(candidate.cameraInertia, fallback.cameraInertia),
     fastMode: booleanOrDefault(candidate.fastMode, fallback.fastMode),
@@ -871,12 +918,15 @@ export function normalizeWorkspaceSettings(value: unknown, fallback: WorkplaneWo
     doubleClickCentersView: booleanOrDefault(candidate.doubleClickCentersView, fallback.doubleClickCentersView),
     objectSnap: booleanOrDefault(candidate.objectSnap, fallback.objectSnap),
     stlAsDownload: booleanOrDefault(candidate.stlAsDownload, fallback.stlAsDownload),
+    lylAsDownload: booleanOrDefault(candidate.lylAsDownload, fallback.lylAsDownload),
     confirmTabClose: booleanOrDefault(candidate.confirmTabClose, fallback.confirmTabClose),
     dimensionsAlwaysVisible: booleanOrDefault(candidate.dimensionsAlwaysVisible, fallback.dimensionsAlwaysVisible),
     dimensionAxisColors: booleanOrDefault(candidate.dimensionAxisColors, fallback.dimensionAxisColors),
     showRotationAngles: booleanOrDefault(candidate.showRotationAngles, fallback.showRotationAngles),
     startWithScrollbars: booleanOrDefault(candidate.startWithScrollbars, fallback.startWithScrollbars),
+    viewBarOpensOnHover: booleanOrDefault(candidate.viewBarOpensOnHover, fallback.viewBarOpensOnHover),
     zoomSpeed: numberOrDefault(candidate.zoomSpeed, fallback.zoomSpeed),
+    panSpeed: numberOrDefault(candidate.panSpeed, fallback.panSpeed),
     mouseScheme: candidate.mouseScheme === "slicer" ? "slicer" : candidate.mouseScheme === "layerling" ? "layerling" : fallback.mouseScheme,
     units,
     inchFormat: candidate.inchFormat === "decimal" ? "decimal" : "fraction",

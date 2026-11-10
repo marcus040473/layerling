@@ -39,6 +39,17 @@ import type { AlignAxis, WorkplaneWorkspaceSettings } from "@/types/layerling";
 
 export type SplitWorkplaneDirection = "parallel" | "acrossX" | "acrossY";
 
+/** Cut in two, or make the selection longer or shorter at the plane (Discussions #506, #1569). */
+export type SplitMode = "split" | "stretch";
+
+const SPLIT_MODES = [
+  { mode: "split", label: "split.modeSplit", hint: "split.modeSplitHint" },
+  { mode: "stretch", label: "split.modeStretch", hint: "split.modeStretchHint" },
+] as const satisfies ReadonlyArray<{ mode: SplitMode; label: string; hint: string }>;
+
+/** How far the Stretch slider reaches either way, in mm; the field takes the same. */
+const STRETCH_SLIDER_LIMIT = 200;
+
 const SPLIT_WORKPLANE_DIRECTIONS = [
   { direction: "parallel", label: "split.workplaneParallel", hint: "split.workplaneParallelHint" },
   { direction: "acrossX", label: "split.workplaneAcrossX", hint: "split.workplaneAcrossXHint" },
@@ -89,6 +100,10 @@ export function SplitPanel({
   picking,
   connectors,
   connectorPreview,
+  mode = "split",
+  stretch = 10,
+  onModeChange = () => undefined,
+  onStretchChange = () => undefined,
   onPickToggle,
   onAxisChange,
   onAlignToWorkplane,
@@ -112,6 +127,11 @@ export function SplitPanel({
   /** Dowels, plugs or a dovetail that line the halves up again, or none (Discussion #832). */
   connectors: SplitConnectorOptions;
   connectorPreview: SplitConnectorPreviewState;
+  mode?: SplitMode;
+  /** How much longer the bodies get at the plane in Stretch, in mm; minus makes them shorter. */
+  stretch?: number;
+  onModeChange?: (mode: SplitMode) => void;
+  onStretchChange?: (stretch: number) => void;
   onPickToggle: () => void;
   onAxisChange: (axis: AlignAxis) => void;
   /** Lays the plane on the workplane, or square to it along its X or Y (#644). */
@@ -172,7 +192,7 @@ export function SplitPanel({
       <div className="split-panel-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
           <strong id="split-panel-title">{t("split.title")}</strong>
-          <span>{t("split.subtitle")}</span>
+          <span>{t(mode === "stretch" ? "split.stretchSubtitle" : "split.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
           <ToolDockToggle />
@@ -182,10 +202,27 @@ export function SplitPanel({
       </div>
 
       <ToolSection title={t("toolSidebar.selection")}>
-        <ToolSelection ready={targetCount > 0} text={targetCount === 1 ? t("split.targetOne") : t("split.targetMany", { count: targetCount })} detail={t("split.targetHint")} />
+        <ToolSelection ready={targetCount > 0} text={targetCount === 1 ? t("split.targetOne") : t("split.targetMany", { count: targetCount })} detail={t(mode === "stretch" ? "split.stretchTargetHint" : "split.targetHint")} />
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
+        <fieldset className="split-axis-control split-mode-control" disabled={busy}>
+          <legend>{t("split.mode")}</legend>
+          <div>
+            {SPLIT_MODES.map((entry) => (
+              <button
+                type="button"
+                className={mode === entry.mode ? "active" : ""}
+                aria-pressed={mode === entry.mode}
+                key={entry.mode}
+                title={t(entry.hint)}
+                onClick={() => onModeChange(entry.mode)}
+              >
+                {t(entry.label)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
         <fieldset className="split-axis-control" disabled={busy}>
           <legend>{t("split.orientation")}</legend>
           <div>
@@ -288,11 +325,27 @@ export function SplitPanel({
           />
         ))}
 
+        {mode === "stretch" ? (<>
+          <EdgeModifierSlider
+            label={t("split.stretchLength")}
+            value={stretch}
+            min={-STRETCH_SLIDER_LIMIT}
+            max={STRETCH_SLIDER_LIMIT}
+            step={0.5}
+            decimals={2}
+            workspace={workspace}
+            length
+            disabled={busy}
+            onChange={onStretchChange}
+          />
+          <ToolHint text={t("split.stretchHelp")} />
+        </>) : null}
+
         <ToolHelp>{t("split.help")}</ToolHelp>
       </ToolSection>
 
-      {/* Connectors that line the halves up again (Discussion #832). */}
-      <ToolSection title={t("split.connectors")}>
+      {/* Connectors that line the halves up again (Discussion #832); Stretch leaves the body in one piece. */}
+      {mode === "stretch" ? null : <ToolSection title={t("split.connectors")}>
         <fieldset className="split-axis-control split-connector-control" disabled={busy}>
           <div>
             {SPLIT_CONNECTOR_KINDS.map((kind) => (
@@ -390,6 +443,13 @@ export function SplitPanel({
               disabled={busy}
               onChange={(value) => onConnectorsChange({ depth: value })}
             />
+            {connectors.kind === "dowels" ? (
+              // For a printer whose bed moves, where the standing dowels wobble loose (breakawayBase.ts).
+              <label className="edge-modifier-check" title={t("split.dowelBaseHint")}>
+                <input type="checkbox" checked={connectors.dowelBase} disabled={busy} onChange={(event) => onConnectorsChange({ dowelBase: event.currentTarget.checked })} />
+                <span>{t("split.dowelBase")}</span>
+              </label>
+            ) : null}
           </>)}
           <EdgeModifierSlider
             label={t("split.connectorClearance")}
@@ -407,19 +467,25 @@ export function SplitPanel({
             {splitConnectorSummary(connectorPreview, connectors.kind).map((line) => <span key={line}>{line}</span>)}
           </div>
         </>)}
-      </ToolSection>
+      </ToolSection>}
 
 
       {error ? <div className="split-panel-error" role="alert">{error}</div> : busy || max - min <= 0.0001 ? (
         <ToolStatus
           state={busy ? "working" : "needed"}
-          text={busy ? t("split.applying") : t("split.error.movePlane")}
+          text={busy ? t(mode === "stretch" ? "split.stretchApplying" : "split.applying") : t("split.error.movePlane")}
         />
       ) : null}
 
       <div className="split-panel-footer edge-modifier-footer">
         <ToolCancel disabled={busy} onClick={onCancel} />
-        <ToolApply label={t("split.apply")} busy={busy} busyLabel={t("split.applying")} disabled={busy || max - min <= 0.0001} onClick={onApply} />
+        <ToolApply
+          label={t(mode === "stretch" ? "split.stretchApply" : "split.apply")}
+          busy={busy}
+          busyLabel={t(mode === "stretch" ? "split.stretchApplying" : "split.applying")}
+          disabled={busy || max - min <= 0.0001 || (mode === "stretch" && Math.abs(stretch) < 0.001)}
+          onClick={onApply}
+        />
       </div>
       </>)}
     </MovableToolPanel>

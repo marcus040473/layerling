@@ -20,7 +20,7 @@ import {
 } from "@/lib/projectAttachments";
 import { normalizeQrSettings } from "@/lib/qrCode";
 import { MAX_SBC_BUTTON_REACH, MAX_SBC_CLEARANCE, MAX_SBC_REACH, MAX_SBC_UP_REACH, MIN_SBC_UP_REACH, SBC_BOARD_ORDER } from "@/lib/sbcBoards";
-import { importedShapeFromStl } from "@/lib/stlImport";
+import { importedShapeFromStl, stlReadBeforeZUp, type StlReadOptions } from "@/lib/stlImport";
 import { importedShapeFromSvg } from "@/lib/svgImport";
 import { importedShapeFrom3mf } from "@/lib/threemfImport";
 import { normalizeDesignView, normalizeSavedViews, readDesignView, readSavedViews, type DesignView, type SavedDesignViews } from "@/lib/designView";
@@ -64,7 +64,7 @@ export const LYL_FILE_TYPES_FORMAT_VERSION = 4;
 /** The newest format this layerling reads. */
 export const LYL_NEWEST_READABLE_FORMAT_VERSION = LYL_FILE_TYPES_FORMAT_VERSION;
 export const LYL_OLDEST_READABLE_FORMAT_VERSION = 1;
-export const LYL_CREATED_WITH_VERSION = "1.152.1";
+export const LYL_CREATED_WITH_VERSION = "1.156.2";
 export const LYL_MEDIA_TYPE = "application/vnd.layerling.project+zip";
 
 export const LYL_LIMITS = {
@@ -330,7 +330,8 @@ export type LylProjectPackageSummary = {
   formatVersion: number;
 };
 
-export type LylSourceImporter = (asset: ProjectAsset) => Promise<NonNullable<WorkplaneShape["importedMesh"]>>;
+/** Reads an imported file again. `stl.yUp` reads an STL as it was read before 1.151.0 (Issue #1518). */
+export type LylSourceImporter = (asset: ProjectAsset, options?: { stl?: StlReadOptions }) => Promise<NonNullable<WorkplaneShape["importedMesh"]>>;
 
 export type ImportLylOptions = {
   sourceImporter?: LylSourceImporter;
@@ -1737,11 +1738,15 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   }
   if (kind === "counterbore" || kind === "countersink" || kind === "doubleCountersink" || kind === "finishingWasher") {
     // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
-    for (const key of ["screwHoleShaft", "screwHoleHeadDepth", "screwHoleAngle"] as const) {
+    for (const key of ["screwHoleShaft", "screwHoleHeadDepth", "screwHoleAngle", "screwHoleRecess"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (value < 0 || value > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
     }
+  }
+  if ((kind === "counterbore" || kind === "countersink" || kind === "doubleCountersink") && definition.screwHoleSlot !== undefined && typeof definition.screwHoleSlot !== "boolean") {
+    // A slotted screw hole (Discussion #1531): on or off.
+    throw new Error(`${label}.screwHoleSlot must be true or false`);
   }
   if ((kind === "cylinder" || kind === "counterbore" || kind === "countersink" || kind === "doubleCountersink") && definition.drillPointAngle !== undefined) {
     // The drill point (Discussion #621). Lenient on purpose: 0 is a flat bottom and the geometry clamps the rest.
@@ -1897,7 +1902,7 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   }
   if (kind === "loft") {
     // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
-    for (const key of ["loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftBottomSides", "loftTopSides", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTwist", "loftTiltX", "loftTiltZ", "loftSmooth", "loftSegments"] as const) {
+    for (const key of ["loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftBottomSides", "loftTopSides", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTopWall", "loftTwist", "loftTiltX", "loftTiltZ", "loftSmooth", "loftSegments"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (Math.abs(value) > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
@@ -2210,14 +2215,14 @@ function sharedImportedMesh(decoded: object, reference: string, create: () => Im
   return mesh;
 }
 
-async function defaultSourceImporter(asset: ProjectAsset) {
+async function defaultSourceImporter(asset: ProjectAsset, options: { stl?: StlReadOptions } = {}) {
   if (asset.sourceFormat === "stl") {
     // In the browser the file is read off the page (lib/geometryWorker.ts); the server reads it here.
     if (typeof window !== "undefined") {
       const { importedShapeFromStlOffThread } = await import("@/lib/geometryWorker");
-      return (await importedShapeFromStlOffThread(asset.name, exactArrayBuffer(asset.bytes))).importedMesh as NonNullable<WorkplaneShape["importedMesh"]>;
+      return (await importedShapeFromStlOffThread(asset.name, exactArrayBuffer(asset.bytes), options.stl)).importedMesh as NonNullable<WorkplaneShape["importedMesh"]>;
     }
-    return importedShapeFromStl(asset.name, exactArrayBuffer(asset.bytes)).importedMesh as NonNullable<WorkplaneShape["importedMesh"]>;
+    return importedShapeFromStl(asset.name, exactArrayBuffer(asset.bytes), options.stl).importedMesh as NonNullable<WorkplaneShape["importedMesh"]>;
   }
   if (asset.sourceFormat === "obj") return importedShapeFromObj(asset.name, strFromU8(asset.bytes), true).importedMesh as NonNullable<WorkplaneShape["importedMesh"]>;
   if (asset.sourceFormat === "svg") return importedShapeFromSvg(asset.name, strFromU8(asset.bytes)).importedMesh as NonNullable<WorkplaneShape["importedMesh"]>;
@@ -2288,8 +2293,20 @@ async function restoreShapeFromNode(
       promise = sourceImporter(sourceAsset);
       sourceMeshCache.set(sourceAsset.id, promise);
     }
-    const regenerated = await promise;
-    importedMesh = sharedImportedMesh(regenerated, sourceAsset.id, () => ({ ...regenerated, assetId: sourceAsset.id }));
+    let regenerated = await promise;
+    let meshKey = sourceAsset.id;
+    // An STL imported before 1.151.0 may have been read Y-up; read Z-up now, it would open turned and stretched (Issue #1518).
+    if (sourceAsset.sourceFormat === "stl" && stlReadBeforeZUp(regenerated, node.importedMesh, definition as { width?: number; depth?: number; height?: number })) {
+      meshKey = `${sourceAsset.id}#y-up`;
+      let legacy = sourceMeshCache.get(meshKey);
+      if (!legacy) {
+        legacy = sourceImporter(sourceAsset, { stl: { yUp: true } });
+        sourceMeshCache.set(meshKey, legacy);
+      }
+      regenerated = await legacy;
+    }
+    const mesh = regenerated;
+    importedMesh = sharedImportedMesh(mesh, meshKey, () => ({ ...mesh, assetId: sourceAsset.id }));
   } else if (node.importedMesh?.meshAssetId) {
     const meshRecord = assetById.get(node.importedMesh.meshAssetId);
     if (!meshRecord) throw new Error(`Object '${node.objectId}' is missing its derived mesh`);
