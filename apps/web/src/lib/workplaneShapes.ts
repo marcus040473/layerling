@@ -144,7 +144,7 @@ export function shapeTaperDimensions(shape: WorkplaneShape) {
  * haben feste Masse fuer Einsatz, Haken und Fuss. Die Liste steht hier, damit das Merkmalsfeld, die
  * Vorschau und die MCP-Bruecke nicht je ihre eigene fuehren.
  */
-const SHAPES_WITHOUT_TAPER = new Set<WorkplaneShape["kind"]>(["gear", "hirth", "pulley", "thread", "spring", "pyramid", "ruler", "hinge", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "bentTube", "loft", "vase", "gridfinity", "screwBoss", "snapFit", "rib"]);
+const SHAPES_WITHOUT_TAPER = new Set<WorkplaneShape["kind"]>(["gear", "hirth", "pulley", "thread", "spring", "pyramid", "ruler", "hinge", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "bentTube", "loft", "vase", "gridfinity", "screwBoss", "snapFit", "rib", "boxGenerator"]);
 
 export function shapeSupportsTaper(kind: WorkplaneShape["kind"]) {
   return !SHAPES_WITHOUT_TAPER.has(kind);
@@ -901,6 +901,18 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     gridfinityOutlinesEqual(a.gridfinityOutline, b.gridfinityOutline) &&
     a.dovetailNeckWidth === b.dovetailNeckWidth &&
     a.dovetailClearance === b.dovetailClearance &&
+    a.boxShape === b.boxShape &&
+    a.boxSides === b.boxSides &&
+    a.boxCornerRadius === b.boxCornerRadius &&
+    a.boxWall === b.boxWall &&
+    a.boxFloor === b.boxFloor &&
+    a.boxColumns === b.boxColumns &&
+    a.boxRows === b.boxRows &&
+    a.boxDivider === b.boxDivider &&
+    a.boxPart === b.boxPart &&
+    a.boxLidStyle === b.boxLidStyle &&
+    a.boxLidPlate === b.boxLidPlate &&
+    a.boxFit === b.boxFit &&
     a.loftBottomOutline === b.loftBottomOutline &&
     a.loftTopOutline === b.loftTopOutline &&
     a.loftBottomWidth === b.loftBottomWidth &&

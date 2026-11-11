@@ -97,6 +97,7 @@ export const SHAPE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   sphere: ["ball", "kugel"],
   // The French names have left the carpenter's and the machinist's words behind; the old ones still find the shape.
   dovetail: ["queue d'aronde", "schwalbenschwanz", "trapezoid", "trapèze"],
+  boxGenerator: ["box generator", "box", "enclosure", "case", "lid", "container", "boxen-generator", "boxen", "box mit deckel", "schachtel", "behälter", "behaelter", "dose", "gehäuse", "gehaeuse", "deckel"],
   bentTube: ["tube courbé", "tube plié", "gebogenes rohr", "rohrbogen"],
   counterbore: ["lamage", "senkbohrung", "zylindersenkung", "drill point", "bohrerspitze", "slotted hole", "langloch"],
   countersink: ["fraisage", "kegelsenkung", "senkkopf", "double countersink", "both sides", "double fraisage", "doppelsenkung", "beidseitig", "drill point", "bohrerspitze", "slotted hole", "langloch", "recessed", "versenkt", "tiefer"],

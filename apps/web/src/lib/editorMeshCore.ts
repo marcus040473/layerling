@@ -16,6 +16,7 @@ import { createHeartGeometry } from "@/lib/heartGeometry";
 import { createCrescentGeometry } from "@/lib/crescentGeometry";
 import { createSlotGeometry } from "@/lib/slotGeometry";
 import { createDovetailGeometry } from "@/lib/dovetailGeometry";
+import { boxGeneratorFieldsOf, createBoxGeneratorGeometry } from "@/lib/boxGeneratorGeometry";
 import { createLoftGeometry } from "@/lib/loftGeometry";
 import { createHingeGeometry } from "@/lib/hingeGeometry";
 import { createGridfinityGeometry, gridfinityLabelTextGiven } from "@/lib/gridfinityGeometry";
@@ -623,6 +624,9 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
       break;
     case "loft":
       geometry = createLoftGeometry({ ...shape, width, depth, height });
+      break;
+    case "boxGenerator":
+      geometry = createBoxGeneratorGeometry({ width, depth, height }, boxGeneratorFieldsOf(shape));
       break;
     case "dovetail":
       geometry = createDovetailGeometry({

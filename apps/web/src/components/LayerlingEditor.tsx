@@ -117,7 +117,7 @@ import { plateDisplayLabel, useBuildPlates } from "@/components/workplane/useBui
 import { zipSync } from "fflate";
 import { PlateBar } from "@/components/workplane/PlateBar";
 import { SplitPanel, type SplitConnectorPreviewState, type SplitMode, type SplitWorkplaneDirection } from "./workplane/SplitPanel";
-import { NO_SPLIT_ROTATION, modelSplitPlane, snapSplitPositionToVertices, splitOrientationForNormal, splitAxisFromLabel, splitAxisLabel, splitRotationAxes, type SplitRotation } from "@/lib/modelSplit";
+import { NO_SPLIT_ROTATION, modelSplitPlane, snapSplitPositionToVertices, splitOrientationForNormal, splitPositionAlongWorkplane, splitAxisFromLabel, splitAxisLabel, splitRotationAxes, type SplitRotation } from "@/lib/modelSplit";
 import { connectorHoleRadius, normalizeSplitConnectorOptions, splitConnectorDefaults, SPLIT_CONNECTOR_KINDS, type SplitConnectorOptions } from "@/lib/splitConnectors";
 import { AttachmentViewer } from "./workplane/AttachmentViewer";
 import { GuideModal } from "./workplane/GuideModal";
@@ -142,6 +142,7 @@ import { sectionMeasurement, sectionPointToWorld, snapSectionPoint } from "@/lib
 import { DEFAULT_INFILL_PERCENT, DEFAULT_WALLS, PRINT_MATERIAL_DENSITY, PRINT_MATERIALS, FILAMENT_DIAMETER_MM, normalizePrintMaterial, printEstimate, printEstimateWithInfill } from "@/lib/printEstimate";
 import { matchingEdgeIds } from "@/lib/edgeMatching";
 import { readEdgeModifierSettings, rememberEdgeModifierSetting, startingEdgeModifierAmount, type EdgeModifierSettings } from "@/lib/edgeModifierMemory";
+import { getEditorProfile, profileBooleanValue } from "@/lib/editorProfile";
 import { CAD_MODIFIER_MAX_SHARP_ANGLE, CAD_MODIFIER_REQUEST_TIMEOUT_MS, CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT, cadModifierPrepareTimeoutMs, cadModifierTimeoutMessage, cadModifierUserErrorMessage, cadModifierWorkerFailureMessage, cadModifierCandidateEdge, cadModifierPresetValues, defaultCadModifierTangentChain, rescueSharpAngleForEdges, selectableCadModifierEdge, type CadModifierRequestPhase } from "@/lib/cadModifierRuntime";
 import { isThinFace, thinFacesWith } from "@/lib/cadThinFaces";
 import { createCadPreviewQueue } from "@/lib/cadPreviewQueue";
@@ -7523,7 +7524,8 @@ export function LayerlingEditor({
   }, [splitTargetPoints]);
 
   // On the workplane, or square to it along its X or Y (#644). Through the workplane's origin where that crosses
-  // the parts - a workplane laid on a face cuts there - otherwise through their middle.
+  // the parts - a workplane laid on a face cuts there - otherwise through their middle. Across the base plate always
+  // through their middle: the plate's middle is no place on the parts (#1590).
   const alignSplitToWorkplane = useCallback((direction: SplitWorkplaneDirection) => {
     const workplane = placementWorkplaneRef.current;
     const along = direction === "parallel" ? workplane.normal : direction === "acrossX" ? workplane.xAxis : workplane.zAxis;
@@ -7534,9 +7536,8 @@ export function LayerlingEditor({
       const centeredPlane = modelSplitPlane(splitTargetPoints, orientation.axis, undefined, orientation.rotation);
       if (!centeredPlane) return current;
       const { origin } = workplane;
-      const through = centeredPlane.normal[0] * origin.x + centeredPlane.normal[1] * origin.y + centeredPlane.normal[2] * origin.z;
-      const crosses = through > centeredPlane.min + 1e-6 && through < centeredPlane.max - 1e-6;
-      const position = crosses ? snapSplitPositionToVertices(splitTargetPoints, centeredPlane.normal, through) : centeredPlane.position;
+      const throughOrigin = direction === "parallel" || !placementWorkplaneIsBase(workplane);
+      const position = splitPositionAlongWorkplane(splitTargetPoints, centeredPlane, [origin.x, origin.y, origin.z], throughOrigin);
       const plane = modelSplitPlane(splitTargetPoints, orientation.axis, position, orientation.rotation);
       return plane ? { ...current, axis: plane.axis, rotation: plane.rotation, position: plane.position, pivot: plane.origin, picking: false, error: null } : current;
     });
@@ -7865,11 +7866,16 @@ export function LayerlingEditor({
     }
     // The settings last chosen for this tool in this browser, so Apply, Undo and the next start keep them (#1342).
     const kept = readEdgeModifierSettings(kind);
+    const options = kind === "fillet" ? getEditorProfile()?.tools.fillet?.options : undefined;
+    const onlyVisibleEdges = profileBooleanValue(options?.onlyVisibleEdges, kept.onlyVisibleEdges);
     const largestDimension = Math.max(shapeWidth(selectedShape), shapeDepth(selectedShape), selectedShape.height);
+    const maxAmount = Math.max(MIN_EDGE_MODIFIER_AMOUNT, largestDimension * 0.99);
+    const defaultAmount = Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(1, shapeWidth(selectedShape) / 6, shapeDepth(selectedShape) / 6, selectedShape.height / 6));
+    const profileAmount = options?.amount?.default;
     const amount = startingEdgeModifierAmount(
       kept,
-      Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(1, shapeWidth(selectedShape) / 6, shapeDepth(selectedShape) / 6, selectedShape.height / 6)),
-      Math.max(MIN_EDGE_MODIFIER_AMOUNT, largestDimension * 0.99),
+      profileAmount !== undefined && profileAmount >= MIN_EDGE_MODIFIER_AMOUNT && profileAmount <= maxAmount ? profileAmount : defaultAmount,
+      maxAmount,
     );
     cadModifierBaseShapeRef.current = selectedShape;
     cadModifierBaseFingerprintRef.current = projectShapesFingerprint([selectedShape]);
@@ -7887,7 +7893,7 @@ export function LayerlingEditor({
       chamferAngle: kept.chamferAngle ?? 45,
       quality: kept.quality ?? "standard",
       tangentChain: defaultCadModifierTangentChain(appliedEdgeTreatmentCount),
-      ...(kept.onlyVisibleEdges !== undefined ? { onlyVisibleEdges: kept.onlyVisibleEdges } : {}),
+      ...(onlyVisibleEdges !== undefined ? { onlyVisibleEdges } : {}),
       ...(kind === "fillet" && kept.concave !== undefined ? { concave: kept.concave } : {}),
       preserveEdgeSize: selectedShape.edgeResizeMode === "preserve",
       busy: true,
@@ -15212,12 +15218,10 @@ export function LayerlingEditor({
         const points = targets.flatMap((shape) => meshForShape(shape).vertices);
         const range = modelSplitPlane(points, axis, undefined, rotation);
         if (!range) throw new Error("The objects have no printable geometry to split");
-        // Along the workplane the plane goes through its origin where that crosses the objects, as in the panel.
-        const throughWorkplane = workplaneOrientation
-          ? range.normal[0] * workplane.origin.x + range.normal[1] * workplane.origin.y + range.normal[2] * workplane.origin.z
-          : undefined;
-        const workplanePosition = throughWorkplane !== undefined && throughWorkplane > range.min + 1e-6 && throughWorkplane < range.max - 1e-6
-          ? snapSplitPositionToVertices(points, range.normal, throughWorkplane)
+        // Along the workplane the plane goes through its origin where that crosses the objects, as in the panel;
+        // across the base plate through their middle (#1590).
+        const workplanePosition = workplaneOrientation
+          ? splitPositionAlongWorkplane(points, range, [workplane.origin.x, workplane.origin.y, workplane.origin.z], alongWorkplane === "parallel" || !placementWorkplaneIsBase(workplane))
           : undefined;
         const requestedPosition = params.position === undefined ? workplanePosition : mcpNumber(params.position, range.position);
         if (requestedPosition !== undefined && (requestedPosition <= range.min || requestedPosition >= range.max)) {

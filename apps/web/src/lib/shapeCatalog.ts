@@ -151,6 +151,14 @@ import {
   normalizeDovetailNeckWidth,
 } from "@/lib/dovetailGeometry";
 import {
+  DEFAULT_BOX_GENERATOR_DEPTH,
+  DEFAULT_BOX_GENERATOR_HEIGHT,
+  DEFAULT_BOX_GENERATOR_WIDTH,
+  boxGeneratorFieldsOf,
+  normalizeBoxGenerator,
+  normalizeBoxGeneratorFields,
+} from "@/lib/boxGeneratorGeometry";
+import {
   DEFAULT_HINGE_CLEARANCE,
   DEFAULT_HINGE_DEPTH,
   DEFAULT_HINGE_HEIGHT,
@@ -251,6 +259,7 @@ const SHAPE_LABEL_KEYS: Record<string, MessageKey> = {
   hinge: "shape.hinge",
   knurl: "shape.knurl",
   dovetail: "shape.dovetail",
+  boxGenerator: "shape.boxGenerator",
   screwBoss: "shape.screwBoss",
   snapFit: "shape.snapFit",
   rib: "shape.rib",
@@ -307,6 +316,7 @@ export const toolbarShapeAssets: ToolbarShapeAsset[] = [
   { id: "knurl", name: "Knurl", src: "assets/editor/shape-icons-gray/knurl.png", menuIcon: "assets/editor/shape-icons-gray/knurl.png", kind: "knurl", color: "#7a8a99" },
   { id: "hinge", name: "Hinge", src: "assets/editor/shape-icons-gray/hinge.png", menuIcon: "assets/editor/shape-icons-gray/hinge.png", kind: "hinge", color: "#3f8f6b" },
   { id: "dovetail", name: "Dovetail", src: "assets/editor/shape-icons-gray/dovetail.png", menuIcon: "assets/editor/shape-icons-gray/dovetail.png", kind: "dovetail", color: "#a0522d" },
+  { id: "boxGenerator", name: "Box generator", src: "assets/editor/shape-icons-gray/boxGenerator.png", menuIcon: "assets/editor/shape-icons-gray/boxGenerator.png", kind: "boxGenerator", color: "#4f7cac" },
   { id: "screwBoss", name: "Screw boss", src: "assets/editor/shape-icons-gray/screwBoss.png", menuIcon: "assets/editor/shape-icons-gray/screwBoss.png", kind: "screwBoss", color: "#8c7b6b" },
   { id: "snapFit", name: "Snap-fit", src: "assets/editor/shape-icons-gray/snapFit.png", menuIcon: "assets/editor/shape-icons-gray/snapFit.png", kind: "snapFit", color: "#4f8f7a" },
   { id: "rib", name: "Rib", src: "assets/editor/shape-icons-gray/rib.png", menuIcon: "assets/editor/shape-icons-gray/rib.png", kind: "rib", color: "#7b8794" },
@@ -484,6 +494,9 @@ export function shapeAssetDefaultDimensions(kind: ShapeKind) {
     const preset = PORT_PRESETS[DEFAULT_PORT_PRESET];
     return { width: preset.width, depth: DEFAULT_PORT_DEPTH, height: preset.height };
   }
+  if (kind === "boxGenerator") {
+    return { width: DEFAULT_BOX_GENERATOR_WIDTH, depth: DEFAULT_BOX_GENERATOR_DEPTH, height: DEFAULT_BOX_GENERATOR_HEIGHT };
+  }
   if (kind === "dovetail") {
     return { width: DEFAULT_DOVETAIL_WIDTH, depth: DEFAULT_DOVETAIL_DEPTH, height: DEFAULT_DOVETAIL_HEIGHT };
   }
@@ -628,6 +641,23 @@ export function shapeAssetSpecialDefaults(kind: ShapeKind, dimensions = shapeAss
   }
   if (kind === "loft") {
     return loftFieldsFromMeasures(normalizeLoftMeasures(DEFAULT_LOFT));
+  }
+  if (kind === "boxGenerator") {
+    const box = normalizeBoxGenerator(dimensions);
+    return {
+      boxShape: box.boxShape,
+      boxSides: box.boxSides,
+      boxCornerRadius: box.boxCornerRadius,
+      boxWall: box.boxWall,
+      boxFloor: box.boxFloor,
+      boxColumns: box.boxColumns,
+      boxRows: box.boxRows,
+      boxDivider: box.boxDivider,
+      boxPart: box.boxPart,
+      boxLidStyle: box.boxLidStyle,
+      boxLidPlate: box.boxLidPlate,
+      boxFit: box.boxFit,
+    };
   }
   if (kind === "dovetail") {
     return {
@@ -915,6 +945,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     knurlChamfer: shape.knurlChamfer,
     dovetailNeckWidth: shape.dovetailNeckWidth,
     dovetailClearance: shape.dovetailClearance,
+    ...boxGeneratorFieldsOf(shape),
     loftBottomOutline: shape.loftBottomOutline,
     loftTopOutline: shape.loftTopOutline,
     loftBottomWidth: shape.loftBottomWidth,
@@ -1356,6 +1387,7 @@ export function makeShapeFromAsset(
     vase: asset.kind === "vase" ? normalizeVaseSettings(undefined) : undefined,
     dovetailNeckWidth: asset.kind === "dovetail" ? normalizeDovetailNeckWidth(customization.dovetailNeckWidth, width) : undefined,
     dovetailClearance: asset.kind === "dovetail" ? normalizeDovetailClearance(customization.dovetailClearance ?? DEFAULT_DOVETAIL_CLEARANCE) : undefined,
+    ...(asset.kind === "boxGenerator" ? normalizeBoxGeneratorFields({ width, depth, height }, customization) : {}),
     screwHoleShaft: asset.kind === "counterbore" || asset.kind === "countersink" || asset.kind === "doubleCountersink" ? normalizeScrewHoleShaft(customization.screwHoleShaft ?? DEFAULT_SCREW_HOLE_SHAFT, width)
       : asset.kind === "finishingWasher" ? customization.screwHoleShaft ?? DEFAULT_FINISHING_WASHER_SHAFT : undefined,
     screwHoleHeadDepth: asset.kind === "counterbore" ? normalizeScrewHoleHeadDepth(customization.screwHoleHeadDepth ?? DEFAULT_SCREW_HOLE_HEAD_DEPTH, height)

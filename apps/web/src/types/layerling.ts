@@ -31,6 +31,7 @@ export type ShapeKind =
   | "hinge"
   | "knurl"
   | "dovetail"
+  | "boxGenerator"
   | "counterbore"
   | "countersink"
   | "doubleCountersink"
@@ -414,6 +415,21 @@ export type ShapeCustomization = {
   dovetailNeckWidth?: number;
   /** Dovetail: gap in mm added on every side when the dovetail is a cut-out (its socket). */
   dovetailClearance?: number;
+  /** Box generator: the outline seen from above, its polygon corners, the corner radius of a rectangle, in mm. */
+  boxShape?: "rectangle" | "round" | "polygon";
+  boxSides?: number;
+  boxCornerRadius?: number;
+  /** Box generator: wall and floor thickness, the compartments across and along, the divider thickness, in mm. */
+  boxWall?: number;
+  boxFloor?: number;
+  boxColumns?: number;
+  boxRows?: number;
+  boxDivider?: number;
+  /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
+  boxPart?: "box" | "lid";
+  boxLidStyle?: "restOn" | "overlap";
+  boxLidPlate?: number;
+  boxFit?: number;
   /** Transition (loft, #188): the outline at the bottom and at the top. */
   loftBottomOutline?: "round" | "rectangle" | "polygon";
   loftTopOutline?: "round" | "rectangle" | "polygon";
@@ -1353,6 +1369,21 @@ export type WorkplaneShape = {
   dovetailNeckWidth?: number;
   /** Dovetail: gap in mm added on every side when the dovetail is a cut-out (its socket). */
   dovetailClearance?: number;
+  /** Box generator: the outline seen from above, its polygon corners, the corner radius of a rectangle, in mm. */
+  boxShape?: "rectangle" | "round" | "polygon";
+  boxSides?: number;
+  boxCornerRadius?: number;
+  /** Box generator: wall and floor thickness, the compartments across and along, the divider thickness, in mm. */
+  boxWall?: number;
+  boxFloor?: number;
+  boxColumns?: number;
+  boxRows?: number;
+  boxDivider?: number;
+  /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
+  boxPart?: "box" | "lid";
+  boxLidStyle?: "restOn" | "overlap";
+  boxLidPlate?: number;
+  boxFit?: number;
   /** Transition (loft, #188): the outline at the bottom and at the top. */
   loftBottomOutline?: "round" | "rectangle" | "polygon";
   loftTopOutline?: "round" | "rectangle" | "polygon";

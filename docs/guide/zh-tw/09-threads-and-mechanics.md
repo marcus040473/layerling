@@ -252,6 +252,16 @@ microSD 卡槽也是左邊緣的接頭，位於電路板下方（Zero 2 W 上在
 
 {{ui:shape.finishingWasher}}（一種裝飾墊圈，Discussion #1131）是放在沉頭或半沉頭螺絲下面的拱形墊圈，用於在木頭或蓋板上顯得整潔。它是實心件，底面平；從較低的邊緣起，拱頂升到座面，座面是承托螺絲頭的錐面，下面是孔。在 {{ui:prop.screwHoleSize}} 下選擇 M2 到 M20：孔是該規格的過孔，座面是該規格的沉頭孔，{{ui:prop.diameter}} 與 {{ui:prop.height}} 由此得出（M3：10.3 × 2.95 mm，M6：16.6 × 4.5 mm）。你也可以自己設定 {{ui:prop.diameter}}、{{ui:prop.height}}、{{ui:prop.centerHole}}、座面頂部的 {{ui:prop.screwHoleHead}} 及其 {{ui:prop.screwHoleAngle}}。它保持圓形，並且是精確實體，因此邊緣工具與 STEP 都能處理它。
 
+## 盒子產生器
+
+{{ui:shape.boxGenerator}}依幾項設定做出一個盒子和它的蓋子。只儲存設定；每次都由設定重新產生實體，所以專案每次開啟都一樣。在{{ui:prop.boxShape}}下選擇{{ui:boxGenerator.shapeRectangle}}（帶{{ui:prop.boxCornerRadius}}）、{{ui:boxGenerator.shapeRound}}（寬和長相等時是圓）或帶{{ui:prop.boxSides}}個角的{{ui:boxGenerator.shapePolygon}}。寬、長、高是外部尺寸。{{ui:prop.boxWall}}和{{ui:prop.boxFloor}}起始為 2.4 mm，這是 FDM 列印的好值。壁對盒子來說太厚時，裡面沒有空間，面板會明確告訴你，而不是悄悄畫出一個實心塊。
+
+{{ui:prop.boxColumns}}和{{ui:prop.boxRows}}把盒子分成格子。隔板厚{{ui:prop.boxDivider}}，與壁和底是一體的。比 2 mm 窄的格子保持實心，面板會告訴你有幾個。
+
+蓋子是同一個形狀的副本，把{{ui:prop.boxPart}}設為{{ui:boxGenerator.partLid}}。它依列印時的樣子繪製，蓋板貼在列印床上。{{ui:boxGenerator.lidRestOn}}是與盒子一樣大的平板。{{ui:boxGenerator.lidOverlap}}帶一圈和壁一樣厚的裙邊，向下罩住盒子外側；{{ui:prop.boxLidPlate}}是蓋板的厚度，{{ui:prop.boxFit}}是每一側的間隙。一個部件的寬和長始終是它自己的，所以罩蓋比盒子大：在{{ui:prop.boxFit}}下，面板會給出合適的尺寸。
+
+> **提示：** 列印出來的配合比繪製的略緊。先列印蓋子，並以十分之一毫米為單位調整{{ui:prop.boxFit}}，直到能順暢合上。鉸鏈、鎖扣、堆疊和 Gridfinity 還不屬於這個形狀；請在旁邊使用鉸鏈、卡扣和 Gridfinity 形狀。
+
 ## 螺絲柱
 
 {{ui:shape.screwBoss}} 是外殼裡用來鎖固蓋子或電路板的柱子：圓形，從頂部開孔。在 {{ui:prop.screwBossFastener}} 中選擇裝入什麼。{{ui:screwBoss.insert}} 是用烙鐵壓入的黃銅螺帽：{{ui:prop.screwBossSize}} 提供 M2 到 M5 以及 #2-56 到 1/4-20，孔依常見熱熔螺帽的要求（M3：長 5.7 mm 的螺帽用 4.0 mm 孔），比螺帽深一公釐，讓被擠開的塑膠有地方去，柱子約為孔的兩倍粗。{{ui:screwBoss.selfTapping}} 自己攻出螺紋：ST2.2 到 ST4.2（DIN 7981）、2.5 到 5 mm (K25–K50) 的塑膠螺絲或 #2 到 #10，底孔約為螺絲的 0.8 倍，柱子 2.5 倍，孔深約 2.5 個螺絲直徑。{{ui:screwBoss.custom}} 使用你輸入的孔徑和孔深。

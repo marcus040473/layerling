@@ -16,6 +16,7 @@ import { createHeartGeometry } from "@/lib/heartGeometry";
 import { createCrescentGeometry } from "@/lib/crescentGeometry";
 import { createSlotGeometry } from "@/lib/slotGeometry";
 import { createDovetailGeometry } from "@/lib/dovetailGeometry";
+import { boxGeneratorFieldsOf, createBoxGeneratorGeometry } from "@/lib/boxGeneratorGeometry";
 import { createParaboloidGeometry } from "@/lib/roundBodyGeometry";
 import { createCurvedConeGeometry } from "@/lib/curvedCone";
 import { createScrewBossGeometry } from "@/lib/screwBoss";
@@ -469,6 +470,7 @@ export function tapeShapeTopologyKey(shape: WorkplaneShape): string {
     vase: shape.kind === "vase" ? JSON.stringify(shape.vase ?? null) : undefined,
     dovetailNeckWidth: shape.dovetailNeckWidth,
     dovetailClearance: shape.dovetailClearance,
+    ...boxGeneratorFieldsOf(shape),
     loftBottomOutline: shape.loftBottomOutline,
     loftTopOutline: shape.loftTopOutline,
     loftBottomWidth: shape.loftBottomWidth,
@@ -906,6 +908,7 @@ export function shapeGeometrySignature(shape: WorkplaneShape): string {
     vase: shape.kind === "vase" ? JSON.stringify(shape.vase ?? null) : undefined,
     dovetailNeckWidth: shape.dovetailNeckWidth,
     dovetailClearance: shape.dovetailClearance,
+    ...boxGeneratorFieldsOf(shape),
     loftBottomOutline: shape.loftBottomOutline,
     loftTopOutline: shape.loftTopOutline,
     loftBottomWidth: shape.loftBottomWidth,
@@ -2257,6 +2260,9 @@ export function createShapeObject(
     case "loft":
       addMesh(group, sharedShapeGeometry(geometryCacheKey, () => createLoftGeometry({ ...shape, width, depth, height })), material, shape);
       break;
+    case "boxGenerator":
+      addMesh(group, sharedShapeGeometry(geometryCacheKey, () => createBoxGeneratorGeometry({ width, depth, height }, boxGeneratorFieldsOf(shape))), material, shape);
+      break;
     case "dovetail":
       addMesh(group, sharedShapeGeometry(geometryCacheKey, () => createDovetailGeometry({
         width,
@@ -2997,7 +3003,7 @@ export function addShapeEdgeDecorations(group: THREE.Group, mesh: THREE.Mesh, pr
   const complexEdges =
     shape.kind === "mesh" ||
     Boolean(shape.importedMesh) ||
-    ["cone", "pyramid", "roof", "roundRoof", "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "ring", "star", "gear", "hirth", "pulley", "wedge", "polygon", "heart", "crescent", "slot", "dovetail", "screwBoss", "snapFit", "rib", "hinge", "gridfinity", "knurl", "teardrop", "port", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "honeycomb", "loft"].includes(shape.kind);
+    ["cone", "pyramid", "roof", "roundRoof", "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "ring", "star", "gear", "hirth", "pulley", "wedge", "polygon", "heart", "crescent", "slot", "dovetail", "boxGenerator", "screwBoss", "snapFit", "rib", "hinge", "gridfinity", "knurl", "teardrop", "port", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "honeycomb", "loft"].includes(shape.kind);
   const importedTriangleCount = shape.importedMesh?.triangleCount ?? 0;
   // A vase's relief has an edge at every rib: drawn like a heavy imported mesh, without the lines.
   const skipHeavyImportedEdges = (Boolean(shape.importedMesh) && importedTriangleCount > IMPORTED_SELECTED_EDGE_TRIANGLE_LIMIT)

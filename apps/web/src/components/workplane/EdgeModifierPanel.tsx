@@ -1,5 +1,6 @@
 "use client";
 
+import { getEditorProfile } from "@/lib/editorProfile";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
@@ -411,6 +412,7 @@ export function EdgeModifierPanel({
   onApply: () => void;
   onCancel: () => void;
 }) {
+  const onlyVisibleEdgesOption = kind === "fillet" ? getEditorProfile()?.tools.fillet?.options?.onlyVisibleEdges : undefined;
   useLanguage();
   const title = kind === "fillet" ? t("edge.filletTitle") : kind === "chamfillet" ? t("edge.chamfilletTitle") : t("edge.chamferTitle");
   const amountMin = Math.min(MIN_EDGE_MODIFIER_AMOUNT, Math.max(Number.EPSILON, maxAmount));
@@ -553,10 +555,12 @@ export function EdgeModifierPanel({
 
       <ToolAdvanced tool="edge" summary={[t("edge.sharpThreshold"), t("edge.onlyVisibleEdges"), t("edge.tangentChains"), t("edge.keepSize"), t("edge.previewQuality")].join(", ")}>
         <EdgeModifierSlider label={t("edge.sharpThreshold")} value={sharpAngle} min={1} max={CAD_MODIFIER_MAX_SHARP_ANGLE} step={1} unit="°" workspace={workspace} disabled={!prepared} onChange={onSharpAngleChange} />
-        <label className="edge-modifier-check" title={t("edge.onlyVisibleEdgesHint")}>
-          <input type="checkbox" checked={onlyVisibleEdges} disabled={!prepared} onChange={(event) => onOnlyVisibleEdgesChange(event.currentTarget.checked)} />
-          <span>{t("edge.onlyVisibleEdges")}</span>
-        </label>
+        {onlyVisibleEdgesOption?.visible !== false ? (
+          <label className="edge-modifier-check" title={t("edge.onlyVisibleEdgesHint")}>
+            <input type="checkbox" checked={onlyVisibleEdges} disabled={!prepared || onlyVisibleEdgesOption?.locked} onChange={(event) => onOnlyVisibleEdgesChange(event.currentTarget.checked)} />
+            <span>{t("edge.onlyVisibleEdges")}</span>
+          </label>
+        ) : null}
         <label className="edge-modifier-check" title={t("edge.tangentChainsHint")}>
           <input type="checkbox" checked={tangentChain} disabled={!prepared} onChange={(event) => onTangentChainChange(event.currentTarget.checked)} />
           <span>{t("edge.tangentChains")}</span>

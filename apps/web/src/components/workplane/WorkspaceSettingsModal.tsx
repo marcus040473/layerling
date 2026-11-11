@@ -20,7 +20,7 @@ import { useToolbarSize } from "@/lib/useToolbarSize";
 import { useSimpleMode } from "@/lib/useSimpleMode";
 import { useShapeColors } from "@/lib/useShapeColors";
 import { setShapeColors } from "@/lib/shapeColors";
-import { isSimpleModeFixedByServer, setSimpleMode } from "@/lib/simpleMode";
+import { isSimpleModeFixed, setSimpleMode } from "@/lib/simpleMode";
 import { useViewCubePosition } from "@/lib/useViewCubePosition";
 import { setViewCubePosition, VIEW_CUBE_POSITION_OPTIONS, type ViewCubePosition } from "@/lib/viewCubePosition";
 import { gearCenterHoleLimits, gearToothPitch, gearTypeHasHelix, MAX_GEAR_TEETH, MIN_GEAR_TEETH } from "@/lib/gearGeometry";
@@ -215,7 +215,7 @@ const BENT_TUBE_PROFILE_OPTIONS: Array<{ value: BentTubeProfile; label: MessageK
   { value: "octagon", label: "bentTube.profileOctagon" },
 ];
 
-type ShapeSpecialNumberKey = "steps" | "sides" | "bevel" | "segments" | "topRadius" | "baseRadius" | "teeth" | "toothSize" | "toothWidth" | "centerHoleSize" | "helixAngle" | "helixQuality" | "gearPressureAngle" | "gearBacklash" | "gearRim" | "threadDiameter" | "threadPitch" | "threadClearance" | "threadBoltClearance" | "threadAxialClearance" | "threadQuality" | "threadChamfer" | "threadHeadChamfer" | "springTurns" | "springWire" | "springQuality" | "topWidth" | "topDepth" | "starPoints" | "starInnerSize" | "starOuterFillet" | "starInnerFillet" | "starQuality" | "heartTipFillet" | "heartQuality" | "crescentThickness" | "crescentTipFillet" | "crescentQuality" | "honeycombCellSize" | "honeycombWallThickness" | "honeycombFrameWidth" | "dovetailNeckWidth" | "dovetailClearance" | "hingeKnuckles" | "hingePinDiameter" | "hingeLeafThickness" | "hingeClearance" | "screwHoleShaft" | "screwHoleHeadDepth" | "screwHoleAngle" | "cornerFillet" | "topBottomFillet" | "roundedBoxQuality" | "bentTubeSize" | "bentTubeWall" | "bentTubeQuality" | "knurlCount" | "knurlDepth" | "knurlAngle" | "knurlChamfer"
+type ShapeSpecialNumberKey = "boxWall" | "boxFloor" | "boxColumns" | "boxRows" | "steps" | "sides" | "bevel" | "segments" | "topRadius" | "baseRadius" | "teeth" | "toothSize" | "toothWidth" | "centerHoleSize" | "helixAngle" | "helixQuality" | "gearPressureAngle" | "gearBacklash" | "gearRim" | "threadDiameter" | "threadPitch" | "threadClearance" | "threadBoltClearance" | "threadAxialClearance" | "threadQuality" | "threadChamfer" | "threadHeadChamfer" | "springTurns" | "springWire" | "springQuality" | "topWidth" | "topDepth" | "starPoints" | "starInnerSize" | "starOuterFillet" | "starInnerFillet" | "starQuality" | "heartTipFillet" | "heartQuality" | "crescentThickness" | "crescentTipFillet" | "crescentQuality" | "honeycombCellSize" | "honeycombWallThickness" | "honeycombFrameWidth" | "dovetailNeckWidth" | "dovetailClearance" | "hingeKnuckles" | "hingePinDiameter" | "hingeLeafThickness" | "hingeClearance" | "screwHoleShaft" | "screwHoleHeadDepth" | "screwHoleAngle" | "cornerFillet" | "topBottomFillet" | "roundedBoxQuality" | "bentTubeSize" | "bentTubeWall" | "bentTubeQuality" | "knurlCount" | "knurlDepth" | "knurlAngle" | "knurlChamfer"
   | "loftBottomWidth" | "loftBottomDepth" | "loftTopWidth" | "loftTopDepth" | "loftWall"
   | "pulleyBeltWidth" | "pulleyFlange" | "pulleyFlangeRise" | "pulleyHubHeight" | "pulleyHubDiameter";
 type ShapeSpecialField =
@@ -453,6 +453,14 @@ function specialFieldsForShape(
       { type: "number", key: "hingePinDiameter", label: t("prop.hingePinDiameter"), defaultValue: defaults.hingePinDiameter ?? 3, min: 0.2, max: Math.max(0.4, dimensions.height - 1), step: 0.1, unit: "mm" },
       { type: "number", key: "hingeLeafThickness", label: t("prop.hingeLeafThickness"), defaultValue: defaults.hingeLeafThickness ?? 2, min: 0.4, max: Math.max(0.5, dimensions.height / 2), step: 0.1, unit: "mm" },
       { type: "number", key: "hingeClearance", label: t("prop.hingeClearance"), defaultValue: defaults.hingeClearance ?? 0.4, min: 0.1, max: 1, step: 0.05, unit: "mm" },
+    ];
+  }
+  if (kind === "boxGenerator") {
+    return [
+      { type: "number", key: "boxWall", label: t("prop.boxWall"), defaultValue: defaults.boxWall ?? 2.4, min: 0.4, max: Math.max(0.4, Math.min(dimensions.width, dimensions.depth) / 2 - 0.5), step: 0.1, unit: "mm" },
+      { type: "number", key: "boxFloor", label: t("prop.boxFloor"), defaultValue: defaults.boxFloor ?? 2.4, min: 0.4, max: Math.max(0.4, dimensions.height - 0.5), step: 0.1, unit: "mm" },
+      { type: "number", key: "boxColumns", label: t("prop.boxColumns"), defaultValue: defaults.boxColumns ?? 1, min: 1, max: 12, step: 1 },
+      { type: "number", key: "boxRows", label: t("prop.boxRows"), defaultValue: defaults.boxRows ?? 1, min: 1, max: 12, step: 1 },
     ];
   }
   if (kind === "dovetail") {
@@ -2115,7 +2123,7 @@ function SimpleModeSetting() {
     }, SIMPLE_MODE_HOLD_MS);
   };
   useEffect(() => cancel, []);
-  if (isSimpleModeFixedByServer()) return null;
+  if (isSimpleModeFixed()) return null;
   if (!simple) {
     return <WorkspaceToggle label={t("workspace.simpleMode")} description={t("workspace.simpleModeHint")} checked={false} onChange={() => setSimpleMode(true)} />;
   }

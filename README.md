@@ -278,7 +278,7 @@ Everyday commands:
 
 **Installing as an app and offline use need https, and the static export.** A browser installs an app and keeps it for offline use only on `https://` or on `localhost`; on a plain `http://192.168.x.x:3000` address it offers neither (layerling hides its install hint there). Even with https, the offline files (`sw.js`) are written only into the static export (see [Static Hosting](#static-hosting-plain-files-on-a-web-server)), not into this image, which runs the server version. For installing and offline use on a network, serve the static export over https; for an https address in front of the container, use a reverse proxy such as Caddy or nginx with a certificate (for example from mkcert).
 
-The image runs `next start` in production mode, so the MCP bridge is off there unless you switch it on (see [Letting an AI client reach a copy on a NAS or server](#letting-an-ai-client-reach-a-copy-on-a-nas-or-server)). To offer a shared project folder, bind a writable directory and set `LAYERLING_SHARED_PROJECTS_DIR` in `compose.yml` to the path inside the container where it is mounted, for example `./shared-projects:/shared-projects` with `LAYERLING_SHARED_PROJECTS_DIR: "/shared-projects"` (see [Shared Designs on a Network](#shared-designs-on-a-network)). The container runs as the user with the number 999, so that user must be allowed to write to the folder: `sudo chown 999:999 ./shared-projects`, or add `user: "1000:1000"` to the service (your own user and group numbers, `id -u` and `id -g` show them) so that the container runs as you. Without it the folder shows up on the start page but nothing can be saved there. After changing it, run `docker compose up -d`: `docker compose restart` keeps the old setting. `docker exec <container> printenv LAYERLING_SHARED_PROJECTS_DIR` shows the one in use.
+The image runs `node apps/web/server.js` in production mode, so the MCP bridge is off there unless you switch it on (see [Letting an AI client reach a copy on a NAS or server](#letting-an-ai-client-reach-a-copy-on-a-nas-or-server)). To offer a shared project folder, bind a writable directory and set `LAYERLING_SHARED_PROJECTS_DIR` in `compose.yml` to the path inside the container where it is mounted, for example `./shared-projects:/shared-projects` with `LAYERLING_SHARED_PROJECTS_DIR: "/shared-projects"` (see [Shared Designs on a Network](#shared-designs-on-a-network)). The container runs as the user with the number 999, so that user must be allowed to write to the folder: `sudo chown 999:999 ./shared-projects`, or add `user: "1000:1000"` to the service (your own user and group numbers, `id -u` and `id -g` show them) so that the container runs as you. Without it the folder shows up on the start page but nothing can be saved there. After changing it, run `docker compose up -d`: `docker compose restart` keeps the old setting. `docker exec <container> printenv LAYERLING_SHARED_PROJECTS_DIR` shows the one in use.
 
 To keep every design in that folder and none in the browser, there is a complete guide in English and German with its own compose file and an update script that checks the configuration, backs up the folder and rolls back a failed update: [docs/docker](docs/docker/README.md), written by Jürgen Keller. With `LAYERLING_NEW_DESIGNS_ON_SERVER: "always"`, everything that makes a design goes to the server folder: the tile, opening or importing a file, restoring a backup (with its folders), duplicating and a state taken from the history, and New folder on the start page makes a server folder.
 
@@ -307,6 +307,24 @@ Four things to know:
 - **Folders that start with an underscore must be served.** Some servers hide them (GitHub Pages does without a `.nojekyll` file, for example), and `_next` holds the whole program.
 - **A quick test on your own computer:** `npx serve apps/web/.next-export` and open the address it prints.
 - **Installing as an app and offline use need https.** The export holds the offline files (`sw.js`), but a browser uses them only on an `https://` address or on `localhost`, not on a plain `http://` address in your network.
+
+### Editor profiles
+
+An optional editor profile changes the 3D ribbon and selected tool options for this page. To try the [example profile](docs/examples/editor-profile.json) in a local checkout:
+
+```sh
+LAYERLING_EDITOR_PROFILE="$(cat docs/examples/editor-profile.json)" npm run dev
+```
+
+Open the editor, add a box, and select it. The simple ribbon uses the usual icon size. **Print check** is visible and **Lid** and **Flexi joints** are hidden. Open **Fillet** to see a starting radius of 2 mm on a box large enough for it. The **Only visible edges** option is hidden and on.
+
+- `version` must be `1`. An optional `base` of `simple` or `full` selects that layout for this page, ahead of the browser choice and the Node server default. Omit it to keep the ordinary mode switch.
+- Set `enlargeInSimpleMode: false` to use the same toolbar, shape menu and control sizing as in full mode. The browser’s toolbar size choice still applies.
+- Under `tools`, `visible: true` or `false` overrides the layout for tools in the clipboard, history, combine, modify and arrange sections of the 3D ribbon, as well as `import`. Use the tool's ID (the `data-layerling-tool` attribute on regular ribbon buttons). The Ribbon settings can still hide or reorder the tools available in the active profile. A visible tool still needs the usual selection. Unknown entries have no effect.
+- Under `tools.fillet.options`, `amount.default` is a radius in millimetres. A valid remembered radius takes precedence, and the tool's own starting value is used when neither fits the body. `onlyVisibleEdges` accepts `visible`, a boolean `default`, and `locked`. A lock requires a default and takes precedence over the remembered value.
+- Profiles affect the ribbon and the connected dialog options. Context menus, keyboard shortcuts, shapes and the camera retain their normal behavior. Use the host's authorization for access to projects.
+
+`LAYERLING_EDITOR_PROFILE` is read by the layout when the HTML is generated. Set it before starting the development server or building production HTML, including a static export. Hosts that generate HTML themselves may instead provide one `<script type="application/json" id="layerling-editor-profile">…</script>` in the document head before Layerling's scripts. Escape literal `<` in the serialized JSON as `\u003c`. Profiles are independent of project files and browser settings and are read once per page load. For per-account profiles, serve the personalized HTML from a private, uncached page outside the static service worker’s offline cache, such as a PHP entry point.
 
 ### Shared Designs on a Network
 
