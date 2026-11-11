@@ -1,0 +1,65 @@
+# Instructions for GitHub Copilot in marcus040473/layerling
+
+This is Marcus's fork of Stefan's **Layerling** (henmedia/layerling): an open-source browser CAD for 3D printing
+(TypeScript, Next.js, React, three.js, Manifold, OpenCascade in a worker, vitest).
+
+**Read `uebergabe/UEBERGABE.md` first.** It says what is done, what is open, and which branch each task lives on.
+
+## People
+- **Marcus** (marcus040473) owns this fork. He is not a programmer. Talk to him in **German, short and simple**, without
+  English technical words. Before you build something new, tell him what is wanted and what already works.
+- **Stefan** (henmedia) maintains the upstream repo. Everything for Stefan is in **English**.
+
+## Branches (important)
+- `marcus` – Marcus's own variant. The demo https://marcus040473.github.io/?editor=1 is built from it.
+  Its tool windows are **docked on the right** (see "The marcus branch" below). Never base a pull request for Stefan on it.
+- Feature branches (`hinge-snap`, `texture-regions`, `slide-lid-hints`, …) are based on **Stefan's main** and are meant
+  to become pull requests to Stefan later.
+- `pr-media` – only pictures for PR texts.
+- `main` of this fork only carries this file and `uebergabe/`. Do not build features on it.
+- When you open a pull request inside this fork, its **base must be the branch the task names** (for example
+  `hinge-snap`), not `main`.
+
+## Hard rules
+1. **Never** open a pull request, issue or comment on **henmedia/layerling**, and never push there. Marcus opens PRs to
+   Stefan himself, only after he has said OK.
+2. **Merge, never rebase.** Never rewrite Stefan's commits. Get Stefan's new versions with
+   `git remote add upstream https://github.com/henmedia/layerling` and `git fetch upstream --tags`, then merge the tag
+   (for example `v1.156.4`).
+3. **Before every push**, all green: `npm run typecheck` and the full `npm test` (about 10 minutes). On feature branches
+   also `npm run test:e2e`, `npm run guide` and `npm run i18n:status`. Never skip or disable a test.
+4. No `CHANGELOG.md` or "what's new" edits (Stefan writes those). No AI model names anywhere. Do not name private persons
+   in commits or PR texts; refer to Discussions by number. Nothing from other projects of Marcus.
+5. No debug writes in tests or sources (`writeFileSync` to /tmp or /dev/null, `console.log`); a guard test checks that.
+
+## Setup
+```
+npm ci
+npm run copy:occt
+```
+
+## How Stefan's code is written (match it)
+- Read the neighbouring code first and follow its patterns. Long doc comments in plain English prose that say what and why.
+- A setting lives on the `WorkplaneShape` fields or a tool's option type with a default, a normalize/clamp function,
+  inspector or panel fields, the MCP tool parameter (`scripts/layerling-mcp-tools.mjs` plus the **three identical copies**
+  of `SKILL.md`: `docs/skills/…`, `.agents/skills/…`, `.claude/skills/…`), the user guide, and tests.
+- Every new or changed UI text in **14 languages**: en, de, fr, nl, ru, cs, sl, da, es, it, pl, ar, zh-cn, zh-tw
+  (`apps/web/src/lib/messages.<lang>.ts`). German: clear everyday words, no Denglisch.
+- User guide `docs/guide/<lang>/…` in 15 languages (the 14 plus hu).
+- Tests in `tests/unit` and `tests/e2e`. For each new test, make sure it fails without the change.
+- Commits for Stefan's branches: English, in Stefan's style (`git log --format=%B -5 upstream/main`).
+  On `marcus`: German, starting with `merge: …` for merges.
+- PR texts follow `.github/pull_request_template.md`: `## Summary`, `## Testing`, `## Notes`.
+  Pictures go to the `pr-media` branch and are linked as
+  `![…](https://raw.githubusercontent.com/marcus040473/layerling/<commit-sha>/<path>)`, never as placeholders.
+
+## The marcus branch: docked tool windows
+- Tool windows are docked in the right column: `MovableToolPanel` with `dock="withObject"` (or `"alone"`) and `onClose`,
+  built from `ToolSection`, `ToolSelection`, `ToolHint`, `ToolApply`, `ToolCancel`, `ToolAdvanced`, `ToolGroup`,
+  `ToolStatus`, `ToolHelp` (`apps/web/src/components/workplane/ToolPanelParts.tsx`).
+- Every window that comes from Stefan in his card style must be rebuilt this way when it is merged into `marcus`.
+  Hints are `<ToolHint text={…} />`, not `<span className="shell-openings-summary">` or `<p className="split-panel-help">`.
+- Hints are **folded** there: a test that reads a hint text must first click `button.tool-hint-more[aria-expanded=false]`.
+  The status line is `[role=status] small`.
+- When a merge conflicts in a docked panel: keep the `marcus` side, then add Stefan's new parts by hand
+  (see `uebergabe/UEBERGABE.md`, "Merging Stefan's versions").
