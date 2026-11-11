@@ -88,6 +88,7 @@ export const GUIDE_SECTIONS = {
   hinge: { chapter: "threads", de: "scharnier", en: "hinge", nl: "scharnier", ru: "petlya", cs: "pant", sl: "tecaj", hu: "zsaner", es: "bisagra" },
   flexi: { chapter: "threads", de: "flexi-gelenke", en: "flexi-joints", nl: "flexi-scharnieren", ru: "fleksi-sharniry", cs: "flexi-klouby", sl: "flexi-zgibi", hu: "flexi-csuklok", es: "articulaciones-flexi", fr: "articulations-flexi" },
   knurl: { chapter: "threads", de: "raendelung", en: "knurling", nl: "kartel", ru: "nakatka", cs: "ryhovane-uchopy", sl: "narebricenje", hu: "recezes", es: "moleteado" },
+  boxGenerator: { chapter: "threads", de: "boxen-generator", en: "box-generator", nl: "dozengenerator", fr: "generateur-de-boite", ru: "generator-korobok", cs: "generator-krabicek", sl: "generator-skatel", da: "kassegenerator", hu: "dobozgenerator", es: "generador-de-cajas", it: "generatore-di-scatole", pl: "generator-pudelek", ar: "box-generator" },
   dovetail: { chapter: "threads", de: "schwalbenschwanz", en: "dovetail", nl: "zwaluwstaart", ru: "lastochkin-khvost", cs: "rybinovy-spoj", sl: "lastovicji-rep", hu: "fecskefark", es: "cola-de-milano" },
   screwBoss: { chapter: "threads", de: "schraubdom", en: "screw-boss", nl: "schroefpaal", fr: "bossage-a-vis", ru: "bobyshka-pod-vint", cs: "sroubovy-sloupek", sl: "vijacni-steber", da: "skruetap", hu: "csavaroszlop", es: "torreta-para-tornillo", it: "torretta-per-viti", pl: "tulejka-na-wkret", ar: "screw-boss" },
   snapFit: { chapter: "threads", de: "schnapphaken", en: "snap-fit", nl: "klikhaak", fr: "clip-a-encliqueter", ru: "zashchelka", cs: "zaklapavaci-hacek", sl: "zaskocna-kljukica", da: "snaplas", hu: "pattintos-kampo", es: "clip-de-encaje", it: "gancio-a-scatto", pl: "zatrzask", ar: "snap-fit" },
@@ -217,6 +218,8 @@ export function guideSectionForShape(shape: GuideShape): GuideSection | undefine
       return "hinge";
     case "knurl":
       return "knurl";
+    case "boxGenerator":
+      return "boxGenerator";
     case "dovetail":
       return "dovetail";
     case "screwBoss":
@@ -260,6 +263,7 @@ export function guideChapterForShape(shape: GuideShape): GuideChapter {
     case "gridfinity":
     case "hinge":
     case "knurl":
+    case "boxGenerator":
     case "dovetail":
     case "screwBoss":
     case "snapFit":

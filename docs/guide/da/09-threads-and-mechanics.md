@@ -258,6 +258,16 @@ Et undersænket skruehoved flugter med overfladen. Skal det sidde dybere, så in
 
 > **Tip:** Ligesom gevindhuller, så læg forsænkninger og undersænkninger lidt ind i materialet når de overlapper en kant af den del de er i, ellers skærer de ikke helt.
 
+## Kassegenerator
+
+{{ui:shape.boxGenerator}} laver en kasse og dens låg ud fra nogle få indstillinger. Kun indstillingerne gemmes; legemet bygges op af dem hver gang, så et projekt altid åbner ens. Under {{ui:prop.boxShape}} vælger du {{ui:boxGenerator.shapeRectangle}} (med en {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (en cirkel, når bredde og længde er ens) eller {{ui:boxGenerator.shapePolygon}} med {{ui:prop.boxSides}} hjørner. Bredde, længde og højde er ydermålet. {{ui:prop.boxWall}} og {{ui:prop.boxFloor}} starter på 2,4 mm, en god værdi til FDM-print. En væg, der er for tyk til kassen, levner ingen indvendig plads, og panelet siger det i stedet for stille og roligt at tegne en massiv blok.
+
+{{ui:prop.boxColumns}} og {{ui:prop.boxRows}} deler kassen i rum. Skillevæggene, {{ui:prop.boxDivider}} tykke, er ét stykke med væggen og bunden. Et rum, der er smallere end 2 mm, forbliver massivt, og panelet fortæller, hvor mange der er.
+
+Låget er en kopi af samme form med {{ui:prop.boxPart}} sat til {{ui:boxGenerator.partLid}}. Det er tegnet, som det printes, med pladen på printpladen. {{ui:boxGenerator.lidRestOn}} er en flad plade, lige så stor som kassen. {{ui:boxGenerator.lidOverlap}} har en kant, lige så tyk som væggen, der går ned over kassens yderside; {{ui:prop.boxLidPlate}} er pladens tykkelse, og {{ui:prop.boxFit}} er spillerummet på hver side. Bredde og længde på en del er altid dens egne, så det overlappende låg er større end kassen: under {{ui:prop.boxFit}} viser panelet den størrelse, der passer.
+
+> **Tip:** Printede pasninger er lidt strammere end tegnede. Print låget først, og ændr {{ui:prop.boxFit}} med en tiendedel millimeter, til det lukker jævnt. Hængsler, låse, stabling og Gridfinity er endnu ikke en del af denne form; brug formerne Hængsel, Snaplås og Gridfinity ved siden af.
+
 ## Skruetap
 
 {{ui:shape.screwBoss}} er tappen, som et låg eller et printkort skrues fast på i et kabinet: rund, med et hul fra oven. Under {{ui:prop.screwBossFastener}} vælger du, hvad der skal i. En {{ui:screwBoss.insert}} er en messingindsats, der presses i med en loddekolbe: {{ui:prop.screwBossSize}} tilbyder M2 til M5 og #2-56 til 1/4-20, hullet som de almindelige indsatser vil have det (M3: 4,0 mm til en indsats på 5,7 mm), en millimeter dybere end indsatsen, så den fortrængte plast har plads, og tappen omtrent dobbelt så tyk som hullet. En {{ui:screwBoss.selfTapping}} skærer selv sit gevind: ST2,2 til ST4,2 (DIN 7981), plastskruer på 2,5 til 5 mm (K25–K50) eller #2 til #10, med en forboring på cirka 0,8 × skruen, tappen 2,5 × og hullet 2,5 skruer dybt. {{ui:screwBoss.custom}} tager den diameter og dybde, du skriver.

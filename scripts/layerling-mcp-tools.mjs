@@ -20,7 +20,7 @@ export const editorTargetSchema = {
 export const creatableShapeKinds = [
   "box", "roundedBox", "cube", "cylinder", "slot", "ellipse", "polygon", "sphere", "cone", "pyramid", "wedge",
   "roundRoof", "halfSphere", "paraboloid", "curvedCone", "torus", "loft", "vase", "tube", "bentTube", "star", "heart", "crescent", "text", "thread", "spring", "gridfinity", "gear", "hirth", "pulley",
-  "hinge", "knurl", "dovetail", "screwBoss", "snapFit", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "ruler", "sketch",
+  "hinge", "knurl", "dovetail", "boxGenerator", "screwBoss", "snapFit", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "ruler", "sketch",
 ];
 
 /**
@@ -349,6 +349,18 @@ export const shapeSettingSchema = {
   slotEndRatio: { type: "number", description: "Capsule (slot) only: the small end's diameter as a share of the large one, 0.1 to 1 (default 1, two equal ends). The large end sits at the start of the long axis, the small one at its end, the sides run as tangents to both - a belt guard. The large diameter is the capsule's short side; the centre distance is the long side less both radii." },
   torusTubeRatio: { type: "number", description: "Torus only: how thick the tube is seen from above, as a share of the torus's outer size, 0.01 to 0.5 (0.5 closes the hole). The height only squashes or stretches the tube, so a flat ring keeps its hole; resizing the torus scales the tube along. A tube as thick as the torus is high keeps the torus an exact CAD body." },
   dovetailClearance: { type: "number", description: "Dovetail only: gap in mm (0 to 2, default 0.2, or the printer's play when one is set with layerling_printer_play) added on every side while the dovetail is a hole - a copy of the tail set to hole cuts a socket the tail fits into." },
+  boxShape: { type: "string", enum: ["rectangle", "round", "polygon"], description: "Box generator only: the outline seen from above - rectangle (with boxCornerRadius), round (a circle, or an oval when width and depth differ) or polygon (boxSides corners). Default rectangle." },
+  boxSides: { type: "integer", description: "Box generator only: corners of a polygon outline, 3 to 12, default 6." },
+  boxCornerRadius: { type: "number", description: "Box generator only: radius in mm of a rectangle's corners, default 3, at most half the smaller side." },
+  boxWall: { type: "number", description: "Box generator only: wall thickness in mm, default 2.4, at least 0.4 and under half the smaller side. A lid with a skirt uses it for the skirt too." },
+  boxFloor: { type: "number", description: "Box generator only: floor thickness in mm of the box part, default 2.4." },
+  boxColumns: { type: "integer", description: "Box generator only: compartments side by side along the width, 1 to 12, default 1. Dividers are one piece with the wall and floor; a compartment narrower than 2 mm stays solid." },
+  boxRows: { type: "integer", description: "Box generator only: compartments one behind the other along the depth, 1 to 12, default 1." },
+  boxDivider: { type: "number", description: "Box generator only: thickness in mm of the dividers between compartments, default 1.6." },
+  boxPart: { type: "string", enum: ["box", "lid"], description: "Box generator only: the open box (default) or its lid, drawn as it prints with the plate on the bed. Create two shapes with the same settings for a box and its lid; each one's width and depth are its own." },
+  boxLidStyle: { type: "string", enum: ["restOn", "overlap"], description: "Box generator only: restOn is a flat plate as large as the box, overlap a plate with a skirt that goes over the outside of the box. An overlap lid is wider than its box by 2 x (boxWall + boxFit) on each axis." },
+  boxLidPlate: { type: "number", description: "Box generator only: thickness in mm of an overlap lid's plate, default 2.4." },
+  boxFit: { type: "number", description: "Box generator only: play per side in mm between a box and its overlap lid, 0 to 2, default 0.3." },
   portProfile: { type: "string", enum: ["rounded", "hdmi", "miniHdmi", "microHdmi", "displayPort", "miniDisplayPort", "xt60", "xt30", "mt60", "dsub9"], description: "Port opening only: rounded corners (default), or the lower corners cut off at a slant as on an HDMI, Mini HDMI, Micro HDMI or Mini DisplayPort socket, or only the lower left one as on DisplayPort; xt60 and xt30 a lying outline with one end narrowed by two cut corners, mt60 a rounded triangle, dsub9 the D-Sub's trapezoid - these four have every corner rounded by cornerFillet. The cut grows with width and height." },
   portClearance: { type: "number", description: "Port opening only: extra room in mm (0 to 2, default 0) on every side, on top of the room a portPreset has already. Together with portPreset when creating, it makes the opening wider and taller by twice this and its corners rounder by it. On its own it does not change the size; it records the extra room, so the inspector still shows the preset." },
   cornerFillet: { type: "number", description: "Rounded box and port opening only. Rounded box: fillet radius of vertical corners in mm. Port opening: radius of the opening's four corners in mm, at most half its width or height (half the height gives fully round ends, as on USB-C)." },

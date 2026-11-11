@@ -333,7 +333,7 @@ export function snapGridForUnits(units: string, snap: GridSize): GridSize {
 }
 const customizableShapeKinds: ShapeKind[] = [
   "box", "roundedBox", "cylinder", "slot", "ellipse", "sphere", "sketch", "scribble", "cone", "pyramid", "roof", "text", "roundRoof",
-  "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "bentTube", "star", "heart", "crescent", "gear", "hirth", "pulley", "honeycomb", "hinge", "knurl", "dovetail", "screwBoss", "snapFit", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "loft", "vase", "thread", "spring", "gridfinity", "ring", "wedge", "polygon", "icosahedron", "ruler", "mesh",
+  "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "bentTube", "star", "heart", "crescent", "gear", "hirth", "pulley", "honeycomb", "hinge", "knurl", "dovetail", "boxGenerator", "screwBoss", "snapFit", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "loft", "vase", "thread", "spring", "gridfinity", "ring", "wedge", "polygon", "icosahedron", "ruler", "mesh",
 ];
 
 function numberOrDefault(value: unknown, fallback: number) {
@@ -610,6 +610,20 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.ribThickness = optionalShapeNumber(source.ribThickness, fallbackEntry?.ribThickness, 0.2, 50);
       entry.ribFootThickness = optionalShapeNumber(source.ribFootThickness, fallbackEntry?.ribFootThickness, 0.2, 50);
       entry.ribFootShape = source.ribFootShape === "square" || source.ribFootShape === "oval" ? source.ribFootShape : fallbackEntry?.ribFootShape;
+    }
+    if (kind === "boxGenerator") {
+      entry.boxShape = source.boxShape === "rectangle" || source.boxShape === "round" || source.boxShape === "polygon" ? source.boxShape : fallbackEntry?.boxShape;
+      entry.boxSides = optionalShapeNumber(source.boxSides, fallbackEntry?.boxSides, 3, 12);
+      entry.boxCornerRadius = optionalShapeNumber(source.boxCornerRadius, fallbackEntry?.boxCornerRadius, 0, MAX_CUSTOM_SHAPE_DIMENSION / 2);
+      entry.boxWall = optionalShapeNumber(source.boxWall, fallbackEntry?.boxWall, 0.4, MAX_CUSTOM_SHAPE_DIMENSION / 2);
+      entry.boxFloor = optionalShapeNumber(source.boxFloor, fallbackEntry?.boxFloor, 0.4, MAX_CUSTOM_SHAPE_DIMENSION);
+      entry.boxColumns = optionalShapeNumber(source.boxColumns, fallbackEntry?.boxColumns, 1, 12);
+      entry.boxRows = optionalShapeNumber(source.boxRows, fallbackEntry?.boxRows, 1, 12);
+      entry.boxDivider = optionalShapeNumber(source.boxDivider, fallbackEntry?.boxDivider, 0.4, 20);
+      entry.boxPart = source.boxPart === "box" || source.boxPart === "lid" ? source.boxPart : fallbackEntry?.boxPart;
+      entry.boxLidStyle = source.boxLidStyle === "restOn" || source.boxLidStyle === "overlap" ? source.boxLidStyle : fallbackEntry?.boxLidStyle;
+      entry.boxLidPlate = optionalShapeNumber(source.boxLidPlate, fallbackEntry?.boxLidPlate, 0.4, MAX_CUSTOM_SHAPE_DIMENSION);
+      entry.boxFit = optionalShapeNumber(source.boxFit, fallbackEntry?.boxFit, 0, 2);
     }
     if (kind === "dovetail") {
       entry.dovetailNeckWidth = optionalShapeNumber(source.dovetailNeckWidth, fallbackEntry?.dovetailNeckWidth, 0.1, MAX_CUSTOM_SHAPE_DIMENSION);
