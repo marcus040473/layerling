@@ -207,6 +207,7 @@ import {
   MIN_BOX_GENERATOR_SIDES,
   MIN_BOX_GENERATOR_WALL,
   boxGeneratorIssues,
+  boxGeneratorGridfinityRoom,
   boxGeneratorMatchingLidSize,
   normalizeBoxGenerator,
   normalizeBoxGeneratorLidStyle,
@@ -2516,6 +2517,15 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         ? t("boxGenerator.lidSizeHint", { width: plainNumber(lidSize.width), depth: plainNumber(lidSize.depth) })
         : t("boxGenerator.boxSizeHint", { width: plainNumber(width - 2 * (box.boxWall + box.boxFit)), depth: plainNumber(depth - 2 * (box.boxWall + box.boxFit)) })
       : undefined;
+    // Gridfinity is not made here: the hint points to the Gridfinity shape and says how much room the inside gives it.
+    const gridfinityRoom = boxGeneratorGridfinityRoom({ width, depth, height: shape.height }, shape);
+    const gridfinityHint = box.boxPart !== "box"
+      ? undefined
+      : !gridfinityRoom
+        ? t("boxGenerator.gridfinityOther")
+        : gridfinityRoom.columns < 1 || gridfinityRoom.rows < 1
+          ? t("boxGenerator.gridfinityTooSmall")
+          : t("boxGenerator.gridfinityHint", { width: plainNumber(gridfinityRoom.width), depth: plainNumber(gridfinityRoom.depth), columns: String(gridfinityRoom.columns), rows: String(gridfinityRoom.rows) });
     const properties: ShapePropertyConfig[] = [
       {
         type: "select",
@@ -2547,7 +2557,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     properties.push({ id: "boxWall", label: t("prop.boxWall"), value: box.boxWall, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, Math.min(width, depth) / 2 - 0.5), step: 0.1, hint: wallIssue, onChange: (value) => onUpdate({ boxWall: value }) });
     if (box.boxPart === "box") {
       properties.push(
-        { id: "boxFloor", label: t("prop.boxFloor"), value: box.boxFloor, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, onChange: (value) => onUpdate({ boxFloor: value }) },
+        { id: "boxFloor", label: t("prop.boxFloor"), value: box.boxFloor, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, hint: gridfinityHint, onChange: (value) => onUpdate({ boxFloor: value }) },
         { id: "boxColumns", label: t("prop.boxColumns"), value: box.boxColumns, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, onChange: (value) => onUpdate({ boxColumns: Math.round(value) }) },
         { id: "boxRows", label: t("prop.boxRows"), value: box.boxRows, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, hint: solidIssue ? t("boxGenerator.issueCompartments", { count: String(solidIssue.code === "compartmentSolid" ? solidIssue.count : 0) }) : undefined, onChange: (value) => onUpdate({ boxRows: Math.round(value) }) },
       );

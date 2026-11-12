@@ -270,6 +270,8 @@ Der Deckel ist eine Kopie derselben Form, bei der {{ui:prop.boxPart}} auf {{ui:b
 
 > **Tipp:** Gedruckte Passungen sind etwas enger als gezeichnet. Drucke zuerst den Deckel und ändere {{ui:prop.boxFit}} in Schritten von einem Zehntelmillimeter, bis er sanft schließt. Scharniere, Verschlüsse, Stapeln und Gridfinity gehören noch nicht zu dieser Form; nimm dafür die Formen Scharnier, Schnapphaken und Gridfinity daneben.
 
+Der Boxen-Generator macht kein eigenes Gridfinity. Das Teil {{ui:shape.gridfinity}} hat Grundplatte und Behälter schon, lege es einfach in die Box. Unter {{ui:prop.boxFloor}} sagt dir das Fenster bei einer rechteckigen Box, wie viel Platz die Innenseite dafür bietet: ihre Größe und wie viele Zellen zu 42 mm in die Breite und in die Länge passen.
+
 ## Schraubdom
 
 Der {{ui:shape.screwBoss}} ist die Säule, an die in einem Gehäuse ein Deckel oder eine Platine geschraubt wird: rund, mit einem Loch von oben. Unter {{ui:prop.screwBossFastener}} wählst du, was hineinkommt. Eine {{ui:screwBoss.insert}} ist ein Messingeinsatz, den man mit dem Lötkolben einschmilzt: {{ui:prop.screwBossSize}} bietet M2 bis M5 und #2-56 bis 1/4-20, das Loch so, wie es die üblichen Einsätze wollen (M3: 4,0 mm für einen Einsatz von 5,7 mm Länge), einen Millimeter tiefer als der Einsatz, damit der verdrängte Kunststoff Platz hat, und der Dom etwa doppelt so dick wie das Loch. Eine {{ui:screwBoss.selfTapping}} schneidet ihr Gewinde selbst: ST2,2 bis ST4,2 (DIN 7981), Kunststoffschrauben von 2,5 bis 5 mm (K25–K50) oder #2 bis #10, mit einer Vorbohrung von etwa 0,8 × Schraube, der Dom 2,5 × so dick und das Loch 2,5 Schrauben tief. {{ui:screwBoss.custom}} nimmt Durchmesser und Tiefe, die du einträgst.

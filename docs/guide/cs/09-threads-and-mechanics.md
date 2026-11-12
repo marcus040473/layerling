@@ -270,6 +270,8 @@ Víko je kopie stejného tvaru s {{ui:prop.boxPart}} nastaveným na {{ui:boxGene
 
 > **Tip:** Vytištěné spoje jsou o málo těsnější než nakreslené. Vytiskněte nejdřív víko a měňte {{ui:prop.boxFit}} po desetinách milimetru, dokud se nezavře plynule. Panty, západky, stohování a Gridfinity zatím k tomuto tvaru nepatří; použijte vedle něj tvary Pant, Zaklapávací háček a Gridfinity.
 
+Generátor krabic nedělá vlastní Gridfinity. Tvar {{ui:shape.gridfinity}} už má základní desku i nádoby, takže ho prostě vlož do krabice. Pod polem {{ui:prop.boxFloor}} u obdélníkové krabice panel říká, kolik místa nabízí vnitřek: jeho velikost a kolik buněk po 42 mm se vejde na šířku a na délku.
+
 ## Šroubový sloupek
 
 {{ui:shape.screwBoss}} je sloupek, ke kterému se v krabičce přišroubuje víko nebo deska: kulatý, s dírou shora. V poli {{ui:prop.screwBossFastener}} zvolíte, co do něj přijde. {{ui:screwBoss.insert}} je mosazná vložka, kterou zatavíte páječkou: {{ui:prop.screwBossSize}} nabízí M2 až M5 a #2-56 až 1/4-20, díru takovou, jakou chtějí běžné vložky (M3: 4,0 mm pro vložku dlouhou 5,7 mm), o milimetr hlubší než vložka, aby vytlačený plast měl kam, a sloupek zhruba dvakrát silnější než díra. {{ui:screwBoss.selfTapping}} si závit vyřízne sám: ST2,2 až ST4,2 (DIN 7981), šrouby do plastu 2,5 až 5 mm (K25–K50) nebo #2 až #10, s předvrtáním asi 0,8 × šroub, sloupkem 2,5 × a dírou hlubokou 2,5 šroubu. {{ui:screwBoss.custom}} vezme průměr a hloubku, které zadáte.

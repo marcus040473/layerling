@@ -268,6 +268,8 @@ Pokrov je kopija iste oblike z {{ui:prop.boxPart}}, nastavljenim na {{ui:boxGene
 
 > **Namig:** Natisnjena prileganja so malo tesnejša od narisanih. Najprej natisni pokrov in spreminjaj {{ui:prop.boxFit}} po desetinko milimetra, dokler se ne zapre gladko. Tečaji, zapahi, zlaganje in Gridfinity še niso del te oblike; ob njej uporabi oblike Tečaj, Zaskočna kljukica in Gridfinity.
 
+Generator škatel ne naredi lastnega Gridfinityja. Oblika {{ui:shape.gridfinity}} že ima osnovno ploščo in posode, zato jo preprosto postavi v škatlo. Pod poljem {{ui:prop.boxFloor}} pri pravokotni škatli plošča pove, koliko prostora ponuja notranjost: njeno velikost in koliko celic po 42 mm gre v širino in v dolžino.
+
 ## Vijačni steber
 
 {{ui:shape.screwBoss}} je steber, na katerega se v ohišju privije pokrov ali tiskanina: okrogel, z luknjo od zgoraj. Pri {{ui:prop.screwBossFastener}} izbereš, kaj pride vanj. {{ui:screwBoss.insert}} je medeninast vložek, ki ga vtisneš s spajkalnikom: {{ui:prop.screwBossSize}} ponuja M2 do M5 in #2-56 do 1/4-20, luknjo takšno, kot jo želijo običajni vložki (M3: 4,0 mm za vložek dolžine 5,7 mm), milimeter globljo od vložka, da ima izrinjena plastika prostor, in steber približno dvakrat debelejši od luknje. {{ui:screwBoss.selfTapping}} si navoj ureže sam: ST2,2 do ST4,2 (DIN 7981), vijaki za plastiko od 2,5 do 5 mm (K25–K50) ali #2 do #10, s predvrtino približno 0,8 × vijak, stebrom 2,5 × in luknjo, globoko 2,5 vijaka. {{ui:screwBoss.custom}} vzame premer in globino, ki ju vpišeš.

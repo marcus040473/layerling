@@ -268,6 +268,8 @@ Le couvercle est une copie de la même forme avec {{ui:prop.boxPart}} réglé su
 
 > **Conseil :** Les ajustements imprimés sont un peu plus serrés que dessinés. Imprimez d'abord le couvercle et changez {{ui:prop.boxFit}} d'un dixième de millimètre jusqu'à ce qu'il se ferme sans effort. Charnières, loquets, empilage et Gridfinity ne font pas encore partie de cette forme ; utilisez à côté les formes Charnière, Clip à encliqueter et Gridfinity.
 
+Le générateur de boîtes ne fabrique pas de Gridfinity à lui. La forme {{ui:shape.gridfinity}} a déjà la plaque de base et les bacs : place-la simplement dans la boîte. Sous {{ui:prop.boxFloor}} d'une boîte rectangulaire, le panneau indique la place qu'offre l'intérieur : sa taille et le nombre de cellules de 42 mm qui tiennent en largeur et en longueur.
+
 ## Bossage à vis
 
 Le {{ui:shape.screwBoss}} est le plot sur lequel on visse un couvercle ou une carte dans un boîtier : rond, percé par le haut. Sous {{ui:prop.screwBossFastener}}, vous choisissez ce qui y entre. Un {{ui:screwBoss.insert}} est une douille en laiton enfoncée au fer à souder : {{ui:prop.screwBossSize}} propose M2 à M5 et #2-56 à 1/4-20, le trou comme le veulent les inserts courants (M3 : 4,0 mm pour un insert de 5,7 mm), un millimètre plus profond que l'insert pour que le plastique repoussé ait de la place, et le plot environ deux fois le trou. Une {{ui:screwBoss.selfTapping}} taille son propre filet : ST2,2 à ST4,2 (DIN 7981), vis pour plastique de 2,5 à 5 mm (K25–K50) ou #2 à #10, avec un avant-trou d'environ 0,8 fois la vis, un plot de 2,5 fois et un trou profond de 2,5 vis. {{ui:screwBoss.custom}} prend le diamètre et la profondeur que vous saisissez.

@@ -266,6 +266,8 @@ microSD 卡槽也是左邊緣的接頭，位於電路板下方（Zero 2 W 上在
 
 > **提示：** 列印出來的配合比繪製的略緊。先列印蓋子，並以十分之一毫米為單位調整{{ui:prop.boxFit}}，直到能順暢合上。鉸鏈、鎖扣、堆疊和 Gridfinity 還不屬於這個形狀；請在旁邊使用鉸鏈、卡扣和 Gridfinity 形狀。
 
+盒子產生器不會自己做 Gridfinity。{{ui:shape.gridfinity}} 形狀已經有底板和收納盒，直接放進盒子裡即可。矩形盒子在 {{ui:prop.boxFloor}} 下，面板會告訴你盒內有多少空間：它的尺寸，以及寬和長方向各能放下多少個 42 公釐的格子。
+
 ## 螺絲柱
 
 {{ui:shape.screwBoss}} 是外殼裡用來鎖固蓋子或電路板的柱子：圓形，從頂部開孔。在 {{ui:prop.screwBossFastener}} 中選擇裝入什麼。{{ui:screwBoss.insert}} 是用烙鐵壓入的黃銅螺帽：{{ui:prop.screwBossSize}} 提供 M2 到 M5 以及 #2-56 到 1/4-20，孔依常見熱熔螺帽的要求（M3：長 5.7 mm 的螺帽用 4.0 mm 孔），比螺帽深一公釐，讓被擠開的塑膠有地方去，柱子約為孔的兩倍粗。{{ui:screwBoss.selfTapping}} 自己攻出螺紋：ST2.2 到 ST4.2（DIN 7981）、2.5 到 5 mm (K25–K50) 的塑膠螺絲或 #2 到 #10，底孔約為螺絲的 0.8 倍，柱子 2.5 倍，孔深約 2.5 個螺絲直徑。{{ui:screwBoss.custom}} 使用你輸入的孔徑和孔深。

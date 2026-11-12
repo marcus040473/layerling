@@ -270,6 +270,8 @@ The lid is a copy of the same shape with {{ui:prop.boxPart}} set to {{ui:boxGene
 
 > **Tip:** Printed fits are a little tighter than drawn. Print the lid first and change {{ui:prop.boxFit}} by a tenth of a millimetre until it closes smoothly. Hinges, latches, stacking and Gridfinity are not part of this shape yet; use the Hinge, Snap-fit and Gridfinity shapes next to it.
 
+The box generator makes no Gridfinity of its own. The {{ui:shape.gridfinity}} shape already has the baseplate and the bins, so put it inside the box. Under {{ui:prop.boxFloor}} of a rectangular box the panel tells you how much room the inside gives it: its size and how many cells of 42 mm fit across and along it.
+
 ## Screw boss
 
 The {{ui:shape.screwBoss}} is the post a lid or a board is screwed to in an enclosure: a round post with a hole from the top. Under {{ui:prop.screwBossFastener}} you choose what goes into it. A {{ui:screwBoss.insert}} is a brass insert pressed in with a soldering iron: {{ui:prop.screwBossSize}} offers M2 to M5 and #2-56 to 1/4-20, the hole as the common inserts want it (M3: 4.0 mm for an insert 5.7 mm long), a millimetre deeper than the insert so the plastic it pushes aside has room, and the post about twice the hole. A {{ui:screwBoss.selfTapping}} cuts its own thread: ST2.2 to ST4.2 (DIN 7981), plastics screws of 2.5 to 5 mm (K25–K50) or #2 to #10, with a pilot hole of about 0.8 times the screw, the post 2.5 times it and the hole 2.5 screws deep. {{ui:screwBoss.custom}} takes the diameter and depth you type in.

@@ -270,6 +270,8 @@ A fedél ugyanennek az alaknak a másolata, a {{ui:prop.boxPart}} értéke {{ui:
 
 > **Tipp:** A kinyomtatott illesztések kicsit szorosabbak a megrajzoltaknál. Előbb a fedelet nyomtasd ki, és a {{ui:prop.boxFit}} értékét tized milliméterenként változtasd, amíg simán záródik. Zsanérok, zárak, egymásra rakás és Gridfinity még nem része ennek az alaknak; használd mellette a Zsanér, Pattintós kampó és Gridfinity alakokat.
 
+A dobozgenerátor nem készít saját Gridfinityt. A {{ui:shape.gridfinity}} forma már tartalmazza az alaplapot és a tárolókat, ezért egyszerűen tedd a dobozba. Téglalap alakú doboznál a {{ui:prop.boxFloor}} alatt a panel megmondja, mennyi helyet ad a belseje: a méretét, és hogy szélességben és hosszban hány 42 mm-es cella fér el.
+
 ## Csavaroszlop
 
 A {{ui:shape.screwBoss}} az az oszlop, amelyre egy dobozban a fedelet vagy a panelt csavarozzák: kerek, felülről furattal. A {{ui:prop.screwBossFastener}} mezőben választod ki, mi kerül bele. A {{ui:screwBoss.insert}} pákával beolvasztott sárgaréz betét: a {{ui:prop.screwBossSize}} M2–M5 és #2-56–1/4-20 méreteket kínál, a furatot úgy, ahogy a szokásos betétek kérik (M3: 4,0 mm egy 5,7 mm hosszú betéthez), egy milliméterrel mélyebben, mint a betét, hogy a kiszorított műanyagnak legyen helye, az oszlopot pedig nagyjából kétszer olyan vastagra, mint a furat. A {{ui:screwBoss.selfTapping}} maga vágja a menetet: ST2,2–ST4,2 (DIN 7981), 2,5–5 mm (K25–K50)-es műanyagcsavarok vagy #2–#10, a furat kb. 0,8-szorosa a csavarnak, az oszlop 2,5-szöröse, a mélység 2,5 csavarnyi. A {{ui:screwBoss.custom}} a beírt átmérőt és mélységet veszi.

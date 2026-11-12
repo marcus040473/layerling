@@ -270,6 +270,8 @@ Pokrywka to kopia tego samego kształtu z {{ui:prop.boxPart}} ustawionym na {{ui
 
 > **Wskazówka:** wydrukowane pasowania są trochę ciaśniejsze niż narysowane. Najpierw wydrukuj pokrywkę i zmieniaj {{ui:prop.boxFit}} o jedną dziesiątą milimetra, aż będzie się zamykać gładko. Zawiasy, zatrzaski, sztaplowanie i Gridfinity nie są jeszcze częścią tego kształtu; obok używaj kształtów Zawias, Zatrzask i Gridfinity.
 
+Generator pudełek nie robi własnego Gridfinity. Kształt {{ui:shape.gridfinity}} ma już płytę bazową i pojemniki, więc po prostu włóż go do pudełka. Pod polem {{ui:prop.boxFloor}} w prostokątnym pudełku panel podaje, ile miejsca daje wnętrze: jego rozmiar i ile komórek po 42 mm mieści się wszerz i wzdłuż.
+
 ## Tulejka na wkręt
 
 {{ui:shape.screwBoss}} to słupek, do którego w obudowie przykręca się pokrywę albo płytkę: okrągły, z otworem od góry. W polu {{ui:prop.screwBossFastener}} wybierasz, co do niego wejdzie. {{ui:screwBoss.insert}} to mosiężna wkładka wtapiana lutownicą: {{ui:prop.screwBossSize}} oferuje M2 do M5 i #2-56 do 1/4-20, otwór taki, jakiego chcą typowe wkładki (M3: 4,0 mm na wkładkę długości 5,7 mm), o milimetr głębszy niż wkładka, żeby wypchnięte tworzywo miało miejsce, a tulejkę około dwa razy grubszą od otworu. {{ui:screwBoss.selfTapping}} sam nacina gwint: ST2,2 do ST4,2 (DIN 7981), wkręty do tworzyw 2,5 do 5 mm (K25–K50) albo #2 do #10, z otworem wstępnym około 0,8 średnicy wkrętu, tulejką 2,5 razy grubszą i otworem głębokim na 2,5 wkrętu. {{ui:screwBoss.custom}} bierze średnicę i głębokość, które wpiszesz.

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { WorkplaneShape } from "@/types/layerling";
+import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
 
 /*
  * The box generator: one parametric shape for a box and its lid, from a few settings instead of a fixed template.
@@ -314,6 +315,20 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
 /** Problems a person should know about; the solid is still made, the affected part left solid. */
 export function boxGeneratorIssues(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}): BoxGeneratorIssue[] {
   return boxGeneratorPlan(size, fields).issues;
+}
+
+/**
+ * What the inside of a box part offers a Gridfinity baseplate, and only that: the box generator makes no Gridfinity of its
+ * own. The Gridfinity shape (baseplate, bins) already exists in the editor and is put inside the box; this gives the room
+ * to plan it with, the inside of the wall and how many cells of the Gridfinity grid fit across and along it. Only a
+ * rectangular box part has a rectangular inside; anything else, and a lid, gives null.
+ */
+export function boxGeneratorGridfinityRoom(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}) {
+  const settings = normalizeBoxGenerator(size, fields);
+  if (settings.boxPart !== "box" || settings.boxShape !== "rectangle") return null;
+  const width = Math.round((settings.width - 2 * settings.boxWall) * 100) / 100;
+  const depth = Math.round((settings.depth - 2 * settings.boxWall) * 100) / 100;
+  return { width, depth, columns: Math.floor(width / GRIDFINITY_GRID + 1e-9), rows: Math.floor(depth / GRIDFINITY_GRID + 1e-9) };
 }
 
 /** The outer size an overlapping lid needs to close a box of this outer size, with the fit on every side. */
