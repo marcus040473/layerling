@@ -17,8 +17,9 @@
 import { MeshBuilder, capWithHoles, holeCeiling, holeWall, zipRings } from './mesh-tools.mjs'
 import { CUTOUTS, CUTOUT_EDGES, cutoutPattern, wallZone } from './vase-cutout.mjs'
 import { REINFORCE, slitBody } from './vase-slits.mjs'
+import { LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isReliefPattern, normalizeLeafPoints, reliefField } from './vase-patterns.mjs'
 
-export { CUTOUTS, CUTOUT_EDGES, REINFORCE }
+export { CUTOUTS, CUTOUT_EDGES, REINFORCE, LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isReliefPattern }
 
 /** Silhouettes as control points [height 0..1, radius 0..1 relative to the largest diameter]. */
 export const PROFILES = {
@@ -53,14 +54,14 @@ const SOCKET_HOLES = { e27: 41, e14: 29 }
 export const PART_KEYS = ['legMode', 'legCount', 'legHeight', 'legDiameter', 'legShape', 'legSplay', 'legInset', 'fitClearance',
   'saucerMode', 'saucerRibs', 'saucerSpout', 'saucerGrip', 'saucerGap', 'saucerHeight', 'saucerWall',
   'insertMode', 'insertWall', 'insertStandoff', 'reservoirHeight', 'tubeDiameter', 'frogHole',
-  'lidMode', 'lidClearance', 'lidThickness', 'lidDepth', 'threadPitch', 'lidGrip', 'lidHeight', 'lidKnob']
+  'lidMode', 'lidClearance', 'lidThickness', 'lidDepth', 'threadPitch', 'lidGrip', 'lidHeight', 'lidKnob', 'stopperRing']
 /**
  * Lid: slip lid (a plate with a lip that sits in the opening), snap lid (a lip with a bead, a groove
  * in the inner wall), screw lid (internal thread in the neck, threaded spigot on the lid).
  */
-export const LID_MODES = { keiner: 'Keiner', stuelp: 'Stülpdeckel', schnapp: 'Schnappdeckel', schraube: 'Schraubdeckel', kanne: 'Teekannendeckel' }
+export const LID_MODES = { keiner: 'Keiner', stuelp: 'Stülpdeckel', schnapp: 'Schnappdeckel', schraube: 'Schraubdeckel', kanne: 'Teekannendeckel', stopfen: 'Steckstopfen' }
 export const SYMMETRIES = { halb: 'Hälfte', viertel: 'Viertel', windmuehle: 'Windmühle', frei: 'Frei' }
-export const EFFECTS = { keine: 'Keine', rillen: 'Rillen', streifen: 'Streifen', voronoi: 'Voronoi', lowpoly: 'Low Poly' }
+export const EFFECTS = { keine: 'Keine', rillen: 'Rillen', streifen: 'Streifen', voronoi: 'Voronoi', lowpoly: 'Low Poly', ...PATTERNS }
 /** Rotation of the cross-section over the height: even (twist + sway) or as a drawn curve. */
 export const TWIST_MODES = { gleichmaessig: 'Gleichmäßig', kurve: 'Als Kurve' }
 /** Material for weight and filament: density in g/cm^3 (manufacturer figures, rounded). */
@@ -192,6 +193,8 @@ export const DEFAULTS = Object.freeze({
   // Teapot lid: the top of the vase, this tall, is the lid (its own wall and pattern); a knob on top, printed apart.
   lidHeight: 30,
   lidKnob: 'ja',
+  // Stopper (decanter): a tapering plug in the neck, with a groove for an O-ring if wanted.
+  stopperRing: 'nein',
   quality: 'standard',
   // Pierced wall (hollow vase): pattern, cell size, web width, height range (%), stretch, arrangement,
   // cut holes off at the edge of the range or only whole holes.
@@ -254,6 +257,31 @@ export const DEFAULTS = Object.freeze({
   lowpolyRows: 10,
   lowpolyJitter: 0.35,
   lowpolySeed: 1,
+  // Relief patterns (vase-patterns.mjs): depth of the relief, cells round the vase, lean of the pattern (degrees),
+  // stretch of the cells up the vase, width of bands and rib channels, ribs per bundle, joints between cells and
+  // tiles (share of a cell), roundness of the tops, seed of the random cells.
+  reliefDepth: 1.6,
+  patternCount: 12,
+  patternTwist: 0,
+  patternAspect: 1,
+  patternWidth: 0.45,
+  patternGroup: 4,
+  patternGap: 0.12,
+  patternRound: 0.6,
+  patternSeed: 1,
+  // Leaves: shape, size (% of 32 mm wide), overlap of the rows (%), layout, lean (degrees), dome 0..1, veins,
+  // stretch of the leaf, and the outline of one's own leaf ([along, half width] pairs).
+  leafShape: 'tulpe',
+  leafSize: 100,
+  leafOverlap: 35,
+  leafLayout: 'versetzt',
+  leafTilt: 0,
+  leafCurve: 0.7,
+  leafVeins: 'ja',
+  leafAspect: 1,
+  leafPoints: null,
+  /** Print-friendly: lower edges of a relief slope at 45 degrees at most instead of overhanging. */
+  printFriendly: 'ja',
 })
 
 /** Limits for every number; the page uses the same ones for its sliders. */
@@ -341,6 +369,20 @@ export const LIMITS = {
   lowpolyRows: [1, 80],
   lowpolyJitter: [0, 0.9],
   lowpolySeed: [1, 9999],
+  reliefDepth: [0, 6],
+  patternCount: [3, 96],
+  patternTwist: [-75, 75],
+  patternAspect: [0.4, 3],
+  patternWidth: [0.15, 0.9],
+  patternGroup: [1, 9],
+  patternGap: [0.03, 0.4],
+  patternRound: [0, 1],
+  patternSeed: [1, 9999],
+  leafSize: [30, 250],
+  leafOverlap: [0, 80],
+  leafTilt: [-45, 45],
+  leafCurve: [0, 1],
+  leafAspect: [0.5, 2.5],
 }
 
 const MAX_SEGMENTS = 2400
@@ -358,7 +400,7 @@ function clamp(value, min, max) {
 export function normalizeParams(input = {}) {
   const p = { ...DEFAULTS }
   for (const key of Object.keys(DEFAULTS)) {
-    if (key === 'drawPoints' || key === 'profilePoints' || key === 'twistPoints') continue
+    if (key === 'drawPoints' || key === 'profilePoints' || key === 'twistPoints' || key === 'leafPoints') continue
     // Only plain values; an object (even one without a prototype) or an array counts as not given.
     const value = input?.[key]
     if (typeof value !== 'number' && typeof value !== 'string' && typeof value !== 'boolean') continue
@@ -372,9 +414,10 @@ export function normalizeParams(input = {}) {
   p.drawPoints = normalizeDrawPoints(input.drawPoints)
   p.profilePoints = normalizeProfilePoints(input.profilePoints)
   p.twistPoints = normalizeTwistPoints(input.twistPoints)
+  p.leafPoints = normalizeLeafPoints(input.leafPoints)
   for (const [key, [min, max]] of Object.entries(LIMITS)) p[key] = clamp(p[key], min, max)
   p.ribCount = Math.round(p.ribCount)
-  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount']) p[key] = Math.round(p[key])
+  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternGroup', 'patternSeed']) p[key] = Math.round(p[key])
   if (p.rubberFeet > 0 && p.rubberFeet < 3) p.rubberFeet = 3
   if (!LEG_MODES[p.legMode]) p.legMode = DEFAULTS.legMode
   if (!LEG_SHAPES[p.legShape]) p.legShape = DEFAULTS.legShape
@@ -383,6 +426,11 @@ export function normalizeParams(input = {}) {
   if (!LID_MODES[p.lidMode]) p.lidMode = DEFAULTS.lidMode
   if (!YES_NO[p.lidGrip]) p.lidGrip = DEFAULTS.lidGrip
   if (!YES_NO[p.lidKnob]) p.lidKnob = DEFAULTS.lidKnob
+  if (!YES_NO[p.stopperRing]) p.stopperRing = DEFAULTS.stopperRing
+  if (!YES_NO[p.leafVeins]) p.leafVeins = DEFAULTS.leafVeins
+  if (!YES_NO[p.printFriendly]) p.printFriendly = DEFAULTS.printFriendly
+  if (!LEAF_SHAPES[p.leafShape]) p.leafShape = DEFAULTS.leafShape
+  if (!LEAF_LAYOUTS[p.leafLayout]) p.leafLayout = DEFAULTS.leafLayout
   for (const key of ['saucerRibs', 'saucerSpout', 'saucerGrip']) if (!YES_NO[p[key]]) p[key] = DEFAULTS[key]
   if (!PROFILES[p.profile] && p.profile !== 'gezeichnet') p.profile = DEFAULTS.profile
   if (!SECTIONS[p.section]) p.section = DEFAULTS.section
@@ -1115,6 +1163,7 @@ function effectDepth(p, ribsActive) {
   if (p.effect === 'rillen') return ribsActive ? p.ribDepth : 0
   if (p.effect === 'streifen') return p.stripeDepth
   if (p.effect === 'voronoi') return p.voronoiDepth
+  if (isReliefPattern(p.effect)) return p.reliefDepth
   return 0
 }
 
@@ -1539,6 +1588,7 @@ export function vaseChecks(input) {
       notes.push(`Teekannendeckel, umgedreht gedruckt: Überhang bis ${deg}° ${where} Höhe der Vase (mehr als 45°) – dort braucht er Stützen, oder die Form dort steiler machen.`)
     }
   }
+  notes.push(...reliefChecks(p, shape, teapot ? teapot.cut : H))
   if (p.body === 'hohl') {
     if (p.wall < 2 * NOZZLE) notes.push(`Wand nur ${fmtMm(p.wall)} mm – unter zwei Linien einer 0,4-mm-Düse druckt sie sich unsicher.`)
     if (p.bottom === 0 && p.lamp === 'keine') notes.push('Ohne Boden: unten offen wie ein Rohr. Auf dem Druckbett steht nur der Wandring – einen Rand (Brim) zum Haften nehmen.')
@@ -1572,6 +1622,70 @@ export function vaseChecks(input) {
   return notes
 }
 
+/** The share of the height (%) up to which a relief leaves the neck smooth for a lid: below the lid's lip or plug. */
+export function lidSafeZoneTo(input) {
+  const p = normalizeParams(input)
+  if (!['stuelp', 'schnapp', 'schraube', 'stopfen'].includes(p.lidMode)) return null
+  return Math.max(0, Math.floor(((p.height - p.lidDepth - 3) / p.height) * 100))
+}
+
+/**
+ * Checks of a relief pattern: its lower edges that overhang more than 45 degrees (the profile's own overhang is
+ * checked apart), details finer than about three lines of a 0.4 mm nozzle at the narrowest place, and a relief
+ * up in the neck where a lid sits.
+ */
+function reliefChecks(p, shape, top) {
+  const notes = []
+  if (!isReliefPattern(p.effect) || p.reliefDepth <= 0) return notes
+  const field = reliefField(p, shape, (z) => zoneMask(z, p))
+  const N = 240, dz = 0.4
+  // 45 degrees, with a degree and a half of room for the sampling.
+  const limit = Math.sin((46.5 * Math.PI) / 180)
+  const outer = (th, z) => {
+    const base = shape.outerAt(th, z)
+    return base - field.depthAt(th, z, base)
+  }
+  const tilt = (radius, th, z) => {
+    const r = radius(th, z)
+    const rTheta = (radius(th + 1e-3, z) - radius(th - 1e-3, z)) / 2e-3
+    const rZ = (radius(th, z + dz) - radius(th, z - dz)) / (2 * dz)
+    return (r * rZ) / Math.hypot(r, rTheta, r * rZ)
+  }
+  const ranges = []
+  const from = (p.zoneFrom / 100) * p.height, to = Math.min(top, (p.zoneTo / 100) * p.height)
+  // The first 2 mm stand on the bed: whatever leans out there is carried by it.
+  for (let z = Math.max(2, from); z < to - dz; z += 0.8) {
+    let rowWorst = 0
+    for (let k = 0; k < N; k++) {
+      const th = (2 * Math.PI * k) / N
+      const down = tilt(outer, th, z)
+      // Only where the relief makes it worse than the profile alone, and beyond 45 degrees.
+      if (down > limit && down > tilt(shape.outerAt, th, z) + 0.05) rowWorst = Math.max(rowWorst, down)
+    }
+    if (rowWorst > limit) {
+      const last = ranges.at(-1)
+      if (last && z - last.to <= 1.7) { last.to = z; last.max = Math.max(last.max, rowWorst) } else ranges.push({ from: z, to: z, max: rowWorst })
+    }
+  }
+  if (ranges.length) {
+    const worst = ranges.reduce((a, b) => (b.max > a.max ? b : a))
+    const deg = Math.round((Math.asin(Math.min(1, worst.max)) * 180) / Math.PI)
+    const lo = Math.min(...ranges.map((r) => r.from)), hi = Math.max(...ranges.map((r) => r.to))
+    notes.push(`Relief: Unterkanten bis ${deg}° überhängend zwischen ${fmtMm(lo)} und ${fmtMm(hi)} mm Höhe – „Druckfreundlich“ einschalten, das Relief flacher machen oder mit Stützen drucken.`)
+  }
+  // The narrowest cell, and the finest feature in it.
+  let smallest = Infinity
+  for (let k = 0; k <= 40; k++) {
+    const z = from + ((to - from) * k) / 40
+    if (z >= 0 && z <= p.height) smallest = Math.min(smallest, field.cellAt(z))
+  }
+  const fine = smallest / (2 * field.detail)
+  if (Number.isFinite(fine) && fine < 1.2 && p.reliefDepth > 0.8) notes.push(`Feine Musterteile: an der engsten Stelle nur etwa ${fmtMm(fine)} mm breit – Spitzen und Rippen können abbrechen; ein größeres Muster oder weniger Wiederholungen nehmen.`)
+  const safe = lidSafeZoneTo(p)
+  if (safe !== null && p.body === 'hohl' && p.zoneTo > safe) notes.push(`Das Muster reicht bis in den Hals, wo der ${LID_MODES[p.lidMode]} sitzt – den Hals glatt lassen (Musterbereich bis ${safe} %), damit der Deckel sauber und dicht passt.`)
+  return notes
+}
+
 /**
  * Builds the vase. Returns a triangle-by-triangle mesh (9 numbers per triangle,
  * counter-clockwise seen from outside = normal pointing out) and key figures.
@@ -1593,6 +1707,8 @@ export function buildVase(input, { part = 'body' } = {}) {
 
   const ribsActive = p.effect === 'rillen' && p.ribCount > 0 && p.ribDepth > 0
   const lowpoly = p.effect === 'lowpoly'
+  // A relief pattern (vase-patterns.mjs): its depth over the surface, and the size of its cells for the grid.
+  const relief = isReliefPattern(p.effect) && p.reliefDepth > 0 ? reliefField(p, shape, (z) => zoneMask(z, p)) : null
 
   // Columns round the vase: as many as the cross-section and effect need. Corners of
   // polygons and pointed waves fall exactly on columns.
@@ -1612,6 +1728,8 @@ export function buildVase(input, { part = 'body' } = {}) {
     // model them itself, one and a half points per joint width are enough.
     if (p.effect === 'voronoi') needs.push(Math.ceil((2 * Math.PI * maxR) / (p.voronoiGap / (1.5 * scale))))
     if (layout.cutoutZone) needs.push(Math.ceil((2 * Math.PI * maxR) / cutoutStep(p)))
+    // A relief: enough columns per cell for its outlines, and at least one every 0.6 mm of the widest circumference.
+    if (relief) needs.push(Math.min(MAX_SEGMENTS, Math.max(relief.around * Math.ceil(Math.max(28, 9 * relief.detail) * scale), Math.ceil(relief.maxCircumference / (0.9 / scale)))))
     segments = Math.min(MAX_SEGMENTS, Math.max(...needs))
     // This makes sharp places (corners, notches, fin edges) fall on columns - during a transition those of both
     // cross-sections (least common multiple, as long as it fits within the maximum count).
@@ -1634,12 +1752,28 @@ export function buildVase(input, { part = 'body' } = {}) {
   else {
     let mmPerRow = q.mmPerRow
     if (p.effect === 'voronoi') mmPerRow = Math.min(mmPerRow, p.voronoiGap / (1.5 * scale))
+    // A relief: rows as fine as its columns at the narrowest cell, at most 0.25 mm apart.
+    if (relief) {
+      let smallest = Infinity
+      for (let k = 0; k <= 32; k++) smallest = Math.min(smallest, relief.cellAt((k / 32) * H))
+      mmPerRow = Math.min(mmPerRow, Math.max(0.2, smallest / (Math.max(24, 7 * relief.detail) * scale)), 0.6 / scale)
+    }
     rows = Math.ceil(H / mmPerRow)
     // Sway: at least 24 rows per swing, so that the folds swing smoothly; twist curve: 12 per point.
     if (p.twistMode === 'kurve') rows = Math.max(rows, (p.twistPoints?.length ?? 2) * 12)
     else if (p.swayAngle > 0 && p.swayCount > 0) rows = Math.max(rows, Math.ceil(p.swayCount * 24))
     if (p.effect === 'streifen' && p.stripeTurn !== 0) rows = Math.max(rows, Math.ceil((p.stripeCount * Math.abs(p.stripeTurn) * q.perRib) / 360))
     rows = Math.min(MAX_ROWS, Math.max(24, rows))
+  }
+  // A relief's fine grid stays within a budget of points per quality, so a fine pattern on a large vase still builds
+  // in a second or two: columns and rows shrink together.
+  if (relief) {
+    const budget = { entwurf: 200000, standard: 420000, fein: 800000 }[p.quality]
+    if (segments * rows > budget) {
+      const f = Math.sqrt(budget / (segments * rows))
+      segments = Math.max(q.smoothSegments, Math.floor(segments * f))
+      rows = Math.max(24, Math.floor(budget / segments))
+    }
   }
 
   const zone = (z) => zoneMask(z, p)
@@ -1677,6 +1811,7 @@ export function buildVase(input, { part = 'body' } = {}) {
       const half = p.voronoiGap / 2
       return edge >= half ? 0 : depth * 0.5 * (1 + Math.cos((Math.PI * edge) / half))
     }
+    if (relief) return relief.depthAt(theta, z, base)
     return 0
   }
 

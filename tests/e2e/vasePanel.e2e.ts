@@ -10,9 +10,9 @@ import type { WorkplaneShape } from "@/types/layerling";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /**
- * A vase in its settings: its measures under Properties, its form and pattern, bottom and wall, accessories and
- * printing on cards of their own; a choice shows the rows that belong to it and changes the vase's settings, and
- * the accessories card lays them out.
+ * A vase in its settings: the vase designer, one card with the tabs Form, Pattern and Print. Body shapes, patterns and
+ * leaves are tiles, the pattern's height range has two handles, a choice shows the rows that belong to it and changes
+ * the vase's settings, the Print tab shows how it prints and lays out the accessories.
  */
 beforeAll(() => {
   // jsdom lays nothing out; the panel only scrolls itself back to the top.
@@ -86,6 +86,16 @@ function type(input: HTMLInputElement, value: string) {
   act(() => input.blur());
 }
 
+/** The vase designer's tabs, its section headers and its tiles. */
+const tab = (panel: HTMLElement, name: string) => [...panel.querySelectorAll<HTMLButtonElement>("[role=tab]")].find((entry) => entry.textContent === name)!;
+const openTab = (panel: HTMLElement, name: string) => act(() => tab(panel, name).click());
+const section = (panel: HTMLElement, name: string) => [...panel.querySelectorAll<HTMLButtonElement>(".vase-section-header")].find((entry) => entry.querySelector("span")?.textContent === name)!;
+const openSection = (panel: HTMLElement, name: string) => {
+  if (section(panel, name).getAttribute("aria-expanded") !== "true") act(() => section(panel, name).click());
+};
+const tile = (panel: HTMLElement, name: string) => [...panel.querySelectorAll<HTMLButtonElement>(".vase-tiles button")].find((entry) => entry.textContent === name);
+const buttonNamed = (panel: HTMLElement, name: string) => [...panel.querySelectorAll<HTMLButtonElement>("button")].find((entry) => entry.textContent === name);
+
 describe("a vase in its settings", () => {
   it("is in the shape library and comes out plain, as a bottle", () => {
     const { shape } = mount();
@@ -94,37 +104,121 @@ describe("a vase in its settings", () => {
     expect(shape.vase?.effect).toBe("keine");
   });
 
-  it("has its form, its bottom and wall, its accessories and printing on cards of their own", () => {
+  it("is one card with three tabs: Form, Pattern and Print", () => {
     const { panel } = mount();
-    expect(headers(panel)).toEqual(expect.arrayContaining(["Form and pattern", "Bottom and wall", "Accessories", "Print"]));
-    expect(header(panel, "Print").querySelector(".property-card-summary")?.textContent).toBe("PLA");
-    expect(selectNamed(panel, "Body form")?.value).toBe("flasche");
-    expect([...panel.querySelectorAll("button")].some((button) => button.textContent === "Draw the vase")).toBe(true);
+    expect([...panel.querySelectorAll("[role=tab]")].map((entry) => entry.textContent)).toEqual(["Form", "Pattern", "Print"]);
+    // The old cards are gone; everything is on the tabs.
+    expect(headers(panel)).not.toEqual(expect.arrayContaining(["Form and pattern"]));
+    openTab(panel, "Form");
+    expect(tab(panel, "Form").getAttribute("aria-selected")).toBe("true");
+    expect(tile(panel, "Bottle")?.getAttribute("aria-pressed")).toBe("true");
+    expect(buttonNamed(panel, "Edit contour")).toBeDefined();
+    expect(rangeNamed(panel, "Height")).toBeDefined();
+  });
+
+  it("chooses the body shape from its tiles", () => {
+    const { panel, calls } = mount();
+    openTab(panel, "Form");
+    act(() => tile(panel, "Bellied")!.click());
+    expect(calls.updates.at(-1)?.vase?.profile).toBe("bauchig");
   });
 
   it("shows the rows of a choice and changes the vase's settings with it", () => {
     const { panel, calls } = mount();
+    openTab(panel, "Form");
     expect(rangeNamed(panel, "Corners")).toBeUndefined();
     choose(selectNamed(panel, "Cross-section")!, "vieleck");
     expect(calls.updates.at(-1)?.vase?.section).toBe("vieleck");
     const polygon = mount({ vase: { ...calls.updates.at(-1)!.vase! } });
+    openTab(polygon.panel, "Form");
     expect(rangeNamed(polygon.panel, "Corners")).toBeDefined();
   });
 
-  it("lays its accessories out from their card", () => {
+  it("chooses a pattern from the gallery and shows its three main sliders and the height range", () => {
     const { panel, calls } = mount();
-    act(() => header(panel, "Accessories").click());
-    const button = [...panel.querySelectorAll<HTMLButtonElement>("button")].find((entry) => entry.textContent === "Lay out accessories")!;
-    act(() => button.click());
+    openTab(panel, "Pattern");
+    expect(tile(panel, "None")?.getAttribute("aria-pressed")).toBe("true");
+    expect(panel.querySelector(".vase-zone")).toBeNull();
+    act(() => tile(panel, "Leaves")!.click());
+    expect(calls.updates.at(-1)?.vase?.effect).toBe("blaetter");
+    const leaves = mount({ vase: { ...calls.updates.at(-1)!.vase! } });
+    openTab(leaves.panel, "Pattern");
+    // The leaf shapes as tiles of their own, and only three sliders before Advanced.
+    expect(tile(leaves.panel, "Ginkgo")).toBeDefined();
+    expect(rangeNamed(leaves.panel, "Leaf size (%)")).toBeDefined();
+    expect(rangeNamed(leaves.panel, "Relief height")).toBeDefined();
+    expect(rangeNamed(leaves.panel, "Overlap (%)")).toBeDefined();
+    expect(rangeNamed(leaves.panel, "Tilt (°)")).toBeUndefined();
+    act(() => leaves.panel.querySelector<HTMLButtonElement>(".vase-more")!.click());
+    expect(rangeNamed(leaves.panel, "Tilt (°)")).toBeDefined();
+    act(() => tile(leaves.panel, "Maple")!.click());
+    expect(leaves.calls.updates.at(-1)?.vase?.leafShape).toBe("ahorn");
+  });
+
+  it("sets the pattern's height range with two handles, typed numbers or a quick choice; start never passes end", () => {
+    const plain = mount().shape;
+    const { panel, calls } = mount({ vase: { ...plain.vase!, effect: "waben" } });
+    openTab(panel, "Pattern");
+    const zone = panel.querySelector<HTMLElement>(".vase-zone")!;
+    expect(zone.querySelectorAll("input[type=range]")).toHaveLength(2);
+    act(() => buttonNamed(zone, "Rim and foot smooth")!.click());
+    expect(calls.updates.at(-1)?.vase?.zoneFrom).toBe(15);
+    expect(calls.updates.at(-1)?.vase?.zoneTo).toBe(85);
+    const [start, end] = [...zone.querySelectorAll<HTMLInputElement>(".vase-zone-number input")];
+    type(start, "30");
+    expect(calls.updates.at(-1)?.vase?.zoneFrom).toBe(30);
+    // An end typed below the start: start and end swap no further than to meet.
+    type(end, "-5");
+    expect(calls.updates.at(-1)?.vase?.zoneTo).toBe(0);
+    expect(calls.updates.at(-1)?.vase?.zoneFrom).toBe(0);
+  });
+
+  it("offers a smooth neck where a lid sits", () => {
+    const plain = mount().shape;
+    const { panel, calls } = mount({ vase: { ...plain.vase!, body: "hohl", effect: "waben", lidMode: "stuelp" } });
+    openTab(panel, "Pattern");
+    const smooth = [...panel.querySelectorAll<HTMLButtonElement>(".vase-neck-hint button")][0];
+    expect(smooth.textContent).toBe("Keep the neck smooth (pattern up to 91 %)");
+    act(() => smooth.click());
+    expect(calls.updates.at(-1)?.vase?.zoneTo).toBe(91);
+  });
+
+  it("shows how it prints on the Print tab, and the pattern tab leads there", () => {
+    const plain = mount().shape;
+    const { panel } = mount({ vase: { ...plain.vase!, effect: "blaetter", printFriendly: "nein", body: "hohl", reliefDepth: 2.4 } });
+    openTab(panel, "Pattern");
+    const badge = panel.querySelector<HTMLButtonElement>(".vase-print-badge")!;
+    expect(badge.textContent).toBe("Supports recommended");
+    act(() => badge.click());
+    expect(tab(panel, "Print").getAttribute("aria-selected")).toBe("true");
+    expect(panel.querySelector(".vase-print-verdict")?.textContent).toBe("Supports recommended");
+    expect(selectNamed(panel, "Material")?.value).toBe("pla");
+  });
+
+  it("lays its accessories out from their section on the Print tab", () => {
+    const { panel, calls } = mount();
+    openTab(panel, "Print");
+    openSection(panel, "Accessories");
+    act(() => buttonNamed(panel, "Lay out accessories")!.click());
     expect(calls.accessories).toBe(1);
+  });
+
+  it("offers a stopper with its length and an O-ring groove", () => {
+    const plain = mount().shape;
+    const { panel } = mount({ vase: { ...plain.vase!, body: "hohl", lidMode: "stopfen" } });
+    openTab(panel, "Print");
+    openSection(panel, "Accessories");
+    expect(selectNamed(panel, "Lid")?.value).toBe("stopfen");
+    expect(rangeNamed(panel, "Plug length")).toBeDefined();
+    expect([...panel.querySelectorAll("label.check-property")].some((row) => row.textContent === "Groove for an O-ring")).toBe(true);
   });
 
   it("fills the teapot lid's height and the joint up to the vase's height, whichever is typed", () => {
     const plain = mount().shape;
     const teapot = (lidHeight: number) => {
       const opened = mount({ height: 140, vase: { ...plain.vase!, body: "hohl", lidMode: "kanne", lidHeight } });
-      // The card stays open once opened.
-      if (!rangeNamed(opened.panel, "Lid height")) act(() => header(opened.panel, "Accessories").click());
+      openTab(opened.panel, "Print");
+      openSection(opened.panel, "Accessories");
       const field = (name: string) => rangeNamed(opened.panel, name)!.querySelector<HTMLInputElement>("input[type=text]")!;
       return { ...opened, lid: field("Lid height"), joint: field("Body up to · lid from") };
     };

@@ -16,14 +16,17 @@ export type VaseNumberKey =
   | "polySides" | "polyRound" | "sectionWaves" | "sectionWaveAmp" | "sectionFinWidth" | "drawRepeat"
   | "stripeTurn" | "stripeCount" | "stripeWidth" | "stripeDepth"
   | "voronoiCell" | "voronoiGap" | "voronoiDepth" | "voronoiSeed"
-  | "lowpolyAround" | "lowpolyRows" | "lowpolyJitter" | "lowpolySeed";
+  | "lowpolyAround" | "lowpolyRows" | "lowpolyJitter" | "lowpolySeed"
+  | "reliefDepth" | "patternCount" | "patternTwist" | "patternAspect" | "patternWidth" | "patternGroup" | "patternGap" | "patternRound" | "patternSeed"
+  | "leafSize" | "leafOverlap" | "leafTilt" | "leafCurve" | "leafAspect";
 
 export type VaseChoiceKey =
   | "profile" | "ribShape" | "twistMode" | "twistAlong" | "material" | "sectionOutside"
   | "section2" | "section2WaveStyle" | "body" | "innerShape"
   | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "insertMode"
   | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "lamp" | "lampSocket" | "reinforce"
-  | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle";
+  | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle"
+  | "stopperRing" | "leafShape" | "leafLayout" | "leafVeins" | "printFriendly";
 
 /** A point of a drawn cross-section in the unit circle: a corner, or round with an optional handle (tx, ty; ix, iy before it). */
 export type VaseDrawPoint = { x: number; y: number; corner: boolean; tx?: number; ty?: number; ix?: number; iy?: number };
@@ -35,6 +38,8 @@ export type VaseSettings = Record<VaseNumberKey, number> & Record<VaseChoiceKey,
   drawPoints: VaseDrawPoint[] | null;
   /** Twist as a curve (twistMode "kurve"): [height 0..1, angle in degrees, kind?, slope?]. */
   twistPoints: number[][] | null;
+  /** One's own leaf (leafShape "eigen"): [along 0..1, half width 0..1]. */
+  leafPoints: number[][] | null;
 };
 
 export const DEFAULTS: Readonly<VaseSettings>;
@@ -56,6 +61,17 @@ export const CUTOUT_EDGES: Readonly<Record<string, string>>;
 export const REINFORCE: Readonly<Record<string, string>>;
 export const LAMPS: Readonly<Record<string, string>>;
 export const LAMP_SOCKETS: Readonly<Record<string, string>>;
+export const LID_MODES: Readonly<Record<string, string>>;
+export const PATTERNS: Readonly<Record<string, string>>;
+export const LEAF_SHAPES: Readonly<Record<string, string>>;
+export const LEAF_LAYOUTS: Readonly<Record<string, string>>;
+export const DRAW_PROFILE: ReadonlyArray<ReadonlyArray<number>>;
+/** Whether an effect is one of the relief pattern families (vase-patterns.mjs). */
+export function isReliefPattern(effect: string): boolean;
+/** The vase's profile as a function of the height share 0..1 (radius share 0..1). */
+export function profileFunction(points: ReadonlyArray<ReadonlyArray<number>>): (x: number) => number;
+/** The height share (%) up to which a relief leaves the neck smooth for the chosen lid, or null without such a lid. */
+export function lidSafeZoneTo(input?: unknown): number | null;
 /** The bottom in the slicer's vase mode, in mm. */
 export const VASE_MODE_BOTTOM: number;
 export const MATERIALS: Readonly<Record<string, { label: string; density: number }>>;

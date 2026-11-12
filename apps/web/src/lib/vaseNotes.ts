@@ -64,7 +64,7 @@ const CONFLICTS: Record<string, MessageKey> = {
   "der Lampenschirm": "vaseCheck.conflictLamp",
 };
 
-const LIDS: Record<string, MessageKey> = { "Stülpdeckel": "vase.lidSlip", "Schnappdeckel": "vase.lidSnap", "Schraubdeckel": "vase.lidScrew" };
+const LIDS: Record<string, MessageKey> = { "Stülpdeckel": "vase.lidSlip", "Schnappdeckel": "vase.lidSnap", "Schraubdeckel": "vase.lidScrew", "Steckstopfen": "vase.lidStopper" };
 
 /** The core's own checks and the notes it builds a vase with (vaseChecks, buildVase). */
 const CHECKS: Note[] = [
@@ -83,6 +83,18 @@ const CHECKS: Note[] = [
     key: "vaseCheck.teapotOverhangAt",
     params: (m) => ({ angle: m[1], at: number(m[2]) }),
   },
+  {
+    pattern: new RegExp(`^Relief: Unterkanten bis (\\d+)° überhängend zwischen ${NUMBER} und ${NUMBER} mm Höhe`),
+    key: "vaseCheck.reliefOverhang",
+    params: (m) => ({ angle: m[1], from: number(m[2]), to: number(m[3]) }),
+  },
+  { pattern: new RegExp(`^Feine Musterteile: an der engsten Stelle nur etwa ${NUMBER} mm breit`), key: "vaseCheck.reliefFine", params: (m) => ({ mm: number(m[1]) }) },
+  {
+    pattern: /^Das Muster reicht bis in den Hals, wo der (Stülpdeckel|Schnappdeckel|Schraubdeckel|Steckstopfen) sitzt – den Hals glatt lassen \(Musterbereich bis (\d+) %\)/,
+    key: "vaseCheck.reliefLidZone",
+    params: (m) => ({ lid: t(LIDS[m[1]]), percent: m[2] }),
+  },
+  { pattern: /^Ein Steckstopfen braucht eine hohle Vase/, key: "vaseCheck.stopperNeedsHollow", params: () => ({ hollow: t("vase.bodyHollow") }) },
   { pattern: new RegExp(`^Wand nur ${NUMBER} mm – unter zwei Linien`), key: "vaseCheck.thinWall", params: (m) => ({ mm: number(m[1]) }) },
   { pattern: new RegExp(`^Boden nur ${NUMBER} mm – unter 0,8 mm`), key: "vaseCheck.thinBottom", params: (m) => ({ mm: number(m[1]) }) },
   { pattern: /^Ein (Stülpdeckel|Schnappdeckel|Schraubdeckel) braucht eine hohle Vase/, key: "vaseCheck.lidNeedsHollow", params: (m) => ({ lid: t(LIDS[m[1]]) }) },

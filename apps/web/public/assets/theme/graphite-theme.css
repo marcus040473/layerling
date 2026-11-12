@@ -4651,6 +4651,350 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .mesh-compare-actions .
   color: #585858;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs {
+  background: #e6e6e6;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs button {
+  color: #525252;
+  background: transparent;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs button:hover {
+  color: #945717;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs button.active {
+  color: #ffffff;
+  background: #e0821f;
+  box-shadow: 0 1px 3px rgba(120, 64, 8, 0.25);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs button:focus-visible,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button:focus-visible,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-presets button:focus-visible,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-section-header:focus-visible {
+  outline: 2px solid #c96f12;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles-label {
+  color: #5e5e5e;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button {
+  color: #5a5a5a;
+  background: #f9f9f9;
+  border: 1px solid #cbcbcb;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button:hover:not(:disabled) {
+  color: #945717;
+  border-color: #cd9860;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button.selected {
+  color: #9f560b;
+  background: #f0f0f0;
+  border-color: #a96b2a;
+  box-shadow: 0 0 0 2px rgba(150, 77, 0, 0.14);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tile-picture {
+  background: #dfdfdf;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-profile-picture path {
+  fill: #dcdcdc;
+  stroke: currentColor;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button.selected .vase-profile-picture path {
+  fill: #d3d3d3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-more-body {
+  border-left: 2px solid #dcdcdc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-head {
+  color: #5e5e5e;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-head small {
+  color: #757575;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-outline {
+  fill: #e7e7e7;
+  stroke: #7a7a7a;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-band {
+  fill: #e0821f;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track {
+  --vase-track: #dbdbdb;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track::before {
+  background: linear-gradient(to right, var(--vase-track) var(--from), #e0821f var(--from), #e0821f var(--to), var(--vase-track) var(--to));
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input {
+  background: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input::-webkit-slider-runnable-track {
+  background: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input::-moz-range-track {
+  background: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input::-webkit-slider-thumb {
+  background: #ffffff;
+  border: 3px solid #e0821f;
+  box-shadow: 0 1px 3px rgba(54, 54, 54, 0.3);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input::-moz-range-thumb {
+  background: #ffffff;
+  border: 3px solid #e0821f;
+  box-shadow: 0 1px 3px rgba(54, 54, 54, 0.3);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #c96f12;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-numbers label {
+  color: #676767;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-number input {
+  color: var(--foreground);
+  background: #ffffff;
+  border: 1px solid #cccccc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-number small {
+  color: #757575;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-presets button {
+  color: #575757;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-presets button.active {
+  color: #ffffff;
+  background: #e0821f;
+  border-color: #c96f12;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-neck-hint {
+  background: #efefef;
+  border: 1px solid #c2c2c2;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-line {
+  color: #5e5e5e;
+  border-top: 1px solid #dcdcdc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-badge {
+  border: 1px solid transparent;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-dot {
+  background: currentColor;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-badge.fine,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-verdict.fine {
+  color: #1f7a45;
+  background: #e3f4e9;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-badge.supports,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-verdict.supports {
+  color: #a35a00;
+  background: #e8e8e8;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-badge.notes,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-verdict.notes {
+  color: #525252;
+  background: #e6e6e6;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-block {
+  border-top: 1px solid #dcdcdc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-section {
+  border: 1px solid #d5d5d5;
+  background: #fbfbfb;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-section-header {
+  color: #525252;
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-section-header small {
+  color: #757575;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-leaf-editor svg {
+  background: #efefef;
+  border: 1px solid #d5d5d5;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-leaf-axis {
+  stroke: #bababa;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-leaf-outline {
+  fill: #d7d7d7;
+  stroke: #6c6c6c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-leaf-point {
+  fill: #ffffff;
+  stroke: #e0821f;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-link-button {
+  color: #b0640f;
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-link-button:disabled {
+  color: #a6a6a6;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tabs {
+  background: #262626;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tabs button {
+  color: #c8c8c8;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tabs button.active {
+  color: #ffffff;
+  background: #c96f12;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles-label,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-head,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-line,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-numbers label {
+  color: #c8c8c8;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles button {
+  color: #a8a8a8;
+  background: #1f1f1f;
+  border-color: #4c4c4c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles button:hover:not(:disabled) {
+  color: #ededed;
+  border-color: #5c5c5c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles button.selected {
+  color: #ee9538;
+  background: #282828;
+  border-color: #cc8031;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-profile-picture path {
+  fill: #313131;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles button.selected .vase-profile-picture path {
+  fill: #5a3d1d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-more-body,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-line,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-block {
+  border-color: #3d3d3d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-outline {
+  fill: #272727;
+  stroke: #757575;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-track {
+  --vase-track: #3d3d3d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-number input,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-presets button {
+  color: #e0e0e0;
+  background: #202020;
+  border-color: #4c4c4c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-presets button.active {
+  color: #ffffff;
+  background: #c96f12;
+  border-color: #e0821f;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-neck-hint {
+  background: #272727;
+  border-color: #7a5320;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-badge.fine,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-verdict.fine {
+  color: #7fdca3;
+  background: #173323;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-badge.supports,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-verdict.supports {
+  color: #f3b766;
+  background: #2a2a2a;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-badge.notes,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-verdict.notes {
+  color: #c8c8c8;
+  background: #262626;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-section {
+  background: #1c1c1c;
+  border-color: #3d3d3d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-section-header {
+  color: #d3d3d3;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-leaf-editor svg {
+  background: #202020;
+  border-color: #3d3d3d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-leaf-outline {
+  fill: #3b3b3b;
+  stroke: #8f8f8f;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .text-layers-body .text-layers-names {
   color: #595959;
 }
