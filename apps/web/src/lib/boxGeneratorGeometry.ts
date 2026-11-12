@@ -50,6 +50,11 @@ export const MIN_BOX_GENERATOR_STACK_HEIGHT = 1;
 export const MAX_BOX_GENERATOR_STACK_HEIGHT = 10;
 /** The thinnest a stacking collar or skirt may be, in mm: a thinner one is not printed as a wall. */
 const MIN_STACK_RING = 0.4;
+/**
+ * How much deeper the groove under the wall is than the collar is high, in mm. The box then always stands on its foot and
+ * the step, never on the collar's top, even where the groove's ceiling or corners print a little rough.
+ */
+export const STACK_GROOVE_EXTRA = 1;
 /** The least width a compartment may have; a narrower cell stays solid. */
 const MIN_COMPARTMENT_SPAN = 2;
 const ROUND_SEGMENTS = 72;
@@ -290,11 +295,12 @@ export type BoxGeneratorPlan = {
   /** Height of the floor of the cells above the bottom. */
   floorTop: number;
   /**
-   * With Stackable: the step round the top and the skirt under the bottom. `skirt` is the outline inside which the floor's
-   * underside is raised by `height`, `collar` the outline of the collar the wall's inner part rises above the step by
-   * `height`; between the outer outline and them lie the skirt (down to the bottom) and the step (below the collar's top).
+   * With Stackable: the step round the top and a groove under the wall. The floor stays flat on the bed. `skirt` is the
+   * inner face of the foot under the outer part of the wall, `groove` the outline inside which the floor begins again
+   * (the cavity's outline); between them a groove of `grooveHeight` (the collar's `height` plus a millimetre of room) is cut into the underside to take the collar of the box
+   * below. `collar` is the outline of the collar the wall's inner part rises above the step by `height`.
    */
-  stack: { skirt: Point[]; collar: Point[]; height: number } | null;
+  stack: { skirt: Point[]; collar: Point[]; groove: Point[]; height: number; grooveHeight: number } | null;
   issues: BoxGeneratorIssue[];
 };
 
@@ -319,9 +325,9 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
     issues.push({ code: "wallTooThick" });
     return { settings, outer, cells: [], floorTop: settings.height, stack: null, issues };
   }
-  // Stackable: the wall's outer half becomes a skirt that reaches down over the step of the box below, its inner half a
-  // collar that rises above the step; the floor's underside is lifted by the collar's height, so a box stands on a box
-  // with its skirt on the step and the floor on the collar, the two centred by the collar. The play is the fit.
+  // Stackable: the wall's inner half rises above a step as a collar; the outer half of the wall's underside has a groove
+  // for the collar of the box below. The floor stays flat on the print bed (a groove only a wall's width wide is bridged
+  // without trouble), and a box stands on a box with its foot on the step, centred by the collar. The play is the fit.
   let stack: BoxGeneratorPlan["stack"] = null;
   if (settings.boxStackable) {
     const ring = settings.boxWall / 2 - settings.boxFit / 2;
@@ -329,11 +335,8 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
     const skirt = ring >= MIN_STACK_RING ? insetConvex(outer, ring) : null;
     const collar = ring >= MIN_STACK_RING ? insetConvex(outer, settings.boxWall / 2 + settings.boxFit / 2) : null;
     if (!skirt || !collar) issues.push({ code: "stackWallThin" });
-    else if (settings.height <= 2 * h || h + settings.boxFloor > settings.height - 1) issues.push({ code: "stackTooLow" });
-    else {
-      stack = { skirt, collar, height: h };
-      floorTop = h + settings.boxFloor;
-    }
+    else if (settings.height < 2 * h + STACK_GROOVE_EXTRA + MIN_STACK_RING) issues.push({ code: "stackTooLow" });
+    else stack = { skirt, collar, groove: inner, height: h, grooveHeight: h + STACK_GROOVE_EXTRA };
   }
   const box = bounds(inner);
   const { boxColumns: columns, boxRows: rows, boxDivider: divider } = settings;
@@ -552,11 +555,13 @@ export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGe
   const { outer, cells, floorTop, settings, stack } = boxGeneratorPlan(size, fields);
   const mesh: MeshBuilder = { positions: [], indices: [] };
   if (stack) {
-    const { skirt, collar, height: lift } = stack;
-    // Underneath: the skirt's foot, the pocket under the floor, and the floor's underside lifted by the collar's height.
+    const { skirt, collar, groove, height: lift, grooveHeight } = stack;
+    // Underneath: the foot under the wall's outer part, the groove for the collar of the box below, the flat floor.
     addCap(mesh, outer, [skirt], 0, "down");
-    addWall(mesh, skirt, 0, lift, "in");
-    addCap(mesh, skirt, [], lift, "down");
+    addWall(mesh, skirt, 0, grooveHeight, "in");
+    addCap(mesh, skirt, [groove], grooveHeight, "down");
+    addWall(mesh, groove, 0, grooveHeight, "out");
+    addCap(mesh, groove, [], 0, "down");
     // The outer wall up to the step, the step, the collar and its top (with the dividers, as high as the collar).
     addWall(mesh, outer, 0, settings.height - lift, "out");
     addCap(mesh, outer, [collar], settings.height - lift, "up");
