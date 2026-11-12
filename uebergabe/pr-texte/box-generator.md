@@ -18,7 +18,7 @@ Hi Stefan, a box generator, so that a box and its lid come from a few settings i
 - [x] `npm test` (5627 passed, 5 skipped)
 - [x] `npm run test:e2e` (1447 passed)
 - [x] `npm run guide`, `npm run i18n:status`
-- [x] Manually tested the affected workflow (box and lid, round and polygon outline, the Gridfinity hint)
+- [x] Manually tested the affected workflow (box and lid, the round outline, the Gridfinity hint)
 
 ## Notes
 
