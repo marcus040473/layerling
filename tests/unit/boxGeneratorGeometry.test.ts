@@ -199,7 +199,7 @@ describe("box generator", () => {
       const h = stack.height;
       // The same box unstacked, less the step round the top and the groove under the wall.
       const plain = volumeOf(createBoxGeneratorGeometry(SIZE, { ...fields }));
-      const expected = plain - (area(plan.outer) - area(stack.collar)) * h - (area(stack.skirt) - area(stack.groove)) * h;
+      const expected = plain - (area(plan.outer) - area(stack.collar)) * h - (area(stack.skirt) - area(stack.groove)) * stack.grooveHeight;
       expect(volumeOf(geometry)).toBeCloseTo(expected, 0);
       // The floor is not lifted: it keeps its thickness and lies on the bed.
       expect(plan.floorTop).toBeCloseTo(plan.settings.boxFloor, 6);
@@ -224,6 +224,8 @@ describe("box generator", () => {
     expect(xs(stack.skirt) - xs(stack.collar)).toBeCloseTo(0.3, 2);
     // The groove reaches in to the cavity, where the collar's inner face is, so the collar fills it up to the play.
     expect(outerX - xs(stack.groove)).toBeCloseTo(2.4, 2);
+    // The groove is a millimetre deeper than the collar is high, so the box never sits on the collar's top.
+    expect(stack.grooveHeight).toBeCloseTo(stack.height + 1, 6);
   });
 
   it("says so, and leaves the box unstacked, when the wall is too thin or the box too low for the step", () => {
