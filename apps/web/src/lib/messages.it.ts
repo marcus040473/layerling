@@ -2930,6 +2930,8 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "Copre la scatola",
   "boxGenerator.lidRestOnHint": "Una piastra piatta grande quanto la scatola che poggia sul suo bordo.",
   "boxGenerator.lidOverlapHint": "Una piastra con un bordo che scende sopra l'esterno della scatola.",
+  "boxGenerator.lidPlug": "Si innesta nella scatola",
+  "boxGenerator.lidPlugHint": "Una piastra grande quanto la scatola con un anello sopra che entra nella scatola, più piccolo dell'interno del gioco.",
   "boxGenerator.lidSizeHint": "Il coperchio che copre questa scatola misura {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Questo coperchio si adatta a una scatola di {width} × {depth} mm.",
   "boxGenerator.issueWall": "La parete non lascia spazio all'interno. Rendila più sottile o la scatola più grande.",

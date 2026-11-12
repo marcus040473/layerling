@@ -2937,6 +2937,8 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "Går över lådan",
   "boxGenerator.lidRestOnHint": "En plan platta lika stor som lådan som ligger på dess kant.",
   "boxGenerator.lidOverlapHint": "En platta med en kjol som går ned över lådans utsida.",
+  "boxGenerator.lidPlug": "Sticks in i lådan",
+  "boxGenerator.lidPlugHint": "En platta lika stor som lådan med en ring på som passar in i lådan, mindre än insidan med spelet.",
   "boxGenerator.lidSizeHint": "Det överlappande locket till den här lådan är {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Det här locket passar en låda på {width} × {depth} mm.",
   "boxGenerator.issueWall": "Väggen lämnar inget utrymme inuti. Gör den tunnare eller lådan större.",

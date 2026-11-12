@@ -2945,6 +2945,8 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "Cubre la caja",
   "boxGenerator.lidRestOnHint": "Una placa plana tan grande como la caja que descansa sobre su borde.",
   "boxGenerator.lidOverlapHint": "Una placa con un faldón que baja por el exterior de la caja.",
+  "boxGenerator.lidPlug": "Se encaja en la caja",
+  "boxGenerator.lidPlugHint": "Una placa tan grande como la caja con un anillo encima que entra en la caja, más pequeño que el interior por la holgura.",
   "boxGenerator.lidSizeHint": "La tapa que cubre esta caja mide {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Esta tapa encaja en una caja de {width} × {depth} mm.",
   "boxGenerator.issueWall": "La pared no deja espacio dentro. Hazla más fina o la caja más grande.",

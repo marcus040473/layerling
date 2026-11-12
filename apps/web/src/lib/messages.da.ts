@@ -3372,6 +3372,8 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "Går over kassen",
   "boxGenerator.lidRestOnHint": "En flad plade, lige så stor som kassen, der ligger på dens kant.",
   "boxGenerator.lidOverlapHint": "En plade med en kant, der går ned over kassens yderside.",
+  "boxGenerator.lidPlug": "Stikker ned i æsken",
+  "boxGenerator.lidPlugHint": "En plade lige så stor som æsken med en ring på, der passer ned i æsken, mindre end indersiden med spillet.",
   "boxGenerator.lidSizeHint": "Det overlappende låg til denne kasse er {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Dette låg passer til en kasse på {width} × {depth} mm.",
   "boxGenerator.issueWall": "Væggen levner ingen plads indeni. Gør den tyndere eller kassen større.",
