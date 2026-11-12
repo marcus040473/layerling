@@ -186,7 +186,7 @@ describe("box generator", () => {
     expect(boxGeneratorInsideOutline([{ x: 0, z: 0 }], 1)).toBeNull();
   });
 
-  it("makes a stackable box with a skirt and a collar: a closed body of the volume its rings say", () => {
+  it("makes a stackable box with a step, a collar and a groove under the wall: a closed body, the floor flat on the bed", () => {
     const area = (points: { x: number; z: number }[]) => Math.abs(points.reduce((sum, p, i) => sum + p.x * points[(i + 1) % points.length].z - points[(i + 1) % points.length].x * p.z, 0)) / 2;
     for (const fields of [{ boxCornerRadius: 6 }, { boxShape: "round" as const }, { boxShape: "polygon" as const, boxSides: 6 }, { boxColumns: 3, boxRows: 2 }]) {
       const settings = { ...fields, boxStackable: true, boxStackHeight: 4 };
@@ -197,31 +197,33 @@ describe("box generator", () => {
       const geometry = createBoxGeneratorGeometry(SIZE, settings);
       expect(openEdges(geometry)).toBe(0);
       const h = stack.height;
-      const H = plan.settings.height;
-      const cells = plan.cells.reduce((sum, cell) => sum + area(cell), 0);
-      const expected = (area(plan.outer) - area(stack.skirt)) * (H - h) + (area(stack.skirt) - area(stack.collar)) * (H - 2 * h) + (area(stack.collar) - cells) * (H - h) + cells * plan.settings.boxFloor;
+      // The same box unstacked, less the step round the top and the groove under the wall.
+      const plain = volumeOf(createBoxGeneratorGeometry(SIZE, { ...fields }));
+      const expected = plain - (area(plan.outer) - area(stack.collar)) * h - (area(stack.skirt) - area(stack.groove)) * h;
       expect(volumeOf(geometry)).toBeCloseTo(expected, 0);
-      // The floor stands a collar's height off the bottom, so its thickness stays what was asked.
-      expect(plan.floorTop).toBeCloseTo(h + plan.settings.boxFloor, 6);
+      // The floor is not lifted: it keeps its thickness and lies on the bed.
+      expect(plan.floorTop).toBeCloseTo(plan.settings.boxFloor, 6);
+      const positions = geometry.getAttribute("position");
+      let flatBottom = 0;
+      for (let i = 0; i < positions.count; i += 3) {
+        if (positions.getY(i) === 0 && positions.getY(i + 1) === 0 && positions.getY(i + 2) === 0) flatBottom += 1;
+      }
+      expect(flatBottom).toBeGreaterThan(0);
     }
   });
 
-  it("stacks one stackable box on another: skirt on the step, floor on the collar, the collar centring with the play", () => {
+  it("stacks one stackable box on another: foot on the step, collar in the groove, the play is the fit", () => {
     const settings = { boxStackable: true, boxStackHeight: 3, boxFit: 0.3, boxWall: 2.4 };
     const plan = boxGeneratorPlan(SIZE, settings);
     const stack = plan.stack!;
-    const H = plan.settings.height;
-    // The box above is set down by H - h: its floor's underside (h above its bottom) then meets the collar's top (H).
-    const lowered = H - stack.height;
-    expect(stack.height + lowered).toBe(H);
-    // Its skirt reaches the bottom, where the box below has its step (H - h): the same height, the same ring.
-    expect(0 + lowered).toBe(H - stack.height);
     const xs = (points: { x: number }[]) => Math.max(...points.map((p) => p.x));
     const outerX = xs(plan.outer);
-    // The skirt's inner face is wall/2 - fit/2 in from the outside, the collar's outer face wall/2 + fit/2: the play between them is the fit.
+    // The foot's inner face is wall/2 - fit/2 in from the outside, the collar's outer face wall/2 + fit/2: the play between them is the fit.
     expect(outerX - xs(stack.skirt)).toBeCloseTo(2.4 / 2 - 0.3 / 2, 2);
     expect(outerX - xs(stack.collar)).toBeCloseTo(2.4 / 2 + 0.3 / 2, 2);
     expect(xs(stack.skirt) - xs(stack.collar)).toBeCloseTo(0.3, 2);
+    // The groove reaches in to the cavity, where the collar's inner face is, so the collar fills it up to the play.
+    expect(outerX - xs(stack.groove)).toBeCloseTo(2.4, 2);
   });
 
   it("says so, and leaves the box unstacked, when the wall is too thin or the box too low for the step", () => {
@@ -231,7 +233,6 @@ describe("box generator", () => {
     // The lid is not stacked, and off is off.
     expect(boxGeneratorPlan(SIZE, { boxStackable: true, boxPart: "lid" }).stack).toBeNull();
     expect(boxGeneratorPlan(SIZE, {}).stack).toBeNull();
-    expect(boxGeneratorPlan(SIZE, { boxStackable: true }).floorTop).toBeCloseTo(3 + 2.4, 6);
   });
 
   it("keeps the Gridfinity settings inside their limits and off by default", () => {

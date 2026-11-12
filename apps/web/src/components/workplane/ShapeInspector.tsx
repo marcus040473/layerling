@@ -2642,7 +2642,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         properties.push({ id: "boxDivider", label: t("prop.boxDivider"), value: box.boxDivider, min: MIN_BOX_GENERATOR_WALL, max: 20, step: 0.1, onChange: (value) => onUpdate({ boxDivider: value }) });
       }
     }
-    // Stackable: a skirt under the bottom and a collar on top, so a box stands on a box, centred; for any outline.
+    // Stackable: a collar on top and a groove under the wall, so a box stands on a box, centred; for any outline.
     const stackIssue = issues.find((issue) => issue.code === "stackWallThin" || issue.code === "stackTooLow");
     if (box.boxPart === "box") {
       properties.push({ type: "toggle", id: "boxStackable", label: t("prop.boxStackable"), value: box.boxStackable, onChange: (value) => onUpdate({ boxStackable: value ? true : undefined }) });
