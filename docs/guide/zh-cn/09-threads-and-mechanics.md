@@ -266,7 +266,7 @@ microSD 卡槽也是左边缘的接口，位于电路板下方（Zero 2 W 上在
 
 > **提示：** 打印出来的配合比绘制的略紧。先打印盖子，并以十分之一毫米为单位调整{{ui:prop.boxFit}}，直到能顺畅合上。铰链、锁扣、堆叠和 Gridfinity 还不属于这个形状；请在旁边使用铰链、卡扣和 Gridfinity 形状。
 
-盒子生成器不会自己做 Gridfinity：{{ui:shape.gridfinity}} 形状已经有底板和收纳盒，直接放进盒子里即可。要让盒子做好准备，打开 {{ui:prop.boxGridfinity}}，并在 {{ui:prop.boxGridfinityColumns}} 和 {{ui:prop.boxGridfinityRows}} 中选格数，例如 3 乘 4。矩形盒子随后会取一个尺寸，使这么多格的底板刚好放进壁内，每格 42 毫米加 0.5 毫米间隙；改变壁厚，尺寸随之变化。圆形或多边形盒子不会改变尺寸：滑块停在能放下的数量，面板会指出轮廓内能放下的最大格子。开关关闭时，{{ui:prop.boxFloor}} 下的面板只说明盒内有多少空间。
+盒子生成器不会自己做 Gridfinity：{{ui:shape.gridfinity}} 形状已经有底板和收纳盒，直接放进盒子里即可。要让盒子做好准备，打开 {{ui:prop.boxGridfinity}}，并在 {{ui:prop.boxGridfinityCells}} 中选格数，例如 3 乘 4。矩形盒子随后会取一个尺寸，使这么多格的底板刚好放进壁内，每格 42 毫米加 0.5 毫米间隙；改变壁厚，尺寸随之变化。圆形或多边形盒子不会改变尺寸：面板会说明格子能否放下，并指出轮廓内能放下的最大格子。开关关闭时，{{ui:prop.boxFloor}} 下的面板只说明盒内有多少空间。
 
 第二个开关 {{ui:prop.boxGridfinityFloor}} 反过来工作：盒子保持你输入的尺寸，无论是矩形、圆形、椭圆还是多边形，底部随之适配。面板会告诉你盒内能放下多少个完整的 42 毫米格子；底板本身请添加一个 Gridfinity {{ui:gridfinity.baseplate}}，与盒子一起选中，再按 {{ui:inspector.gridfinityOutlineFit}}。它会连同放得下的完整格子一起适配到壁内，底部其余部分保持实心。两个开关互相排斥。
 

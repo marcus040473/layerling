@@ -2528,7 +2528,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       ? undefined
       : gridfinityFloor
         ? gridfinityFloor.cells > 0
-          ? t("boxGenerator.gridfinityFloorHint", { cells: String(gridfinityFloor.cells) })
+          ? t("boxGenerator.gridfinityFloorHint", { cells: String(gridfinityFloor.cells), plate: t("gridfinity.baseplate"), button: t("inspector.gridfinityOutlineFit") })
           : t("boxGenerator.gridfinityFloorNone")
         : !gridfinityRoom
         ? t("boxGenerator.gridfinityOther")
@@ -2539,8 +2539,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     // one only tells how large a grid fits; the baseplate and bins are the Gridfinity shape's own.
     const gridfinityFit = box.boxPart === "box" && box.boxGridfinity ? boxGeneratorGridfinityFit({ width, depth, height: shape.height }, shape) : null;
     const gridfinityRectangle = box.boxShape === "rectangle";
-    const gridfinityBoxPatch = (columns: number, rows: number, wall: number): Partial<WorkplaneShape> => {
-      const next = boxGeneratorGridfinityBoxSize(columns, rows, wall);
+    const gridfinityBoxPatch = (columns: number, rows: number, wall: number, cornerRadius = box.boxCornerRadius): Partial<WorkplaneShape> => {
+      const next = boxGeneratorGridfinityBoxSize(columns, rows, wall, cornerRadius);
       return { width: next.width, depth: next.depth, size: resizedShapeSize(next.width, next.depth) };
     };
     const gridfinityCellsHint = !gridfinityFit
@@ -2575,7 +2575,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       { id: "height", label: t("prop.height"), value: shape.height, min: MIN_SHAPE_SIZE, max: 400, onChange: setHeight },
     ];
     if (box.boxShape === "rectangle") {
-      properties.push({ id: "boxCornerRadius", label: t("prop.boxCornerRadius"), value: box.boxCornerRadius, min: 0, max: Math.min(width, depth) / 2, step: 0.5, onChange: (value) => onUpdate({ boxCornerRadius: value }) });
+      properties.push({ id: "boxCornerRadius", label: t("prop.boxCornerRadius"), value: box.boxCornerRadius, min: 0, max: Math.min(width, depth) / 2, step: 0.5, onChange: (value) => onUpdate(box.boxPart === "box" && box.boxGridfinity ? { boxCornerRadius: value, ...gridfinityBoxPatch(box.boxGridfinityColumns, box.boxGridfinityRows, box.boxWall, value) } : { boxCornerRadius: value }) });
     }
     if (box.boxShape === "polygon") {
       properties.push({ id: "boxSides", label: t("prop.boxSides"), value: box.boxSides, min: MIN_BOX_GENERATOR_SIDES, max: MAX_BOX_GENERATOR_SIDES, step: 1, onChange: (value) => onUpdate({ boxSides: Math.round(value) }) });
@@ -2597,29 +2597,23 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
           : { boxGridfinity: undefined }),
       });
       if (box.boxGridfinity) {
-        const mostColumns = gridfinityRectangle || !gridfinityFit ? MAX_BOX_GENERATOR_GRIDFINITY_CELLS : Math.max(1, gridfinityFit.maxColumns);
-        const mostRows = gridfinityRectangle || !gridfinityFit ? MAX_BOX_GENERATOR_GRIDFINITY_CELLS : Math.max(1, gridfinityFit.maxRows);
-        properties.push(
-          {
-            id: "boxGridfinityColumns",
-            label: t("prop.boxGridfinityColumns"),
-            value: Math.min(box.boxGridfinityColumns, mostColumns),
-            min: 1,
-            max: mostColumns,
-            step: 1,
-            onChange: (value) => onUpdate(gridfinityRectangle ? { boxGridfinityColumns: Math.round(value), ...gridfinityBoxPatch(Math.round(value), box.boxGridfinityRows, box.boxWall) } : { boxGridfinityColumns: Math.round(value) }),
+        // One field for the grid, "3 x 4": it takes less room than two sliders. A rectangular box takes its size from it.
+        properties.push({
+          type: "text",
+          id: "boxGridfinityCells",
+          label: t("prop.boxGridfinityCells"),
+          value: `${box.boxGridfinityColumns} × ${box.boxGridfinityRows}`,
+          maxLength: 8,
+          hint: gridfinityCellsHint,
+          onChange: (text) => {
+            // "3 x 4", "3×4" or "3" (a square grid); anything half typed is left alone until it reads as a grid.
+            const grid = /^\s*(\d{1,2})\s*(?:[x×*]\s*(\d{1,2}))?\s*$/i.exec(text);
+            if (!grid) return;
+            const columns = Math.min(MAX_BOX_GENERATOR_GRIDFINITY_CELLS, Math.max(1, Number(grid[1])));
+            const rows = Math.min(MAX_BOX_GENERATOR_GRIDFINITY_CELLS, Math.max(1, Number(grid[2] ?? grid[1])));
+            onUpdate(gridfinityRectangle ? { boxGridfinityColumns: columns, boxGridfinityRows: rows, ...gridfinityBoxPatch(columns, rows, box.boxWall) } : { boxGridfinityColumns: columns, boxGridfinityRows: rows });
           },
-          {
-            id: "boxGridfinityRows",
-            label: t("prop.boxGridfinityRows"),
-            value: Math.min(box.boxGridfinityRows, mostRows),
-            min: 1,
-            max: mostRows,
-            step: 1,
-            hint: gridfinityCellsHint,
-            onChange: (value) => onUpdate(gridfinityRectangle ? { boxGridfinityRows: Math.round(value), ...gridfinityBoxPatch(box.boxGridfinityColumns, Math.round(value), box.boxWall) } : { boxGridfinityRows: Math.round(value) }),
-          },
-        );
+        });
       }
       // The other way round: the box keeps the size it is given, whatever its outline, and the baseplate is fitted to its inside.
       properties.push({
