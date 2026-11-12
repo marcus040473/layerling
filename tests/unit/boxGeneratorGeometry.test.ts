@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import type * as THREE from "three";
 import {
   boxGeneratorIssues,
+  boxGeneratorGridfinityBoxSize,
+  boxGeneratorGridfinityFit,
+  boxGeneratorGridfinityFloor,
+  boxGeneratorInsideOutline,
   boxGeneratorGridfinityRoom,
   boxGeneratorMatchingLidSize,
   boxGeneratorPlan,
@@ -95,6 +99,68 @@ describe("box generator", () => {
     expect(boxGeneratorGridfinityRoom(SIZE, { boxShape: "round" })).toBeNull();
     expect(boxGeneratorGridfinityRoom(SIZE, { boxShape: "polygon" })).toBeNull();
     expect(boxGeneratorGridfinityRoom(SIZE, { boxPart: "lid" })).toBeNull();
+  });
+
+  it("sizes a rectangular box to a Gridfinity grid and finds the largest grid that fits a round or polygon box", () => {
+    // 3 x 4 cells: 126.5 x 168.5 mm of baseplate with its play, and the wall twice round it.
+    expect(boxGeneratorGridfinityBoxSize(3, 4, 2.4)).toEqual({ width: 131.3, depth: 173.3 });
+    const size = boxGeneratorGridfinityBoxSize(3, 4, 2.4);
+    const rectangle = boxGeneratorGridfinityFit({ ...size, height: 48 }, { boxGridfinity: true });
+    expect(rectangle).toMatchObject({ rectangle: true, innerWidth: 126.5, innerDepth: 168.5, best: { columns: 3, rows: 4 }, maxColumns: 3, maxRows: 4 });
+    expect(rectangle!.fits(3, 4)).toBe(true);
+    expect(rectangle!.fits(4, 4)).toBe(false);
+    // One millimetre less and the third cell no longer fits across.
+    expect(boxGeneratorGridfinityFit({ width: size.width - 1, depth: size.depth, height: 48 }, {})!.fits(3, 4)).toBe(false);
+    // A round box of 140 mm: the corners of a grid must lie inside the circle, so 2 x 2 (84.5 mm square, 119.5 across the corners) fits, 3 x 3 does not.
+    const round = boxGeneratorGridfinityFit({ width: 140, depth: 140, height: 40 }, { boxShape: "round" })!;
+    expect(round.rectangle).toBe(false);
+    expect(round.fits(2, 2)).toBe(true);
+    expect(round.fits(3, 3)).toBe(false);
+    expect(round.best).toEqual({ columns: 2, rows: 2 });
+    // The most cells across with one row is more than a square grid allows.
+    expect(round.maxColumns).toBeGreaterThanOrEqual(2);
+    expect(round.maxColumns * 42 + 0.5).toBeLessThan(140);
+    // A hexagon takes less than a circle of its size, and a box too small for one cell takes none.
+    const hexagon = boxGeneratorGridfinityFit({ width: 140, depth: 140, height: 40 }, { boxShape: "polygon", boxSides: 6 })!;
+    expect(hexagon.best!.columns * hexagon.best!.rows).toBeLessThanOrEqual(round.best!.columns * round.best!.rows);
+    expect(boxGeneratorGridfinityFit({ width: 40, depth: 40, height: 20 }, { boxShape: "round" })!.best).toBeNull();
+    // A lid has no inside.
+    expect(boxGeneratorGridfinityFit({ width: 140, depth: 140, height: 40 }, { boxPart: "lid" })).toBeNull();
+  });
+
+  it("fits the Gridfinity floor to the inside of a box of any outline as it was given", () => {
+    // The box keeps its size; its inside holds the whole cells the baseplate's own count finds.
+    expect(boxGeneratorGridfinityFloor({ width: 126, depth: 90, height: 48 }, {})).toEqual({ cells: 4 });
+    expect(boxGeneratorGridfinityFloor({ width: 131.3, depth: 173.3, height: 48 }, {})).toEqual({ cells: 12 });
+    const round = boxGeneratorGridfinityFloor({ width: 140, depth: 140, height: 40 }, { boxShape: "round" })!;
+    const hexagon = boxGeneratorGridfinityFloor({ width: 140, depth: 140, height: 40 }, { boxShape: "polygon", boxSides: 6 })!;
+    expect(round.cells).toBeGreaterThanOrEqual(4);
+    expect(round.cells).toBeLessThan(16);
+    expect(hexagon.cells).toBeGreaterThan(0);
+    expect(boxGeneratorGridfinityFloor({ width: 40, depth: 40, height: 20 }, {})).toEqual({ cells: 0 });
+    expect(boxGeneratorGridfinityFloor({ width: 126, depth: 90, height: 48 }, { boxPart: "lid" })).toBeNull();
+    // A thicker wall leaves a smaller inside.
+    expect(boxGeneratorGridfinityFloor({ width: 126, depth: 90, height: 48 }, { boxWall: 20 })!.cells).toBeLessThan(4);
+  });
+
+  it("pulls an outline in by the wall, whichever way round it runs", () => {
+    const square = [{ x: 10, z: 10 }, { x: 10, z: -10 }, { x: -10, z: -10 }, { x: -10, z: 10 }];
+    const inside = boxGeneratorInsideOutline(square, 2)!;
+    const xs = inside.map((p) => p.x);
+    expect(Math.min(...xs)).toBeCloseTo(-8, 6);
+    expect(Math.max(...xs)).toBeCloseTo(8, 6);
+    expect(boxGeneratorInsideOutline(square, 11)).toBeNull();
+    expect(boxGeneratorInsideOutline([{ x: 0, z: 0 }], 1)).toBeNull();
+  });
+
+  it("keeps the Gridfinity settings inside their limits and off by default", () => {
+    const off = normalizeBoxGenerator(SIZE, {});
+    expect(off).toMatchObject({ boxGridfinity: false, boxGridfinityFloor: false, boxGridfinityColumns: 2, boxGridfinityRows: 2 });
+    expect(normalizeBoxGenerator(SIZE, { boxGridfinity: true, boxGridfinityColumns: 99, boxGridfinityRows: -3 })).toMatchObject({ boxGridfinity: true, boxGridfinityColumns: 12, boxGridfinityRows: 1 });
+    // The cells change no geometry: the body is the same with the switch on.
+    const plain = createBoxGeneratorGeometry(SIZE, {});
+    const prepared = createBoxGeneratorGeometry(SIZE, { boxGridfinity: true, boxGridfinityColumns: 3, boxGridfinityRows: 3 });
+    expect(volumeOf(prepared)).toBeCloseTo(volumeOf(plain), 6);
   });
 
   it("keeps every setting inside its limits, so no value breaks the body", () => {

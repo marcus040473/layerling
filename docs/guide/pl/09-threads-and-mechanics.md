@@ -272,7 +272,9 @@ Pokrywka to kopia tego samego kształtu z {{ui:prop.boxPart}} ustawionym na {{ui
 
 > **Wskazówka:** wydrukowane pasowania są trochę ciaśniejsze niż narysowane. Najpierw wydrukuj pokrywkę i zmieniaj {{ui:prop.boxFit}} o jedną dziesiątą milimetra, aż będzie się zamykać gładko. Zawiasy, zatrzaski, sztaplowanie i Gridfinity nie są jeszcze częścią tego kształtu; obok używaj kształtów Zawias, Zatrzask i Gridfinity.
 
-Generator pudełek nie robi własnego Gridfinity. Kształt {{ui:shape.gridfinity}} ma już płytę bazową i pojemniki, więc po prostu włóż go do pudełka. Pod polem {{ui:prop.boxFloor}} w prostokątnym pudełku panel podaje, ile miejsca daje wnętrze: jego rozmiar i ile komórek po 42 mm mieści się wszerz i wzdłuż.
+Generator pudełek nie robi własnego Gridfinity: kształt {{ui:shape.gridfinity}} ma już płytę bazową i pojemniki, więc po prostu włóż go do pudełka. Aby przygotować pudełko, włącz {{ui:prop.boxGridfinity}} i wybierz komórki w polach {{ui:prop.boxGridfinityColumns}} i {{ui:prop.boxGridfinityRows}}, na przykład 3 na 4. Prostokątne pudełko dostaje wtedy rozmiar, w którym wewnątrz ścianki mieści się płyta bazowa dokładnie z tymi komórkami, po 42 mm plus 0,5 mm luzu; zmienisz ściankę, a rozmiar za nią podąży. W okrągłym lub wielokątnym pudełku nic się nie zmienia: suwaki zatrzymują się na tym, co się mieści, a panel podaje największą siatkę, która mieści się w obrysie. Przy wyłączonym przełączniku panel pod polem {{ui:prop.boxFloor}} tylko mówi, ile miejsca daje wnętrze.
+
+Drugi przełącznik, {{ui:prop.boxGridfinityFloor}}, działa odwrotnie: pudełko zachowuje dokładnie rozmiar, który podasz, czy jest prostokątne, okrągłe, owalne czy wielokątne, a dno się do niego dopasowuje. Panel podaje, ile pełnych komórek po 42 mm mieści wnętrze; dla samej płyty dodaj Gridfinity {{ui:gridfinity.baseplate}}, zaznacz ją razem z pudełkiem i naciśnij {{ui:inspector.gridfinityOutlineFit}}. Zostaje dopasowana wewnątrz ścianki z pełnymi komórkami, które się mieszczą, a reszta dna pozostaje pełna. Oba przełączniki się wykluczają.
 
 ## Tulejka na wkręt
 

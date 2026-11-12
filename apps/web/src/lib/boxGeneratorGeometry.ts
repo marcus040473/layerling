@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { WorkplaneShape } from "@/types/layerling";
-import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
+import { GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
 
 /*
  * The box generator: one parametric shape for a box and its lid, from a few settings instead of a fixed template.
@@ -43,6 +43,8 @@ export const MIN_BOX_GENERATOR_SIDES = 3;
 export const MAX_BOX_GENERATOR_SIDES = 12;
 export const MAX_BOX_GENERATOR_COMPARTMENTS = 12;
 export const MAX_BOX_GENERATOR_FIT = 2;
+/** Gridfinity cells across or along that the settings take, the largest baseplate Layerling makes. */
+export const MAX_BOX_GENERATOR_GRIDFINITY_CELLS = 12;
 /** The least width a compartment may have; a narrower cell stays solid. */
 const MIN_COMPARTMENT_SPAN = 2;
 const ROUND_SEGMENTS = 72;
@@ -61,6 +63,10 @@ export type BoxGeneratorFields = {
   boxLidStyle?: BoxGeneratorLidStyle;
   boxLidPlate?: number;
   boxFit?: number;
+  boxGridfinity?: boolean;
+  boxGridfinityColumns?: number;
+  boxGridfinityRows?: number;
+  boxGridfinityFloor?: boolean;
 };
 
 export type BoxGeneratorSize = { width: number; depth: number; height: number };
@@ -118,6 +124,10 @@ export function normalizeBoxGenerator(size: BoxGeneratorSize, fields: BoxGenerat
     boxLidStyle: normalizeBoxGeneratorLidStyle(fields.boxLidStyle),
     boxLidPlate: clamp(finite(fields.boxLidPlate, DEFAULT_BOX_GENERATOR_LID_PLATE), MIN_BOX_GENERATOR_WALL, Math.max(MIN_BOX_GENERATOR_WALL, height - 0.5)),
     boxFit: clamp(finite(fields.boxFit, DEFAULT_BOX_GENERATOR_FIT), 0, MAX_BOX_GENERATOR_FIT),
+    boxGridfinity: fields.boxGridfinity === true,
+    boxGridfinityColumns: Math.round(clamp(finite(fields.boxGridfinityColumns, 2), 1, MAX_BOX_GENERATOR_GRIDFINITY_CELLS)),
+    boxGridfinityRows: Math.round(clamp(finite(fields.boxGridfinityRows, 2), 1, MAX_BOX_GENERATOR_GRIDFINITY_CELLS)),
+    boxGridfinityFloor: fields.boxGridfinityFloor === true,
   };
 }
 
@@ -331,6 +341,79 @@ export function boxGeneratorGridfinityRoom(size: BoxGeneratorSize, fields: BoxGe
   return { width, depth, columns: Math.floor(width / GRIDFINITY_GRID + 1e-9), rows: Math.floor(depth / GRIDFINITY_GRID + 1e-9) };
 }
 
+/** The baseplate of a grid of Gridfinity cells, in mm: the cells of the grid and the play the drawer clearance leaves. */
+function gridfinityPlate(columns: number, rows: number) {
+  return { width: columns * GRIDFINITY_GRID + GRIDFINITY_DRAWER_CLEARANCE, depth: rows * GRIDFINITY_GRID + GRIDFINITY_DRAWER_CLEARANCE };
+}
+
+/** The outer size of a rectangular box whose inside holds a Gridfinity baseplate of this many cells with its play. */
+export function boxGeneratorGridfinityBoxSize(columns: number, rows: number, wall: number) {
+  const plate = gridfinityPlate(Math.max(1, Math.round(columns)), Math.max(1, Math.round(rows)));
+  const grow = 2 * Math.max(0, wall);
+  return { width: Math.round((plate.width + grow) * 100) / 100, depth: Math.round((plate.depth + grow) * 100) / 100 };
+}
+
+/**
+ * How a box part takes a Gridfinity baseplate (the box generator makes none: the Gridfinity shape goes inside). `fits`
+ * says whether a grid of that many cells lies inside the inside of the wall, a rectangle of the cells and the play
+ * centred on the box: against the sides of a rectangular box, and with its four corners inside a round or many-sided
+ * outline. `best` is the grid with the most cells that fits (the squarest of equals), null when not even one cell does;
+ * `maxColumns` and `maxRows` are the most cells across and along when the other is one. A lid has no inside: null.
+ */
+export function boxGeneratorGridfinityFit(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}) {
+  const settings = normalizeBoxGenerator(size, fields);
+  if (settings.boxPart !== "box") return null;
+  const outer = counterClockwise(boxGeneratorOutline(settings));
+  const inner = insetConvex(outer, settings.boxWall);
+  const rectangle = settings.boxShape === "rectangle";
+  const innerWidth = Math.round((settings.width - 2 * settings.boxWall) * 100) / 100;
+  const innerDepth = Math.round((settings.depth - 2 * settings.boxWall) * 100) / 100;
+  const fits = (columns: number, rows: number) => {
+    const plate = gridfinityPlate(columns, rows);
+    if (rectangle) return plate.width <= innerWidth + 1e-6 && plate.depth <= innerDepth + 1e-6;
+    if (!inner) return false;
+    const corners: Point[] = [{ x: -plate.width / 2, z: -plate.depth / 2 }, { x: plate.width / 2, z: -plate.depth / 2 }, { x: plate.width / 2, z: plate.depth / 2 }, { x: -plate.width / 2, z: plate.depth / 2 }];
+    return corners.every((corner) => inner.every((a, i) => {
+      const b = inner[(i + 1) % inner.length];
+      return (b.x - a.x) * (corner.z - a.z) - (b.z - a.z) * (corner.x - a.x) >= -1e-6;
+    }));
+  };
+  let best: { columns: number; rows: number } | null = null;
+  let maxColumns = 0;
+  let maxRows = 0;
+  for (let columns = 1; columns <= MAX_BOX_GENERATOR_GRIDFINITY_CELLS; columns += 1) {
+    if (fits(columns, 1)) maxColumns = columns;
+    for (let rows = 1; rows <= MAX_BOX_GENERATOR_GRIDFINITY_CELLS; rows += 1) {
+      if (!fits(columns, rows)) continue;
+      if (!best || columns * rows > best.columns * best.rows || (columns * rows === best.columns * best.rows && Math.abs(columns - rows) < Math.abs(best.columns - best.rows))) best = { columns, rows };
+    }
+  }
+  for (let rows = 1; rows <= MAX_BOX_GENERATOR_GRIDFINITY_CELLS; rows += 1) if (fits(1, rows)) maxRows = rows;
+  return { innerWidth, innerDepth, rectangle, fits, best, maxColumns, maxRows };
+}
+
+/**
+ * The outline of a box part's inside: a convex outline of the outside (any order, in the plane's own frame) pulled in by
+ * the wall, or null when nothing is left. The Gridfinity baseplate is fitted to this, the floor the box really has.
+ */
+export function boxGeneratorInsideOutline(outline: readonly Point[], wall: number): Point[] | null {
+  if (outline.length < 3) return null;
+  return insetConvex(counterClockwise([...outline]), Math.max(0, wall));
+}
+
+/**
+ * The floor of a box part for the Gridfinity baseplate that is fitted to it (the plate's own "Fit baseplate to outline"
+ * does the fitting): how many whole 42 mm cells the inside holds, counted by the same function the plate uses, with the box
+ * as it was given. The box is not resized. Null for a lid.
+ */
+export function boxGeneratorGridfinityFloor(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}) {
+  const settings = normalizeBoxGenerator(size, fields);
+  if (settings.boxPart !== "box") return null;
+  const inside = boxGeneratorInsideOutline(boxGeneratorOutline(settings), settings.boxWall);
+  if (!inside) return { cells: 0 };
+  return { cells: gridfinityOutlineCells(inside, MAX_GRIDFINITY_LARGE_PLATE_UNITS).length };
+}
+
 /** The outer size an overlapping lid needs to close a box of this outer size, with the fit on every side. */
 export function boxGeneratorMatchingLidSize(box: { width: number; depth: number }, wall: number, fit: number) {
   const grow = 2 * (Math.max(0, wall) + Math.max(0, fit));
@@ -447,6 +530,10 @@ export function boxGeneratorFieldsOf(shape: Partial<WorkplaneShape>): BoxGenerat
     boxLidStyle: shape.boxLidStyle,
     boxLidPlate: shape.boxLidPlate,
     boxFit: shape.boxFit,
+    boxGridfinity: shape.boxGridfinity,
+    boxGridfinityColumns: shape.boxGridfinityColumns,
+    boxGridfinityRows: shape.boxGridfinityRows,
+    boxGridfinityFloor: shape.boxGridfinityFloor,
   };
 }
 

@@ -436,6 +436,12 @@ export type ShapeCustomization = {
   boxLidStyle?: "restOn" | "overlap";
   boxLidPlate?: number;
   boxFit?: number;
+  /** Box generator: ready for Gridfinity, with the cells across and along (a rectangular box takes its size from them). */
+  boxGridfinity?: boolean;
+  boxGridfinityColumns?: number;
+  boxGridfinityRows?: number;
+  /** Box generator: the Gridfinity floor is fitted to the box as given, whatever its outline (the box is not resized). */
+  boxGridfinityFloor?: boolean;
   /** Transition (loft, #188): the outline at the bottom and at the top. */
   loftBottomOutline?: "round" | "rectangle" | "polygon";
   loftTopOutline?: "round" | "rectangle" | "polygon";
@@ -1400,6 +1406,12 @@ export type WorkplaneShape = {
   boxLidStyle?: "restOn" | "overlap";
   boxLidPlate?: number;
   boxFit?: number;
+  /** Box generator: ready for Gridfinity, with the cells across and along (a rectangular box takes its size from them). */
+  boxGridfinity?: boolean;
+  boxGridfinityColumns?: number;
+  boxGridfinityRows?: number;
+  /** Box generator: the Gridfinity floor is fitted to the box as given, whatever its outline (the box is not resized). */
+  boxGridfinityFloor?: boolean;
   /** Transition (loft, #188): the outline at the bottom and at the top. */
   loftBottomOutline?: "round" | "rectangle" | "polygon";
   loftTopOutline?: "round" | "rectangle" | "polygon";

@@ -272,7 +272,9 @@ A fedél ugyanennek az alaknak a másolata, a {{ui:prop.boxPart}} értéke {{ui:
 
 > **Tipp:** A kinyomtatott illesztések kicsit szorosabbak a megrajzoltaknál. Előbb a fedelet nyomtasd ki, és a {{ui:prop.boxFit}} értékét tized milliméterenként változtasd, amíg simán záródik. Zsanérok, zárak, egymásra rakás és Gridfinity még nem része ennek az alaknak; használd mellette a Zsanér, Pattintós kampó és Gridfinity alakokat.
 
-A dobozgenerátor nem készít saját Gridfinityt. A {{ui:shape.gridfinity}} forma már tartalmazza az alaplapot és a tárolókat, ezért egyszerűen tedd a dobozba. Téglalap alakú doboznál a {{ui:prop.boxFloor}} alatt a panel megmondja, mennyi helyet ad a belseje: a méretét, és hogy szélességben és hosszban hány 42 mm-es cella fér el.
+A dobozgenerátor nem készít saját Gridfinityt: a {{ui:shape.gridfinity}} forma már tartalmazza az alaplapot és a tárolókat, ezért egyszerűen tedd a dobozba. A doboz előkészítéséhez kapcsold be a {{ui:prop.boxGridfinity}} kapcsolót, és válaszd ki a cellákat a {{ui:prop.boxGridfinityColumns}} és a {{ui:prop.boxGridfinityRows}} mezőben, például 3 × 4. A téglalap alakú doboz ekkor pontosan akkora lesz, hogy a falán belül elférjen egy ennyi cellás alaplap, cellánként 42 mm plusz 0,5 mm játék; ha a falat módosítod, a méret követi. Kerek vagy sokszögű doboznál semmi sem változik: a csúszkák megállnak annál, ami elfér, a panel pedig megnevezi a körvonalba még beférő legnagyobb rácsot. Kikapcsolt kapcsolónál a panel a {{ui:prop.boxFloor}} alatt csak azt mondja meg, mennyi helyet ad a belseje.
+
+A második kapcsoló, a {{ui:prop.boxGridfinityFloor}}, fordítva működik: a doboz pontosan akkora marad, amekkorát megadsz, legyen téglalap, kerek, ovális vagy sokszögű, a padlót pedig ehhez igazítja. A panel megmondja, hány egész 42 mm-es cella fér a belsejébe; magához a lemezhez adj hozzá egy Gridfinity {{ui:gridfinity.baseplate}} elemet, jelöld ki a dobozzal együtt, és nyomd meg a {{ui:inspector.gridfinityOutlineFit}} gombot. A falon belülre illeszkedik a beférő egész cellákkal, a padló többi része tömör marad. A két kapcsoló kizárja egymást.
 
 ## Csavaroszlop
 

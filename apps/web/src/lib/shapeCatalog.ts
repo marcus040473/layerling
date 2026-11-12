@@ -660,6 +660,10 @@ export function shapeAssetSpecialDefaults(kind: ShapeKind, dimensions = shapeAss
       boxLidStyle: box.boxLidStyle,
       boxLidPlate: box.boxLidPlate,
       boxFit: box.boxFit,
+      boxGridfinity: box.boxGridfinity,
+      boxGridfinityColumns: box.boxGridfinityColumns,
+      boxGridfinityRows: box.boxGridfinityRows,
+      boxGridfinityFloor: box.boxGridfinityFloor,
     };
   }
   if (kind === "dovetail") {

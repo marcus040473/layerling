@@ -272,7 +272,9 @@ Het deksel is een kopie van dezelfde vorm met {{ui:prop.boxPart}} op {{ui:boxGen
 
 > **Tip:** Geprinte passingen zijn iets krapper dan getekend. Print eerst het deksel en verander {{ui:prop.boxFit}} met een tiende millimeter tot het soepel sluit. Scharnieren, sluitingen, stapelen en Gridfinity horen nog niet bij deze vorm; gebruik daarnaast de vormen Scharnier, Klikhaak en Gridfinity.
 
-De dozengenerator maakt geen eigen Gridfinity. De vorm {{ui:shape.gridfinity}} heeft de basisplaat en de bakjes al, zet hem dus gewoon in de doos. Onder {{ui:prop.boxFloor}} van een rechthoekige doos zegt het paneel hoeveel ruimte de binnenkant biedt: de maat en hoeveel cellen van 42 mm er in de breedte en in de lengte passen.
+De dozengenerator maakt geen eigen Gridfinity: de vorm {{ui:shape.gridfinity}} heeft de basisplaat en de bakjes al, zet hem dus gewoon in de doos. Om de doos voor te bereiden zet je {{ui:prop.boxGridfinity}} aan en kies je de cellen onder {{ui:prop.boxGridfinityColumns}} en {{ui:prop.boxGridfinityRows}}, bijvoorbeeld 3 bij 4. Een rechthoekige doos krijgt dan precies de maat waarin een basisplaat van die cellen binnen de wand past, 42 mm per cel plus 0,5 mm speling; verander je de wand, dan volgt de maat. Bij een ronde of veelhoekige doos wordt niets aangepast: de schuiven stoppen bij wat past en het paneel noemt het grootste raster dat in de omtrek past. Met de schakelaar uit zegt het paneel onder {{ui:prop.boxFloor}} alleen hoeveel ruimte de binnenkant biedt.
+
+De tweede schakelaar, {{ui:prop.boxGridfinityFloor}}, werkt andersom: de doos houdt precies de maat die je opgeeft, rechthoekig, rond, ovaal of veelhoekig, en de bodem wordt eraan aangepast. Het paneel zegt hoeveel hele cellen van 42 mm de binnenkant bevat; voor de plaat zelf voeg je een Gridfinity-{{ui:gridfinity.baseplate}} toe, selecteer je die samen met de doos en druk je op {{ui:inspector.gridfinityOutlineFit}}. Hij wordt binnen de wand gepast met de hele cellen die passen, de rest van de bodem blijft massief. De twee schakelaars sluiten elkaar uit.
 
 ## Schroefpaal
 
