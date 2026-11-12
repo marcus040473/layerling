@@ -2971,6 +2971,8 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "Recouvre la boîte",
   "boxGenerator.lidRestOnHint": "Une plaque plate aussi grande que la boîte, posée sur son bord.",
   "boxGenerator.lidOverlapHint": "Une plaque avec une jupe qui descend par-dessus l'extérieur de la boîte.",
+  "boxGenerator.lidPlug": "S'enfonce dans la boîte",
+  "boxGenerator.lidPlugHint": "Une plaque aussi grande que la boîte avec un anneau dessus qui entre dans la boîte, plus petit que l'intérieur du jeu.",
   "boxGenerator.lidSizeHint": "Le couvercle recouvrant pour cette boîte mesure {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Ce couvercle convient à une boîte de {width} × {depth} mm.",
   "boxGenerator.issueWall": "La paroi ne laisse aucune place à l'intérieur. Rendez-la plus fine ou la boîte plus grande.",

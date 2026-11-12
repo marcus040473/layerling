@@ -266,7 +266,7 @@ microSD 卡槽也是左邊緣的接頭，位於電路板下方（Zero 2 W 上在
 
 {{ui:prop.boxColumns}}和{{ui:prop.boxRows}}把盒子分成格子。隔板厚{{ui:prop.boxDivider}}，與壁和底是一體的。比 2 mm 窄的格子保持實心，面板會告訴你有幾個。
 
-蓋子是同一個形狀的副本，把{{ui:prop.boxPart}}設為{{ui:boxGenerator.partLid}}。它依列印時的樣子繪製，蓋板貼在列印床上。{{ui:boxGenerator.lidRestOn}}是與盒子一樣大的平板。{{ui:boxGenerator.lidOverlap}}帶一圈和壁一樣厚的裙邊，向下罩住盒子外側；{{ui:prop.boxLidPlate}}是蓋板的厚度，{{ui:prop.boxFit}}是每一側的間隙。一個部件的寬和長始終是它自己的，所以罩蓋比盒子大：在{{ui:prop.boxFit}}下，面板會給出合適的尺寸。
+蓋子是同一個形狀的副本，把{{ui:prop.boxPart}}設為{{ui:boxGenerator.partLid}}。它依列印時的樣子繪製，蓋板貼在列印床上。{{ui:boxGenerator.lidRestOn}}是與盒子一樣大的平板。{{ui:boxGenerator.lidOverlap}}帶一圈和壁一樣厚的裙邊，向下罩住盒子外側；{{ui:prop.boxLidPlate}}是蓋板的厚度，{{ui:prop.boxFit}}是每一側的間隙。一個部件的寬和長始終是它自己的，所以罩蓋比盒子大：在{{ui:prop.boxFit}}下，面板會給出合適的尺寸。 {{ui:boxGenerator.lidPlug}} 與盒子一樣大：一塊板，上面立著一個插入盒子的環，厚度與壁相同，每側比內部小 {{ui:prop.boxFit}}；{{ui:prop.boxLidPlate}} 是板的厚度。列印時板貼著列印板，所以環不需要支撐。
 
 > **提示：** 列印出來的配合比繪製的略緊。先列印蓋子，並以十分之一毫米為單位調整{{ui:prop.boxFit}}，直到能順暢合上。鉸鏈和鎖扣還不屬於這個形狀；請在旁邊使用鉸鏈和卡扣形狀。
 

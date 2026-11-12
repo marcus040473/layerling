@@ -2694,14 +2694,14 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       id: "boxLidStyle",
       label: t("prop.boxLidStyle"),
       value: box.boxLidStyle,
-      options: [{ value: "restOn", label: t("boxGenerator.lidRestOn") }, { value: "overlap", label: t("boxGenerator.lidOverlap") }],
-      hint: t(box.boxLidStyle === "overlap" ? "boxGenerator.lidOverlapHint" : "boxGenerator.lidRestOnHint"),
+      options: [{ value: "restOn", label: t("boxGenerator.lidRestOn") }, { value: "overlap", label: t("boxGenerator.lidOverlap") }, { value: "plug", label: t("boxGenerator.lidPlug") }],
+      hint: t(box.boxLidStyle === "overlap" ? "boxGenerator.lidOverlapHint" : box.boxLidStyle === "plug" ? "boxGenerator.lidPlugHint" : "boxGenerator.lidRestOnHint"),
       onChange: (value) => onUpdate({ boxLidStyle: normalizeBoxGeneratorLidStyle(value) }),
     });
-    if (box.boxPart === "lid" && box.boxLidStyle === "overlap") {
+    if (box.boxPart === "lid" && (box.boxLidStyle === "overlap" || box.boxLidStyle === "plug")) {
       properties.push({ id: "boxLidPlate", label: t("prop.boxLidPlate"), value: box.boxLidPlate, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, onChange: (value) => onUpdate({ boxLidPlate: value }) });
     }
-    if (box.boxLidStyle === "overlap" || (box.boxPart === "box" && box.boxStackable)) {
+    if (box.boxLidStyle === "overlap" || (box.boxPart === "lid" && box.boxLidStyle === "plug") || (box.boxPart === "box" && box.boxStackable)) {
       properties.push({ id: "boxFit", label: t("prop.boxFit"), value: box.boxFit, min: 0, max: MAX_BOX_GENERATOR_FIT, step: 0.05, hint: box.boxLidStyle === "overlap" ? fitHint : undefined, onChange: (value) => onUpdate({ boxFit: value }) });
     }
     return properties;

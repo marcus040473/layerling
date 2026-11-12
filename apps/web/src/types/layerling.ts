@@ -433,7 +433,7 @@ export type ShapeCustomization = {
   boxDivider?: number;
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid";
-  boxLidStyle?: "restOn" | "overlap";
+  boxLidStyle?: "restOn" | "overlap" | "plug";
   boxLidPlate?: number;
   boxFit?: number;
   /** Box generator: ready for Gridfinity, with the cells across and along (a rectangular box takes its size from them). */
@@ -1408,7 +1408,7 @@ export type WorkplaneShape = {
   boxDivider?: number;
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid";
-  boxLidStyle?: "restOn" | "overlap";
+  boxLidStyle?: "restOn" | "overlap" | "plug";
   boxLidPlate?: number;
   boxFit?: number;
   /** Box generator: ready for Gridfinity, with the cells across and along (a rectangular box takes its size from them). */

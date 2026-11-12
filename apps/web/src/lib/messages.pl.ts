@@ -2921,6 +2921,8 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "Nachodzi na pudełko",
   "boxGenerator.lidRestOnHint": "Płaska płytka wielkości pudełka, która leży na jego krawędzi.",
   "boxGenerator.lidOverlapHint": "Płytka ze spódniczką, która schodzi w dół po zewnętrznej stronie pudełka.",
+  "boxGenerator.lidPlug": "Wchodzi do pudełka",
+  "boxGenerator.lidPlugHint": "Płyta wielkości pudełka z pierścieniem na niej, który wchodzi do pudełka, mniejszym od wnętrza o luz.",
   "boxGenerator.lidSizeHint": "Nachodząca pokrywka do tego pudełka ma {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Ta pokrywka pasuje do pudełka {width} × {depth} mm.",
   "boxGenerator.issueWall": "Ścianka nie zostawia miejsca w środku. Zrób ją cieńszą albo pudełko większe.",

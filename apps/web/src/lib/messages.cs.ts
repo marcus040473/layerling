@@ -3060,6 +3060,8 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "boxGenerator.lidOverlap": "Přesahuje krabičku",
   "boxGenerator.lidRestOnHint": "Plochá deska stejně velká jako krabička, která leží na jejím okraji.",
   "boxGenerator.lidOverlapHint": "Deska se sukní, která sahá dolů přes vnější stranu krabičky.",
+  "boxGenerator.lidPlug": "Zasouvá se do krabice",
+  "boxGenerator.lidPlugHint": "Deska velká jako krabice s prstencem, který zapadá do krabice, o vůli menší než vnitřek.",
   "boxGenerator.lidSizeHint": "Přesahující víko pro tuto krabičku má {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Toto víko pasuje na krabičku {width} × {depth} mm.",
   "boxGenerator.issueWall": "Stěna nenechává uvnitř žádné místo. Udělejte ji tenčí nebo krabičku větší.",

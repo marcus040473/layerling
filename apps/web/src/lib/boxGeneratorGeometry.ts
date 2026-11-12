@@ -17,7 +17,8 @@ import { loadedManifoldRuntime, requestManifoldRuntime } from "@/lib/manifoldHan
  *
  * Part "box" is the open box: a floor, a wall all round and, if columns or rows are more than one, fixed dividers that
  * are one piece with the wall and floor. Part "lid" is the lid, printed top side down: a plate, and for the style
- * "overlap" a skirt that goes down over the outside of the box. Both parts take the same settings, so a box and its lid
+ * "overlap" a skirt that goes down over the outside of the box, for "plug" a ring that stands up from the plate and fits
+ * inside the box. Both parts take the same settings, so a box and its lid
  * are two copies of the shape with another part. The width and depth are always those of the part itself; for an
  * overlapping lid boxGeneratorMatchingLidSize gives the size that fits a box.
  *
@@ -27,7 +28,7 @@ import { loadedManifoldRuntime, requestManifoldRuntime } from "@/lib/manifoldHan
 
 export type BoxGeneratorShape = "rectangle" | "round" | "polygon";
 export type BoxGeneratorPart = "box" | "lid";
-export type BoxGeneratorLidStyle = "restOn" | "overlap";
+export type BoxGeneratorLidStyle = "restOn" | "overlap" | "plug";
 
 export const DEFAULT_BOX_GENERATOR_WIDTH = 126;
 export const DEFAULT_BOX_GENERATOR_DEPTH = 90;
@@ -113,7 +114,7 @@ export function normalizeBoxGeneratorPart(value: unknown): BoxGeneratorPart {
 }
 
 export function normalizeBoxGeneratorLidStyle(value: unknown): BoxGeneratorLidStyle {
-  return value === "overlap" ? "overlap" : "restOn";
+  return value === "overlap" || value === "plug" ? value : "restOn";
 }
 
 export type NormalizedBoxGenerator = Required<BoxGeneratorFields> & BoxGeneratorSize;
@@ -312,6 +313,8 @@ export type BoxGeneratorPlan = {
    * for each cell as the baseplate's own are (gridfinityCutSockets).
    */
   plate: { cells: Point[]; bottom: number } | null;
+  /** A plug lid: the ring that fits into the box (`outline`, with `hole` as the ring's inside, null for a solid plug) and the plate's thickness. */
+  plug: { outline: Point[]; hole: Point[] | null; plate: number } | null;
   issues: BoxGeneratorIssue[];
 };
 
@@ -323,18 +326,30 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
   const inner = insetConvex(outer, settings.boxWall);
 
   if (settings.boxPart === "lid") {
-    if (settings.boxLidStyle === "restOn") return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, issues };
+    if (settings.boxLidStyle === "plug") {
+      // A plug lid is as large as the box: a plate, and on it a ring that fits into the box, the play (Fit) smaller than the
+      // inside on each side, as thick as the wall. Printed plate down, so the ring needs no support.
+      const plug = insetConvex(outer, settings.boxWall + settings.boxFit);
+      if (!plug) {
+        issues.push({ code: "lidNoSkirt" });
+        return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: null, issues };
+      }
+      const platePart = Math.min(settings.boxLidPlate, settings.height - 0.5);
+      const hole = insetConvex(plug, settings.boxWall);
+      return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: { outline: plug, hole, plate: platePart }, issues };
+    }
+    if (settings.boxLidStyle === "restOn") return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: null, issues };
     if (!inner) {
       issues.push({ code: "lidNoSkirt" });
-      return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, issues };
+      return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: null, issues };
     }
-    return { settings, outer, cells: [inner], floorTop: Math.min(settings.boxLidPlate, settings.height - 0.5), stack: null, plate: null, issues };
+    return { settings, outer, cells: [inner], floorTop: Math.min(settings.boxLidPlate, settings.height - 0.5), stack: null, plate: null, plug: null, issues };
   }
 
   let floorTop = Math.min(settings.boxFloor, settings.height - 0.5);
   if (!inner) {
     issues.push({ code: "wallTooThick" });
-    return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, issues };
+    return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: null, issues };
   }
   // Stackable: the wall's inner half rises above a step as a collar; the outer half of the wall's underside has a groove
   // for the collar of the box below. The floor stays flat on the print bed (a groove only a wall's width wide is bridged
@@ -380,7 +395,7 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
     }
   }
   if (solid > 0) issues.push({ code: "compartmentSolid", count: solid });
-  return { settings, outer, cells, floorTop, stack, plate, issues };
+  return { settings, outer, cells, floorTop, stack, plate, plug: null, issues };
 }
 
 /** Problems a person should know about; the solid is still made, the affected part left solid. */
@@ -577,9 +592,20 @@ function addWall(mesh: MeshBuilder, outline: Point[], y0: number, y1: number, fa
  * cells, the cells' walls facing inward and the floor of each cell.
  */
 export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}): THREE.BufferGeometry {
-  const { outer, cells, floorTop, settings, stack, plate } = boxGeneratorPlan(size, fields);
+  const { outer, cells, floorTop, settings, stack, plate, plug } = boxGeneratorPlan(size, fields);
   const mesh: MeshBuilder = { positions: [], indices: [] };
-  if (stack) {
+  if (plug) {
+    // The plate on the bed, the ring standing up from it: its outside, its top, and its inside down to the plate.
+    addCap(mesh, outer, [], 0, "down");
+    addWall(mesh, outer, 0, plug.plate, "out");
+    addCap(mesh, outer, [plug.outline], plug.plate, "up");
+    addWall(mesh, plug.outline, plug.plate, settings.height, "out");
+    addCap(mesh, plug.outline, plug.hole ? [plug.hole] : [], settings.height, "up");
+    if (plug.hole) {
+      addWall(mesh, plug.hole, plug.plate, settings.height, "in");
+      addCap(mesh, plug.hole, [], plug.plate, "up");
+    }
+  } else if (stack) {
     const { skirt, collar, groove, height: lift, grooveHeight } = stack;
     // Underneath: the foot under the wall's outer part, the groove for the collar of the box below, the flat floor.
     addCap(mesh, outer, [skirt], 0, "down");

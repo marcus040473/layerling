@@ -2983,6 +2983,8 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "boxGenerator.lidOverlap": "Valt over de doos",
   "boxGenerator.lidRestOnHint": "Een platte plaat zo groot als de doos die op de rand ligt.",
   "boxGenerator.lidOverlapHint": "Een plaat met een rand die over de buitenkant van de doos naar beneden loopt.",
+  "boxGenerator.lidPlug": "Steekt in de doos",
+  "boxGenerator.lidPlugHint": "Een plaat zo groot als de doos met een ring erop die in de doos past, kleiner dan de binnenkant met de speling.",
   "boxGenerator.lidSizeHint": "Het overlappende deksel voor deze doos is {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Dit deksel past op een doos van {width} × {depth} mm.",
   "boxGenerator.issueWall": "De wand laat binnenin geen ruimte over. Maak hem dunner of de doos groter.",
