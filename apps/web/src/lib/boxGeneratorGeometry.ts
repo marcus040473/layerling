@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { WorkplaneShape } from "@/types/layerling";
-import { GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
+import { GRIDFINITY_BASEPLATE_RADIUS, GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
 
 /*
  * The box generator: one parametric shape for a box and its lid, from a few settings instead of a fixed template.
@@ -336,9 +336,9 @@ export function boxGeneratorIssues(size: BoxGeneratorSize, fields: BoxGeneratorF
 export function boxGeneratorGridfinityRoom(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}) {
   const settings = normalizeBoxGenerator(size, fields);
   if (settings.boxPart !== "box" || settings.boxShape !== "rectangle") return null;
-  const width = Math.round((settings.width - 2 * settings.boxWall) * 100) / 100;
-  const depth = Math.round((settings.depth - 2 * settings.boxWall) * 100) / 100;
-  return { width, depth, columns: Math.floor(width / GRIDFINITY_GRID + 1e-9), rows: Math.floor(depth / GRIDFINITY_GRID + 1e-9) };
+  const fit = boxGeneratorGridfinityFit(size, fields);
+  const best = fit?.best ?? null;
+  return { width: fit!.innerWidth, depth: fit!.innerDepth, columns: best?.columns ?? 0, rows: best?.rows ?? 0 };
 }
 
 /** The baseplate of a grid of Gridfinity cells, in mm: the cells of the grid and the play the drawer clearance leaves. */
@@ -346,11 +346,29 @@ function gridfinityPlate(columns: number, rows: number) {
   return { width: columns * GRIDFINITY_GRID + GRIDFINITY_DRAWER_CLEARANCE, depth: rows * GRIDFINITY_GRID + GRIDFINITY_DRAWER_CLEARANCE };
 }
 
-/** The outer size of a rectangular box whose inside holds a Gridfinity baseplate of this many cells with its play. */
-export function boxGeneratorGridfinityBoxSize(columns: number, rows: number, wall: number) {
-  const plate = gridfinityPlate(Math.max(1, Math.round(columns)), Math.max(1, Math.round(rows)));
-  const grow = 2 * Math.max(0, wall);
-  return { width: Math.round((plate.width + grow) * 100) / 100, depth: Math.round((plate.depth + grow) * 100) / 100 };
+/**
+ * How much room a baseplate needs on every side between its edge and the inside of a rectangular box, in mm. The play of
+ * the drawer fit gives half of it; the rounded corners of the inside may ask for more: a plate whose corners are rounded
+ * by the Gridfinity radius fits a corner rounded by `inside` only when it stands back from the straight walls by
+ * (inside - radius) x (1 - 1 / sqrt 2), as the corner circles must lie within one another.
+ */
+export function boxGeneratorGridfinityMargin(insideCornerRadius: number) {
+  const corner = Math.max(0, insideCornerRadius - GRIDFINITY_BASEPLATE_RADIUS) * (1 - Math.SQRT1_2);
+  return Math.max(GRIDFINITY_DRAWER_CLEARANCE / 2, corner);
+}
+
+/**
+ * The outer size of a rectangular box whose inside holds a Gridfinity baseplate of this many cells: with its play, and
+ * wide enough that the plate's corners clear the rounded corners of the inside (`cornerRadius` is the outside's).
+ */
+export function boxGeneratorGridfinityBoxSize(columns: number, rows: number, wall: number, cornerRadius = 0) {
+  const margin = boxGeneratorGridfinityMargin(Math.max(0, cornerRadius - Math.max(0, wall)));
+  const grow = 2 * (Math.max(0, wall) + margin);
+  return {
+    // Up to a hundredth, so the rounding can never take the clearance away again.
+    width: Math.ceil((Math.max(1, Math.round(columns)) * GRIDFINITY_GRID + grow) * 100 - 1e-6) / 100,
+    depth: Math.ceil((Math.max(1, Math.round(rows)) * GRIDFINITY_GRID + grow) * 100 - 1e-6) / 100,
+  };
 }
 
 /**
@@ -370,7 +388,8 @@ export function boxGeneratorGridfinityFit(size: BoxGeneratorSize, fields: BoxGen
   const innerDepth = Math.round((settings.depth - 2 * settings.boxWall) * 100) / 100;
   const fits = (columns: number, rows: number) => {
     const plate = gridfinityPlate(columns, rows);
-    if (rectangle) return plate.width <= innerWidth + 1e-6 && plate.depth <= innerDepth + 1e-6;
+    // Against the sides of a rectangular box, and clear of the rounded corners of its inside.
+    if (rectangle) return Math.min(innerWidth - plate.width, innerDepth - plate.depth) / 2 >= boxGeneratorGridfinityMargin(Math.max(0, settings.boxCornerRadius - settings.boxWall)) - GRIDFINITY_DRAWER_CLEARANCE / 2 - 0.006;
     if (!inner) return false;
     const corners: Point[] = [{ x: -plate.width / 2, z: -plate.depth / 2 }, { x: plate.width / 2, z: -plate.depth / 2 }, { x: plate.width / 2, z: plate.depth / 2 }, { x: -plate.width / 2, z: plate.depth / 2 }];
     return corners.every((corner) => inner.every((a, i) => {

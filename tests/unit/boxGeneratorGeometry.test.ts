@@ -4,6 +4,8 @@ import {
   boxGeneratorIssues,
   boxGeneratorGridfinityBoxSize,
   boxGeneratorGridfinityFit,
+  boxGeneratorGridfinityMargin,
+  boxGeneratorOutline,
   boxGeneratorGridfinityFloor,
   boxGeneratorInsideOutline,
   boxGeneratorGridfinityRoom,
@@ -91,7 +93,8 @@ describe("box generator", () => {
     // 126 x 90 with a 2.4 wall: 121.2 x 85.2 inside, two 42 mm cells each way.
     expect(boxGeneratorGridfinityRoom(SIZE, { boxCornerRadius: 3 })).toEqual({ width: 121.2, depth: 85.2, columns: 2, rows: 2 });
     // A thicker wall takes the second row's room away.
-    expect(boxGeneratorGridfinityRoom({ width: 130, depth: 90, height: 48 }, { boxWall: 3 })).toEqual({ width: 124, depth: 84, columns: 2, rows: 2 });
+    // 84 mm deep is 0.5 mm short of two cells with their play: one row.
+    expect(boxGeneratorGridfinityRoom({ width: 130, depth: 90, height: 48 }, { boxWall: 3 })).toEqual({ width: 124, depth: 84, columns: 2, rows: 1 });
     expect(boxGeneratorGridfinityRoom({ width: 130, depth: 90, height: 48 }, { boxWall: 3.2 })).toMatchObject({ depth: 83.6, rows: 1 });
     // Smaller than a cell: none fit.
     expect(boxGeneratorGridfinityRoom({ width: 40, depth: 40, height: 20 }, {})).toMatchObject({ columns: 0, rows: 0 });
@@ -126,6 +129,36 @@ describe("box generator", () => {
     expect(boxGeneratorGridfinityFit({ width: 40, depth: 40, height: 20 }, { boxShape: "round" })!.best).toBeNull();
     // A lid has no inside.
     expect(boxGeneratorGridfinityFit({ width: 140, depth: 140, height: 40 }, { boxPart: "lid" })).toBeNull();
+  });
+
+  it("keeps a Gridfinity baseplate clear of the rounded corners of a box sized to its cells", () => {
+    // Small corners ask for nothing but the play; large ones push the walls out.
+    expect(boxGeneratorGridfinityMargin(0)).toBe(0.25);
+    expect(boxGeneratorGridfinityMargin(4)).toBe(0.25);
+    expect(boxGeneratorGridfinityMargin(27.6)).toBeCloseTo(0.2929 * 23.6, 2);
+    expect(boxGeneratorGridfinityBoxSize(3, 3, 2.4, 3)).toEqual({ width: 131.3, depth: 131.3 });
+    const grown = boxGeneratorGridfinityBoxSize(3, 3, 2.4, 30);
+    expect(grown.width).toBeGreaterThan(140);
+    const fields = { boxCornerRadius: 30 };
+    const fit = boxGeneratorGridfinityFit({ width: grown.width, depth: grown.depth, height: 40 }, fields)!;
+    expect(fit.fits(3, 3)).toBe(true);
+    expect(boxGeneratorGridfinityFit({ width: grown.width - 1, depth: grown.depth - 1, height: 40 }, fields)!.fits(3, 3)).toBe(false);
+    // The plate itself (3 x 42 mm, its corners rounded by 4 mm) lies inside the rounded inside, corner by corner.
+    const settings = normalizeBoxGenerator({ width: grown.width, depth: grown.depth, height: 40 }, fields);
+    const inside = boxGeneratorInsideOutline(boxGeneratorOutline(settings), settings.boxWall)!;
+    const half = (3 * 42) / 2;
+    const plate: { x: number; z: number }[] = [];
+    for (const [cx, cz] of [[half - 4, half - 4], [-(half - 4), half - 4], [-(half - 4), -(half - 4)], [half - 4, -(half - 4)]]) {
+      for (let k = 0; k <= 12; k += 1) {
+        const angle = Math.atan2(cz, cx) - Math.PI / 4 + (k / 12) * (Math.PI / 2);
+        plate.push({ x: cx + 4 * Math.cos(angle), z: cz + 4 * Math.sin(angle) });
+      }
+    }
+    const outsideBy = Math.max(...plate.map((p) => Math.max(...inside.map((a, i) => {
+      const b = inside[(i + 1) % inside.length];
+      return -((b.x - a.x) * (p.z - a.z) - (b.z - a.z) * (p.x - a.x)) / Math.hypot(b.x - a.x, b.z - a.z);
+    }))));
+    expect(outsideBy).toBeLessThan(0.2);
   });
 
   it("fits the Gridfinity floor to the inside of a box of any outline as it was given", () => {
