@@ -45,7 +45,7 @@ export const MCP_SHAPE_SETTING_KEYS = [
   "gridfinityCompartmentsX", "gridfinityCompartmentsZ", "gridfinityDividerThickness", "gridfinityDividerPositionsX", "gridfinityDividerPositionsZ", "gridfinityCompartmentLabels", "gridfinityOpenings", "gridfinityOpeningCorner", "gridfinityOpeningCornerSize", "gridfinityOutline",
   "knurlPattern", "knurlCount", "knurlDepth", "knurlAngle", "knurlChamfer",
   "dovetailNeckWidth", "dovetailClearance",
-  "boxShape", "boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxPart", "boxLidStyle", "boxLidPlate", "boxFit", "boxGridfinity", "boxGridfinityColumns", "boxGridfinityRows", "boxGridfinityFloor",
+  "boxShape", "boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxPart", "boxLidStyle", "boxLidPlate", "boxFit", "boxGridfinity", "boxGridfinityColumns", "boxGridfinityRows", "boxGridfinityFloor", "boxStackable", "boxStackHeight",
   "loftBottomOutline", "loftTopOutline", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftBottomSides", "loftTopSides", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTopWall", "loftTwist", "loftTiltX", "loftTiltZ", "loftSmooth", "loftSegments", "loftSections", "loftThrough", "slotEndRatio", "torusTubeRatio",
   "screwHoleShaft", "screwHoleHeadDepth", "screwHoleAngle", "drillPointAngle", "screwHoleSlot", "screwHoleRecess", "screwHoleChamfer", "portProfile", "portClearance",
   "cornerFillet", "topBottomFillet", "bottomFillet", "roundedBoxQuality",

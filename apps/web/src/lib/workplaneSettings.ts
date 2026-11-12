@@ -633,6 +633,8 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.boxGridfinityColumns = optionalShapeNumber(source.boxGridfinityColumns, fallbackEntry?.boxGridfinityColumns, 1, 12);
       entry.boxGridfinityRows = optionalShapeNumber(source.boxGridfinityRows, fallbackEntry?.boxGridfinityRows, 1, 12);
       entry.boxGridfinityFloor = source.boxGridfinityFloor === true ? true : source.boxGridfinityFloor === false ? undefined : fallbackEntry?.boxGridfinityFloor;
+      entry.boxStackable = source.boxStackable === true ? true : source.boxStackable === false ? undefined : fallbackEntry?.boxStackable;
+      entry.boxStackHeight = optionalShapeNumber(source.boxStackHeight, fallbackEntry?.boxStackHeight, 1, 10);
     }
     if (kind === "dovetail") {
       entry.dovetailNeckWidth = optionalShapeNumber(source.dovetailNeckWidth, fallbackEntry?.dovetailNeckWidth, 0.1, MAX_CUSTOM_SHAPE_DIMENSION);

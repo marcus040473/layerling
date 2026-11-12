@@ -919,6 +919,8 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.boxGridfinityColumns === b.boxGridfinityColumns &&
     a.boxGridfinityRows === b.boxGridfinityRows &&
     a.boxGridfinityFloor === b.boxGridfinityFloor &&
+    a.boxStackable === b.boxStackable &&
+    a.boxStackHeight === b.boxStackHeight &&
     a.loftBottomOutline === b.loftBottomOutline &&
     a.loftTopOutline === b.loftTopOutline &&
     a.loftBottomWidth === b.loftBottomWidth &&

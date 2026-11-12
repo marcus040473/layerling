@@ -264,11 +264,13 @@ microSD 卡槽也是左边缘的接口，位于电路板下方（Zero 2 W 上在
 
 盖子是同一个形状的副本，把{{ui:prop.boxPart}}设为{{ui:boxGenerator.partLid}}。它按打印时的样子绘制，盖板贴在打印床上。{{ui:boxGenerator.lidRestOn}}是与盒子一样大的平板。{{ui:boxGenerator.lidOverlap}}带一圈和壁一样厚的裙边，向下罩住盒子外侧；{{ui:prop.boxLidPlate}}是盖板的厚度，{{ui:prop.boxFit}}是每一侧的间隙。一个部件的宽和长始终是它自己的，所以罩盖比盒子大：在{{ui:prop.boxFit}}下，面板会给出合适的尺寸。
 
-> **提示：** 打印出来的配合比绘制的略紧。先打印盖子，并以十分之一毫米为单位调整{{ui:prop.boxFit}}，直到能顺畅合上。铰链、锁扣、堆叠和 Gridfinity 还不属于这个形状；请在旁边使用铰链、卡扣和 Gridfinity 形状。
+> **提示：** 打印出来的配合比绘制的略紧。先打印盖子，并以十分之一毫米为单位调整{{ui:prop.boxFit}}，直到能顺畅合上。铰链和锁扣还不属于这个形状；请在旁边使用铰链和卡扣形状。
 
 盒子生成器不会自己做 Gridfinity：{{ui:shape.gridfinity}} 形状已经有底板和收纳盒，直接放进盒子里即可。要让盒子做好准备，打开 {{ui:prop.boxGridfinity}}，并在 {{ui:prop.boxGridfinityCells}} 中选格数，例如 3 乘 4。矩形盒子随后会取一个尺寸，使这么多格的底板刚好放进壁内，每格 42 毫米加 0.5 毫米间隙；改变壁厚，尺寸随之变化。圆形或多边形盒子不会改变尺寸：面板会说明格子能否放下，并指出轮廓内能放下的最大格子。开关关闭时，{{ui:prop.boxFloor}} 下的面板只说明盒内有多少空间。
 
 第二个开关 {{ui:prop.boxGridfinityFloor}} 反过来工作：盒子保持你输入的尺寸，无论是矩形、圆形、椭圆还是多边形，底部随之适配。面板会告诉你盒内能放下多少个完整的 42 毫米格子；底板本身请添加一个 Gridfinity {{ui:gridfinity.baseplate}}，与盒子一起选中，再按 {{ui:inspector.gridfinityOutlineFit}}。它会连同放得下的完整格子一起适配到壁内，底部其余部分保持实心。两个开关互相排斥。
+
+{{ui:prop.boxStackable}} 做出能互相叠放的盒子，任何轮廓都适用。底部下方的裙边厚度是壁的一半，套在下面盒子顶部一圈的台阶外；顶部的凸缘是壁的另一半，高出台阶并让上面的盒子对中。凸缘高出 {{ui:prop.boxStackHeight}}，这包含在盒子的高度里，底部下表面也抬高同样的高度，使底部保持原来的厚度。裙边与凸缘之间的间隙是 {{ui:prop.boxFit}}。壁太薄或盒子对凸缘来说太矮时，面板会说明，盒子保持不可堆叠。盖子不堆叠。
 
 ## 螺丝柱
 
