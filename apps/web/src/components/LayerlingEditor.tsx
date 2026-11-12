@@ -27,7 +27,7 @@ import { limitedText } from "@/lib/textLength";
 import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textKerningPatch, textLetterSize, textLetterSizePatch, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
 import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, isIconLayerBody, normalizeIconTagCount } from "@/lib/iconTag";
 import { automaticFlexiJoints, automaticFoldJoints, DEFAULT_FLEXI_FOLD, FLEXI_DEFAULTS, normalizeFlexiOptions, type FlexiOptions } from "@/lib/flexiJoints";
-import { LID_HINGE_TYPES, groupedWithMagnets, lidClickBumpsFit, lidDefaults, lidFlipTopFits, lidHandleFits, lidNeckFit, lidNeckFitPatch, lidStandardThread, lidTakesExtras, lidTakesMagnets, lidTetherFits, lidTopEdgeFits, magnetPocketDepth, normalizeLidOptions, type LidOptions, type LidThreadStandard } from "@/lib/lidTool";
+import { LID_HINGE_TYPES, groupedWithMagnets, lidClickBumpsFit, lidDefaults, lidFlipTopFits, lidHandleFits, lidNeckFit, lidNeckFitPatch, lidStandardThread, lidTakesMagnets, lidTetherFits, lidTopEdgeFits, magnetPocketDepth, normalizeLidOptions, type LidOptions, type LidThreadStandard } from "@/lib/lidTool";
 import { FIT_TEST_CLEARANCES, getPrinterPlay, MAX_PRINTER_PLAY, MIN_PRINTER_PLAY, normalizePrinterPlay, PRINTER_PLAY_SETTINGS, printerPlayPrinter, printerPlaySource, printerPlayStart, setPrinterPlay, setPrinterPlayPrinter, withPrinterPlay } from "@/lib/printerPlay";
 import { FIT_TEST_PIN_DIAMETER, fitTestHoles, fitTestShape, fitTestSpot } from "@/lib/fitTest";
 import { fitTestPinBaseChosen } from "@/lib/breakawayBase";
@@ -112,7 +112,7 @@ import { disposeBoundsTree } from "three-mesh-bvh";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import { arrayCirclePivot, arrayFitGap, arrayFitShift, arrayFollowingPivot, arrayGridSize, arrayGroupsCopies, arrayWithFit, circleStepDegrees, clampArrayCount, gridOffsets, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing, type ArraySettings } from "@/lib/shapeArray";
 import { keepDismissedOverhangs, printerPresetById, shapeBedFootprint, type BedOverhang } from "@/lib/printBed";
-import { MAX_BUILD_PLATES, PLATE_GAP, plateCenterX, plateIndexAt, plateName, plateOfShape, plateOverhangs, shapesOnPlateFrame, shapesAfterPlateResize, platePitch, plateCount as buildPlateCount } from "@/lib/buildPlates";
+import { MAX_BUILD_PLATES, PLATE_GAP, plateCenterX, plateIndexAt, plateName, plateOfShape, plateOverhangs, shapesOnPlateFrame, shapesAfterPlateResize, platePitch, plateCount as buildPlateCount, shapeMovedAlongX } from "@/lib/buildPlates";
 import { plateDisplayLabel, useBuildPlates } from "@/components/workplane/useBuildPlates";
 import { zipSync } from "fflate";
 import { PlateBar } from "@/components/workplane/PlateBar";
@@ -121,6 +121,7 @@ import { NO_SPLIT_ROTATION, modelSplitPlane, snapSplitPositionToVertices, splitO
 import { connectorHoleRadius, normalizeSplitConnectorOptions, splitConnectorDefaults, SPLIT_CONNECTOR_KINDS, type SplitConnectorOptions } from "@/lib/splitConnectors";
 import { AttachmentViewer } from "./workplane/AttachmentViewer";
 import { GuideModal } from "./workplane/GuideModal";
+import { FileBackupsDialog, fileBackupName } from "@/components/FileBackupsDialog";
 import { HistoryViewOverlay, historyStateNameSuffix } from "./workplane/HistoryViewOverlay";
 import { useHistoryViewPicking } from "./workplane/useHistoryViewPicking";
 import { ShortcutsModal } from "./workplane/ShortcutsModal";
@@ -143,7 +144,7 @@ import { DEFAULT_INFILL_PERCENT, DEFAULT_WALLS, PRINT_MATERIAL_DENSITY, PRINT_MA
 import { matchingEdgeIds } from "@/lib/edgeMatching";
 import { readEdgeModifierSettings, rememberEdgeModifierSetting, startingEdgeModifierAmount, type EdgeModifierSettings } from "@/lib/edgeModifierMemory";
 import { getEditorProfile, profileBooleanValue } from "@/lib/editorProfile";
-import { CAD_MODIFIER_MAX_SHARP_ANGLE, CAD_MODIFIER_REQUEST_TIMEOUT_MS, CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT, cadModifierPrepareTimeoutMs, cadModifierTimeoutMessage, cadModifierUserErrorMessage, cadModifierWorkerFailureMessage, cadModifierCandidateEdge, cadModifierPresetValues, defaultCadModifierTangentChain, rescueSharpAngleForEdges, selectableCadModifierEdge, type CadModifierRequestPhase } from "@/lib/cadModifierRuntime";
+import { CAD_MODIFIER_MAX_SHARP_ANGLE, CAD_MODIFIER_REQUEST_TIMEOUT_MS, CAD_MODIFIER_PREPARE_TRIANGLE_LIMIT, cadModifierPrepareTimeoutMs, cadModifierTimeoutMessage, cadModifierSizeRefusal, cadModifierUserErrorMessage, cadModifierWorkerFailureMessage, cadModifierCandidateEdge, cadModifierPresetValues, defaultCadModifierTangentChain, rescueSharpAngleForEdges, selectableCadModifierEdge, type CadModifierRequestPhase } from "@/lib/cadModifierRuntime";
 import { isThinFace, thinFacesWith } from "@/lib/cadThinFaces";
 import { createCadPreviewQueue } from "@/lib/cadPreviewQueue";
 import { cloneWorkplaneShapeSnapshot, compactEdgeTreatmentHistory, edgeTreatmentAppliedFrame, groupBeforeEdgeTreatments, restoreShapeBeforeEdgeTreatment, tubeBeforeEdgeTreatments, wasGroupBeforeEdgeTreatments } from "@/lib/edgeTreatmentHistory";
@@ -185,7 +186,10 @@ import { useFileAccept } from "@/lib/fileAccept";
 import { exportLylProject, LYL_CREATED_WITH_VERSION, LYL_MEDIA_TYPE, lylThumbnailFiles } from "@/lib/lylProject";
 import { projectThumbnailPngBytes } from "@/lib/backupDownload";
 import { isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
+import { createKernelGate, isKernelStatusMessage, warmKernelMessage, type KernelGate } from "@/lib/cadKernelGate";
 import { ensureLylFileWritable, forgetLylFile, forgetStlFile, linkedLylFile, linkedStlFile, lylFileAccessSupported, pickLylFileToOpen, pickLylFileToSave, pickStlFileToSave, rememberLylFile, rememberStlFile, writeLylFile, type LylFileHandle } from "@/lib/lylFileAccess";
+import { addFileBackup, allowBackupFolder, fileBackupsOfDesign, listFileBackups, OPEN_FILE_BACKUPS_EVENT, readFileBackupBytes, readFileBackupSettings } from "@/lib/fileBackups";
+import { backupFileBeforeOverwrite, takeEditorBackupReminder } from "@/components/workplane/fileBackupEditor";
 import { copyNamePatterns, shapeNamesIn, withCopyName } from "@/lib/shapeCopyName";
 import { clipboardShape, displayShapeName, hasOwnShapeName, iconTagAsset, qrCodeAsset, makeShapeFromAsset, nameTagAsset, sbcBoardAsset, shapeAssetLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
 import { storeRecentShape } from "@/lib/shapeLibrarySections";
@@ -211,7 +215,7 @@ import { findShapeInHistoryState } from "@/lib/historyRestore";
 import { noteAnchorFromWorld, notesAfterShapeChange, notesPinnedTo, notesPutBack } from "@/lib/noteAnchoring";
 import { noticeReportsLastChange } from "@/lib/noticeTiming";
 import { referencePointsForBox, unionReferenceBoxes, type ReferencePointSpot, type ReferencePosition } from "@/lib/referencePoints";
-import { normalizePlacementWorkplane, placementPatchForNewShape, placementWorkplaneCoordinates, placementWorkplaneFingerprint, placementWorkplaneFromSurface, placementWorkplaneIsBase, placementWorkplanePoint, horizontalPlacementWorkplane, translationToWorkplane, type PlacementPoint, REVOLVE_REFERENCE_WORKPLANE, revolveBodyStandsUpright, type PlacementWorkplane } from "@/lib/placementWorkplane";
+import { normalizePlacementWorkplane, placementPatchForNewShape, placementWorkplaneCoordinates, placementWorkplaneFingerprint, placementWorkplaneFromSurface, placementWorkplaneIsBase, placementWorkplanePlateShift, placementWorkplanePoint, horizontalPlacementWorkplane, translationToWorkplane, type PlacementPoint, REVOLVE_REFERENCE_WORKPLANE, revolveBodyStandsUpright, type PlacementWorkplane } from "@/lib/placementWorkplane";
 import { localizedError } from "@/lib/userErrors";
 import { alignNaturalCenter, type AlignPoint } from "@/lib/alignCenter";
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
@@ -311,6 +315,7 @@ const HISTORY_VIEW_MCP_ACTIONS = new Set([
   "set_history_view",
   "restore_from_history",
   "clear_history",
+  "list_backups",
   // Reading a design's files, as Download in the attachments panel still works there (#820).
   ...ATTACHMENT_MCP_READ_ACTIONS,
 ]);
@@ -377,6 +382,10 @@ type EdgeModifierSession = {
   workingEdgeIds?: number[];
   // The edge(s) whose selection broke a working treatment; drawn red while that error stands.
   failedEdgeIds?: number[];
+  // The error shown when the size was refused, to offer the search for the largest size that fits while it stands (#1635).
+  sizeRefusedError?: string | null;
+  // That search is running.
+  searchingLargest?: boolean;
   preview: WorkplaneShape | null;
   componentPreviews: EdgeModifierComponentPreview[];
 };
@@ -489,6 +498,9 @@ const PROJECT_SYNC_HELD_MAX_MS = 2000;
 const MAX_SKETCH_HISTORY_ENTRIES = 100;
 const NORMAL_SELECTION_CAD_EDGE_MIN_ANGLE = 60;
 const MIN_EDGE_MODIFIER_AMOUNT = 0.001;
+// The worker gives up its search for the largest size after 15 s with the best one so far; a single heavy run of the
+// kernel can go past that, and a timeout here restarts the worker and closes the tool.
+const LARGEST_EDGE_AMOUNT_TIMEOUT_MS = 90_000;
 const SEPARATE_PARTS_VERTEX_TOLERANCE = 0.0005;
 
 
@@ -3043,6 +3055,7 @@ export function LayerlingEditor({
   initialPlacementWorkplane,
   onHome,
   onOpenLylProjectFile,
+  onBackUpAllDesigns,
   onSaveSharedProject,
   onSaveExportFile,
   serverFileName = null,
@@ -3075,7 +3088,9 @@ export function LayerlingEditor({
   initialPlacementElevation?: number;
   initialPlacementWorkplane?: PlacementWorkplane;
   onHome?: (leaving: { itemCount: number }) => void;
-  onOpenLylProjectFile?: (file: File, shared?: undefined, fileHandle?: LylFileHandle) => Promise<{ ok: boolean; message: string } | void> | { ok: boolean; message: string } | void;
+  onOpenLylProjectFile?: (file: File, shared?: undefined, fileHandle?: LylFileHandle, options?: { name?: string }) => Promise<{ ok: boolean; message: string } | void> | { ok: boolean; message: string } | void;
+  /** "Back up all" of the start page, for the reminder in the status line; it starts with the save dialog. */
+  onBackUpAllDesigns?: () => void;
   onSaveSharedProject?: (request: { exportName: string; bytes: Uint8Array; thumbnailDataUrl: string; targetFileName?: string }) => Promise<string>;
   /** An export file put into the server folder instead of the downloads (#779). Resolves to the notice; a file that is there already rejects with `exists`. */
   onSaveExportFile?: (request: { fileName: string; blob: Blob; overwrite?: boolean }) => Promise<string>;
@@ -3244,6 +3259,13 @@ export function LayerlingEditor({
     if (!editorOpen) setInteractiveHelp(false);
   }, [editorOpen]);
   const [guideOpen, setGuideOpen] = useState(false);
+  // "Earlier versions": the automatic backups of this design, from the export window, the command search or a notice.
+  const [backupsOpen, setBackupsOpen] = useState(false);
+  useEffect(() => {
+    const show = () => setBackupsOpen(true);
+    window.addEventListener(OPEN_FILE_BACKUPS_EVENT, show);
+    return () => window.removeEventListener(OPEN_FILE_BACKUPS_EVENT, show);
+  }, []);
   /**
    * The attachment open in the viewer (#820), by id. The viewer is drawn from the attachment that has
    * this id now, so it shows a replaced file's new content and goes away when the file does.
@@ -3647,7 +3669,7 @@ export function LayerlingEditor({
   const cadModifierPendingRef = useRef(new Map<number, {
     resolve: (message: CadModifierWorkerResponse) => void;
     reject: (error: Error) => void;
-    timer: number;
+    cancelTimer: () => void;
   }>());
   const cadModifierRequestRef = useRef(0);
   const cadModifierPrepareRef = useRef(0);
@@ -3655,7 +3677,9 @@ export function LayerlingEditor({
   const cadModifierBaseShapeRef = useRef<WorkplaneShape | null>(null);
   const cadModifierBaseFingerprintRef = useRef("");
   const cadModifierSourcePartsRef = useRef<WorkplaneShape[]>([]);
-  const cadModifierWatchdogRef = useRef<{ requestId: number; phase: CadModifierRequestPhase; timer: number } | null>(null);
+  const cadModifierWatchdogRef = useRef<{ requestId: number; phase: CadModifierRequestPhase; cancelTimer: () => void } | null>(null);
+  // The edge worker's kernel: its time limits count only once it is loaded (lib/cadKernelGate.ts, #1612).
+  const cadModifierKernelGateRef = useRef<KernelGate | null>(null);
   const cadPreviewSendRef = useRef<(payload: CadPreviewPayload) => number | null>(() => null);
   const cadPreviewQueueRef = useRef(createCadPreviewQueue<CadPreviewPayload>((payload) => cadPreviewSendRef.current(payload)));
   const cadModifierWorkerRestartRef = useRef<() => Worker | null>(() => null);
@@ -3665,13 +3689,21 @@ export function LayerlingEditor({
   const clearCadModifierWatchdog = useCallback((requestId?: number) => {
     const active = cadModifierWatchdogRef.current;
     if (!active || (requestId !== undefined && active.requestId !== requestId)) return;
-    window.clearTimeout(active.timer);
+    active.cancelTimer();
     cadModifierWatchdogRef.current = null;
+  }, []);
+
+  /** setTimeout for a request to the edge worker, counting from when its kernel is loaded (#1612). */
+  const cadModifierTimeout = useCallback((callback: () => void, timeoutMs: number) => {
+    const gate = cadModifierKernelGateRef.current;
+    if (gate) return gate.timeout(callback, timeoutMs);
+    const timer = window.setTimeout(callback, timeoutMs);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const armCadModifierWatchdog = useCallback((requestId: number, phase: CadModifierRequestPhase, timeoutMs = CAD_MODIFIER_REQUEST_TIMEOUT_MS) => {
     clearCadModifierWatchdog();
-    const timer = window.setTimeout(() => {
+    const cancelTimer = cadModifierTimeout(() => {
       const active = cadModifierWatchdogRef.current;
       if (!active || active.requestId !== requestId) return;
       cadModifierWatchdogRef.current = null;
@@ -3689,14 +3721,14 @@ export function LayerlingEditor({
       } : current);
       setNotice(message);
     }, timeoutMs);
-    cadModifierWatchdogRef.current = { requestId, phase, timer };
-  }, [clearCadModifierWatchdog]);
+    cadModifierWatchdogRef.current = { requestId, phase, cancelTimer };
+  }, [cadModifierTimeout, clearCadModifierWatchdog]);
 
   useEffect(() => {
     let disposed = false;
     const rejectPendingRequests = (message: string) => {
       cadModifierPendingRef.current.forEach((pending) => {
-        window.clearTimeout(pending.timer);
+        pending.cancelTimer();
         pending.reject(new Error(message));
       });
       cadModifierPendingRef.current.clear();
@@ -3718,13 +3750,22 @@ export function LayerlingEditor({
         setNotice(message);
       }
     };
-    const createWorker = () => {
+    const createWorker = (warm: boolean) => {
       if (disposed) return null;
       cadModifierWorkerRef.current?.terminate();
+      cadModifierKernelGateRef.current?.dispose();
+      cadModifierKernelGateRef.current = null;
       try {
         const worker = new Worker(new URL("../workers/cadModifier.worker.ts", import.meta.url), { type: "module" });
+        const gate = createKernelGate();
         cadModifierWorkerRef.current = worker;
-        worker.onmessage = handleWorkerMessage;
+        cadModifierKernelGateRef.current = gate;
+        worker.onmessage = (event: MessageEvent<CadModifierWorkerResponse>) => {
+          if (isKernelStatusMessage(event.data)) gate.open();
+          else handleWorkerMessage(event);
+        };
+        // A worker started again after a timeout loads its kernel at once; the first one when the editor is idle.
+        if (warm) worker.postMessage(warmKernelMessage());
         worker.onerror = (event) => {
           event.preventDefault();
           reportWorkerFailure(worker);
@@ -3745,7 +3786,7 @@ export function LayerlingEditor({
       clearCadModifierWatchdog(message.requestId);
       const pending = cadModifierPendingRef.current.get(message.requestId);
       if (pending) {
-        window.clearTimeout(pending.timer);
+        pending.cancelTimer();
         cadModifierPendingRef.current.delete(message.requestId);
         if (message.type === "error") {
           pending.reject(new Error(message.message));
@@ -3848,13 +3889,16 @@ export function LayerlingEditor({
           setNotice(cadModifierUserErrorMessage(message.message) ?? message.message);
           return;
         }
+        const shownError = message.tightestBend !== undefined
+          ? tightBendError(message.tightestBend, workspaceSettingsRef.current)
+          : cadModifierUserErrorMessage(message.message) ?? message.message;
         setEdgeModifier((current) => current ? {
           ...current,
           busy: false,
           preview: null,
-          error: message.tightestBend !== undefined
-            ? tightBendError(message.tightestBend, workspaceSettingsRef.current)
-            : cadModifierUserErrorMessage(message.message) ?? message.message,
+          error: shownError,
+          // A refusal for the size offers the search for the largest one that fits (Discussion #1635).
+          sizeRefusedError: message.tightestBend !== undefined || cadModifierSizeRefusal(message.message) ? shownError : null,
           // The edges with the tight bend are the cause, whichever edge was picked last.
           failedEdgeIds: message.tightestBend !== undefined
             ? message.failedEdgeIds ?? []
@@ -3866,8 +3910,8 @@ export function LayerlingEditor({
         }
       }
     }
-    cadModifierWorkerRestartRef.current = createWorker;
-    createWorker();
+    cadModifierWorkerRestartRef.current = () => createWorker(true);
+    createWorker(false);
     return () => {
       disposed = true;
       clearCadModifierWatchdog();
@@ -3875,6 +3919,8 @@ export function LayerlingEditor({
       rejectPendingRequests("The CAD worker was closed");
       cadModifierWorkerRef.current?.terminate();
       cadModifierWorkerRef.current = null;
+      cadModifierKernelGateRef.current?.dispose();
+      cadModifierKernelGateRef.current = null;
     };
   }, [clearCadModifierWatchdog]);
 
@@ -3888,7 +3934,8 @@ export function LayerlingEditor({
     cadModifierRequestRef.current = requestId;
     cadModifierLatestPreviewRef.current = requestId;
     cadModifierPrepareRef.current = requestId;
-    if (hadInFlightRequest) {
+    // A worker still loading its kernel is only downloading: stopped, it would begin the 21 MB again from nothing (#1612).
+    if (hadInFlightRequest && cadModifierKernelGateRef.current?.isOpen !== false) {
       cadModifierWorkerRef.current?.terminate();
       cadModifierWorkerRef.current = null;
       cadModifierWorkerRestartRef.current();
@@ -3909,6 +3956,8 @@ export function LayerlingEditor({
         resetManifoldRuntime();
       });
       warmGeometryWorker();
+      // The CAD kernel is 21 MB; loaded now, the first edge tool, Hollow or Split need not wait for it (#1612).
+      cadModifierWorkerRef.current?.postMessage(warmKernelMessage());
     };
     if ("requestIdleCallback" in window) {
       const idleId = window.requestIdleCallback(warmBooleanRuntime, { timeout: 1500 });
@@ -4486,7 +4535,11 @@ export function LayerlingEditor({
         ? shape
         : sketchReferenceShapeOnWorkplane(shape, REVOLVE_REFERENCE_WORKPLANE));
     }
-    const onBase = placementWorkplaneIsBase(activeSketchWorkplane);
+    // A sketch started on another build plate lies on the plate's own plane, moved to that plate's middle (#1660): the
+    // bodies are shown as on the base plate, only moved by as much.
+    const plateShift = placementWorkplanePlateShift(activeSketchWorkplane);
+    const onBase = plateShift !== null;
+    const onPlate = (shape: WorkplaneShape) => (plateShift ? shapeMovedAlongX(shape, -plateShift) : shape);
     if (sketchMirrorAbout) {
       return shapes.map((shape) => shape.hidden || shape.id === editingSketchShapeId || isNonSolidShape(shape)
         ? shape
@@ -4495,9 +4548,9 @@ export function LayerlingEditor({
     // On the base plate a body that only stands turned about the vertical keeps its plain outline;
     // one that lies tilted (laid flat, stood on an edge) shows as it sits there, not as it was made (#231).
     const tilted = (shape: WorkplaneShape) => Boolean(shape.rotationX || shape.rotationZ);
-    if (onBase && !shapes.some(tilted)) return shapes;
+    if (onBase && !shapes.some(tilted)) return plateShift ? shapes.map(onPlate) : shapes;
     return shapes.map((shape) => shape.hidden || shape.id === editingSketchShapeId || (onBase && !tilted(shape))
-      ? shape
+      ? onPlate(shape)
       : sketchReferenceShapeOnWorkplane(shape, activeSketchWorkplane, !onBase));
   }, [activeSketchWorkplane, editingSketchShapeId, revolveSketchFront, shapes, sketchActive, sketchMirrorAbout]);
   // A workplane inside a body cuts it: the sketch view shows the outline of the cut (a hollow body
@@ -4506,7 +4559,7 @@ export function LayerlingEditor({
   // workplane at its own height, and the cut through the bodies there was drawn as a ghost from above (Discussion #1575).
   const sketchReferenceSlices = useMemo(() => {
     const slices: Record<string, string> = {};
-    if (!sketchActive || revolveSketchFront || placementWorkplaneIsBase(activeSketchWorkplane)) return slices;
+    if (!sketchActive || revolveSketchFront || placementWorkplanePlateShift(activeSketchWorkplane) !== null) return slices;
     shapes.forEach((shape) => {
       if (shape.hidden || shape.id === editingSketchShapeId) return;
       const mesh = meshForShape(shape);
@@ -5435,6 +5488,19 @@ export function LayerlingEditor({
    */
   const sketchOperationSwitchRef = useRef<{ operation: SketchOperation; workplane: PlacementWorkplane } | null>(null);
 
+  /**
+   * Where a new sketch lies (#1660): started on the base plate while another build plate is active, on that plate - the
+   * plate's own plane, moved to its middle, as a new shape lands there - so the sketch view shows that plate and reaches
+   * across it. A revolve is drawn from the front and moved onto the plate once it is finished; a sketch opened for a
+   * body, or on a workplane placed by hand, stays where it is.
+   */
+  const { newShapeOrigin } = buildPlates;
+  const sketchWorkplaneOnActivePlate = useCallback((workplane: PlacementWorkplane, operation: SketchOperation, fixed: boolean): PlacementWorkplane => {
+    if (fixed || operation === "revolve" || !placementWorkplaneIsBase(workplane)) return workplane;
+    const origin = newShapeOrigin(workplane);
+    return Math.abs(origin.x - workplane.origin.x) < 1e-9 ? workplane : { ...workplane, origin };
+  }, [newShapeOrigin]);
+
   const beginSketch = useCallback((
     operation: SketchOperation,
     profile?: SketchProfile,
@@ -5452,7 +5518,7 @@ export function LayerlingEditor({
     setCruiseAsset(null);
     setNoteMode(false);
     setWorkplaneMode(false);
-    setActiveSketchWorkplane(normalizePlacementWorkplane(workplaneOverride ?? placementWorkplaneRef.current));
+    setActiveSketchWorkplane(sketchWorkplaneOnActivePlate(normalizePlacementWorkplane(workplaneOverride ?? placementWorkplaneRef.current), operation, Boolean(workplaneOverride || editingId)));
     setToolbarMode("sketch");
     setSketchActive(true);
     setSketchOperation(operation);
@@ -5477,7 +5543,7 @@ export function LayerlingEditor({
         ? t("status.editingInsetProfile", { distance: Number(initial.inset.distance.toFixed(2)), radius: Number(initial.inset.radius.toFixed(2)) })
         : t(operation === "revolve" ? "status.editingRevolveProfile" : operation === "sweep" ? "status.editingSweepProfile" : "status.editingProfile")
       : operation === "revolve" ? t("status.revolveStarted") : operation === "sweep" ? t("status.sweepStarted") : t("status.sketchStarted"));
-  }, []);
+  }, [sketchWorkplaneOnActivePlate]);
 
   const beginSketchEdit = useCallback(() => {
     if (selectedShapes.length !== 1 || !selectedShape?.sketchProfile) {
@@ -5655,6 +5721,12 @@ export function LayerlingEditor({
         sketchOperationSwitchRef.current = switched;
         setActiveSketchWorkplane(horizontalPlacementWorkplane());
       }
+    } else {
+      // A new sketch on another build plate (#1660): a revolve is drawn from the front on the base plate and moved onto
+      // that plate when finished, so it goes back there; an extrusion or a sweep lies on the plate again.
+      const plateShift = placementWorkplanePlateShift(activeSketchWorkplane);
+      if (next === "revolve" && plateShift) setActiveSketchWorkplane(horizontalPlacementWorkplane());
+      else if (sketchOperation === "revolve") setActiveSketchWorkplane(sketchWorkplaneOnActivePlate(activeSketchWorkplane, next, false));
     }
     setSketchOperation(next);
     setSketchRevolvePreview(null);
@@ -5664,7 +5736,7 @@ export function LayerlingEditor({
       if (leftOfAxis !== sketchProfile) commitSketchProfile(leftOfAxis);
     }
     setNotice(t("status.sketchOperationChanged", { operation: t(next === "revolve" ? "sketch.modeBadgeRevolve" : next === "sweep" ? "sketch.modeBadgeSweep" : "sketch.modeBadgeExtrude") }));
-  }, [activeSketchWorkplane, commitSketchProfile, editingSketchShapeId, sketchOperation, sketchProfile]);
+  }, [activeSketchWorkplane, commitSketchProfile, editingSketchShapeId, sketchOperation, sketchProfile, sketchWorkplaneOnActivePlate]);
 
   // Which edge of a swept section runs along the path; centre is what a sketch without the field has (#732).
   const setSketchSweepAnchor = useCallback((anchor: SweepAnchor) => {
@@ -6398,6 +6470,8 @@ export function LayerlingEditor({
           const runtime = await getManifoldRuntime();
           const outline = sketchOutlineBounds(revolveBuildProfile(runtime, drawnProfile));
           if (outline) resolved = canonicalizeShape({ ...resolved, elevation: (resolved.elevation ?? 0) - outline.maxZ });
+          // Drawn from the front, around the first plate's middle: onto the plate that is active, as a new shape (#1660).
+          if (resolved) resolved = ontoActivePlate([resolved])[0];
         }
         if (existing?.sketchProfile && resolved) {
           // The rebuilt body is centred on its outline again: keep its axis where it was.
@@ -6465,7 +6539,7 @@ export function LayerlingEditor({
     sketchEditTurnRef.current = null;
     sketchOperationSwitchRef.current = null;
     setToolbarMode("geometry");
-  }, [activeSketchWorkplane, commitShapes, editingSketchShapeId, shapes, sketchOperation, sketchProfile, sketchRevolveSettings]);
+  }, [activeSketchWorkplane, commitShapes, editingSketchShapeId, ontoActivePlate, shapes, sketchOperation, sketchProfile, sketchRevolveSettings]);
 
   useEffect(() => {
     if (!projectId) {
@@ -6858,29 +6932,38 @@ export function LayerlingEditor({
    * ausgewaehlte Kopie seit ihrer Entstehung nicht, wird der zuletzt
    * angewandte Versatz erneut benutzt, statt auf Null zurueckzufallen -
    * genau das erlaubt das blosse wiederholte Druecken.
+   *
+   * Seit #1662 gilt das auch fuer eine Mehrfachauswahl: die Kette merkt sich
+   * jede Kopie mit ihrem eigenen Stand, und sie geht weiter, solange genau
+   * diese Kopien ausgewaehlt sind. Jede neue Kopie bekommt den Versatz ihrer
+   * Vorlage; hat sich keine bewegt, wiederholt jede ihren letzten Versatz -
+   * eine ganze Lage Teile stapelt sich so Lage fuer Lage.
    */
-  const smartDuplicateRef = useRef<{ chainId: string; baseline: ShapeTransformSnapshot; delta: ShapeMoveDelta } | null>(null);
+  const smartDuplicateRef = useRef<{ id: string; baseline: ShapeTransformSnapshot; delta: ShapeMoveDelta }[] | null>(null);
 
   const duplicateSelected = useCallback(() => {
     if (!hasSelection) {
       setNotice(t("status.selectShapeFirst"));
       return;
     }
-    if (selectedShapes.length === 1) {
-      const shape = selectedShapes[0];
-      const chain = smartDuplicateRef.current;
-      const continuing = chain?.chainId === shape.id;
-      const movedSinceCreation = continuing ? shapeMoveDeltaBetween(chain.baseline, shapeTransformSnapshot(shape)) : ZERO_MOVE_DELTA;
-      const delta = continuing && isZeroMoveDelta(movedSinceCreation) ? chain.delta : movedSinceCreation;
-      const duplicate = applyShapeMoveDelta(withCopyName(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), shapeNamesIn(shapes), copyNamePatterns()), delta);
-      commitShapes([...shapes, duplicate], [duplicate.id], t("status.duplicatedOne"));
-      smartDuplicateRef.current = { chainId: duplicate.id, baseline: shapeTransformSnapshot(duplicate), delta };
-      return;
-    }
-    smartDuplicateRef.current = null;
+    const chain = smartDuplicateRef.current;
+    const links = new Map((chain ?? []).map((link) => [link.id, link]));
+    const continuing = chain !== null && chain.length === selectedShapes.length && selectedShapes.every((shape) => links.has(shape.id));
+    const moved = selectedShapes.map((shape) => {
+      const link = continuing ? links.get(shape.id) : undefined;
+      return link ? shapeMoveDeltaBetween(link.baseline, shapeTransformSnapshot(shape)) : ZERO_MOVE_DELTA;
+    });
+    const repeatLast = continuing && moved.every(isZeroMoveDelta);
     const takenNames = shapeNamesIn(shapes);
-    const duplicates = selectedShapes.map((shape) => withCopyName(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), takenNames, copyNamePatterns()));
-    commitShapes([...shapes, ...duplicates], duplicates.map((shape) => shape.id), t("status.duplicatedMany", { count: duplicates.length }));
+    const deltas = selectedShapes.map((shape, index) => (repeatLast ? links.get(shape.id)?.delta ?? ZERO_MOVE_DELTA : moved[index]));
+    const duplicates = selectedShapes.map((shape, index) =>
+      applyShapeMoveDelta(withCopyName(cloneWorkplaneShapeTreeWithFreshIds(shape, "copy"), takenNames, copyNamePatterns()), deltas[index]));
+    commitShapes(
+      [...shapes, ...duplicates],
+      duplicates.map((shape) => shape.id),
+      duplicates.length === 1 ? t("status.duplicatedOne") : t("status.duplicatedMany", { count: duplicates.length }),
+    );
+    smartDuplicateRef.current = duplicates.map((duplicate, index) => ({ id: duplicate.id, baseline: shapeTransformSnapshot(duplicate), delta: deltas[index] }));
   }, [commitShapes, hasSelection, selectedShapes, shapes]);
 
   /** Scales the selection by a percentage (#179); the same code the MCP action uses. */
@@ -7723,11 +7806,11 @@ export function LayerlingEditor({
     const requestId = cadModifierRequestRef.current + 1;
     cadModifierRequestRef.current = requestId;
     return new Promise<CadModifierWorkerResponse>((resolve, reject) => {
-      const timer = window.setTimeout(() => {
+      const cancelTimer = cadModifierTimeout(() => {
         if (!cadModifierPendingRef.current.has(requestId)) return;
         const pendingRequests = [...cadModifierPendingRef.current.values()];
         cadModifierPendingRef.current.clear();
-        pendingRequests.forEach((pending) => window.clearTimeout(pending.timer));
+        pendingRequests.forEach((pending) => pending.cancelTimer());
         cadModifierWorkerRef.current?.terminate();
         cadModifierWorkerRef.current = null;
         cadPreviewQueueRef.current.reset();
@@ -7742,16 +7825,16 @@ export function LayerlingEditor({
         cadModifierWorkerRestartRef.current();
         pendingRequests.forEach((pending) => pending.reject(new Error("Timed out waiting for the CAD worker; the worker was restarted")));
       }, timeoutMs);
-      cadModifierPendingRef.current.set(requestId, { resolve, reject, timer });
+      cadModifierPendingRef.current.set(requestId, { resolve, reject, cancelTimer });
       try {
         worker.postMessage({ ...request, requestId } as CadModifierWorkerRequest, transfer);
       } catch (error) {
-        window.clearTimeout(timer);
+        cancelTimer();
         cadModifierPendingRef.current.delete(requestId);
         reject(error instanceof Error ? error : new Error("The CAD worker rejected the request"));
       }
     });
-  }, []);
+  }, [cadModifierTimeout]);
 
   const cancelEdgeModifier = useCallback(() => {
     invalidateCadModifierSession();
@@ -8074,7 +8157,9 @@ export function LayerlingEditor({
     const sourceProjectId = projectInfoRef.current.projectId;
     const kind: CadModifierKind = params.kind === "fillet" ? "fillet" : params.kind === "chamfillet" ? "chamfillet" : "chamfer";
     const sharpAngle = Math.max(1, Math.min(CAD_MODIFIER_MAX_SHARP_ANGLE, mcpNumber(params.sharpAngle, 25)));
-    const amount = Math.max(MIN_EDGE_MODIFIER_AMOUNT, mcpNumber(params.amount, 1));
+    // "largest": the largest size the picked edges take, searched as the panel's button does (Discussion #1635).
+    const largest = params.amount === "largest";
+    let amount = largest ? 0 : Math.max(MIN_EDGE_MODIFIER_AMOUNT, mcpNumber(params.amount, 1));
     const chamferAngle = Math.max(kind === "chamfillet" ? 15 : 5, Math.min(kind === "chamfillet" ? 75 : 85, mcpNumber(params.chamferAngle, 45)));
     const quality: CadModifierQuality = params.quality === "draft" || params.quality === "fine" ? params.quality : "standard";
     const preserveEdgeSize = typeof params.preserveEdgeSize === "boolean" ? params.preserveEdgeSize : shape.edgeResizeMode === "preserve";
@@ -8107,6 +8192,22 @@ export function LayerlingEditor({
     }
     if (endAmount !== undefined && selectedEdgeIds.length !== 1) {
       throw new Error("endAmount (a variable radius) works on exactly one edge id");
+    }
+    if (largest) {
+      if (endAmount !== undefined) throw new Error("amount \"largest\" does not go with endAmount (a variable radius)");
+      // Searched below maxAmount, or below the body's largest measure, the most the panel's field takes.
+      const upper = Math.max(MIN_EDGE_MODIFIER_AMOUNT * 2, mcpNumber(params.maxAmount, Math.max(shapeWidth(shape), shapeDepth(shape), shape.height) * 0.99));
+      const search = await postCadModifierRequestAsync({
+        type: "largest",
+        kind,
+        edgeIds: selectedEdgeIds,
+        amount: upper,
+        chamferAngle,
+        ...(concave ? { concave } : {}),
+      }, [], LARGEST_EDGE_AMOUNT_TIMEOUT_MS);
+      if (search.type !== "largest") throw new Error("The CAD worker did not return a size");
+      if (search.amount === null) throw new Error("No size of this chamfer or fillet fits the chosen edges, not even a very small one: the size is not what stands in the way");
+      amount = search.amount;
     }
     const previewResponse = await postCadModifierRequestAsync({
       type: "preview",
@@ -8191,6 +8292,7 @@ export function LayerlingEditor({
     );
     return {
       object: mcpShapeSummary(modifiedShape),
+      ...(largest ? { amount } : {}),
       selectedEdgeIds,
       ...(cornerEdgeIds.length ? { cornerEdgeIds } : {}),
       // The sharp inner corners at the picked edges' ends, rounded or chamfered first at this size so they went through.
@@ -9417,6 +9519,69 @@ export function LayerlingEditor({
     };
     setEdgeEditRound((round) => round + 1);
   }, [commitShapes, edgeModifier, invalidateCadModifierSession, shapes]);
+
+  /*
+   * The largest size up to the refused one that the picked edges still take (Discussion #1635). On a click only, never by
+   * itself: a size typed in is what the person wants, and the search costs a dozen runs of the kernel. The size found goes
+   * into the field like a typed one and is previewed as usual. Nothing changes when the edges, the size or the kind
+   * changed meanwhile.
+   */
+  const findLargestEdgeAmount = useCallback(async () => {
+    const session = edgeModifierRef.current;
+    if (!session?.prepared || session.searchingLargest || session.selectedEdgeIds.length === 0) return;
+    if (session.kind !== "fillet" && session.kind !== "chamfer" && session.kind !== "chamfillet") return;
+    const kind = session.kind;
+    const searchKey = (candidate: EdgeModifierSession) => JSON.stringify([candidate.kind, candidate.amount, candidate.endAmount ?? null, candidate.concave === true, candidate.chamferAngle, candidate.selectedEdgeIds]);
+    const key = searchKey(session);
+    const prepareId = cadModifierPrepareRef.current;
+    const stopSearching = () => setEdgeModifier((current) => current?.searchingLargest ? { ...current, searchingLargest: false } : current);
+    setEdgeModifier((current) => current ? { ...current, searchingLargest: true } : current);
+    setNotice(t("status.edgeLargestSearching"), true);
+    let found: { amount: number | null; endAmount?: number };
+    try {
+      const response = await postCadModifierRequestAsync({
+        type: "largest",
+        kind,
+        edgeIds: session.selectedEdgeIds,
+        amount: session.amount,
+        chamferAngle: session.chamferAngle,
+        ...(kind === "fillet" && session.endAmount != null ? { endAmount: session.endAmount } : {}),
+        ...(kind === "fillet" && session.concave ? { concave: true } : {}),
+      }, [], LARGEST_EDGE_AMOUNT_TIMEOUT_MS);
+      if (response.type !== "largest") throw new Error("The CAD worker did not return a size");
+      found = response;
+    } catch (error) {
+      stopSearching();
+      const raw = error instanceof Error ? error.message : String(error ?? "");
+      setNotice(cadModifierUserErrorMessage(raw) ?? raw);
+      return;
+    }
+    const current = edgeModifierRef.current;
+    if (!current || cadModifierPrepareRef.current !== prepareId || searchKey(current) !== key) {
+      stopSearching();
+      return;
+    }
+    if (found.amount === null) {
+      stopSearching();
+      setNotice(t("status.edgeLargestNone"), true);
+      return;
+    }
+    const amount = Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(edgeModifierMaxAmount, found.amount));
+    const endAmount = found.endAmount !== undefined ? Math.max(MIN_EDGE_MODIFIER_AMOUNT, Math.min(edgeModifierMaxAmount, found.endAmount)) : undefined;
+    keepEdgeSetting({ amount });
+    setEdgeModifier((latest) => latest ? {
+      ...latest,
+      amount,
+      ...(endAmount !== undefined ? { endAmount } : {}),
+      searchingLargest: false,
+      preview: null,
+      busy: latest.selectedEdgeIds.length > 0,
+      error: null,
+      sizeRefusedError: null,
+    } : latest);
+    const workspace = workspaceSettingsRef.current;
+    setNotice(t("status.edgeLargestFound", { size: `${formatLengthMm(amount, workspace.accuracy)} ${lengthDisplayUnit(workspace).label}` }), true);
+  }, [edgeModifierMaxAmount, keepEdgeSetting, postCadModifierRequestAsync]);
 
   useEffect(() => {
     if (!edgeModifier) return;
@@ -13035,6 +13200,38 @@ export function LayerlingEditor({
         return { selectedIds: validIds, objects: currentShapes().filter((shape) => validIds.includes(shape.id)).map(mcpShapeSummary) };
       }
 
+      if (command.action === "list_backups") {
+        // "Earlier versions": the open design's backups, or every one of this browser with all: true.
+        const openId = projectInfoRef.current.projectId ?? null;
+        const backups = params.all === true ? await listFileBackups() : await fileBackupsOfDesign(openId, linkedLylFile(openId ?? ""));
+        return {
+          scope: params.all === true ? "all" : "design",
+          backups: backups.map((backup) => ({
+            id: backup.id,
+            kind: backup.kind,
+            createdAt: new Date(backup.createdAt).toISOString(),
+            name: fileBackupName(backup),
+            fileName: backup.fileName,
+            projectId: backup.projectId,
+            size: backup.size,
+          })),
+        };
+      }
+
+      if (command.action === "open_backup") {
+        // As Open in Earlier versions: a new design, never tied to the original file.
+        const id = typeof params.id === "string" ? params.id : "";
+        const backup = (await listFileBackups()).find((entry) => entry.id === id);
+        if (!backup) throw new Error("There is no backup with this id; layerling_list_backups lists them");
+        const bytes = await readFileBackupBytes(backup.id);
+        if (!bytes) throw new Error("The backup's file is missing from this browser");
+        if (!onOpenLylProjectFile) throw new Error(t("status.lylUnavailable"));
+        const name = t("backups.openedName", { name: fileBackupName(backup), when: new Date(backup.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) });
+        const result = await onOpenLylProjectFile(new File([bytes as unknown as ArrayBuffer], `${name}.lyl`, { type: LYL_MEDIA_TYPE }), undefined, undefined, { name });
+        if (result && result.ok === false) throw new Error(result.message);
+        return { opened: name, kind: backup.kind, createdAt: new Date(backup.createdAt).toISOString() };
+      }
+
       if (command.action === "rename_project") {
         // As the pencil beside the project name does (Discussion #1483): trimmed, at most 80 characters, never empty.
         const name = typeof params.name === "string" ? params.name.trim().slice(0, 80) : "";
@@ -14086,6 +14283,7 @@ export function LayerlingEditor({
           thickness: given("thickness") ?? null,
           gap: given("gap") ?? null,
           bridgeWidth: given("bridgeWidth") ?? null,
+          ...(given("bridgeGap") !== undefined ? { bridgeGap: given("bridgeGap") } : {}),
           footThickness: given("footThickness") ?? null,
           bundle: params.bundle !== false,
         });
@@ -14095,6 +14293,7 @@ export function LayerlingEditor({
           tooSteep: "That face is almost upright and needs no rib",
           offBed: "That face does not reach down to the bed straight down its slope from the point, nor stop within 3 mm of it at a rounded or chamfered bottom edge; the part must stand tilted on one edge",
           tooLow: "The rib would be too low; give a greater height",
+          bridgeGapTooWide: "With this bridgeGap the bridges would end inside the rib; give a wider gap or a smaller bridgeGap",
           collides: "The rib would run into the part; pick another point on the face or a lower height",
           partOffBed: "The part does not stand on the bed; drop it onto the workplane first so the bridges meet their layers",
           failed: "The rib could not be built there",
@@ -17092,6 +17291,9 @@ export function LayerlingEditor({
             fileHandle = await pickLylFileToSave(projectExportFileName(exportName, "lyl"));
             pickedNewFile = true;
           }
+          // The backup folder may need the browser's permission again after a reload, and it is asked only while
+          // the key press or click still counts: now, before anything slow.
+          if (fileHandle && readFileBackupSettings().overwriteCount > 0) await allowBackupFolder().catch(() => false);
           // Closed without a choice: nothing is written, and the status line says so (a browser also reports a
           // dialog it could not use as closed; staying silent left people wondering where the file went).
           // The browser cannot tell a closed dialog from a file it would not hand over, and on some PCs the
@@ -17148,6 +17350,9 @@ export function LayerlingEditor({
       if (target === "shared" && onSaveSharedProject) {
         setNotice(await onSaveSharedProject({ exportName: exportName.trim() || projectName, bytes, thumbnailDataUrl }));
       } else if (fileHandle) {
+        // The file as it is on the disk stays as a backup before it is written over; a backup that fails does not
+        // stop the save.
+        const backup = await backupFileBeforeOverwrite(fileHandle, { projectId: projectId || null, projectName });
         try {
           await writeLylFile(fileHandle, bytes);
         } catch {
@@ -17161,14 +17366,28 @@ export function LayerlingEditor({
         const fileStem = fileHandle.name.replace(/\.(lyl|skf)$/i, "").trim();
         const offerRename = pickedNewFile && onProjectNameChange && fileStem
           && fileHandle.name !== projectExportFileName(projectName, "lyl");
+        const backupNote = backup.failed
+          ? t("status.previousVersionNotKept")
+          : backup.kept
+            ? t("status.previousVersionKept", { button: t("backups.title") })
+            : "";
+        const folderNote = backup.folder === "noPermission"
+          ? t("status.backupFolderNeedsPermission")
+          : backup.folder === "failed" ? t("status.backupFolderFailed") : "";
+        const savedText = [t("status.savedToFile", { name: fileHandle.name }), backupNote, folderNote].filter(Boolean).join(" ");
         setNotice(
-          t("status.savedToFile", { name: fileHandle.name }),
-          Boolean(offerRename),
+          savedText,
+          Boolean(offerRename) || Boolean(folderNote),
           offerRename ? {
             label: t("status.renameDraftToFile"),
             run: () => {
               onProjectNameChange(fileStem);
               setNotice(t("status.draftRenamedToFile", { name: fileStem }));
+            },
+          } : backup.folder === "noPermission" ? {
+            label: t("backups.allowFolder"),
+            run: () => {
+              void allowBackupFolder().then((allowed) => setNotice(t(allowed ? "backups.folderAllowed" : "backups.folderNotAllowed")));
             },
           } : null,
         );
@@ -17190,6 +17409,92 @@ export function LayerlingEditor({
   saveDesignRef.current = () => {
     void exportLylDesign(projectName, workspaceSettingsRef.current.historyLimit, lylFileAccessSupported() ? "file" : "download");
   };
+
+  /**
+   * A state of the design every few minutes while it is worked on, among the automatic backups ("Earlier versions"):
+   * taken only when something changed since the last one, never during a drag, a save or in the History view, and
+   * when the browser is idle. One that fails is tried again on the next round. The same change asks, once a day at
+   * most, to back up all designs into a file (the backups here are in the same browser, not a second place).
+   */
+  const lylExportingRef = useRef(lylExporting);
+  lylExportingRef.current = lylExporting;
+  const snapshotSourceRef = useRef<{ shapes: unknown; notes: unknown } | null>(null);
+  const snapshotAtRef = useRef(0);
+  const snapshotRunningRef = useRef(false);
+  const backupFolderAskedRef = useRef(false);
+  const onBackUpAllDesignsRef = useRef(onBackUpAllDesigns);
+  onBackUpAllDesignsRef.current = onBackUpAllDesigns;
+  const takeSnapshotRef = useRef<() => Promise<void>>(async () => undefined);
+  takeSnapshotRef.current = async () => {
+    const snapshotProjectId = projectInfoRef.current.projectId;
+    if (!snapshotProjectId) return;
+    const exportedHistory = editorHistoryForExport(historyRef.current, historyIndexRef.current, workspaceSettingsRef.current.historyLimit);
+    const bytes = await exportLylProject({
+      projectId: snapshotProjectId,
+      projectName,
+      createdAt: projectCreatedAt,
+      modifiedAt: Date.now(),
+      extraFiles: lylThumbnailFiles(await projectThumbnailPngBytes(await capturedDesignPicture())),
+      shapes: shapesRef.current,
+      notes: notesRef.current,
+      history: exportedHistory.entries,
+      historyIndex: exportedHistory.index,
+      assets: projectAssetsRef.current,
+      attachments: projectAttachmentsRef.current,
+      workspace: workspaceSettingsRef.current,
+      snapGrid,
+      placementElevation,
+      placementWorkplane,
+      sketchPlacementWorkplane: placementWorkplane,
+    });
+    const result = await addFileBackup({ kind: "snapshot", bytes, projectId: snapshotProjectId, projectName });
+    // The folder wants its permission again: asked once per session, with a button, since only a click may grant it.
+    if (result.folder === "noPermission" && !backupFolderAskedRef.current) {
+      backupFolderAskedRef.current = true;
+      setNotice(t("status.backupFolderNeedsPermission"), "stay", {
+        label: t("backups.allowFolder"),
+        run: () => void allowBackupFolder().then((allowed) => setNotice(t(allowed ? "backups.folderAllowed" : "backups.folderNotAllowed"))),
+      });
+    }
+  };
+  useEffect(() => {
+    if (!editorOpen) return;
+    // The design as it opened is no change; the first snapshot comes after the first minutes of work.
+    snapshotSourceRef.current = { shapes: shapesRef.current, notes: notesRef.current };
+    snapshotAtRef.current = Date.now();
+    const timer = window.setInterval(() => {
+      const source = { shapes: shapesRef.current, notes: notesRef.current };
+      const previous = snapshotSourceRef.current;
+      if (previous && previous.shapes === source.shapes && previous.notes === source.notes) return;
+      if (projectInteractionActiveRef.current || lylExportingRef.current || historyViewStateRef.current) return;
+      const reminder = takeEditorBackupReminder();
+      if (reminder) {
+        const backUpAll = onBackUpAllDesignsRef.current;
+        setNotice(
+          reminder.never ? t("backups.reminderNever") : t("backups.reminderAfterDays", { days: reminder.days }),
+          "stay",
+          backUpAll ? { label: t("backups.backUpNow"), run: backUpAll } : null,
+        );
+      }
+      const minutes = readFileBackupSettings().snapshotMinutes;
+      if (minutes <= 0 || snapshotRunningRef.current || Date.now() - snapshotAtRef.current < minutes * 60_000) return;
+      snapshotRunningRef.current = true;
+      const run = () => {
+        void takeSnapshotRef.current()
+          .then(() => {
+            snapshotSourceRef.current = source;
+            snapshotAtRef.current = Date.now();
+          })
+          .catch(() => undefined)
+          .finally(() => {
+            snapshotRunningRef.current = false;
+          });
+      };
+      if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(run, { timeout: 10_000 });
+      else run();
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [editorOpen, projectId, setNotice]);
 
   /** The open button of the export dialog: a file dialog where there is one, the usual file field elsewhere. */
   const pickProjectFile = useCallback(async () => {
@@ -19501,6 +19806,9 @@ export function LayerlingEditor({
           busy={edgeModifier.busy}
           prepared={edgeModifier.prepared}
           error={edgeModifier.error}
+          sizeRefused={edgeModifier.error !== null && edgeModifier.error === edgeModifier.sizeRefusedError}
+          searchingLargest={edgeModifier.searchingLargest === true}
+          onFindLargest={() => void findLargestEdgeAmount()}
           // The same value again changes nothing: dropping the preview for it left Apply
           // waiting on a computation nobody started (#204).
           onAmountChange={(value) => { keepEdgeSetting({ amount: value }); setEdgeModifier((current) => {
@@ -19691,6 +19999,13 @@ export function LayerlingEditor({
       {interactiveHelp ? <InteractiveHelp onExit={toggleInteractiveHelp} /> : null}
       {viewedAttachment ? <AttachmentViewer attachment={viewedAttachment} onClose={() => setViewedAttachmentId(null)} /> : null}
       {guideOpen ? <GuideModal sharedStore={sharedProjectsEnabled} sketchMode={toolbarMode === "sketch"} onClose={() => setGuideOpen(false)} /> : null}
+      {backupsOpen ? (
+        <FileBackupsDialog
+          scope={{ projectId: projectInfoRef.current.projectId ?? null, fileHandle: linkedLylFile(projectInfoRef.current.projectId ?? ""), name: projectName }}
+          onOpen={(file, name) => onOpenLylProjectFile?.(file, undefined, undefined, { name })}
+          onClose={() => setBackupsOpen(false)}
+        />
+      ) : null}
       {notice ? (
         <p className="editor-status" role="status" aria-live="polite" onMouseEnter={holdNotice} onMouseLeave={releaseNotice}>
           <span className="editor-status-text">{notice}</span>
