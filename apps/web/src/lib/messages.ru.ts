@@ -2946,6 +2946,8 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "Надевается на коробку",
   "boxGenerator.lidRestOnHint": "Плоская пластина размером с коробку, которая лежит на её краю.",
   "boxGenerator.lidOverlapHint": "Пластина с юбкой, которая опускается поверх коробки снаружи.",
+  "boxGenerator.lidPlug": "Вставляется в коробку",
+  "boxGenerator.lidPlugHint": "Пластина размером с коробку с кольцом сверху, которое входит в коробку, меньше внутренней части на величину зазора.",
   "boxGenerator.lidSizeHint": "Надевающаяся крышка для этой коробки — {width} × {depth} мм.",
   "boxGenerator.boxSizeHint": "Эта крышка подходит к коробке {width} × {depth} мм.",
   "boxGenerator.issueWall": "Стенка не оставляет места внутри. Сделайте её тоньше или коробку больше.",

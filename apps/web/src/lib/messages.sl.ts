@@ -2279,6 +2279,8 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "Prekrije škatlo",
   "boxGenerator.lidRestOnHint": "Ravna plošča, velika kot škatla, ki leži na njenem robu.",
   "boxGenerator.lidOverlapHint": "Plošča z robom, ki sega navzdol čez zunanjo stran škatle.",
+  "boxGenerator.lidPlug": "Vstavi se v škatlo",
+  "boxGenerator.lidPlugHint": "Plošča, velika kot škatla, z obročem, ki gre v škatlo, za zračnost manjšim od notranjosti.",
   "boxGenerator.lidSizeHint": "Prekrivni pokrov za to škatlo meri {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "Ta pokrov ustreza škatli {width} × {depth} mm.",
   "boxGenerator.issueWall": "Stena ne pusti prostora v notranjosti. Naredite jo tanjšo ali škatlo večjo.",

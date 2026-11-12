@@ -2950,6 +2950,8 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "boxGenerator.lidOverlap": "Greift über die Box",
   "boxGenerator.lidRestOnHint": "Eine flache Platte, so groß wie die Box, die auf dem Rand liegt.",
   "boxGenerator.lidOverlapHint": "Eine Platte mit einem Rand, der außen über die Box nach unten greift.",
+  "boxGenerator.lidPlug": "Steckt in die Box",
+  "boxGenerator.lidPlugHint": "Eine Platte, so groß wie die Box, mit einem Ring darauf, der in die Box passt, um das Spiel kleiner als das Innere.",
   "boxGenerator.lidSizeHint": "Der übergreifende Deckel für diese Box ist {width} × {depth} mm groß.",
   "boxGenerator.boxSizeHint": "Dieser Deckel passt auf eine Box mit {width} × {depth} mm.",
   "boxGenerator.issueWall": "Durch die Wand bleibt innen kein Platz. Mach sie dünner oder die Box größer.",

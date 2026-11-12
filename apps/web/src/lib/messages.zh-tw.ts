@@ -2902,6 +2902,8 @@ export const MESSAGES_ZH_TW: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "罩住盒子",
   "boxGenerator.lidRestOnHint": "與盒子一樣大的平板，放在盒口邊緣上。",
   "boxGenerator.lidOverlapHint": "帶裙邊的蓋板，裙邊向下罩住盒子外側。",
+  "boxGenerator.lidPlug": "插入盒子",
+  "boxGenerator.lidPlugHint": "與盒子一樣大的板，上面有一個插入盒子的環，比內部小一個間隙。",
   "boxGenerator.lidSizeHint": "這個盒子的罩蓋尺寸為 {width} × {depth} mm。",
   "boxGenerator.boxSizeHint": "這個蓋子適合 {width} × {depth} mm 的盒子。",
   "boxGenerator.issueWall": "壁太厚，裡面沒有空間。請調薄一點或把盒子加大。",

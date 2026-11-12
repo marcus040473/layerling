@@ -626,7 +626,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.boxRows = optionalShapeNumber(source.boxRows, fallbackEntry?.boxRows, 1, 12);
       entry.boxDivider = optionalShapeNumber(source.boxDivider, fallbackEntry?.boxDivider, 0.4, 20);
       entry.boxPart = source.boxPart === "box" || source.boxPart === "lid" ? source.boxPart : fallbackEntry?.boxPart;
-      entry.boxLidStyle = source.boxLidStyle === "restOn" || source.boxLidStyle === "overlap" ? source.boxLidStyle : fallbackEntry?.boxLidStyle;
+      entry.boxLidStyle = source.boxLidStyle === "restOn" || source.boxLidStyle === "overlap" || source.boxLidStyle === "plug" ? source.boxLidStyle : fallbackEntry?.boxLidStyle;
       entry.boxLidPlate = optionalShapeNumber(source.boxLidPlate, fallbackEntry?.boxLidPlate, 0.4, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.boxFit = optionalShapeNumber(source.boxFit, fallbackEntry?.boxFit, 0, 2);
       entry.boxGridfinity = source.boxGridfinity === true ? true : source.boxGridfinity === false ? undefined : fallbackEntry?.boxGridfinity;

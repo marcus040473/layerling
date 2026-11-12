@@ -2951,6 +2951,8 @@ export const MESSAGES_EN = {
   "boxGenerator.lidOverlap": "Overlaps the box",
   "boxGenerator.lidRestOnHint": "A flat plate as large as the box that lies on its rim.",
   "boxGenerator.lidOverlapHint": "A plate with a skirt that goes down over the outside of the box.",
+  "boxGenerator.lidPlug": "Plugs into the box",
+  "boxGenerator.lidPlugHint": "A plate as large as the box with a ring on it that fits into the box, Fit smaller than the inside.",
   "boxGenerator.lidSizeHint": "The overlapping lid for this box is {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "This lid fits a box of {width} × {depth} mm.",
   "boxGenerator.issueWall": "The wall leaves no room inside. Make it thinner or the box larger.",

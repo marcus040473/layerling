@@ -2959,6 +2959,8 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "boxGenerator.lidOverlap": "يغطي الصندوق",
   "boxGenerator.lidRestOnHint": "صفيحة مسطحة بحجم الصندوق تستقر على حافته.",
   "boxGenerator.lidOverlapHint": "صفيحة بحافة تنزل إلى الأسفل فوق الجهة الخارجية للصندوق.",
+  "boxGenerator.lidPlug": "يُدخل في الصندوق",
+  "boxGenerator.lidPlugHint": "لوح بحجم الصندوق عليه حلقة تدخل في الصندوق، أصغر من الداخل بمقدار الخلوص.",
   "boxGenerator.lidSizeHint": "الغطاء الذي يغطي هذا الصندوق مقاسه {width} × {depth} mm.",
   "boxGenerator.boxSizeHint": "هذا الغطاء يناسب صندوقًا مقاسه {width} × {depth} mm.",
   "boxGenerator.issueWall": "الجدار لا يترك مكانًا في الداخل. اجعله أرق أو اجعل الصندوق أكبر.",

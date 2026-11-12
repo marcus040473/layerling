@@ -311,3 +311,41 @@ describe("a Gridfinity baseplate in the floor", () => {
     expect(cut.boundingBox!.min.y).toBeCloseTo(0, 6);
   });
 });
+
+describe("a plug lid", () => {
+  const area = (points: { x: number; z: number }[]) => Math.abs(points.reduce((sum, p, i) => sum + p.x * points[(i + 1) % points.length].z - points[(i + 1) % points.length].x * p.z, 0)) / 2;
+  const base = { boxPart: "lid" as const, boxLidStyle: "plug" as const, boxWall: 2.4, boxFit: 0.3, boxLidPlate: 2 };
+
+  it("is as large as the box, a plate with a ring that fits inside the box with the play", () => {
+    for (const fields of [{ boxCornerRadius: 6 }, { boxShape: "round" as const }, { boxShape: "polygon" as const, boxSides: 6 }]) {
+      const settings = { ...base, ...fields };
+      const lid = { width: 126, depth: 90, height: 8 };
+      const plan = boxGeneratorPlan(lid, settings);
+      expect(plan.issues).toEqual([]);
+      const plug = plan.plug!;
+      expect(plug.plate).toBeCloseTo(2, 6);
+      // The ring's outside is the box's inside, Fit smaller; its inside one wall further in.
+      const box = boxGeneratorInsideOutline(plan.outer, 2.4)!;
+      expect(area(plug.outline)).toBeLessThan(area(box));
+      expect(area(plug.hole!)).toBeLessThan(area(plug.outline));
+      const geometry = createBoxGeneratorGeometry(lid, settings);
+      expect(openEdges(geometry)).toBe(0);
+      // Volume: the plate, and the ring from the plate up.
+      expect(volumeOf(geometry)).toBeCloseTo(area(plan.outer) * 2 + (area(plug.outline) - area(plug.hole!)) * 6, 0);
+    }
+  });
+
+  it("is a solid plug when the ring leaves no room inside, and says so when there is no ring at all", () => {
+    const thin = boxGeneratorPlan({ width: 12, depth: 12, height: 8 }, { ...base, boxWall: 3 });
+    expect(thin.plug).not.toBeNull();
+    expect(thin.plug!.hole).toBeNull();
+    expect(openEdges(createBoxGeneratorGeometry({ width: 12, depth: 12, height: 8 }, { ...base, boxWall: 3 }))).toBe(0);
+    expect(boxGeneratorIssues({ width: 8, depth: 8, height: 8 }, { ...base, boxWall: 3, boxFit: 2 })).toContainEqual({ code: "lidNoSkirt" });
+  });
+
+  it("leaves the other lid styles and the box as they were", () => {
+    expect(boxGeneratorPlan(SIZE, { boxPart: "lid", boxLidStyle: "restOn" }).plug).toBeNull();
+    expect(boxGeneratorPlan(SIZE, { boxPart: "box", boxLidStyle: "plug" }).plug).toBeNull();
+    expect(normalizeBoxGenerator(SIZE, { boxLidStyle: "plug" }).boxLidStyle).toBe("plug");
+  });
+});

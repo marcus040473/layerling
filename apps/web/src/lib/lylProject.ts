@@ -1957,8 +1957,8 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
     if (definition.boxPart !== undefined && definition.boxPart !== "box" && definition.boxPart !== "lid") {
       throw new Error(`${label}.boxPart must be box or lid`);
     }
-    if (definition.boxLidStyle !== undefined && definition.boxLidStyle !== "restOn" && definition.boxLidStyle !== "overlap") {
-      throw new Error(`${label}.boxLidStyle must be restOn or overlap`);
+    if (definition.boxLidStyle !== undefined && definition.boxLidStyle !== "restOn" && definition.boxLidStyle !== "overlap" && definition.boxLidStyle !== "plug") {
+      throw new Error(`${label}.boxLidStyle must be restOn, overlap or plug`);
     }
     for (const key of ["boxGridfinity", "boxGridfinityFloor", "boxGridfinityPlate", "boxStackable"] as const) {
       if (definition[key] !== undefined && typeof definition[key] !== "boolean") throw new Error(`${label}.${key} must be true or false`);
