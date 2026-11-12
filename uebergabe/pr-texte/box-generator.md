@@ -12,7 +12,9 @@ Hi Stefan, a box generator, so that a box and its lid come from a few settings i
   - *Gridfinity: fit the floor*: the box keeps the size it is given, whatever its outline, and the panel says how many whole cells its inside holds (counted by the baseplate's own function). The plate is then fitted with the existing *Fit baseplate to outline*; for a box from this generator that action now reads the inside of the wall instead of the whole outline, so the plate sits on the floor with the whole cells that fit and the rest solid.
 - MCP settings, the guide and the texts in every language are included.
 
-![The box generator with the Gridfinity hint](https://raw.githubusercontent.com/marcus040473/layerling/accf14df9fc9c71f5b99604b4a4274fac8a826f7/box-generator/gridfinity-hint.png)
+![Box from 3 x 4 Gridfinity cells: 131.3 x 173.3 mm](https://raw.githubusercontent.com/marcus040473/layerling/db4ad7382c159fba72fb3666f69bfc9550327c28/box-generator/gridfinity-cells.png)
+
+![The baseplate fitted to the inside of the box: 4 whole cells, the rest solid](https://raw.githubusercontent.com/marcus040473/layerling/db4ad7382c159fba72fb3666f69bfc9550327c28/box-generator/gridfinity-floor.png)
 
 ## Testing
 
