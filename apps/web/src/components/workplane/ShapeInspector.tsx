@@ -8,7 +8,7 @@ import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicke
 import { SnapGridMenuItems } from "@/components/workplane/SnapGridMenu";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
-import { AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
+import { AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type Dispatch, type ReactNode, type SetStateAction } from "react";
@@ -188,7 +188,7 @@ import { localizedError } from "@/lib/userErrors";
 import { normalizeHexColor } from "@/lib/coloredImport";
 import { displayShapeName, makeShapeFromAsset, renamedShapeName, shapeAssetDefaultDimensions } from "@/lib/shapeCatalog";
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_TIMBER_BRACINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_TIMBER_BRACINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureRegion, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { SURFACE_TEXTURE_OWN_IMAGE_SIZE, surfaceTextureOwnImage } from "@/lib/surfaceTextureImages";
 import { drawingGrey, drawingOutlines, inTwoTones, SURFACE_IMAGE_OUTLINE_RASTER } from "@/lib/surfaceImageOutline";
 import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
@@ -346,7 +346,7 @@ import { meshAabb } from "@/lib/editorMeshCore";
 import { undersideOffset } from "@/lib/positionUnderside";
 import { plateOffsetOfShape } from "@/lib/buildPlates";
 import { isNonSolidShape, normalizeGroupResize, resizedShapeSize, shapeDepth, shapeHasTaper, shapeOverallFootprintDimensions, shapeSupportsTaper, shapeTaperDimensions, shapeWidth } from "@/lib/workplaneShapes";
-import { tubeBeforeEdgeTreatments } from "@/lib/edgeTreatmentHistory";
+import { shapeBeforeEdgeTreatments, tubeBeforeEdgeTreatments } from "@/lib/edgeTreatmentHistory";
 import { MAX_SKETCH_REVOLVE_TURNS, normalizeSketchRevolveSettings } from "@/lib/sketchRevolve";
 import { roundSideCount } from "@/lib/roundSideCount";
 import { normalizeCurvedConeBend, normalizeCurvedConeTop } from "@/lib/curvedCone";
@@ -4537,6 +4537,9 @@ export function ShapeInspector({
   surfacePickedFaces,
   surfaceFacesShown,
   onSurfaceFacePick,
+  surfaceRegionDrawing,
+  surfaceDrawnRegion,
+  onSurfaceRegionDraw,
   onVaseAccessories,
   onGridfinityKeys,
   onLayerText,
@@ -4588,6 +4591,11 @@ export function ShapeInspector({
   surfaceFacesShown?: boolean;
   /** Starts picking faces from these (null: stops), on the faces as the given edge angle bounds them; review only lights them. */
   onSurfaceFacePick?: (faces: SurfaceTextureFace[] | null, edgeAngle: number, review?: boolean) => void;
+  /** Whether a region is being drawn on this body for its texture (Discussion #1579), and the region drawn last. */
+  surfaceRegionDrawing?: boolean;
+  surfaceDrawnRegion?: { region: SurfaceTextureRegion } | null;
+  /** Starts drawing a region on the body in the view (false: stops). */
+  onSurfaceRegionDraw?: (drawing: boolean) => void;
   /** Lays this vase's accessories out beside it, ready to print. */
   onVaseAccessories?: () => void;
   /** Lays this Swallowtail baseplate's keys out in front of it, ready to print (#1061). */
@@ -4650,6 +4658,16 @@ export function ShapeInspector({
   const printerPlay = usePrinterPlay();
   const properties = withFitTestNotes(getShapeProperties(shape, onUpdate, workspace, { loftSection, setLoftSection, portPresetWithScrewHoles: onPortPresetWithScrewHoles }), shape.kind, printerPlay);
   const tiltedMeasures = orientedMeasures(shape).kind === "tilted";
+  // A shape with settings of its own that got a fillet or chamfer shows only its measures now; the note names it
+  // and says how its settings come back (#1689). A plain box had nothing more, so it gets no note.
+  const kindBeforeEdgeTreatments = (() => {
+    const before = shapeBeforeEdgeTreatments(shape);
+    if (!before) return null;
+    const now = new Set(properties.map((property) => property.id));
+    const own = getShapePropertiesWithAppLimits(before, () => undefined);
+    if (!own.some((property) => !now.has(property.id))) return null;
+    return t(`shape.${before.kind}` as MessageKey) || before.kind;
+  })();
   // What each value would be on a shape of this kind made new, with the saved defaults: the
   // small arrow next to a changed value takes it back there.
   const propertyDefaults = useMemo(() => shapePropertyDefaults(shape.kind, workspace, shape.kind === "gridfinity" ? normalizeGridfinityType(shape.gridfinityType) : undefined, printerPlay), [shape.kind, workspace, shape.gridfinityType, printerPlay]);
@@ -5354,6 +5372,9 @@ export function ShapeInspector({
           pickedFaces={surfacePickedFaces}
           facesShown={surfaceFacesShown}
           onFacePick={onSurfaceFacePick}
+          regionDrawing={surfaceRegionDrawing}
+          drawnRegion={surfaceDrawnRegion}
+          onRegionDraw={onSurfaceRegionDraw}
         />
       ) : null}
 
@@ -5539,6 +5560,16 @@ export function ShapeInspector({
             {/* Only the plain Length, Width and Height need the note; a Head diameter means the same at any angle (#1634). */}
             {tiltedMeasures && primaryProperties.some((property) => isPlainMeasure(property, MEASURE_LABELS())) ? (
               <p className="cylinder-wrap-hint">{t("prop.tiltedMeasures")}</p>
+            ) : null}
+            {kindBeforeEdgeTreatments ? (
+              <p className="cylinder-wrap-hint">{t("prop.settingsBeforeEdgeFeature", {
+                shape: kindBeforeEdgeTreatments,
+                fillet: t("editor.tool.fillet"),
+                chamfer: t("editor.tool.chamfer"),
+                hollow: t("editor.tool.hollow"),
+                list: t("edge.featureHistory"),
+                undo: t("edge.revertAction"),
+              })}</p>
             ) : null}
             {shape.kind === "gridfinity" && gridfinityPlan({ ...shape, depth: shapeDepth(shape) }).swallowtail ? (
               <>
@@ -6948,6 +6979,9 @@ export function SurfaceTextureCard({
   pickedFaces = null,
   facesShown = false,
   onFacePick,
+  regionDrawing = false,
+  drawnRegion = null,
+  onRegionDraw,
 }: {
   shape: WorkplaneShape;
   workspace: WorkplaneWorkspaceSettings;
@@ -6965,6 +6999,13 @@ export function SurfaceTextureCard({
   /** The faces of the shown layer are lit for a look, without picking (Discussion #1607). */
   facesShown?: boolean;
   onFacePick?: (faces: SurfaceTextureFace[] | null, edgeAngle: number, review?: boolean) => void;
+  /**
+   * A region drawn on the face in the view (Discussion #1579; the editor holds the drawing): it comes back once per lasso,
+   * for the layer shown when drawing began.
+   */
+  regionDrawing?: boolean;
+  drawnRegion?: { region: SurfaceTextureRegion } | null;
+  onRegionDraw?: (drawing: boolean) => void;
 }) {
   const [ownOpen, setOwnOpen] = useState(false);
   const open = openProp ?? ownOpen;
@@ -7010,12 +7051,17 @@ export function SurfaceTextureCard({
   useEffect(() => {
     if (pickedFaces) setLayers((all) => all.map((layer, index) => (index === pickedLayer.current ? normalizeSurfaceTexture({ ...layer, faces: pickedFaces }) : layer)));
   }, [pickedFaces]);
-  /** Shows another layer: picking faces goes on with that layer's faces. */
+  // A region drawn in the view is the place of the layer it was drawn for, instead of faces picked.
+  useEffect(() => {
+    if (drawnRegion) setLayers((all) => all.map((layer, index) => (index === pickedLayer.current ? normalizeSurfaceTexture({ ...layer, region: drawnRegion.region, faces: [] }) : layer)));
+  }, [drawnRegion]);
+  /** Shows another layer: picking faces goes on with that layer's faces; drawing a region stops. */
   const showLayer = (index: number) => {
     pickedLayer.current = index;
     setLayerIndex(index);
     if (facePicking) onFacePick?.(layers[index].faces, layers[index].edgeAngle);
     else if (facesShown) onFacePick?.(layers[index].faces.length > 0 ? layers[index].faces : null, layers[index].edgeAngle, true);
+    if (regionDrawing) onRegionDraw?.(false);
   };
   const addLayer = () => {
     // A new layer starts on no faces and asks for them: it goes only where it is picked.
@@ -7033,6 +7079,13 @@ export function SurfaceTextureCard({
     pickedLayer.current = shown;
     setLayerIndex(shown);
     if (facePicking || facesShown) onFacePick?.(null, settings.edgeAngle);
+    if (regionDrawing) onRegionDraw?.(false);
+  };
+  /** Draws a region for the layer shown (or stops): picking faces stops, the region takes their place. */
+  const drawRegion = (drawing: boolean) => {
+    pickedLayer.current = shownLayer;
+    if (drawing && (facePicking || facesShown)) onFacePick?.(null, settings.edgeAngle);
+    onRegionDraw?.(drawing);
   };
   // A further layer needs faces of its own; the first, picking none, takes the faces left over.
   const layerWithoutFaces = layers.findIndex((layer, index) => index > 0 && !surfaceTextureLayerPlaced(layer));
@@ -7105,8 +7158,9 @@ export function SurfaceTextureCard({
   const patternColor = layers[0].patternColor || surfacePatternPartOf(shape)?.color || surfacePatternColor(layers[0], shape.color);
   const percent = (id: string, label: string, value: number, onChange: (value: number) => void) => range(id, label, Math.round(value * 100), [0, 100], 1, (share) => onChange(share / 100));
   const apply = async () => {
-    // The faces picked so far are in the settings already; picking ends with the texture made.
+    // The faces picked so far are in the settings already; picking ends with the texture made, and so does drawing.
     if (facePicking || facesShown) onFacePick?.(null, settings.edgeAngle);
+    if (regionDrawing) onRegionDraw?.(false);
     setBusy(true);
     try {
       await onApply(layers[0], layers.slice(1));
@@ -7146,7 +7200,7 @@ export function SurfaceTextureCard({
     />
   );
   // Where the pattern goes, with the buttons to pick faces (the card's own; docked, the selection line holds them).
-  const facesPart = (withSummary: boolean) => text || !onFacePick ? null : (
+  const facesPart = (withSummary: boolean) => text || !onFacePick || settings.region ? null : (
                 <>
                   {withSummary ? <p className="cylinder-wrap-hint">{picked ? t("inspector.surfaceFacesSome", { count: settings.faces.length }) : t("inspector.surfaceFacesAll")}</p> : null}
                   <button
@@ -7188,6 +7242,40 @@ export function SurfaceTextureCard({
                     </button>
                   ) : null}
                   {facePicking ? <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceFacesPickHint")} /> : null}
+                </>
+  );
+  // Or a region drawn on a face (Discussion #1579): the pattern only inside it, the rest of the face smooth or another
+  // layer's. Several layers can each have one on the same face.
+  const regionPart = text || !onRegionDraw ? null : (
+                <>
+                  <p className="cylinder-wrap-hint">
+                    {settings.region ? t("inspector.surfaceRegionSome", { count: settings.region.points.length }) : t("inspector.surfaceRegionNone")}
+                  </p>
+                  <button
+                    className={`inspector-action-button ${regionDrawing ? "active" : ""}`}
+                    type="button"
+                    aria-pressed={regionDrawing}
+                    disabled={disabled || busy}
+                    onClick={() => drawRegion(!regionDrawing)}
+                  >
+                    <Lasso size={17} strokeWidth={2.5} />
+                    <span>{t(regionDrawing ? "inspector.surfaceRegionStop" : settings.region ? "inspector.surfaceRegionAgain" : "inspector.surfaceRegionDraw")}</span>
+                  </button>
+                  {settings.region ? (
+                    <button
+                      className="inspector-action-button"
+                      type="button"
+                      disabled={disabled || busy}
+                      onClick={() => {
+                        set({ region: null });
+                        if (regionDrawing) onRegionDraw(false);
+                      }}
+                    >
+                      <RotateCcw size={17} strokeWidth={2.5} />
+                      <span>{t("inspector.surfaceRegionClear")}</span>
+                    </button>
+                  ) : null}
+                  {regionDrawing ? <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceRegionDrawHint")} /> : null}
                 </>
   );
   const patternLabel = (pattern: SurfaceTexturePattern) => t(SURFACE_TEXTURE_LABELS.pattern[pattern]);
@@ -7700,7 +7788,7 @@ export function SurfaceTextureCard({
                     ready={!needsFaces}
                     confirm={picked}
                     text={shape.name}
-                    scope={appliedOnly || text || !onFacePick ? undefined : picked ? (settings.faces.length === 1 ? t("toolSidebar.facesOne") : t("toolSidebar.facesCount", { count: settings.faces.length })) : layers.length > 1 && shownLayer === 0 ? t("inspector.surfaceLayerRest") : needsFaces ? undefined : t("toolSidebar.allFaces")}
+                    scope={appliedOnly || text || !onFacePick ? undefined : settings.region ? t("inspector.surfaceRegionSome", { count: settings.region.points.length }) : picked ? (settings.faces.length === 1 ? t("toolSidebar.facesOne") : t("toolSidebar.facesCount", { count: settings.faces.length })) : layers.length > 1 && shownLayer === 0 ? t("inspector.surfaceLayerRest") : needsFaces ? undefined : t("toolSidebar.allFaces")}
                     detail={appliedOnly ? t("inspector.surfaceApplied", { pattern: appliedPatterns }) : needsFaces ? t("inspector.surfaceLayerNeedsFaces") : undefined}
                     action={appliedOnly || text || !onFacePick ? undefined : (
                       <button
@@ -7735,6 +7823,27 @@ export function SurfaceTextureCard({
                         </button>
                       ) : null}
                       {facePicking && !placedHere ? <span>{t("inspector.surfaceFacesPickHint")}</span> : null}
+                    </div>
+                  ) : null}
+                  {!appliedOnly && !text && onRegionDraw ? (
+                    <div className="tool-selection-links">
+                      <button type="button" className="tool-hint-more" aria-pressed={regionDrawing} disabled={disabled || busy} onClick={() => drawRegion(!regionDrawing)}>
+                        {t(regionDrawing ? "inspector.surfaceRegionStop" : settings.region ? "inspector.surfaceRegionAgain" : "inspector.surfaceRegionDraw")}
+                      </button>
+                      {settings.region ? (
+                        <button
+                          type="button"
+                          className="tool-hint-more"
+                          disabled={disabled || busy}
+                          onClick={() => {
+                            set({ region: null });
+                            if (regionDrawing) onRegionDraw(false);
+                          }}
+                        >
+                          {t("inspector.surfaceRegionClear")}
+                        </button>
+                      ) : null}
+                      {regionDrawing ? <span>{t("inspector.surfaceRegionDrawHint")}</span> : null}
                     </div>
                   ) : null}
                   {applied && onRemove ? (
@@ -7804,6 +7913,7 @@ export function SurfaceTextureCard({
               {patternPartFields}
               {/* Where it goes: every face, or only the faces clicked in the view (a text goes where it is put). */}
               {facesPart(true)}
+              {regionPart}
               <button className="name-tag-more" type="button" aria-expanded={moreOpen} onClick={() => setMoreOpen((current) => !current)}>
                 <ChevronDown className={moreOpen ? "open" : ""} size={15} strokeWidth={2.6} />
                 <span>{t(moreOpen ? "inspector.less" : "inspector.more")}</span>
