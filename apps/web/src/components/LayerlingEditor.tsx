@@ -20,7 +20,7 @@ import { hingePartScope, hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
 import { GRIDFINITY_SWALLOWTAIL_KEY_THICKNESS, gridfinityHasLabelText, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlateToWorld, gridfinitySceneWithKeys, gridfinitySwallowtailKeyCount, gridfinitySwallowtailKeyProfile, gridfinitySwallowtailKeys } from "@/lib/gridfinityGeometry";
-import { boxGeneratorInsideOutline, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorMatchingLidPatch, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
 import { curvedTextPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING } from "@/lib/textGeometry";
@@ -12451,6 +12451,29 @@ export function LayerlingEditor({
    * each pocket at its back and right, so that every pocket across a seam with the next plate gets one; the keys laid out
    * for it before give way. The same code the MCP's gridfinityKeys uses.
    */
+  /**
+   * A box generator box's matching lid, laid out beside it: a copy with the part set to lid, the size and height the lid
+   * needs (boxGeneratorMatchingLidPatch) and everything else the box's own, so the two fit.
+   */
+  const makeBoxLid = useCallback((boxId: string) => {
+    const box = shapesRef.current.find((shape) => shape.id === boxId);
+    if (!box || box.kind !== "boxGenerator") return;
+    if (box.locked) {
+      setNotice(t("status.objectLocked"), true);
+      return;
+    }
+    if (historyViewStateRef.current) {
+      setNotice(t("status.historyViewBlocksEdits"), true);
+      return;
+    }
+    const size = { width: shapeWidth(box), depth: shapeDepth(box), height: box.height };
+    const patch = boxGeneratorMatchingLidPatch(size, boxGeneratorFieldsOf(box));
+    const name = `${displayShapeName(box)} \u2013 ${t("boxGenerator.partLid")}`;
+    const beside = applyShapeMoveDelta(withCopyName(cloneWorkplaneShapeTreeWithFreshIds(box, "copy"), shapeNamesIn(shapesRef.current), copyNamePatterns()), { ...ZERO_MOVE_DELTA, dx: size.width / 2 + patch.width / 2 + 10 });
+    const lid = canonicalizeShape({ ...beside, ...patch, size: resizedShapeSize(patch.width, patch.depth), name });
+    commitShapes([...shapesRef.current, lid], [lid.id], t("status.boxLidMade", { name }));
+  }, [commitShapes]);
+
   const makeSwallowtailKeys = useCallback(async (plateId: string) => {
     const fail = (message: string) => {
       setNotice(message, true);
@@ -19211,6 +19234,7 @@ export function LayerlingEditor({
           surfacePickedFaces={surfaceFacePick?.faces ?? null}
           onSurfaceFacePick={selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) ? pickSurfaceFaces : undefined}
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
+          onMakeBoxLid={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLid(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
           onLayerText={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? layerSelectedText : undefined}
           onTextTags={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? makeTextTags : undefined}

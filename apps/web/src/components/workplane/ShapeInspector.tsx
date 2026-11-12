@@ -2661,7 +2661,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     }
     // Stackable: a collar on top and a groove under the wall, so a box stands on a box, centred; for any outline.
     const stackIssue = issues.find((issue) => issue.code === "stackWallThin" || issue.code === "stackTooLow");
-    if (box.boxPart === "box") {
+    // A lid that rests on top can stack too: it is made like a low stackable box, so the next box stands on it.
+    if (box.boxPart === "box" || (box.boxPart === "lid" && box.boxLidStyle === "restOn")) {
       properties.push({ type: "toggle", id: "boxStackable", label: t("prop.boxStackable"), value: box.boxStackable, onChange: (value) => onUpdate({ boxStackable: value ? true : undefined }) });
       if (box.boxStackable) {
         properties.push({
@@ -2671,7 +2672,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
           min: MIN_BOX_GENERATOR_STACK_HEIGHT,
           max: MAX_BOX_GENERATOR_STACK_HEIGHT,
           step: 0.5,
-          hint: stackIssue ? t(stackIssue.code === "stackWallThin" ? "boxGenerator.issueStackWall" : "boxGenerator.issueStackLow") : t("boxGenerator.stackHint", { fit: plainNumber(box.boxFit) }),
+          hint: stackIssue ? t(stackIssue.code === "stackWallThin" ? "boxGenerator.issueStackWall" : "boxGenerator.issueStackLow") : t(box.boxPart === "lid" ? "boxGenerator.stackLidHint" : "boxGenerator.stackHint", { fit: plainNumber(box.boxFit) }),
           onChange: (value) => onUpdate({ boxStackHeight: value }),
         });
       }
@@ -2685,10 +2686,10 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       hint: t(box.boxLidStyle === "overlap" ? "boxGenerator.lidOverlapHint" : box.boxLidStyle === "plug" ? "boxGenerator.lidPlugHint" : "boxGenerator.lidRestOnHint"),
       onChange: (value) => onUpdate({ boxLidStyle: normalizeBoxGeneratorLidStyle(value) }),
     });
-    if (box.boxPart === "lid" && (box.boxLidStyle === "overlap" || box.boxLidStyle === "plug")) {
+    if (box.boxPart === "lid" && (box.boxLidStyle === "overlap" || box.boxLidStyle === "plug" || (box.boxLidStyle === "restOn" && box.boxStackable))) {
       properties.push({ id: "boxLidPlate", label: t("prop.boxLidPlate"), value: box.boxLidPlate, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, onChange: (value) => onUpdate({ boxLidPlate: value }) });
     }
-    if (box.boxLidStyle === "overlap" || (box.boxPart === "lid" && box.boxLidStyle === "plug") || (box.boxPart === "box" && box.boxStackable)) {
+    if (box.boxLidStyle === "overlap" || (box.boxPart === "lid" && box.boxLidStyle === "plug") || (box.boxStackable && (box.boxPart === "box" || box.boxLidStyle === "restOn"))) {
       properties.push({ id: "boxFit", label: t("prop.boxFit"), value: box.boxFit, min: 0, max: MAX_BOX_GENERATOR_FIT, step: 0.05, hint: box.boxLidStyle === "overlap" ? fitHint : undefined, onChange: (value) => onUpdate({ boxFit: value }) });
     }
     return properties;
@@ -4525,6 +4526,7 @@ export function ShapeInspector({
   onSurfaceFacePick,
   onVaseAccessories,
   onGridfinityKeys,
+  onMakeBoxLid,
   onLayerText,
   onTextTags,
   onTextBlock,
@@ -4575,6 +4577,8 @@ export function ShapeInspector({
   onVaseAccessories?: () => void;
   /** Lays this Swallowtail baseplate's keys out in front of it, ready to print (#1061). */
   onGridfinityKeys?: () => void;
+  /** A box generator box: lays out a matching lid beside it, with the box's own outline, wall, play and stacking. */
+  onMakeBoxLid?: () => void;
   /** Splits a text into layers, or builds a layered text again with new words, font or layers (#215). */
   onLayerText?: (patch: TextLayerPatch) => void;
   /** One tag like this text or stack per name, laid out in rows (#215). */
@@ -5551,6 +5555,15 @@ export function ShapeInspector({
                     <span>{t("inspector.gridfinityKeys")}</span>
                   </button>
                 ) : null}
+              </>
+            ) : null}
+            {shape.kind === "boxGenerator" && shape.boxPart !== "lid" && onMakeBoxLid ? (
+              <>
+                <p className="cylinder-wrap-hint">{t("inspector.boxMakeLidHint")}</p>
+                <button className="inspector-action-button" type="button" disabled={frozen} onClick={onMakeBoxLid}>
+                  <Plus size={17} strokeWidth={2.5} />
+                  <span>{t("inspector.boxMakeLid")}</span>
+                </button>
               </>
             ) : null}
             {onShapeDefaultsChange && propertyDefaults ? (
