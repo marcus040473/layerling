@@ -270,6 +270,8 @@ Het deksel is een kopie van dezelfde vorm met {{ui:prop.boxPart}} op {{ui:boxGen
 
 > **Tip:** Geprinte passingen zijn iets krapper dan getekend. Print eerst het deksel en verander {{ui:prop.boxFit}} met een tiende millimeter tot het soepel sluit. Scharnieren, sluitingen, stapelen en Gridfinity horen nog niet bij deze vorm; gebruik daarnaast de vormen Scharnier, Klikhaak en Gridfinity.
 
+De dozengenerator maakt geen eigen Gridfinity. De vorm {{ui:shape.gridfinity}} heeft de basisplaat en de bakjes al, zet hem dus gewoon in de doos. Onder {{ui:prop.boxFloor}} van een rechthoekige doos zegt het paneel hoeveel ruimte de binnenkant biedt: de maat en hoeveel cellen van 42 mm er in de breedte en in de lengte passen.
+
 ## Schroefpaal
 
 De {{ui:shape.screwBoss}} is de paal waaraan in een behuizing een deksel of een printplaat wordt geschroefd: rond, met een gat van boven. Onder {{ui:prop.screwBossFastener}} kies je wat erin komt. Een {{ui:screwBoss.insert}} is een messing insert die je met de soldeerbout inperst: {{ui:prop.screwBossSize}} biedt M2 tot M5 en #2-56 tot 1/4-20, het gat zoals gangbare inserts het willen (M3: 4,0 mm voor een insert van 5,7 mm lang), een millimeter dieper dan de insert zodat het verdrongen plastic ruimte heeft, en de paal ongeveer twee keer het gat. Een {{ui:screwBoss.selfTapping}} snijdt zelf zijn draad: ST2,2 tot ST4,2 (DIN 7981), kunststofschroeven van 2,5 tot 5 mm (K25–K50) of #2 tot #10, met een voorboring van ongeveer 0,8 × de schroef, de paal 2,5 × en het gat 2,5 schroeven diep. {{ui:screwBoss.custom}} neemt de diameter en diepte die je invult.

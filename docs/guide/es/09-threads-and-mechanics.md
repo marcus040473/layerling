@@ -270,6 +270,8 @@ La tapa es una copia de la misma forma con {{ui:prop.boxPart}} en {{ui:boxGenera
 
 > **Consejo:** Los ajustes impresos quedan algo más apretados que los dibujados. Imprime primero la tapa y cambia {{ui:prop.boxFit}} una décima de milímetro hasta que cierre con suavidad. Bisagras, cierres, apilado y Gridfinity aún no forman parte de esta forma; usa a su lado las formas Bisagra, Clip de encaje y Gridfinity.
 
+El generador de cajas no hace un Gridfinity propio. La forma {{ui:shape.gridfinity}} ya tiene la placa base y los contenedores, así que ponla dentro de la caja. Bajo {{ui:prop.boxFloor}} de una caja rectangular, el panel dice cuánto sitio ofrece el interior: su tamaño y cuántas celdas de 42 mm caben a lo ancho y a lo largo.
+
 ## Torreta para tornillo
 
 La {{ui:shape.screwBoss}} es el poste al que se atornilla una tapa o una placa dentro de una caja: redonda, con un orificio desde arriba. En {{ui:prop.screwBossFastener}} eliges qué entra en ella. Un {{ui:screwBoss.insert}} es un casquillo de latón que se mete con el soldador: {{ui:prop.screwBossSize}} ofrece M2 a M5 y #2-56 a 1/4-20, el orificio como lo piden los insertos habituales (M3: 4,0 mm para un inserto de 5,7 mm), un milímetro más profundo que el inserto para que el plástico desplazado tenga sitio, y la torreta de unas dos veces el orificio. Un {{ui:screwBoss.selfTapping}} talla su propia rosca: ST2,2 a ST4,2 (DIN 7981), tornillos para plástico de 2,5 a 5 mm (K25–K50) o #2 a #10, con un agujero guía de unas 0,8 veces el tornillo, la torreta de 2,5 veces y el orificio de 2,5 tornillos de profundidad. {{ui:screwBoss.custom}} toma el diámetro y la profundidad que escribas.

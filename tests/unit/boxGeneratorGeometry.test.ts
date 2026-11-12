@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type * as THREE from "three";
 import {
   boxGeneratorIssues,
+  boxGeneratorGridfinityRoom,
   boxGeneratorMatchingLidSize,
   boxGeneratorPlan,
   createBoxGeneratorGeometry,
@@ -80,6 +81,20 @@ describe("box generator", () => {
 
   it("sizes an overlapping lid so its skirt clears the box by the fit", () => {
     expect(boxGeneratorMatchingLidSize({ width: 126, depth: 90 }, 2.4, 0.3)).toEqual({ width: 126 + 5.4, depth: 90 + 5.4 });
+  });
+
+  it("gives a rectangular box's inside to Gridfinity and builds no Gridfinity of its own", () => {
+    // 126 x 90 with a 2.4 wall: 121.2 x 85.2 inside, two 42 mm cells each way.
+    expect(boxGeneratorGridfinityRoom(SIZE, { boxCornerRadius: 3 })).toEqual({ width: 121.2, depth: 85.2, columns: 2, rows: 2 });
+    // A thicker wall takes the second row's room away.
+    expect(boxGeneratorGridfinityRoom({ width: 130, depth: 90, height: 48 }, { boxWall: 3 })).toEqual({ width: 124, depth: 84, columns: 2, rows: 2 });
+    expect(boxGeneratorGridfinityRoom({ width: 130, depth: 90, height: 48 }, { boxWall: 3.2 })).toMatchObject({ depth: 83.6, rows: 1 });
+    // Smaller than a cell: none fit.
+    expect(boxGeneratorGridfinityRoom({ width: 40, depth: 40, height: 20 }, {})).toMatchObject({ columns: 0, rows: 0 });
+    // Not a rectangle, or a lid: no rectangular inside to plan with.
+    expect(boxGeneratorGridfinityRoom(SIZE, { boxShape: "round" })).toBeNull();
+    expect(boxGeneratorGridfinityRoom(SIZE, { boxShape: "polygon" })).toBeNull();
+    expect(boxGeneratorGridfinityRoom(SIZE, { boxPart: "lid" })).toBeNull();
   });
 
   it("keeps every setting inside its limits, so no value breaks the body", () => {

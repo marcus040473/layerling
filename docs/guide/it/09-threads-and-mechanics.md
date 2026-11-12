@@ -269,6 +269,8 @@ Il coperchio è una copia della stessa forma con {{ui:prop.boxPart}} impostato s
 
 > **Suggerimento:** gli accoppiamenti stampati sono un po' più stretti di quelli disegnati. Stampa prima il coperchio e cambia {{ui:prop.boxFit}} di un decimo di millimetro finché si chiude senza sforzo. Cerniere, chiusure, impilamento e Gridfinity non fanno ancora parte di questa forma; usa accanto le forme Cerniera, Gancio a scatto e Gridfinity.
 
+Il generatore di scatole non fa un Gridfinity proprio. La forma {{ui:shape.gridfinity}} ha già la piastra base e i contenitori, quindi mettila dentro la scatola. Sotto {{ui:prop.boxFloor}} di una scatola rettangolare il pannello dice quanto spazio offre l'interno: la sua misura e quante celle da 42 mm entrano in larghezza e in lunghezza.
+
 ## Torretta per viti
 
 La {{ui:shape.screwBoss}} è il perno a cui in una scatola si avvita un coperchio o una scheda: tonda, con un foro dall'alto. In {{ui:prop.screwBossFastener}} scegli cosa ci va. Un {{ui:screwBoss.insert}} è una boccola in ottone inserita con il saldatore: {{ui:prop.screwBossSize}} offre da M2 a M5 e da #2-56 a 1/4-20, il foro come lo vogliono gli inserti comuni (M3: 4,0 mm per un inserto lungo 5,7 mm), un millimetro più profondo dell'inserto perché la plastica spostata abbia spazio, e la torretta circa il doppio del foro. Una {{ui:screwBoss.selfTapping}} taglia da sé la filettatura: da ST2,2 a ST4,2 (DIN 7981), viti per plastica da 2,5 a 5 mm (K25–K50) o da #2 a #10, con un preforo di circa 0,8 volte la vite, la torretta 2,5 volte e il foro profondo 2,5 viti. {{ui:screwBoss.custom}} prende il diametro e la profondità che inserisci.
