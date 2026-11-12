@@ -633,6 +633,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.boxGridfinityColumns = optionalShapeNumber(source.boxGridfinityColumns, fallbackEntry?.boxGridfinityColumns, 1, 12);
       entry.boxGridfinityRows = optionalShapeNumber(source.boxGridfinityRows, fallbackEntry?.boxGridfinityRows, 1, 12);
       entry.boxGridfinityFloor = source.boxGridfinityFloor === true ? true : source.boxGridfinityFloor === false ? undefined : fallbackEntry?.boxGridfinityFloor;
+      entry.boxGridfinityPlate = source.boxGridfinityPlate === true ? true : source.boxGridfinityPlate === false ? undefined : fallbackEntry?.boxGridfinityPlate;
       entry.boxStackable = source.boxStackable === true ? true : source.boxStackable === false ? undefined : fallbackEntry?.boxStackable;
       entry.boxStackHeight = optionalShapeNumber(source.boxStackHeight, fallbackEntry?.boxStackHeight, 1, 10);
     }

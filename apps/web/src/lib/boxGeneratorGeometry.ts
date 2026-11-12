@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { WorkplaneShape } from "@/types/layerling";
-import { GRIDFINITY_BASEPLATE_RADIUS, GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
+import { GRIDFINITY_BASEPLATE_HEIGHT, GRIDFINITY_BASEPLATE_RADIUS, GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_FLOOR, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityCutSockets, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
+import { loadedManifoldRuntime, requestManifoldRuntime } from "@/lib/manifoldHandle";
 
 /*
  * The box generator: one parametric shape for a box and its lid, from a few settings instead of a fixed template.
@@ -77,6 +78,7 @@ export type BoxGeneratorFields = {
   boxGridfinityColumns?: number;
   boxGridfinityRows?: number;
   boxGridfinityFloor?: boolean;
+  boxGridfinityPlate?: boolean;
   boxStackable?: boolean;
   boxStackHeight?: number;
 };
@@ -88,6 +90,8 @@ export type BoxGeneratorIssue =
   | { code: "compartmentSolid"; count: number }
   | { code: "lidNoSkirt" }
   | { code: "stackWallThin" }
+  | { code: "plateTooLow" }
+  | { code: "plateNoCell" }
   | { code: "stackTooLow" };
 
 type Point = { x: number; z: number };
@@ -142,6 +146,7 @@ export function normalizeBoxGenerator(size: BoxGeneratorSize, fields: BoxGenerat
     boxGridfinityColumns: Math.round(clamp(finite(fields.boxGridfinityColumns, 2), 1, MAX_BOX_GENERATOR_GRIDFINITY_CELLS)),
     boxGridfinityRows: Math.round(clamp(finite(fields.boxGridfinityRows, 2), 1, MAX_BOX_GENERATOR_GRIDFINITY_CELLS)),
     boxGridfinityFloor: fields.boxGridfinityFloor === true,
+    boxGridfinityPlate: fields.boxGridfinityPlate === true,
     boxStackable: fields.boxStackable === true,
     boxStackHeight: clamp(finite(fields.boxStackHeight, DEFAULT_BOX_GENERATOR_STACK_HEIGHT), MIN_BOX_GENERATOR_STACK_HEIGHT, MAX_BOX_GENERATOR_STACK_HEIGHT),
   };
@@ -301,6 +306,12 @@ export type BoxGeneratorPlan = {
    * below. `collar` is the outline of the collar the wall's inner part rises above the step by `height`.
    */
   stack: { skirt: Point[]; collar: Point[]; groove: Point[]; height: number; grooveHeight: number } | null;
+  /**
+   * With a Gridfinity baseplate in the floor: the cells of the existing Gridfinity grid that fit the box's inside, and the
+   * height the sockets stand on. The floor is as thick as a baseplate plus its closed floor, and a socket is cut into it
+   * for each cell as the baseplate's own are (gridfinityCutSockets).
+   */
+  plate: { cells: Point[]; bottom: number } | null;
   issues: BoxGeneratorIssue[];
 };
 
@@ -312,18 +323,18 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
   const inner = insetConvex(outer, settings.boxWall);
 
   if (settings.boxPart === "lid") {
-    if (settings.boxLidStyle === "restOn") return { settings, outer, cells: [], floorTop: settings.height, stack: null, issues };
+    if (settings.boxLidStyle === "restOn") return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, issues };
     if (!inner) {
       issues.push({ code: "lidNoSkirt" });
-      return { settings, outer, cells: [], floorTop: settings.height, stack: null, issues };
+      return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, issues };
     }
-    return { settings, outer, cells: [inner], floorTop: Math.min(settings.boxLidPlate, settings.height - 0.5), stack: null, issues };
+    return { settings, outer, cells: [inner], floorTop: Math.min(settings.boxLidPlate, settings.height - 0.5), stack: null, plate: null, issues };
   }
 
   let floorTop = Math.min(settings.boxFloor, settings.height - 0.5);
   if (!inner) {
     issues.push({ code: "wallTooThick" });
-    return { settings, outer, cells: [], floorTop: settings.height, stack: null, issues };
+    return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, issues };
   }
   // Stackable: the wall's inner half rises above a step as a collar; the outer half of the wall's underside has a groove
   // for the collar of the box below. The floor stays flat on the print bed (a groove only a wall's width wide is bridged
@@ -337,6 +348,20 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
     if (!skirt || !collar) issues.push({ code: "stackWallThin" });
     else if (settings.height < 2 * h + STACK_GROOVE_EXTRA + MIN_STACK_RING) issues.push({ code: "stackTooLow" });
     else stack = { skirt, collar, groove: inner, height: h, grooveHeight: h + STACK_GROOVE_EXTRA };
+  }
+  // A Gridfinity baseplate in the floor: the floor is as thick as the baseplate, and the existing socket cutter does the rest.
+  let plate: BoxGeneratorPlan["plate"] = null;
+  if (settings.boxGridfinityPlate) {
+    const top = GRIDFINITY_BASEPLATE_HEIGHT + GRIDFINITY_FLOOR;
+    if (top > settings.height - 1) issues.push({ code: "plateTooLow" });
+    else {
+      const cells = gridfinityOutlineCells(inner, MAX_GRIDFINITY_LARGE_PLATE_UNITS);
+      if (cells.length === 0) issues.push({ code: "plateNoCell" });
+      else {
+        plate = { cells, bottom: GRIDFINITY_FLOOR };
+        floorTop = Math.max(floorTop, top);
+      }
+    }
   }
   const box = bounds(inner);
   const { boxColumns: columns, boxRows: rows, boxDivider: divider } = settings;
@@ -355,7 +380,7 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
     }
   }
   if (solid > 0) issues.push({ code: "compartmentSolid", count: solid });
-  return { settings, outer, cells, floorTop, stack, issues };
+  return { settings, outer, cells, floorTop, stack, plate, issues };
 }
 
 /** Problems a person should know about; the solid is still made, the affected part left solid. */
@@ -552,7 +577,7 @@ function addWall(mesh: MeshBuilder, outline: Point[], y0: number, y1: number, fa
  * cells, the cells' walls facing inward and the floor of each cell.
  */
 export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}): THREE.BufferGeometry {
-  const { outer, cells, floorTop, settings, stack } = boxGeneratorPlan(size, fields);
+  const { outer, cells, floorTop, settings, stack, plate } = boxGeneratorPlan(size, fields);
   const mesh: MeshBuilder = { positions: [], indices: [] };
   if (stack) {
     const { skirt, collar, groove, height: lift, grooveHeight } = stack;
@@ -576,9 +601,25 @@ export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGe
     addWall(mesh, cell, floorTop, settings.height, "in");
     addCap(mesh, cell, [], floorTop, "up");
   }
+  let { positions, indices } = mesh;
+  if (plate) {
+    // The sockets need Manifold: until it has loaded the floor is drawn plain and asks for it (manifoldRevision in the cache key).
+    const runtime = loadedManifoldRuntime();
+    if (!runtime) requestManifoldRuntime();
+    else {
+      const body: Array<[number, number, number][]> = [];
+      for (let i = 0; i < indices.length; i += 3) {
+        body.push([0, 1, 2].map((k) => [positions[indices[i + k] * 3], positions[indices[i + k] * 3 + 1], positions[indices[i + k] * 3 + 2]] as [number, number, number]));
+      }
+      // The mesh holds its heights as 32-bit numbers: the sockets' top is put on exactly the floor's, or a sliver is left between them.
+      const cut = gridfinityCutSockets(runtime, body, plate.cells, Math.fround(floorTop) - GRIDFINITY_BASEPLATE_HEIGHT);
+      positions = cut.flat(2);
+      indices = Array.from({ length: positions.length / 3 }, (_, k) => k);
+    }
+  }
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(mesh.positions, 3));
-  geometry.setIndex(mesh.indices);
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
   // Unindexed, so every face keeps its own flat normal and the edges stay sharp.
   const flat = geometry.toNonIndexed();
   geometry.dispose();
@@ -604,6 +645,7 @@ export function boxGeneratorFieldsOf(shape: Partial<WorkplaneShape>): BoxGenerat
     boxGridfinityColumns: shape.boxGridfinityColumns,
     boxGridfinityRows: shape.boxGridfinityRows,
     boxGridfinityFloor: shape.boxGridfinityFloor,
+    boxGridfinityPlate: shape.boxGridfinityPlate,
     boxStackable: shape.boxStackable,
     boxStackHeight: shape.boxStackHeight,
   };

@@ -440,6 +440,8 @@ export type ShapeCustomization = {
   boxGridfinityRows?: number;
   /** Box generator: the Gridfinity floor is fitted to the box as given, whatever its outline (the box is not resized). */
   boxGridfinityFloor?: boolean;
+  /** Box generator: the floor is a Gridfinity baseplate, the sockets of the existing grid cut into it. */
+  boxGridfinityPlate?: boolean;
   /** Box generator: stackable (a collar on top, a skirt under the bottom) and the height of that step, in mm. */
   boxStackable?: boolean;
   boxStackHeight?: number;
@@ -1411,6 +1413,8 @@ export type WorkplaneShape = {
   boxGridfinityRows?: number;
   /** Box generator: the Gridfinity floor is fitted to the box as given, whatever its outline (the box is not resized). */
   boxGridfinityFloor?: boolean;
+  /** Box generator: the floor is a Gridfinity baseplate, the sockets of the existing grid cut into it. */
+  boxGridfinityPlate?: boolean;
   /** Box generator: stackable (a collar on top, a skirt under the bottom) and the height of that step, in mm. */
   boxStackable?: boolean;
   boxStackHeight?: number;
