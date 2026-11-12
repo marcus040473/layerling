@@ -11,6 +11,7 @@ import {
   boxGeneratorGridfinityFloor,
   boxGeneratorInsideOutline,
   boxGeneratorGridfinityRoom,
+  boxGeneratorMatchingLidPatch,
   boxGeneratorMatchingLidSize,
   boxGeneratorPlan,
   createBoxGeneratorGeometry,
@@ -235,7 +236,8 @@ describe("box generator", () => {
     expect(boxGeneratorPlan(SIZE, { boxStackable: true, boxWall: 0.9, boxFit: 0.3 }).stack).toBeNull();
     expect(boxGeneratorIssues({ width: 60, depth: 60, height: 6 }, { boxStackable: true, boxStackHeight: 3 })).toContainEqual({ code: "stackTooLow" });
     // The lid is not stacked, and off is off.
-    expect(boxGeneratorPlan(SIZE, { boxStackable: true, boxPart: "lid" }).stack).toBeNull();
+    expect(boxGeneratorPlan(SIZE, { boxStackable: true, boxPart: "lid", boxLidStyle: "overlap" }).stack).toBeNull();
+    expect(boxGeneratorPlan(SIZE, { boxStackable: true, boxPart: "lid", boxLidStyle: "plug" }).stack).toBeNull();
     expect(boxGeneratorPlan(SIZE, {}).stack).toBeNull();
   });
 
@@ -347,5 +349,61 @@ describe("a plug lid", () => {
     expect(boxGeneratorPlan(SIZE, { boxPart: "lid", boxLidStyle: "restOn" }).plug).toBeNull();
     expect(boxGeneratorPlan(SIZE, { boxPart: "box", boxLidStyle: "plug" }).plug).toBeNull();
     expect(normalizeBoxGenerator(SIZE, { boxLidStyle: "plug" }).boxLidStyle).toBe("plug");
+  });
+});
+
+describe("a stackable lid that rests on top", () => {
+  const lid = { width: 126, depth: 90, height: 10 };
+  const settings = { boxPart: "lid" as const, boxLidStyle: "restOn" as const, boxStackable: true, boxStackHeight: 3, boxLidPlate: 2, boxWall: 2.4, boxFit: 0.3, boxCornerRadius: 6 };
+
+  it("is made like a low stackable box with its plate for a floor and no compartments", () => {
+    const plan = boxGeneratorPlan(lid, settings);
+    expect(plan.issues).toEqual([]);
+    expect(plan.stack).not.toBeNull();
+    expect(plan.cells).toHaveLength(1);
+    expect(plan.floorTop).toBeCloseTo(2, 6);
+    const geometry = createBoxGeneratorGeometry(lid, settings);
+    expect(openEdges(geometry)).toBe(0);
+    // The same solid as a stackable box of that height whose floor is the plate, with its dividers left out.
+    const box = createBoxGeneratorGeometry(lid, { ...settings, boxPart: "box", boxFloor: 2, boxColumns: 1, boxRows: 1 });
+    expect(volumeOf(geometry)).toBeCloseTo(volumeOf(box), 3);
+  });
+
+  it("says so when it is too low for the collar, and does not take a Gridfinity floor or dividers from the settings", () => {
+    expect(boxGeneratorIssues({ ...lid, height: 6 }, settings)).toContainEqual({ code: "stackTooLow" });
+    const plan = boxGeneratorPlan(lid, { ...settings, boxColumns: 3, boxRows: 2, boxGridfinityPlate: true });
+    expect(plan.cells).toHaveLength(1);
+    expect(plan.plate).toBeNull();
+  });
+
+  it("fits on the box: the lid's groove takes the box's collar and its foot stands on the box's step", () => {
+    const boxPlan = boxGeneratorPlan({ width: 126, depth: 90, height: 48 }, { ...settings, boxPart: "box" });
+    const lidPlan = boxGeneratorPlan(lid, settings);
+    const xs = (points: { x: number }[]) => Math.max(...points.map((p) => p.x));
+    expect(xs(lidPlan.stack!.skirt)).toBeCloseTo(xs(boxPlan.stack!.skirt), 6);
+    expect(xs(lidPlan.stack!.collar)).toBeCloseTo(xs(boxPlan.stack!.collar), 6);
+    expect(xs(lidPlan.stack!.groove)).toBeCloseTo(xs(boxPlan.stack!.groove), 6);
+    expect(lidPlan.stack!.grooveHeight).toBeGreaterThan(boxPlan.stack!.height);
+  });
+});
+
+describe("the matching lid of a box", () => {
+  const box = { width: 126, depth: 90, height: 48 };
+
+  it("takes the box's size for a lid that rests on top or plugs in, and the grown size for one that overlaps", () => {
+    expect(boxGeneratorMatchingLidPatch(box, {})).toEqual({ boxPart: "lid", width: 126, depth: 90, height: 3 });
+    expect(boxGeneratorMatchingLidPatch(box, { boxLidStyle: "plug" })).toEqual({ boxPart: "lid", width: 126, depth: 90, height: 10 });
+    const grown = boxGeneratorMatchingLidSize(box, 2.4, 0.2);
+    expect(boxGeneratorMatchingLidPatch(box, { boxLidStyle: "overlap", boxWall: 2.4, boxFit: 0.2 })).toEqual({ boxPart: "lid", width: grown.width, depth: grown.depth, height: 10 });
+  });
+
+  it("gives a stackable resting lid the room for its groove and collar, so it raises no issue", () => {
+    for (const boxStackHeight of [1, 3, 6, 10]) {
+      const fields = { boxStackable: true, boxStackHeight };
+      const patch = boxGeneratorMatchingLidPatch(box, fields);
+      const { boxPart, width, depth, height } = patch;
+      expect(boxPart).toBe("lid");
+      expect(boxGeneratorIssues({ width, depth, height }, { ...fields, boxPart })).toEqual([]);
+    }
   });
 });

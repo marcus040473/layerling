@@ -266,7 +266,7 @@ microSD 卡槽也是左邊緣的接頭，位於電路板下方（Zero 2 W 上在
 
 {{ui:prop.boxColumns}}和{{ui:prop.boxRows}}把盒子分成格子。隔板厚{{ui:prop.boxDivider}}，與壁和底是一體的。比 2 mm 窄的格子保持實心，面板會告訴你有幾個。
 
-蓋子是同一個形狀的副本，把{{ui:prop.boxPart}}設為{{ui:boxGenerator.partLid}}。它依列印時的樣子繪製，蓋板貼在列印床上。{{ui:boxGenerator.lidRestOn}}是與盒子一樣大的平板。{{ui:boxGenerator.lidOverlap}}帶一圈和壁一樣厚的裙邊，向下罩住盒子外側；{{ui:prop.boxLidPlate}}是蓋板的厚度，{{ui:prop.boxFit}}是每一側的間隙。一個部件的寬和長始終是它自己的，所以罩蓋比盒子大：在{{ui:prop.boxFit}}下，面板會給出合適的尺寸。 {{ui:boxGenerator.lidPlug}} 與盒子一樣大：一塊板，上面立著一個插入盒子的環，厚度與壁相同，每側比內部小 {{ui:prop.boxFit}}；{{ui:prop.boxLidPlate}} 是板的厚度。列印時板貼著列印板，所以環不需要支撐。
+蓋子是同一個形狀的副本，把{{ui:prop.boxPart}}設為{{ui:boxGenerator.partLid}}。它依列印時的樣子繪製，蓋板貼在列印床上。{{ui:boxGenerator.lidRestOn}}是與盒子一樣大的平板。{{ui:boxGenerator.lidOverlap}}帶一圈和壁一樣厚的裙邊，向下罩住盒子外側；{{ui:prop.boxLidPlate}}是蓋板的厚度，{{ui:prop.boxFit}}是每一側的間隙。一個部件的寬和長始終是它自己的，所以罩蓋比盒子大：在{{ui:prop.boxFit}}下，面板會給出合適的尺寸。 {{ui:boxGenerator.lidPlug}} 與盒子一樣大：一塊板，上面立著一個插入盒子的環，厚度與壁相同，每側比內部小 {{ui:prop.boxFit}}；{{ui:prop.boxLidPlate}} 是板的厚度。列印時板貼著列印板，所以環不需要支撐。 在盒子的設定下方，{{ui:inspector.boxMakeLid}} 會在旁邊放上配套的蓋子：輪廓、壁、間隙、蓋子類型和堆疊都相同，並設好蓋子所需的尺寸和高度（罩住的蓋子更寬，可堆疊的蓋子留有凹槽和凸緣的空間）。
 
 > **提示：** 列印出來的配合比繪製的略緊。先列印蓋子，並以十分之一毫米為單位調整{{ui:prop.boxFit}}，直到能順暢合上。鉸鏈和鎖扣還不屬於這個形狀；請在旁邊使用鉸鏈和卡扣形狀。
 
@@ -274,7 +274,7 @@ microSD 卡槽也是左邊緣的接頭，位於電路板下方（Zero 2 W 上在
 
 第二個開關 {{ui:prop.boxGridfinityFloor}} 反過來運作：盒子保持你輸入的尺寸，無論是矩形、圓形、橢圓還是多邊形，底部隨之適配。面板會告訴你盒內能放下多少個完整的 42 公釐格子；底板本身請新增一個 Gridfinity {{ui:gridfinity.baseplate}}，與盒子一起選取，再按 {{ui:inspector.gridfinityOutlineFit}}。它會連同放得下的完整格子一起適配到壁內，底部其餘部分保持實心。兩個開關互相排斥。
 
-{{ui:prop.boxStackable}} 製作可以互相疊放的盒子，任何輪廓都適用。牆的內側一半作為凸緣，高出盒子上緣一圈的台階，並使上方的盒子對中。下方，牆下的一道窄凹槽容納下面盒子的凸緣。底部保持平放在列印板上，所以大面能列印得乾淨。凸緣高出 {{ui:prop.boxStackHeight}}，它包含在盒子的高度內。凸緣與凹槽之間的間隙是 {{ui:prop.boxFit}}。如果牆太薄，或盒子矮於凸緣的兩倍，面板會提示，盒子保持不可堆疊。蓋子不堆疊。
+{{ui:prop.boxStackable}} 製作可以互相疊放的盒子，任何輪廓都適用。牆的內側一半作為凸緣，高出盒子上緣一圈的台階，並使上方的盒子對中。下方，牆下的一道窄凹槽容納下面盒子的凸緣。底部保持平放在列印板上，所以大面能列印得乾淨。凸緣高出 {{ui:prop.boxStackHeight}}，它包含在盒子的高度內。凸緣與凹槽之間的間隙是 {{ui:prop.boxFit}}。如果牆太薄，或盒子矮於凸緣的兩倍，面板會提示，盒子保持不可堆疊。蓋子不堆疊。 放在上面的蓋子也可以是 {{ui:prop.boxStackable}}。它做成一個低矮的可堆疊盒子：邊緣下的凹槽容納下方盒子的凸緣，自己頂部的凸緣使上方的盒子對中。{{ui:prop.boxLidPlate}} 是它的底，高度必須超過 {{ui:prop.boxStackHeight}} 的兩倍再加 1.4 公釐。
 
 {{ui:prop.boxGridfinityPlate}} 把盒子的底部直接做成 Gridfinity 底板，不必再放入底板。現有 Gridfinity 網格的凹槽會切入底部，每個能放進內部的 42 公釐單元都有，任何輪廓都適用，面板會告訴你有多少個。底部厚度等於一塊底板（5 公釐）加上它封閉的底（1.2 公釐），所以盒子必須高於 7.2 公釐；{{ui:prop.boxFloor}} 不再起作用。與 {{ui:prop.boxGridfinity}} 一起使用時，盒子按整數個單元決定尺寸。蓋子不受影響。
 

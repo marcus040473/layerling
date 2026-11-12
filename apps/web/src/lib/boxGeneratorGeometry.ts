@@ -325,7 +325,10 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
   const issues: BoxGeneratorIssue[] = [];
   const inner = insetConvex(outer, settings.boxWall);
 
-  if (settings.boxPart === "lid") {
+  // A stackable lid that rests on top is made like a low stackable box without compartments: its groove takes the collar of
+  // the box below, and its own collar on top centres the box that stands on it.
+  const stackedLid = settings.boxPart === "lid" && settings.boxLidStyle === "restOn" && settings.boxStackable;
+  if (settings.boxPart === "lid" && !stackedLid) {
     if (settings.boxLidStyle === "plug") {
       // A plug lid is as large as the box: a plate, and on it a ring that fits into the box, the play (Fit) smaller than the
       // inside on each side, as thick as the wall. Printed plate down, so the ring needs no support.
@@ -346,7 +349,9 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
     return { settings, outer, cells: [inner], floorTop: Math.min(settings.boxLidPlate, settings.height - 0.5), stack: null, plate: null, plug: null, issues };
   }
 
-  let floorTop = Math.min(settings.boxFloor, settings.height - 0.5);
+  // The lid of a stackable box has its plate for a floor and one open space for its cavity.
+  const use = stackedLid ? { ...settings, boxFloor: settings.boxLidPlate, boxColumns: 1, boxRows: 1, boxGridfinityPlate: false } : settings;
+  let floorTop = Math.min(use.boxFloor, settings.height - 0.5);
   if (!inner) {
     issues.push({ code: "wallTooThick" });
     return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: null, issues };
@@ -366,7 +371,7 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
   }
   // A Gridfinity baseplate in the floor: the floor is as thick as the baseplate, and the existing socket cutter does the rest.
   let plate: BoxGeneratorPlan["plate"] = null;
-  if (settings.boxGridfinityPlate) {
+  if (use.boxGridfinityPlate) {
     const top = GRIDFINITY_BASEPLATE_HEIGHT + GRIDFINITY_FLOOR;
     if (top > settings.height - 1) issues.push({ code: "plateTooLow" });
     else {
@@ -379,7 +384,7 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
     }
   }
   const box = bounds(inner);
-  const { boxColumns: columns, boxRows: rows, boxDivider: divider } = settings;
+  const { boxColumns: columns, boxRows: rows, boxDivider: divider } = use;
   const cellWidth = (box.maxX - box.minX - (columns - 1) * divider) / columns;
   const cellDepth = (box.maxZ - box.minZ - (rows - 1) * divider) / rows;
   const cells: Point[][] = [];
@@ -513,6 +518,23 @@ export function boxGeneratorGridfinityFloor(size: BoxGeneratorSize, fields: BoxG
 export function boxGeneratorMatchingLidSize(box: { width: number; depth: number }, wall: number, fit: number) {
   const grow = 2 * (Math.max(0, wall) + Math.max(0, fit));
   return { width: box.width + grow, depth: box.depth + grow };
+}
+
+/**
+ * What turns a box into its matching lid: the part, and the size and height the lid needs. A lid that overlaps the box is
+ * wider than it by the walls and the play; a stackable lid that rests on top has room for its groove and collar, a flat one
+ * is a thin plate, and a plug lid or an overlapping one is a short ring on a plate. Everything else (outline, wall, play, lid
+ * style, stacking) stays the box's own, so the two fit.
+ */
+export function boxGeneratorMatchingLidPatch(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}) {
+  const settings = normalizeBoxGenerator(size, fields);
+  const grown = settings.boxLidStyle === "overlap" ? boxGeneratorMatchingLidSize(size, settings.boxWall, settings.boxFit) : { width: size.width, depth: size.depth };
+  let height = 10;
+  if (settings.boxLidStyle === "restOn") {
+    const room = 2 * settings.boxStackHeight + STACK_GROOVE_EXTRA + MIN_STACK_RING + 1;
+    height = settings.boxStackable ? Math.ceil(room * 2) / 2 : 3;
+  }
+  return { boxPart: "lid" as const, width: grown.width, depth: grown.depth, height };
 }
 
 type MeshBuilder = {
