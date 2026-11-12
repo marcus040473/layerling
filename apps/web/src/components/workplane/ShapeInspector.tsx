@@ -212,6 +212,7 @@ import {
   MIN_BOX_GENERATOR_SIDES,
   MIN_BOX_GENERATOR_WALL,
   boxGeneratorIssues,
+  boxGeneratorPlan,
   boxGeneratorGridfinityBoxSize,
   boxGeneratorGridfinityFit,
   boxGeneratorGridfinityFloor,
@@ -2567,6 +2568,13 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
           : gridfinityFit.fits(box.boxGridfinityColumns, box.boxGridfinityRows)
             ? t("boxGenerator.gridfinityFitMax", { columns: String(gridfinityFit.best.columns), rows: String(gridfinityFit.best.rows) })
             : t("boxGenerator.gridfinityTooBig", { columns: String(box.boxGridfinityColumns), rows: String(box.boxGridfinityRows), maxColumns: String(gridfinityFit.best.columns), maxRows: String(gridfinityFit.best.rows) });
+    // A baseplate in the floor: how many cells of the Gridfinity grid are cut into it, or why none are.
+    const platePlan = box.boxPart === "box" && box.boxGridfinityPlate ? boxGeneratorPlan({ width, depth, height: shape.height }, shape) : null;
+    const plateHint = !platePlan
+      ? undefined
+      : platePlan.plate
+        ? t("boxGenerator.plateHint", { cells: String(platePlan.plate.cells.length), floor: plainNumber(platePlan.floorTop), box: t("prop.boxGridfinity") })
+        : t(platePlan.issues.some((issue) => issue.code === "plateTooLow") ? "boxGenerator.plateTooLow" : "boxGenerator.plateNoCell");
     const properties: ShapePropertyConfig[] = [
       {
         type: "select",
@@ -2598,7 +2606,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     properties.push({ id: "boxWall", label: t("prop.boxWall"), value: box.boxWall, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, Math.min(width, depth) / 2 - 0.5), step: 0.1, hint: wallIssue, onChange: (value) => onUpdate(box.boxPart === "box" && box.boxGridfinity && gridfinityRectangle ? { boxWall: value, ...gridfinityBoxPatch(box.boxGridfinityColumns, box.boxGridfinityRows, value) } : { boxWall: value }) });
     if (box.boxPart === "box") {
       properties.push(
-        { id: "boxFloor", label: t("prop.boxFloor"), value: box.boxFloor, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, hint: box.boxGridfinity && !box.boxGridfinityFloor ? undefined : gridfinityHint, onChange: (value) => onUpdate({ boxFloor: value }) },
+        { id: "boxFloor", label: t("prop.boxFloor"), value: box.boxFloor, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, hint: plateHint ?? (box.boxGridfinity && !box.boxGridfinityFloor ? undefined : gridfinityHint), onChange: (value) => onUpdate({ boxFloor: value }) },
         { id: "boxColumns", label: t("prop.boxColumns"), value: box.boxColumns, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, onChange: (value) => onUpdate({ boxColumns: Math.round(value) }) },
         { id: "boxRows", label: t("prop.boxRows"), value: box.boxRows, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, hint: solidIssue ? t("boxGenerator.issueCompartments", { count: String(solidIssue.code === "compartmentSolid" ? solidIssue.count : 0) }) : undefined, onChange: (value) => onUpdate({ boxRows: Math.round(value) }) },
       );
@@ -2637,6 +2645,14 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         label: t("prop.boxGridfinityFloor"),
         value: box.boxGridfinityFloor,
         onChange: (value) => onUpdate(value ? { boxGridfinityFloor: true, boxGridfinity: undefined } : { boxGridfinityFloor: undefined }),
+      });
+      // The floor itself is the baseplate: the existing grid's sockets are cut into it, so no baseplate has to be put in.
+      properties.push({
+        type: "toggle",
+        id: "boxGridfinityPlate",
+        label: t("prop.boxGridfinityPlate"),
+        value: box.boxGridfinityPlate,
+        onChange: (value) => onUpdate({ boxGridfinityPlate: value ? true : undefined }),
       });
       if (box.boxColumns * box.boxRows > 1) {
         properties.push({ id: "boxDivider", label: t("prop.boxDivider"), value: box.boxDivider, min: MIN_BOX_GENERATOR_WALL, max: 20, step: 0.1, onChange: (value) => onUpdate({ boxDivider: value }) });

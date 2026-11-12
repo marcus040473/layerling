@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import manifoldModule from "manifold-3d";
 import type * as THREE from "three";
+import { rememberManifoldRuntime } from "@/lib/manifoldHandle";
 import {
   boxGeneratorIssues,
   boxGeneratorGridfinityBoxSize,
@@ -266,5 +268,46 @@ describe("box generator", () => {
     const inset = insetConvex(square, 2)!;
     expect(Math.max(...inset.map((p) => p.x))).toBeCloseTo(8);
     expect(insetConvex(square, 11)).toBeNull();
+  });
+});
+
+describe("a Gridfinity baseplate in the floor", () => {
+  const size = { ...boxGeneratorGridfinityBoxSize(3, 2, 2.4, 6), height: 30 };
+  const fields = { boxCornerRadius: 6, boxWall: 2.4, boxGridfinityPlate: true };
+
+  it("makes the floor as thick as a baseplate and a closed floor, with the grid's cells that fit", () => {
+    const plan = boxGeneratorPlan(size, fields);
+    expect(plan.issues).toEqual([]);
+    expect(plan.plate!.cells).toHaveLength(6);
+    // The cells sit on the box's middle, a 3 x 2 grid of 42 mm.
+    expect(plan.plate!.cells.map((c) => `${Math.round(c.x)},${Math.round(c.z)}`).sort()).toEqual(["-42,-21", "-42,21", "0,-21", "0,21", "42,-21", "42,21"]);
+    expect(plan.plate!.bottom).toBeCloseTo(1.2, 6);
+    expect(plan.floorTop).toBeCloseTo(5 + 1.2, 6);
+    // Without the switch there is no plate, and the floor is the one asked for.
+    expect(boxGeneratorPlan(size, { ...fields, boxGridfinityPlate: false }).plate).toBeNull();
+    // A round box takes the cells that fit its inside too.
+    expect(boxGeneratorPlan({ width: 100, depth: 100, height: 30 }, { boxShape: "round", boxGridfinityPlate: true }).plate!.cells.length).toBeGreaterThan(0);
+  });
+
+  it("says so, and leaves the floor plain, when the box is too low or no cell fits", () => {
+    expect(boxGeneratorIssues({ ...size, height: 7 }, fields)).toContainEqual({ code: "plateTooLow" });
+    expect(boxGeneratorPlan({ ...size, height: 7 }, fields).plate).toBeNull();
+    expect(boxGeneratorIssues({ width: 30, depth: 30, height: 30 }, { boxGridfinityPlate: true })).toContainEqual({ code: "plateNoCell" });
+  });
+
+  it("is drawn plain until the kernel is there, then with a socket in each cell, closed", async () => {
+    const plain = createBoxGeneratorGeometry(size, fields);
+    expect(openEdges(plain)).toBe(0);
+    const runtime = await manifoldModule();
+    runtime.setup();
+    rememberManifoldRuntime(runtime);
+    const cut = createBoxGeneratorGeometry(size, fields);
+    expect(openEdges(cut)).toBe(0);
+    // Each socket takes a good part of the 42 x 42 x 5 mm block away; the bottom of the floor is untouched.
+    const removed = volumeOf(plain) - volumeOf(cut);
+    expect(removed).toBeGreaterThan(6 * 1500);
+    expect(removed).toBeLessThan(6 * 42 * 42 * 5);
+    cut.computeBoundingBox();
+    expect(cut.boundingBox!.min.y).toBeCloseTo(0, 6);
   });
 });
