@@ -442,6 +442,9 @@ export type ShapeCustomization = {
   boxGridfinityRows?: number;
   /** Box generator: the Gridfinity floor is fitted to the box as given, whatever its outline (the box is not resized). */
   boxGridfinityFloor?: boolean;
+  /** Box generator: stackable (a collar on top, a skirt under the bottom) and the height of that step, in mm. */
+  boxStackable?: boolean;
+  boxStackHeight?: number;
   /** Transition (loft, #188): the outline at the bottom and at the top. */
   loftBottomOutline?: "round" | "rectangle" | "polygon";
   loftTopOutline?: "round" | "rectangle" | "polygon";
@@ -1412,6 +1415,9 @@ export type WorkplaneShape = {
   boxGridfinityRows?: number;
   /** Box generator: the Gridfinity floor is fitted to the box as given, whatever its outline (the box is not resized). */
   boxGridfinityFloor?: boolean;
+  /** Box generator: stackable (a collar on top, a skirt under the bottom) and the height of that step, in mm. */
+  boxStackable?: boolean;
+  boxStackHeight?: number;
   /** Transition (loft, #188): the outline at the bottom and at the top. */
   loftBottomOutline?: "round" | "rectangle" | "polygon";
   loftTopOutline?: "round" | "rectangle" | "polygon";

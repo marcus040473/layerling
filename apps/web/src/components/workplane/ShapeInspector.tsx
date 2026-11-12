@@ -206,6 +206,8 @@ import { MAX_PORT_CLEARANCE, maxPortCorner, normalizePortClearance, normalizePor
 import {
   MAX_BOX_GENERATOR_COMPARTMENTS,
   MAX_BOX_GENERATOR_FIT,
+  MAX_BOX_GENERATOR_STACK_HEIGHT,
+  MIN_BOX_GENERATOR_STACK_HEIGHT,
   MAX_BOX_GENERATOR_SIDES,
   MIN_BOX_GENERATOR_SIDES,
   MIN_BOX_GENERATOR_WALL,
@@ -2640,6 +2642,23 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         properties.push({ id: "boxDivider", label: t("prop.boxDivider"), value: box.boxDivider, min: MIN_BOX_GENERATOR_WALL, max: 20, step: 0.1, onChange: (value) => onUpdate({ boxDivider: value }) });
       }
     }
+    // Stackable: a skirt under the bottom and a collar on top, so a box stands on a box, centred; for any outline.
+    const stackIssue = issues.find((issue) => issue.code === "stackWallThin" || issue.code === "stackTooLow");
+    if (box.boxPart === "box") {
+      properties.push({ type: "toggle", id: "boxStackable", label: t("prop.boxStackable"), value: box.boxStackable, onChange: (value) => onUpdate({ boxStackable: value ? true : undefined }) });
+      if (box.boxStackable) {
+        properties.push({
+          id: "boxStackHeight",
+          label: t("prop.boxStackHeight"),
+          value: box.boxStackHeight,
+          min: MIN_BOX_GENERATOR_STACK_HEIGHT,
+          max: MAX_BOX_GENERATOR_STACK_HEIGHT,
+          step: 0.5,
+          hint: stackIssue ? t(stackIssue.code === "stackWallThin" ? "boxGenerator.issueStackWall" : "boxGenerator.issueStackLow") : t("boxGenerator.stackHint", { fit: plainNumber(box.boxFit) }),
+          onChange: (value) => onUpdate({ boxStackHeight: value }),
+        });
+      }
+    }
     properties.push({
       type: "select",
       id: "boxLidStyle",
@@ -2652,8 +2671,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     if (box.boxPart === "lid" && box.boxLidStyle === "overlap") {
       properties.push({ id: "boxLidPlate", label: t("prop.boxLidPlate"), value: box.boxLidPlate, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, onChange: (value) => onUpdate({ boxLidPlate: value }) });
     }
-    if (box.boxLidStyle === "overlap") {
-      properties.push({ id: "boxFit", label: t("prop.boxFit"), value: box.boxFit, min: 0, max: MAX_BOX_GENERATOR_FIT, step: 0.05, hint: fitHint, onChange: (value) => onUpdate({ boxFit: value }) });
+    if (box.boxLidStyle === "overlap" || (box.boxPart === "box" && box.boxStackable)) {
+      properties.push({ id: "boxFit", label: t("prop.boxFit"), value: box.boxFit, min: 0, max: MAX_BOX_GENERATOR_FIT, step: 0.05, hint: box.boxLidStyle === "overlap" ? fitHint : undefined, onChange: (value) => onUpdate({ boxFit: value }) });
     }
     return properties;
   }
