@@ -629,6 +629,10 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.boxLidStyle = source.boxLidStyle === "restOn" || source.boxLidStyle === "overlap" ? source.boxLidStyle : fallbackEntry?.boxLidStyle;
       entry.boxLidPlate = optionalShapeNumber(source.boxLidPlate, fallbackEntry?.boxLidPlate, 0.4, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.boxFit = optionalShapeNumber(source.boxFit, fallbackEntry?.boxFit, 0, 2);
+      entry.boxGridfinity = source.boxGridfinity === true ? true : source.boxGridfinity === false ? undefined : fallbackEntry?.boxGridfinity;
+      entry.boxGridfinityColumns = optionalShapeNumber(source.boxGridfinityColumns, fallbackEntry?.boxGridfinityColumns, 1, 12);
+      entry.boxGridfinityRows = optionalShapeNumber(source.boxGridfinityRows, fallbackEntry?.boxGridfinityRows, 1, 12);
+      entry.boxGridfinityFloor = source.boxGridfinityFloor === true ? true : source.boxGridfinityFloor === false ? undefined : fallbackEntry?.boxGridfinityFloor;
     }
     if (kind === "dovetail") {
       entry.dovetailNeckWidth = optionalShapeNumber(source.dovetailNeckWidth, fallbackEntry?.dovetailNeckWidth, 0.1, MAX_CUSTOM_SHAPE_DIMENSION);

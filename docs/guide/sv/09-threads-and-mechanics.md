@@ -270,7 +270,9 @@ Locket är en kopia av samma form med {{ui:prop.boxPart}} satt till {{ui:boxGene
 
 > **Tips:** Utskrivna passningar blir lite trängre än ritade. Skriv ut locket först och ändra {{ui:prop.boxFit}} med en tiondels millimeter åt gången tills det stängs mjukt. Gångjärn, lås, stapling och Gridfinity ingår inte i den här formen ännu; använd formerna Gångjärn, Snäpplås och Gridfinity bredvid den.
 
-Lådgeneratorn gör ingen egen Gridfinity. Formen {{ui:shape.gridfinity}} har redan basplattan och backarna, så lägg den i lådan. Under {{ui:prop.boxFloor}} på en rektangulär låda berättar panelen hur mycket plats insidan ger den: dess storlek och hur många celler på 42 mm som ryms på tvären och på längden.
+Lådgeneratorn gör ingen egen Gridfinity: formen {{ui:shape.gridfinity}} har redan basplattan och backarna, så lägg den i lådan. För att förbereda lådan slår du på {{ui:prop.boxGridfinity}} och väljer cellerna under {{ui:prop.boxGridfinityColumns}} och {{ui:prop.boxGridfinityRows}}, till exempel 3 gånger 4. En rektangulär låda får då precis den storlek där en basplatta med de cellerna ryms innanför väggen, 42 mm per cell plus 0,5 mm spel; ändrar du väggen följer storleken med. En rund eller månghörnig låda ändras inte: reglagen stannar vid det som ryms, och panelen anger det största rutnät som ryms i konturen. Med strömbrytaren av säger panelen under {{ui:prop.boxFloor}} bara hur mycket plats insidan ger.
+
+Den andra strömbrytaren, {{ui:prop.boxGridfinityFloor}}, fungerar tvärtom: lådan behåller exakt den storlek du anger, oavsett om den är rektangulär, rund, oval eller månghörnig, och botten anpassas till den. Panelen säger hur många hela celler på 42 mm insidan rymmer; för själva plattan lägger du till en Gridfinity-{{ui:gridfinity.baseplate}}, markerar den tillsammans med lådan och trycker på {{ui:inspector.gridfinityOutlineFit}}. Den anpassas innanför väggen med de hela celler som ryms, och resten av botten förblir massiv. De två strömbrytarna utesluter varandra.
 
 ## Skruvfäste
 

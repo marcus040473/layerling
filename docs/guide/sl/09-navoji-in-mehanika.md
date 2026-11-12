@@ -268,7 +268,9 @@ Pokrov je kopija iste oblike z {{ui:prop.boxPart}}, nastavljenim na {{ui:boxGene
 
 > **Namig:** Natisnjena prileganja so malo tesnejša od narisanih. Najprej natisni pokrov in spreminjaj {{ui:prop.boxFit}} po desetinko milimetra, dokler se ne zapre gladko. Tečaji, zapahi, zlaganje in Gridfinity še niso del te oblike; ob njej uporabi oblike Tečaj, Zaskočna kljukica in Gridfinity.
 
-Generator škatel ne naredi lastnega Gridfinityja. Oblika {{ui:shape.gridfinity}} že ima osnovno ploščo in posode, zato jo preprosto postavi v škatlo. Pod poljem {{ui:prop.boxFloor}} pri pravokotni škatli plošča pove, koliko prostora ponuja notranjost: njeno velikost in koliko celic po 42 mm gre v širino in v dolžino.
+Generator škatel ne naredi lastnega Gridfinityja: oblika {{ui:shape.gridfinity}} že ima osnovno ploščo in posode, zato jo preprosto postavi v škatlo. Za pripravo škatle vklopi {{ui:prop.boxGridfinity}} in izberi celice v poljih {{ui:prop.boxGridfinityColumns}} in {{ui:prop.boxGridfinityRows}}, na primer 3 krat 4. Pravokotna škatla dobi nato velikost, v katero znotraj stene gre osnovna plošča natanko s temi celicami, po 42 mm plus 0,5 mm zračnosti; če spremeniš steno, velikost sledi. Pri okrogli ali večkotni škatli se nič ne spremeni: drsniki se ustavijo pri tem, kar gre noter, plošča pa pove največjo mrežo, ki gre v obris. Pri izklopljenem stikalu plošča pod poljem {{ui:prop.boxFloor}} samo pove, koliko prostora ponuja notranjost.
+
+Drugo stikalo, {{ui:prop.boxGridfinityFloor}}, deluje obratno: škatla obdrži natanko velikost, ki jo vneseš, naj bo pravokotna, okrogla, ovalna ali večkotna, dno pa se ji prilagodi. Plošča pove, koliko celih celic po 42 mm sprejme notranjost; za samo ploščo dodaj Gridfinity {{ui:gridfinity.baseplate}}, izberi jo skupaj s škatlo in pritisni {{ui:inspector.gridfinityOutlineFit}}. Vstavi se v steno s celimi celicami, ki gredo noter, preostanek dna pa ostane poln. Stikali se izključujeta.
 
 ## Vijačni steber
 

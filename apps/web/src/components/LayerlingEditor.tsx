@@ -18,6 +18,7 @@ import { hingePartScope, hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
 import { GRIDFINITY_SWALLOWTAIL_KEY_THICKNESS, gridfinityHasLabelText, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlateToWorld, gridfinitySceneWithKeys, gridfinitySwallowtailKeyCount, gridfinitySwallowtailKeyProfile, gridfinitySwallowtailKeys } from "@/lib/gridfinityGeometry";
+import { boxGeneratorInsideOutline, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
 import { curvedTextPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING } from "@/lib/textGeometry";
@@ -11673,8 +11674,14 @@ export function LayerlingEditor({
     setNotice(t("status.gridfinityOutlineReading"), true);
     try {
       const found = await footprintLoops([withHoleMode(source, false)]);
-      const read = found
-        ? gridfinityOutlineFromLoops(await getManifoldRuntime(), gridfinityOutlineToPlate(found.loops.map((loop) => loop.points.map((p) => ({ x: p.u, z: p.v }))), plate))
+      // A box from the box generator stands on its whole outline, floor and wall: the plate goes inside the wall.
+      const boxWall = source.kind === "boxGenerator" && found?.loops.length === 1 ? normalizeBoxGenerator({ width: source.width, depth: source.depth ?? source.width, height: source.height }, source) : null;
+      const loops = found && boxWall ? found.loops.map((loop) => {
+        const inside = boxWall.boxPart === "box" ? boxGeneratorInsideOutline(loop.points.map((p) => ({ x: p.u, z: p.v })), boxWall.boxWall) : null;
+        return inside ? { ...loop, points: inside.map((p) => ({ u: p.x, v: p.z })) } : loop;
+      }) : found?.loops;
+      const read = found && loops
+        ? gridfinityOutlineFromLoops(await getManifoldRuntime(), gridfinityOutlineToPlate(loops.map((loop) => loop.points.map((p) => ({ x: p.u, z: p.v }))), plate))
         : { error: "empty" as const };
       if ("error" in read) {
         setNotice(t(read.error === "several" ? "status.gridfinityOutlineSeveral" : "status.gridfinityOutlineNoOutline"));
