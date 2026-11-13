@@ -1885,6 +1885,18 @@ export function buildVase(input, { part = 'body' } = {}) {
         addWall([outer[i][j], outer[i + 1][k], outer[i + 1][j]], [edgeD(i, j), edgeH(i + 1, j), edgeV(i, j)], [t0, z0, t1, z1, t0, z1], flat || fixedRow.has(i + 1))
         continue
       }
+      // A relief: each quad is split along the diagonal whose two ends lie at more nearly the same depth, so a relief's
+      // edge runs along the triangles' sides instead of across them - no fine staircase where an edge crosses the grid
+      // at a slant or in a curve. Facets keep their own split.
+      if (relief && !lowpoly) {
+        const a = outer[i][j], b = outer[i][k], c = outer[i + 1][k], d = outer[i + 1][j]
+        const r = (v) => Math.hypot(verts[v * 3], verts[v * 3 + 1])
+        if (Math.abs(r(a) - r(c)) > Math.abs(r(b) - r(d))) {
+          tris.push(a, b, d)
+          tris.push(b, c, d)
+          continue
+        }
+      }
       tris.push(outer[i][j], outer[i][k], outer[i + 1][k])
       tris.push(outer[i][j], outer[i + 1][k], outer[i + 1][j])
     }

@@ -130,7 +130,11 @@ function mapValues(entry) {
   return values
 }
 
-/** A pattern tile's height 0..1 at (u, v) in tiles, repeating both ways; v counts up the vase (the picture's rows down). */
+/**
+ * A pattern tile's height 0..1 at (u, v) in tiles, repeating both ways; v counts up the vase (the picture's rows down).
+ * Read between its points along smooth curves (Catmull-Rom over four by four points): straight lines between them left
+ * the picture's raster as small corners along every edge.
+ */
 function tileHeight(entry, u, v) {
   const n = entry.size
   const values = mapValues(entry)
@@ -138,10 +142,20 @@ function tileHeight(entry, u, v) {
   const y = (1 - frac(v)) * n - 0.5
   const x0 = Math.floor(x), y0 = Math.floor(y)
   const fx = x - x0, fy = y - y0
-  const at = (i, j) => values[(((j % n) + n) % n) * n + (((i % n) + n) % n)]
-  const top = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * fx
-  const bottom = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * fx
-  return (top + (bottom - top) * fy) / 255
+  const wrap = (i) => ((i % n) + n) % n
+  const weights = (t) => {
+    const t2 = t * t, t3 = t2 * t
+    return [(-t3 + 2 * t2 - t) / 2, (3 * t3 - 5 * t2 + 2) / 2, (-3 * t3 + 4 * t2 + t) / 2, (t3 - t2) / 2]
+  }
+  const wx = weights(fx), wy = weights(fy)
+  let sum = 0
+  for (let b = 0; b < 4; b++) {
+    const row = wrap(y0 - 1 + b) * n
+    let line = 0
+    for (let a = 0; a < 4; a++) line += wx[a] * values[row + wrap(x0 - 1 + a)]
+    sum += wy[b] * line
+  }
+  return clamp(sum / 255, 0, 1)
 }
 
 /** A leaf picture's signed distance (in its board's texels, positive inside) at board point (x, y), 0..1, y down. */
