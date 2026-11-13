@@ -4256,6 +4256,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "Sześciokąty",
   "vase.effectWeave": "Rombowy splot",
   "vase.effectLeaves": "Liście",
+  "prop.vaseLeafFixed": "Zachowaj rozmiar",
   "vase.effectLeafFlow": "Płynące liście",
   "vase.leafScattered": "Rozproszone",
   "vase.effectWaves": "Fale",

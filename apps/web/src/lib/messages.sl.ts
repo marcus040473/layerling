@@ -3403,6 +3403,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "Šestkotni relief",
   "vase.effectWeave": "Rombasto pletivo",
   "vase.effectLeaves": "Listi",
+  "prop.vaseLeafFixed": "Ohrani velikost",
   "vase.effectLeafFlow": "Valoviti listi",
   "vase.leafScattered": "Razpršeno",
   "vase.effectWaves": "Valovi",

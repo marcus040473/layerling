@@ -4242,6 +4242,7 @@ export const MESSAGES_ZH_TW: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "六邊形浮雕",
   "vase.effectWeave": "菱形編織",
   "vase.effectLeaves": "葉片",
+  "prop.vaseLeafFixed": "保持大小",
   "vase.effectLeafFlow": "流動葉片",
   "vase.leafScattered": "散布",
   "vase.effectWaves": "波浪",

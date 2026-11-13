@@ -4404,6 +4404,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "vase.effectHexagons": "Šestiúhelníky",
   "vase.effectWeave": "Kosočtverečný výplet",
   "vase.effectLeaves": "Listy",
+  "prop.vaseLeafFixed": "Zachovat velikost",
   "vase.effectLeafFlow": "Plynoucí listy",
   "vase.leafScattered": "Rozptýleně",
   "vase.effectWaves": "Vlny",

@@ -4340,6 +4340,7 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "Шестиугольники",
   "vase.effectWeave": "Ромбовое плетение",
   "vase.effectLeaves": "Листья",
+  "prop.vaseLeafFixed": "Сохранять размер",
   "vase.effectLeafFlow": "Струящиеся листья",
   "vase.leafScattered": "Вразброс",
   "vase.effectWaves": "Волны",

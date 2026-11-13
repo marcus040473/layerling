@@ -1853,6 +1853,7 @@ export const MESSAGES_PT_BR: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "Relevo hexagonal",
   "vase.effectWeave": "Trama de losangos",
   "vase.effectLeaves": "Folhas",
+  "prop.vaseLeafFixed": "Manter o tamanho",
   "vase.effectLeafFlow": "Folhas fluidas",
   "vase.leafScattered": "Espalhadas",
   "vase.effectWaves": "Ondas",

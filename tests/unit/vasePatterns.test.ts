@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildVase, normalizeParams, vaseChecks, vaseShape, lidSafeZoneTo } from "@/lib/vase/vase-geometry.mjs";
 import { buildParts } from "@/lib/vase/vase-parts.mjs";
-import { LEAF_SHAPES, PATTERNS, leafHeight, normalizeLeafPoints, patternHeight, patternPreview } from "@/lib/vase/vase-patterns.mjs";
+import { LEAF_SHAPES, PATTERNS, leafHeight, normalizeLeafPoints, patternHeight, patternPreview, reliefField } from "@/lib/vase/vase-patterns.mjs";
 
 /*
  * The vase designer's relief patterns (vase-patterns.mjs): seven families and leaves on the vase's surface, the height
@@ -58,6 +58,27 @@ describe("vase relief patterns", () => {
     for (const leafShape of Object.keys(LEAF_SHAPES)) {
       const mesh = buildVase({ effect: "blaetter", leafShape, body: "hohl", profile: "flasche", quality: "entwurf", leafPoints: leafShape === "eigen" ? [[0, 0.2], [0.5, 1], [1, 0.05]] : null });
       expect(openEdges(mesh), leafShape).toBe(0);
+    }
+  });
+
+  it("keeps leaves the same size at a narrow neck when asked: fewer round it instead of smaller ones", () => {
+    // Raised width per leaf run round the bottle's neck (radius 17 mm against 45 mm at the belly), in mm.
+    const widthAtNeck = (effect: string, leafFixed: string) => {
+      const shape = vaseShape({ profile: "flasche", effect, leafFixed, leafLayout: "regelmaessig" });
+      const field = reliefField(shape.p, shape, () => 1);
+      const z = 150, n = 1440, r = shape.R(z);
+      let runs = 0, up = 0, before: boolean | null = null;
+      for (let i = 0; i <= n; i += 1) {
+        const raised = field.depthAt((i / n) * 2 * Math.PI, z, r) < 0.3 * shape.p.reliefDepth;
+        if (before === false && raised) runs += 1;
+        if (raised) up += 1;
+        before = raised;
+      }
+      return ((up / n) * 2 * Math.PI * r) / Math.max(1, runs);
+    };
+    for (const effect of ["blaetter", "tulpenblaetter"]) {
+      expect(widthAtNeck(effect, "ja"), effect).toBeGreaterThan(1.3 * widthAtNeck(effect, "nein"));
+      expect(openEdges(buildVase({ profile: "flasche", body: "hohl", effect, leafFixed: "ja", quality: "entwurf" })), effect).toBe(0);
     }
   });
 

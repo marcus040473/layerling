@@ -1637,10 +1637,12 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       properties.push(reliefDepth, count, lean(pattern), aspect, patternMore({ type: "toggle", id: "vase.patternInvert", label: t("prop.vasePatternInvert"), value: vase.patternInvert === "ja", onChange: (value) => setVase({ patternInvert: value ? "ja" : "nein" }) }));
     }
     if (vase.effect === "wisp") properties.push(reliefDepth, count, lean(pattern), patternMore(range("patternGroup", "prop.vasePatternGroup", 1)), patternMore(percent("patternWidth", "prop.vasePatternChannel")));
-    if (vase.effect === "tulpenblaetter") properties.push(reliefDepth, count, lean(pattern), patternMore(range("leafOverlap", "prop.vaseLeafOverlap", 1)));
+    // Leaves may keep their size where the vase narrows: fewer round there instead of smaller ones.
+    const leafFixed = pattern({ type: "toggle", id: "vase.leafFixed", label: t("prop.vaseLeafFixed"), value: vase.leafFixed === "ja", onChange: (value) => setVase({ leafFixed: value ? "ja" : "nein" }) });
+    if (vase.effect === "tulpenblaetter") properties.push(reliefDepth, count, lean(pattern), leafFixed, patternMore(range("leafOverlap", "prop.vaseLeafOverlap", 1)));
     if (vase.effect === "blaetter") {
       properties.push(pattern(choice("leafShape", "prop.vaseLeafShape")));
-      properties.push(pattern(range("leafSize", "prop.vaseLeafSize", 1)), reliefDepth, pattern(range("leafOverlap", "prop.vaseLeafOverlap", 1)));
+      properties.push(pattern(range("leafSize", "prop.vaseLeafSize", 1)), reliefDepth, pattern(range("leafOverlap", "prop.vaseLeafOverlap", 1)), leafFixed);
       properties.push(
         patternMore(choice("leafLayout", "prop.vaseLeafLayout")),
         patternMore(percent("leafCurve", "prop.vaseLeafCurve")),

@@ -1160,6 +1160,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "Sekskantrelief",
   "vase.effectWeave": "Rudeflet",
   "vase.effectLeaves": "Blade",
+  "prop.vaseLeafFixed": "Behold størrelsen",
   "vase.effectLeafFlow": "Flydende blade",
   "vase.leafScattered": "Spredt",
   "vase.effectWaves": "Bølger",

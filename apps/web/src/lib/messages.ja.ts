@@ -3353,6 +3353,7 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "六角形タイル",
   "vase.effectWeave": "ひし形の編み目",
   "vase.effectLeaves": "葉っぱ",
+  "prop.vaseLeafFixed": "同じ大きさを保つ",
   "vase.effectLeafFlow": "流れる葉",
   "vase.leafScattered": "散らす",
   "vase.effectWaves": "波",

@@ -328,7 +328,7 @@ export function patternCellsAround(p, maxCircumference) {
 
 /** Leaf rows: the lower lies over the upper, within a row the left edge over the neighbour's right. */
 function leavesAt(cu, cv, around, o) {
-  const { shape, aspect, width, overlap, layout, tilt, curve, withVeins, points, step, bend = 0 } = o
+  const { shape, aspect, width, overlap, layout, tilt, curve, withVeins, points, step, bend = 0, fixed = null } = o
   const scattered = layout === 'verstreut'
   const length = width * aspect
   // The slope at a leaf's edge: about a twentieth of a cell, in lengths of the leaf.
@@ -359,24 +359,29 @@ function leavesAt(cu, cv, around, o) {
     const dyRow = cv - r * pitch
     // A row whose leaves cannot reach this height is passed over at once.
     if (dyRow > rowAbove || dyRow < -rowBelow) continue
-    const lean = dyRow * (sin / Math.max(0.2, cos))
-    const c = Math.round(cu - off - lean)
+    // Leaves that keep their size (`fixed`): each row has as many leaves round as fit its own height's circumference,
+    // and the point is measured in that row's places; `ring` is the circumference at the point, in cells.
+    const rowAround = fixed ? fixed.count(r) : around
+    const scale = fixed ? fixed.ring / rowAround : 1
+    const cuRow = fixed ? fixed.u * rowAround : cu
+    const lean = (dyRow * (sin / Math.max(0.2, cos))) / scale
+    const c = Math.round(cuRow - off - lean)
     let rowBest = -1, rowX = Infinity, rowOther = 0, rowEdge = 1, rowCover = 0
     for (let k = c - reach; k <= c + reach; k++) {
       // Scattered: each leaf a little off its place, turned and sized its own way (the same every time, and the same
       // a whole turn further round, so the seam closes).
       // A leaf whose base lies farther away than it is long (and wide) cannot reach this point.
-      let near = cu - (k + off)
-      near -= around * Math.round(near / around)
+      let near = cuRow - (k + off)
+      near = (near - rowAround * Math.round(near / rowAround)) * scale
       if (near > side || near < -side || near * near + dyRow * dyRow > farthest) continue
-      const wrapped = ((k % around) + around) % around
+      const wrapped = ((k % rowAround) + rowAround) % rowAround
       const jx = scattered ? (hash2(wrapped, r, 17) - 0.5) * 0.7 : 0
       const jy = scattered ? (hash2(wrapped, r, 29) - 0.5) * 0.6 * pitch : 0
       const turn = scattered ? (hash2(wrapped, r, 41) - 0.5) * 0.75 : 0
       const size = scattered ? 0.82 + 0.36 * hash2(wrapped, r, 53) : 1
       const lsin = Math.sin(tilt + turn), lcos = Math.cos(tilt + turn)
-      let dx = cu - (k + off + jx)
-      dx -= around * Math.round(dx / around)
+      let dx = cuRow - (k + off + jx)
+      dx = (dx - rowAround * Math.round(dx / rowAround)) * scale
       const dy0 = dyRow - jy
       const along = (dx * lsin + dy0 * lcos) / size
       let across = (dx * lcos - dy0 * lsin) / size
@@ -412,8 +417,19 @@ function leavesAt(cu, cv, around, o) {
   return clamp(beneath + (hitTop - beneath) * hitEdge, 0, 1)
 }
 
+/** The tulip leaves' own leaf: length per width, width per cell, and how much more their rows overlap. */
+const TULIP = { aspect: 2.7, width: 1.35, overlap: 0.25 }
+
+/** A leaf family's rows in cells: a leaf's length and the distance between rows. */
+function leafRows(p) {
+  const form = p.effect === 'tulpenblaetter' ? { width: TULIP.width, aspect: TULIP.aspect } : leafForm(p.leafShape, p.leafAspect)
+  const overlap = p.leafOverlap / 100 + (p.effect === 'tulpenblaetter' ? TULIP.overlap : 0)
+  const length = form.width * form.aspect
+  return { length, pitch: Math.max(0.12, length * (1 - overlap)) }
+}
+
 /** The height 0..1 of a family at (cu, cv), in cells; `around` is the count of cells round the vase. */
-export function patternHeight(p, cu, cv, around) {
+export function patternHeight(p, cu, cv, around, fixed = null) {
   const lean = (clamp(p.patternTwist, -75, 75) * Math.PI) / 180
   const sheared = cu + Math.tan(lean) * cv
   const picture = PATTERN_MAPS[p.effect]
@@ -424,7 +440,7 @@ export function patternHeight(p, cu, cv, around) {
   if (p.effect === 'wisp') return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth)
   if (p.effect === 'tulpenblaetter') {
     // Long tulip leaves rising from the bottom in a spiral, overlapping at the sides, bent like flames by the lean.
-    return leavesAt(cu, cv, around, { shape: 'tulpe', aspect: 2.7, width: 1.35, overlap: p.leafOverlap / 100 + 0.25, layout: 'spirale', tilt: lean, curve: 1, withVeins: false, points: null, step: OVERLAP_STEP, bend: Math.sign(p.patternTwist) * Math.min(0.8, Math.abs(p.patternTwist) / 45) })
+    return leavesAt(cu, cv, around, { shape: 'tulpe', aspect: TULIP.aspect, width: TULIP.width, overlap: p.leafOverlap / 100 + TULIP.overlap, layout: 'spirale', tilt: lean, curve: 1, withVeins: false, points: null, step: OVERLAP_STEP, bend: Math.sign(p.patternTwist) * Math.min(0.8, Math.abs(p.patternTwist) / 45), fixed })
   }
   if (p.effect === 'blaetter') {
     const form = leafForm(p.leafShape, p.leafAspect)
@@ -439,6 +455,7 @@ export function patternHeight(p, cu, cv, around) {
       withVeins: p.leafVeins === 'ja',
       points: p.leafShape === 'eigen' ? (p.leafPoints ?? DEFAULT_LEAF_POINTS) : null,
       step: OVERLAP_STEP,
+      fixed,
     })
   }
   return 1
@@ -457,8 +474,8 @@ const rasterCache = new Map()
  * cell's width there) and at most about 500,000 points; read between its points. Round the vase it
  * repeats, so the seam closes as before.
  */
-function leafRaster(p, around, v0, v1, cellMm) {
-  const key = JSON.stringify([p.effect, p.leafShape, p.leafSize, p.leafOverlap, p.leafLayout, p.leafTilt, p.leafCurve, p.leafVeins, p.leafAspect, p.leafPoints, p.patternTwist, p.patternCount, around, Math.round(v0 * 1e4), Math.round(v1 * 1e4), Math.round(cellMm * 100)])
+function leafRaster(p, around, v0, v1, cellMm, fixedFor = null, shapeKey = '') {
+  const key = JSON.stringify([shapeKey, p.leafFixed, p.effect, p.leafShape, p.leafSize, p.leafOverlap, p.leafLayout, p.leafTilt, p.leafCurve, p.leafVeins, p.leafAspect, p.leafPoints, p.patternTwist, p.patternCount, around, Math.round(v0 * 1e4), Math.round(v1 * 1e4), Math.round(cellMm * 100)])
   const known = rasterCache.get(key)
   if (known) return known
   const span = Math.max(1e-3, v1 - v0)
@@ -469,12 +486,12 @@ function leafRaster(p, around, v0, v1, cellMm) {
   const values = new Float32Array(columns * rows)
   for (let j = 0; j < rows; j++) {
     const cv = v0 + (j - 1) / per
-    for (let i = 0; i < columns; i++) values[j * columns + i] = patternHeight(p, i / per, cv, around)
+    for (let i = 0; i < columns; i++) values[j * columns + i] = patternHeight(p, i / per, cv, around, fixedFor ? fixedFor(i / columns, cv) : null)
   }
   const at = (cu, cv) => {
     const x = cu * per
     const y = (cv - v0) * per + 1
-    if (y < 0 || y > rows - 1) return patternHeight(p, cu, cv, around)
+    if (y < 0 || y > rows - 1) return patternHeight(p, cu, cv, around, fixedFor ? fixedFor(frac(cu / around), cv) : null)
     const x0 = Math.floor(x), y0 = Math.floor(y)
     const fx = x - x0, fy = y - y0
     const xa = ((x0 % columns) + columns) % columns, xb = (xa + 1) % columns
@@ -505,12 +522,17 @@ export function reliefField(p, shape, zone) {
   }
   const around = patternCellsAround(p, maxC)
   const stretch = cellStretch(p)
+  // Leaves that keep their size: cells of one size all the way up (the widest place's), and each row of leaves as
+  // many round as fit there; otherwise conformal cells that shrink with the circumference.
+  const leafy = p.effect === 'blaetter' || p.effect === 'tulpenblaetter'
+  const keepSize = leafy && p.leafFixed === 'ja'
+  const cellMm = maxC / around
   const V = new Float64Array(steps + 1)
   for (let k = 1; k <= steps; k++) {
     const z0 = ((k - 1) / steps) * H, z1 = (k / steps) * H
     const ds = Math.hypot(z1 - z0, R(z1) - R(z0))
     const c = Math.max(1e-3, (circumference[k] + circumference[k - 1]) / 2)
-    V[k] = V[k - 1] + (ds * around) / (c * stretch)
+    V[k] = V[k - 1] + (keepSize ? ds / cellMm : (ds * around) / (c * stretch))
   }
   const vAt = (z) => {
     const x = clamp(z / H, 0, 1) * steps
@@ -518,12 +540,22 @@ export function reliefField(p, shape, zone) {
     return V[k] + (V[k + 1] - V[k]) * (x - k)
   }
   // Leaves start their first row at the bottom of the range, so the lowest leaves sit on its border.
-  const leafy = p.effect === 'blaetter' || p.effect === 'tulpenblaetter'
   const start = leafy ? vAt((p.zoneFrom / 100) * H) : 0
+  // The circumference (in cells) at a height given in cells up from the start: V looked up backwards.
+  const ringAt = (cv) => {
+    const v = clamp(cv + start, 0, V[steps])
+    let lo = 0, hi = steps
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (V[mid] < v) lo = mid; else hi = mid }
+    const f = (v - V[lo]) / Math.max(1e-9, V[hi] - V[lo])
+    return (circumference[lo] + (circumference[hi] - circumference[lo]) * f) / cellMm
+  }
+  const rowsOf = keepSize ? leafRows(p) : null
+  const fixedFor = keepSize ? (u, cv) => ({ u, ring: ringAt(cv), count: (r) => Math.max(3, Math.round(ringAt(r * rowsOf.pitch + 0.5 * rowsOf.length))) }) : null
+  const shapeKey = keepSize ? Array.from({ length: 17 }, (_, k) => Math.round(circumference[k * 64] * 10)).join(',') : ''
   const amount = Math.max(0, p.reliefDepth)
   // Leaves look at many leaves around each point: they are worked out once on a fine raster over the height range and
   // read from it between its points, which makes building and checking a leaf vase many times faster.
-  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, maxC / around) : (cu, cv) => patternHeight(p, cu, cv, around)
+  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : (cu, cv) => patternHeight(p, cu, cv, around)
   const raw = (theta, z, base) => {
     const m = zone(z)
     if (m <= 0) return 0

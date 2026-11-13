@@ -278,6 +278,8 @@ export const DEFAULTS = Object.freeze({
   leafVeins: 'ja',
   leafAspect: 1,
   leafPoints: null,
+  /** Leaves keep their size up the vase: fewer round where it is narrow, instead of smaller ones. */
+  leafFixed: 'nein',
   /** Print-friendly: lower edges of a relief slope at 45 degrees at most instead of overhanging. */
   printFriendly: 'ja',
 })
@@ -425,6 +427,7 @@ export function normalizeParams(input = {}) {
   if (!YES_NO[p.leafVeins]) p.leafVeins = DEFAULTS.leafVeins
   if (!YES_NO[p.printFriendly]) p.printFriendly = DEFAULTS.printFriendly
   if (!YES_NO[p.patternInvert]) p.patternInvert = DEFAULTS.patternInvert
+  if (!YES_NO[p.leafFixed]) p.leafFixed = DEFAULTS.leafFixed
   if (!LEAF_SHAPES[p.leafShape]) p.leafShape = DEFAULTS.leafShape
   if (!LEAF_LAYOUTS[p.leafLayout]) p.leafLayout = DEFAULTS.leafLayout
   for (const key of ['saucerRibs', 'saucerSpout', 'saucerGrip']) if (!YES_NO[p[key]]) p[key] = DEFAULTS[key]

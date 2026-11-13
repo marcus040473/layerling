@@ -4333,6 +4333,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "Relief hexagonal",
   "vase.effectWeave": "Tressage en losanges",
   "vase.effectLeaves": "Feuilles",
+  "prop.vaseLeafFixed": "Garder la même taille",
   "vase.effectLeafFlow": "Feuilles ondulantes",
   "vase.leafScattered": "Dispersées",
   "vase.effectWaves": "Vagues",

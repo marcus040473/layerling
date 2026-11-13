@@ -4346,6 +4346,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "vase.effectHexagons": "Sechseck-Kacheln",
   "vase.effectWeave": "Rautengeflecht",
   "vase.effectLeaves": "Blätter",
+  "prop.vaseLeafFixed": "Gleich groß bleiben",
   "vase.effectLeafFlow": "Fließende Blätter",
   "vase.leafScattered": "Verstreut",
   "vase.effectWaves": "Wellen",

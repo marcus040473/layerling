@@ -4347,6 +4347,7 @@ export const MESSAGES_EN = {
   "vase.effectHexagons": "Hexagon relief",
   "vase.effectWeave": "Diamond weave",
   "vase.effectLeaves": "Leaves",
+  "prop.vaseLeafFixed": "Keep the same size",
   "vase.effectLeafFlow": "Flowing leaves",
   "vase.leafScattered": "Scattered",
   "vase.effectWaves": "Waves",

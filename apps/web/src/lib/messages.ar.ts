@@ -4623,6 +4623,7 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "vase.effectHexagons": "نقش سداسي",
   "vase.effectWeave": "نسيج معيني",
   "vase.effectLeaves": "أوراق",
+  "prop.vaseLeafFixed": "الحفاظ على الحجم",
   "vase.effectLeafFlow": "أوراق متموجة",
   "vase.leafScattered": "متناثرة",
   "vase.effectWaves": "أمواج",
