@@ -276,6 +276,8 @@ microSD 卡槽也是左邊緣的接頭，位於電路板下方（Zero 2 W 上在
 
 {{ui:prop.boxGridfinityPlate}} 把盒子的底部直接做成 Gridfinity 底板，不必再放入底板。現有 Gridfinity 網格的凹槽會切入底部，每個能放進內部的 42 公釐單元都有，任何輪廓都適用，面板會告訴你有多少個。底部厚度等於一塊底板（5 公釐）加上它封閉的底（1.2 公釐），所以盒子必須高於 7.2 公釐；{{ui:prop.boxFloor}} 不再起作用。與 {{ui:prop.boxGridfinity}} 一起使用時，盒子按整數個單元決定尺寸。蓋子不受影響。
 
+{{ui:prop.boxLatches}} 會加上類似相機電池盒上的鎖扣。盒子和蓋子在相接處附近、壁的外側各有一根由兩片耳板夾住的銷。{{ui:prop.boxLatchSides}} 選擇放在哪幾邊，鎖扣沿每邊平均分布。卡扣是該形狀的第三個副本，把 {{ui:prop.boxPart}} 設為 {{ui:boxGenerator.partLatch}}：一條短條，兩端各有一個 C 形卡座，卡在兩根銷上。蓋子銷上的卡座一直掛著並能轉動，所以卡扣向下翻過盒子的銷並卡住；拉它的拉片即可打開，卡扣會掛在蓋子上。{{ui:inspector.boxMakeLatches}} 為每個鎖扣放一個卡扣。{{ui:prop.boxLatchWidth}} 是卡扣的寬度，銷的粗細是它的四分之一。{{ui:prop.boxLatchGrip}} 是卡座開口比銷窄多少。請給盒子、蓋子和卡扣相同的鎖扣設定。鎖扣需要蓋子樣式 {{ui:boxGenerator.lidRestOn}}，以及矩形或圓形的盒子。帶鎖扣的蓋子會變成以 {{ui:prop.boxLidPlate}} 為底板的淺托盤，高度足夠容納卡扣。卡扣側放列印，卡座不需要支撐並沿層方向彎曲，耳板以 45° 斜向牆面。卡扣用 PETG 比 PLA 更合適，PLA 多次開合後可能斷裂。
+
 ## 螺絲柱
 
 {{ui:shape.screwBoss}} 是外殼裡用來鎖固蓋子或電路板的柱子：圓形，從頂部開孔。在 {{ui:prop.screwBossFastener}} 中選擇裝入什麼。{{ui:screwBoss.insert}} 是用烙鐵壓入的黃銅螺帽：{{ui:prop.screwBossSize}} 提供 M2 到 M5 以及 #2-56 到 1/4-20，孔依常見熱熔螺帽的要求（M3：長 5.7 mm 的螺帽用 4.0 mm 孔），比螺帽深一公釐，讓被擠開的塑膠有地方去，柱子約為孔的兩倍粗。{{ui:screwBoss.selfTapping}} 自己攻出螺紋：ST2.2 到 ST4.2（DIN 7981）、2.5 到 5 mm (K25–K50) 的塑膠螺絲或 #2 到 #10，底孔約為螺絲的 0.8 倍，柱子 2.5 倍，孔深約 2.5 個螺絲直徑。{{ui:screwBoss.custom}} 使用你輸入的孔徑和孔深。

@@ -20,7 +20,7 @@ import { hingePartScope, hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
 import { GRIDFINITY_SWALLOWTAIL_KEY_THICKNESS, gridfinityHasLabelText, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlateToWorld, gridfinitySceneWithKeys, gridfinitySwallowtailKeyCount, gridfinitySwallowtailKeyProfile, gridfinitySwallowtailKeys } from "@/lib/gridfinityGeometry";
-import { boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorMatchingLidPatch, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorLatchClip, boxGeneratorMatchingLidPatch, boxGeneratorPlan, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
 import { curvedTextPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING } from "@/lib/textGeometry";
@@ -12474,6 +12474,41 @@ export function LayerlingEditor({
     commitShapes([...shapesRef.current, lid], [lid.id], t("status.boxLidMade", { name }));
   }, [commitShapes]);
 
+  /**
+   * The clips for a box generator part's latches, laid out in a row in front of it: one copy with the part set to the clip
+   * for each latch the part has, everything else the part's own, so they fit its pins and the lid's.
+   */
+  const makeBoxLatches = useCallback((boxId: string) => {
+    const box = shapesRef.current.find((shape) => shape.id === boxId);
+    if (!box || box.kind !== "boxGenerator") return;
+    if (box.locked) {
+      setNotice(t("status.objectLocked"), true);
+      return;
+    }
+    if (historyViewStateRef.current) {
+      setNotice(t("status.historyViewBlocksEdits"), true);
+      return;
+    }
+    const size = { width: shapeWidth(box), depth: shapeDepth(box), height: box.height };
+    const fields = boxGeneratorFieldsOf(box);
+    const count = boxGeneratorPlan(size, fields).latches?.spots.length ?? 0;
+    if (count === 0) {
+      setNotice(t("status.boxLatchesNone"), true);
+      return;
+    }
+    const clip = boxGeneratorLatchClip(fields).size;
+    // In a row in front of the part as it stands, 4 mm apart, upright on its level as they print.
+    const bounds = boundsForShapes([box]);
+    const clips = Array.from({ length: count }, (_, index) => {
+      const name = `${displayShapeName(box)} \u2013 ${t("boxGenerator.partLatch")} ${index + 1}`;
+      const copy = cloneWorkplaneShapeTreeWithFreshIds(box, "copy");
+      const x = bounds.minX + clip.width / 2 + index * (clip.width + 4);
+      const z = bounds.maxZ + 4 + clip.depth / 2;
+      return canonicalizeShape({ ...copy, boxPart: "latch", ...clip, size: resizedShapeSize(clip.width, clip.depth), name, x, z, elevation: bounds.minY, rotation: 0, rotationX: 0, rotationZ: 0 });
+    });
+    commitShapes([...shapesRef.current, ...clips], clips.map((part) => part.id), t("status.boxLatchesMade", { count: String(count) }));
+  }, [commitShapes]);
+
   const makeSwallowtailKeys = useCallback(async (plateId: string) => {
     const fail = (message: string) => {
       setNotice(message, true);
@@ -19235,6 +19270,7 @@ export function LayerlingEditor({
           onSurfaceFacePick={selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) ? pickSurfaceFaces : undefined}
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
           onMakeBoxLid={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLid(selectedShape.id) : undefined}
+          onMakeBoxLatches={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLatches(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
           onLayerText={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? layerSelectedText : undefined}
           onTextTags={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? makeTextTags : undefined}

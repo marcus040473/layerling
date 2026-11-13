@@ -430,7 +430,7 @@ export type ShapeCustomization = {
   boxRows?: number;
   boxDivider?: number;
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
-  boxPart?: "box" | "lid";
+  boxPart?: "box" | "lid" | "latch";
   boxLidStyle?: "restOn" | "overlap" | "plug";
   boxLidPlate?: number;
   boxFit?: number;
@@ -445,6 +445,11 @@ export type ShapeCustomization = {
   /** Box generator: stackable (a collar on top, a skirt under the bottom) and the height of that step, in mm. */
   boxStackable?: boolean;
   boxStackHeight?: number;
+  /** Box generator: latches on each chosen side, 0 for none. */
+  boxLatches?: number;
+  boxLatchSides?: "frontBack" | "leftRight" | "all";
+  boxLatchWidth?: number;
+  boxLatchGrip?: number;
   /** Transition (loft, #188): the outline at the bottom and at the top. */
   loftBottomOutline?: "round" | "rectangle" | "polygon";
   loftTopOutline?: "round" | "rectangle" | "polygon";
@@ -1403,7 +1408,7 @@ export type WorkplaneShape = {
   boxRows?: number;
   boxDivider?: number;
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
-  boxPart?: "box" | "lid";
+  boxPart?: "box" | "lid" | "latch";
   boxLidStyle?: "restOn" | "overlap" | "plug";
   boxLidPlate?: number;
   boxFit?: number;
@@ -1418,6 +1423,11 @@ export type WorkplaneShape = {
   /** Box generator: stackable (a collar on top, a skirt under the bottom) and the height of that step, in mm. */
   boxStackable?: boolean;
   boxStackHeight?: number;
+  /** Box generator: latches on each chosen side, 0 for none. */
+  boxLatches?: number;
+  boxLatchSides?: "frontBack" | "leftRight" | "all";
+  boxLatchWidth?: number;
+  boxLatchGrip?: number;
   /** Transition (loft, #188): the outline at the bottom and at the top. */
   loftBottomOutline?: "round" | "rectangle" | "polygon";
   loftTopOutline?: "round" | "rectangle" | "polygon";

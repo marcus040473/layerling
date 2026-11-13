@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import manifoldModule from "manifold-3d";
 import type * as THREE from "three";
-import { rememberManifoldRuntime } from "@/lib/manifoldHandle";
+import { loadedManifoldRuntime, rememberManifoldRuntime } from "@/lib/manifoldHandle";
+import { canonicalizeShape } from "@/lib/workplaneShapes";
+import type { WorkplaneShape } from "@/types/layerling";
 import {
   boxGeneratorIssues,
+  boxGeneratorLatchClip,
+  boxGeneratorLatchClipProfile,
+  boxGeneratorLatchHeight,
+  boxGeneratorLatchLidHeight,
+  boxGeneratorLatchMeasures,
   boxGeneratorGridfinityBoxSize,
   boxGeneratorGridfinityFit,
   boxGeneratorGridfinityMargin,
@@ -405,5 +412,155 @@ describe("the matching lid of a box", () => {
       expect(boxPart).toBe("lid");
       expect(boxGeneratorIssues({ width, depth, height }, { ...fields, boxPart })).toEqual([]);
     }
+  });
+});
+
+describe("latches", () => {
+  const box = { width: 90, depth: 60, height: 40 };
+  const fields = { boxLatches: 2, boxCornerRadius: 4 };
+  const lidHeight = boxGeneratorMatchingLidPatch(box, fields).height;
+  const lid = { ...box, height: lidHeight };
+  const lidFields = { ...fields, boxPart: "lid" as const };
+  const kernel = async () => {
+    if (loadedManifoldRuntime()) return;
+    const runtime = await manifoldModule();
+    runtime.setup();
+    rememberManifoldRuntime(runtime);
+  };
+  const sizeOf = (geometry: THREE.BufferGeometry) => {
+    geometry.computeBoundingBox();
+    const { min, max } = geometry.boundingBox!;
+    return { min, max };
+  };
+
+  it("makes a clip with a C-shaped socket at each end whose opening is narrower than the pin by the grip", () => {
+    const measures = boxGeneratorLatchMeasures({ boxLatchWidth: 12, boxLatchGrip: 0.3 });
+    expect(measures.pin).toBeCloseTo(1.5, 6);
+    expect(2 * measures.opening).toBeCloseTo(2 * measures.pin - 0.3, 6);
+    const profile = boxGeneratorLatchClipProfile(measures);
+    // Nothing of the clip comes nearer the wall than its gap, and the sockets' ends stop where they are as wide as the opening.
+    const nearest = Math.min(...profile.map((point) => point.n));
+    expect(nearest).toBeGreaterThan(0.5);
+    const ends = profile.filter((point) => Math.abs(point.n - nearest) < 1e-6 && Math.abs(point.v) < measures.rim);
+    expect(Math.min(...ends.map((point) => Math.abs(point.v)))).toBeCloseTo(measures.opening, 6);
+    // The two sockets are as far apart as the pins of a box and its lid.
+    const clip = boxGeneratorLatchClip({ boxLatchWidth: 12 });
+    expect(clip.size.width).toBeCloseTo(2 * measures.offset + 2 * measures.rim + measures.tab, 1);
+    expect(clip.size.height).toBe(12);
+  });
+
+  it("draws the clip on its side as a closed body of its own size, whatever size the shape was given", () => {
+    const clip = boxGeneratorLatchClip({ boxLatchWidth: 16 });
+    const geometry = createBoxGeneratorGeometry(box, { boxPart: "latch", boxLatchWidth: 16 });
+    expect(openEdges(geometry)).toBe(0);
+    expect(volumeOf(geometry)).toBeGreaterThan(0);
+    const { min, max } = sizeOf(geometry);
+    expect(max.x - min.x).toBeCloseTo(clip.size.width, 3);
+    expect(max.z - min.z).toBeCloseTo(clip.size.depth, 3);
+    expect(min.y).toBeCloseTo(0, 6);
+    expect(max.y).toBeCloseTo(16, 6);
+  });
+
+  it("puts the pins of box and lid twice the offset apart when the lid sits on the box, as the clip's sockets are", async () => {
+    const boxPlan = boxGeneratorPlan(box, fields);
+    const lidPlan = boxGeneratorPlan(lid, lidFields);
+    expect(boxPlan.issues).toEqual([]);
+    expect(lidPlan.issues).toEqual([]);
+    expect(boxPlan.latches!.spots).toHaveLength(4);
+    expect(lidPlan.latches!.spots).toHaveLength(4);
+    const { offset } = boxPlan.latches!.measures;
+    // The lid prints top side down: flipped onto the box its pins stand at box height + lid height - their height.
+    const lidPinOnBox = box.height + lidHeight - lidPlan.latches!.pinY;
+    expect(lidPinOnBox - boxPlan.latches!.pinY).toBeCloseTo(2 * offset, 6);
+    // Flipped, the lid's front is the box's back: the latches line up along the wall.
+    const along = (plan: typeof boxPlan) => plan.latches!.spots.map((spot) => `${spot.origin.x.toFixed(3)},${Math.abs(spot.origin.z).toFixed(3)}`).sort();
+    expect(along(lidPlan)).toEqual(along(boxPlan));
+    // A resting lid with latches is a shallow tray: the cheeks need a wall to stand on.
+    expect(lidPlan.cells).toHaveLength(1);
+  });
+
+  it("joins the cheeks and pins to the wall once the kernel is there: closed, on the bed, standing out at the front and back", async () => {
+    await kernel();
+    const plain = createBoxGeneratorGeometry(box, {});
+    const latched = createBoxGeneratorGeometry(box, fields);
+    expect(openEdges(latched)).toBe(0);
+    expect(volumeOf(latched)).toBeGreaterThan(volumeOf(plain) + 100);
+    const { min, max } = sizeOf(latched);
+    const measures = boxGeneratorLatchMeasures(fields);
+    expect(min.y).toBeCloseTo(0, 6);
+    expect(max.y).toBeCloseTo(box.height, 6);
+    expect(max.x - min.x).toBeCloseTo(box.width, 3);
+    expect(max.z).toBeCloseTo(box.depth / 2 + measures.reach + measures.cheekRadius, 1);
+    // The clip's outside stands clear of the cheeks.
+    expect(measures.reach + measures.rim).toBeGreaterThan(measures.reach + measures.cheekRadius);
+    const lidGeometry = createBoxGeneratorGeometry(lid, lidFields);
+    expect(openEdges(lidGeometry)).toBe(0);
+    expect(sizeOf(lidGeometry).min.y).toBeCloseTo(0, 6);
+  });
+
+  it("puts them on left and right, or on all four sides", () => {
+    expect(boxGeneratorPlan(box, { ...fields, boxLatchSides: "leftRight" }).latches!.spots).toHaveLength(4);
+    expect(boxGeneratorPlan(box, { ...fields, boxLatches: 1, boxLatchSides: "all" }).latches!.spots).toHaveLength(4);
+    const right = boxGeneratorPlan(box, { ...fields, boxLatches: 1, boxLatchSides: "leftRight" }).latches!.spots.find((spot) => spot.normal.x > 0.5)!;
+    expect(right.origin.x).toBeCloseTo(box.width / 2, 6);
+    expect(right.bulge).toBeCloseTo(0, 6);
+  });
+
+  it("fits a round box, the wall under each latch straightened", async () => {
+    await kernel();
+    const round = { width: 100, depth: 80, height: 40 };
+    const plan = boxGeneratorPlan(round, { ...fields, boxShape: "round" });
+    expect(plan.issues).toEqual([]);
+    expect(plan.latches!.spots).toHaveLength(4);
+    for (const spot of plan.latches!.spots) expect(spot.bulge).toBeLessThan(2.4 - 0.6);
+    expect(openEdges(createBoxGeneratorGeometry(round, { ...fields, boxShape: "round" }))).toBe(0);
+  });
+
+  it("fits a stackable box and its stackable lid: the pins stand off the collar, twice the offset apart", () => {
+    const stack = { ...fields, boxStackable: true, boxStackHeight: 3 };
+    const patch = boxGeneratorMatchingLidPatch(box, stack);
+    expect(patch.height).toBeGreaterThanOrEqual(boxGeneratorLatchLidHeight(stack));
+    const boxPlan = boxGeneratorPlan(box, stack);
+    const lidPlan = boxGeneratorPlan({ ...box, height: patch.height }, { ...stack, boxPart: "lid" });
+    expect(boxPlan.issues).toEqual([]);
+    expect(lidPlan.issues).toEqual([]);
+    // The stackable lid stands on its foot on the box's step, below the box's collar.
+    const step = box.height - 3;
+    expect(step + lidPlan.latches!.pinY - boxPlan.latches!.pinY).toBeCloseTo(2 * boxPlan.latches!.measures.offset, 6);
+  });
+
+  it("says why, and makes none, for another lid style, a polygon, a short side or a low box", () => {
+    expect(boxGeneratorPlan(box, { ...fields, boxLidStyle: "overlap" }).issues).toContainEqual({ code: "latchLidStyle" });
+    expect(boxGeneratorPlan(box, { ...fields, boxLidStyle: "plug" }).latches).toBeNull();
+    expect(boxGeneratorPlan(box, { ...fields, boxShape: "polygon" }).issues).toContainEqual({ code: "latchOutline" });
+    const short = boxGeneratorPlan({ width: 30, depth: 60, height: 40 }, fields);
+    expect(short.issues).toContainEqual({ code: "latchNoRoom" });
+    expect(short.latches).toBeNull();
+    const low = { ...box, height: boxGeneratorLatchHeight(fields) - 1 };
+    expect(boxGeneratorPlan(low, fields).issues).toContainEqual({ code: "latchLow" });
+    expect(boxGeneratorPlan({ ...box, height: boxGeneratorLatchHeight(fields) }, fields).issues).toEqual([]);
+    expect(boxGeneratorPlan({ ...lid, height: 5 }, lidFields).issues).toContainEqual({ code: "latchLow" });
+    // Without latches nothing changes: a resting lid stays a flat plate.
+    expect(boxGeneratorPlan(lid, { boxPart: "lid" }).cells).toEqual([]);
+  });
+
+  it("gives a clip part the size of its clip, whatever size it was given", () => {
+    const shape = canonicalizeShape({ id: "clip", kind: "boxGenerator", x: 0, y: 0, z: 0, width: 90, depth: 60, height: 40, size: 90, color: "#fff", boxPart: "latch", boxLatchWidth: 14 } as unknown as WorkplaneShape);
+    const clip = boxGeneratorLatchClip({ boxLatchWidth: 14 }).size;
+    expect(shape.width).toBeCloseTo(clip.width, 6);
+    expect(shape.depth).toBeCloseTo(clip.depth, 6);
+    expect(shape.height).toBe(14);
+  });
+
+  it("keeps the latch settings inside their limits and off by default", () => {
+    const off = normalizeBoxGenerator(box, {});
+    expect(off.boxLatches).toBe(0);
+    expect(off.boxLatchSides).toBe("frontBack");
+    const wild = normalizeBoxGenerator(box, { boxLatches: 99, boxLatchWidth: 1, boxLatchGrip: 5, boxLatchSides: "nonsense" as never, boxPart: "latch" });
+    expect(wild.boxLatches).toBe(4);
+    expect(wild.boxLatchWidth).toBe(6);
+    expect(wild.boxLatchGrip).toBe(1);
+    expect(wild.boxLatchSides).toBe("frontBack");
+    expect(wild.boxPart).toBe("latch");
   });
 });
