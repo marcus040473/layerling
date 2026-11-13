@@ -239,13 +239,13 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 ### 圖樣
 
-新花瓶是光面的。{{ui:vase.tabPattern}} 分頁頂部是一個圖庫：每個圖塊依實際計算出的樣子顯示它的圖案。除了凹槽、條紋、Voronoi 接縫和切面，還有凸起的浮雕：{{ui:vase.effectPetals}}（細長、柔和流動的水滴）、{{ui:vase.effectWaveDiamond}}、{{ui:vase.effectTulipLeaves}}（呈螺旋狀相互交疊的葉片）、{{ui:vase.effectWispRibs}}（窄而斜的肋條，旁邊是光滑的區域）、{{ui:vase.effectCells}}、切面清晰的 {{ui:vase.effectHexagons}} 和 {{ui:vase.effectWeave}}。圖塊 {{ui:vase.effectLeaves}} 會開啟第二排：鬱金香、銀杏、蓮花、常春藤、楓葉、龜背芋和蕨類，另有 {{ui:vase.leafOwn}}：在這裡拖曳半片葉子的各點，另一半會鏡像產生。
+新花瓶是光面的。{{ui:vase.tabPattern}} 分頁頂部是一個圖庫：每個圖塊依實際計算出的樣子顯示它的圖案。除了凹槽、條紋、Voronoi 接縫和切面，還有凸起的浮雕：{{ui:vase.effectPetals}}、{{ui:vase.effectWaveDiamond}}、{{ui:vase.effectTulipLeaves}}（細長舒展、呈螺旋狀向上翻捲的葉片）、{{ui:vase.effectLeafFlow}}、{{ui:vase.effectWispRibs}}（窄而斜的肋條，旁邊是光滑的區域）、{{ui:vase.effectWaves}}、{{ui:vase.effectCells}}、{{ui:vase.effectPebbles}}、{{ui:vase.effectHexagons}}、{{ui:vase.effectWeave}}、{{ui:vase.effectScales}} 和 {{ui:vase.effectVeins}}。其中大多數來自可無縫重複的高度圖，因此在任何尺寸下都保持平滑。圖塊 {{ui:vase.effectLeaves}} 會開啟第二排：鬱金香、銀杏、蓮花、常春藤、楓葉、龜背芋、蕨類、橡樹、椴樹和柳樹，另有 {{ui:vase.leafOwn}}：在這裡拖曳半片葉子的各點，另一半會鏡像產生。葉片一開始為 {{ui:vase.leafScattered}}：幾片大葉子，每片的旋轉、位置和大小都略有不同；在 {{ui:vase.advanced}} 下也可以把它們排成列或排成螺旋。
 
 圖庫下方只有對所選圖案作用最大的三個滑桿，通常是 {{ui:prop.vaseReliefDepth}}、{{ui:prop.vasePatternCount}} 和傾斜；葉片則是 {{ui:prop.vaseLeafSize}}、{{ui:prop.vaseReliefDepth}} 和 {{ui:prop.vaseLeafOverlap}}。浮雕貼在花瓶自身的形狀上，其間的底面依浮雕高度下沉，因此沒有任何部分凸出輪廓，也沒有葉片像孤島一樣鬆散地貼在壁上。更改形狀時重複次數保持不變：在鼓肚處圖案和葉片變大，在瓶頸處變小，繞一圈後圖案無縫閉合。
 
 {{ui:vase.zoneTitle}} 有一個帶兩個握把的滑桿：圖案的起點和終點，以高度的百分比表示。旁邊的小花瓶剪影顯示這一段範圍；在滑桿下方可以輸入數值，或點一個快速選項：{{ui:vase.zoneAll}}（0–100 %）、{{ui:vase.zoneMiddle}}（15–85 %）、{{ui:vase.zoneLow}}（0–65 %）和 {{ui:vase.zoneHigh}}（60–100 %）。起點不能越過終點；兩者相同時，花瓶保持光面。如果花瓶有坐在瓶頸裡的蓋子或瓶塞，而圖案一直延伸到那裡，卡片會提供 {{ui:vase.zoneNeckSmooth}}，讓蓋子貼合得乾淨緊密。
 
-{{ui:vase.advanced}} 下有 {{ui:prop.vaseZoneFade}}（圖案在邊界處淡出得多柔和）、圖案的細節設定（拉伸、圓潤度、接縫、葉片排列、弧度、傾斜、葉脈、隨機性）以及 {{ui:prop.vasePrintFriendly}}。易於列印預設開啟：浮雕的每條下緣都以最多 45° 向外升起，而不是懸垂，上緣則保持銳利。因此葉片浮雕大多不需要支撐就能列印。
+{{ui:vase.advanced}} 下有 {{ui:prop.vaseZoneFade}}（圖案在邊界處淡出得多柔和）、圖案的細節設定（拉伸、{{ui:prop.vasePatternInvert}}、葉片排列、弧度、傾斜、葉脈）以及 {{ui:prop.vasePrintFriendly}}。易於列印預設開啟：浮雕的每條下緣都以最多 45° 向外升起，而不是懸垂，上緣則保持銳利。因此葉片浮雕大多不需要支撐就能列印。
 
 ### 列印
 

@@ -193,7 +193,7 @@ import { SURFACE_TEXTURE_OWN_IMAGE_SIZE, surfaceTextureOwnImage } from "@/lib/su
 import { drawingGrey, drawingOutlines, inTwoTones, SURFACE_IMAGE_OUTLINE_RASTER } from "@/lib/surfaceImageOutline";
 import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
 import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternColor, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureEntry, surfaceTextureLayerPlaced } from "@/lib/surfaceTextureShape";
-import { DRAW_PROFILE, LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, PROFILES, isReliefPattern as isVaseReliefPattern, lidSafeZoneTo, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
+import { DRAW_PROFILE, LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, PROFILES, isPicturePattern as isVasePicturePattern, isReliefPattern as isVaseReliefPattern, lidSafeZoneTo, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
 import { vaseShapePatchOffThread } from "@/lib/vaseShape";
 import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
@@ -472,10 +472,14 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
   effect: {
     keine: "vase.effectNone", rillen: "vase.effectGrooves", streifen: "vase.effectStripes", voronoi: "vase.effectVoronoi", lowpoly: "vase.effectFacets",
     blueten: "vase.effectPetals", rautenwelle: "vase.effectWaveDiamond", tulpenblaetter: "vase.effectTulipLeaves", wisp: "vase.effectWispRibs",
-    zellen: "vase.effectCells", waben: "vase.effectHexagons", geflecht: "vase.effectWeave", blaetter: "vase.effectLeaves",
+    zellen: "vase.effectCells", waben: "vase.effectHexagons", geflecht: "vase.effectWeave", wellen: "vase.effectWaves",
+    blattfluss: "vase.effectLeafFlow", schuppen: "vase.effectScales", kiesel: "vase.effectPebbles", adern: "vase.effectVeins", blaetter: "vase.effectLeaves",
   },
-  leafShape: { tulpe: "vase.leafTulip", ginkgo: "vase.leafGinkgo", lotus: "vase.leafLotus", efeu: "vase.leafIvy", ahorn: "vase.leafMaple", monstera: "vase.leafMonstera", farn: "vase.leafFern", eigen: "vase.leafOwn" },
-  leafLayout: { versetzt: "vase.leafOffset", spirale: "vase.leafSpiral", regelmaessig: "vase.leafRegular" },
+  leafShape: {
+    tulpe: "vase.leafTulip", ginkgo: "vase.leafGinkgo", lotus: "vase.leafLotus", efeu: "vase.leafIvy", ahorn: "vase.leafMaple", monstera: "vase.leafMonstera",
+    farn: "vase.leafFern", eiche: "vase.leafOak", linde: "vase.leafLinden", weide: "vase.leafWillow", eigen: "vase.leafOwn",
+  },
+  leafLayout: { verstreut: "vase.leafScattered", versetzt: "vase.leafOffset", spirale: "vase.leafSpiral", regelmaessig: "vase.leafRegular" },
   ribShape: { rund: "vase.grooveRound", v: "vase.groovePointed", flach: "vase.grooveFlat" },
   stripeStyle: { einfach: "vase.stripesOneWay", doppelt: "vase.stripesCrossed" },
   quality: { entwurf: "vase.qualityDraft", standard: "vase.qualityStandard", fein: "vase.qualityFine" },
@@ -1611,8 +1615,6 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     const count = pattern(range("patternCount", "prop.vasePatternCount", 1, "vase.patternCountHint"));
     const lean = (config: (c: ShapePropertyConfig) => ShapePropertyConfig) => config(range("patternTwist", "prop.vasePatternTwist", 1));
     const aspect = patternMore(percent("patternAspect", "prop.vasePatternAspect"));
-    const round = patternMore(percent("patternRound", "prop.vasePatternRound"));
-    const gap = (config: (c: ShapePropertyConfig) => ShapePropertyConfig) => config(percent("patternGap", "prop.vasePatternGap"));
     if (vase.effect === "rillen") {
       properties.push(pattern(range("ribDepth", "prop.vaseGrooveDepth", 0.1)), pattern(range("ribCount", "prop.vaseGrooveCount", 1)), pattern(range("waveAmplitude", "prop.vaseGrooveWave", 0.5)));
       properties.push(patternMore(percent("grooveWidth", "prop.vaseGrooveWidth")), patternMore(choice("ribShape", "prop.vaseGrooveShape")));
@@ -1630,12 +1632,12 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       properties.push(pattern(range("lowpolyAround", "prop.vaseFacetsAround", 1)), pattern(range("lowpolyRows", "prop.vaseFacetRows", 1)), pattern(percent("lowpolyJitter", "prop.vaseFacetJitter")));
       properties.push(patternMore(range("lowpolySeed", "prop.vaseSeed", 1)));
     }
-    if (vase.effect === "blueten" || vase.effect === "rautenwelle") properties.push(reliefDepth, count, lean(pattern), aspect, round);
-    if (vase.effect === "geflecht") properties.push(reliefDepth, count, lean(pattern), patternMore(percent("patternWidth", "prop.vasePatternBand")), aspect);
+    // A pattern from a picture: how high, how often round, how it leans; stretched or turned inside out under Advanced.
+    if (isVasePicturePattern(vase.effect)) {
+      properties.push(reliefDepth, count, lean(pattern), aspect, patternMore({ type: "toggle", id: "vase.patternInvert", label: t("prop.vasePatternInvert"), value: vase.patternInvert === "ja", onChange: (value) => setVase({ patternInvert: value ? "ja" : "nein" }) }));
+    }
     if (vase.effect === "wisp") properties.push(reliefDepth, count, lean(pattern), patternMore(range("patternGroup", "prop.vasePatternGroup", 1)), patternMore(percent("patternWidth", "prop.vasePatternChannel")));
-    if (vase.effect === "zellen") properties.push(reliefDepth, count, gap(pattern), aspect, round, patternMore(range("patternSeed", "prop.vaseSeed", 1)));
-    if (vase.effect === "waben") properties.push(reliefDepth, count, gap(pattern), lean(patternMore), aspect, round);
-    if (vase.effect === "tulpenblaetter") properties.push(reliefDepth, count, pattern(range("leafOverlap", "prop.vaseLeafOverlap", 1)), lean(patternMore));
+    if (vase.effect === "tulpenblaetter") properties.push(reliefDepth, count, lean(pattern), patternMore(range("leafOverlap", "prop.vaseLeafOverlap", 1)));
     if (vase.effect === "blaetter") {
       properties.push(pattern(choice("leafShape", "prop.vaseLeafShape")));
       properties.push(pattern(range("leafSize", "prop.vaseLeafSize", 1)), reliefDepth, pattern(range("leafOverlap", "prop.vaseLeafOverlap", 1)));
@@ -9046,8 +9048,8 @@ type VaseTab = "form" | "pattern" | "print";
 let lastVaseTab: VaseTab = "form";
 
 /** Pattern families in the gallery's order: smooth first, then the vase's older surfaces, then the reliefs, leaves last. */
-const VASE_GALLERY = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "wisp", "zellen", "waben", "geflecht", "blaetter"] as const;
-const VASE_LEAVES = ["tulpe", "ginkgo", "lotus", "efeu", "ahorn", "monstera", "farn", "eigen"] as const;
+const VASE_GALLERY = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "blattfluss", "wisp", "wellen", "zellen", "kiesel", "waben", "geflecht", "schuppen", "adern", "blaetter"] as const;
+const VASE_LEAVES = ["tulpe", "ginkgo", "lotus", "efeu", "ahorn", "monstera", "farn", "eiche", "linde", "weide", "eigen"] as const;
 const VASE_PROFILES = ["flasche", "bauchig", "schale", "fass", "zylinder", "trichter", "gezeichnet"] as const;
 
 /**
@@ -9208,7 +9210,7 @@ function VaseDesigner({
                     const option = effect.options.find((entry) => entry.value === value);
                     if (!option) return null;
                     return (
-                      <button key={value} type="button" disabled={disabled} className={vase.effect === value ? "selected" : ""} aria-pressed={vase.effect === value} title={option.label} onClick={() => effect.onChange(value)}>
+                      <button key={value} type="button" disabled={disabled} className={vase.effect === value ? "selected" : ""} aria-pressed={vase.effect === value} title={option.label} onClick={() => setVase(vasePatternChoice(vase, value))}>
                         <PatternPicture settings={tileSettings({ effect: value })} />
                         <span>{option.label}</span>
                       </button>
@@ -9316,10 +9318,22 @@ function VaseDesigner({
   );
 }
 
+/**
+ * What choosing a pattern in the gallery sets: the pattern, and for leaves a relief strong enough to read and for tulip
+ * leaves a lean that makes them rise in a spiral - but only where the vase still has the defaults, so nothing one has
+ * set oneself is lost.
+ */
+function vasePatternChoice(vase: VaseSettings, effect: string): Partial<VaseSettings> {
+  const patch: Partial<VaseSettings> = { effect };
+  if ((effect === "blaetter" || effect === "tulpenblaetter") && vase.reliefDepth === 1.6) patch.reliefDepth = 2.4;
+  if (effect === "tulpenblaetter" && vase.patternTwist === 0) patch.patternTwist = 30;
+  return patch;
+}
+
 /** How the gallery draws every family: the core's defaults, so a tile shows the family and not this vase's tuning. */
 const DEFAULT_VASE_PATTERN_LOOK: Record<string, unknown> = {
-  patternTwist: 0, patternAspect: 1, patternWidth: 0.45, patternGroup: 4, patternGap: 0.12, patternRound: 0.6, patternSeed: 1,
-  leafShape: "tulpe", leafSize: 100, leafOverlap: 35, leafLayout: "versetzt", leafTilt: 0, leafCurve: 0.7, leafVeins: "ja", leafAspect: 1, leafPoints: null,
+  patternTwist: 0, patternAspect: 1, patternWidth: 0.45, patternGroup: 4, patternInvert: "nein",
+  leafShape: "tulpe", leafSize: 100, leafOverlap: 20, leafLayout: "regelmaessig", leafTilt: 0, leafCurve: 0.7, leafVeins: "ja", leafAspect: 1, leafPoints: null,
 };
 
 /**

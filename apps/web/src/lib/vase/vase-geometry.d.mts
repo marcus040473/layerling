@@ -17,7 +17,7 @@ export type VaseNumberKey =
   | "stripeTurn" | "stripeCount" | "stripeWidth" | "stripeDepth"
   | "voronoiCell" | "voronoiGap" | "voronoiDepth" | "voronoiSeed"
   | "lowpolyAround" | "lowpolyRows" | "lowpolyJitter" | "lowpolySeed"
-  | "reliefDepth" | "patternCount" | "patternTwist" | "patternAspect" | "patternWidth" | "patternGroup" | "patternGap" | "patternRound" | "patternSeed"
+  | "reliefDepth" | "patternCount" | "patternTwist" | "patternAspect" | "patternWidth" | "patternGroup"
   | "leafSize" | "leafOverlap" | "leafTilt" | "leafCurve" | "leafAspect";
 
 export type VaseChoiceKey =
@@ -26,7 +26,7 @@ export type VaseChoiceKey =
   | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "insertMode"
   | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "lamp" | "lampSocket" | "reinforce"
   | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle"
-  | "stopperRing" | "leafShape" | "leafLayout" | "leafVeins" | "printFriendly";
+  | "stopperRing" | "leafShape" | "leafLayout" | "leafVeins" | "printFriendly" | "patternInvert";
 
 /** A point of a drawn cross-section in the unit circle: a corner, or round with an optional handle (tx, ty; ix, iy before it). */
 export type VaseDrawPoint = { x: number; y: number; corner: boolean; tx?: number; ty?: number; ix?: number; iy?: number };
@@ -68,6 +68,8 @@ export const LEAF_LAYOUTS: Readonly<Record<string, string>>;
 export const DRAW_PROFILE: ReadonlyArray<ReadonlyArray<number>>;
 /** Whether an effect is one of the relief pattern families (vase-patterns.mjs). */
 export function isReliefPattern(effect: string): boolean;
+/** Whether a pattern family comes from a picture (its roundness, joints and band width do not apply). */
+export function isPicturePattern(effect: string): boolean;
 /** The vase's profile as a function of the height share 0..1 (radius share 0..1). */
 export function profileFunction(points: ReadonlyArray<ReadonlyArray<number>>): (x: number) => number;
 /** The height share (%) up to which a relief leaves the neck smooth for the chosen lid, or null without such a lid. */

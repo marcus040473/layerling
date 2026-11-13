@@ -1,63 +1,72 @@
 /**
- * Relief patterns of the vase (Vase designer 2.0): seven pattern families and leaf reliefs, each a height field over
- * the unrolled surface of the vase. A plain ES module without dependencies, like vase-geometry.mjs: the core
- * subtracts the depth from the radius, the gallery draws its tiles from the very same functions.
+ * Relief patterns of the vase (vase designer 2.0): pattern families and leaf reliefs, each a height field over the
+ * unrolled surface of the vase. The core subtracts the depth from the radius, the gallery draws its tiles from the very
+ * same functions.
  *
- * Surface coordinates. Around the vase a pattern has a whole number of cells `N`, so it closes at 360 degrees
- * without a seam; `cu` counts cells around (0..N), turning along with the vase's twist. Up the vase, `cv` counts
- * cells too, measured along the contour and scaled by the local circumference ("conformal"): a cell is as tall as
- * it is wide wherever it lies, times the stretch. On a belly the cells grow, at a neck they shrink, and the number
- * of repeats stays the same when the profile changes - the pattern follows the measured circumference.
+ * Most families and most leaves come from pictures (vase-pattern-maps.mjs): a pattern is one seamless tile of heights,
+ * read between its points (bilinear), so it is smooth at any size; a leaf is a signed distance field of its outline, so
+ * its edge is sharp and round at any size and its dome grows with the distance from the edge. Wisp ribs, the tulip
+ * petal and one's own drawn leaf are worked out here.
  *
- * Height. Every family gives h in 0..1 per point: 1 is the raised relief, which lies on the vase's own surface
- * (the profile), 0 the background, sunk in by the relief depth. Inside the height range the depth is
- * reliefDepth x (1 - h); outside it the surface stays smooth, with a soft transition at the borders. So a relief
- * never stands out of the vase's outline and never lies on it as a loose island: it is part of the wall.
+ * Surface coordinates. Around the vase a pattern has a whole number of cells `N` (tiles of a picture), so it closes at
+ * 360 degrees without a seam; `cu` counts cells around (0..N), turning along with the vase's twist. Up the vase, `cv`
+ * counts cells too, measured along the contour and scaled by the local circumference ("conformal"): a cell keeps its
+ * proportions wherever it lies, times the stretch. On a belly the cells grow, at a neck they shrink, and the number of
+ * repeats stays the same when the profile changes - the pattern follows the measured circumference.
  *
- * Leaves. A leaf is an outline (half width over its length, or a polar outline for fan, ivy and maple) with a
- * domed top and optional veins. Leaves stand in rows from the bottom of the height range; a lower row lies over the
- * row above it, and within a row each leaf's left edge lies over its left neighbour's right edge - a rule that holds
- * all round, so the overlap closes at the seam too. Where one leaf lies over another, its edge stands a step above
- * the leaf beneath, so the overlap can be seen and felt.
+ * Height. Every family gives h in 0..1 per point: 1 is the raised relief, which lies on the vase's own surface (the
+ * profile), 0 the background, sunk in by the relief depth. Inside the height range the depth is reliefDepth x (1 - h);
+ * outside it the surface stays smooth, with a soft transition at the borders. So a relief never stands out of the
+ * vase's outline and never lies on it as a loose island: it is part of the wall.
+ *
+ * Leaves stand in rows from the bottom of the height range; a lower row lies over the row above it, and within a row
+ * each leaf's left edge lies over its left neighbour's right edge - a rule that holds all round, so the overlap closes
+ * at the seam too. Where one leaf lies over another, its edge stands a step above the leaf beneath.
  *
  * Print-friendly mode: going up, the surface may move outwards by at most as much as it rises (45 degrees). Every
- * lower edge of a relief - a leaf's base on the background, a petal's lower rim - then slopes instead of
- * overhanging; the upper edges stay sharp.
+ * lower edge of a relief then slopes instead of overhanging; the upper edges stay sharp.
  */
+import { inflateSync } from 'fflate'
+import { LEAF_MAPS, PATTERN_MAPS } from './vase-pattern-maps.mjs'
 
 /** The pattern families with their German names (the editor shows its own, translated). */
 export const PATTERNS = {
   blueten: 'Flow Petals',
   rautenwelle: 'Wave Diamond',
   tulpenblaetter: 'Tulip Leaves',
+  blattfluss: 'Fließende Blätter',
   wisp: 'Wisp Ribs',
   zellen: 'Organic Voronoi',
   waben: 'Hexagon Relief',
   geflecht: 'Diamond Weave',
+  wellen: 'Wellen',
+  schuppen: 'Schuppen',
+  kiesel: 'Kiesel',
+  adern: 'Blattadern',
   blaetter: 'Blätter',
 }
 
 /** Leaf shapes; `eigen` takes the outline drawn in `leafPoints`. */
-export const LEAF_SHAPES = { tulpe: 'Tulpe', ginkgo: 'Ginkgo', lotus: 'Lotus', efeu: 'Efeu', ahorn: 'Ahorn', monstera: 'Monstera', farn: 'Farn', eigen: 'Eigenes Blatt' }
+export const LEAF_SHAPES = { tulpe: 'Tulpe', ginkgo: 'Ginkgo', lotus: 'Lotus', efeu: 'Efeu', ahorn: 'Ahorn', monstera: 'Monstera', farn: 'Farn', eiche: 'Eiche', linde: 'Linde', weide: 'Weide', eigen: 'Eigenes Blatt' }
 
 /** How the leaf rows stand: offset by half a leaf, turning up in a spiral, or straight above one another. */
-export const LEAF_LAYOUTS = { versetzt: 'Versetzt', spirale: 'Spiralförmig', regelmaessig: 'Regelmäßig' }
+export const LEAF_LAYOUTS = { verstreut: 'Verstreut', versetzt: 'Versetzt', spirale: 'Spiralförmig', regelmaessig: 'Regelmäßig' }
 
 /** Default outline of a drawn leaf: [along 0..1 from the base to the tip, half width 0..1]. */
 export const DEFAULT_LEAF_POINTS = Object.freeze([[0, 0.12], [0.18, 0.7], [0.45, 1], [0.75, 0.72], [1, 0]])
 
-/** Leaf width at 100 % (mm at the widest circumference: about 6 leaves round a vase 90 mm wide), and per shape its length per width and its width per cell. */
-const LEAF_WIDTH_MM = 46
-const LEAF_FORM = {
-  tulpe: { aspect: 1.9, width: 1.0 },
-  ginkgo: { aspect: 0.9, width: 1.3 },
-  lotus: { aspect: 1.55, width: 1.0 },
-  efeu: { aspect: 1.05, width: 1.25 },
-  ahorn: { aspect: 1.0, width: 1.3 },
-  monstera: { aspect: 1.2, width: 1.1 },
-  farn: { aspect: 3.2, width: 1.05 },
-  eigen: { aspect: 1.7, width: 1.0 },
-}
+/**
+ * How many of a picture's motifs one of its tiles holds across: `patternCount` counts motifs round the vase, so a tile
+ * of twenty pebbles and one of a single diamond both read the same.
+ */
+const MOTIFS_PER_TILE = { blueten: 2, geflecht: 2, waben: 2, wellen: 3, zellen: 5, rautenwelle: 1, blattfluss: 2, schuppen: 2, kiesel: 6, adern: 2 }
+
+/** Leaf width at 100 % (mm at the widest circumference: four or five large leaves round a vase 90 mm wide). */
+const LEAF_WIDTH_MM = 66
+/** The drawn leaves: length per width, and width per cell (more than 1: neighbours overlap at the sides). */
+const DRAWN_LEAF = { tulpe: { aspect: 1.9, width: 1.0 }, eigen: { aspect: 1.7, width: 1.0 } }
+/** Leaves from pictures: width per cell (their length per width is the picture's own). */
+const PICTURE_LEAF_WIDTH = { ginkgo: 1.15, lotus: 1.05, efeu: 1.1, ahorn: 1.1, monstera: 1.1, farn: 1.0, eiche: 1.05, linde: 1.05, weide: 1.0 }
 /** How far a leaf over another stands above it (share of the relief depth). */
 const OVERLAP_STEP = 0.2
 /** The lowest a leaf's edge stands above the background. */
@@ -88,6 +97,70 @@ function hash2(i, j, seed) {
 
 export function isReliefPattern(effect) {
   return Object.prototype.hasOwnProperty.call(PATTERNS, effect)
+}
+
+/** Whether a family comes from a picture (and so ignores roundness, joints and band width). */
+export function isPicturePattern(effect) {
+  return Object.prototype.hasOwnProperty.call(PATTERN_MAPS, effect)
+}
+
+/** Whether a leaf comes from a picture. */
+export function isPictureLeaf(shape) {
+  return Object.prototype.hasOwnProperty.call(LEAF_MAPS, shape)
+}
+
+/** A map's numbers, unpacked once: deflated rows of differences from the left neighbour. */
+const unpacked = new Map()
+function mapValues(entry) {
+  let values = unpacked.get(entry)
+  if (values) return values
+  const text = atob(entry.data)
+  const packed = new Uint8Array(text.length)
+  for (let i = 0; i < text.length; i++) packed[i] = text.charCodeAt(i)
+  values = inflateSync(packed)
+  const n = entry.size
+  for (let y = 0; y < n; y++) {
+    let sum = 0
+    for (let x = 0; x < n; x++) {
+      sum = (sum + values[y * n + x]) & 255
+      values[y * n + x] = sum
+    }
+  }
+  unpacked.set(entry, values)
+  return values
+}
+
+/** A pattern tile's height 0..1 at (u, v) in tiles, repeating both ways; v counts up the vase (the picture's rows down). */
+function tileHeight(entry, u, v) {
+  const n = entry.size
+  const values = mapValues(entry)
+  const x = frac(u) * n - 0.5
+  const y = (1 - frac(v)) * n - 0.5
+  const x0 = Math.floor(x), y0 = Math.floor(y)
+  const fx = x - x0, fy = y - y0
+  const at = (i, j) => values[(((j % n) + n) % n) * n + (((i % n) + n) % n)]
+  const top = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * fx
+  const bottom = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * fx
+  return (top + (bottom - top) * fy) / 255
+}
+
+/** A leaf picture's signed distance (in its board's texels, positive inside) at board point (x, y), 0..1, y down. */
+function leafDistance(entry, x, y) {
+  const n = entry.size
+  const values = mapValues(entry)
+  const px = x * n - 0.5, py = y * n - 0.5
+  if (px < 0 || py < 0 || px > n - 1 || py > n - 1) return -32
+  const x0 = Math.floor(px), y0 = Math.floor(py)
+  const fx = px - x0, fy = py - y0
+  const x1 = Math.min(n - 1, x0 + 1), y1 = Math.min(n - 1, y0 + 1)
+  const a = values[y0 * n + x0], b = values[y0 * n + x1], c = values[y1 * n + x0], d = values[y1 * n + x1]
+  const v = (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy
+  return (v - 128) / 4
+}
+
+/** A leaf picture's length per width: base to tip against its widest. */
+function pictureLeafAspect(entry) {
+  return (entry.base - entry.tip) / (2 * entry.half)
 }
 
 /** Points of a drawn leaf outline: at least two, along 0..1 ascending, half width 0..1; null when unusable. */
@@ -125,141 +198,50 @@ function drawnHalfWidth(points, t) {
 let leafEdge = 0
 
 /** The midrib and side veins of a leaf (0..1, 1 = a vein's groove), in its own coordinates. */
-function veins(t, xn, side) {
+function veins(t, xn) {
   const rib = Math.exp(-((xn / 0.06) ** 2)) * smooth(0.02, 0.12, t) * (1 - smooth(0.85, 0.97, t))
   const a = frac(t * 4.5 - Math.abs(xn) * 1.1 + 0.2)
-  const sideVein = Math.abs(xn) > 0.1 ? Math.exp(-(((a - 0.5) / 0.06) ** 2)) * (1 - Math.abs(xn)) * side : 0
+  const sideVein = Math.abs(xn) > 0.1 ? Math.exp(-(((a - 0.5) / 0.06) ** 2)) * (1 - Math.abs(xn)) : 0
   return Math.max(rib, 0.45 * sideVein)
 }
 
 /**
  * One leaf: its height 0..1 at (t, xn), or -1 outside it. t runs from the base (0) to the tip (1), xn across from -1 to
- * 1 at the widest place. `curve` domes the top, `withVeins` presses the veins in.
+ * 1 at the widest place. `curve` domes the top, `withVeins` presses the veins in (on a drawn leaf, and the midrib of the
+ * long picture leaves).
  */
 export function leafHeight(shape, t, xn, curve, withVeins, points, halfWidthInLengths = 0.3) {
   if (t < -0.02 || t > 1.02) return -1
-  const ax = Math.abs(xn)
-  let inside = -1
-  let across = 0
+  const picture = LEAF_MAPS[shape]
+  let dome
   let vein = 0
-  if (shape === 'ginkgo' || shape === 'efeu' || shape === 'ahorn') {
-    // Polar outlines round a point on the axis: a fan from the stem, or lobes round the leaf's middle.
-    const cx = 0, cy = shape === 'ginkgo' ? 0.02 : shape === 'efeu' ? 0.42 : 0.48
-    const width = LEAF_FORM[shape].width / LEAF_FORM[shape].aspect
-    const x = xn * width * 0.5, y = t - cy
-    const rho = Math.hypot(x, y)
-    const phi = Math.atan2(x, y)
-    let limit
-    if (shape === 'ginkgo') {
-      if (Math.abs(phi) > 1.08 || y < 0) limit = -1
-      else {
-        const notch = 0.2 * Math.exp(-((phi / 0.12) ** 2))
-        limit = 0.98 - notch + 0.025 * Math.cos(phi * 14)
-      }
-      // The stem from the base up into the fan.
-      if (Math.abs(x) < 0.035 && t >= -0.02 && t < 0.3) { leafEdge = 0.035 - Math.abs(x); return 0.55 }
-    } else if (shape === 'efeu') {
-      limit = 0.5 * (0.6 + 0.4 * Math.abs(Math.cos(1.5 * phi)) ** 1.6) * (phi > 2.3 || phi < -2.3 ? 0.75 : 1)
-      if (Math.abs(x) < 0.03 && y < 0 && t > -0.02) { leafEdge = 0.03 - Math.abs(x); return 0.55 }
-    } else {
-      limit = 0.5 * (0.55 + 0.45 * Math.abs(Math.cos(2.5 * phi)) ** 2.5) * (1 + 0.04 * Math.abs(Math.sin(22 * phi)))
-      if (Math.abs(phi) > 2.6) limit *= 0.55
-      if (Math.abs(x) < 0.03 && y < 0 && t > -0.02) { leafEdge = 0.03 - Math.abs(x); return 0.55 }
-    }
-    if (limit <= 0 || rho >= limit) return -1
-    leafEdge = limit - rho
-    const s = rho / limit
-    across = s
-    inside = 1
-    if (withVeins) {
-      // Veins run out from the centre: five main ones on ivy and maple, many fine ones on the fan.
-      const count = shape === 'ginkgo' ? 16 : 5
-      const a = frac((phi / TAU) * count + 0.5)
-      vein = Math.exp(-(((a - 0.5) / (shape === 'ginkgo' ? 0.08 : 0.04)) ** 2)) * (1 - s * 0.8) * (shape === 'ginkgo' ? 0.7 : 1)
-    }
+  if (picture) {
+    const x = 0.5 + xn * picture.half
+    const y = picture.base + (picture.tip - picture.base) * t
+    const d = leafDistance(picture, x, y)
+    if (d <= 0) return -1
+    const lengthTexels = (picture.base - picture.tip) * picture.size
+    leafEdge = d / lengthTexels
+    // The dome rises over the first twelfth of the leaf's length in from its edge; narrow parts (a stem, a fern's
+    // leaflets) stay low, broad ones get a full rounded top.
+    const inward = Math.min(1, d / (0.08 * lengthTexels))
+    dome = 1 - (1 - inward) * (1 - inward)
+    if (withVeins && (shape === 'weide' || shape === 'linde' || shape === 'eiche')) vein = Math.exp(-((xn / 0.05) ** 2)) * smooth(0.04, 0.15, t) * (1 - smooth(0.85, 0.97, t))
   } else {
-    let hw
-    if (shape === 'tulpe') hw = Math.pow(Math.max(0, Math.sin(Math.PI * clamp(t, 0, 1))), 0.55) * (1 - 0.22 * Math.max(0, t - 0.45))
-    else if (shape === 'lotus') hw = Math.pow(Math.max(0, Math.sin(Math.PI * clamp(t, 0, 1))), 0.42) * (1 - Math.pow(clamp(t, 0, 1), 7))
-    else if (shape === 'monstera') hw = Math.pow(Math.max(0, Math.sin(Math.PI * clamp(t * 0.92 + 0.04, 0, 1))), 0.5)
-    else if (shape === 'farn') hw = Math.pow(Math.max(0, Math.sin(Math.PI * clamp(t, 0, 1))), 0.7) * (1 - 0.45 * clamp(t, 0, 1))
-    else hw = drawnHalfWidth(points ?? DEFAULT_LEAF_POINTS, clamp(t, 0, 1))
+    const ax = Math.abs(xn)
+    const hw = shape === 'tulpe'
+      ? Math.pow(Math.max(0, Math.sin(Math.PI * clamp(t, 0, 1))), 0.55) * (1 - 0.22 * Math.max(0, t - 0.45))
+      : drawnHalfWidth(points ?? DEFAULT_LEAF_POINTS, clamp(t, 0, 1))
     if (hw <= 1e-3 || ax >= hw) return -1
     // Inside the outline: across to the side, and to the base and the tip, in lengths of the leaf.
     leafEdge = Math.min((hw - ax) * halfWidthInLengths, Math.max(0, t), Math.max(0, 1 - t))
-    across = ax / hw
-    inside = 1
-    if (shape === 'monstera') {
-      // Slits from the edge in towards the midrib, and small holes beside the rib between them.
-      // Three wide slits on each side, from the edge in to half way, sloping up towards the tip.
-      const slit = frac((t + 0.45 * across) * 3.4 + 0.3)
-      if (across > 0.45 && slit < 0.2 && t > 0.12 && t < 0.9) return -1
-      if (across > 0.45 && t > 0.12 && t < 0.9) leafEdge = Math.min(leafEdge, Math.min(slit - 0.2, 1 - slit) / 3.4)
-    }
-    if (shape === 'farn') {
-      // Leaflets on both sides of the stalk, offset, pointing up and out; the stalk itself.
-      const side = xn < 0 ? 0.5 : 0
-      const k = frac(t * 10 - across * 0.9 + side)
-      if (ax > 0.06 && k > 0.72) return -1
-      if (ax > 0.06) leafEdge = Math.min(leafEdge, Math.min(k, 0.72 - k) / 10)
-      const leaflet = ax <= 0.06 ? 1 : Math.sin((Math.PI * k) / 0.72)
-      across = 1 - leaflet * (1 - across * 0.5)
-    }
-    if (withVeins && shape !== 'farn') vein = veins(t, xn, shape === 'monstera' ? 0.6 : 1)
+    const across = ax / hw
+    dome = Math.sqrt(Math.max(0, 1 - across * across))
+    if (withVeins) vein = veins(t, xn)
   }
-  if (inside < 0) return -1
-  // Dome: flat at curve 0, rising to a rounded top at 1; the tip fades a little.
-  const dome = Math.sqrt(Math.max(0, 1 - across * across))
   const top = (1 - curve) + curve * dome
-  const tipFade = 1 - 0.25 * smooth(0.82, 1, t)
+  const tipFade = picture ? 1 : 1 - 0.25 * smooth(0.82, 1, t)
   return clamp(LEAF_EDGE + (1 - LEAF_EDGE) * top * tipFade - 0.16 * vein, 0, 1)
-}
-
-/** Diamond weave: two families of bands along the diagonals, over and under in turn. */
-function weave(cu, cv, width) {
-  const a = cu + cv, b = cu - cv
-  const band = (x) => {
-    const d = Math.abs(frac(x + 0.5) - 0.5) / Math.max(0.05, width / 2)
-    return d >= 1 ? 0 : Math.sqrt(1 - d * d)
-  }
-  const ba = band(a), bb = band(b)
-  const topA = (Math.round(a) + Math.round(b)) % 2 === 0
-  const ha = topA ? ba : ba * (1 - 0.55 * bb)
-  const hb = topA ? bb * (1 - 0.55 * ba) : bb
-  return Math.max(ha, hb)
-}
-
-/** Wave diamond: plump diamonds, their rows swaying sideways, so the facets run on like waves. */
-function waveDiamond(cu, cv, round) {
-  const x = cu + 0.22 * Math.sin(Math.PI * cv)
-  const a = frac(x + cv) - 0.5, b = frac(x - cv) - 0.5
-  const d = Math.max(Math.abs(a), Math.abs(b)) * 2
-  const pillow = Math.cos((Math.PI / 2) * clamp(d, 0, 1))
-  return clamp(Math.pow(pillow, 0.4 + 1.6 * (1 - round)) * 1.08, 0, 1)
-}
-
-/** Flow petals: long, soft drops in offset rows, each swinging a little sideways. */
-function petals(cu, cv, round, overlap) {
-  const length = 1 + overlap
-  let best = 0
-  const r0 = Math.floor(cv)
-  for (let r = r0 - 2; r <= r0; r++) {
-    const off = r % 2 === 0 ? 0 : 0.5
-    const t = (cv - r) / length
-    if (t < 0 || t > 1) continue
-    const c = Math.round(cu - off)
-    for (let k = c - 1; k <= c + 1; k++) {
-      const swing = 0.12 * Math.sin(Math.PI * t)
-      const dx = cu - (k + off) - swing
-      const hw = 0.52 * Math.pow(Math.sin(Math.PI * t), 0.75)
-      if (hw <= 1e-3 || Math.abs(dx) >= hw) continue
-      const s = Math.abs(dx) / hw
-      const v = Math.pow(1 - s * s, 0.3 + 0.9 * round) * (0.55 + 0.45 * Math.sin(Math.PI * Math.min(1, t * 1.15)))
-      // Petals of neighbouring rows meet where their domes are equal: the higher one shows.
-      best = Math.max(best, v)
-    }
-  }
-  return clamp(best, 0, 1)
 }
 
 /** Wisp ribs: bundles of narrow ribs in a sunk channel, between smooth fields. */
@@ -275,7 +257,7 @@ function wisp(cu, cv, group, width) {
   return clamp(Math.max(ridge * 0.95, 1 - smooth(0, 0.08, edge)), 0, 1)
 }
 
-/** Organic Voronoi: plump cells with a net of rounded joints between them (F2 - F1 of a jittered grid). */
+/** Voronoi joints for the gallery's tile of the older surface: plump cells (F2 - F1 of a jittered grid). */
 function cells(cu, cv, around, gap, round, seed) {
   const ci = Math.floor(cu), cj = Math.floor(cv)
   let d1 = Infinity, d2 = Infinity
@@ -296,53 +278,44 @@ function cells(cu, cv, around, gap, round, seed) {
   return Math.pow(smooth(half, half + 0.08 + 0.35 * round, edge), 0.7)
 }
 
-/** Hexagon relief: six-sided tiles with flat tops and clear facets round them, in offset rows. */
-function hexagons(cu, cv, gap, round) {
-  // Hex width 1 around, rows sqrt(3)/2 apart; the nearest of the two lattices' centres.
-  const rowH = Math.sqrt(3) / 2
-  const r = Math.round(cv / rowH)
-  let best = Infinity
-  for (let rr = r - 1; rr <= r + 1; rr++) {
-    const off = rr % 2 === 0 ? 0 : 0.5
-    const c = Math.round(cu - off)
-    for (let k = c - 1; k <= c + 1; k++) {
-      const dx = cu - (k + off), dy = cv - rr * rowH
-      // Distance to the hexagon's edge (pointy top): the largest of three projections.
-      const q = Math.max(Math.abs(dx), Math.abs(dx * 0.5 + dy * rowH), Math.abs(dx * 0.5 - dy * rowH))
-      best = Math.min(best, q)
-    }
-  }
-  const edge = 0.5 - best
-  const half = gap / 2
-  if (edge <= half) return 0
-  const bevel = 0.06 + 0.3 * round
-  return clamp((edge - half) / bevel, 0, 1)
-}
-
 /**
- * How many fine features a family has across one cell (ribs of a bundle, a fern's leaflets, a monstera's slits): the
- * core gives the grid that many more columns and rows, so they come out as shapes and not as a zip of steps.
+ * How many fine features a family has across one cell (ribs of a bundle, a fern's leaflets, a vein picture's veins):
+ * the core gives the grid that many more columns and rows, so they come out as shapes and not as a zip of steps.
  */
 export function patternDetail(p) {
   if (p.effect === 'wisp') return Math.max(1, Math.round(p.patternGroup) / Math.max(0.15, p.patternWidth))
-  if (p.effect === 'blaetter') return { farn: 7, monstera: 4, ginkgo: 2.5, ahorn: 3, efeu: 2 }[p.leafShape] ?? 1.5
-  if (p.effect === 'geflecht') return 1.5
+  if (p.effect === 'tulpenblaetter') return 1.5
+  if (p.effect === 'blaetter') return { farn: 6, monstera: 3, ahorn: 3, eiche: 2.5, ginkgo: 2, efeu: 2 }[p.leafShape] ?? 1.5
+  if (p.effect === 'adern') return 4
+  if (isPicturePattern(p.effect)) return 1.5 * (MOTIFS_PER_TILE[p.effect] ?? 1) ** 0.5
   return 1
 }
 
-/** The count of cells around for a family. Leaves: from their size and the widest circumference. */
+/** The width of a leaf in cells and its length per width. */
+function leafForm(shape, leafAspect) {
+  const picture = LEAF_MAPS[shape]
+  if (picture) return { width: PICTURE_LEAF_WIDTH[shape] ?? 1, aspect: pictureLeafAspect(picture) * leafAspect }
+  const drawn = DRAWN_LEAF[shape] ?? DRAWN_LEAF.tulpe
+  return { width: drawn.width, aspect: drawn.aspect * leafAspect }
+}
+
+/** The count of cells around for a family: tiles of a picture, leaves from their size and the widest circumference. */
 export function patternCellsAround(p, maxCircumference) {
   if (p.effect === 'blaetter') {
-    const form = LEAF_FORM[p.leafShape] ?? LEAF_FORM.tulpe
-    const width = (LEAF_WIDTH_MM * p.leafSize) / 100
-    return clamp(Math.round(maxCircumference / (width / form.width * 1.0)), 3, 64)
+    const { width } = leafForm(p.leafShape, 1)
+    const leaf = (LEAF_WIDTH_MM * p.leafSize) / 100
+    return clamp(Math.round(maxCircumference / (leaf / width)), 3, 64)
   }
+  if (isPicturePattern(p.effect)) return clamp(Math.round(p.patternCount / (MOTIFS_PER_TILE[p.effect] ?? 1)), 1, 96)
+  // Tulip leaves: half as many leaves round as the count says, each one broad.
+  if (p.effect === 'tulpenblaetter') return clamp(Math.round(p.patternCount / 2.4), 3, 40)
   return clamp(Math.round(p.patternCount), 3, 96)
 }
 
 /** Leaf rows: the lower lies over the upper, within a row the left edge over the neighbour's right. */
 function leavesAt(cu, cv, around, o) {
-  const { shape, aspect, width, overlap, layout, tilt, curve, withVeins, points, step } = o
+  const { shape, aspect, width, overlap, layout, tilt, curve, withVeins, points, step, bend = 0 } = o
+  const scattered = layout === 'verstreut'
   const length = width * aspect
   // The slope at a leaf's edge: about a twentieth of a cell, in lengths of the leaf.
   const ramp = 0.055 / length
@@ -351,27 +324,44 @@ function leavesAt(cu, cv, around, o) {
   const sin = Math.sin(tilt), cos = Math.cos(tilt)
   if (cv < -0.05) return 0
   const rTop = Math.floor(cv / pitch)
-  const rows = Math.ceil(length / pitch) + 1
+  const rows = Math.ceil((length * 1.2) / pitch) + (scattered ? 2 : 1)
+  // How many leaves to each side may reach this point: a long leaf that leans or bends reaches far sideways.
+  const reach = Math.ceil(width * 0.7 + length * (Math.abs(sin) + Math.abs(bend) * 0.35 + (scattered ? 0.45 : 0)) + (scattered ? 0.5 : 0)) + 1
   let hit = -1, hitTop = 0, hitEdge = 1
   let beneath = 0
-  for (let r = Math.max(0, rTop - rows); r <= rTop; r++) {
+  // A leaning leaf reaches below its own row with its lower corner, a scattered one sits a little lower: rows above count too.
+  const below = Math.ceil((width * Math.abs(sin) + (scattered ? 0.6 * pitch : 0)) / pitch) + 1
+  for (let r = Math.max(0, rTop - rows); r <= rTop + below; r++) {
     // Rows from the lowest that may reach this point: the first hit is the leaf that lies on top.
     const off = layout === 'regelmaessig' ? 0 : layout === 'spirale' ? frac(r * 0.381966) : (r % 2) * 0.5
-    const dy0 = cv - r * pitch
-    const lean = dy0 * (sin / Math.max(0.2, cos))
+    const dyRow = cv - r * pitch
+    const lean = dyRow * (sin / Math.max(0.2, cos))
     const c = Math.round(cu - off - lean)
-    let rowBest = -1, rowX = Infinity, rowOther = 0, rowEdge = 1
-    for (let k = c - 2; k <= c + 2; k++) {
-      let dx = cu - (k + off)
+    let rowBest = -1, rowX = Infinity, rowOther = 0, rowEdge = 1, rowCover = 0
+    for (let k = c - reach; k <= c + reach; k++) {
+      // Scattered: each leaf a little off its place, turned and sized its own way (the same every time, and the same
+      // a whole turn further round, so the seam closes).
+      const wrapped = ((k % around) + around) % around
+      const jx = scattered ? (hash2(wrapped, r, 17) - 0.5) * 0.7 : 0
+      const jy = scattered ? (hash2(wrapped, r, 29) - 0.5) * 0.6 * pitch : 0
+      const turn = scattered ? (hash2(wrapped, r, 41) - 0.5) * 0.75 : 0
+      const size = scattered ? 0.82 + 0.36 * hash2(wrapped, r, 53) : 1
+      const lsin = Math.sin(tilt + turn), lcos = Math.cos(tilt + turn)
+      let dx = cu - (k + off + jx)
       dx -= around * Math.round(dx / around)
-      const along = dx * sin + dy0 * cos
-      const across = dx * cos - dy0 * sin
+      const dy0 = dyRow - jy
+      const along = (dx * lsin + dy0 * lcos) / size
+      let across = (dx * lcos - dy0 * lsin) / size
       const t = along / length
+      // A bent leaf: its middle line curves to the side towards the tip, like a flame.
+      const leafBend = bend + (scattered ? (hash2(wrapped, r, 67) - 0.5) * 0.3 : 0)
+      across -= leafBend * t * t * length * 0.35
       const xn = across / (width / 2)
       if (t < -0.02 || t > 1.02 || Math.abs(xn) > 1.05) continue
       const v = leafHeight(shape, t, xn, curve, withVeins, points, halfWidthInLengths)
       if (v < 0) continue
       const edge = smooth(0, ramp, leafEdge)
+      rowCover = Math.max(rowCover, edge)
       if (xn < rowX) {
         if (rowBest >= 0) rowOther = Math.max(rowOther, rowBest * rowEdge)
         rowBest = v
@@ -380,48 +370,50 @@ function leavesAt(cu, cv, around, o) {
       } else rowOther = Math.max(rowOther, v * edge)
     }
     if (rowBest < 0) continue
-    // The leaf on top, stepped above what it covers, sloping down to it at its own edge.
-    const top = rowOther > 0 ? Math.max(rowBest, rowOther + step) : rowBest
+    // The leaf on top with its own dome; at its edge it meets what it covers, so where its edge lies lower than the leaf
+    // beneath, a fine groove shows the outline - as on a carved vase.
+    const top = rowBest
     const own = rowOther + (top - rowOther) * rowEdge
-    if (hit < 0) { hit = own; hitTop = top; hitEdge = rowEdge }
+    // How much this row covers the point: its leaves together, so a leaf just starting at its edge does not let the
+    // row beneath show through where a neighbour of the same row lies.
+    if (hit < 0) { hit = own; hitTop = own; hitEdge = rowCover }
     else beneath = Math.max(beneath, own)
   }
   if (hit < 0) return 0
   if (beneath <= 0) return clamp(hit, 0, 1)
-  const top = Math.max(hitTop, beneath + step)
-  return clamp(beneath + (top - beneath) * hitEdge, 0, 1)
+  return clamp(beneath + (hitTop - beneath) * hitEdge, 0, 1)
 }
 
 /** The height 0..1 of a family at (cu, cv), in cells; `around` is the count of cells round the vase. */
 export function patternHeight(p, cu, cv, around) {
   const lean = (clamp(p.patternTwist, -75, 75) * Math.PI) / 180
   const sheared = cu + Math.tan(lean) * cv
-  switch (p.effect) {
-    case 'blueten': return petals(sheared, cv, p.patternRound, 0.35)
-    case 'rautenwelle': return waveDiamond(sheared, cv, p.patternRound)
-    case 'geflecht': return weave(sheared, cv, p.patternWidth)
-    case 'wisp': return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth)
-    case 'zellen': return cells(cu, cv, around, p.patternGap, p.patternRound, p.patternSeed)
-    case 'waben': return hexagons(sheared, cv, p.patternGap, p.patternRound)
-    case 'tulpenblaetter':
-      return leavesAt(cu, cv, around, { shape: 'tulpe', aspect: 1.7, width: 1.2, overlap: p.leafOverlap / 100, layout: 'spirale', tilt: lean * 0.6, curve: 1, withVeins: false, points: null, step: OVERLAP_STEP })
-    case 'blaetter': {
-      const form = LEAF_FORM[p.leafShape] ?? LEAF_FORM.tulpe
-      return leavesAt(cu, cv, around, {
-        shape: p.leafShape,
-        aspect: form.aspect * p.leafAspect,
-        width: form.width,
-        overlap: p.leafOverlap / 100,
-        layout: p.leafLayout,
-        tilt: (clamp(p.leafTilt, -45, 45) * Math.PI) / 180,
-        curve: p.leafCurve,
-        withVeins: p.leafVeins === 'ja',
-        points: p.leafShape === 'eigen' ? (p.leafPoints ?? DEFAULT_LEAF_POINTS) : null,
-        step: OVERLAP_STEP,
-      })
-    }
-    default: return 1
+  const picture = PATTERN_MAPS[p.effect]
+  if (picture) {
+    const h = tileHeight(picture, sheared, cv / picture.aspect)
+    return p.patternInvert === 'ja' ? 1 - h : h
   }
+  if (p.effect === 'wisp') return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth)
+  if (p.effect === 'tulpenblaetter') {
+    // Long tulip leaves rising from the bottom in a spiral, overlapping at the sides, bent like flames by the lean.
+    return leavesAt(cu, cv, around, { shape: 'tulpe', aspect: 2.7, width: 1.35, overlap: p.leafOverlap / 100 + 0.25, layout: 'spirale', tilt: lean, curve: 1, withVeins: false, points: null, step: OVERLAP_STEP, bend: Math.sign(p.patternTwist) * Math.min(0.8, Math.abs(p.patternTwist) / 45) })
+  }
+  if (p.effect === 'blaetter') {
+    const form = leafForm(p.leafShape, p.leafAspect)
+    return leavesAt(cu, cv, around, {
+      shape: p.leafShape,
+      aspect: form.aspect,
+      width: form.width,
+      overlap: p.leafOverlap / 100,
+      layout: p.leafLayout,
+      tilt: (clamp(p.leafTilt, -45, 45) * Math.PI) / 180,
+      curve: p.leafCurve,
+      withVeins: p.leafVeins === 'ja',
+      points: p.leafShape === 'eigen' ? (p.leafPoints ?? DEFAULT_LEAF_POINTS) : null,
+      step: OVERLAP_STEP,
+    })
+  }
+  return 1
 }
 
 /** Stretch of the cells up the vase (1 = as tall as wide). Leaves keep their own proportions. */
@@ -523,7 +515,8 @@ function classicPreview(effect, cu, cv, around) {
  * row 0 at the bottom: the gallery shades its tiles from it.
  */
 export function patternPreview(p, columns = 48, rows = 48, cellsAcross = null) {
-  const around = cellsAcross ?? (p.effect === 'blaetter' ? 3 : p.effect === 'tulpenblaetter' ? 3 : p.effect === 'zellen' ? 4 : 3)
+  // A picture's tile once; leaves and the worked-out families three cells across.
+  const around = cellsAcross ?? (isPicturePattern(p.effect) ? 1 : 3)
   const stretch = cellStretch(p)
   const out = new Float32Array(columns * rows)
   for (let j = 0; j < rows; j++) {

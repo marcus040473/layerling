@@ -17,9 +17,9 @@
 import { MeshBuilder, capWithHoles, holeCeiling, holeWall, zipRings } from './mesh-tools.mjs'
 import { CUTOUTS, CUTOUT_EDGES, cutoutPattern, wallZone } from './vase-cutout.mjs'
 import { REINFORCE, slitBody } from './vase-slits.mjs'
-import { LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isReliefPattern, normalizeLeafPoints, reliefField } from './vase-patterns.mjs'
+import { LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isPicturePattern, isReliefPattern, normalizeLeafPoints, reliefField } from './vase-patterns.mjs'
 
-export { CUTOUTS, CUTOUT_EDGES, REINFORCE, LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isReliefPattern }
+export { CUTOUTS, CUTOUT_EDGES, REINFORCE, LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isPicturePattern, isReliefPattern }
 
 /** Silhouettes as control points [height 0..1, radius 0..1 relative to the largest diameter]. */
 export const PROFILES = {
@@ -257,24 +257,22 @@ export const DEFAULTS = Object.freeze({
   lowpolyRows: 10,
   lowpolyJitter: 0.35,
   lowpolySeed: 1,
-  // Relief patterns (vase-patterns.mjs): depth of the relief, cells round the vase, lean of the pattern (degrees),
-  // stretch of the cells up the vase, width of bands and rib channels, ribs per bundle, joints between cells and
-  // tiles (share of a cell), roundness of the tops, seed of the random cells.
+  // Relief patterns (vase-patterns.mjs): depth of the relief, motifs round the vase, lean of the pattern (degrees),
+  // stretch of the cells up the vase, and for the wisp ribs the width of their channel and the ribs per bundle.
   reliefDepth: 1.6,
   patternCount: 12,
   patternTwist: 0,
   patternAspect: 1,
   patternWidth: 0.45,
   patternGroup: 4,
-  patternGap: 0.12,
-  patternRound: 0.6,
-  patternSeed: 1,
+  /** A picture pattern turned inside out: what was raised is sunk. */
+  patternInvert: 'nein',
   // Leaves: shape, size (% of 32 mm wide), overlap of the rows (%), layout, lean (degrees), dome 0..1, veins,
   // stretch of the leaf, and the outline of one's own leaf ([along, half width] pairs).
   leafShape: 'tulpe',
   leafSize: 100,
-  leafOverlap: 35,
-  leafLayout: 'versetzt',
+  leafOverlap: 20,
+  leafLayout: 'verstreut',
   leafTilt: 0,
   leafCurve: 0.7,
   leafVeins: 'ja',
@@ -375,9 +373,6 @@ export const LIMITS = {
   patternAspect: [0.4, 3],
   patternWidth: [0.15, 0.9],
   patternGroup: [1, 9],
-  patternGap: [0.03, 0.4],
-  patternRound: [0, 1],
-  patternSeed: [1, 9999],
   leafSize: [30, 250],
   leafOverlap: [0, 80],
   leafTilt: [-45, 45],
@@ -417,7 +412,7 @@ export function normalizeParams(input = {}) {
   p.leafPoints = normalizeLeafPoints(input.leafPoints)
   for (const [key, [min, max]] of Object.entries(LIMITS)) p[key] = clamp(p[key], min, max)
   p.ribCount = Math.round(p.ribCount)
-  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternGroup', 'patternSeed']) p[key] = Math.round(p[key])
+  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternGroup']) p[key] = Math.round(p[key])
   if (p.rubberFeet > 0 && p.rubberFeet < 3) p.rubberFeet = 3
   if (!LEG_MODES[p.legMode]) p.legMode = DEFAULTS.legMode
   if (!LEG_SHAPES[p.legShape]) p.legShape = DEFAULTS.legShape
@@ -429,6 +424,7 @@ export function normalizeParams(input = {}) {
   if (!YES_NO[p.stopperRing]) p.stopperRing = DEFAULTS.stopperRing
   if (!YES_NO[p.leafVeins]) p.leafVeins = DEFAULTS.leafVeins
   if (!YES_NO[p.printFriendly]) p.printFriendly = DEFAULTS.printFriendly
+  if (!YES_NO[p.patternInvert]) p.patternInvert = DEFAULTS.patternInvert
   if (!LEAF_SHAPES[p.leafShape]) p.leafShape = DEFAULTS.leafShape
   if (!LEAF_LAYOUTS[p.leafLayout]) p.leafLayout = DEFAULTS.leafLayout
   for (const key of ['saucerRibs', 'saucerSpout', 'saucerGrip']) if (!YES_NO[p[key]]) p[key] = DEFAULTS[key]
@@ -1728,8 +1724,8 @@ export function buildVase(input, { part = 'body' } = {}) {
     // model them itself, one and a half points per joint width are enough.
     if (p.effect === 'voronoi') needs.push(Math.ceil((2 * Math.PI * maxR) / (p.voronoiGap / (1.5 * scale))))
     if (layout.cutoutZone) needs.push(Math.ceil((2 * Math.PI * maxR) / cutoutStep(p)))
-    // A relief: enough columns per cell for its outlines, and at least one every 0.6 mm of the widest circumference.
-    if (relief) needs.push(Math.min(MAX_SEGMENTS, Math.max(relief.around * Math.ceil(Math.max(28, 9 * relief.detail) * scale), Math.ceil(relief.maxCircumference / (0.9 / scale)))))
+    // A relief: enough columns per cell for its outlines, and at least one every half millimetre of the widest circumference.
+    if (relief) needs.push(Math.min(MAX_SEGMENTS, Math.max(relief.around * Math.ceil(Math.max(28, 9 * relief.detail) * scale), Math.ceil(relief.maxCircumference / (0.5 / scale)))))
     segments = Math.min(MAX_SEGMENTS, Math.max(...needs))
     // This makes sharp places (corners, notches, fin edges) fall on columns - during a transition those of both
     // cross-sections (least common multiple, as long as it fits within the maximum count).
@@ -1752,11 +1748,11 @@ export function buildVase(input, { part = 'body' } = {}) {
   else {
     let mmPerRow = q.mmPerRow
     if (p.effect === 'voronoi') mmPerRow = Math.min(mmPerRow, p.voronoiGap / (1.5 * scale))
-    // A relief: rows as fine as its columns at the narrowest cell, at most 0.25 mm apart.
+    // A relief: rows as fine as its columns at the narrowest cell, between 0.2 and 0.45 mm apart.
     if (relief) {
       let smallest = Infinity
       for (let k = 0; k <= 32; k++) smallest = Math.min(smallest, relief.cellAt((k / 32) * H))
-      mmPerRow = Math.min(mmPerRow, Math.max(0.2, smallest / (Math.max(24, 7 * relief.detail) * scale)), 0.6 / scale)
+      mmPerRow = Math.min(mmPerRow, Math.max(0.2, smallest / (Math.max(24, 7 * relief.detail) * scale)), 0.45 / scale)
     }
     rows = Math.ceil(H / mmPerRow)
     // Sway: at least 24 rows per swing, so that the folds swing smoothly; twist curve: 12 per point.

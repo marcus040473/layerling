@@ -80,7 +80,9 @@ describe("vase relief patterns", () => {
       const at = radiusNear(mesh, z, 0.4);
       if (z === 80) expect(at.most - at.least).toBeGreaterThan(1);
       else expect(at.most - at.least, `smooth at ${z}`).toBeLessThan(0.02);
-      expect(at.most).toBeCloseTo(r, 1);
+      // Inside the range the relief reaches up to the outline; outside the surface is the outline.
+      if (z === 80) expect(at.most).toBeLessThanOrEqual(r + 0.01);
+      else expect(at.most).toBeCloseTo(r, 1);
     }
   });
 
@@ -107,12 +109,44 @@ describe("vase relief patterns", () => {
     expect(normalizeParams(belly.params).patternCount).toBe(9);
   });
 
-  it("is the same every time for the same settings (stable random cells)", () => {
-    const a = buildVase({ effect: "zellen", patternSeed: 7, quality: "entwurf" });
-    const b = buildVase({ effect: "zellen", patternSeed: 7, quality: "entwurf" });
-    const c = buildVase({ effect: "zellen", patternSeed: 8, quality: "entwurf" });
-    expect(Array.from(a.positions.slice(0, 3000))).toEqual(Array.from(b.positions.slice(0, 3000)));
+  it("is the same every time for the same settings, scattered leaves too", () => {
+    const a = buildVase({ effect: "blaetter", leafLayout: "verstreut", quality: "entwurf" });
+    const b = buildVase({ effect: "blaetter", leafLayout: "verstreut", quality: "entwurf" });
+    const c = buildVase({ effect: "blaetter", leafLayout: "regelmaessig", quality: "entwurf" });
+    expect(Array.from(a.positions)).toEqual(Array.from(b.positions));
     expect(Array.from(a.positions)).not.toEqual(Array.from(c.positions));
+  });
+
+  it("reads picture patterns as seamless tiles and picture leaves as sharp outlines", () => {
+    // A picture tile repeats: the same a whole tile further round and up.
+    const p = normalizeParams({ effect: "schuppen" });
+    expect(patternHeight(p, 0.3, 0.7, 4)).toBeCloseTo(patternHeight(p, 1.3, 0.7, 4), 6);
+    // Turned inside out, raised becomes sunk.
+    const inverted = normalizeParams({ effect: "schuppen", patternInvert: "ja" });
+    expect(patternHeight(inverted, 0.3, 0.7, 4)).toBeCloseTo(1 - patternHeight(p, 0.3, 0.7, 4), 6);
+    // An oak leaf: inside in its middle, outside beside it, its dome higher inside than near its edge.
+    expect(leafHeight("eiche", 0.55, 0, 1, false, null)).toBeGreaterThan(0.6);
+    expect(leafHeight("eiche", 0.55, 1.2, 1, false, null)).toBe(-1);
+    // Monstera's holes and slits are holes.
+    let holes = 0;
+    for (let i = 0; i < 40; i += 1) for (let j = 0; j < 40; j += 1) if (leafHeight("monstera", 0.2 + (0.7 * i) / 40, -0.9 + (1.8 * j) / 40, 1, false, null) < 0) holes += 1;
+    expect(holes).toBeGreaterThan(100);
+  });
+
+  it("has no jumps in its leaves: a leaf's edge always slopes, also where leaves of a row overlap", () => {
+    for (const settings of [{ effect: "tulpenblaetter", patternTwist: 30 }, { effect: "blaetter" }, { effect: "blaetter", leafShape: "ginkgo" }]) {
+      const p = normalizeParams(settings);
+      let jumps = 0;
+      for (let cu = 0; cu < 5; cu += 0.1) {
+        let previous = patternHeight(p, cu, 0, 5);
+        for (let cv = 0.005; cv < 10; cv += 0.005) {
+          const h = patternHeight(p, cu, cv, 5);
+          if (Math.abs(h - previous) > 0.3) jumps += 1;
+          previous = h;
+        }
+      }
+      expect(jumps, JSON.stringify(settings)).toBe(0);
+    }
   });
 
   it("keeps the settings inside their limits and drops unknown leaves and layouts", () => {
@@ -121,7 +155,7 @@ describe("vase relief patterns", () => {
     expect(p.patternCount).toBe(3);
     expect(p.leafSize).toBe(250);
     expect(p.leafShape).toBe("tulpe");
-    expect(p.leafLayout).toBe("versetzt");
+    expect(p.leafLayout).toBe("verstreut");
     expect(p.printFriendly).toBe("ja");
     expect(p.leafPoints).toBeNull();
     expect(normalizeLeafPoints([[0.5, 2], [0.2, -1]])).toEqual([[0, 0], [1, 1]]);
