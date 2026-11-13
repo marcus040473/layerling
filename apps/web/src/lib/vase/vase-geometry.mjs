@@ -1774,7 +1774,7 @@ export function buildVase(input, { part = 'body' } = {}) {
       rows = Math.max(24, Math.floor(budget / segments))
     }
     // The pattern's edges softened to the spacing the grid really has.
-    relief.setGrid(Math.max(relief.maxCircumference / segments, Htop / rows))
+    relief.setGrid(Math.max(relief.maxCircumference / segments, Htop / rows), segments)
   }
 
   const zone = (z) => zoneMask(z, p)
@@ -1848,6 +1848,8 @@ export function buildVase(input, { part = 'body' } = {}) {
   const reliefRows = relief && !lowpoly && !zones.length ? reliefRowHeights(relief, Htop, H / rows) : null
   const zsOuter = slitted ? [] : adaptive ? adaptiveRows((z) => R(z), 0, Htop, q.tol, q.maxStep, zones) : reliefRows ?? rowHeights(0, Htop, H / rows, zones)
   if (adaptive) rows = zsOuter.length - 1
+  // A relief's grid turns with its pattern lines (from the bottom up), so slanted ribs run along it.
+  const gridTurn = reliefRows ? (z) => relief.turnAt(z) - relief.turnAt(0) : null
   const outer = []
   const outerAtZ = new Map()
   for (let i = 0; i < zsOuter.length; i++) {
@@ -1857,7 +1859,10 @@ export function buildVase(input, { part = 'body' } = {}) {
       let z = zsOuter[i]
       let r
       if (lowpoly) ({ theta, z, r } = shape.lowpolyVertex(i, j))
-      else r = outerRadius(theta, z)
+      else {
+        if (gridTurn) theta += gridTurn(z)
+        r = outerRadius(theta, z)
+      }
       row[j] = addVertex(r * Math.cos(theta), r * Math.sin(theta), z)
     }
     outer.push(row)
@@ -1900,7 +1905,8 @@ export function buildVase(input, { part = 'body' } = {}) {
         const a = outer[i][j], b = outer[i][k], c = outer[i + 1][k], d = outer[i + 1][j]
         const r = (v) => Math.hypot(verts[v * 3], verts[v * 3 + 1])
         // The diagonal whose middle lies nearer the real surface in the middle of the quad.
-        const middle = outerRadius((2 * Math.PI * (j + 0.5)) / segments, (zsOuter[i] + zsOuter[i + 1]) / 2)
+        const turn = gridTurn ? (gridTurn(zsOuter[i]) + gridTurn(zsOuter[i + 1])) / 2 : 0
+        const middle = outerRadius((2 * Math.PI * (j + 0.5)) / segments + turn, (zsOuter[i] + zsOuter[i + 1]) / 2)
         if (Math.abs((r(a) + r(c)) / 2 - middle) > Math.abs((r(b) + r(d)) / 2 - middle) + 1e-6) {
           tris.push(a, b, d)
           tris.push(b, c, d)
@@ -2026,10 +2032,13 @@ export function buildVase(input, { part = 'body' } = {}) {
       })
     }
     const innerTop = inner[inner.length - 1]
+    // The outer top row turned with a relief's grid: joined to the inner one by the nearest whole column.
+    const shift = gridTurn ? ((Math.round(gridTurn(Htop) / ((2 * Math.PI) / segments)) % segments) + segments) % segments : 0
     for (let j = 0; j < segments; j++) {
       const k = (j + 1) % segments
-      tris.push(top[j], top[k], innerTop[k])
-      tris.push(top[j], innerTop[k], innerTop[j])
+      const a = top[(j - shift + segments) % segments], b = top[(k - shift + segments) % segments]
+      tris.push(a, b, innerTop[k])
+      tris.push(a, innerTop[k], innerTop[j])
     }
     const openBottom = zones.some((zn) => zn.open && zn.z0 === 0)
     if (floorTop === 0) {

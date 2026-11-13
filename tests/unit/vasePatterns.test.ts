@@ -107,6 +107,13 @@ describe("vase relief patterns", () => {
     }
   });
 
+  it("turns its grid with slanted patterns and twist, and stays closed", () => {
+    for (const body of ["voll", "hohl"]) {
+      const mesh = buildVase({ profile: "flasche", effect: "wisp", patternCount: 26, reliefDepth: 2.4, patternTwist: 30, twist: 90, body, quality: "entwurf" });
+      expect(openEdges(mesh), body).toBe(0);
+    }
+  });
+
   it("repeats the honeycomb upwards without a seam", () => {
     // One tile is 2 sqrt3 / 3 cells high; a tile further up the honeycomb is the same.
     const p = normalizeParams({ effect: "waben" });

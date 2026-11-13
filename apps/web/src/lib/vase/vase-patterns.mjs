@@ -310,16 +310,20 @@ export function leafHeight(shape, t, xn, curve, withVeins, points, halfWidthInLe
 }
 
 /** Wisp ribs: bundles of narrow ribs in a sunk channel, between smooth fields. */
-function wisp(cu, cv, group, width) {
+function wisp(cu, cv, group, width, blur = 0) {
   const f = frac(cu)
   if (f >= width) return 1
   const k = (f / width) * group
   const rib = Math.abs(frac(k) - 0.5) * 2
-  // Round ribs: a cosine across each, so the grid draws them smooth at any lean.
-  const ridge = 0.5 + 0.5 * Math.cos(Math.PI * rib)
+  // Round ribs: a cosine across each, so the grid draws them smooth at any lean. Ribs too fine for the grid (`blur`,
+  // a Gaussian's width in cells) fade as a cosine does under that blur, to a smooth channel: drawn at full height they
+  // came out as knotted, beaded ribs.
+  const period = width / group
+  const keep = Math.exp((-2 * Math.PI * Math.PI * blur * blur) / (period * period))
+  const ridge = 0.5 + 0.5 * keep * Math.cos(Math.PI * rib)
   // The channel's two ends rise softly to the fields.
   const edge = Math.min(f, width - f) / width
-  return clamp(Math.max(ridge * 0.95, 1 - smooth(0, 0.08, edge)), 0, 1)
+  return clamp(Math.max(ridge * 0.95, 1 - smooth(0, Math.max(0.08, (2.5 * blur) / width), edge)), 0, 1)
 }
 
 /** Voronoi joints for the gallery's tile of the older surface: plump cells (F2 - F1 of a jittered grid). */
@@ -481,14 +485,15 @@ function leafRows(p) {
 
 /** The height 0..1 of a family at (cu, cv), in cells; `around` is the count of cells round the vase. */
 export function patternHeight(p, cu, cv, around, fixed = null, blur = 0) {
+  // `blur`: how far the pattern is softened to the build grid, a Gaussian's width in cells.
   const lean = (clamp(p.patternTwist, -75, 75) * Math.PI) / 180
   const sheared = cu + Math.tan(lean) * cv
   const picture = PATTERN_MAPS[p.effect]
   if (picture) {
-    const h = tileHeight(picture, sheared, cv / picture.aspect, blur)
+    const h = tileHeight(picture, sheared, cv / picture.aspect, blur * picture.size)
     return p.patternInvert === 'ja' ? 1 - h : h
   }
-  if (p.effect === 'wisp') return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth)
+  if (p.effect === 'wisp') return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth, blur)
   if (p.effect === 'tulpenblaetter') {
     // Long tulip leaves rising from the bottom in a spiral, overlapping at the sides, bent like flames by the lean.
     return leavesAt(cu, cv, around, { shape: 'tulpe', aspect: TULIP.aspect, width: TULIP.width, overlap: p.leafOverlap / 100 + TULIP.overlap, layout: 'spirale', tilt: lean, curve: 1, withVeins: false, points: null, step: OVERLAP_STEP, bend: Math.sign(p.patternTwist) * Math.min(0.8, Math.abs(p.patternTwist) / 45), fixed })
@@ -604,18 +609,19 @@ export function reliefField(p, shape, zone) {
   const fixedFor = keepSize ? (u, cv) => ({ u, ring: ringAt(cv), count: (r) => Math.max(3, Math.round(ringAt(r * rowsOf.pitch + 0.5 * rowsOf.length))) }) : null
   const shapeKey = keepSize ? Array.from({ length: 17 }, (_, k) => Math.round(circumference[k * 64] * 10)).join(',') : ''
   const amount = Math.max(0, p.reliefDepth)
-  // A picture pattern's edges softened to the build grid's spacing (about the columns' spacing in mm per quality), in
-  // the tile's texels where the cell has the size it has at that height.
+  // A pattern softened to the build grid's spacing (about the columns' spacing in mm per quality), in cells where the
+  // cell has the size it has at that height.
   const picture = PATTERN_MAPS[p.effect]
   let gridMm = { entwurf: 1.17, standard: 0.7, fein: 0.45 }[p.quality] ?? 0.7
-  // Fine (for printing) softens the edges fully to its grid; the quicker qualities only a little, so they stay crisp.
-  const soften = p.quality === 'fein' ? 0.55 : 0.3
+  // A picture's edges: fine (for printing) softens them fully to its grid; the quicker qualities only a little, so they
+  // stay crisp. Wisp ribs fade by half the grid in every quality.
+  const soften = p.effect === 'wisp' ? 0.5 : p.quality === 'fein' ? 0.55 : 0.3
   const blurAt = (z) => {
-    if (!picture) return 0
+    if (!picture && p.effect !== 'wisp') return 0
     const x = clamp(z / H, 0, 1) * steps
     const k = Math.min(steps - 1, Math.floor(x))
     const c = circumference[k] + (circumference[k + 1] - circumference[k]) * (x - k)
-    return (soften * gridMm * picture.size * around) / Math.max(1e-3, c)
+    return (soften * gridMm * around) / Math.max(1e-3, c)
   }
   // Leaves look at many leaves around each point: they are worked out once on a fine raster over the height range and
   // read from it between its points, which makes building and checking a leaf vase many times faster.
@@ -638,27 +644,43 @@ export function reliefField(p, shape, zone) {
   const outer = shape.outerAt
   let friendlyRaster = null
   const buildFriendly = () => {
-    const stepZ = 0.4
+    // As fine as the build grid (at most 0.4 mm up and 0.5 mm round), so fine ribs do not come out beaded from it.
+    const stepZ = Math.min(0.4, Math.max(0.2, gridMm * 0.8))
     const top = Math.min(H, (p.zoneTo / 100) * H + 1)
     const rows = Math.max(2, Math.ceil(top / stepZ) + 1)
-    const columns = clamp(Math.ceil(maxC / 0.5), 360, 1600)
+    // Its columns are the build grid's and turn with it (with the pattern's lines), so the mesh reads them where they
+    // lie and slanted ribs come out smooth; each point is still held to the point straight below it.
+    const columns = gridColumns ? Math.min(gridColumns, Math.ceil(maxC / 0.3)) : clamp(Math.ceil(maxC / Math.min(0.5, Math.max(0.2, gridMm * 0.8))), 360, 2400)
     const values = new Float32Array(columns * rows)
-    for (let c = 0; c < columns; c++) {
-      const theta = (TAU * c) / columns
-      let previous = 0, previousBase = 0
-      for (let r = 0; r < rows; r++) {
-        const z = Math.min(H, r * stepZ)
+    // The outline along the row below, read between its points like the depths.
+    let bases = new Float64Array(columns), basesNow = new Float64Array(columns)
+    let before = 0
+    for (let r = 0; r < rows; r++) {
+      const z = Math.min(H, r * stepZ)
+      const turn = turnAt(z) - turnAt(0)
+      // How far the point straight below lies in the row below, in columns.
+      const back = r > 0 ? ((turn - before) / TAU) * columns : 0
+      const zBelow = Math.max(0, z - stepZ)
+      for (let c = 0; c < columns; c++) {
+        const theta = (TAU * c) / columns + turn
         const base = outer(theta, z)
         const own = raw(theta, z, base)
         let d = own
         if (r > 0 && zone(z) > 0) {
-          const need = previous + (base - previousBase) - stepZ
+          const x = c + back
+          const x0 = Math.floor(x), f = x - x0
+          const xa = ((x0 % columns) + columns) % columns, xb = (xa + 1) % columns
+          const row = (r - 1) * columns
+          const previous = values[row + xa] + (values[row + xb] - values[row + xa]) * f
+          const baseBelow = bases[xa] + (bases[xb] - bases[xa]) * f
+          const need = previous + (base - baseBelow) - (z - zBelow)
           if (need > d) d = Math.min(need, Math.max(own, Math.min(amount, base / 3) * zone(z)))
         }
         values[r * columns + c] = d
-        previous = d
-        previousBase = base
+        basesNow[c] = base
       }
+      ;[bases, basesNow] = [basesNow, bases]
+      before = turn
     }
     friendlyRaster = { values, rows, columns, stepZ, top }
   }
@@ -667,7 +689,7 @@ export function reliefField(p, shape, zone) {
     if (!friendlyRaster) buildFriendly()
     const { values, rows, columns, stepZ, top } = friendlyRaster
     if (z > top) return raw(theta, z, base)
-    const x = (frac(theta / TAU)) * columns
+    const x = frac((theta - (turnAt(z) - turnAt(0))) / TAU) * columns
     const y = Math.min(rows - 1, Math.max(0, z / stepZ))
     const x0 = Math.floor(x), y0 = Math.floor(y)
     const fx = x - x0, fy = y - y0
@@ -684,12 +706,18 @@ export function reliefField(p, shape, zone) {
     return circumference[k] / around
   }
   // The build tells the field its grid's real spacing (mm) before it reads any depth.
-  const setGrid = (mm) => {
-    if (!(mm > 0) || Math.abs(mm - gridMm) < 1e-6) return
+  let gridColumns = 0
+  const setGrid = (mm, columns = 0) => {
+    if (!(mm > 0) || (Math.abs(mm - gridMm) < 1e-6 && columns === gridColumns)) return
     gridMm = mm
+    gridColumns = columns
     friendlyRaster = null
   }
-  return { depthAt, around, cellAt, setGrid, maxCircumference: maxC, detail: patternDetail(p) }
+  // The angle a line of the pattern has turned to at height z (the vase's twist and the pattern's lean): the build turns
+  // its grid along, so slanted ribs and edges run along the grid instead of across it, where they came out beaded.
+  const shear = leafy ? 0 : Math.tan((clamp(p.patternTwist, -75, 75) * Math.PI) / 180)
+  const turnAt = (z) => rotation(twistT(z)) - (TAU * shear * (vAt(z) - start)) / around
+  return { depthAt, around, cellAt, setGrid, turnAt, maxCircumference: maxC, detail: patternDetail(p) }
 }
 
 /** The look of the vase's older surfaces (grooves, stripes, Voronoi joints, facets) for the gallery's tiles. */
