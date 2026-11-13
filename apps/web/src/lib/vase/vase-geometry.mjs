@@ -1838,7 +1838,10 @@ export function buildVase(input, { part = 'body' } = {}) {
   // and the vase's own effects still need the fixed rows.
   const adaptive = !lowpoly && !slitted && p.effect === 'keine' && p.section === 'kreis' && p.section2 === 'keiner' && !shape.lid
   // With slits, vase-slits.mjs builds the whole solid body; here only the lowest ring, for the bottom.
-  const zsOuter = slitted ? [] : adaptive ? adaptiveRows((z) => R(z), 0, Htop, q.tol, q.maxStep, zones) : rowHeights(0, Htop, H / rows, zones)
+  // A relief's pattern shrinks where the vase is narrow (its cells follow the circumference): its rows close up there by
+  // as much, so a small scale at the neck gets as many rows as a large one on the belly and stays free of steps.
+  const reliefRows = relief && !lowpoly && !zones.length ? reliefRowHeights(relief, Htop, H / rows) : null
+  const zsOuter = slitted ? [] : adaptive ? adaptiveRows((z) => R(z), 0, Htop, q.tol, q.maxStep, zones) : reliefRows ?? rowHeights(0, Htop, H / rows, zones)
   if (adaptive) rows = zsOuter.length - 1
   const outer = []
   const outerAtZ = new Map()
@@ -2097,6 +2100,21 @@ export function buildVase(input, { part = 'body' } = {}) {
     locked: lockedMask(tris.length / 3, locked),
     extent,
   }
+}
+
+/**
+ * Rows for a relief from 0 to top: `step` apart where its cells are widest, closer where they are smaller (down to a
+ * third of that, and never under 0.12 mm), so the rows keep pace with the pattern. At most MAX_ROWS rows.
+ */
+function reliefRowHeights(relief, top, step) {
+  let widest = 0
+  for (let k = 0; k <= 64; k++) widest = Math.max(widest, relief.cellAt((k / 64) * top))
+  const spacing = (z) => Math.max(0.12, step * clamp(relief.cellAt(z) / Math.max(1e-6, widest), 1 / 3, 1))
+  // Count the rows first, then stretch them to end exactly at the top.
+  const zs = [0]
+  while (zs[zs.length - 1] < top - 1e-9 && zs.length < MAX_ROWS) zs.push(Math.min(top, zs[zs.length - 1] + spacing(zs[zs.length - 1])))
+  zs[zs.length - 1] = top
+  return zs
 }
 
 /** The knob of a teapot lid and the hole it sits in: as wide as the top allows, between 12 and 28 mm. */
