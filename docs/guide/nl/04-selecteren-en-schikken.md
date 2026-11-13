@@ -72,7 +72,7 @@ Zit er tussen de gekozen vormen een plaat die in die richting langer is dan alle
 
 Zonder plaat houd je [[Shift]] ingedrukt en klik je eerst op een lege plek van het bouwplatform: dat is dan de vaste vorm, gelijke tussenruimte verdeelt de vormen over het hele platform met dezelfde ruimte tot de randen, en de andere punten lijnen ze uit op de randen of het midden. Nog een klik met [[Shift]] op de lege plek laat het weer los. Een klik op een lege plek zonder [[Shift]] beëindigt het uitlijnen, net als [[L]] en [[Esc]].
 
-Houd [[Alt]] ingedrukt en klik op de punt om de tussenruimte zelf in te typen, bijvoorbeeld 5 mm: de vormen komen dan zo ver uit elkaar te staan, vanaf de eerste vorm of vanaf de vorm die je eerst aanklikte; op een plaat komt de rij in het midden. Een vergrendelde vorm blijft staan, dus een tussen de buitenste vormen verhindert gelijke tussenruimte.
+Houd [[Alt]] ingedrukt en klik op de punt om de tussenruimte zelf in te typen, bijvoorbeeld 5 mm: de vormen komen dan zo ver uit elkaar te staan, vanaf de eerste vorm of vanaf de vorm die je eerst aanklikte; op een plaat komt de rij in het midden. Een vergrendelde vorm blijft staan, dus een tussen de buitenste vormen verhindert gelijke tussenruimte. Op een tablet, dat geen Alt-toets heeft, doet de schakelaar {{ui:align.sizeSwitch}} naast de stippen hetzelfde: zet je hem aan, dan blijven de stippen vierkantjes en opent de afstandsstip zijn veld, tot je hem weer uitzet.
 
 ## Spiegelen
 
@@ -188,6 +188,8 @@ Met meerdere onderdelen geselecteerd laat het eigenschappenpaneel rechts zien ho
 Om een of meer onderdelen met hetzelfde deel groter of kleiner te maken, zeg alle onderdelen van een printbestand met 20 %, gebruik je {{ui:scalePercent.title}}. Selecteer de onderdelen, klik er met rechts op en kies {{ui:scalePercent.title}}, of zoek het met [[Ctrl]]+[[K]].
 
 Onder {{ui:scalePercent.percent}} typ je de nieuwe maat als percentage van de huidige: 120 % is een vijfde groter, 50 % half zo groot. Breedte, diepte en hoogte veranderen gelijk, zodat de verhoudingen blijven. De onderkant blijft waar hij is, zodat er niets in de plaat zakt.
+
+Voor modelbouw kies je bovenaan {{ui:scalePercent.by.scale}} in plaats van {{ui:scalePercent.by.percent}}. Onder {{ui:scalePercent.scalePresets}} staan de gangbare sporen van Z (1:220) tot G (1:22,5), en bij {{ui:scalePercent.ratio}} typ je elke andere schaal, zoals 35 voor 1:35. Is het model op ware grootte gebouwd, laat dan {{ui:scalePercent.original.fullSize}} gekozen: 1:87 maakt het 87 keer kleiner. Heb je het op een willekeurige grootte gebouwd, kies dan {{ui:scalePercent.original.realSize}}, kies {{ui:scalePercent.axis.height}} of {{ui:scalePercent.axis.length}} (de langste zijde over de plaat) en typ bij {{ui:scalePercent.realSize}} hoe groot het origineel echt is, in meters (in voet bij inch-eenheden). Een boom die in werkelijkheid 16 m hoog is, wordt in H0 zo 16.000 mm / 87 = 184 mm hoog, hoe groot hij eerst ook was. Onder de velden staat de nieuwe grootte voordat je op {{ui:scalePercent.apply}} drukt. De schaal blijft ingesteld zolang de editor open is.
 
 Met meerdere onderdelen kies je hoe ze groeien:
 

@@ -72,7 +72,7 @@ Si une plaque fait partie de la sélection, plus longue dans cette direction que
 
 Sans plaque, maintenez [[Shift]] et cliquez d'abord sur un endroit libre du plateau : le plateau devient alors la forme fixe, l'espacement égal répartit les formes sur tout le plateau avec le même écart à ses bords, et les autres points les alignent sur ses bords ou son milieu. Un nouveau clic avec [[Shift]] sur le plateau libre le relâche. Un clic dans le vide sans [[Shift]] termine l'alignement, comme [[L]] et [[Esc]].
 
-Maintenez [[Alt]] et cliquez sur le point pour saisir l'écart vous-même, par exemple 5 mm : les formes s'alignent à cette distance, à partir de la première forme ou de celle cliquée en premier ; sur une plaque, la rangée vient en son milieu. Une forme verrouillée reste en place ; entre les formes extérieures, elle empêche donc l'espacement égal.
+Maintenez [[Alt]] et cliquez sur le point pour saisir l'écart vous-même, par exemple 5 mm : les formes s'alignent à cette distance, à partir de la première forme ou de celle cliquée en premier ; sur une plaque, la rangée vient en son milieu. Une forme verrouillée reste en place ; entre les formes extérieures, elle empêche donc l'espacement égal. Sur une tablette, qui n'a pas de touche Alt, l'interrupteur {{ui:align.sizeSwitch}} à côté des points fait la même chose : activé, les points restent des carrés et le point d'écart ouvre son champ, jusqu'à ce que vous le désactiviez.
 
 ## Mise en miroir
 
@@ -188,6 +188,8 @@ Avec plusieurs pièces sélectionnées, le panneau des propriétés de droite mo
 Pour agrandir ou réduire une ou plusieurs parties d'un même partage, disons toutes les parties d'un fichier d'impression de 20 %, utilisez {{ui:scalePercent.title}}. Sélectionnez les pièces, cliquez dessus avec le bouton droit et choisissez {{ui:scalePercent.title}}, ou recherchez-la avec [[Ctrl]]+[[K]].
 
 Sous {{ui:scalePercent.percent}}, vous saisissez la nouvelle taille en pourcentage de la taille actuelle : 120 % correspond à un cinquième de plus, 50 % à la moitié de la taille. La largeur, la profondeur et la hauteur changent de la même manière, donc les proportions restent. Le fond reste là où il est, donc rien ne coule dans l'assiette.
+
+Pour le modélisme, choisissez {{ui:scalePercent.by.scale}} au lieu de {{ui:scalePercent.by.percent}} en haut. {{ui:scalePercent.scalePresets}} propose les échelles courantes de Z (1:220) à G (1:22,5), et dans {{ui:scalePercent.ratio}} vous tapez toute autre échelle, par exemple 35 pour 1:35. Si le modèle est construit à la taille réelle de l'original, laissez {{ui:scalePercent.original.fullSize}} : 1:87 le rend 87 fois plus petit. Si vous l'avez construit à une taille quelconque, choisissez {{ui:scalePercent.original.realSize}}, puis {{ui:scalePercent.axis.height}} ou {{ui:scalePercent.axis.length}} (le plus long côté sur le plateau), et tapez dans {{ui:scalePercent.realSize}} la taille réelle de l'original, en mètres (en pieds avec les unités impériales). Un arbre de 16 m de haut en réalité mesure alors 16 000 mm / 87 = 184 mm en H0, quelle que soit sa taille avant. La nouvelle taille s'affiche sous les champs avant que vous appuyiez sur {{ui:scalePercent.apply}}. L'échelle reste réglée tant que l'éditeur est ouvert.
 
 Avec plusieurs parties, vous choisissez comment elles poussent :
 

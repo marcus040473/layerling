@@ -21,7 +21,7 @@
     <a href="#layerling-mcp-skill"><img alt="Drivable by AI" src="https://img.shields.io/badge/AI--drivable-MCP%20server-16c0d4"></a>
   </p>
 
-  <p><strong>English</strong> · <a href="README.de.md">Deutsch</a> · <a href="README.es.md">Español</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.sv.md">Svenska</a> · <a href="README.ar.md">العربية</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-cn.md">简体中文</a> · <a href="README.zh-tw.md">繁體中文</a></p>
+  <p><strong>English</strong> · <a href="README.de.md">Deutsch</a> · <a href="README.es.md">Español</a> · <a href="README.nl.md">Nederlands</a> · <a href="README.pl.md">Polski</a> · <a href="README.sv.md">Svenska</a> · <a href="README.ar.md">العربية</a> · <a href="README.ja.md">日本語</a> · <a href="README.zh-cn.md">简体中文</a> · <a href="README.zh-tw.md">繁體中文</a></p>
 </div>
 
 <p align="center">
@@ -46,7 +46,7 @@ layerling sits a step beyond Tinkercad towards Fusion 360: it is operated the sa
 - **Hollow, split, sketch, thread.** Hollow a body to an even wall, split it with a plane or stretch it there, draw sketches with exact lengths and angles and extrude or revolve them, and add screws, nuts and tapped holes.
 - **Patterns and wrapping.** Repeat a shape in a row, a grid of columns and rows, a circle or a spiral, or wrap a pattern or text around a cylinder.
 - **Hole patterns.** Click a flat face, or the round wall of a cylinder or tube, and spread round, square, rectangular, hexagonal or slot holes over it, in a grid or staggered, with spacing, margin and depth - vents, speaker grilles and baskets in one step. Or set a ring of screw holes along its edge, with counterbores or countersinks if you like, or repeat a shape of your own over it, rivets or a diamond plate.
-- **Scale by percent.** Make one or many parts larger or smaller by a percentage - together, so the layout grows with them, or each in place.
+- **Scale by percent.** Make one or many parts larger or smaller by a percentage - together, so the layout grows with them, or each in place. Or bring them to a model scale such as 1:87 for H0, from the original's real size if you like (a tree 16 m tall becomes 184 mm).
 - **Match sizes.** Hold Alt on an align dot and the parts stretch instead of moving: to the side of another part, or to its width, length or height - to swap a box for a cylinder of the same size, for instance.
 - **Equal gaps.** Spread parts of different sizes so the space between them is the same everywhere - between the outer two, on a board with the same gap at its edges, or row by row, as for a peg puzzle; or type the gap.
 - **Measure and look inside.** Tape measure, rulers, a section view that cuts the model open, and a history slider to look back at earlier states.
@@ -360,6 +360,9 @@ there.
 under a free name, picture and all – nothing is repacked, so the copy carries exactly the geometry of the original. In
 your browser the copy becomes a design of its own, with the same shapes, the same history and its own preview picture,
 and it belongs to nobody on the server.
+
+**Open a copy** in the same menu does the same and opens the copy right away, for trying something out: the original
+stays as it was, whatever you do in the copy.
 
 A design that lives on the server saves itself back there, five seconds after the last change and when you leave the
 editor. Thumbnails land beside the files in `.thumbnails`. Designs that are only in your browser stay there, untouched.

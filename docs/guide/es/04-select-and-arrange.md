@@ -78,7 +78,7 @@ Si entre las formas seleccionadas hay una base (una forma sobre la que están la
 
 Sin base, mantén [[Shift]] y haz clic primero en un sitio libre de la placa: la placa pasa a ser la forma fija, el espaciado igual reparte las formas por toda la placa con la misma separación a sus bordes, y los demás puntos las alinean con sus bordes o su centro. Otro clic con [[Shift]] en la placa libre la suelta. Un clic en un lugar vacío sin [[Shift]] termina la alineación, igual que [[L]] y [[Esc]].
 
-Mantén [[Alt]] y haz clic en el punto para escribir tú la separación, por ejemplo 5 mm: las formas se alinean a esa distancia, desde la primera forma o desde la que pulsaste primero; sobre una base, la fila queda en su centro. Una forma bloqueada no se mueve, así que una entre las formas exteriores impide el espaciado igual.
+Mantén [[Alt]] y haz clic en el punto para escribir tú la separación, por ejemplo 5 mm: las formas se alinean a esa distancia, desde la primera forma o desde la que pulsaste primero; sobre una base, la fila queda en su centro. Una forma bloqueada no se mueve, así que una entre las formas exteriores impide el espaciado igual. En una tableta, que no tiene tecla Alt, el interruptor {{ui:align.sizeSwitch}} junto a los puntos hace lo mismo: al activarlo, los puntos siguen siendo cuadrados y el punto de separación abre su campo, hasta que lo desactives.
 
 ## Reflejar
 
@@ -192,6 +192,8 @@ Con varias piezas seleccionadas, el panel de propiedades de la derecha muestra c
 Para hacer una o varias piezas más grandes o más pequeñas en la misma proporción, por ejemplo todas las piezas de un archivo de impresión un 20 %, usa {{ui:scalePercent.title}}. Selecciona las piezas, haz clic derecho sobre ellas y elige {{ui:scalePercent.title}}, o búscalo con [[Ctrl]]+[[K]].
 
 En {{ui:scalePercent.percent}} escribes el tamaño nuevo como porcentaje del actual: 120 % es una quinta parte más grande y 50 %, la mitad. La anchura, la profundidad y la altura cambian igual, así que se mantienen las proporciones. La base se queda donde está, así que nada se hunde en la placa.
+
+Para modelismo, elige arriba {{ui:scalePercent.by.scale}} en lugar de {{ui:scalePercent.by.percent}}. {{ui:scalePercent.scalePresets}} ofrece las escalas habituales desde Z (1:220) hasta G (1:22,5), y en {{ui:scalePercent.ratio}} escribes cualquier otra, como 35 para 1:35. Si el modelo está hecho al tamaño real del original, deja {{ui:scalePercent.original.fullSize}}: 1:87 lo hace 87 veces más pequeño. Si lo hiciste a cualquier otro tamaño, elige {{ui:scalePercent.original.realSize}}, luego {{ui:scalePercent.axis.height}} o {{ui:scalePercent.axis.length}} (el lado más largo sobre la placa) y escribe en {{ui:scalePercent.realSize}} cuánto mide de verdad el original, en metros (en pies con unidades imperiales). Un árbol que en realidad mide 16 m queda así en H0 con 16 000 mm / 87 = 184 mm, tuviera el tamaño que tuviera antes. El nuevo tamaño aparece bajo los campos antes de pulsar {{ui:scalePercent.apply}}. La escala se mantiene mientras el editor esté abierto.
 
 Con varias piezas, eliges cómo crecen:
 

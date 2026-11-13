@@ -78,7 +78,7 @@ If a board (a base the others stand on, such as a flat box, not an SBC board) is
 
 Without a board, hold [[Shift]] and click an empty spot of the plate first: the plate is then the fixed shape, equal gaps spread the shapes over the whole plate with the same gap to its edges, and the other dots line them up on its edges or its middle. Another click with [[Shift]] on the empty plate lets it go. A click on empty space without [[Shift]] ends Align, as [[L]] and [[Esc]] do.
 
-Hold [[Alt]] and click the dot to type the gap yourself, say 5 mm: the shapes line up that far apart, starting at the first shape or at the one you clicked first; on a board the row comes to its middle. A locked shape stays where it is, so one between the outer shapes stops the equal gaps.
+Hold [[Alt]] and click the dot to type the gap yourself, say 5 mm: the shapes line up that far apart, starting at the first shape or at the one you clicked first; on a board the row comes to its middle. A locked shape stays where it is, so one between the outer shapes stops the equal gaps. On a tablet, which has no Alt key, the switch {{ui:align.sizeSwitch}} beside the dots does the same: switch it on and the dots stay squares and the gap dot opens its field, until you switch it off.
 
 ## Mirroring
 
@@ -192,6 +192,8 @@ With several parts selected, the properties panel on the right shows how many th
 To make one or several parts larger or smaller by the same share, say all the parts of a print file by 20 %, use {{ui:scalePercent.title}}. Select the parts, right-click them and choose {{ui:scalePercent.title}}, or search for it with [[Ctrl]]+[[K]].
 
 Under {{ui:scalePercent.percent}} you type the new size as a percentage of the current one: 120 % is a fifth larger, 50 % half the size. Width, depth and height change alike, so the proportions stay. The bottom stays where it is, so nothing sinks into the plate.
+
+For model making, choose {{ui:scalePercent.by.scale}} instead of {{ui:scalePercent.by.percent}} at the top. {{ui:scalePercent.scalePresets}} offers the usual gauges from Z (1:220) to G (1:22.5), and in {{ui:scalePercent.ratio}} you type any other scale, such as 35 for 1:35. If the model is built at the original's real size, leave {{ui:scalePercent.original.fullSize}} chosen: 1:87 makes it 87 times smaller. If you built it at some other size, choose {{ui:scalePercent.original.realSize}}, pick {{ui:scalePercent.axis.height}} or {{ui:scalePercent.axis.length}} (the longest side across the plate) and type in {{ui:scalePercent.realSize}} how big the original really is, in metres (in feet with imperial units). A tree that is 16 m tall in real life then becomes 16,000 mm / 87 = 184 mm tall in H0, whatever size it had before. The new size shows under the fields before you press {{ui:scalePercent.apply}}. The scale stays set while the editor is open.
 
 With several parts you choose how they grow:
 

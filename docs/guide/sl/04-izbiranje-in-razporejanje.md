@@ -72,7 +72,7 @@ Ob srednji točki vsake črte stoji širša točka s črtico na vsaki strani. Ra
 
 Brez plošče najprej drži [[Shift]] in klikni prazno mesto podlage: podlaga je nato fiksna oblika, enaki razmiki razporedijo oblike po vsej podlagi z enakim razmikom do robov, druge točke pa jih poravnajo na njene robove ali sredino. Ponoven klik s [[Shift]] na prazno podlago jo izpusti. Klik na prazno mesto brez [[Shift]] konča poravnavo, tako kot [[L]] in [[Esc]].
 
-Drži [[Alt]] in klikni točko, da sam vpišeš razmik, na primer 5 mm: oblike se postavijo tako daleč narazen, od prve oblike ali od tiste, ki si jo kliknil najprej; na plošči pride vrsta na sredino. Zaklenjena oblika ostane na mestu, zato ena med zunanjima oblikama prepreči enake razmike.
+Drži [[Alt]] in klikni točko, da sam vpišeš razmik, na primer 5 mm: oblike se postavijo tako daleč narazen, od prve oblike ali od tiste, ki si jo kliknil najprej; na plošči pride vrsta na sredino. Zaklenjena oblika ostane na mestu, zato ena med zunanjima oblikama prepreči enake razmike. Na tablici, ki nima tipke Alt, isto naredi stikalo {{ui:align.sizeSwitch}} ob pikah: ko ga vklopite, pike ostanejo kvadratki in pika razmika odpre svoje polje, dokler stikala ne izklopite.
 
 ## Zrcaljenje
 
@@ -188,6 +188,8 @@ Umetna inteligenca lahko isto naredi prek vmesnika MCP, z `layerling_push_face` 
 Če naj se en del ali več delov poveča ali zmanjša za isti delež, na primer vsi deli neke tiskalne datoteke za 20 %, uporabi {{ui:scalePercent.title}}. Izberi dele, klikni nanje z desnim gumbom in izberi {{ui:scalePercent.title}}, ali ga poišči s [[Ctrl]]+[[K]].
 
 Pri {{ui:scalePercent.percent}} vpišeš novo velikost v odstotkih sedanje: 120 % je petino večje, 50 % pol manjše. Širina, globina in višina se pri tem spremenijo enako, razmerja torej ostanejo. Spodnja stran ostane, kjer je, tako da nič ne zdrsne v ploščo.
+
+Za modelarstvo zgoraj izberi {{ui:scalePercent.by.scale}} namesto {{ui:scalePercent.by.percent}}. {{ui:scalePercent.scalePresets}} ponuja običajne velikosti od Z (1:220) do G (1:22,5), v {{ui:scalePercent.ratio}} pa vpišeš katero koli drugo merilo, npr. 35 za 1:35. Če je model narejen v pravi velikosti izvirnika, pusti izbrano {{ui:scalePercent.original.fullSize}}: 1:87 ga pomanjša 87-krat. Če si ga naredil v poljubni velikosti, izberi {{ui:scalePercent.original.realSize}}, nato {{ui:scalePercent.axis.height}} ali {{ui:scalePercent.axis.length}} (najdaljša stranica na plošči) in v {{ui:scalePercent.realSize}} vpiši, kako velik je izvirnik v resnici, v metrih (pri palčnih enotah v čevljih). Drevo, ki je v resnici visoko 16 m, je tako v H0 visoko 16.000 mm / 87 = 184 mm, ne glede na to, kako veliko je bilo prej. Nova velikost je vidna pod polji, preden pritisneš {{ui:scalePercent.apply}}. Merilo ostane nastavljeno, dokler je urejevalnik odprt.
 
 Pri več delih izbereš, kako rastejo:
 

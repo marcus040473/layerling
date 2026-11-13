@@ -80,7 +80,7 @@ Er der blandt de valgte figurer en plade (en grundform, som de andre står på, 
 
 Uden en plade holder du [[Shift]] nede og klikker først på et tomt sted på byggepladen: så er den den faste figur, lige store mellemrum fordeler figurerne over hele pladen med samme mellemrum til kanterne, og de andre punkter justerer dem efter dens kanter eller midte. Et nyt klik med [[Shift]] på den tomme plade slipper den igen. Et klik på et tomt sted uden [[Shift]] afslutter justeringen, ligesom [[L]] og [[Esc]].
 
-Hold [[Alt]] nede og klik på punktet for selv at indtaste mellemrummet, fx 5 mm: figurerne stilles så langt fra hinanden, fra den første figur eller fra den, du klikkede først; på en plade kommer rækken i midten. En låst figur bliver stående, så en mellem de yderste figurer forhindrer lige store mellemrum.
+Hold [[Alt]] nede og klik på punktet for selv at indtaste mellemrummet, fx 5 mm: figurerne stilles så langt fra hinanden, fra den første figur eller fra den, du klikkede først; på en plade kommer rækken i midten. En låst figur bliver stående, så en mellem de yderste figurer forhindrer lige store mellemrum. På en tablet, som ikke har nogen Alt-tast, gør kontakten {{ui:align.sizeSwitch}} ved siden af prikkerne det samme: Tænder du den, forbliver prikkerne firkanter, og afstandsprikken åbner sit felt, indtil du slukker den igen.
 
 ## Spejling
 
@@ -195,6 +195,8 @@ Med flere dele valgt viser egenskabspanelet til højre hvor mange der er og tilb
 For at gøre en eller flere dele større eller mindre med den samme andel, for eksempel alle dele i en printfil med 20 %, brug {{ui:scalePercent.title}}. Vælg delene, højreklik på dem og vælg {{ui:scalePercent.title}}, eller søg efter den med [[Ctrl]]+[[K]].
 
 Under {{ui:scalePercent.percent}} taster du den nye størrelse som en procent af den aktuelle: 120 % er en femtedel større, 50 % halv størrelse. Bredde, dybde og højde ændres ens, så proportionerne bevares. Bunden bliver hvor den er, så intet synker ned i pladen.
+
+Til modelbygning vælger du {{ui:scalePercent.by.scale}} i stedet for {{ui:scalePercent.by.percent}} øverst. {{ui:scalePercent.scalePresets}} har de almindelige skalaer fra Z (1:220) til G (1:22,5), og i {{ui:scalePercent.ratio}} taster du enhver anden skala, fx 35 for 1:35. Er modellen bygget i forbilledets virkelige størrelse, så lad {{ui:scalePercent.original.fullSize}} være valgt: 1:87 gør den 87 gange mindre. Har du bygget den i en vilkårlig størrelse, vælg {{ui:scalePercent.original.realSize}}, så {{ui:scalePercent.axis.height}} eller {{ui:scalePercent.axis.length}} (den længste side på pladen), og tast i {{ui:scalePercent.realSize}}, hvor stort forbilledet virkelig er, i meter (i fod med tommeenheder). Et træ, der i virkeligheden er 16 m højt, bliver så 16.000 mm / 87 = 184 mm højt i H0, uanset hvor stort det var før. Den nye størrelse står under felterne, før du trykker på {{ui:scalePercent.apply}}. Skalaen bliver stående, så længe editoren er åben.
 
 Med flere dele vælger du hvordan de vokser:
 

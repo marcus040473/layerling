@@ -78,7 +78,7 @@ Finns en basplatta (ett underlag de andra står på, som en platt låda, inte et
 
 Utan en basplatta håller du [[Shift]] och klickar först på en tom plats på byggplattan: då fungerar plattan som den fasta formen, lika mellanrum sprider ut formerna över hela plattan med samma marginal till dess kanter, och de andra prickarna riktar in dem mot plattans kanter eller mitt. Ett nytt [[Shift]]-klick på den tomma plattan släpper den. Ett klick på tom yta utan [[Shift]] avslutar Rikta in, precis som [[L]] och [[Esc]].
 
-Håll [[Alt]] nere och klicka på punkten för att själv skriva in mellanrummet, till exempel 5 mm: då radar formerna upp sig med just det avståndet från den första formen eller från den du klickade på först; på en underlagsplatta centreras raden på den. En låst form stannar där den är, så en låst del mellan de yttre formerna hindrar utjämning.
+Håll [[Alt]] nere och klicka på punkten för att själv skriva in mellanrummet, till exempel 5 mm: då radar formerna upp sig med just det avståndet från den första formen eller från den du klickade på först; på en underlagsplatta centreras raden på den. En låst form stannar där den är, så en låst del mellan de yttre formerna hindrar utjämning. På en surfplatta, som saknar Alt-tangent, gör reglaget {{ui:align.sizeSwitch}} bredvid prickarna samma sak: Slår du på det förblir prickarna fyrkanter och avståndsprickan öppnar sitt fält, tills du slår av det.
 
 ## Spegla
 
@@ -192,6 +192,8 @@ När flera delar är markerade visar egenskapspanelen till höger hur många de 
 För att göra en eller flera delar större eller mindre i samma proportion, säg alla delar i en utskriftsfil med 20 %, använder du {{ui:scalePercent.title}}. Markera delarna, högerklicka och välj {{ui:scalePercent.title}}, eller sök efter den med [[Ctrl]]+[[K]].
 
 Under {{ui:scalePercent.percent}} skriver du den nya storleken i procent av den nuvarande: 120 % är en femtedel större, 50 % halva storleken. Bredd, djup och höjd ändras lika mycket så proportionerna består. Undersidan ligger kvar där den stod så att inget sjunker ned i plattan.
+
+För modellbygge väljer du {{ui:scalePercent.by.scale}} i stället för {{ui:scalePercent.by.percent}} högst upp. {{ui:scalePercent.scalePresets}} har de vanliga skalorna från Z (1:220) till G (1:22,5), och i {{ui:scalePercent.ratio}} skriver du vilken annan skala som helst, till exempel 35 för 1:35. Är modellen byggd i förebildens verkliga storlek, låt {{ui:scalePercent.original.fullSize}} vara valt: 1:87 gör den 87 gånger mindre. Har du byggt den i någon annan storlek, välj {{ui:scalePercent.original.realSize}}, sedan {{ui:scalePercent.axis.height}} eller {{ui:scalePercent.axis.length}} (den längsta sidan på plattan) och ange i {{ui:scalePercent.realSize}} hur stor förebilden verkligen är, i meter (i fot med tumenheter). Ett träd som i verkligheten är 16 m högt blir då 16 000 mm / 87 = 184 mm högt i H0, oavsett hur stort det var innan. Den nya storleken visas under fälten innan du trycker på {{ui:scalePercent.apply}}. Skalan ligger kvar så länge redigeraren är öppen.
 
 Med flera delar väljer du hur de ska växa:
 

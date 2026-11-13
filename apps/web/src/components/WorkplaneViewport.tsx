@@ -1,7 +1,7 @@
 "use client";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import type { TextBlockOptions } from "@/lib/textBlock";
-import type { SurfaceTextureFace, SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import type { SurfaceTextureFace, SurfaceTextureRegion, SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { markEscapeHandled } from "@/lib/escapeHandled";
 import { ArrowDownToLine, Check, ChevronLeft, Crosshair, Cuboid, Download, Eye, EyeOff, FlipHorizontal, GripVertical, Home, Layers, Minus, MousePointer2, PanelsTopLeft, ScanEye, PencilLine, PictureInPicture2, Plus, Rotate3d, RotateCcw, Ruler, RulerDimensionLine, Slice, Spline, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Dispatch, type DragEvent, type MutableRefObject, type PointerEvent as ReactPointerEvent, type ReactNode, type SetStateAction, type WheelEvent as ReactWheelEvent } from "react";
@@ -118,7 +118,7 @@ import { aimPickRay, firstShapeHit, paintLassoInView, pickImagePoint, pickLayFla
 import { fastEdgesGeometry } from "@/lib/fastEdgesGeometry";
 import { RENDER_LAYER_HELPERS, type PointCardOffset, type ThreeState, type MoveDimensionSession, type NoteOverlayState, type TapePoint, type TapeAttachment, type TapeEdgeAttachment, type TapeModel, type TapeOverlayState, type TapeCandidate, type DragItem, quaternionForShape, projectToScreen, syncMoveDimensionWorldLines, tapeShapeDimensions, tapePointWorld, tapeEdgeWorldPoints, tapeSegmentWorldPoints, tapeLengthMoverOf, tapeLengthRefusalText, syncTapeOverlay, tapeSegmentLengths, syncNoteOverlay, NoteOverlay, TapeOverlay, type RulerDimensionOverlayItem, type RulerDimensionOverlayState, syncRulerDimensionOverlay, RulerDimensionOverlay, type CornerRulerInstance, type CornerRulerOverlayState, syncCornerRulerToolOverlay, CornerRulerToolOverlay, syncOriginDimensionWorldLines, shapeCenter, shapeLocalExtents, projectShapeExtent, projectShapesExtent, type OriginDimensionFrame, formatMeasure, findShapeObject, releaseSharedShapeMaterials, disposeChildren, disposeObject } from "@/components/workplane/ViewportOverlays";
 import { MIN_SHAPE_SIZE, RENDER_LAYER_PREVIEWS, overhangUniforms, setEdgeLineStyle, setStrongHoles, setRulerInchScale, MODIFIER_EDGE_DEPTH_PULL, clamp, selectionFrameForShapes, refreshFrozenObjectMatrix, updateShapeObjectTransform, applySectionClipping, rebuildShapes, rebuildModifierEdges, setModifierEdgeHover, rebuildSelectionHelpers, cadFacePickLayerMesh, syncCadFaceLayer, syncBentTubeSegment, TRANSPARENT_SOLID_OPACITY, createShapeObject, onGroupDisplayReady } from "./workplane/viewportShapeObjects";
-import { movePivotToDepthUnder, WorkspaceSettings, createThreeScene, rebuildWorkplane, syncWorkplaneHoverPreview, updateSectionPlaneHelper, syncSplitPlane, type SplitConnectorMarks } from "./workplane/viewportScene";
+import { movePivotToDepthUnder, WorkspaceSettings, createThreeScene, rebuildWorkplane, showWorkplanePlates, syncWorkplaneHoverPreview, updateSectionPlaneHelper, syncSplitPlane, type SplitConnectorMarks } from "./workplane/viewportScene";
 import { pointInsideOutline } from "@/lib/screenHull";
 import { isTypingTarget } from "@/lib/editorKeyTargets";
 import { liftHandleOffset, screenAngle, framePoint, selectionFrameCorners, workplaneFootprintY, syncTransformOverlay, syncAlignOverlay, syncMirrorOverlay, syncLayFlatHover } from "./workplane/viewportTransformOverlays";
@@ -250,7 +250,11 @@ type WorkplaneViewportProps = {
   onSurfaceTextureOpenChange?: (open: boolean) => void;
   surfaceFacePicking?: boolean;
   surfacePickedFaces?: SurfaceTextureFace[] | null;
-  onSurfaceFacePick?: (faces: SurfaceTextureFace[] | null, edgeAngle: number) => void;
+  surfaceFacesShown?: boolean;
+  onSurfaceFacePick?: (faces: SurfaceTextureFace[] | null, edgeAngle: number, review?: boolean) => void;
+  /** The region drawn last for the texture (see surfaceRegionDrawing), and starting or stopping the drawing. */
+  surfaceDrawnRegion?: { region: SurfaceTextureRegion } | null;
+  onSurfaceRegionDraw?: (drawing: boolean) => void;
   /** Lays the selected vase's accessories out beside it. */
   onVaseAccessories?: () => void;
   /** Lays the selected Swallowtail baseplate's keys out in front of it (#1061). */
@@ -321,6 +325,12 @@ type WorkplaneViewportProps = {
   onPaintPick?: (pick: LayFlatPick | null) => void;
   /** A lasso drawn for the paint tool: the view it was drawn in, and the shape in that view (see PaintStroke.outline). */
   onPaintLasso?: (view: PaintLassoView, outline: Array<[number, number]>) => void;
+  /**
+   * Drawing a region for the surface texture (Discussion #1579): pressed on a face, a lasso drawn with the button held,
+   * as the paint tool's; it comes back with where the press landed (the face's point and normal) and the view.
+   */
+  surfaceRegionDrawing?: boolean;
+  onSurfaceRegionLasso?: (start: LayFlatPick, view: PaintLassoView, outline: Array<[number, number]>) => void;
   /** "Delete face" waiting for clicks on faces of the prepared body; a click toggles the face. */
   cadFacePick?: CadFacePick | null;
   onCadFacePick?: (faceId: number) => void;
@@ -1638,7 +1648,10 @@ export function WorkplaneViewport({
   onSurfaceTextureOpenChange,
   surfaceFacePicking,
   surfacePickedFaces,
+  surfaceFacesShown,
   onSurfaceFacePick,
+  surfaceDrawnRegion,
+  onSurfaceRegionDraw,
   onVaseAccessories,
   onGridfinityKeys,
   onMakeBoxLid,
@@ -1679,6 +1692,8 @@ export function WorkplaneViewport({
   paintPick = null,
   onPaintPick,
   onPaintLasso,
+  surfaceRegionDrawing = false,
+  onSurfaceRegionLasso,
   cadFacePick = null,
   onCadFacePick,
   onNoteAdd,
@@ -1796,6 +1811,11 @@ export function WorkplaneViewport({
   }, []);
   const workplaneLayerHiddenRef = useRef(workplaneLayerHidden);
   workplaneLayerHiddenRef.current = workplaneLayerHidden;
+  // With a workplane on a face showing, the switch puts away only the build plate (Discussion #1714) and says so.
+  const faceWorkplaneShown = !placementWorkplaneIsBase(placementWorkplane) && !workplaneHidden;
+  const platesSwitchLabel = faceWorkplaneShown
+    ? t(workplaneLayerHidden ? "camera.showBuildPlate" : "camera.hideBuildPlate")
+    : t(workplaneLayerHidden ? "camera.showWorkplane" : "camera.hideWorkplane");
   // Back from the sketch the measurements come from the editor's memory; on opening the design, from what the design keeps (#881).
   const [tapeModel, setTapeModel] = useState<TapeModel>(() => toolMemory?.current.tape ?? {
     ...(readTape(projectId) ?? { points: [], segments: [] }),
@@ -2080,17 +2100,22 @@ export function WorkplaneViewport({
   onPaintPickRef.current = onPaintPick;
   const onPaintLassoRef = useRef(onPaintLasso);
   onPaintLassoRef.current = onPaintLasso;
-  // A lasso being drawn for the paint tool: its points in the view, from the press to where the pointer is.
-  const paintLassoRef = useRef<{ pointerId: number; points: Array<[number, number]> } | null>(null);
+  const surfaceRegionDrawingRef = useRef(surfaceRegionDrawing);
+  surfaceRegionDrawingRef.current = surfaceRegionDrawing;
+  const onSurfaceRegionLassoRef = useRef(onSurfaceRegionLasso);
+  onSurfaceRegionLassoRef.current = onSurfaceRegionLasso;
+  // A lasso being drawn for the paint tool: its points in the view, from the press to where the pointer is. One drawn for
+  // a surface texture's region keeps where the press landed on the face (`region`).
+  const paintLassoRef = useRef<{ pointerId: number; points: Array<[number, number]>; region?: LayFlatPick } | null>(null);
   const [paintLassoPoints, setPaintLassoPoints] = useState<string | null>(null);
   // The tool closed or turned to another mode: a lasso half drawn goes with it.
   useEffect(() => {
-    if (paintPick?.mode === "lasso" || !paintLassoRef.current) return;
+    if (paintPick?.mode === "lasso" || surfaceRegionDrawing || !paintLassoRef.current) return;
     paintLassoRef.current = null;
     setPaintLassoPoints(null);
     const state = threeRef.current;
     if (state) state.controls.enabled = true;
-  }, [paintPick?.mode]);
+  }, [paintPick?.mode, surfaceRegionDrawing]);
   const cadFacePickRef = useRef(cadFacePick);
   cadFacePickRef.current = cadFacePick;
   const cadFaceHoverRef = useRef<number | null>(null);
@@ -3148,7 +3173,7 @@ export function WorkplaneViewport({
   useEffect(() => {
     const state = threeRef.current;
     if (!state) return;
-    state.workplaneLayer.visible = !workplaneLayerHidden;
+    showWorkplanePlates(state.workplaneLayer, !workplaneLayerHidden);
     state.needsRender = true;
   }, [workplaneLayerHidden]);
 
@@ -3187,7 +3212,7 @@ export function WorkplaneViewport({
     state.palette = themePaletteRef.current;
     threeRef.current = state;
     rebuildWorkplane(state, workspaceRef.current, resolvedThemeRef.current, drawnWorkplane(), projectNameRef.current, (index) => plateLabel(workspaceRef.current, index));
-    state.workplaneLayer.visible = !workplaneLayerHiddenRef.current;
+    showWorkplanePlates(state.workplaneLayer, !workplaneLayerHiddenRef.current);
     window.layerlingCaptureCanvas = () => {
       state.camera.updateMatrixWorld();
       renderFrame(state);
@@ -6893,6 +6918,19 @@ export function WorkplaneViewport({
         return;
       }
 
+      if (surfaceRegionDrawingRef.current) {
+        // Pressed on a body, the region is drawn round the place with the button held; beside it, the view turns.
+        const start = pickLayFlatFace(state, event.clientX, event.clientY);
+        if (!start) return;
+        event.preventDefault();
+        capturePointer(event.currentTarget, event.pointerId);
+        paintLassoRef.current = { pointerId: event.pointerId, points: [[event.clientX - rect.left, event.clientY - rect.top]], region: start };
+        setPaintLassoPoints(null);
+        state.controls.enabled = false;
+        onInteractionActiveChange?.(true);
+        return;
+      }
+
       if (paintPickRef.current) {
         event.preventDefault();
         const paint = paintPickRef.current;
@@ -7745,7 +7783,8 @@ export function WorkplaneViewport({
           const ys = lasso.points.map(([, y]) => y);
           if (lasso.points.length >= 3 && Math.max(...xs) - Math.min(...xs) + Math.max(...ys) - Math.min(...ys) > 6) {
             const drawn = paintLassoInView(state, lasso.points);
-            if (drawn) onPaintLassoRef.current?.(drawn.view, drawn.outline);
+            if (drawn && lasso.region) onSurfaceRegionLassoRef.current?.(lasso.region, drawn.view, drawn.outline);
+            else if (drawn) onPaintLassoRef.current?.(drawn.view, drawn.outline);
           }
         }
         onInteractionActiveChange?.(false);
@@ -8677,8 +8716,8 @@ export function WorkplaneViewport({
             <div className="workplane-display-control-group">
               <button
                 className={workplaneLayerHidden ? "active" : ""}
-                aria-label={workplaneLayerHidden ? t("camera.showWorkplane") : t("camera.hideWorkplane")}
-                title={workplaneLayerHidden ? t("camera.showWorkplane") : t("camera.hideWorkplane")}
+                aria-label={platesSwitchLabel}
+                title={platesSwitchLabel}
                 aria-pressed={workplaneLayerHidden}
                 onClick={() => setWorkplaneLayerHidden((current) => !current)}
               >
@@ -9166,7 +9205,7 @@ export function WorkplaneViewport({
         )}
       </div>
 
-      <section className={`workplane-wrap ${noteMode ? "note-mode" : ""} ${workplaneMode ? "placing-workplane" : ""} ${splitActive ? "split-mode" : ""} ${splitHandleState ? `split-handle-${splitHandleState}` : ""} ${splitSurfacePick ? "split-picking" : ""} ${splitSurfacePick && splitPickOverFace ? "split-pick-over-face" : ""} ${cruiseAsset || carryIds?.length ? "cruising" : ""} ${tapeMode ? "tape-mode" : ""} ${tapeDeleteMode ? "tape-delete-mode" : ""} ${tapeMoveMode ? "tape-move-mode" : ""} ${cornerRulerMode ? "corner-ruler-mode" : ""} ${protractorOpen ? "protractor-mode" : ""} ${pivotPickMode || layFlatPickMode || mateFacePick || matePointPick?.picking || cadFacePick || paintPick ? "pivot-pick-mode" : ""} ${modifierActive ? "modifier-edge-pick" : ""} ${sectionMeasureMode && sectionSettings.enabled ? "section-measure-mode" : ""} ${workspace.dimensionAxisColors ? "dimension-axis-colors" : ""}`} aria-label={t("aria.workplane")}>
+      <section className={`workplane-wrap ${noteMode ? "note-mode" : ""} ${workplaneMode ? "placing-workplane" : ""} ${splitActive ? "split-mode" : ""} ${splitHandleState ? `split-handle-${splitHandleState}` : ""} ${splitSurfacePick ? "split-picking" : ""} ${splitSurfacePick && splitPickOverFace ? "split-pick-over-face" : ""} ${cruiseAsset || carryIds?.length ? "cruising" : ""} ${tapeMode ? "tape-mode" : ""} ${tapeDeleteMode ? "tape-delete-mode" : ""} ${tapeMoveMode ? "tape-move-mode" : ""} ${cornerRulerMode ? "corner-ruler-mode" : ""} ${protractorOpen ? "protractor-mode" : ""} ${pivotPickMode || layFlatPickMode || mateFacePick || matePointPick?.picking || cadFacePick || paintPick || surfaceRegionDrawing ? "pivot-pick-mode" : ""} ${modifierActive ? "modifier-edge-pick" : ""} ${sectionMeasureMode && sectionSettings.enabled ? "section-measure-mode" : ""} ${workspace.dimensionAxisColors ? "dimension-axis-colors" : ""}`} aria-label={t("aria.workplane")}>
         <div className="workplane-plane">
           <div
             className="three-workplane-host"
@@ -9185,7 +9224,7 @@ export function WorkplaneViewport({
           {!workplaneMode && !splitActive ? <SelectionCounter count={selectedIds.length} hostRef={hostRef} /> : null}
           {!workplaneMode && !splitActive && !pickOnly ? plateBar : null}
           {!workplaneMode && !splitActive && marqueeRect ? <div className={marqueeTouching ? "selection-marquee touching" : "selection-marquee"} style={marqueeRect} /> : null}
-          {paintPick && paintLassoPoints ? (
+          {(paintPick || surfaceRegionDrawing) && paintLassoPoints ? (
             <svg className="paint-lasso-overlay" aria-hidden="true">
               <polygon points={paintLassoPoints} />
             </svg>
@@ -9200,7 +9239,7 @@ export function WorkplaneViewport({
           {!workplaneMode && !splitActive && originDimensionsEnabled && !dimensionsHidden && originDimensionOverlay ? (
             <OriginDimensionOverlay overlay={originDimensionOverlay} />
           ) : null}
-          {!workplaneMode && !splitActive && !pivotPickMode && !layFlatPickMode && !mateFacePick && !matePointPick?.picking && !cadFacePick && !paintPick && transformOverlay && !alignMode && !mirrorMode && !tapeMode && !tapeDeleteMode && !tapeMoveMode && !modifierActive ? (
+          {!workplaneMode && !splitActive && !pivotPickMode && !layFlatPickMode && !mateFacePick && !matePointPick?.picking && !cadFacePick && !paintPick && !surfaceRegionDrawing && transformOverlay && !alignMode && !mirrorMode && !tapeMode && !tapeDeleteMode && !tapeMoveMode && !modifierActive ? (
             <TransformOverlay
               // Q leaves out what shows by itself; a handle pointed at still shows its size.
               box={dimensionsHidden ? { ...transformOverlay, alwaysVisibleDimensionKeys: [] } : transformOverlay}
@@ -9437,7 +9476,11 @@ export function WorkplaneViewport({
           onSurfaceTextureOpenChange={onSurfaceTextureOpenChange}
           surfaceFacePicking={surfaceFacePicking}
           surfacePickedFaces={surfacePickedFaces}
+          surfaceFacesShown={surfaceFacesShown}
           onSurfaceFacePick={onSurfaceFacePick}
+          surfaceRegionDrawing={surfaceRegionDrawing}
+          surfaceDrawnRegion={surfaceDrawnRegion}
+          onSurfaceRegionDraw={onSurfaceRegionDraw}
           onVaseAccessories={onVaseAccessories}
           onGridfinityKeys={onGridfinityKeys}
           onMakeBoxLid={onMakeBoxLid}

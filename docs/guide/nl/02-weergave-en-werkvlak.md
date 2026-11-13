@@ -44,7 +44,7 @@ Aan de linkerrand staat een smalle balk. Van boven naar beneden:
 - {{ui:camera.orthographic}} schakelt naar een platte weergave waarin evenwijdige randen evenwijdig blijven. Voor meten en randen uitlijnen is dat vaak prettiger dan de perspectiefweergave. [[O]] schakelt heen en weer, en een tweede klik zet het terug.
 - {{ui:camera.secondView}} opent een tweede weergave van het ontwerp in een eigen venster, zie hieronder. Een tweede klik sluit het.
 - {{ui:camera.showScrollbars}} zet een schuifbalk onderaan de weergave en een langs de rechterrand. Sleep een balk om de weergave vloeiend te verschuiven, klik op een pijl aan het eind om een klein stukje te schuiven (ingedrukt houden gaat door), of klik naast de balk om bijna een hele weergave verder te gaan. Er draait niets, en anders dan de pijltoetsen werken de balken ook terwijl een onderdeel geselecteerd is - handig van dichtbij bij kleine details. Een tweede klik verbergt ze; {{ui:workspace.startWithScrollbars}} in de instellingen bepaalt of een ontwerp ermee opent. Deze browser onthoudt de keuze bovendien.
-- {{ui:camera.hideWorkplane}} (het oog boven een raster) verbergt de plaat met het raster, zodat je een ontwerp van onderen kunt bekijken. Alleen de weergave verandert: nieuwe vormen komen nog steeds op het werkvlak terecht. Een tweede klik toont de plaat weer.
+- {{ui:camera.hideWorkplane}} (het oog boven een raster) verbergt de plaat met het raster, zodat je een ontwerp van onderen kunt bekijken. Alleen de weergave verandert: nieuwe vormen komen nog steeds op het werkvlak terecht. Een tweede klik toont de plaat weer. Met een werkvlak op een vlak heet hij {{ui:camera.hideBuildPlate}} en verbergt hij alleen de bouwplaat: het werkvlak op het vlak blijft staan, dat heeft een eigen oog, {{ui:camera.hideFaceWorkplane}}.
 - {{ui:camera.placeWorkplane}}, het meetlint en de winkelhaak zijn gereedschappen op zich, die hieronder en in [Meten en notities](chapter:meten-en-notities) aan bod komen.
 
 Het pijltje helemaal bovenaan de balk verbergt hem als hij in de weg zit.
@@ -158,7 +158,7 @@ De schetsweergave heeft eigen kleuren: {{ui:workspace.sketchBackground}} voor he
 
 ### Weergave: aspijlen en randlijnen
 
-{{ui:workspace.showAxes}} (standaard aan) tekent drie pijlen in de linkerachterhoek van de plaat: **X** in rood naar rechts, **Y** in groen naar achteren en **Z** in blauw omhoog, zoals de positievelden tellen. Dat is de rechterhandregel die ook Tinkercad, CAD-programma's en de slicers gebruiken. Met het werkvlak op een vlak volgen ze dat. Zet ze hier uit als ze je in de weg zitten.
+{{ui:workspace.showAxes}} (standaard aan) tekent drie pijlen in de linkerachterhoek van de plaat: **X** in rood naar rechts, **Y** in groen naar achteren en **Z** in blauw omhoog, zoals de positievelden tellen. Dat is de rechterhandregel die ook Tinkercad, CAD-programma's en de slicers gebruiken. Met het werkvlak op een vlak volgen ze dat. Zet ze hier uit als ze je in de weg zitten. Zolang de pijlen aan staan, krijgt ook het middenkruis van het raster hun kleuren: de lijn langs X rood, die langs Y groen. Zo zie je ook bij een klein onderdeel meteen welke kant elke as op loopt.
 
 {{ui:workspace.edgeLines}} tekent een omtrek op elk lichaam, in de kleur van {{ui:workspace.edgeColor}} (eerst zwart, zoals in Tinkercad): dat helpt als donkere kleuren in elkaar overlopen. Het staat standaard uit, en zeer grote geïmporteerde meshes worden overgeslagen.
 
@@ -193,6 +193,8 @@ De schetsweergave heeft eigen kleuren: {{ui:workspace.sketchBackground}} voor he
 {{ui:workspace.startWithScrollbars}}: een ontwerp opent dan met de schuifbalken van de weergave. De instelling wordt met het ontwerp en met {{ui:workspace.makeDefault}} bewaard.
 
 {{ui:workspace.viewBarOpensOnHover}}: een ingeklapte weergavebalk klapt open zolang de muis boven zijn pijl is en klapt kort nadat de muis hem verlaten heeft weer in, tenzij een van zijn hulpmiddelen in gebruik is. Een klik op de pijl terwijl hij zo open is, houdt hem open. Dit geldt alleen voor de muis; op een aanraakscherm opent een tik de balk zoals voorheen.
+
+{{ui:workspace.showStepNotices}}: na een stap zoals samenvoegen zegt een korte melding naast de weergavekubus wat er gebeurd is en biedt {{ui:shortcuts.undo}} aan. Uitgeschakeld blijven deze meldingen weg; meldingen die iets van je vragen of een probleem melden verschijnen nog steeds, en {{ui:editor.tool.undo}} in het lint noemt de stap nog als je erop wijst.
 
 {{ui:workspace.startView}} bepaalt de hoek waarin een nieuw ontwerp opent en waarnaar {{ui:camera.home}} teruggaat. Draai en zoom de weergave zoals je hem graag hebt en klik dan op {{ui:workspace.startViewUseCurrent}}; {{ui:workspace.startViewStandard}} brengt het gewone aanzicht van rechtsvoor terug. Het geldt voor elk ontwerp in deze browser. Een ontwerp dat je opnieuw opent, opent nog steeds zoals je het achterliet.
 
