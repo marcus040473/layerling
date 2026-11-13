@@ -1885,13 +1885,15 @@ export function buildVase(input, { part = 'body' } = {}) {
         addWall([outer[i][j], outer[i + 1][k], outer[i + 1][j]], [edgeD(i, j), edgeH(i + 1, j), edgeV(i, j)], [t0, z0, t1, z1, t0, z1], flat || fixedRow.has(i + 1))
         continue
       }
-      // A relief: each quad is split along the diagonal whose two ends lie at more nearly the same depth, so a relief's
-      // edge runs along the triangles' sides instead of across them - no fine staircase where an edge crosses the grid
-      // at a slant or in a curve. Facets keep their own split.
+      // A relief: each quad is split along the diagonal that comes nearer the real surface in the quad's middle, so a
+      // relief's edge runs along the triangles' sides instead of across them - no fine staircase where an edge crosses
+      // the grid at a slant or in a curve. Facets keep their own split.
       if (relief && !lowpoly) {
         const a = outer[i][j], b = outer[i][k], c = outer[i + 1][k], d = outer[i + 1][j]
         const r = (v) => Math.hypot(verts[v * 3], verts[v * 3 + 1])
-        if (Math.abs(r(a) - r(c)) > Math.abs(r(b) - r(d))) {
+        // The diagonal whose middle lies nearer the real surface in the middle of the quad.
+        const middle = outerRadius((2 * Math.PI * (j + 0.5)) / segments, (zsOuter[i] + zsOuter[i + 1]) / 2)
+        if (Math.abs((r(a) + r(c)) / 2 - middle) > Math.abs((r(b) + r(d)) / 2 - middle) + 1e-6) {
           tris.push(a, b, d)
           tris.push(b, c, d)
           continue
