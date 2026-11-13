@@ -3,6 +3,7 @@ import { repairClampedMeshBase } from "@/lib/importedMeshBase";
 import { fieldFormulasEqual } from "@/lib/fieldFormulas";
 import { threadFootprintPatch } from "@/lib/threadGeometry";
 import { pulleyFootprint } from "@/lib/pulleyGeometry";
+import { boxGeneratorLatchClip } from "@/lib/boxGeneratorGeometry";
 import { GRIDFINITY_PADDING_KEYS, gridfinityCompartmentLabelsEqual, gridfinityDividerPositionsEqual, gridfinityFootprintPatch, gridfinityOpeningsEqual, gridfinityOutlinesEqual, normalizeGridfinityPadding } from "@/lib/gridfinityGeometry";
 import { MCP_SHAPE_SETTING_KEYS } from "@/lib/mcpShapeSettings";
 import { bentTubeSegmentsEqual } from "@/lib/bentTubeGeometry";
@@ -606,6 +607,12 @@ export function canonicalizeShape(unrepaired: WorkplaneShape): WorkplaneShape {
   }
   // A GT2 pulley (Discussion #1319): the teeth, the belt width, the flanges and the hub set its box.
   if (shape.kind === "pulley") Object.assign(next, pulleyFootprint(next));
+  // A box generator's latch clip is as large as its latch settings make it, whatever set its box.
+  if (shape.kind === "boxGenerator" && shape.boxPart === "latch") {
+    const clip = boxGeneratorLatchClip(next).size;
+    Object.assign(next, clip);
+    next.size = resizedShapeSize(clip.width, clip.depth);
+  }
   // A cylinder's cross-section must always stay circular - width is
   // authoritative, depth follows. This is the single enforcement point: every
   // creation, edit and project load runs through canonicalizeShape.
@@ -923,6 +930,10 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.boxGridfinityPlate === b.boxGridfinityPlate &&
     a.boxStackable === b.boxStackable &&
     a.boxStackHeight === b.boxStackHeight &&
+    a.boxLatches === b.boxLatches &&
+    a.boxLatchSides === b.boxLatchSides &&
+    a.boxLatchWidth === b.boxLatchWidth &&
+    a.boxLatchGrip === b.boxLatchGrip &&
     a.loftBottomOutline === b.loftBottomOutline &&
     a.loftTopOutline === b.loftTopOutline &&
     a.loftBottomWidth === b.loftBottomWidth &&

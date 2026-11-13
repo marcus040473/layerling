@@ -3228,7 +3228,7 @@ export function gridfinityLabelledTriangles(runtime: ManifoldToplevel, shape: Gr
 }
 
 /** Triangles welded into an indexed mesh as a Manifold (meshDataToManifoldMesh would close an import cycle here). */
-function manifoldOfTriangles(runtime: ManifoldToplevel, triangles: Vec3[][]) {
+export function manifoldOfTriangles(runtime: ManifoldToplevel, triangles: Vec3[][]) {
   const ids = new Map<string, number>();
   const vertices: number[] = [];
   const triVerts: number[] = [];
@@ -3246,7 +3246,7 @@ function manifoldOfTriangles(runtime: ManifoldToplevel, triangles: Vec3[][]) {
 }
 
 /** A Manifold's mesh as triangles, the other way from manifoldOfTriangles. */
-function trianglesOfManifold(manifold: ReturnType<ManifoldToplevel["Manifold"]["cube"]>) {
+export function trianglesOfManifold(manifold: ReturnType<ManifoldToplevel["Manifold"]["cube"]>) {
   const out = manifold.getMesh();
   const triangles: Vec3[][] = [];
   for (let t = 0; t < out.triVerts.length; t += 3) {
