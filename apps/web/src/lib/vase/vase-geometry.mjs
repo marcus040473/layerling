@@ -1634,7 +1634,7 @@ function reliefChecks(p, shape, top) {
   const notes = []
   if (!isReliefPattern(p.effect) || p.reliefDepth <= 0) return notes
   const field = reliefField(p, shape, (z) => zoneMask(z, p))
-  const N = 240, dz = 0.4
+  const N = 144, dz = 0.4
   // 45 degrees, with a degree and a half of room for the sampling.
   const limit = Math.sin((46.5 * Math.PI) / 180)
   const outer = (th, z) => {
@@ -1650,7 +1650,7 @@ function reliefChecks(p, shape, top) {
   const ranges = []
   const from = (p.zoneFrom / 100) * p.height, to = Math.min(top, (p.zoneTo / 100) * p.height)
   // The first 2 mm stand on the bed: whatever leans out there is carried by it.
-  for (let z = Math.max(2, from); z < to - dz; z += 0.8) {
+  for (let z = Math.max(2, from); z < to - dz; z += 1.2) {
     let rowWorst = 0
     for (let k = 0; k < N; k++) {
       const th = (2 * Math.PI * k) / N
@@ -1724,8 +1724,8 @@ export function buildVase(input, { part = 'body' } = {}) {
     // model them itself, one and a half points per joint width are enough.
     if (p.effect === 'voronoi') needs.push(Math.ceil((2 * Math.PI * maxR) / (p.voronoiGap / (1.5 * scale))))
     if (layout.cutoutZone) needs.push(Math.ceil((2 * Math.PI * maxR) / cutoutStep(p)))
-    // A relief: enough columns per cell for its outlines, and at least one every half millimetre of the widest circumference.
-    if (relief) needs.push(Math.min(MAX_SEGMENTS, Math.max(relief.around * Math.ceil(Math.max(28, 9 * relief.detail) * scale), Math.ceil(relief.maxCircumference / (0.5 / scale)))))
+    // A relief: enough columns per cell for its outlines, and at least one every 0.7 mm of the widest circumference (0.45 mm when fine).
+    if (relief) needs.push(Math.min(MAX_SEGMENTS, Math.max(relief.around * Math.ceil(Math.max(28, 9 * relief.detail) * scale), Math.ceil(relief.maxCircumference / (0.7 / scale)))))
     segments = Math.min(MAX_SEGMENTS, Math.max(...needs))
     // This makes sharp places (corners, notches, fin edges) fall on columns - during a transition those of both
     // cross-sections (least common multiple, as long as it fits within the maximum count).
@@ -1748,11 +1748,11 @@ export function buildVase(input, { part = 'body' } = {}) {
   else {
     let mmPerRow = q.mmPerRow
     if (p.effect === 'voronoi') mmPerRow = Math.min(mmPerRow, p.voronoiGap / (1.5 * scale))
-    // A relief: rows as fine as its columns at the narrowest cell, between 0.2 and 0.45 mm apart.
+    // A relief: rows as fine as its columns at the narrowest cell, between 0.2 and 0.6 mm apart.
     if (relief) {
       let smallest = Infinity
       for (let k = 0; k <= 32; k++) smallest = Math.min(smallest, relief.cellAt((k / 32) * H))
-      mmPerRow = Math.min(mmPerRow, Math.max(0.2, smallest / (Math.max(24, 7 * relief.detail) * scale)), 0.45 / scale)
+      mmPerRow = Math.min(mmPerRow, Math.max(0.2, smallest / (Math.max(24, 7 * relief.detail) * scale)), 0.6 / scale)
     }
     rows = Math.ceil(H / mmPerRow)
     // Sway: at least 24 rows per swing, so that the folds swing smoothly; twist curve: 12 per point.

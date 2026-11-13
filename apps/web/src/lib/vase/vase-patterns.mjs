@@ -325,6 +325,14 @@ function leavesAt(cu, cv, around, o) {
   if (cv < -0.05) return 0
   const rTop = Math.floor(cv / pitch)
   const rows = Math.ceil((length * 1.2) / pitch) + (scattered ? 2 : 1)
+  const farthest = (length * 1.3 + width + 1) ** 2
+  // How far up from its row and down below it a leaf may reach, and how far to the side (in cells).
+  const spread = scattered ? 1.2 : 1
+  // The steepest a leaf may lean: its own tilt, and a scattered leaf's turn of up to 0.375 radians more.
+  const leanMost = Math.sin(Math.min(Math.PI / 2, Math.abs(tilt) + (scattered ? 0.4 : 0)))
+  const rowAbove = length * 1.05 * spread + width * 0.5 * leanMost + (scattered ? 0.35 * pitch : 0) + 0.05
+  const rowBelow = (width * 0.6 + Math.abs(bend) * 0.35 * length + 0.05) * leanMost * spread + (scattered ? 0.35 * pitch + 0.1 : 0.05)
+  const side = (width * 0.62 + length * (leanMost + Math.abs(bend) * 0.4)) * spread + (scattered ? 0.4 : 0.02)
   // How many leaves to each side may reach this point: a long leaf that leans or bends reaches far sideways.
   const reach = Math.ceil(width * 0.7 + length * (Math.abs(sin) + Math.abs(bend) * 0.35 + (scattered ? 0.45 : 0)) + (scattered ? 0.5 : 0)) + 1
   let hit = -1, hitTop = 0, hitEdge = 1
@@ -335,12 +343,18 @@ function leavesAt(cu, cv, around, o) {
     // Rows from the lowest that may reach this point: the first hit is the leaf that lies on top.
     const off = layout === 'regelmaessig' ? 0 : layout === 'spirale' ? frac(r * 0.381966) : (r % 2) * 0.5
     const dyRow = cv - r * pitch
+    // A row whose leaves cannot reach this height is passed over at once.
+    if (dyRow > rowAbove || dyRow < -rowBelow) continue
     const lean = dyRow * (sin / Math.max(0.2, cos))
     const c = Math.round(cu - off - lean)
     let rowBest = -1, rowX = Infinity, rowOther = 0, rowEdge = 1, rowCover = 0
     for (let k = c - reach; k <= c + reach; k++) {
       // Scattered: each leaf a little off its place, turned and sized its own way (the same every time, and the same
       // a whole turn further round, so the seam closes).
+      // A leaf whose base lies farther away than it is long (and wide) cannot reach this point.
+      let near = cu - (k + off)
+      near -= around * Math.round(near / around)
+      if (near > side || near < -side || near * near + dyRow * dyRow > farthest) continue
       const wrapped = ((k % around) + around) % around
       const jx = scattered ? (hash2(wrapped, r, 17) - 0.5) * 0.7 : 0
       const jy = scattered ? (hash2(wrapped, r, 29) - 0.5) * 0.6 * pitch : 0
@@ -421,6 +435,45 @@ function cellStretch(p) {
   return p.effect === 'blaetter' || p.effect === 'tulpenblaetter' ? 1 : p.patternAspect
 }
 
+/** The last few leaf rasters, so a check right after a build (or the same vase again) does not work them out anew. */
+const rasterCache = new Map()
+
+/**
+ * Leaf heights on a raster over cells `around` by the range v0..v1, about 0.45 mm apart at the widest place (`cellMm` a
+ * cell's width there) and at most about 500,000 points; read between its points. Round the vase it
+ * repeats, so the seam closes as before.
+ */
+function leafRaster(p, around, v0, v1, cellMm) {
+  const key = JSON.stringify([p.effect, p.leafShape, p.leafSize, p.leafOverlap, p.leafLayout, p.leafTilt, p.leafCurve, p.leafVeins, p.leafAspect, p.leafPoints, p.patternTwist, p.patternCount, around, Math.round(v0 * 1e4), Math.round(v1 * 1e4), Math.round(cellMm * 100)])
+  const known = rasterCache.get(key)
+  if (known) return known
+  const span = Math.max(1e-3, v1 - v0)
+  let per = Math.max(24, Math.ceil(cellMm / 0.45))
+  while (per > 24 && around * per * (span * per + 2) > 500000) per = Math.floor(per * 0.9)
+  const columns = around * per
+  const rows = Math.max(2, Math.ceil(span * per) + 2)
+  const values = new Float32Array(columns * rows)
+  for (let j = 0; j < rows; j++) {
+    const cv = v0 + (j - 1) / per
+    for (let i = 0; i < columns; i++) values[j * columns + i] = patternHeight(p, i / per, cv, around)
+  }
+  const at = (cu, cv) => {
+    const x = cu * per
+    const y = (cv - v0) * per + 1
+    if (y < 0 || y > rows - 1) return patternHeight(p, cu, cv, around)
+    const x0 = Math.floor(x), y0 = Math.floor(y)
+    const fx = x - x0, fy = y - y0
+    const xa = ((x0 % columns) + columns) % columns, xb = (xa + 1) % columns
+    const y1 = Math.min(rows - 1, y0 + 1)
+    const a = values[y0 * columns + xa], b = values[y0 * columns + xb]
+    const c = values[y1 * columns + xa], d = values[y1 * columns + xb]
+    return (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy
+  }
+  rasterCache.set(key, at)
+  while (rasterCache.size > 3) rasterCache.delete(rasterCache.keys().next().value)
+  return at
+}
+
 /**
  * The depth (mm, inwards) of a relief pattern on a vase: `shape` from vaseShape, `zone(z)` the height range's mask.
  * Returns { depthAt(theta, z, base), around, cellAt(z) } - cellAt gives a cell's size in mm at height z.
@@ -454,6 +507,9 @@ export function reliefField(p, shape, zone) {
   const leafy = p.effect === 'blaetter' || p.effect === 'tulpenblaetter'
   const start = leafy ? vAt((p.zoneFrom / 100) * H) : 0
   const amount = Math.max(0, p.reliefDepth)
+  // Leaves look at many leaves around each point: they are worked out once on a fine raster over the height range and
+  // read from it between its points, which makes building and checking a leaf vase many times faster.
+  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, maxC / around) : (cu, cv) => patternHeight(p, cu, cv, around)
   const raw = (theta, z, base) => {
     const m = zone(z)
     if (m <= 0) return 0
@@ -461,32 +517,56 @@ export function reliefField(p, shape, zone) {
     if (depth <= 0) return 0
     const turn = theta - rotation(twistT(z))
     const cu = frac(turn / TAU) * around
-    const h = patternHeight(p, cu, vAt(z) - start, around)
+    const h = heightAt(cu, vAt(z) - start)
     return depth * (1 - h)
   }
   const friendly = p.printFriendly === 'ja'
-  const stepMm = 0.25
-  // Far enough down for a relief on a vase flaring out at up to 70 degrees; the loop usually stops much sooner.
-  const lookDown = Math.ceil((4 * amount) / stepMm)
+  // Print-friendly: going up, the surface - the vase's own outline less the relief - may come out by at most what it
+  // rises: base(z) - d(z) <= base(z - s) - d(z - s) + s, never deeper than the relief itself. Worked out once per
+  // upright line round the vase, from the bottom up (each row from the one below), on a raster half a millimetre
+  // fine, and read from it between its points.
   const outer = shape.outerAt
-  const depthAt = !friendly ? raw : (theta, z, base) => {
-    // Going up, the surface - the vase's own outline less the relief - may come out by at most what it rises:
-    // base(z) - d(z) <= base(z - k s) - d(z - k s) + k s. Never deeper than the relief itself.
-    const own = raw(theta, z, base)
-    if (zone(z) <= 0) return own
-    let d = own
-    for (let k = 1; k <= lookDown; k++) {
-      let below = z - k * stepMm
-      if (below < -1e-6) break
-      below = Math.max(0, below)
-      const lowBase = outer(theta, below)
-      const rise = base - lowBase - k * stepMm
-      // No lower point can ask for more than the whole relief there: once that is no more than d, stop looking.
-      if (amount + rise <= d) break
-      const need = raw(theta, below, lowBase) + rise
-      if (need > d) d = need
+  let friendlyRaster = null
+  const buildFriendly = () => {
+    const stepZ = 0.4
+    const top = Math.min(H, (p.zoneTo / 100) * H + 1)
+    const rows = Math.max(2, Math.ceil(top / stepZ) + 1)
+    const columns = clamp(Math.ceil(maxC / 0.5), 360, 1600)
+    const values = new Float32Array(columns * rows)
+    for (let c = 0; c < columns; c++) {
+      const theta = (TAU * c) / columns
+      let previous = 0, previousBase = 0
+      for (let r = 0; r < rows; r++) {
+        const z = Math.min(H, r * stepZ)
+        const base = outer(theta, z)
+        const own = raw(theta, z, base)
+        let d = own
+        if (r > 0 && zone(z) > 0) {
+          const need = previous + (base - previousBase) - stepZ
+          if (need > d) d = Math.min(need, Math.max(own, Math.min(amount, base / 3) * zone(z)))
+        }
+        values[r * columns + c] = d
+        previous = d
+        previousBase = base
+      }
     }
-    return Math.min(d, Math.max(own, Math.min(amount, base / 3) * zone(z)))
+    friendlyRaster = { values, rows, columns, stepZ, top }
+  }
+  const depthAt = !friendly ? raw : (theta, z, base) => {
+    if (zone(z) <= 0) return raw(theta, z, base)
+    if (!friendlyRaster) buildFriendly()
+    const { values, rows, columns, stepZ, top } = friendlyRaster
+    if (z > top) return raw(theta, z, base)
+    const x = (frac(theta / TAU)) * columns
+    const y = Math.min(rows - 1, Math.max(0, z / stepZ))
+    const x0 = Math.floor(x), y0 = Math.floor(y)
+    const fx = x - x0, fy = y - y0
+    const xa = x0 % columns, xb = (xa + 1) % columns
+    const y1 = Math.min(rows - 1, y0 + 1)
+    const a = values[y0 * columns + xa], b = values[y0 * columns + xb]
+    const c = values[y1 * columns + xa], d = values[y1 * columns + xb]
+    // Never shallower than the relief's own depth here (the raster is read between its points).
+    return Math.max(raw(theta, z, base), (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy)
   }
   const cellAt = (z) => {
     const x = clamp(z / H, 0, 1) * steps

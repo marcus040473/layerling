@@ -2617,6 +2617,9 @@ const NO_EDGE_IDS: number[] = [];
 
 function separablePartCount(shape: WorkplaneShape) {
   if (bodyLocked(shape) || shape.hole) return 0;
+  // A vase is one body (moulded legs belong to it): counting the parts of its hundreds of thousands of triangles after
+  // every change of a setting held the editor up for a third of a second.
+  if (shape.kind === "vase" && !shape.importedMesh) return 1;
   if (shape.groupedShapes?.length && !shape.importedMesh) return shape.groupedShapes.length;
   if (!shape.importedMesh) {
     // Text stands in for itself until its font has loaded, so it is counted each time.

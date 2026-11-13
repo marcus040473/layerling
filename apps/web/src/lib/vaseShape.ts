@@ -48,6 +48,21 @@ function rememberVaseBody(key: string, body: VaseBody) {
 
 let worker: Worker | null = null;
 let requestCounter = 0;
+/**
+ * One build at a time: while the worker builds, a newer change waits here (the newest per vase only) and goes once the
+ * build is done. Dragging a slider so asks for the first and the last value, not for every step on the way.
+ */
+let building = false;
+const waiting = new Map<string, () => void>();
+const waitingRequest = new Map<string, number>();
+
+function startNextBuild() {
+  building = false;
+  const next = waiting.entries().next();
+  if (next.done) return;
+  waiting.delete(next.value[0]);
+  next.value[1]();
+}
 const pending = new Map<number, { key: string; resolve: () => void; reject: (error: Error) => void }>();
 const latestForShape = new Map<string, number>();
 
@@ -64,16 +79,18 @@ function ensureWorker() {
     pending.delete(event.data.requestId);
     if ("error" in event.data) {
       entry.reject(new Error(event.data.error));
-      return;
+    } else {
+      rememberVaseBody(entry.key, event.data.body);
+      entry.resolve();
     }
-    rememberVaseBody(entry.key, event.data.body);
-    entry.resolve();
+    startNextBuild();
   };
   next.onerror = () => {
     pending.forEach((entry) => entry.reject(new Error("The vase worker stopped")));
     pending.clear();
     next.terminate();
     worker = null;
+    startNextBuild();
   };
   worker = next;
   return next;
@@ -112,8 +129,27 @@ export function vaseShapePatchOffThread(
     // The worker could not build it: build it here, as before there was one.
     reject: handOn,
   });
-  const request: VaseBodyWorkerRequest = { requestId, settings };
-  ensureWorker().postMessage(request);
+  const send = () => {
+    // A newer change for this vase came while this one waited: only that one is built.
+    if (latestForShape.get(owner) !== requestId) {
+      pending.delete(requestId);
+      startNextBuild();
+      return;
+    }
+    building = true;
+    const request: VaseBodyWorkerRequest = { requestId, settings };
+    ensureWorker().postMessage(request);
+  };
+  if (building) {
+    // The change it replaces is dropped with its waiting entry.
+    const replaced = waitingRequest.get(owner);
+    if (replaced !== undefined) pending.delete(replaced);
+    waitingRequest.set(owner, requestId);
+    waiting.set(owner, () => {
+      waitingRequest.delete(owner);
+      send();
+    });
+  } else send();
 }
 
 /**
@@ -283,7 +319,9 @@ export function vasePrintReport(shape: { width: number; depth: number; height: n
   }
   const volume = printVolume(settings, positions);
   const weight = printWeight(volume.mm3, settings.material);
-  const notes = [...vaseChecks(settings), ...buildVaseCached(settings).notes].filter((note, index, all) => all.indexOf(note) === index);
+  // The checks came with the body from the worker where it was built there; else they are worked out here.
+  const body = buildVaseCached(settings);
+  const notes = [...(body.checks ?? vaseChecks(settings)), ...body.notes].filter((note, index, all) => all.indexOf(note) === index);
   const report = { grams: weight.grams, meters: weight.meters, material: weight.material, vaseMode: volume.mode === "vasenmodus", line: settings.lineWidth, bottom: VASE_MODE_BOTTOM, notes };
   reportCache.set(key, report);
   while (reportCache.size > 4) reportCache.delete(reportCache.keys().next().value as string);
