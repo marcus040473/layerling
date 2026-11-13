@@ -131,13 +131,64 @@ function mapValues(entry) {
 }
 
 /**
+ * A tile softened by a Gaussian of `level` steps (sigma 2^(level/2) texels), worked out once per tile and step and
+ * repeating both ways like the tile.
+ */
+const softened = new Map()
+function softValues(entry, level) {
+  if (level <= 0) return mapValues(entry)
+  let levels = softened.get(entry)
+  if (!levels) softened.set(entry, (levels = []))
+  let out = levels[level]
+  if (out) return out
+  const n = entry.size
+  const raw = mapValues(entry)
+  const sigma = 2 ** ((level - 1) / 2)
+  const reach = Math.ceil(3 * sigma)
+  const kernel = new Float64Array(2 * reach + 1)
+  let total = 0
+  for (let k = -reach; k <= reach; k++) total += kernel[k + reach] = Math.exp(-(k * k) / (2 * sigma * sigma))
+  for (let k = 0; k < kernel.length; k++) kernel[k] /= total
+  const wrap = (i) => ((i % n) + n) % n
+  const across = new Float32Array(n * n)
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      let sum = 0
+      for (let k = -reach; k <= reach; k++) sum += kernel[k + reach] * raw[y * n + wrap(x + k)]
+      across[y * n + x] = sum
+    }
+  }
+  out = new Float32Array(n * n)
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      let sum = 0
+      for (let k = -reach; k <= reach; k++) sum += kernel[k + reach] * across[wrap(y + k) * n + x]
+      out[y * n + x] = sum
+    }
+  }
+  levels[level] = out
+  return out
+}
+
+/**
  * A pattern tile's height 0..1 at (u, v) in tiles, repeating both ways; v counts up the vase (the picture's rows down).
  * Read between its points along smooth curves (Catmull-Rom over four by four points): straight lines between them left
- * the picture's raster as small corners along every edge.
+ * the picture's raster as small corners along every edge. `blur` (texels) softens its edges to what the vase's grid can
+ * show: a sharp edge between grid points came out as a fine zigzag along it, in the fine quality, too.
  */
-function tileHeight(entry, u, v) {
+function tileHeight(entry, u, v, blur = 0) {
+  if (blur > 0.5) {
+    // Between two softened steps, blended, so the softness changes smoothly up a tapering vase.
+    const x = clamp(1 + 2 * Math.log2(blur), 0, 12)
+    const lo = Math.floor(x), f = x - lo
+    const a = tileAt(entry, softValues(entry, lo), u, v)
+    return f < 1e-3 ? a : a + (tileAt(entry, softValues(entry, lo + 1), u, v) - a) * f
+  }
+  return tileAt(entry, mapValues(entry), u, v)
+}
+
+function tileAt(entry, values, u, v) {
   const n = entry.size
-  const values = mapValues(entry)
   const x = frac(u) * n - 0.5
   const y = (1 - frac(v)) * n - 0.5
   const x0 = Math.floor(x), y0 = Math.floor(y)
@@ -429,12 +480,12 @@ function leafRows(p) {
 }
 
 /** The height 0..1 of a family at (cu, cv), in cells; `around` is the count of cells round the vase. */
-export function patternHeight(p, cu, cv, around, fixed = null) {
+export function patternHeight(p, cu, cv, around, fixed = null, blur = 0) {
   const lean = (clamp(p.patternTwist, -75, 75) * Math.PI) / 180
   const sheared = cu + Math.tan(lean) * cv
   const picture = PATTERN_MAPS[p.effect]
   if (picture) {
-    const h = tileHeight(picture, sheared, cv / picture.aspect)
+    const h = tileHeight(picture, sheared, cv / picture.aspect, blur)
     return p.patternInvert === 'ja' ? 1 - h : h
   }
   if (p.effect === 'wisp') return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth)
@@ -553,9 +604,22 @@ export function reliefField(p, shape, zone) {
   const fixedFor = keepSize ? (u, cv) => ({ u, ring: ringAt(cv), count: (r) => Math.max(3, Math.round(ringAt(r * rowsOf.pitch + 0.5 * rowsOf.length))) }) : null
   const shapeKey = keepSize ? Array.from({ length: 17 }, (_, k) => Math.round(circumference[k * 64] * 10)).join(',') : ''
   const amount = Math.max(0, p.reliefDepth)
+  // A picture pattern's edges softened to the build grid's spacing (about the columns' spacing in mm per quality), in
+  // the tile's texels where the cell has the size it has at that height.
+  const picture = PATTERN_MAPS[p.effect]
+  let gridMm = { entwurf: 1.17, standard: 0.7, fein: 0.45 }[p.quality] ?? 0.7
+  // Fine (for printing) softens the edges fully to its grid; the quicker qualities only a little, so they stay crisp.
+  const soften = p.quality === 'fein' ? 0.55 : 0.3
+  const blurAt = (z) => {
+    if (!picture) return 0
+    const x = clamp(z / H, 0, 1) * steps
+    const k = Math.min(steps - 1, Math.floor(x))
+    const c = circumference[k] + (circumference[k + 1] - circumference[k]) * (x - k)
+    return (soften * gridMm * picture.size * around) / Math.max(1e-3, c)
+  }
   // Leaves look at many leaves around each point: they are worked out once on a fine raster over the height range and
   // read from it between its points, which makes building and checking a leaf vase many times faster.
-  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : (cu, cv) => patternHeight(p, cu, cv, around)
+  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : (cu, cv, z) => patternHeight(p, cu, cv, around, null, blurAt(z))
   const raw = (theta, z, base) => {
     const m = zone(z)
     if (m <= 0) return 0
@@ -563,7 +627,7 @@ export function reliefField(p, shape, zone) {
     if (depth <= 0) return 0
     const turn = theta - rotation(twistT(z))
     const cu = frac(turn / TAU) * around
-    const h = heightAt(cu, vAt(z) - start)
+    const h = heightAt(cu, vAt(z) - start, z)
     return depth * (1 - h)
   }
   const friendly = p.printFriendly === 'ja'
@@ -619,7 +683,13 @@ export function reliefField(p, shape, zone) {
     const k = Math.min(steps, Math.round(x))
     return circumference[k] / around
   }
-  return { depthAt, around, cellAt, maxCircumference: maxC, detail: patternDetail(p) }
+  // The build tells the field its grid's real spacing (mm) before it reads any depth.
+  const setGrid = (mm) => {
+    if (!(mm > 0) || Math.abs(mm - gridMm) < 1e-6) return
+    gridMm = mm
+    friendlyRaster = null
+  }
+  return { depthAt, around, cellAt, setGrid, maxCircumference: maxC, detail: patternDetail(p) }
 }
 
 /** The look of the vase's older surfaces (grooves, stripes, Voronoi joints, facets) for the gallery's tiles. */

@@ -1773,6 +1773,8 @@ export function buildVase(input, { part = 'body' } = {}) {
       segments = Math.max(q.smoothSegments, Math.floor(segments * f))
       rows = Math.max(24, Math.floor(budget / segments))
     }
+    // The pattern's edges softened to the spacing the grid really has.
+    relief.setGrid(Math.max(relief.maxCircumference / segments, Htop / rows))
   }
 
   const zone = (z) => zoneMask(z, p)

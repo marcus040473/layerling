@@ -107,6 +107,15 @@ describe("vase relief patterns", () => {
     }
   });
 
+  it("repeats the honeycomb upwards without a seam", () => {
+    // One tile is 2 sqrt3 / 3 cells high; a tile further up the honeycomb is the same.
+    const p = normalizeParams({ effect: "waben" });
+    const up = (2 * Math.sqrt(3)) / 3;
+    for (const [cu, cv] of [[0.1, 0.2], [0.37, 0.9], [0.8, 0.05], [0.55, 0.6]]) {
+      expect(Math.abs(patternHeight(p, cu, cv, 12) - patternHeight(p, cu, cv + up, 12))).toBeLessThan(0.02);
+    }
+  });
+
   it("builds no relief when start and end meet", () => {
     const mesh = buildVase({ profile: "zylinder", body: "voll", effect: "blueten", zoneFrom: 50, zoneTo: 50, quality: "entwurf" });
     const at = radiusNear(mesh, 90, 0.4);
