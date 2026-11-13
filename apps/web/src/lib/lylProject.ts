@@ -1946,7 +1946,7 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   }
   if (kind === "boxGenerator") {
     // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
-    for (const key of ["boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxLidPlate", "boxFit", "boxGridfinityColumns", "boxGridfinityRows", "boxStackHeight"] as const) {
+    for (const key of ["boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxLidPlate", "boxFit", "boxGridfinityColumns", "boxGridfinityRows", "boxStackHeight", "boxLatches", "boxLatchWidth", "boxLatchGrip"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (value < 0 || value > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
@@ -1954,8 +1954,11 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
     if (definition.boxShape !== undefined && definition.boxShape !== "rectangle" && definition.boxShape !== "round" && definition.boxShape !== "polygon") {
       throw new Error(`${label}.boxShape must be rectangle, round or polygon`);
     }
-    if (definition.boxPart !== undefined && definition.boxPart !== "box" && definition.boxPart !== "lid") {
-      throw new Error(`${label}.boxPart must be box or lid`);
+    if (definition.boxPart !== undefined && definition.boxPart !== "box" && definition.boxPart !== "lid" && definition.boxPart !== "latch") {
+      throw new Error(`${label}.boxPart must be box, lid or latch`);
+    }
+    if (definition.boxLatchSides !== undefined && definition.boxLatchSides !== "frontBack" && definition.boxLatchSides !== "leftRight" && definition.boxLatchSides !== "all") {
+      throw new Error(`${label}.boxLatchSides must be frontBack, leftRight or all`);
     }
     if (definition.boxLidStyle !== undefined && definition.boxLidStyle !== "restOn" && definition.boxLidStyle !== "overlap" && definition.boxLidStyle !== "plug") {
       throw new Error(`${label}.boxLidStyle must be restOn, overlap or plug`);

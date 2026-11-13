@@ -626,7 +626,7 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.boxColumns = optionalShapeNumber(source.boxColumns, fallbackEntry?.boxColumns, 1, 12);
       entry.boxRows = optionalShapeNumber(source.boxRows, fallbackEntry?.boxRows, 1, 12);
       entry.boxDivider = optionalShapeNumber(source.boxDivider, fallbackEntry?.boxDivider, 0.4, 20);
-      entry.boxPart = source.boxPart === "box" || source.boxPart === "lid" ? source.boxPart : fallbackEntry?.boxPart;
+      entry.boxPart = source.boxPart === "box" || source.boxPart === "lid" || source.boxPart === "latch" ? source.boxPart : fallbackEntry?.boxPart;
       entry.boxLidStyle = source.boxLidStyle === "restOn" || source.boxLidStyle === "overlap" || source.boxLidStyle === "plug" ? source.boxLidStyle : fallbackEntry?.boxLidStyle;
       entry.boxLidPlate = optionalShapeNumber(source.boxLidPlate, fallbackEntry?.boxLidPlate, 0.4, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.boxFit = optionalShapeNumber(source.boxFit, fallbackEntry?.boxFit, 0, 2);
@@ -637,6 +637,10 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.boxGridfinityPlate = source.boxGridfinityPlate === true ? true : source.boxGridfinityPlate === false ? undefined : fallbackEntry?.boxGridfinityPlate;
       entry.boxStackable = source.boxStackable === true ? true : source.boxStackable === false ? undefined : fallbackEntry?.boxStackable;
       entry.boxStackHeight = optionalShapeNumber(source.boxStackHeight, fallbackEntry?.boxStackHeight, 1, 10);
+      entry.boxLatches = optionalShapeNumber(source.boxLatches, fallbackEntry?.boxLatches, 0, 4);
+      entry.boxLatchSides = source.boxLatchSides === "frontBack" || source.boxLatchSides === "leftRight" || source.boxLatchSides === "all" ? source.boxLatchSides : fallbackEntry?.boxLatchSides;
+      entry.boxLatchWidth = optionalShapeNumber(source.boxLatchWidth, fallbackEntry?.boxLatchWidth, 6, 40);
+      entry.boxLatchGrip = optionalShapeNumber(source.boxLatchGrip, fallbackEntry?.boxLatchGrip, 0.05, 1);
     }
     if (kind === "dovetail") {
       entry.dovetailNeckWidth = optionalShapeNumber(source.dovetailNeckWidth, fallbackEntry?.dovetailNeckWidth, 0.1, MAX_CUSTOM_SHAPE_DIMENSION);

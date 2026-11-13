@@ -207,8 +207,18 @@ import { DEFAULT_DRILL_POINT_ANGLE, DRILL_POINT_ANGLES, MAX_DRILL_POINT_ANGLE, M
 import { MAX_TEARDROP_TIP_ANGLE, MIN_TEARDROP_TIP_ANGLE, normalizeTeardropTipAngle, teardropHeightForTipAngle, teardropTipAngle } from "@/lib/teardropGeometry";
 import { MAX_PORT_CLEARANCE, maxPortCorner, normalizePortClearance, normalizePortCorner, PORT_PRESET_ORDER, PORT_PRESETS, portPresetFor, portPresetSize, type PortPreset } from "@/lib/portGeometry";
 import {
+  DEFAULT_BOX_GENERATOR_DEPTH,
+  DEFAULT_BOX_GENERATOR_HEIGHT,
+  DEFAULT_BOX_GENERATOR_WIDTH,
   MAX_BOX_GENERATOR_COMPARTMENTS,
   MAX_BOX_GENERATOR_FIT,
+  MAX_BOX_GENERATOR_LATCHES,
+  MAX_BOX_GENERATOR_LATCH_GRIP,
+  MAX_BOX_GENERATOR_LATCH_WIDTH,
+  MIN_BOX_GENERATOR_LATCH_GRIP,
+  MIN_BOX_GENERATOR_LATCH_WIDTH,
+  boxGeneratorLatchHeight,
+  boxGeneratorMatchingLidPatch,
   MAX_BOX_GENERATOR_STACK_HEIGHT,
   MIN_BOX_GENERATOR_STACK_HEIGHT,
   MAX_BOX_GENERATOR_SIDES,
@@ -224,6 +234,7 @@ import {
   boxGeneratorMatchingLidSize,
   normalizeBoxGenerator,
   normalizeBoxGeneratorLidStyle,
+  normalizeBoxGeneratorLatchSides,
   normalizeBoxGeneratorShape,
 } from "@/lib/boxGeneratorGeometry";
 import { MAX_DOVETAIL_CLEARANCE, maxDovetailNeckWidth, normalizeDovetailClearance, normalizeDovetailNeckWidth } from "@/lib/dovetailGeometry";
@@ -2653,16 +2664,30 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       : platePlan.plate
         ? t("boxGenerator.plateHint", { cells: String(platePlan.plate.cells.length), floor: plainNumber(platePlan.floorTop), box: t("prop.boxGridfinity") })
         : t(platePlan.issues.some((issue) => issue.code === "plateTooLow") ? "boxGenerator.plateTooLow" : "boxGenerator.plateNoCell");
-    const properties: ShapePropertyConfig[] = [
-      {
-        type: "select",
-        id: "boxPart",
-        label: t("prop.boxPart"),
-        value: box.boxPart,
-        options: [{ value: "box", label: t("boxGenerator.partBox") }, { value: "lid", label: t("boxGenerator.partLid") }],
-        hint: t(box.boxPart === "box" ? "boxGenerator.partBoxHint" : "boxGenerator.partLidHint"),
-        onChange: (value) => onUpdate({ boxPart: value === "lid" ? "lid" : "box" }),
+    const partSelect: ShapePropertyConfig = {
+      type: "select",
+      id: "boxPart",
+      label: t("prop.boxPart"),
+      value: box.boxPart,
+      options: [{ value: "box", label: t("boxGenerator.partBox") }, { value: "lid", label: t("boxGenerator.partLid") }, { value: "latch", label: t("boxGenerator.partLatch") }],
+      hint: t(box.boxPart === "box" ? "boxGenerator.partBoxHint" : box.boxPart === "lid" ? "boxGenerator.partLidHint" : "boxGenerator.partLatchHint"),
+      // The clip takes its size from its latch settings; a box or lid made from a clip starts at the generator's own size.
+      onChange: (value) => {
+        const part = value === "lid" || value === "latch" ? value : "box";
+        if (part === box.boxPart) return;
+        if (box.boxPart === "latch") {
+          const height = part === "lid" ? boxGeneratorMatchingLidPatch({ width: DEFAULT_BOX_GENERATOR_WIDTH, depth: DEFAULT_BOX_GENERATOR_DEPTH, height: DEFAULT_BOX_GENERATOR_HEIGHT }, shape).height : DEFAULT_BOX_GENERATOR_HEIGHT;
+          onUpdate({ boxPart: part, width: DEFAULT_BOX_GENERATOR_WIDTH, depth: DEFAULT_BOX_GENERATOR_DEPTH, height, size: resizedShapeSize(DEFAULT_BOX_GENERATOR_WIDTH, DEFAULT_BOX_GENERATOR_DEPTH) });
+        }
+        else onUpdate({ boxPart: part });
       },
+    };
+    const latchWidth: ShapePropertyConfig = { id: "boxLatchWidth", label: t("prop.boxLatchWidth"), value: box.boxLatchWidth, min: MIN_BOX_GENERATOR_LATCH_WIDTH, max: MAX_BOX_GENERATOR_LATCH_WIDTH, step: 0.5, onChange: (value) => onUpdate({ boxLatchWidth: value }) };
+    const latchGrip: ShapePropertyConfig = { id: "boxLatchGrip", label: t("prop.boxLatchGrip"), value: box.boxLatchGrip, min: MIN_BOX_GENERATOR_LATCH_GRIP, max: MAX_BOX_GENERATOR_LATCH_GRIP, step: 0.05, hint: t("boxGenerator.latchGripHint"), onChange: (value) => onUpdate({ boxLatchGrip: value }) };
+    // The clip: its size comes from the latch settings alone, so only those are offered.
+    if (box.boxPart === "latch") return [partSelect, latchWidth, latchGrip];
+    const properties: ShapePropertyConfig[] = [
+      partSelect,
       {
         type: "select",
         id: "boxShape",
@@ -2763,7 +2788,38 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       hint: t(box.boxLidStyle === "overlap" ? "boxGenerator.lidOverlapHint" : box.boxLidStyle === "plug" ? "boxGenerator.lidPlugHint" : "boxGenerator.lidRestOnHint"),
       onChange: (value) => onUpdate({ boxLidStyle: normalizeBoxGeneratorLidStyle(value) }),
     });
-    if (box.boxPart === "lid" && (box.boxLidStyle === "overlap" || box.boxLidStyle === "plug" || (box.boxLidStyle === "restOn" && box.boxStackable))) {
+    // Latches: a pin with two cheeks on box and lid, and a clip that snaps over both (part Clip).
+    const latchIssue = issues.find((issue) => issue.code.startsWith("latch"));
+    const latchCount = box.boxLatches > 0 ? boxGeneratorPlan({ width, depth, height: shape.height }, shape).latches?.spots.length ?? 0 : 0;
+    properties.push({
+      id: "boxLatches",
+      label: t("prop.boxLatches"),
+      value: box.boxLatches,
+      min: 0,
+      max: MAX_BOX_GENERATOR_LATCHES,
+      step: 1,
+      hint: latchIssue
+        ? t(LATCH_ISSUE_KEYS[latchIssue.code as keyof typeof LATCH_ISSUE_KEYS], { height: plainNumber(boxGeneratorLatchHeight(box)) })
+        : box.boxLatches > 0
+          ? t("boxGenerator.latchHint", { count: String(latchCount) })
+          : undefined,
+      onChange: (value) => onUpdate({ boxLatches: Math.round(value) || undefined }),
+    });
+    if (box.boxLatches > 0) {
+      properties.push(
+        {
+          type: "select",
+          id: "boxLatchSides",
+          label: t("prop.boxLatchSides"),
+          value: box.boxLatchSides,
+          options: [{ value: "frontBack", label: t("boxGenerator.latchFrontBack") }, { value: "leftRight", label: t("boxGenerator.latchLeftRight") }, { value: "all", label: t("boxGenerator.latchAll") }],
+          onChange: (value) => onUpdate({ boxLatchSides: normalizeBoxGeneratorLatchSides(value) }),
+        },
+        latchWidth,
+        latchGrip,
+      );
+    }
+    if (box.boxPart === "lid" && (box.boxLidStyle === "overlap" || box.boxLidStyle === "plug" || (box.boxLidStyle === "restOn" && (box.boxStackable || box.boxLatches > 0)))) {
       properties.push({ id: "boxLidPlate", label: t("prop.boxLidPlate"), value: box.boxLidPlate, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, onChange: (value) => onUpdate({ boxLidPlate: value }) });
     }
     if (box.boxLidStyle === "overlap" || (box.boxPart === "lid" && box.boxLidStyle === "plug") || (box.boxStackable && (box.boxPart === "box" || box.boxLidStyle === "restOn"))) {
@@ -4578,6 +4634,15 @@ function getShapeProperties(shape: WorkplaneShape, onUpdate: ShapeInspectorUpdat
  */
 const SliderSnapContext = createContext(0);
 
+/** The panel's text for each reason a box generator's latches cannot be made. */
+const LATCH_ISSUE_KEYS = {
+  latchLidStyle: "boxGenerator.issueLatchLidStyle",
+  latchOutline: "boxGenerator.issueLatchOutline",
+  latchNoRoom: "boxGenerator.issueLatchNoRoom",
+  latchLow: "boxGenerator.issueLatchLow",
+  latchCurved: "boxGenerator.issueLatchCurved",
+} as const;
+
 export function ShapeInspector({
   shape,
   snap,
@@ -4608,6 +4673,7 @@ export function ShapeInspector({
   onVaseAccessories,
   onGridfinityKeys,
   onMakeBoxLid,
+  onMakeBoxLatches,
   onLayerText,
   onTextTags,
   onTextBlock,
@@ -4668,6 +4734,7 @@ export function ShapeInspector({
   onGridfinityKeys?: () => void;
   /** A box generator box: lays out a matching lid beside it, with the box's own outline, wall, play and stacking. */
   onMakeBoxLid?: () => void;
+  onMakeBoxLatches?: () => void;
   /** Splits a text into layers, or builds a layered text again with new words, font or layers (#215). */
   onLayerText?: (patch: TextLayerPatch) => void;
   /** One tag like this text or stack per name, laid out in rows (#215). */
@@ -5650,12 +5717,21 @@ export function ShapeInspector({
                 ) : null}
               </>
             ) : null}
-            {shape.kind === "boxGenerator" && shape.boxPart !== "lid" && onMakeBoxLid ? (
+            {shape.kind === "boxGenerator" && shape.boxPart !== "lid" && shape.boxPart !== "latch" && onMakeBoxLid ? (
               <>
                 <p className="cylinder-wrap-hint">{t("inspector.boxMakeLidHint")}</p>
                 <button className="inspector-action-button" type="button" disabled={frozen} onClick={onMakeBoxLid}>
                   <Plus size={17} strokeWidth={2.5} />
                   <span>{t("inspector.boxMakeLid")}</span>
+                </button>
+              </>
+            ) : null}
+            {shape.kind === "boxGenerator" && shape.boxPart !== "latch" && (shape.boxLatches ?? 0) > 0 && onMakeBoxLatches ? (
+              <>
+                <p className="cylinder-wrap-hint">{t("inspector.boxMakeLatchesHint")}</p>
+                <button className="inspector-action-button" type="button" disabled={frozen} onClick={onMakeBoxLatches}>
+                  <Plus size={17} strokeWidth={2.5} />
+                  <span>{t("inspector.boxMakeLatches")}</span>
                 </button>
               </>
             ) : null}
