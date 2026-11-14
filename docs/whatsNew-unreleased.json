@@ -111,5 +111,18 @@
       "de": "Ein verrundetes Sechseck aus einer Gruppe kam beim Aufheben gestaucht zurück, weil die Verrundung an den Spitzen für ein Verkleinern gehalten wurde. Jetzt kommen die Teile in ihren alten Maßen zurück.",
       "en": "A filleted hexagon made from a group came back squashed when it was ungrouped, as the fillet on its points was taken for a resize. Now the parts come back at their old size."
     }
+  },
+  {
+    "title": {
+      "de": "Knöpfe der eigenen Formen in älterem Firefox",
+      "en": "Custom shape buttons in an older Firefox"
+    },
+    "body": {
+      "de": "In Firefox bis Version 120, etwa dem letzten Firefox auf Windows 7, blieben die Knöpfe auf den Kacheln der eigenen Formen unsichtbar: Verschieben, Umbenennen und Löschen. Ebenso die Knöpfe an den Ordnern. Jetzt erscheinen sie, sobald die Maus auf einer Kachel liegt.",
+      "en": "In Firefox up to version 120, such as the last Firefox on Windows 7, the buttons on the custom shapes' tiles stayed invisible: move, rename and delete. So did the buttons on the folders. Now they show as soon as the mouse rests on a tile."
+    },
+    "guide": {
+      "section": "myShapes"
+    }
   }
 ]
