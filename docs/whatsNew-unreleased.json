@@ -101,5 +101,15 @@
     "guide": {
       "section": "sketchDrawing"
     }
+  },
+  {
+    "title": {
+      "de": "Aufheben hält die Form",
+      "en": "Ungrouping keeps the shape"
+    },
+    "body": {
+      "de": "Ein verrundetes Sechseck aus einer Gruppe kam beim Aufheben gestaucht zurück, weil die Verrundung an den Spitzen für ein Verkleinern gehalten wurde. Jetzt kommen die Teile in ihren alten Maßen zurück.",
+      "en": "A filleted hexagon made from a group came back squashed when it was ungrouped, as the fillet on its points was taken for a resize. Now the parts come back at their old size."
+    }
   }
 ]
