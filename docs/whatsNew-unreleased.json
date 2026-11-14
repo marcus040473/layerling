@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "title": {
+      "de": "Neigungswinkel mit „Proportionen beibehalten“",
+      "en": "Slope angle with Keep proportions"
+    },
+    "body": {
+      "de": "War „Proportionen beibehalten“ an, änderte ein getippter Neigungswinkel am Keil alle Maße, nur nicht den Winkel. Ebenso der Spitzenwinkel am Tropfen. Jetzt ändert ein Winkel nur die Höhe, Länge und Breite bleiben, wie sie sind.",
+      "en": "With Keep proportions on, a slope angle typed on a wedge changed every size but the angle. So did the tip angle of a teardrop. Now an angle changes only the height; length and width stay as they are."
+    },
+    "guide": {
+      "section": "shapeSettings"
+    }
+  }
+]

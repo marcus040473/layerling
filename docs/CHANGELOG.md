@@ -6,6 +6,8 @@ code still carries it - so a lower number further down is older, not newer.
 
 ## Unreleased
 
+- **A slope angle typed with Keep proportions on changes the angle (Issue #1763):** A wedge's Slope angle and a teardrop's Tip angle are reached by changing the height alone, and they reported that as a height typed in; with Keep proportions on, the length and width were scaled along, the whole body grew and the angle stayed. The two angle fields now say they are an angle (`angle` in `ShapeInspectorUpdateOptions`), and `keepsProportionsForUpdate` in `lib/keepProportions.ts` leaves Keep proportions out for them. Checked in the editor: a 20 mm wedge with Keep proportions on, 30 typed as its angle, is 20 x 20 mm and 11.55 mm high (before: scaled, still 45°). Unit test in `keepProportions`. Reported by @uninteressant2026.
+
 ## 1.165.0
 
 - **SBC board: FriendlyELEC NanoPi NEO3 Plus and Waveshare ESP32-P4-NANO (PR #1758 by @plazmabokor):** Two more boards for the SBC board shape. The NanoPi NEO3 Plus from FriendlyELEC's PCB CAD file (48 mm square with R 3.048 corners, the tab under the USB-C and the notches, the four 3.0 mm holes checked on a real board, every part's place from its footprint; Ethernet and the upright USB 3.0 at the right end, microSD at the left, the USER and MASK buttons pressed from the front edge), the ESP32-P4-NANO from Waveshare's STEP model and drawing (50 x 50 x 1.6 mm, 2.70 mm holes 45.10 mm apart, R 2.00 corners), turned a quarter so its microSD card goes in at the left edge like on every other board. Heights the files do not give are marked estimated. Unit tests for both boards, and the STEP export test knows the NEO3 Plus outline. The code is the PR's; merged with green CI, not opened in the editor.

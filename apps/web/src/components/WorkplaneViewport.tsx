@@ -40,7 +40,7 @@ import { readViewScrollbars, storeViewScrollbars } from "@/lib/viewScroll";
 import { openSecondViewWindow, SecondViewWindow, useSecondViewSupported } from "@/components/workplane/SecondViewWindow";
 import { starSettingsForSize } from "@/lib/starGeometry";
 import { carriedOntoFace } from "@/lib/carryOntoFace";
-import { keepsProportionsOnAxis } from "@/lib/keepProportions";
+import { keepsProportionsForUpdate, keepsProportionsOnAxis } from "@/lib/keepProportions";
 import { useWheelField } from "@/lib/useWheelField";
 import { wheelBaseStep, wheelNextValue } from "@/lib/wheelValueStep";
 import { createLatestRunner, type LatestRunner } from "@/lib/latestRunner";
@@ -9505,7 +9505,7 @@ export function WorkplaneViewport({
             // Der Inspektor rechnet in der Urform; ein gedrehter Koerper wird
             // daraus neu gebaut, also muss auch der Anker daher kommen.
             const inspected = shapeWithParametricSource(selectedShape);
-            const resized = proportionLockRef.current ? patchWithKeptProportions(inspected, patch, options?.resizeAxis) : patch;
+            const resized = proportionLockRef.current && keepsProportionsForUpdate(inspected, options) ? patchWithKeptProportions(inspected, patch, options?.resizeAxis) : patch;
             onUpdateShape(selectedShape.id, patchWithResizeAnchor(inspected, resized, options?.resizeAxis, lastResizeAnchorRef.current));
           }}
           proportionLock={proportionLock}

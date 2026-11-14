@@ -603,7 +603,11 @@ type ColorPropertyConfig = {
 };
 
 type ShapePropertyConfig = RangePropertyConfig | TextPropertyConfig | SelectPropertyConfig | TogglePropertyConfig | ColorPropertyConfig;
-export type ShapeInspectorUpdateOptions = { resizeAxis?: "width" | "depth" | "height" };
+/**
+ * `angle`: the measure typed is an angle that changes the body's form through one size (a wedge's slope, a teardrop's tip),
+ * so "Keep proportions" leaves the other sizes alone; scaled along, the angle stayed as it was (#1763).
+ */
+export type ShapeInspectorUpdateOptions = { resizeAxis?: "width" | "depth" | "height"; angle?: boolean };
 type ShapeInspectorUpdate = (patch: Partial<WorkplaneShape>, options?: ShapeInspectorUpdateOptions) => void;
 
 function clamp(value: number, min: number, max: number) {
@@ -1452,7 +1456,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         min: MIN_TEARDROP_TIP_ANGLE,
         max: MAX_TEARDROP_TIP_ANGLE,
         step: 1,
-        onChange: (value) => onUpdate({ height: teardropHeightForTipAngle(width, normalizeTeardropTipAngle(value)) }, { resizeAxis: "height" }),
+        onChange: (value) => onUpdate({ height: teardropHeightForTipAngle(width, normalizeTeardropTipAngle(value)) }, { resizeAxis: "height", angle: true }),
       },
       { id: "height", label: t("prop.height"), value: shape.height, min: MIN_SHAPE_SIZE, max: 160, onChange: setHeight },
       ...roundSideProperties(shape, width, width, onUpdate),
@@ -2802,7 +2806,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         min: MIN_WEDGE_ANGLE,
         max: MAX_WEDGE_ANGLE,
         step: 1,
-        onChange: (angle) => onUpdate({ height: Math.max(MIN_SHAPE_SIZE, wedgeHeightForAngle(width, angle)) }, { resizeAxis: "height" }),
+        onChange: (angle) => onUpdate({ height: Math.max(MIN_SHAPE_SIZE, wedgeHeightForAngle(width, angle)) }, { resizeAxis: "height", angle: true }),
       },
     ];
   }
