@@ -6,6 +6,8 @@ code still carries it - so a lower number further down is older, not newer.
 
 ## Unreleased
 
+## 1.165.1
+
 - **A slope angle typed with Keep proportions on changes the angle (Issue #1763):** A wedge's Slope angle and a teardrop's Tip angle are reached by changing the height alone, and they reported that as a height typed in; with Keep proportions on, the length and width were scaled along, the whole body grew and the angle stayed. The two angle fields now say they are an angle (`angle` in `ShapeInspectorUpdateOptions`), and `keepsProportionsForUpdate` in `lib/keepProportions.ts` leaves Keep proportions out for them. Checked in the editor: a 20 mm wedge with Keep proportions on, 30 typed as its angle, is 20 x 20 mm and 11.55 mm high (before: scaled, still 45°). Unit test in `keepProportions`. Reported by @uninteressant2026.
 
 ## 1.165.0
