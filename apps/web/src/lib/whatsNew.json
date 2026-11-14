@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.165.2",
+    "items": [
+      {
+        "title": {
+          "de": "Kopien kleiner Teile bleiben im Blick",
+          "en": "Copies of small parts stay in view"
+        },
+        "body": {
+          "de": "Eine eingefügte Kopie lag immer 12 mm neben dem Original. Bei einem Teil von wenigen Millimetern und starkem Zoom war sie damit außerhalb des Bildes. Jetzt rückt sie um die halbe Größe dessen, was du kopiert hast, zwischen 1 und 12 mm. Große Teile rücken wie bisher 12 mm.",
+          "en": "A pasted copy always lay 12 mm beside the original, which put it out of view for a part of a few millimetres while zoomed in. Now it moves by half the size of what you copied, between 1 and 12 mm. Large parts still move 12 mm."
+        }
+      }
+    ]
+  },
+  {
     "version": "1.165.1",
     "items": [
       {
