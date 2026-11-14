@@ -1268,7 +1268,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "shell.grid": "Gridfinity-Boden",
   "shell.gridCells": "Felder im Boden",
   "shell.gridFit": "Wände ans Raster anpassen",
-  "shell.gridHint": "Eine Gridfinity-Grundplatte im Boden: für jedes Feld eine Mulde, so viele wie eingestellt (höchstens so viele, wie hineinpassen). Der Boden wird 6,2 mm dick. Mit der Anpassung werden die Wände verdickt, sodass der Innenraum genau die Felder mit 0,5 mm Spiel ist.",
+  "shell.gridHint": "Eine Gridfinity-Grundplatte im Boden: für jedes Feld eine Mulde, so viele wie eingestellt (höchstens so viele, wie hineinpassen). Der Boden wird 6,2 mm dick. Mit der Anpassung werden die Wände verdickt, sodass der Innenraum genau die Felder mit 0,5 mm Spiel ist. Am rechten Ende des Reglers nimmt er alle Felder, die hineinpassen, und mehr, wenn die Box größer wird.",
   "shell.gridNoCell": "Nicht einmal ein ganzes Feld passt in den Innenraum dieser Box.",
   "shell.dividers": "Trennstege",
   "shell.dividersAcross": "Trennstege quer",
