@@ -41,36 +41,65 @@ export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: 
     const rim = top - Math.min(0.3, total * 0.02);
     const faces = rimFaces(cad, solid, rim);
     if (!faces || faces.length === 0 || faces.every(({ openings }) => openings.length === 0)) throw new Error(STACK_NEEDS_TOP_MESSAGE);
-    // The foot of the box above goes into the opening of the box below: the outline at the bottom as wide as at the rim.
-    const footPlane = bottom + Math.min(0.3, total * 0.02);
+    // The foot of the box above goes into the opening of the box below: the walls stand straight between just above the foot
+    // and half way up. Measured there, not at the very bottom and top, so a rounded or chamfered bottom or top edge counts
+    // as straight: the foot is cut out of the bottom one anyway, and a top edge rounded outside leaves the opening as it is.
+    const footPlane = Math.min(bottom + foot + inset + 0.5, top - 0.5);
+    const midPlane = (footPlane + top) / 2;
     const footFaces = rimFaces(cad, solid, footPlane);
-    if (!footFaces) throw new Error(STACK_NOT_STRAIGHT_MESSAGE);
-    const topArea = outerArea(cad, faces);
-    if (Math.abs(topArea - outerArea(cad, footFaces)) > 0.01 * topArea) throw new Error(STACK_NOT_STRAIGHT_MESSAGE);
+    const midFaces = rimFaces(cad, solid, midPlane);
+    if (!footFaces || !midFaces) throw new Error(STACK_NOT_STRAIGHT_MESSAGE);
+    const midArea = outerArea(cad, midFaces);
+    if (Math.abs(midArea - outerArea(cad, footFaces)) > 0.01 * midArea) throw new Error(STACK_NOT_STRAIGHT_MESSAGE);
+    // The foot is the opening at the top, less the play: it fits whatever narrows the opening there (a top edge rounded outside
+    // narrows it a little). Above the foot the box widens at 45 degrees by the wall and the play.
+    // Cut at the very top first; where the kernel cannot move that outline (its edges come out broken there, as after a
+    // rounded bottom), a little lower, then half way up, where the walls stand straight.
+    let found: { lip: number; feet: Array<{ hole: ShapeHandle; foot: ShapeHandle; lowest: ShapeHandle | null }> } | null = null;
+    for (const lip of [top - 0.02, top - 0.3, midPlane]) {
+      const faces = rimFaces(cad, solid, lip);
+      if (!faces || faces.every(({ openings: holes }) => holes.length === 0)) continue;
+      const feet = faces.flatMap(({ openings: holes }) => holes.map((hole) => ({ hole, foot: moved(cad, hole, -SHELL_STACK_PLAY), lowest: moved(cad, hole, -(SHELL_STACK_PLAY + SHELL_STACK_FOOT_CHAMFER)) })));
+      if (feet.every(({ foot: f }) => f)) {
+        found = { lip, feet: feet as Array<{ hole: ShapeHandle; foot: ShapeHandle; lowest: ShapeHandle | null }> };
+        break;
+      }
+    }
+    if (!found) throw new Error(STACK_FAILED_MESSAGE);
+    const { lip } = found;
     const keep: ShapeHandle[] = [];
-    for (const { outer } of footFaces) {
-      const footFace = moved(cad, outer, -inset);
-      const lowest = moved(cad, outer, -(inset + SHELL_STACK_FOOT_CHAMFER));
-      if (!footFace) throw new Error(STACK_FAILED_MESSAGE);
-      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, foot / 2);
+    const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, foot / 2);
+    for (const { foot: footFace, lowest } of found.feet) {
       if (lowest && chamfer > 0) {
         // The lowest edge: widening at 45 degrees from the chamfer's inset to the foot's.
-        keep.push(cad.draftPrism(cad.translate(lowest, 0, bottom - footPlane, 0), 0, chamfer, 0, -45));
-        keep.push(block(cad, footFace, footPlane, bottom + chamfer, bottom + foot));
+        keep.push(cad.draftPrism(cad.translate(lowest, 0, bottom - lip, 0), 0, chamfer, 0, -45));
+        keep.push(block(cad, footFace, lip, bottom + chamfer, bottom + foot));
       } else {
-        keep.push(block(cad, footFace, footPlane, bottom - 1, bottom + foot));
+        keep.push(block(cad, footFace, lip, bottom - 1, bottom + foot));
       }
       // Above the foot, widening at 45 degrees to the full outline.
-      keep.push(cad.draftPrism(cad.translate(footFace, 0, bottom + foot - footPlane, 0), 0, inset, 0, -45));
+      keep.push(cad.draftPrism(cad.translate(footFace, 0, bottom + foot - lip, 0), 0, inset, 0, -45));
     }
     const wide = { x0: box.xmin - 1, z0: box.zmin - 1, x1: box.xmax + 1, z1: box.zmax + 1 };
     const slab = (low: number, high: number) => cad.makeBoxFromCorners({ x: wide.x0, y: low, z: wide.z0 }, { x: wide.x1, y: high, z: wide.z1 });
+    const feet = cad.fuseAll(keep);
     keep.push(slab(bottom + foot + inset - 0.01, top + 1));
     // The floor raised to the top of the widening: the foot is solid.
-    const filled = cad.fuseAll([solid, cad.common(original, slab(bottom - 1, floorTop))]);
+    // Within the cavity's outline only, from the bottom: the outside (a rounded bottom edge) is not touched twice.
+    // The cavity's outline half way up, where the walls stand straight (the top may be narrowed by a rounded edge).
+    const middle = rimFaces(cad, solid, midPlane) ?? [];
+    const fill = middle.flatMap(({ openings: holes }) => holes.map((hole) => block(cad, cad.makeFace(hole), midPlane, bottom, floorTop)));
+    if (!fill.length) throw new Error(STACK_FAILED_MESSAGE);
+    const filled = cad.fuseAll([solid, ...fill]);
     let body = cad.common(filled, cad.fuseAll(keep));
-    body = cad.simplify(body);
-    const solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
+    let solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
+    if (solids.length !== 1) {
+      // The kernel sometimes loses that common part (a rounded bottom edge): the same cut the other way, as what goes away.
+      body = cad.cut(filled, cad.cut(slab(bottom - 1, bottom + foot + inset - 0.005), feet));
+      solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
+    }
+    body = cad.simplify(solids.length === 1 ? solids[0] : body);
+    solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
     if (solids.length !== 1 || !cad.isValid(solids[0]) || cad.getVolume(solids[0]) <= 0) throw new Error(STACK_FAILED_MESSAGE);
     result = solids[0];
     return result;
