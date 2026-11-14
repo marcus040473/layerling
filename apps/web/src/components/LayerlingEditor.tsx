@@ -58,6 +58,7 @@ import { changesLockedOutline, setSketchPointsLocked, sketchLockState } from "@/
 import { curveSketchSegment, isSegmentCurved, straightenSketchSegment } from "@/lib/sketchSegmentCurve";
 import { chordHandles, withBezierHandles, withBezierStartHandle } from "@/lib/sketchBezierHandles";
 import { sketchProfileWithoutPoint } from "@/lib/sketchPointRemoval";
+import { toolSwitchKeepsChain } from "@/lib/sketchPointerControls";
 import { sketchProfileWithArc, type SketchArcEnd } from "@/lib/sketchArc";
 import { withSegmentsConstruction } from "@/lib/sketchConstruction";
 import { alignAxesForWorkplane, shiftAlongAxis, type AlignAxes } from "@/lib/alignFrame";
@@ -103,12 +104,13 @@ import { customFontList, onCustomFontsChanged, textFontLabel } from "@/lib/textF
 import { isCustomFontId } from "@/lib/customFonts";
 import { storedCustomFonts } from "@/lib/customFontStore";
 import { ArrayPanel } from "./workplane/ArrayPanel";
-import { ScalePercentPanel, type ScalePercentSettings } from "./workplane/ScalePercentPanel";
+import { DEFAULT_SCALE_PERCENT_SETTINGS, ScalePercentPanel, type ScalePercentSettings } from "./workplane/ScalePercentPanel";
 import { ClearancePanel, clearanceMarkFor, clearanceRowIds, type ClearanceSettings, type ClearanceToolState } from "./workplane/ClearancePanel";
 import { CLEARANCE_THRESHOLD_LIMITS, clearanceMeshShape, clearanceSourceShapes, clearanceStartThreshold, normalizeClearanceOptions, reclassifyClearance, readClearanceSettings, writeClearanceSettings } from "@/lib/clearanceCheck";
 import { PrintCheckPanel, printCheckLineFocus, printCheckLineIds, type PrintCheckLine, type PrintCheckSettings, type PrintCheckToolState } from "./workplane/PrintCheckPanel";
 import { normalizePrintCheckOptions, printCheckFloating, printCheckSmallContacts, printCheckTopLevelId, printCheckWarnings, PRINT_CHECK_NOZZLE_LIMITS, readPrintCheckSettings, writePrintCheckSettings } from "@/lib/printCheck";
-import { scaleShapesByPercent } from "@/lib/scaleByPercent";
+import { scaleShapesByPercent, worldBoxOfShapes } from "@/lib/scaleByPercent";
+import { MODEL_SCALE_RATIO_MAX, MODEL_SCALE_RATIO_MIN, modelScalePercent, type ModelScaleAxis } from "@/lib/modelScale";
 import { isSameSize, resizedCopy, SAME_SIZE, shapeSize, sizeFactorsBetween, type ShapeSize, type SizeFactors } from "@/lib/duplicateResize";
 import { canToggleGroupColors, colorForParts, groupShowsPartColors } from "@/lib/groupColors";
 import { disposeBoundsTree } from "three-mesh-bvh";
@@ -216,7 +218,7 @@ import { mcpGridfinityOutlinePatch, mcpGridfinityPatch, mcpGridfinityPaddingPatc
 import { createNoteId, normalizeNotes, NOTE_COUNT_LIMIT, NOTE_TEXT_LIMIT, referencePoints } from "@/lib/workplaneNotes";
 import { findShapeInHistoryState } from "@/lib/historyRestore";
 import { noteAnchorFromWorld, notesAfterShapeChange, notesPinnedTo, notesPutBack } from "@/lib/noteAnchoring";
-import { noticeReportsLastChange } from "@/lib/noticeTiming";
+import { noticeReportsLastChange, showsNotice } from "@/lib/noticeTiming";
 import { referencePointsForBox, unionReferenceBoxes, type ReferencePointSpot, type ReferencePosition } from "@/lib/referencePoints";
 import { normalizePlacementWorkplane, placementPatchForNewShape, placementWorkplaneCoordinates, placementWorkplaneFingerprint, placementWorkplaneFromSurface, placementWorkplaneIsBase, placementWorkplanePlateShift, placementWorkplanePoint, horizontalPlacementWorkplane, translationToWorkplane, type PlacementPoint, REVOLVE_REFERENCE_WORKPLANE, revolveBodyStandsUpright, type PlacementWorkplane } from "@/lib/placementWorkplane";
 import { localizedError } from "@/lib/userErrors";
@@ -270,7 +272,7 @@ import { roundedAlignedValue } from "@/lib/alignRounding";
 import { buildSketchLoftFromSelection, canSketchLoft } from "@/lib/sketchLoft";
 import { alignBounds, sizeAlignmentState, sizedShapesForSelection } from "@/lib/alignSize";
 import { ALIGN_PLATE_ID, alignPlateShape, distributedShapesForSelection, distributionState, type DistributeProblem, type DistributeResult } from "@/lib/alignDistribute";
-import { cloneAsGroupChild, meshDataToManifoldMesh, shapeToManifoldSolid, withClosedHolesNote, withConnectorsNote, stretchNotice, stretchLengthLabel, MAX_STRETCH_LENGTH, DEFAULT_STRETCH_LENGTH, unionOverlappingExportMeshes, exportBodiesWithLooseHoles, formatSectionOffset, SECTION_SEEN_FROM_KEYS, visibleExportShapes, multicolorExportSolids, exportFaceColors, colorSeparatedExportMeshes, disposeManifold, canIntersectShapes, buildIntersectionShapeFromSelection, canHullShapes, buildHullShapeFromSelection, groupedShape, quaternionForShape, rotationFromQuaternion, cleanShapePatch, restoreGroupedChildren, restoreGroupedChildrenForEdges } from "@/lib/editorBooleans";
+import { cloneAsGroupChild, meshDataToManifoldMesh, shapeToManifoldSolid, withClosedHolesNote, withConnectorsNote, stretchNotice, stretchLengthLabel, type RebuildStretchedGroup, MAX_STRETCH_LENGTH, DEFAULT_STRETCH_LENGTH, unionOverlappingExportMeshes, exportBodiesWithLooseHoles, formatSectionOffset, SECTION_SEEN_FROM_KEYS, visibleExportShapes, multicolorExportSolids, exportFaceColors, colorSeparatedExportMeshes, disposeManifold, canIntersectShapes, buildIntersectionShapeFromSelection, canHullShapes, buildHullShapeFromSelection, groupedShape, quaternionForShape, rotationFromQuaternion, cleanShapePatch, restoreGroupedChildren, restoreGroupedChildrenForEdges } from "@/lib/editorBooleans";
 import { handleViewArrowKey } from "@/lib/viewArrowKeys";
 import { createKeyRepeatBatch } from "@/lib/keyRepeatBatch";
 import { escapeWasHandled } from "@/lib/escapeHandled";
@@ -283,6 +285,7 @@ import { emptySketchProfile, cadShapeFromSketchProfile, cadShapeFromSketchSweep,
 import { drawingLabelsInLanguage } from "@/lib/drawingLabels";
 import { DEFAULT_TEXT_BLOCK_GAP, offersTextBlock, TEXT_BLOCK_ALIGNS, textBlockFor, textBlockLines, type TextBlockAlign, type TextBlockOptions } from "@/lib/textBlock";
 import { offersTextLayers, textLayerStack, layeredTextShape, nameTagSource, nameTagsFor, offersIconLayers, iconLayerStack, iconTagArea, layeredIconShape, iconTagCopies, svgIconArea, iconTagFromSvg, keyringTabShape, keyringTabTag, keyringTabAt, keyringTabPlace, textFreeKeyring, textFreeKeyringPlace, iconFreeKeyring, iconFreeKeyringPlace } from "@/lib/editorTextTags";
+import { groupMarksOf } from "@/lib/groupMarks";
 import { isNonTextControl, isTypingTarget } from "@/lib/editorKeyTargets";
 import { isFocusModeKey, useFocusMode } from "@/lib/focusMode";
 import { DEFAULT_KEYRING_DIAMETER } from "@/lib/textGeometry";
@@ -3131,7 +3134,7 @@ export function LayerlingEditor({
   /** The last failed autosave, so the editor can say so; `at` makes a repeat failure show again. */
   projectSaveFailure?: { message: string; at: number } | null;
   /** Why the newest state of this design could not be stored, while it could not (#1652): a note stays up until a save gets through. */
-  projectUnsaved?: { message: string; kind: SaveFailureKind; detail: string } | null;
+  projectUnsaved?: { message: string; kind: SaveFailureKind; detail: string; broken?: boolean } | null;
   onProjectNameChange?: (name: string) => void;
   /** Legt aus einem frueheren Stand ein neues Projekt an und sagt in einem Satz, was daraus wurde. */
   onCreateProjectFromState?: (request: HistoryProjectRequest) => Promise<string>;
@@ -3442,8 +3445,10 @@ export function LayerlingEditor({
   const [arrayTool, setArrayTool] = useState<ArraySettings | null>(null);
   const [scalePercentTool, setScalePercentTool] = useState<ScalePercentSettings | null>(null);
   const [scalePercentError, setScalePercentError] = useState<string | null>(null);
+  // The model scale chosen last stays for the next time the window opens: a model railway builder keeps to one gauge.
+  const lastModelScaleRef = useRef<Pick<ScalePercentSettings, "by" | "ratio" | "useRealSize" | "realSize" | "axis"> | null>(null);
   const editorLanguage = useLanguage();
-  const { notice, noticeAction, noticeAt, setNotice, holdNotice, releaseNotice, dismissNotice, reportNoticesRef } = useEditorNotice();
+  const { notice, noticeAction, noticeAt, noticeOrdinary, setNotice, holdNotice, releaseNotice, dismissNotice, reportNoticesRef } = useEditorNotice();
   // Cuts and splits run in a worker (lib/geometryWorker.ts): one that takes a moment says so, and
   // the editor stays usable meanwhile. Leaving the editor calls off what it still had running.
   const geometryAbortRef = useRef<AbortController | null>(null);
@@ -3532,6 +3537,8 @@ export function LayerlingEditor({
   }, [projectId]);
   const booleanAutomationRunRef = useRef<string | null>(null);
   const splitRunRef = useRef(0);
+  // A stretched group is built again from its parts (Discussion #1707); set once rebuildGroupFromParts is made, below.
+  const rebuildStretchedGroupRef = useRef<RebuildStretchedGroup | undefined>(undefined);
   const splitProjectIdRef = useRef(projectId ?? null);
   splitProjectIdRef.current = projectId ?? null;
   const projectHydratingRef = useRef(false);
@@ -4134,6 +4141,13 @@ export function LayerlingEditor({
   }, [initialSnap]);
 
   const selectedShapes = useMemo(() => shapes.filter((shape) => selectedIds.includes(shape.id)), [selectedIds, shapes]);
+  const scalePercentOpen = Boolean(scalePercentTool);
+  // The box the selection takes up, for the model scale in Scale by percent (only while the window is open).
+  const scalePercentSelectionSize = useMemo(() => {
+    if (!scalePercentOpen || selectedShapes.length === 0) return { width: 0, depth: 0, height: 0 };
+    const size = worldBoxOfShapes(selectedShapes).getSize(new THREE.Vector3());
+    return { width: size.x, depth: size.z, height: size.y };
+  }, [scalePercentOpen, selectedShapes]);
   const selectedShape = selectedShapes.at(-1) ?? null;
   const hasSelection = selectedShapes.length > 0;
 
@@ -5804,8 +5818,11 @@ export function LayerlingEditor({
 
   const setActiveSketchTool = useCallback((tool: SketchTool) => {
     setSketchTool(tool);
-    setSketchActivePointId(null);
-    setSketchSelection(null);
+    // Line, curve and smooth line go on from the last point (#1725); every other switch ends the chain.
+    if (!toolSwitchKeepsChain(sketchTool, tool)) {
+      setSketchActivePointId(null);
+      setSketchSelection(null);
+    }
     if (tool !== "measure") setSketchMeasureStart(null);
     const messages: Record<SketchTool, string> = {
       line: t("status.sketchTool.line"),
@@ -5829,7 +5846,7 @@ export function LayerlingEditor({
       measure: t("status.sketchTool.measure"),
     };
     setNotice(messages[tool]);
-  }, []);
+  }, [sketchTool]);
 
   const measureSketchPoint = useCallback(
     (point: SketchPoint) => {
@@ -7036,7 +7053,7 @@ export function LayerlingEditor({
     if (refuseBodyLockedSelection()) return;
     setArrayTool(null);
     setScalePercentError(null);
-    setScalePercentTool({ percent: 100, mode: "together" });
+    setScalePercentTool({ ...DEFAULT_SCALE_PERCENT_SETTINGS, ...lastModelScaleRef.current });
   }, [refuseLockedSelection, scalePercentTool, selectedShapes.length, refuseBodyLockedSelection]);
 
   const applyScalePercentTool = useCallback((percent?: number) => {
@@ -7046,6 +7063,8 @@ export function LayerlingEditor({
       setScalePercentError(result.message);
       return;
     }
+    const { by, ratio, useRealSize, realSize, axis } = scalePercentTool;
+    lastModelScaleRef.current = { by, ratio, useRealSize, realSize, axis };
     setScalePercentTool(null);
     setScalePercentError(null);
   }, [scalePercentTool, scaleSelectionByPercent]);
@@ -7750,7 +7769,7 @@ export function LayerlingEditor({
     splitAbortRef.current = splitAbort;
     const stretch = session.mode === "stretch" ? session.stretch : undefined;
     const connectors = stretch !== undefined || session.connectors.kind === "none" ? undefined : session.connectors;
-    const outcome = await splitShapesByPlaneOffThread(splitTargetShapes, plane, () => splitRunRef.current === runId && sourceContextIsCurrent(), splitAbort.signal, connectors, stretch);
+    const outcome = await splitShapesByPlaneOffThread(splitTargetShapes, plane, () => splitRunRef.current === runId && sourceContextIsCurrent(), splitAbort.signal, connectors, stretch, rebuildStretchedGroupRef.current);
     if (splitRunRef.current !== runId) return;
     if (outcome.status === "stale" || !sourceContextIsCurrent()) {
       splitRunRef.current += 1;
@@ -11670,7 +11689,10 @@ export function LayerlingEditor({
     const remainingShapes = shapesRef.current.filter((shape) => !operandIds.has(shape.id));
     if (result.empty) {
       // Nothing is shared: the shapes stay, instead of vanishing (#372). Move them over each other, or take one out.
-      setNotice(t("status.intersectionEmptyKept"));
+      // The preview closes with it, so the button does not stay pressed and the shapes do not stay see-through (#1729).
+      const wasPreview = Boolean(intersectPreviewIdsRef.current);
+      if (wasPreview) exitIntersectPreview();
+      setNotice(t(wasPreview ? "status.intersectionEmptyClosed" : "status.intersectionEmptyKept"));
       return;
     }
 
@@ -12050,12 +12072,18 @@ export function LayerlingEditor({
       groupResize: original.groupResize,
       // Multicolor switched on or off stays so after Done; a group cut into one body lost it and turned one colour (#1323).
       ...(typeof original.multicolor === "boolean" ? { multicolor: original.multicolor } : {}),
+      // A name tag, icon tag, QR code or SBC board stays one, with its card (Discussion #1692).
+      ...groupMarksOf(original),
     }, Boolean(original.hole))));
     // The group's own paint (paint.ts) goes over to the group built again, where it lay in the world.
     if (original.paint?.length && canPaintShape(group)) group.paint = rebasePaintStrokes(original.paint, original, group);
     const mergeWarning = "mergeWarning" in result && typeof result.mergeWarning === "string" ? result.mergeWarning : "";
     return { group, mergeWarning };
   }, []);
+  rebuildStretchedGroupRef.current = async (group, parts) => {
+    const rebuilt = await rebuildGroupFromParts(group, parts);
+    return rebuilt.group ?? { error: rebuilt.failure };
+  };
 
   const finishOpenGroup = useCallback(async (): Promise<OpenGroupOutcome> => {
     const levels = openGroupsRef.current;
@@ -14018,9 +14046,18 @@ export function LayerlingEditor({
       if (command.action === "scale_objects") {
         const requestedIds = mcpStringArray(params.ids ?? params.id);
         const ids = requestedIds.length ? requestedIds : selectedIdsRef.current;
-        const percent = typeof params.percent === "number" ? params.percent : Number.NaN;
         const mode = params.mode === "each" ? "each" : "together";
         if (ids.length === 0) throw new Error("scale_objects needs ids or a selection");
+        // A model scale such as 1:87 works the percentage out, as in the window (forum, 3DVadda).
+        const ratio = typeof params.scale === "number" ? params.scale : null;
+        let percent = typeof params.percent === "number" ? params.percent : Number.NaN;
+        if (ratio !== null) {
+          const realSize = typeof params.realSize === "number" ? params.realSize : null;
+          const axis: ModelScaleAxis = params.realSizeAxis === "length" ? "length" : "height";
+          const size = worldBoxOfShapes(currentShapes().filter((shape) => ids.includes(shape.id))).getSize(new THREE.Vector3());
+          percent = modelScalePercent(ratio, realSize, { width: size.x, depth: size.z, height: size.y }, axis);
+          if (!Number.isFinite(percent)) throw new Error(`scale must be between ${MODEL_SCALE_RATIO_MIN} and ${MODEL_SCALE_RATIO_MAX}, realSize a size in mm above 0`);
+        }
         const unscaled = new Map(currentShapes().map((shape) => [shape.id, shape]));
         const result = scaleSelectionByPercent(ids, percent, mode);
         if (!result.ok) throw new Error(result.message);
@@ -14030,6 +14067,7 @@ export function LayerlingEditor({
         const scaled = new Set(ids);
         return {
           percent,
+          ...(ratio !== null ? { scale: ratio } : {}),
           mode,
           skippedLocked: result.skipped,
           objects: currentShapes().filter((shape) => scaled.has(shape.id)).map(mcpShapeSummary),
@@ -15551,6 +15589,7 @@ export function LayerlingEditor({
           geometryAbortRef.current?.signal,
           connectors.kind === "none" ? undefined : connectors,
           stretch,
+          rebuildStretchedGroupRef.current,
         );
         if (outcome.status === "stale") throw new Error("The scene changed while splitting; run the command again");
         if (outcome.status === "failed") throw new Error(t(stretch === undefined ? "split.error.failed" : "split.error.stretchFailed", { name: outcome.shape.name, detail: outcome.error }));
@@ -18272,6 +18311,9 @@ export function LayerlingEditor({
           event.preventDefault();
           exitIntersectPreview();
           setNotice("");
+          // The Intersection button was clicked and still has the focus: its frame would stay round it, and a folded
+          // group stay open while the pointer rests on it, after the preview is over (#1729).
+          if (document.activeElement instanceof HTMLButtonElement && document.activeElement.classList.contains("toolbar-icon")) document.activeElement.blur();
           return;
         }
         if (clearanceToolOpenRef.current) {
@@ -19469,7 +19511,8 @@ export function LayerlingEditor({
       {projectUnsaved ? (
         <div className="unsaved-design-banner" role="alert">
           <strong>{t("notice.designNotSavedTitle")}</strong>
-          <span>{projectUnsaved.message}</span>
+          {/* Refused with most of the room free, the browser's storage for the site is broken: "no room left" would send people deleting designs, which does not help (#1639, Facebook). */}
+          <span>{projectUnsaved.broken ? t("notice.storageBroken", { backupAll: t("dashboard.backupAll") }) : projectUnsaved.message}</span>
           {/* Lighter meshes help only where size or memory was the reason; a design of a few plates is refused all the same (#1639). */}
           <span>{t(projectUnsaved.kind === "outOfMemory" || projectUnsaved.kind === "tooLarge" ? "notice.designNotSavedHint" : "notice.designNotSavedHintCopy")}</span>
           {/* The browser's own words and its storage figures, so a screenshot tells why (#1639). */}
@@ -19557,6 +19600,10 @@ export function LayerlingEditor({
           onChange={changePrintCheckSettings}
           onCheck={() => void runPrintCheck(printCheckTool.settings, printCheckTool.scopeIds)}
           onShow={showPrintCheckLine}
+          onExport={() => {
+            closePrintCheck();
+            setTopPanel("export");
+          }}
           onClose={closePrintCheck}
         />
       ) : null}
@@ -19564,6 +19611,7 @@ export function LayerlingEditor({
         <ScalePercentPanel
           targetName={selectedShapes.length === 1 ? selectedShapes[0].name : t("array.targetMany", { count: selectedShapes.length })}
           count={selectedShapes.length}
+          selectionSize={scalePercentSelectionSize}
           settings={scalePercentTool}
           workspace={workspaceSettings}
           error={scalePercentError}
@@ -20152,7 +20200,7 @@ export function LayerlingEditor({
           onClose={() => setBackupsOpen(false)}
         />
       ) : null}
-      {notice ? (
+      {notice && showsNotice(workspaceSettings.showStepNotices, noticeOrdinary, noticeReportsLastChange(noticeAt, lastHistoryChangeRef.current, historyIndex)) ? (
         <p className="editor-status" role="status" aria-live="polite" onMouseEnter={holdNotice} onMouseLeave={releaseNotice}>
           <span className="editor-status-text">{notice}</span>
           {!noticeAction && noticeReportsLastChange(noticeAt, lastHistoryChangeRef.current, historyIndex) ? (

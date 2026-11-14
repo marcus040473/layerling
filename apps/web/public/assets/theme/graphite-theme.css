@@ -407,6 +407,23 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .dashboard-trademark {
   color: #565656;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-notice-action {
+  border: 1px solid #c96a12;
+  background: #f3f3f3;
+  color: #9a4f08;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-notice-action:hover,
+:where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-notice-action:focus-visible {
+  background: #e1e1e1;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .dashboard-notice-action {
+  border-color: #f3a452;
+  background: #2d2d2d;
+  color: #f3a452;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .install-app-hint {
   background: linear-gradient(135deg, #f0f0f0 0%, #e1e1e1 100%);
   border: 2px solid #e08a2c;
@@ -1148,6 +1165,14 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-quick-ac
   color: #515151;
   background: #f8f8f8;
   border: 1px solid #c8c8c8;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .model-scale-result {
+  color: #515151;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .model-scale-result {
+  color: #c1c1c1;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .paint-eraser {
@@ -3181,6 +3206,10 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .inspector-bundle-note 
   color: #656565;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .print-check-export {
+  color: #656565;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .print-check-row {
   color: #2d2d2d;
   background: #f7f7f7;
@@ -3425,7 +3454,9 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .touch-multi-select {
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .corner-ruler-tick-label {
-  color: #5a3917;
+  color: #323232;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 0 1px rgba(90, 57, 23, 0.18);
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .corner-ruler-arm {
@@ -3438,7 +3469,8 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .corner-ruler-tick {
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .corner-ruler-tick-label {
   color: #dcdcdc;
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.7);
+  background: rgba(27, 27, 27, 0.86);
+  box-shadow: 0 0 0 1px rgba(242, 166, 90, 0.35);
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .corner-ruler-delete {
@@ -6638,7 +6670,8 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .print-check-nozzle-fie
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .print-check-nozzle-field span,
-html[data-theme="dark"]:where([data-palette="graphite"]) .print-check-nozzle-hint {
+html[data-theme="dark"]:where([data-palette="graphite"]) .print-check-nozzle-hint,
+html[data-theme="dark"]:where([data-palette="graphite"]) .print-check-export {
   color: #909090;
 }
 
@@ -9707,6 +9740,19 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .select-property select
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .property-card > button.property-card-header:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .align-size-toggle {
+  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  color: var(--foreground);
+  box-shadow: 0 2px 8px rgba(33, 33, 33, 0.22);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .align-size-toggle.on {
+  background: rgba(173, 89, 0, 0.92);
+  border-color: rgba(173, 89, 0, 0.92);
+  color: #fff;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-welcome-hide {

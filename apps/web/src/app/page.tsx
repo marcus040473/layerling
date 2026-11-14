@@ -3,7 +3,7 @@
 import { requestPersistentStorage } from "@/lib/persistentStorage";
 import { clearDesignOpening, forgetDesignOpening, markDesignOpening, takeUnfinishedOpening } from "@/lib/openingDesignGuard";
 import { keepShownSelection, localDesignKey, selectionHasStale, serverDesignKey, toggleDesignSelection } from "@/lib/designSelection";
-import { Archive, ArchiveRestore, Check, History, CheckSquare, Clock3, Copy, EllipsisVertical, Folder, FolderInput, FolderKanban, FolderPlus, FolderUp, Grid3X3, List, LoaderCircle, MonitorDown, Pencil, Plus, RefreshCw, Search, Server, Shapes, SlidersHorizontal, Sparkles, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Check, History, CheckSquare, Clock3, Copy, CopyPlus, EllipsisVertical, Folder, FolderInput, FolderKanban, FolderPlus, FolderUp, Grid3X3, List, LoaderCircle, MonitorDown, Pencil, Plus, RefreshCw, Search, Server, Shapes, SlidersHorizontal, Sparkles, Trash2, X } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { AppFooter } from "@/components/AppFooter";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
@@ -43,8 +43,8 @@ import { applyAppTheme, getAppThemePreference, hasStoredAppTheme, readStoredAppT
 import { hydrateEditorHistoryState, notesForHistoryIndex, type EditorHistoryEntry } from "@/lib/editorHistory";
 import { detectLanguage, setLanguage, t, translate, type Language } from "@/lib/i18n";
 import { localizedError } from "@/lib/userErrors";
-import { historyTrimSteps, isRetriedWithLessHistory, trimHistoryWindow } from "@/lib/historyTrim";
-import { describeSaveError, probeBrowserStorage, saveFailureKind, storageProbeText, type SaveFailureKind } from "@/lib/saveFailureDiagnosis";
+import { saveWithLessHistoryIfNeeded } from "@/lib/historyTrim";
+import { describeSaveError, probeBrowserStorage, saveFailureKind, storageLooksBroken, storageProbeText, type SaveFailureKind } from "@/lib/saveFailureDiagnosis";
 import { reportBugReportError } from "@/lib/bugReport";
 import { leaveGuardReleased, provideDesignSaveState } from "@/lib/leaveGuard";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
@@ -632,31 +632,19 @@ async function loadProjectPackage(projectId: string): Promise<Uint8Array | null>
 type ProjectShapesSaveResult = { historyTrimmed?: { kept: number; total: number } };
 
 async function saveProjectShapes(projectId: string, entry: ProjectShapeCacheEntry, context: ProjectShapeSaveContext): Promise<ProjectShapesSaveResult> {
-  const pack = (history: ProjectShapeCacheEntry["history"], historyIndex: number) => packProjectEntry(projectId, entry, context, history, historyIndex);
-  let lylPackage: Awaited<ReturnType<typeof exportLylProject>>;
-  let historyTrimmed: ProjectShapesSaveResult["historyTrimmed"];
-  try {
-    lylPackage = await pack(entry.history, entry.historyIndex);
-  } catch (error) {
-    if (!isRetriedWithLessHistory(error) || entry.history.length <= 1) throw error;
-    // Too big with the whole history, or out of memory packing it (#1652): keep the newest steps that fit, so the design
-    // is saved all the same.
-    let packed: Awaited<ReturnType<typeof exportLylProject>> | null = null;
-    for (const keep of historyTrimSteps(entry.history.length)) {
-      const trimmed = trimHistoryWindow(entry.history, entry.historyIndex, keep);
-      try {
-        packed = await pack(trimmed.history, trimmed.historyIndex);
-        historyTrimmed = { kept: trimmed.history.length, total: entry.history.length };
-        break;
-      } catch (retryError) {
-        if (!isRetriedWithLessHistory(retryError)) throw retryError;
-      }
-    }
-    if (!packed) throw error;
-    lylPackage = packed;
-  }
+  // Too big with the whole history, out of memory packing it (#1652), or refused by the browser (#1728): the newest
+  // steps that fit are kept, so the design is saved all the same.
+  return saveWithLessHistoryIfNeeded(
+    entry.history,
+    entry.historyIndex,
+    (history, historyIndex) => packProjectEntry(projectId, entry, context, history, historyIndex),
+    (lylPackage) => writeProjectPackage(projectId, entry.revision, lylPackage),
+  );
+}
+
+async function writeProjectPackage(projectId: string, revision: number, lylPackage: Awaited<ReturnType<typeof exportLylProject>>): Promise<void> {
   const database = await openProjectShapesDb();
-  return new Promise<ProjectShapesSaveResult>((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     const transaction = database.transaction(PROJECT_SHAPES_STORE_NAME, "readwrite");
     const store = transaction.objectStore(PROJECT_SHAPES_STORE_NAME);
     const existingRequest = store.get(projectId);
@@ -665,19 +653,19 @@ async function saveProjectShapes(projectId: string, entry: ProjectShapeCacheEntr
     };
     existingRequest.onsuccess = () => {
       const existing = existingRequest.result as ProjectShapeRecord | undefined;
-      if (existing && existing.revision > entry.revision) {
+      if (existing && existing.revision > revision) {
         return;
       }
       store.put({
         id: projectId,
-        revision: entry.revision,
+        revision,
         lylPackage,
         updatedAt: Date.now(),
       } satisfies ProjectShapeRecord);
     };
     transaction.oncomplete = () => {
       database.close();
-      resolve({ historyTrimmed });
+      resolve();
     };
     transaction.onerror = () => {
       database.close();
@@ -1014,6 +1002,14 @@ export default function Home() {
   const [themePreference, setThemePreference] = useState<AppThemePreference>("system");
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedAppTheme>("light");
   const [dashboardNotice, setDashboardNotice] = useState("");
+  // A notice may carry one button, shown while that notice stands: a backup whose save dialog handed back no file
+  // offers to make it a download instead (Facebook group, 12.11.2026).
+  const [dashboardNoticeAction, setDashboardNoticeAction] = useState<{ notice: string; label: string; run: () => void } | null>(null);
+  const noticeNoBackupChosen = useCallback((retryAsDownload: () => void) => {
+    const notice = t("notice.backupNothingChosen");
+    setDashboardNotice(notice);
+    setDashboardNoticeAction({ notice, label: t("status.saveAsDownload"), run: retryAsDownload });
+  }, []);
   // A backup that holds the settings of the browser it came from asks, before it is restored, whether they come along
   // (Discussion #1678). The answer: true or false for the tick box, null for Cancel.
   const [backupSettingsAsk, setBackupSettingsAsk] = useState<{ fileName: string; take: boolean; resolve: (answer: boolean | null) => void } | null>(null);
@@ -1090,21 +1086,24 @@ export default function Home() {
   // Designs whose newest state could not be stored (#1652): the revision that failed, until a newer save gets through. While
   // one is listed, closing or reloading the tab asks first, and the editor keeps a red note up.
   const unsavedProjectsRef = useRef(new Map<string, number>());
-  const [unsavedDesign, setUnsavedDesign] = useState<{ projectId: string; message: string; kind: SaveFailureKind; detail: string } | null>(null);
+  const [unsavedDesign, setUnsavedDesign] = useState<{ projectId: string; message: string; kind: SaveFailureKind; detail: string; broken?: boolean } | null>(null);
   /**
    * The error with what the browser says about its storage and whether a tiny write gets through (#1639), for the
    * note, the console and the bug report. A failing design fails at every change, so the storage is asked once a
    * minute for the same error.
    */
-  const lastSaveDiagnosisRef = useRef<{ detail: string; at: number; text: string } | null>(null);
+  const lastSaveDiagnosisRef = useRef<{ detail: string; at: number; text: string; broken: boolean } | null>(null);
   const diagnoseSaveFailure = useCallback(async (detail: string) => {
     const last = lastSaveDiagnosisRef.current;
-    if (last && last.detail === detail && Date.now() - last.at < 60000) return last.text;
-    const text = `${detail} · ${storageProbeText(await probeBrowserStorage())}`;
-    lastSaveDiagnosisRef.current = { detail, at: Date.now(), text };
-    console.error(`layerling: storage when the save failed: ${text}`);
+    if (last && last.detail === detail && Date.now() - last.at < 60000) return { text: last.text, broken: last.broken };
+    const probe = await probeBrowserStorage();
+    const text = `${detail} · ${storageProbeText(probe)}`;
+    // A tiny write refused with most of the room free: the site's storage is broken, not full.
+    const broken = storageLooksBroken(probe);
+    lastSaveDiagnosisRef.current = { detail, at: Date.now(), text, broken };
+    console.error(`layerling: storage when the save failed: ${text}${broken ? " (storage looks broken, not full)" : ""}`);
     reportBugReportError(`Save failed: ${text}`);
-    return text;
+    return { text, broken };
   }, []);
   const editorLoadingStartedAtRef = useRef(0);
 
@@ -1771,8 +1770,8 @@ export default function Home() {
           const detail = describeSaveError(error);
           console.error(`layerling: could not save the design: ${detail}`, error);
           setUnsavedDesign({ projectId: snapshot.projectId, message, kind, detail });
-          void diagnoseSaveFailure(detail).then((full) => {
-            setUnsavedDesign((current) => (current?.projectId === snapshot.projectId ? { ...current, detail: full } : current));
+          void diagnoseSaveFailure(detail).then(({ text, broken }) => {
+            setUnsavedDesign((current) => (current?.projectId === snapshot.projectId ? { ...current, detail: text, broken } : current));
           });
         }
       })
@@ -2069,7 +2068,8 @@ export default function Home() {
    * aus der Liste, die er ohnehin vor sich hat; ist er in der Zwischenzeit
    * vergeben, weist der Server ihn ab, statt etwas zu ueberschreiben.
    */
-  const duplicateSharedProject = useCallback(async (sharedProject: SharedProject) => {
+  /** With `open`, the copy opens in the editor right away and the original stays as it is ("Open a copy"). */
+  const duplicateSharedProject = useCallback(async (sharedProject: SharedProject, open = false) => {
     const name = duplicateName(
       sharedProject.name,
       sharedProjects.map((project) => project.name),
@@ -2094,11 +2094,12 @@ export default function Home() {
       const copy = payload.project;
       await refreshSharedProjects();
       setDashboardNotice(t("notice.duplicated", { name: copy.name }));
+      if (open) await openSharedProject(copy);
     } catch (error) {
       setDashboardNotice(error instanceof Error ? localizedError(error.message) : t("notice.duplicateFailed"));
       await refreshSharedProjects();
     }
-  }, [refreshSharedProjects, sharedProjects]);
+  }, [openSharedProject, refreshSharedProjects, sharedProjects]);
 
   /**
    * A design of the server folder, taken into this browser: the way back from "Put on the server" (#1572).
@@ -2547,7 +2548,7 @@ export default function Home() {
   // Designs of this browser, each as its own .lyl, together in one ZIP. "Back up all" takes every design
   // and the custom shapes of this browser in a folder beside them; the chosen designs or one folder (#991)
   // go without the shapes. Empty folders go along when all or a folder is backed up.
-  const backupProjects = useCallback(async (scope: { designIds: string[] } | { folderId: string } | null) => {
+  const backupProjects = useCallback(async (scope: { designIds: string[] } | { folderId: string } | null, asDownload = false): Promise<void> => {
     // The browser's own designs: a design of the server kept here while open is the server's to back up.
     const inFolder = (folderId: string, id: string | null | undefined) => folderTrail(designFolders, folderOfDesign(designFolders, id)).some((folder) => folder.id === folderId);
     const designs = !scope
@@ -2569,9 +2570,9 @@ export default function Home() {
     }
     // Where the backup goes is asked first, while the click still counts for the browser: reading the designs can
     // take a while. Chrome and Edge show a save dialog that remembers its folder; elsewhere it is a download.
-    let target = designs.length > 0 ? await pickBackupTarget(suggestedName) : null;
+    let target = designs.length > 0 ? await pickBackupTarget(suggestedName, asDownload) : null;
     if (designs.length > 0 && !target) {
-      setDashboardNotice(t("notice.backupNothingChosen"));
+      noticeNoBackupChosen(() => void backupProjects(scope, true));
       return;
     }
     const shapeEntries = scope ? [] : await customShapesBackupEntries().catch(() => []);
@@ -2581,9 +2582,9 @@ export default function Home() {
       return;
     }
     // Only custom shapes: asked once they are read, which is quick.
-    target ??= await pickBackupTarget(suggestedName);
+    target ??= await pickBackupTarget(suggestedName, asDownload);
     if (!target) {
-      setDashboardNotice(t("notice.backupNothingChosen"));
+      noticeNoBackupChosen(() => void backupProjects(scope, true));
       return;
     }
     try {
@@ -2648,16 +2649,16 @@ export default function Home() {
       writeBackupProgress(null);
       setDashboardNotice(t("notice.backupFailed", { reason: error instanceof Error ? localizedError(error.message) : String(error) }));
     }
-  }, [designFolders, localDesigns]);
+  }, [designFolders, localDesigns, noticeNoBackupChosen]);
   const backupAllProjects = useCallback(() => backupProjects(null), [backupProjects]);
 
   // Every design of the server, in its folders, and its custom shapes, as the same kind of ZIP:
   // "Restore backup" brings it back, on this computer or another.
-  const backupAllServerDesigns = useCallback(async () => {
+  const backupAllServerDesigns = useCallback(async (asDownload = false): Promise<void> => {
     // Asked before the designs are fetched, while the click still counts (see backupProjects).
-    const target = await pickBackupTarget(backupFileName(new Date(), "layerling-server-backup"));
+    const target = await pickBackupTarget(backupFileName(new Date(), "layerling-server-backup"), asDownload);
     if (!target) {
-      setDashboardNotice(t("notice.backupNothingChosen"));
+      noticeNoBackupChosen(() => void backupAllServerDesigns(true));
       return;
     }
     try {
@@ -2691,7 +2692,7 @@ export default function Home() {
       writeBackupProgress(null);
       setDashboardNotice(t("notice.backupFailed", { reason: error instanceof Error ? localizedError(error.message) : String(error) }));
     }
-  }, []);
+  }, [noticeNoBackupChosen]);
 
   // A backup brings every design back as a new design of this browser; the
   // editor stays closed, so the whole set lands on the start page at once.
@@ -3052,7 +3053,8 @@ export default function Home() {
     }
   };
 
-  const duplicateProject = async (projectId: string) => {
+  /** With `open`, the copy opens in the editor right away and the original stays as it is ("Open a copy"). */
+  const duplicateProject = async (projectId: string, open = false) => {
     const source = projects.find((project) => project.id === projectId);
     if (!source) return;
     setDashboardNotice(t("notice.duplicating", { name: source.name }));
@@ -3080,6 +3082,7 @@ export default function Home() {
       setProjectShapesById((current) => ({ ...current, [placed.id]: entry }));
       setProjects((current) => [placed, ...current]);
       if (placed.sharedProject) void refreshSharedProjects();
+      if (open) openEditor(placed.id, { allowMissingFromStorage: true });
       const picture = await projectThumbnailDataUrl(source.thumbnailUrl);
       // Das Bild ist Beiwerk: Bleibt es aus, steht die Kopie eben mit der
       // Ersatzflaeche da, statt dass das Duplizieren als gescheitert gilt.
@@ -3235,6 +3238,12 @@ export default function Home() {
         <Dashboard
           dashboardSection={dashboardSection}
           dashboardNotice={dashboardNotice}
+          dashboardNoticeAction={dashboardNoticeAction?.notice === dashboardNotice ? dashboardNoticeAction : null}
+          onDashboardNoticeAction={(run) => {
+            setDashboardNoticeAction(null);
+            setDashboardNotice("");
+            run();
+          }}
           hasProjects={projects.length > 0}
           projects={visibleProjects}
           designFolders={designFolders}
@@ -3281,9 +3290,9 @@ export default function Home() {
           onDeleteProjects={deleteProjects}
           onDeleteSharedProject={(project) => void deleteSharedProject(project)}
           onDeleteSharedProjects={(sharedList) => void deleteSharedProjectsInTurn(sharedList)}
-          onDuplicateProject={(projectId) => void duplicateProject(projectId)}
+          onDuplicateProject={(projectId, open) => void duplicateProject(projectId, open)}
           onOpenProjectWithoutHistory={(projectId) => void openProjectWithoutHistory(projectId)}
-          onDuplicateSharedProject={(project) => void duplicateSharedProject(project)}
+          onDuplicateSharedProject={(project, open) => void duplicateSharedProject(project, open)}
           onImportFile={() => void pickDashboardImport()}
           onBackupAll={() => void backupAllProjects()}
           onBackupProjects={(designIds) => void backupProjects({ designIds })}
@@ -3517,6 +3526,8 @@ function EditorLoadingSkeleton() {
 function Dashboard({
   dashboardSection,
   dashboardNotice,
+  dashboardNoticeAction,
+  onDashboardNoticeAction,
   hasProjects,
   projects,
   designFolders,
@@ -3585,6 +3596,9 @@ function Dashboard({
 }: {
   dashboardSection: DashboardSection;
   dashboardNotice: string;
+  /** The button of the notice, when it has one. */
+  dashboardNoticeAction: { label: string; run: () => void } | null;
+  onDashboardNoticeAction: (run: () => void) => void;
   hasProjects: boolean;
   projects: DashboardProject[];
   /** Every folder of this browser, the ones to show here, and the folder that is open (null: the top level). */
@@ -3627,10 +3641,11 @@ function Dashboard({
   onDeleteProjects: (projectIds: string[]) => void;
   onDeleteSharedProject: (project: SharedProject) => void;
   onDeleteSharedProjects: (projects: SharedProject[]) => void;
-  onDuplicateProject: (projectId: string) => void;
+  /** With `open`, the copy opens right away ("Open a copy", the original stays as it is). */
+  onDuplicateProject: (projectId: string, open?: boolean) => void;
   /** Opens a design with only its current state, without the undo history (#1157). */
   onOpenProjectWithoutHistory: (projectId: string) => void;
-  onDuplicateSharedProject: (project: SharedProject) => void;
+  onDuplicateSharedProject: (project: SharedProject, open?: boolean) => void;
   onImportFile: () => void;
   onBackupAll: () => void;
   onBackupProjects: (designIds: string[]) => void;
@@ -4126,6 +4141,11 @@ function Dashboard({
           {dashboardNotice ? (
             <div className="dashboard-import-notice" role="status">
               {dashboardNotice}
+              {dashboardNoticeAction ? (
+                <button className="dashboard-notice-action" type="button" onClick={() => onDashboardNoticeAction(dashboardNoticeAction.run)}>
+                  {dashboardNoticeAction.label}
+                </button>
+              ) : null}
             </div>
           ) : null}
           {announcements.shown && !simpleMode ? <AnnouncementCard announcement={announcements.shown} reveal={announcements.reopened} onClose={announcements.close} /> : null}
@@ -4484,6 +4504,18 @@ function Dashboard({
                             <Copy size={16} />
                             <span>{t("common.duplicate")}</span>
                           </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            title={t("dashboard.openCopyTitle")}
+                            onClick={() => {
+                              setOpenSharedProjectMenuKey(null);
+                              onDuplicateSharedProject(project, true);
+                            }}
+                          >
+                            <CopyPlus size={16} />
+                            <span>{t("dashboard.openCopy")}</span>
+                          </button>
                           {canTakeIntoBrowser ? (
                             <button
                               type="button"
@@ -4781,6 +4813,18 @@ function Dashboard({
                           >
                             <Copy size={16} />
                             <span>{t("common.duplicate")}</span>
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            title={t("dashboard.openCopyTitle")}
+                            onClick={() => {
+                              setOpenProjectMenuId(null);
+                              onDuplicateProject(project.id, true);
+                            }}
+                          >
+                            <CopyPlus size={16} />
+                            <span>{t("dashboard.openCopy")}</span>
                           </button>
                           <button
                             type="button"

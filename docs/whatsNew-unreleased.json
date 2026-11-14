@@ -1,94 +1,58 @@
 [
   {
     "title": {
-      "de": "Duplizieren: wieder eine schlichte Kopie",
-      "en": "Duplicate: a plain copy again"
+      "de": "Finger nur zum Verschieben, für die Größe oder zum Drehen",
+      "en": "A finger for moving, sizing or turning only"
     },
     "body": {
-      "de": "Duplizieren wiederholt das Verschieben, Drehen oder Skalieren der letzten Kopie, so entsteht mit wiederholtem Drücken eine Lochreihe. Das endet jetzt, sobald du etwas anderes auswählst oder ins Leere klickst. Wählst du die Kopie danach wieder aus, macht Duplizieren eine schlichte Kopie an derselben Stelle.",
-      "en": "Duplicate repeats the move, turn or resize of the copy made last, so pressing it again and again lays out a row of holes. That now ends once you select something else or click into empty space. Select the copy again afterwards and Duplicate makes a plain copy in the same spot."
-    }
-  },
-  {
-    "title": {
-      "de": "Wohin die Einstellungen nach einer Fase gehen",
-      "en": "Where a shape's settings go after a chamfer"
-    },
-    "body": {
-      "de": "Nach einer Fase oder Verrundung ist eine Form wie eine Hirth-Verzahnung ein fester Körper, und im Feld stehen nur noch Länge, Breite und Höhe. Jetzt steht dort auch, woraus der Körper entstanden ist und wie die eigenen Einstellungen zurückkommen: Kantenbearbeitung zurücknehmen.",
-      "en": "After a chamfer or fillet, a shape like a Hirth joint is a fixed body and the panel shows only Length, Width and Height. Now it also says what the body was made from and how its own settings come back: take the edge treatment back."
+      "de": "Auf einem Tablet liegen die Griffe rund um eine Auswahl dicht beieinander, und ein Finger erwischte leicht den falschen. Ein neuer Knopf mit der zeigenden Hand in der Ansichtsleiste wählt, was ein Finger tut:\n– Alle Griffe, wie bisher\n– Nur verschieben\n– Nur Größe\n– Nur drehen\n\nDie übrigen Griffe verschwinden, und bei Größe oder Drehen wählt ein Finger auf dem Teil es nur aus, statt es zu verschieben. Der Knopf erscheint nur auf Geräten mit Touchscreen, und der Browser merkt sich die Wahl.",
+      "en": "On a tablet the handles around a selection lie close together, and a finger easily caught the wrong one. A new button with the pointing hand in the view bar chooses what a finger does:\n– All handles, as before\n– Move only\n– Size only\n– Turn only\n\nThe other handles are hidden, and set to the size or to turning, a finger on the part only selects it instead of moving it. The button only shows on a device with a touch screen, and the browser keeps the choice."
     },
     "guide": {
-      "section": "edgeTreatment"
+      "chapter": "tablet"
     }
   },
   {
     "title": {
-      "de": "Winkellineal im dunklen Farbschema gut lesbar",
-      "en": "Framing square easy to read in the dark themes"
+      "de": "Ziehen in der Vorder- und Seitenansicht folgt der Maus",
+      "en": "Dragging in the front and side view follows the mouse"
     },
     "body": {
-      "de": "Im dunklen und im Graphit-Farbschema waren die braunen Arme, Teilstriche und Zahlen des Winkellineals auf dem Raster kaum zu sehen. Jetzt sind sie dort hell, in demselben Orange wie das Maßband.",
-      "en": "In the dark and graphite themes, the brown arms, ticks and numbers of the framing square were hard to see on the grid. Now they are light there, in the same orange as the tape measure."
+      "de": "Von vorn oder von der Seite gesehen, etwa in der Vorderansicht mit orthografischer Ansicht, blieb ein gezogenes Teil an zufälligen Stellen stehen, hinkte der Maus hinterher oder sprang in der Tiefe. Jetzt folgt es der Maus entlang der Achse, die man sieht, und behält seine Tiefe.",
+      "en": "Seen from the front or the side, as in the front view with orthographic projection, a dragged part stopped at random points, lagged behind the mouse or jumped in depth. Now it follows the mouse along the axis that shows and keeps its depth."
     }
   },
   {
     "title": {
-      "de": "Objektliste: Auswahl wie im Explorer",
-      "en": "Object list: select as in a file manager"
+      "de": "Die Druckprüfung zeigt den Weg zum Export",
+      "en": "Print check points the way to the export"
     },
     "body": {
-      "de": "In der Objektliste nimmt Strg (auf dem Mac Cmd) einen Eintrag dazu oder wieder weg. Umschalt wählt alle Einträge vom zuletzt angeklickten bis zum angeklickten, Strg+Umschalt nimmt sie zur Auswahl dazu.\n\nIn der Ansicht bleibt es bei Umschalt, denn Strg mit der linken Maustaste dreht dort die Ansicht.",
-      "en": "In the object list, Ctrl (Cmd on a Mac) adds an entry or takes it away again. Shift selects every entry from the one clicked last to the one you click, and Ctrl+Shift adds them to what is selected.\n\nIn the view it stays with Shift, as Ctrl with the left mouse button turns the view there."
+      "de": "Das Druckersymbol öffnet die Druckprüfung: Sie sucht nur nach Stellen, die beim Drucken Ärger machen, und druckt oder speichert nichts. Das sagt das Fenster jetzt selbst, und der Knopf Exportieren darin schließt die Prüfung und öffnet gleich den Export für den Slicer.",
+      "en": "The printer icon opens Print check: it only looks for places that would cause trouble when printing, and it does not print or save anything. The window now says so itself, and its Export button closes the check and opens the export for your slicer right away."
     },
     "guide": {
-      "section": "objectList"
+      "section": "printCheck"
     }
   },
   {
     "title": {
-      "de": "Fokusmodus: der Name ist mit dabei",
-      "en": "Focus mode: the name comes along"
+      "de": "Rechtsklick-Menü ohne doppelten Text",
+      "en": "Right-click menu without repeated text"
     },
     "body": {
-      "de": "Die kleine Leiste im Fokusmodus zeigt jetzt auch den Namen des Entwurfs. Ein Klick darauf benennt ihn um, ohne dass du den Fokusmodus verlassen musst.",
-      "en": "The small bar in focus mode now also shows the design's name. Click it to rename the design without leaving focus mode."
-    },
-    "guide": {
-      "section": "focusMode"
+      "de": "Zeigte die Maus im Rechtsklick-Menü auf einen Eintrag, erschien derselbe Text noch einmal als Hinweis darüber. Die Einträge zeigen ihren Text ja schon ganz, der Hinweis kommt dort nicht mehr.",
+      "en": "Resting the mouse on an item of the right-click menu showed the same text again as a hint above it. The items show their text in full already, so the hint no longer comes there."
     }
   },
   {
     "title": {
-      "de": "„Alle sichern“ nimmt die Einstellungen mit",
-      "en": "\"Back up all\" takes your settings along"
+      "de": "STEP-Export: Aussparungs-Gruppen schneiden wie im Editor",
+      "en": "STEP export: groups set as a hole cut as in the editor"
     },
     "body": {
-      "de": "Die Sicherung aller Entwürfe enthält jetzt auch die Einstellungen dieses Browsers: deine Vorgabe für neue Entwürfe, das Farbschema, das Menüband, deine eigenen Tasten und die Drucker.\n\nBeim Wiederherstellen fragt ein Häkchen, ob du sie übernehmen willst. Auf einem neuen Rechner ist es schon gesetzt, so kommt mit einem Schritt alles zurück.",
-      "en": "The backup of all designs now also holds the settings of this browser: your default for new designs, the theme, the ribbon, your own keys and the printers.\n\nWhen you restore it, a tick box asks whether to take them over. On a new computer it is ticked already, so everything comes back in one step."
-    },
-    "guide": {
-      "chapter": "files"
-    }
-  },
-  {
-    "title": {
-      "de": "Verdrehte Textur kommt verdreht in die Datei",
-      "en": "A twisted texture comes out twisted"
-    },
-    "body": {
-      "de": "Ein Körper mit Textur, den du als Ganzes verdrehst, verjüngst oder neigst, kam bisher gerade in STL, 3MF und OBJ, obwohl ihn die Ansicht verdreht zeigte. Jetzt enthält die Datei, was du siehst, und im 3MF behalten Körper und Muster ihre Farben.",
-      "en": "A body with a texture that you twist, taper or lean as a whole came out straight in STL, 3MF and OBJ, although the view showed it twisted. Now the file holds what you see, and in a 3MF the body and the pattern keep their colours."
-    }
-  },
-  {
-    "title": {
-      "de": "Gewinde lassen sich aushöhlen",
-      "en": "Threads can be hollowed"
-    },
-    "body": {
-      "de": "Eine Gewindestange oder Schraube auszuhöhlen lief bisher in eine Zeitüberschreitung. Jetzt geht es in wenigen Sekunden: Außen bleibt das Gewinde, wie es ist, und die Wand ist am Gewindegrund so dick, wie du sie einstellst.",
-      "en": "Hollowing a threaded rod or screw used to run into a time-out. Now it takes a few seconds: the thread stays as it is outside, and the wall is as thick as you set it at the root of the thread."
+      "de": "Eine als Aussparung gesetzte Gruppe, in der ein fester Körper mit eigener Aussparung steckte, etwa ein Quader mit ausgeschnittener Kapsel, der eine verrundete Kapsel auf einen Umriss zuschneidet, kam im STEP-Export falsch heraus: Der feste Körper fehlte, und die innere Aussparung schnitt stattdessen den Körper aus. Übrig blieb ein dünner Ring. Jetzt schneidet die Gruppe in der STEP-Datei genau so wie im Editor.",
+      "en": "A group set as a hole that held a solid with a hole of its own, such as a box with a capsule cut out of it trimming a rounded capsule to an outline, came out wrong in the STEP export: the solid was missing and the inner hole cut the body instead, leaving a thin ring. Now the group cuts the STEP file just as it cuts the design in the editor."
     }
   }
 ]

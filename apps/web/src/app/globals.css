@@ -1381,6 +1381,29 @@ html[data-theme="dark"] .dashboard-trademark {
   font-weight: 600;
 }
 
+/* The button a notice may carry, such as "Download instead" after a backup whose save dialog handed back no file. */
+.dashboard-notice-action {
+  margin-left: 10px;
+  padding: 3px 10px;
+  border: 1px solid #c96a12;
+  border-radius: 6px;
+  background: #fff4e6;
+  color: #9a4f08;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dashboard-notice-action:hover,
+.dashboard-notice-action:focus-visible {
+  background: #ffe6c2;
+}
+
+html[data-theme="dark"] .dashboard-notice-action {
+  border-color: #f3a452;
+  background: #3a2c16;
+  color: #f3a452;
+}
+
 /* The recommendation to install layerling as an app: a card under the start tiles that is meant
    to be seen - what it brings, an install button where the browser has one, "Not now" for two
    weeks and a cross for good. */
@@ -3160,6 +3183,27 @@ html[data-theme="dark"] .edge-modifier-quick-actions button.active {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* Scale by percent: the model railway gauges, four to a row. */
+.model-scale-presets {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.model-scale-presets button {
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.model-scale-result {
+  margin: 8px 0 0;
+  color: #6d5133;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="dark"] .model-scale-result {
+  color: #d9c3a8;
+}
+
 /* Paint: fill, circle and lasso side by side. */
 .paint-panel .shell-opening-options {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4876,6 +4920,18 @@ html[data-theme="dark"] .toolbar-title-help .action-icon-button.active svg path 
 
 .shape-menu-trigger.active::before {
   transform: translateX(-50%) scaleY(-1);
+}
+
+/* The tab's hit area: resting the mouse on it opens the shapes panel, as on a folded group (#1722). A little larger than
+   the chevron, so it is easy to meet, and above it, so the chevron itself stays a drawing only. */
+.shape-menu-tab {
+  position: absolute;
+  z-index: 2;
+  bottom: -13px;
+  left: 50%;
+  width: 26px;
+  height: 13px;
+  transform: translateX(-50%);
 }
 
 .shape-menu-dropdown {
@@ -7226,7 +7282,6 @@ html[data-theme="dark"] .sketch-shape-options .unit {
   color: #321d07;
   background: rgba(247, 235, 223, 0.82);
   border-color: rgba(207, 182, 155, 0.7);
-  transform: translateX(1px);
 }
 
 .camera-controls button:focus-visible {
@@ -7972,6 +8027,21 @@ html[data-theme="dark"] .inspector-bundle-note {
   max-height: none;
 }
 
+.print-check-export {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  color: #867360;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.print-check-export > span {
+  flex: 1;
+}
+
 .print-check-row {
   display: flex;
   align-items: flex-start;
@@ -8471,7 +8541,8 @@ html[data-theme="dark"] .touch-multi-select {
   filter: drop-shadow(0 0 4px rgba(129, 67, 0, 0.4));
 }
 
-/* An arm's end, dragged to make the arm longer or shorter (Discussion #1469): smaller than the corner's handle. */
+/* An arm's end, dragged to make the arm longer or shorter (Discussion #1469): smaller than the corner's handle.
+   The pointer follows the arm's direction on the screen (cornerRulerArmCursor, Discussion #1743); ew-resize is the fallback. */
 .corner-ruler-end-handle {
   fill: #ffffff;
   stroke: #b66108;
@@ -8486,14 +8557,21 @@ html[data-theme="dark"] .touch-multi-select {
   filter: drop-shadow(0 0 4px rgba(129, 67, 0, 0.4));
 }
 
+/* The numbers sit on a small plate of their own, so grid lines behind them do not cut through
+   the digits at any zoom (Discussion #1704: 10 px plain text on a 1/8" grid was unreadable). */
 .corner-ruler-tick-label {
   position: absolute;
   z-index: 2;
-  color: #5a3917;
-  font-size: 10px;
-  font-weight: 600;
+  padding: 2px 4px;
+  color: #4a2e12;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(90, 57, 23, 0.18);
+  font-size: 12px;
+  font-weight: 700;
   line-height: 1;
   text-align: center;
+  white-space: nowrap;
   pointer-events: none;
   transform: translate(-50%, -50%);
 }
@@ -8510,7 +8588,8 @@ html[data-theme="dark"] .corner-ruler-tick {
 
 html[data-theme="dark"] .corner-ruler-tick-label {
   color: #f6dfc2;
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.7);
+  background: rgba(24, 20, 16, 0.86);
+  box-shadow: 0 0 0 1px rgba(242, 166, 90, 0.35);
 }
 
 .corner-ruler-delete {
@@ -14884,7 +14963,8 @@ html[data-theme="dark"] .print-check-nozzle-field input {
 }
 
 html[data-theme="dark"] .print-check-nozzle-field span,
-html[data-theme="dark"] .print-check-nozzle-hint {
+html[data-theme="dark"] .print-check-nozzle-hint,
+html[data-theme="dark"] .print-check-export {
   color: #b9a58f;
 }
 
@@ -19929,4 +20009,32 @@ html[data-theme="dark"] .select-property select option {
 }
 html[data-theme="dark"] .property-card > button.property-card-header:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.align-size-toggle {
+  display: none;
+  position: absolute;
+  left: 12px;
+  bottom: 72px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--foreground);
+  font: 600 13px var(--font-ui);
+  box-shadow: 0 2px 8px rgba(40, 27, 13, 0.22);
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.align-size-toggle.on {
+  background: rgba(173, 89, 0, 0.92);
+  border-color: rgba(173, 89, 0, 0.92);
+  color: #fff;
+}
+
+@media (any-pointer: coarse) {
+  .align-size-toggle {
+    display: block;
+  }
 }

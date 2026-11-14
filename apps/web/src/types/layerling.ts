@@ -627,6 +627,8 @@ export type WorkplaneWorkspaceSettings = {
   startWithScrollbars: boolean;
   /** A folded view bar opens while the mouse is over its arrow and folds again once the mouse has left it (Discussion #1552). */
   viewBarOpensOnHover: boolean;
+  /** The short message after a step, such as a union, with its Undo button (Discussion #1708); on by default. Off, messages that want something, warn or carry a button of their own still show. */
+  showStepNotices: boolean;
   zoomSpeed: number;
   /** How fast shifting the 3D view follows the mouse, a slider from 1 to 9; at 5 the grabbed point stays under the cursor (#1553). */
   panSpeed: number;
@@ -1124,6 +1126,11 @@ export type WorkplaneShape = {
   sideDrop?: number;
   /** Side drop: -1 to 1, 0 a straight line from the middle to the edge, above 0 bulging up, below 0 sagging. */
   sideCurve?: number;
+  /**
+   * Only on a tube's bore split off as a hole (splitBoreTube), never saved: the width and depth of the
+   * tube around it. Its slope and side drop are measured over the tube, so its top lies on the tube's (#1698).
+   */
+  slopeSpan?: { width: number; depth: number };
   /**
    * Narrow along: seen from above, the width of the narrow end in mm,
    * both long sides running in evenly. Missing or the full width means no narrowing.
@@ -1793,7 +1800,7 @@ export type QrErrorCorrection = "L" | "M" | "Q" | "H";
 export type QrStyle = "code" | "raised" | "engraved";
 /** What a QR body keeps so it can be made again from the inspector (#553). */
 /** The single-board computers the SBC board shape knows (#1098). */
-export type SbcBoardType = "pi5" | "pi4" | "pi3bPlus" | "zero2w" | "bttPi12" | "xiaoEsp32c6" | "esp32c3SuperMini" | "esp32c6SuperMini" | "featherEsp32s3" | "arduinoUno" | "arduinoMega" | "arduinoNano" | "wemosD1Mini" | "pico" | "picoW" | "pico2" | "pico2W" | "esp32CamMb" | "esp32s3Cam" | "esp32DevKitC" | "esp32DevKitV1" | "cyd" | "cyd2usb";
+export type SbcBoardType = "pi5" | "pi4" | "pi3bPlus" | "zero2w" | "bttPi12" | "xiaoEsp32c6" | "esp32c3SuperMini" | "esp32c6SuperMini" | "featherEsp32s3" | "arduinoUno" | "arduinoMega" | "arduinoNano" | "wemosD1Mini" | "pico" | "picoW" | "pico2" | "pico2W" | "esp32CamMb" | "esp32s3Cam" | "esp32DevKitC" | "esp32DevKitV1" | "cyd" | "cyd2usb" | "waveshareEsp32s3Zero" | "arduinoProMini";
 
 export type SbcBoardSettings = {
   board: SbcBoardType;

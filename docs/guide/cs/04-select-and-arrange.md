@@ -72,7 +72,7 @@ Je-li mezi vybranými tvary deska, která je v tomto směru delší než všechn
 
 Bez desky nejdřív se stisknutým [[Shift]] klikněte na volné místo podložky: podložka je pak pevný tvar, stejné mezery rozmístí tvary po celé podložce se stejnou mezerou k jejím okrajům a ostatní body je zarovnají k jejím okrajům nebo středu. Další klik se [[Shift]] na volnou podložku ji uvolní. Klik do prázdna bez [[Shift]] zarovnání ukončí, stejně jako [[L]] a [[Esc]].
 
-Podržte [[Alt]] a klikněte na bod, chcete-li mezeru zadat sami, třeba 5 mm: tvary se seřadí v této vzdálenosti, od prvního tvaru nebo od toho, na který jste klikli jako první; na desce přijde řada doprostřed. Zamčený tvar zůstane na místě, takže jeden mezi krajními tvary stejným mezerám zabrání.
+Podržte [[Alt]] a klikněte na bod, chcete-li mezeru zadat sami, třeba 5 mm: tvary se seřadí v této vzdálenosti, od prvního tvaru nebo od toho, na který jste klikli jako první; na desce přijde řada doprostřed. Zamčený tvar zůstane na místě, takže jeden mezi krajními tvary stejným mezerám zabrání. Na tabletu, který nemá klávesu Alt, dělá totéž přepínač {{ui:align.sizeSwitch}} vedle teček: když ho zapnete, tečky zůstanou čtverečky a tečka rozestupu otevře své pole, dokud přepínač nevypnete.
 
 ## Zrcadlení
 
@@ -188,6 +188,8 @@ Při více vybraných dílech ukazuje pravý panel jejich počet a společné vl
 Pro stejné zvětšení či zmenšení jednoho nebo více dílů použijte {{ui:scalePercent.title}} v pravé nabídce nebo přes [[Ctrl]]+[[K]].
 
 {{ui:scalePercent.percent}} zadává novou velikost v procentech původní. 120 % znamená zvětšení o pětinu, 50 % poloviční velikost. Všechny tři rozměry se mění stejně a zachovají proporce. Spodek zůstává na místě, takže se díl nezanoří do podložky.
+
+Pro modelářství zvolte nahoře {{ui:scalePercent.by.scale}} místo {{ui:scalePercent.by.percent}}. {{ui:scalePercent.scalePresets}} nabízí obvyklé velikosti od Z (1:220) po 16mm (1:19,05) a do {{ui:scalePercent.ratio}} zadáte jakékoli jiné měřítko, třeba 35 pro 1:35. Je-li model postavený ve skutečné velikosti předlohy, nechte {{ui:scalePercent.original.fullSize}}: 1:87 ho zmenší 87krát. Pokud jste ho postavili v libovolné velikosti, zvolte {{ui:scalePercent.original.realSize}}, pak {{ui:scalePercent.axis.height}} nebo {{ui:scalePercent.axis.length}} (nejdelší strana na desce) a do {{ui:scalePercent.realSize}} zadejte, jak velká je předloha doopravdy, v metrech (při palcových jednotkách ve stopách). Strom, který je ve skutečnosti 16 m vysoký, bude v H0 vysoký 16 000 mm / 87 = 184 mm, ať byl předtím jakkoli velký. Nová velikost se ukáže pod poli dřív, než stisknete {{ui:scalePercent.apply}}. Měřítko zůstane nastavené, dokud je editor otevřený.
 
 Pro více dílů zvolte:
 

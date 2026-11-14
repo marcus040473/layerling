@@ -72,7 +72,7 @@ Se tra le forme selezionate c'è una base più lunga di tutte le altre in quella
 
 Senza base, tieni premuto [[Shift]] e fai prima clic su un punto libero del piano: il piano diventa la forma fissa, la spaziatura uguale distribuisce le forme su tutto il piano con la stessa distanza dai bordi, e gli altri punti le allineano ai suoi bordi o al suo centro. Un altro clic con [[Shift]] sul piano libero lo rilascia. Un clic in un punto vuoto senza [[Shift]] termina l'allineamento, come [[L]] ed [[Esc]].
 
-Tieni premuto [[Alt]] e fai clic sul punto per digitare tu la distanza, per esempio 5 mm: le forme si allineano a quella distanza, a partire dalla prima forma o da quella cliccata per prima; su una base la fila va al suo centro. Una forma bloccata resta ferma, quindi una tra le forme esterne impedisce la spaziatura uguale.
+Tieni premuto [[Alt]] e fai clic sul punto per digitare tu la distanza, per esempio 5 mm: le forme si allineano a quella distanza, a partire dalla prima forma o da quella cliccata per prima; su una base la fila va al suo centro. Una forma bloccata resta ferma, quindi una tra le forme esterne impedisce la spaziatura uguale. Su un tablet, che non ha il tasto Alt, l'interruttore {{ui:align.sizeSwitch}} accanto ai punti fa lo stesso: se lo attivi, i punti restano quadrati e il punto della distanza apre il suo campo, finché non lo disattivi.
 
 ## Specchiare
 
@@ -186,6 +186,8 @@ Quando selezioni più parti, il pannello delle proprietà a destra mostra quante
 Per ingrandire o rimpicciolire una o più parti della stessa percentuale, per esempio tutte le parti di un file di stampa del 20%, usa {{ui:scalePercent.title}}. Seleziona le parti, fai clic destro e scegli {{ui:scalePercent.title}}, oppure cercalo con [[Ctrl]]+[[K]].
 
 In {{ui:scalePercent.percent}} digita la nuova dimensione come percentuale di quella attuale: 120% è un quinto in più, 50% è la metà. Larghezza, profondità e altezza cambiano nella stessa proporzione, mantenendo la forma. La base resta nella posizione iniziale, così l’oggetto non sprofonda nella piastra.
+
+Per il modellismo scegli in alto {{ui:scalePercent.by.scale}} invece di {{ui:scalePercent.by.percent}}. {{ui:scalePercent.scalePresets}} offre le scale più comuni da Z (1:220) a 16mm (1:19,05), e in {{ui:scalePercent.ratio}} scrivi qualsiasi altra scala, per esempio 35 per 1:35. Se il modello è costruito alla dimensione reale dell'originale, lascia {{ui:scalePercent.original.fullSize}}: 1:87 lo rende 87 volte più piccolo. Se l'hai costruito a una dimensione qualsiasi, scegli {{ui:scalePercent.original.realSize}}, poi {{ui:scalePercent.axis.height}} o {{ui:scalePercent.axis.length}} (il lato più lungo sul piano) e scrivi in {{ui:scalePercent.realSize}} quanto è grande davvero l'originale, in metri (in piedi con le unità imperiali). Un albero alto davvero 16 m diventa così in H0 alto 16.000 mm / 87 = 184 mm, qualunque fosse la sua dimensione prima. La nuova dimensione compare sotto i campi prima che tu prema {{ui:scalePercent.apply}}. La scala resta impostata finché l'editor è aperto.
 
 Selezionando più parti, puoi scegliere come ridimensionarle:
 
