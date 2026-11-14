@@ -77,7 +77,7 @@ import { displayYTurn, insideZ } from "@/lib/displayAxes";
 import { boundsInsideRect, marqueeMode } from "@/lib/marqueeSelection";
 import { slicerLeftTurn } from "@/lib/cameraMouseButtons";
 import { useSpaceMouse } from "@/components/workplane/useSpaceMouse";
-import { canBeginShapeDrag, handleDimensionLimit, typedDimensionLimit, DEFAULT_SNAP_GRID, effectiveViewSettings, normalizeSnapGrid, normalizeWorkspaceSettings, readWorkspaceDefault, saveShapeDefaultsForNewDesigns, saveWorkspaceDefault, customSnapGridLabel, snapGridForShortcut, snapGridForUnits, snapGridOptions, snapGridStep as snapStep, workplaneSettingsFingerprint, workspaceForUnits, workspaceHydrationSyncDecision, zoomDistanceScale, ZOOM_STEP_IN, ZOOM_STEP_OUT } from "@/lib/workplaneSettings";
+import { canBeginShapeDrag, handleDimensionLimit, heightHandleLimit, typedDimensionLimit, DEFAULT_SNAP_GRID, effectiveViewSettings, normalizeSnapGrid, normalizeWorkspaceSettings, readWorkspaceDefault, saveShapeDefaultsForNewDesigns, saveWorkspaceDefault, customSnapGridLabel, snapGridForShortcut, snapGridForUnits, snapGridOptions, snapGridStep as snapStep, workplaneSettingsFingerprint, workspaceForUnits, workspaceHydrationSyncDecision, zoomDistanceScale, ZOOM_STEP_IN, ZOOM_STEP_OUT } from "@/lib/workplaneSettings";
 import { withShapeDefaults } from "@/lib/shapeDefaults";
 import { WORKPLANE_LINE_ELEVATION } from "@/lib/workplaneGrid";
 import { cleanNearZero, cleanRotationDegrees, isNonSolidShape, resizedShapeSize, shapeDepth, shapeHasTaper, shapeWidth, shapeWithParametricSource } from "@/lib/workplaneShapes";
@@ -4778,7 +4778,9 @@ export function WorkplaneViewport({
         const resizingFromBottom = transform.handleKey === "bottom-height";
         const rawFrameHeight = transform.selectionFrame.height + (resizingFromBottom ? -rawDelta : rawDelta);
         const printerHeight = printerPresetById(workspaceRef.current.printer)?.height;
-        const maxHeight = Math.max(...transform.items.map((item) => handleDimensionLimit(workspaceRef.current, item.startShape.kind, 180, "height", transform.selectionFrame.height, printerHeight)));
+        // Laid on its side, the height runs along the plate: the printer's height is then no limit (Discussion #1558).
+        const heightUpright = Math.abs(transform.selectionFrame.yAxis.clone().normalize().y) > 0.9999;
+        const maxHeight = Math.max(...transform.items.map((item) => heightHandleLimit(workspaceRef.current, item.startShape.kind, transform.selectionFrame.height, printerHeight, heightUpright)));
         // The face you drag lands on the grid of the workplane; a tilted selection keeps the step from where it started.
         const startLift = liftGeometryForFrame(transform.selectionFrame, placementWorkplaneRef.current);
         const upright = transform.selectionFrame.yAxis.clone().normalize().dot(startLift.axis) > 0.9999;

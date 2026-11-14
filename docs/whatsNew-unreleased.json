@@ -124,5 +124,18 @@
     "guide": {
       "section": "myShapes"
     }
+  },
+  {
+    "title": {
+      "de": "Liegende Teile länger ziehen",
+      "en": "Pull lying parts longer"
+    },
+    "body": {
+      "de": "Ein Teil, das auf der Seite liegt, etwa ein Quader auf der Stirnseite einer liegenden Schiene, blieb beim Ziehen am Höhengriff bei der Höhe des Druckers stehen. Seine Höhe läuft aber waagerecht. Jetzt reicht der Griff so weit, wie die Platte breit ist.",
+      "en": "A part lying on its side, such as a box placed on the end face of a lying rail, stopped at the printer's height when you pulled its height handle, although its height runs along the plate. Now the handle reaches as far as the plate is wide."
+    },
+    "guide": {
+      "section": "shapeSettings"
+    }
   }
 ]
