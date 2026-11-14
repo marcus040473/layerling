@@ -680,6 +680,19 @@ export function LidPanel({
         </ToolGroup>
         {!hingeFits && extras && !slide ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
 
+        {/* A stacking top: the lid prints upright with a foot and carries the next stackable box in a tray on top. */}
+        {settings.type === "plug" ? (
+          <ToolGroup
+            tool="lid-stack-top"
+            label={t("lid.stackTop")}
+            checked={settings.stackTop}
+            disabled={busy}
+            onCheck={(stackTop) => onChange({ stackTop })}
+          >
+            <ToolHint text={t("lid.stackTopHint")} />
+          </ToolGroup>
+        ) : null}
+
         {/* Latches: a clip over a pin on the body and one on the lid, on the side the lid opens at (and the back without a hinge). */}
         {extras && !slide ? (<>
           <ToolGroup
