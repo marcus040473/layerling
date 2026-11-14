@@ -9449,6 +9449,58 @@ export function LayerlingEditor({
   }, [deleteFaceTool, edgeModifier, projectInteractionActive, rehollowedShape, replaceRebuiltShape, shapes, shellRebuildRound, shellTool]);
 
   /**
+   * A textured hollow body that has been resized: its hollowing is made again at the new size (a Gridfinity floor takes
+   * more or fewer sockets, as the body grew or shrank) and the texture is laid on it again with the same settings. Only for a
+   * body whose hollowing is the step under the texture; any other textured body keeps stretching, as it did.
+   */
+  const textureRebuildBusyRef = useRef(false);
+  const textureRebuildFailedRef = useRef(new Set<string>());
+  const [textureRebuildRound, setTextureRebuildRound] = useState(0);
+  useEffect(() => {
+    if (projectInteractionActive || edgeModifier || shellTool || deleteFaceTool || shellRebuildBusyRef.current || textureRebuildBusyRef.current) return;
+    const stale = shapes.find((shape) => {
+      if (shape.locked || !shape.surfaceTexture || !canChangeSurfaceTexture(shape)) return false;
+      const under = shapeUnderSurfaceTexture(shape);
+      return Boolean(under && shellNeedingRebuild(under)) && !textureRebuildFailedRef.current.has(projectShapesFingerprint([shape]));
+    });
+    if (!stale) return;
+    const timer = window.setTimeout(() => {
+      const fingerprint = projectShapesFingerprint([stale]);
+      const under = shapeUnderSurfaceTexture(stale);
+      const settings = stale.surfaceTexture;
+      if (!under || !settings) return;
+      textureRebuildBusyRef.current = true;
+      void (async () => {
+        const rebuilt = await rehollowedShape(under, stale);
+        if (!rebuilt) throw new Error("not rebuilt");
+        const layers = stale.surfaceTextureLayers ?? [];
+        const outcomes: Awaited<ReturnType<typeof textureSurfaceOffThread>>[] = [];
+        let positions: Float64Array = surfaceTextureInput(rebuilt);
+        for (const layer of surfaceTextureLayersToMake(settings, layers)) {
+          const made = await textureSurfaceOffThread(positions, layer);
+          outcomes.push(made);
+          positions = made.positions;
+        }
+        const outcome = mergedSurfaceTextureOutcome(outcomes);
+        const textured = surfaceTextureResultShape(rebuilt, stale, outcome, settings, [...layers], `${displayShapeName(rebuilt)} – ${t("surfaceTexture.patternPart")}`);
+        if (!textured) throw new Error("no texture");
+        if (replaceRebuiltShape(stale.id, fingerprint, textured)) setNotice(t("status.shellRebuilt", { size: Number((shellRebuildEntry(rebuilt)?.feature.amount ?? 0).toFixed(2)) }));
+      })()
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error);
+          if (/changed while/.test(message)) return;
+          textureRebuildFailedRef.current.add(fingerprint);
+          setNotice(t("status.shellRebuildFailed"), true);
+        })
+        .finally(() => {
+          textureRebuildBusyRef.current = false;
+          setTextureRebuildRound((round) => round + 1);
+        });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [deleteFaceTool, edgeModifier, projectInteractionActive, rehollowedShape, replaceRebuiltShape, shapes, shellTool, textureRebuildRound]);
+
+  /**
    * "Fit the body to the neck" (issue #1482): the body's top made as wide as a standard's neck under the thread
    * (`lidNeckFitPatch`), its height kept, so that Make lid gives it the neck's thread. A hollowed body is hollowed again
    * at its new size before it is put back, its walls as thick as they were, so the resize is one step to undo and the
