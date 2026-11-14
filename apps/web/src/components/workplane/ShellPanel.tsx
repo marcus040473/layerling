@@ -39,6 +39,8 @@ export function ShellPanel({
   gridCells,
   gridFit,
   gridMax,
+  gridColumns,
+  gridRows,
   dividers,
   workspace,
   busy,
@@ -54,6 +56,7 @@ export function ShellPanel({
   onEdgesChange,
   onStackChange,
   onGridChange,
+  onGridSize,
   onDividersChange,
   onApply,
   onCancel,
@@ -71,6 +74,9 @@ export function ShellPanel({
   gridCells: number;
   gridFit: boolean;
   gridMax: number;
+  /** The cells across and along the inside holds, or as asked for: the body is made exactly that large when it is applied. */
+  gridColumns: number;
+  gridRows: number;
   /** Dividers across (x) and along (z) the inside; null for none. */
   dividers: ShellDividers | null;
   workspace: WorkplaneWorkspaceSettings;
@@ -89,6 +95,7 @@ export function ShellPanel({
   onEdgesChange: (value: ShellEdges) => void;
   onStackChange: (value: number) => void;
   onGridChange: (cells: number, fit: boolean) => void;
+  onGridSize: (columns: number, rows: number) => void;
   onDividersChange: (value: ShellDividers | null) => void;
   onApply: () => void;
   onCancel: () => void;
@@ -199,6 +206,29 @@ export function ShellPanel({
               disabled={busy}
               onChange={(value) => onGridChange(Math.round(value), gridFit)}
             />
+            <EdgeModifierSlider
+              label={t("shell.gridColumns")}
+              value={Math.max(1, gridColumns)}
+              min={1}
+              max={12}
+              step={1}
+              workspace={workspace}
+              decimals={0}
+              disabled={busy}
+              onChange={(value) => onGridSize(Math.round(value), Math.max(1, gridRows))}
+            />
+            <EdgeModifierSlider
+              label={t("shell.gridRows")}
+              value={Math.max(1, gridRows)}
+              min={1}
+              max={12}
+              step={1}
+              workspace={workspace}
+              decimals={0}
+              disabled={busy}
+              onChange={(value) => onGridSize(Math.max(1, gridColumns), Math.round(value))}
+            />
+            <ToolHint text={t("shell.gridSizeHint")} />
             <label className="edge-modifier-field offset-copy">
               <input type="checkbox" checked={gridFit} disabled={busy} onChange={(event) => onGridChange(gridCells, event.target.checked)} />
               <span>{t("shell.gridFit")}</span>

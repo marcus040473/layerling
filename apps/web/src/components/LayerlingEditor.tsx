@@ -115,7 +115,8 @@ import { isSameSize, resizedCopy, SAME_SIZE, shapeSize, sizeFactorsBetween, type
 import { canToggleGroupColors, colorForParts, groupShowsPartColors } from "@/lib/groupColors";
 import { disposeBoundsTree } from "three-mesh-bvh";
 import { clampShellStackHeight } from "@/lib/shellStackLimits";
-import { MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
+import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
+import { SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import { arrayCirclePivot, arrayFitGap, arrayFitShift, arrayFollowingPivot, arrayGridSize, arrayGroupsCopies, arrayWithFit, circleStepDegrees, clampArrayCount, gridOffsets, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing, type ArraySettings } from "@/lib/shapeArray";
 import { keepDismissedOverhangs, printerPresetById, shapeBedFootprint, type BedOverhang } from "@/lib/printBed";
@@ -3679,7 +3680,7 @@ export function LayerlingEditor({
   }, [sketchSelection, sketchTool, sketchActive]);
   const [edgeModifier, setEdgeModifier] = useState<EdgeModifierSession | null>(null);
   // `mode: "offset"` is the Offset tool (#919), which shares the hollow tool's state: `thickness` is then the distance.
-  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; gridCells?: number; gridFit?: boolean; dividers?: { x: number; z: number } | null; busy: boolean; error: string | null } | null>(null);
+  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; gridCells?: number; gridFit?: boolean; gridColumns?: number; gridRows?: number; dividers?: { x: number; z: number } | null; busy: boolean; error: string | null } | null>(null);
   /** Cut out (#927): `partId` stays, a copy of it grown by `clearance` is cut out of `hostId`. */
   const [cutOutTool, setCutOutTool] = useState<{ partId: string; hostId: string; clearance: number; busy: boolean; error: string | null } | null>(null);
   const [punchTool, setPunchTool] = useState<{ punchId: string; targetId: string; axis: SectionPlaneAxis; clearance: number; busy: boolean; error: string | null } | null>(null);
@@ -9332,11 +9333,21 @@ export function LayerlingEditor({
       return;
     }
     const extras = { stack, grid, dividers };
+    // The cells asked for as a number across and a number along: the body is made as large as holds exactly them (the wall
+    // each side and the play the drawer fit leaves), and the floor takes every cell that fits.
+    const columns = Math.round(shellTool.gridColumns ?? 0), rows = Math.round(shellTool.gridRows ?? 0);
+    const sized = grid && columns > 0 && rows > 0
+      ? (() => {
+        const width = Number((columns * GRIDFINITY_GRID + SHELL_GRID_PLAY + 2 * thickness).toFixed(2));
+        const depth = Number((rows * GRIDFINITY_GRID + SHELL_GRID_PLAY + 2 * thickness).toFixed(2));
+        return { ...target, width, depth, size: resizedShapeSize(width, depth) };
+      })()
+      : target;
     // A body that is hollowed already is hollowed again from the state before, so the new settings replace the old.
     const hollowed = shellRebuildEntry(target) !== null;
     const make = hollowed
-      ? (rehollowRef.current ? rehollowRef.current(target, target, { amount: thickness, openings, edges, extras }) : Promise.resolve(null)).then((again) => again ?? shellShape(target, thickness, openings, edges, target, undefined, extras))
-      : shellShape(target, thickness, openings, edges, target, undefined, extras);
+      ? (rehollowRef.current ? rehollowRef.current(sized, target, { amount: thickness, openings, edges, extras }) : Promise.resolve(null)).then((again) => again ?? shellShape(sized, thickness, openings, edges, target, undefined, extras))
+      : shellShape(sized, thickness, openings, edges, target, undefined, extras);
     void make
       .then((modifiedShape) => {
         commitShapes(
@@ -20092,6 +20103,9 @@ export function LayerlingEditor({
           gridCells={shellTool.gridCells ?? 0}
           gridFit={shellTool.gridFit === true}
           gridMax={shellGridEstimate(shapeWidth(selectedShape), shapeDepth(selectedShape), shellTool.thickness).max}
+          gridColumns={shellTool.gridColumns ?? shellGridEstimate(shapeWidth(selectedShape), shapeDepth(selectedShape), shellTool.thickness).columns}
+          gridRows={shellTool.gridRows ?? shellGridEstimate(shapeWidth(selectedShape), shapeDepth(selectedShape), shellTool.thickness).rows}
+          onGridSize={(columns, rows) => setShellTool((current) => current ? { ...current, gridColumns: columns, gridRows: rows, error: null } : current)}
           dividers={shellTool.dividers ?? null}
           onGridChange={(cells, fit) => setShellTool((current) => current ? { ...current, gridCells: cells, gridFit: fit, error: null } : current)}
           onDividersChange={(value) => setShellTool((current) => current ? { ...current, dividers: value, error: null } : current)}
