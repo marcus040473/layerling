@@ -2325,6 +2325,7 @@ export const MESSAGES_PT_BR: Partial<Record<MessageKey, string>> = {
   "shell.errorStackTooLow": "O corpo é baixo demais para um colar e um canal. Escolha um colar mais baixo ou desligue o empilhamento.",
   "shell.errorStackNotStraight": "As paredes não são retas: a base não é tão larga quanto o topo, então uma caixa não encaixaria na próxima. Desligue o empilhamento.",
   "shell.errorStackFailed": "O colar e o canal não puderam ser construídos neste corpo. Desligue o empilhamento ou escolha outra parede.",
+  "shell.errorChangedAfter": "O corpo foi alterado depois de esvaziado (por exemplo pelos ímãs da ferramenta Tampa) e por isso não pode ser esvaziado de novo. Desfaça antes esse passo no histórico e depois altere o esvaziamento.",
   "shell.grid": "Fundo Gridfinity",
   "shell.gridCells": "Células no fundo",
   "shell.gridFit": "Ajustar as paredes à grade",

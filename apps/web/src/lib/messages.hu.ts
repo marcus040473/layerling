@@ -636,6 +636,7 @@ export const MESSAGES_HU: Partial<Record<MessageKey, string>> = {
   "shell.errorStackTooLow": "A test túl alacsony gallérhoz és horonyhoz. Válassz alacsonyabb gallért, vagy kapcsold ki a rakásolást.",
   "shell.errorStackNotStraight": "A falak nem függőlegesek: az alja nem olyan széles, mint a teteje, így egy doboz nem férne a következőre. Kapcsold ki a rakásolást.",
   "shell.errorStackFailed": "A gallért és a hornyot nem sikerült megépíteni ezen a testen. Kapcsold ki a rakásolást, vagy válassz másik falat.",
+  "shell.errorChangedAfter": "A testet a kivájás után módosították (például a Fedél eszköz mágneseivel), ezért nem lehet újra kivájni. Előbb vond vissza ezt a lépést az előzményekben, aztán módosítsd a kivájást.",
   "shell.grid": "Gridfinity-fenék",
   "shell.gridCells": "Cellák a fenékben",
   "shell.gridFit": "Falak igazítása a rácshoz",

@@ -623,6 +623,7 @@ export const MESSAGES_TR: Partial<Record<MessageKey, string>> = {
   "shell.errorStackTooLow": "Gövde yaka ve oluk için çok alçak. Daha alçak bir yaka seçin veya üst üste koymayı kapatın.",
   "shell.errorStackNotStraight": "Duvarlar dik değil: alt, üst kadar geniş değil; bu yüzden bir kutu diğerine oturmaz. Üst üste koymayı kapatın.",
   "shell.errorStackFailed": "Yaka ve oluk bu gövdede oluşturulamadı. Üst üste koymayı kapatın veya başka bir duvar seçin.",
+  "shell.errorChangedAfter": "Gövde oyulduktan sonra değiştirildi (örneğin Kapak aracının mıknatıslarıyla), bu yüzden yeniden oyulamaz. Önce geçmişte o adımı geri al, sonra oymayı değiştir.",
   "shell.grid": "Gridfinity tabanı",
   "shell.gridCells": "Tabandaki hücreler",
   "shell.gridFit": "Duvarları ızgaraya uydur",
