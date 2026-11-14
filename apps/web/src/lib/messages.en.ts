@@ -1290,7 +1290,7 @@ export const MESSAGES_EN = {
   "shell.grid": "Gridfinity floor",
   "shell.gridCells": "Cells in the floor",
   "shell.gridFit": "Fit the walls to the grid",
-  "shell.gridHint": "A Gridfinity baseplate in the floor: a socket for each cell, as many as you set (at most as many as fit). The floor becomes 6.2 mm thick. With the fit on, the walls are thickened so the inside is exactly the cells, with 0.5 mm of play.",
+  "shell.gridHint": "A Gridfinity baseplate in the floor: a socket for each cell, as many as you set (at most as many as fit). The floor becomes 6.2 mm thick. With the fit on, the walls are thickened so the inside is exactly the cells, with 0.5 mm of play. At the right end of the slider it takes every cell that fits, and more when the box grows. At the right end of the slider it takes every cell that fits, and more when the box grows.",
   "shell.gridNoCell": "Not even one whole cell fits into the inside of this box.",
   "shell.dividers": "Dividers",
   "shell.dividersAcross": "Dividers across",
