@@ -981,7 +981,7 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushCorners": "已制作盖子（{type}），带齐平铰链：墙内 {count} 个铰节，两端的铰节填满圆角，以及一个 {pin} mm 销钉孔，销钉长 {length} mm。盖子翻转后放在主体旁边，可直接打印。",
   "lid.error.hingeLidType": "铰链只适用于插入式或平盖：外围的边在打开时会撞到后壁。",
   "lid.error.stackTopType": "此类盖子或铰链暂不支持堆叠托盘。",
-  "lid.error.stackTopExtras": "堆叠托盘暂不能与磁铁、锁扣、卡扣凸点或把手一起使用。",
+  "lid.error.stackTopExtras": "堆叠托盘暂不能与磁铁、锁扣、卡扣凸点、把手、系绳或翻盖一起使用。",
   "lid.error.hingeNoBack": "所选一侧放不下三个铰节：太短或弯曲太大。",
   "lid.error.hingeTooLow": "主体太低，放不下铰链：铰节下面需要留出斜面的空间。请用更细的销钉或更高的主体。",
   "lid.error.hingeKernel": "无法把铰链与主体连接。",

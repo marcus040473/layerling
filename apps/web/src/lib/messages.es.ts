@@ -1027,7 +1027,7 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushCorners": "Tapa hecha ({type}) con bisagra enrasada: {count} nudillos en la pared, los de los extremos llenando las esquinas redondeadas, y un agujero para un pasador de {pin} mm y {length} mm de largo. La tapa queda al revés junto al cuerpo, lista para imprimir.",
   "lid.error.hingeLidType": "Una bisagra solo va con una tapa encajada o plana: un borde por fuera chocaría con la pared trasera al abrirse.",
   "lid.error.stackTopType": "La bandeja para apilar aún no funciona con este tipo de tapa o de bisagra.",
-  "lid.error.stackTopExtras": "La bandeja para apilar aún no funciona con imanes, cierres, botones de clic o asa.",
+  "lid.error.stackTopExtras": "La bandeja para apilar aún no funciona con imanes, cierres, botones de clic, asa, correa ni tapón abatible.",
   "lid.error.hingeNoBack": "El lado elegido no tiene sitio para tres nudillos: es demasiado corto o demasiado curvo.",
   "lid.error.hingeTooLow": "El cuerpo es demasiado bajo para la bisagra: bajo los nudillos hace falta sitio para su pendiente. Usa un pasador más fino o un cuerpo más alto.",
   "lid.error.hingeKernel": "No se pudo unir la bisagra al cuerpo.",

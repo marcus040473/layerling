@@ -1044,7 +1044,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "status.lidMadeHingeFlushCorners": "Deckel gemacht ({type}) mit bündigem Scharnier: {count} Knöchel in der Wand, die äußeren füllen die abgerundeten Ecken, und ein Loch für einen Stift von {pin} mm und {length} mm Länge. Der Deckel liegt umgedreht neben dem Körper, fertig zum Drucken.",
   "lid.error.hingeLidType": "Ein Scharnier geht nur mit eingestecktem oder flachem Deckel: Ein Rand außen herum würde beim Aufklappen an die Rückwand stoßen.",
   "lid.error.stackTopType": "Eine Stapelmulde geht mit dieser Deckelart oder diesem Scharnier noch nicht.",
-  "lid.error.stackTopExtras": "Eine Stapelmulde geht noch nicht mit Magneten, Verschlüssen, Klicknoppen oder Griff.",
+  "lid.error.stackTopExtras": "Eine Stapelmulde geht noch nicht mit Magneten, Verschlüssen, Klicknoppen, Griff, Halteband oder Klappverschluss.",
   "lid.error.hingeNoBack": "An der gewählten Seite ist kein Platz für drei Knöchel: Sie ist zu kurz oder zu stark gekrümmt.",
   "lid.error.hingeTooLow": "Der Körper ist für das Scharnier zu niedrig: Unter den Knöcheln braucht es Platz für ihre Schräge. Nimm einen dünneren Stift oder einen höheren Körper.",
   "lid.error.hingeKernel": "Das Scharnier ließ sich nicht mit dem Körper verbinden.",

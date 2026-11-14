@@ -922,7 +922,7 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushCorners": "Tampa criada ({type}) com uma dobradiça embutida: {count} nós na parede, com os das extremidades a preencher os cantos arredondados, e um furo para um pino de {pin} mm de diâmetro e {length} mm de comprimento. A tampa está ao lado do sólido, virada ao contrário e pronta a imprimir.",
   "lid.error.hingeLidType": "Uma dobradiça só pode ser usada com uma tampa de encaixe interior ou uma tampa plana: um bordo exterior bateria na parede traseira ao abrir a tampa.",
   "lid.error.stackTopType": "O tabuleiro para empilhar ainda não funciona com este tipo de tampa ou de dobradiça.",
-  "lid.error.stackTopExtras": "O tabuleiro para empilhar ainda não funciona com ímanes, fechos, saliências de clique ou pega.",
+  "lid.error.stackTopExtras": "O tabuleiro para empilhar ainda não funciona com ímanes, fechos, saliências de clique, pega, fita de retenção ou tampa basculante.",
   "lid.error.hingeNoBack": "O lado escolhido não tem espaço para três nós: é demasiado curto ou tem uma curvatura demasiado acentuada.",
   "lid.error.hingeTooLow": "O sólido é demasiado baixo para a dobradiça: é necessário espaço por baixo dos nós para a sua transição inclinada. Usa um pino mais fino ou um sólido mais alto.",
   "lid.error.hingeKernel": "Não foi possível unir a dobradiça ao sólido.",

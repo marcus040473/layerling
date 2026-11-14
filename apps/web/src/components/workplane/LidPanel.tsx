@@ -13,6 +13,7 @@ import {
   LID_HINGE_SIDES,
   LID_HINGE_STYLES,
   LID_HINGE_TYPES,
+  lidStackTopFits,
   LID_MAGNET_SIZES,
   LID_THREAD_STANDARDS,
   LID_THREAD_STANDARD_SPECS,
@@ -681,7 +682,7 @@ export function LidPanel({
         {!hingeFits && extras && !slide ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
 
         {/* A stacking top: the lid prints upright with a foot and carries the next stackable box in a tray on top. */}
-        {settings.type === "plug" ? (
+        {lidStackTopFits(settings) ? (
           <ToolGroup
             tool="lid-stack-top"
             label={t("lid.stackTop")}

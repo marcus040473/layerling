@@ -980,7 +980,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushCorners": "Pokrywa gotowa ({type}) z zawiasem zlicowanym: {count} kostek w ścianie, skrajne wypełniają zaokrąglone narożniki, i otwór na sworzeń {pin} mm o długości {length} mm. Pokrywa leży odwrócona obok korpusu, gotowa do druku.",
   "lid.error.hingeLidType": "Zawias pasuje tylko do pokrywki wciskanej lub płaskiej: obrzeże dookoła uderzyłoby przy otwieraniu w tylną ściankę.",
   "lid.error.stackTopType": "Taca do układania nie działa jeszcze z tym rodzajem pokrywki lub zawiasu.",
-  "lid.error.stackTopExtras": "Taca do układania nie działa jeszcze z magnesami, zatrzaskami, wypustkami klik ani uchwytem.",
+  "lid.error.stackTopExtras": "Taca do układania nie działa jeszcze z magnesami, zatrzaskami, wypustkami klik, uchwytem, paskiem ani zamknięciem klapkowym.",
   "lid.error.hingeNoBack": "Na wybranej stronie nie ma miejsca na trzy tuleje: jest za krótka albo zbyt zakrzywiona.",
   "lid.error.hingeTooLow": "Korpus jest za niski na zawias: pod kostkami potrzeba miejsca na ich skos. Weź cieńszy sworzeń albo wyższy korpus.",
   "lid.error.hingeKernel": "Nie udało się połączyć zawiasu z korpusem.",

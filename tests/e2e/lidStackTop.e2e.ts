@@ -81,14 +81,15 @@ function save(name: string, solid: Body) {
 const OPTIONS = { type: "plug", thickness: 2, gap: 0.2, depth: 4, hinge: true, hingePin: 1.75, hingeGap: 0.3, stackTop: true };
 
 describe("a hinged lid with a stacking top, printed upright (real Manifold kernel)", () => {
-  it("is off unless asked for, and only with a plug lid and a hinge behind the back", async () => {
+  it("is off unless asked for, and not with a screw-in or slide-in lid nor another hinge style", async () => {
     expect(normalizeLidOptions().stackTop).toBe(false);
     expect(normalizeLidOptions({ stackTop: "true" }).stackTop).toBe(true);
     const kernel = await runtime();
     const created: Solid[] = [];
     try {
       const body = stackingBox(kernel, created);
-      expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, type: "cap", hinge: false }))).toEqual({ error: { code: "stackTopType" } });
+      expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, type: "slide", hinge: false }))).toEqual({ error: { code: "stackTopType" } });
+      expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, type: "screwIn", hinge: false }))).toEqual({ error: { code: "stackTopType" } });
       expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, hingeStyle: "flush" }))).toEqual({ error: { code: "stackTopType" } });
       expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, magnets: true }))).toEqual({ error: { code: "stackTopExtras" } });
     } finally {
@@ -154,6 +155,100 @@ describe("a hinged lid with a stacking top, printed upright (real Manifold kerne
       save("next", next);
       const open = swung(lid, axisY, axisZ, 110, created);
       save("lid-open", open);
+    } finally {
+      Array.from(new Set(created)).forEach((value) => value.delete?.());
+    }
+  });
+});
+
+/** A round box made stackable the same way: 60 across, 40 high, 2 mm walls, the foot 2.25 mm in and 3 mm high. */
+function roundStackingBox(kernel: Kernel, created: Solid[]) {
+  const { Manifold } = kernel;
+  const keep = <T extends Solid>(value: T) => (created.push(value), value);
+  const radius = 30;
+  const foot = keep(Manifold.cylinder(FOOT, radius - INSET, radius - INSET, 128));
+  const flare = keep(keep(Manifold.cylinder(INSET, radius - INSET, radius, 128)).translate([0, 0, FOOT]));
+  const upper = keep(keep(Manifold.cylinder(HEIGHT - FOOT - INSET, radius, radius, 128)).translate([0, 0, FOOT + INSET]));
+  const cavity = keep(keep(Manifold.cylinder(HEIGHT, radius - WALL, radius - WALL, 128)).translate([0, 0, FOOT + INSET + WALL]));
+  const up = keep(keep(Manifold.union([foot, flare, upper])).subtract(cavity));
+  return keep(up.rotate([-90, 0, 0]));
+}
+
+describe("a stacking top on the other kinds of lid, each printed upright (real Manifold kernel)", () => {
+  const cases: { type: string; round: boolean; extra?: "thread" | "lugs" }[] = [
+    { type: "flat", round: false },
+    { type: "cap", round: false },
+    { type: "both", round: false },
+    { type: "screw", round: true, extra: "thread" },
+    { type: "bayonet", round: true, extra: "lugs" },
+  ];
+  for (const { type, round, extra } of cases) {
+    it(`${type}: closes the box without touching it and takes the next box's foot in its tray`, async () => {
+      const kernel = await runtime();
+      const created: Solid[] = [];
+      try {
+        const body = round ? roundStackingBox(kernel, created) : stackingBox(kernel, created);
+        const result = lidForSolid(kernel, body, normalizeLidOptions({ type, thickness: 2, gap: 0.2, depth: 4, stackTop: true }));
+        if ("error" in result) throw new Error(JSON.stringify(result.error));
+        created.push(result.lid);
+        expect(result.lid.status()).toBe("NoError");
+        expect(result.lid.decompose().length).toBe(1);
+        expect(result.lid.boundingBox().min[1]).toBeCloseTo(0, 6);
+        const added = extra === "thread" ? result.screw?.thread : extra === "lugs" ? result.bayonet?.lugs : null;
+        if (extra) expect(added).toBeTruthy();
+        const whole = added ? body.add(added) : body;
+        if (added) created.push(added, whole);
+        // Closed: its tray's rim 2 + 3 mm over the rim, in the middle of the body.
+        const bodyBox = body.boundingBox();
+        const box = result.lid.boundingBox();
+        const lid = result.lid.translate([
+          (bodyBox.min[0] + bodyBox.max[0]) / 2 - (box.min[0] + box.max[0]) / 2,
+          HEIGHT + 5 - box.max[1],
+          (bodyBox.min[2] + bodyBox.max[2]) / 2 - (box.min[2] + box.max[2]) / 2,
+        ]);
+        created.push(lid);
+        const common = whole.intersect(lid);
+        created.push(common);
+        expect(common.volume()).toBeLessThan(1e-3);
+        // Under a cap a solid foot fills the opening, so its plate does not hang over it as it prints.
+        if (type !== "flat") expect(lid.boundingBox().min[1]).toBeLessThan(HEIGHT - 3.5);
+        const next = whole.translate([0, HEIGHT + 5 - FOOT, 0]);
+        const onTop = next.intersect(lid);
+        const slid = whole.translate([1, HEIGHT + 5 - FOOT, 0]);
+        const pushed = slid.intersect(lid);
+        created.push(next, onTop, slid, pushed);
+        expect(onTop.volume()).toBeLessThan(1e-3);
+        expect(pushed.volume()).toBeGreaterThan(1);
+        save(`${type}-lid`, result.lid);
+      } finally {
+        Array.from(new Set(created)).forEach((value) => value.delete?.());
+      }
+    });
+  }
+
+  it("flat with a hinge: swings open without touching the box", async () => {
+    const kernel = await runtime();
+    const created: Solid[] = [];
+    try {
+      const body = stackingBox(kernel, created);
+      const options = normalizeLidOptions({ ...OPTIONS, type: "flat" });
+      const result = lidForSolid(kernel, body, options);
+      if ("error" in result) throw new Error(JSON.stringify(result.error));
+      const { knuckles } = result.hinge!;
+      created.push(result.lid, knuckles);
+      expect(result.lid.decompose().length).toBe(1);
+      const whole = body.add(knuckles);
+      created.push(whole);
+      const lid = closing(body, result.lid, 0, created);
+      const lidBox = lid.boundingBox();
+      const radius = hingeKnuckleRadius(options);
+      const axisY = lidBox.max[1] - radius;
+      const axisZ = -DEPTH / 2 - radius - OPTIONS.hingeGap;
+      for (let degrees = 0; degrees <= 180; degrees += 10) {
+        const common = whole.intersect(swung(lid, axisY, axisZ, degrees, created));
+        created.push(common);
+        expect(common.volume(), `${degrees} degrees`).toBeLessThan(1e-3);
+      }
     } finally {
       Array.from(new Set(created)).forEach((value) => value.delete?.());
     }

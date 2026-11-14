@@ -324,7 +324,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushCorners": "Låg lavet ({type}) med forsænket hængsel: {count} knoer i væggen, hvor de yderste fylder de afrundede hjørner, og et hul til en stift på {pin} mm og {length} mm lang. Låget ligger vendt om ved siden af kroppen, klar til print.",
   "lid.error.hingeLidType": "Et hængsel passer kun til et låg, der stikkes i, eller et fladt låg: En kant uden om ville ramme bagvæggen, når låget åbnes.",
   "lid.error.stackTopType": "En stablebakke går endnu ikke med denne slags låg eller hængsel.",
-  "lid.error.stackTopExtras": "En stablebakke går endnu ikke med magneter, låse, klikknopper eller greb.",
+  "lid.error.stackTopExtras": "En stablebakke går endnu ikke med magneter, låse, klikknopper, greb, strop eller klaplåg.",
   "lid.error.hingeNoBack": "Den valgte side har ikke plads til tre knoer: den er for kort eller for stærkt krummet.",
   "lid.error.hingeTooLow": "Kroppen er for lav til hængslet: Under knoerne skal der være plads til deres skråning. Tag en tyndere stift eller en højere krop.",
   "lid.error.hingeKernel": "Hængslet kunne ikke forbindes med kroppen.",

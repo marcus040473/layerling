@@ -981,7 +981,7 @@ export const MESSAGES_ZH_TW: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushCorners": "已製作蓋子（{type}），帶齊平鉸鏈：牆內 {count} 個鉸節，兩端的鉸節填滿圓角，以及一個 {pin} mm 銷釘孔，銷釘長 {length} mm。蓋子翻轉後放在主體旁邊，可直接列印。",
   "lid.error.hingeLidType": "鉸鏈只適用於插入式或平蓋：外圍的邊在打開時會撞到後壁。",
   "lid.error.stackTopType": "此類蓋子或鉸鏈暫不支援堆疊托盤。",
-  "lid.error.stackTopExtras": "堆疊托盤暫不能與磁鐵、鎖扣、卡扣凸點或把手一起使用。",
+  "lid.error.stackTopExtras": "堆疊托盤暫不能與磁鐵、鎖扣、卡扣凸點、把手、繫繩或翻蓋一起使用。",
   "lid.error.hingeNoBack": "所選一側放不下三個鉸節：太短或彎曲太大。",
   "lid.error.hingeTooLow": "主體太低，放不下鉸鏈：鉸節下面需要留出斜面的空間。請用更細的銷釘或更高的主體。",
   "lid.error.hingeKernel": "無法把鉸鏈與主體連接。",

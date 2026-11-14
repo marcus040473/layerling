@@ -910,7 +910,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushCorners": "Pokrov narejen ({type}) s poravnanim tečajem: {count} členkov v steni, skrajna zapolnjujeta zaobljena vogala, in luknja za zatič {pin} mm, dolg {length} mm. Pokrov leži obrnjen poleg telesa, pripravljen za tisk.",
   "lid.error.hingeLidType": "Tečaj gre le z vstavljenim ali ploščatim pokrovom: rob okoli bi ob odpiranju zadel zadnjo steno.",
   "lid.error.stackTopType": "Pladenj za zlaganje še ne deluje s to vrsto pokrova ali tečaja.",
-  "lid.error.stackTopExtras": "Pladenj za zlaganje še ne deluje z magneti, zaskočkami, klik izboklinami ali ročajem.",
+  "lid.error.stackTopExtras": "Pladenj za zlaganje še ne deluje z magneti, zaskočkami, klik izboklinami, ročajem, trakom ali preklopnim pokrovčkom.",
   "lid.error.hingeNoBack": "Na izbrani strani ni prostora za tri členke: je prekratka ali preveč ukrivljena.",
   "lid.error.hingeTooLow": "Telo je za tečaj prenizko: pod členki je potreben prostor za njihov naklon. Vzemi tanjši zatič ali višje telo.",
   "lid.error.hingeKernel": "Tečaja ni bilo mogoče povezati s telesom.",

@@ -874,6 +874,12 @@ function capWithTopEdge(runtime: ManifoldToplevel, cap: ManifoldSolid, centre: P
   return keep(created, cap.subtract(ring));
 }
 
+/** The kinds of lid a stacking top goes with: all but the screw-in lid and the slide-in lid, so far. */
+export const LID_STACK_TOP_TYPES: readonly LidType[] = ["plug", "flat", "cap", "both", "screw", "bayonet"];
+export function lidStackTopFits(options: Pick<LidOptions, "type">) {
+  return LID_STACK_TOP_TYPES.includes(options.type);
+}
+
 /**
  * Whether a flip-top goes with this kind of lid: a cap that stays on while the flap in its plate opens, a screw lid's or
  * a bayonet lid's. A lid that is lifted off has no need of one.
@@ -3093,11 +3099,13 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     // plate over that, and on the plate a rim like the body's round a tray the next box's foot goes into. With a hinge, the
     // lid is as tall as the knuckles need for a 45 degree slope from its back face, so they print without support.
     const stackTop = options.stackTop;
-    if (stackTop && (options.type !== "plug" || !hasOpening || (options.hinge && options.hingeStyle !== "outside"))) return { error: { code: "stackTopType" } };
-    if (stackTop && (options.magnets || options.latches > 0 || options.clickBumps || options.handle !== "none")) return { error: { code: "stackTopExtras" } };
+    if (stackTop && (!lidStackTopFits(options) || !hasOpening || (options.hinge && options.hingeStyle !== "outside"))) return { error: { code: "stackTopType" } };
+    if (stackTop && (options.magnets || options.latches > 0 || options.clickBumps || options.handle !== "none" || options.tether || options.flipTop)) return { error: { code: "stackTopExtras" } };
+    // The tray's rim stands on the cap's top edge, so that stays square.
+    if (stackTop) options.topEdge = "square";
     let flareHeight = 0;
     let lidTop = top + options.thickness;
-    if (stackTop) {
+    if (stackTop && options.type === "plug") {
       const lip = keep(created, opening.offset(-options.gap, "Round", 2, 48));
       if (lip.area() < MIN_OPENING_AREA) return { error: { code: "tooSmall" } };
       // Grown with mitred corners, so a square corner is reached when the sides are, not a wall's width later.
@@ -3105,6 +3113,8 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
         flareHeight += STACK_TOP_STEP;
         if (flareHeight > 30) return { error: { code: "tooSmall" } };
       }
+    }
+    if (stackTop) {
       const plateTop = top + flareHeight + options.thickness;
       lidTop = plateTop + DEFAULT_SHELL_STACK_HEIGHT;
       if (options.hinge) {
@@ -3189,6 +3199,17 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     }
 
     const prism = (area: CrossSection, low: number, high: number) => keep(created, keep(created, area.extrude(high - low)).translate([0, 0, low]));
+    // A stacking top's foot: `area` from `depth` below the rim up to it, with a small chamfer at the bottom against the
+    // first layer's spreading, in four steps.
+    const stackFoot = (area: CrossSection) => {
+      const bottom = top - options.depth;
+      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, options.depth / 4);
+      const steps = [0, 1, 2, 3].map((step) => {
+        const low = bottom + (chamfer * step) / 4;
+        return prism(keep(created, area.offset(-chamfer * (1 - (step + 0.5) / 4), "Round", 2, 48)), low, low + chamfer / 4);
+      });
+      return keep(created, runtime.Manifold.union([...steps, prism(area, bottom + chamfer, top + 0.01)]));
+    };
     const parts: ManifoldSolid[] = [];
     // The rim's inside and outside, for a cap and both.
     const inner = keep(created, outline.offset(options.gap, "Round", 2, 48));
@@ -3241,15 +3262,9 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       slide = { plan, cuts: back(solids.cuts), bumps: solids.bumps };
     } else if (options.type === "flat") {
       parts.push(prism(outline, top, top + options.thickness));
-    } else if (stackTop) {
+    } else if (stackTop && options.type === "plug") {
       const lip = keep(created, opening.offset(-options.gap, "Round", 2, 48));
-      const bottom = top - options.depth;
-      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, options.depth / 4);
-      for (let step = 0; step < 4; step += 1) {
-        const low = bottom + (chamfer * step) / 4;
-        parts.push(prism(keep(created, lip.offset(-chamfer * (1 - (step + 0.5) / 4), "Round", 2, 48)), low, low + chamfer / 4));
-      }
-      parts.push(prism(lip, bottom + chamfer, top));
+      parts.push(stackFoot(lip));
       for (let height = STACK_TOP_STEP; height < flareHeight + 1e-9; height += STACK_TOP_STEP) {
         parts.push(prism(keep(created, keep(created, lip.offset(height, "Miter", 2, 48)).intersect(outline)), top + height - STACK_TOP_STEP, top + height));
       }
@@ -3277,6 +3292,24 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       tether = { plan, bead: solids.bead, part: solids.part };
     }
     let made = parts.length === 1 ? parts[0] : keep(created, runtime.Manifold.union(parts));
+    // A stacking top on any other lid that prints upright: a solid foot in the opening under a cap (so its plate does not
+    // hang over the opening as it prints; only the groove over the body's wall is bridged), and on the plate a rim round
+    // a tray as large as the opening, the lid's own top outline outside.
+    if (stackTop && options.type !== "plug") {
+      const plateTop = top + options.thickness;
+      if (options.type !== "flat") {
+        // As deep as the opening stays as wide: cut at the foot's bottom too.
+        const cutLow = keep(created, up.slice(top - options.depth));
+        const lower = keep(created, filled(runtime, cutLow, created).subtract(cutLow));
+        const low = lower.area() >= MIN_OPENING_AREA ? lower : null;
+        const area = keep(created, opening.offset(-options.gap, "Round", 2, 48));
+        const foot = low ? keep(created, area.intersect(keep(created, low.offset(-options.gap, "Round", 2, 48)))) : area;
+        if (foot.area() < MIN_OPENING_AREA) return { error: { code: "tooSmall" } };
+        made = keep(created, made.add(stackFoot(foot)));
+      }
+      const own = filled(runtime, keep(created, made.slice(plateTop - 0.05)), created);
+      made = keep(created, made.add(prism(keep(created, own.subtract(opening)), plateTop - 0.01, lidTop)));
+    }
     // A flip-top: the opening and the flap's room cut out of the cap's plate, the flap and its hinge put in.
     let flipTop: FlipTopPlan | null = null;
     const capPlan = screw?.plan ?? bayonet?.plan;

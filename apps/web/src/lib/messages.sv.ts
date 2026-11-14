@@ -1039,7 +1039,7 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushCorners": "Lock skapat ({type}) med infällt gångjärn: {count} leder i väggen, där de yttersta fyller de rundade hörnen, och ett hål för en {pin} mm sprint på {length} mm. Locket ligger upp och ner bredvid kroppen, klart att skriva ut.",
   "lid.error.hingeLidType": "Ett gångjärn fungerar bara med ett instickslock eller ett platt lock: en kant utanpå skulle slå i bakväggen när locket fälls upp.",
   "lid.error.stackTopType": "En stapelbricka går ännu inte med den här sortens lock eller gångjärn.",
-  "lid.error.stackTopExtras": "En stapelbricka går ännu inte med magneter, spärrar, klickknoppar eller handtag.",
+  "lid.error.stackTopExtras": "En stapelbricka går ännu inte med magneter, spärrar, klickknoppar, handtag, band eller fliplock.",
   "lid.error.hingeNoBack": "Den valda sidan har inte plats för tre leder: den är för kort eller för skarpt krökt.",
   "lid.error.hingeTooLow": "Kroppen är för låg för gångjärnet: under lederna behövs plats för deras lutning. Välj en tunnare sprint eller en högre kropp.",
   "lid.error.hingeKernel": "Gångjärnet kunde inte förenas med kroppen.",
