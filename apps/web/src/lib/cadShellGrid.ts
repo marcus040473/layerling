@@ -108,7 +108,7 @@ function cavityOutline(cad: OcctKernel, body: ShapeHandle, message: string) {
   if (!faces || faces.length !== 1 || faces[0].openings.length !== 1) throw new Error(message);
   const polygon = wirePolygon(cad, faces[0].openings[0]);
   if (!polygon) throw new Error(message);
-  return { polygon, top: box.ymax, bottom: box.ymin, total };
+  return { polygon, top: box.ymax, bottom: box.ymin, total, opening: faces[0].openings[0], rim };
 }
 
 function bounds(points: readonly Cell[]) {
@@ -132,21 +132,22 @@ export function shellGridCells(polygon: readonly Cell[], count: number): Cell[] 
  * `grid.fit` its walls thickened to the cells. Throws an error with one of the messages of shellGridLimits where it
  * cannot be done; the caller shows it.
  */
-export function shellGridSolid(kernel: OcctKernel, original: ShapeHandle, shelled: ShapeHandle, grid: ShellGrid): ShapeHandle {
+export function shellGridSolid(kernel: OcctKernel, original: ShapeHandle, shelled: ShapeHandle, grid: ShellGrid, lift = 0): ShapeHandle {
   const made: ShapeHandle[] = [];
   const cad = tracking(kernel, made);
   let result: ShapeHandle | null = null;
   try {
-    const { polygon, top, bottom, total } = cavityOutline(cad, shelled, GRID_NEEDS_TOP_MESSAGE);
-    const floorTop = bottom + SHELL_GRID_FLOOR;
-    if (total < SHELL_GRID_FLOOR + SHELL_GRID_MIN_DEPTH) throw new Error(GRID_TOO_LOW_MESSAGE);
+    const { polygon, top, bottom, total, opening, rim } = cavityOutline(cad, shelled, GRID_NEEDS_TOP_MESSAGE);
+    const floorTop = bottom + Math.max(0, lift) + SHELL_GRID_FLOOR;
+    if (total < floorTop - bottom + SHELL_GRID_MIN_DEPTH) throw new Error(GRID_TOO_LOW_MESSAGE);
     const cells = shellGridCells(polygon, grid.cells);
     const box = cad.getBoundingBox(original);
     const wide = { x0: box.xmin - 1, x1: box.xmax + 1, z0: box.zmin - 1, z1: box.zmax + 1 };
     const slab = (low: number, high: number) => cad.makeBoxFromCorners({ x: wide.x0, y: low, z: wide.z0 }, { x: wide.x1, y: high, z: wide.z1 });
     const parts: ShapeHandle[] = [shelled];
     // The floor, up to the top of the sockets, over the whole inside: where the box was hollowed it is the cavity's.
-    parts.push(cad.common(original, slab(bottom, floorTop)));
+    // Within the cavity's outline only: under a stacking foot the band round it stays cut away.
+    parts.push(cad.common(cad.common(original, slab(bottom, floorTop)), block(cad, cad.makeFace(opening), rim, bottom - 1, floorTop)));
     if (grid.fit) {
       // The walls reach in to the cells and their play: what lies in the box's outline, above the floor, outside the fitted
       // inside. The fitted inside never reaches past the inside of the box, as its cells fit in it.

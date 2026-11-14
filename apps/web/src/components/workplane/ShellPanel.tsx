@@ -55,6 +55,7 @@ export function ShellPanel({
   onOpeningsChange,
   onEdgesChange,
   onStackChange,
+  onStackLid,
   onGridChange,
   onGridSize,
   onDividersChange,
@@ -94,6 +95,8 @@ export function ShellPanel({
   onOpeningsChange: (value: ShellOpenings) => void;
   onEdgesChange: (value: ShellEdges) => void;
   onStackChange: (value: number) => void;
+  /** Makes a flat stacking lid with the same foot beside the box. */
+  onStackLid?: () => void;
   onGridChange: (cells: number, fit: boolean) => void;
   onGridSize: (columns: number, rows: number) => void;
   onDividersChange: (value: ShellDividers | null) => void;
@@ -305,6 +308,12 @@ export function ShellPanel({
               onChange={onStackChange}
             />
           ) : null}
+          {stack > 0 && onStackLid ? (
+            <div className="shell-opening-options">
+              <button type="button" disabled={busy} onClick={onStackLid}>{t("shell.stackLid")}</button>
+            </div>
+          ) : null}
+          {stack > 0 && onStackLid ? <ToolHint text={t("shell.stackLidHint")} /> : null}
           <ToolHint text={thickness < SHELL_STACK_MIN_WALL && stack > 0 ? t("shell.stackWallThin", { min: SHELL_STACK_MIN_WALL }) : t("shell.stackHint")} />
         </div>
       ) : null}

@@ -114,7 +114,7 @@ import { MODEL_SCALE_RATIO_MAX, MODEL_SCALE_RATIO_MIN, modelScalePercent, type M
 import { isSameSize, resizedCopy, SAME_SIZE, shapeSize, sizeFactorsBetween, type ShapeSize, type SizeFactors } from "@/lib/duplicateResize";
 import { canToggleGroupColors, colorForParts, groupShowsPartColors } from "@/lib/groupColors";
 import { disposeBoundsTree } from "three-mesh-bvh";
-import { clampShellStackHeight } from "@/lib/shellStackLimits";
+import { clampShellStackHeight, shellStackFloor } from "@/lib/shellStackLimits";
 import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
 import { magnetsMeetGridCells } from "@/lib/shellGridMagnets";
 import { SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
@@ -9371,6 +9371,48 @@ export function LayerlingEditor({
         setShellTool((current) => current ? { ...current, busy: false, error: changedAfter ? t("shell.errorChangedAfter") : message } : current);
       });
   }, [commitShapes, offsetShape, selectedShape, selectedShapes.length, shellShape, shellTool]);
+
+  /**
+   * A stacking lid for the selected box: a flat box of the same outline, with the same foot and wall, beside it. Its foot goes
+   * into the box, its floor closes it, and the next box's foot stands in its rim. Made as a body of its own and hollowed
+   * like the box, so it prints standing on its foot as the box does.
+   */
+  const makeStackLid = useCallback(() => {
+    if (!shellTool || shellTool.busy || !selectedShape || selectedShapes.length !== 1) return;
+    const target = selectedShape;
+    const stack = shellTool.stack ?? 0;
+    if (stack <= 0) return;
+    const wall = shellTool.thickness;
+    const entry = shellRebuildEntry(target);
+    const source = entry ? restoreShapeBeforeEdgeTreatment(target, shellRebuildReference(target, entry)) : target;
+    // The foot and the floor over it, then a rim as deep as the next box's foot and half a millimetre.
+    const height = Number((shellStackFloor(stack, wall) + stack + 0.5).toFixed(2));
+    const width = shapeWidth(source);
+    const lid = canonicalizeShape({
+      ...source,
+      id: createLocalId(source.kind),
+      name: `${displayShapeName(target)} – ${t("shell.stackLid")}`,
+      height,
+      x: target.x + width + 10,
+      elevation: 0,
+      locked: false,
+      edgeTreatments: undefined,
+      edgeTreatmentHistory: undefined,
+    });
+    const placed = [...shapesRef.current, lid];
+    commitShapes(placed, lid.id);
+    setShellTool((current) => current ? { ...current, busy: true, error: null } : current);
+    void shellShape(lid, wall, "top", shellTool.edges, lid, undefined, { stack })
+      .then((made) => {
+        commitShapes(shapesRef.current.map((candidate) => candidate.id === lid.id ? made : candidate), made.id, t("status.shelled", { size: Number(wall.toFixed(2)) }));
+        setShellTool(null);
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? localizedError(error.message) : String(error);
+        commitShapes(shapesRef.current.filter((candidate) => candidate.id !== lid.id), target.id);
+        setShellTool((current) => current ? { ...current, busy: false, error: message } : current);
+      });
+  }, [commitShapes, selectedShape, selectedShapes.length, shellShape, shellTool]);
 
   // The panel belongs to one selected body; a new selection closes it.
   useEffect(() => {
@@ -20117,6 +20159,7 @@ export function LayerlingEditor({
           stack={shellTool.stack ?? 0}
           stackOffered={shellOpenSides(shellTool.openings).length === 1 && shellOpenSides(shellTool.openings)[0] === "top"}
           onStackChange={(value) => setShellTool((current) => current ? { ...current, stack: value, error: null } : current)}
+          onStackLid={makeStackLid}
           edges={shellTool.edges}
           onEdgesChange={(value) => setShellTool((current) => current ? { ...current, edges: value, error: null } : current)}
           onApply={applyShellTool}

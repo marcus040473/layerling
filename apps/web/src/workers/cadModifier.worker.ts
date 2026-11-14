@@ -7,7 +7,8 @@ import { cornerEdgeCandidates, edgesTouchingEnds } from "@/lib/cadCornerEdges";
 import { innerCornerEdges, treatAfterInnerCorners } from "@/lib/cadInnerCorners";
 import { OcctKernel, type OcctModuleFactory, type ShapeHandle } from "occt-wasm";
 import { assertCadKernelRunnable } from "@/lib/wasmSupport";
-import { STACK_NEEDS_TOP_MESSAGE, shellStackSolid } from "@/lib/cadShellStack";
+import { STACK_NEEDS_TOP_MESSAGE, shellStackFloor, shellStackSolid } from "@/lib/cadShellStack";
+import { GRIDFINITY_FLOOR } from "@/lib/gridfinityGeometry";
 import { shellDividersSolid, shellGridSolid } from "@/lib/cadShellGrid";
 import { DIVIDERS_NEEDS_TOP_MESSAGE, GRID_NEEDS_TOP_MESSAGE, SHELL_GRID_FLOOR, normalizeShellDividers, normalizeShellGrid } from "@/lib/shellGridLimits";
 import { shellOpenSides } from "@/lib/shellLimits";
@@ -1360,32 +1361,35 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
         component = threadShellCore && baseSolids.length === 1
           ? shellThreadByCore(activeCad, solid, threadShellCore, request.amount, request.shellOpenings ?? "none", request.shellEdges)
           : shellSolid(activeCad, solid, request.amount, request.shellOpenings ?? "none", request.shellEdges);
-        // A Gridfinity floor and dividers, only for a body hollowed with its top open; the stacking comes last.
+        // Stacking first (the foot and the floor raised over it), then a Gridfinity floor on that floor, then dividers: only
+        // for a body hollowed with its top open.
+        const stack = request.shellStack && request.shellStack > 0 ? request.shellStack : 0;
         const grid = normalizeShellGrid(request.shellGrid);
         const dividers = normalizeShellDividers(request.shellDividers);
-        if (grid || dividers) {
+        if (stack || grid || dividers) {
           const open = shellOpenSides(request.shellOpenings);
-          if (open.length !== 1 || open[0] !== "top") throw new Error(grid ? GRID_NEEDS_TOP_MESSAGE : DIVIDERS_NEEDS_TOP_MESSAGE);
-          let floorTop: number | null = null;
-          if (grid) {
-            const floored = shellGridSolid(activeCad, solid, component, grid);
-            floorTop = activeCad.getBoundingBox(floored).ymin + SHELL_GRID_FLOOR;
-            activeCad.release(component);
-            component = floored;
-          }
-          if (dividers) {
-            const divided = shellDividersSolid(activeCad, solid, component, dividers, floorTop);
-            activeCad.release(component);
-            component = divided;
-          }
+          if (open.length !== 1 || open[0] !== "top") throw new Error(grid ? GRID_NEEDS_TOP_MESSAGE : dividers ? DIVIDERS_NEEDS_TOP_MESSAGE : STACK_NEEDS_TOP_MESSAGE);
         }
-        // Stacking: a collar round the top and a groove under the wall, only for a body hollowed with its top open.
-        if (request.shellStack && request.shellStack > 0) {
-          const open = shellOpenSides(request.shellOpenings);
-          if (open.length !== 1 || open[0] !== "top") throw new Error(STACK_NEEDS_TOP_MESSAGE);
-          const stacked = shellStackSolid(activeCad, component, request.shellStack, request.amount);
+        const bottom = activeCad.getBoundingBox(component).ymin;
+        let floorTop: number | null = null;
+        if (stack) {
+          const stacked = shellStackSolid(activeCad, component, stack, request.amount, solid);
           activeCad.release(component);
           component = stacked;
+          floorTop = bottom + shellStackFloor(stack, request.amount);
+        }
+        if (grid) {
+          // On a stacking floor the sockets start where that floor ends.
+          const lift = floorTop === null ? 0 : floorTop - bottom - GRIDFINITY_FLOOR;
+          const floored = shellGridSolid(activeCad, solid, component, grid, lift);
+          floorTop = bottom + lift + SHELL_GRID_FLOOR;
+          activeCad.release(component);
+          component = floored;
+        }
+        if (dividers) {
+          const divided = shellDividersSolid(activeCad, solid, component, dividers, floorTop);
+          activeCad.release(component);
+          component = divided;
         }
       } else if (request.kind === "offset") {
         component = (request.offsetSideways ? offsetSolidSideways : offsetSolid)(activeCad, solid, request.amount, request.offsetShrink === true, request.shellEdges);

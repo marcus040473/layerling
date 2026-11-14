@@ -89,9 +89,11 @@ describe("a Gridfinity floor, fit and dividers with the real OCCT kernel", () =>
 
   it("stands on a Gridfinity floor, with dividers and a stack", () => {
     const { original, shelled } = hollow(100, 80, 40);
-    const grid = shellGridSolid(kernel, original, shelled, { cells: 99, fit: false });
-    const divided = shellDividersSolid(kernel, original, grid, { x: 1, z: 0 }, SHELL_GRID_FLOOR);
-    const stacked = shellStackSolid(kernel, divided, 3, 2);
+    // As the worker does it: the foot first, the sockets on its floor, then the dividers.
+    const stacked0 = shellStackSolid(kernel, shelled, 3, 2, original);
+    const lift = 3 + 2.25 + 2 - 1.2;
+    const grid = shellGridSolid(kernel, original, stacked0, { cells: 99, fit: false }, lift);
+    const stacked = shellDividersSolid(kernel, original, grid, { x: 1, z: 0 }, lift + SHELL_GRID_FLOOR);
     expect(kernel.isValid(stacked)).toBe(true);
     expect(kernel.getSubShapes(stacked, "solid")).toHaveLength(1);
   });

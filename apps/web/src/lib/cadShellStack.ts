@@ -1,18 +1,17 @@
 import type { OcctKernel, ShapeHandle } from "occt-wasm";
 import { block, moved, rimFaces, tracking } from "@/lib/cadLid";
-import { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_EXTRA, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_PART, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight } from "@/lib/shellStackLimits";
+import { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_DEPTH, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight, shellStackFloor, shellStackInset } from "@/lib/shellStackLimits";
 import { STACK_FAILED_MESSAGE, STACK_NEEDS_TOP_MESSAGE, STACK_NOT_STRAIGHT_MESSAGE, STACK_TOO_LOW_MESSAGE, STACK_WALL_THIN_MESSAGE } from "@/lib/shellStackMessages";
 
-export { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_EXTRA, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_PART, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight };
+export { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_DEPTH, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight, shellStackFloor, shellStackInset };
 export { STACK_FAILED_MESSAGE, STACK_NEEDS_TOP_MESSAGE, STACK_NOT_STRAIGHT_MESSAGE, STACK_TOO_LOW_MESSAGE, STACK_WALL_THIN_MESSAGE };
 
 /*
- * Stacking for a hollowed box with its top open, so one box stands on the next. The outer half of the wall rises above
- * the top as a collar, `height` high and flush with the outside, and the underside has a groove the same width and a
- * millimetre deeper, open to the outside, that takes the collar of the box below. The inner half of the wall, the floor
- * and the bottom stay flat, so the box prints standing on its floor with nothing hanging in the air, and the floor stays
- * joined to the wall. The play between collar and groove sits on the inside of the collar. Everything here is in the
- * scene's frame, y up.
+ * Stacking for a hollowed box with its top open, the way Gridfinity bins stack: the bottom is a foot, narrower than the box by
+ * the wall and a little play per side, that goes into the opening of the box below; above it the box widens to its full size
+ * at 45 degrees, so it prints standing on its foot without support. The floor is raised to the top of that widening and the
+ * foot is solid, so nothing in it is thin. The top stays as it was: every lid fits as before. The foot's lowest edge is
+ * chamfered a little against the squash of the first layer. Everything here is in the scene's frame, y up.
  */
 
 /** The area of what the outlines of the faces at the rim enclose, in mm². */
@@ -21,49 +20,55 @@ function outerArea(cad: OcctKernel, faces: Array<{ outer: ShapeHandle }>) {
 }
 
 /**
- * The hollowed `solid` with the collar round its top and the groove under its wall. Throws an error with one of the
- * messages above where it cannot be done; the caller shows it.
+ * The hollowed `solid` (made from `original`, the body before, which holds the cavity as solid) with the foot. Throws an error
+ * with one of the messages above where it cannot be done; the caller shows it.
  */
-export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: number, wall: number): ShapeHandle {
+export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: number, wall: number, original: ShapeHandle): ShapeHandle {
   const made: ShapeHandle[] = [];
   const cad = tracking(kernel, made);
   let result: ShapeHandle | null = null;
   try {
-    const stack = clampShellStackHeight(height);
+    const foot = clampShellStackHeight(height);
     if (wall < SHELL_STACK_MIN_WALL - 1e-9) throw new Error(STACK_WALL_THIN_MESSAGE);
     const box = cad.getBoundingBox(solid);
     const top = box.ymax;
     const bottom = box.ymin;
     const total = top - bottom;
-    // The collar and the groove (and a millimetre) both fit into the wall's height, with the floor between.
-    if (total < 2 * stack + SHELL_STACK_EXTRA + wall + 1) throw new Error(STACK_TOO_LOW_MESSAGE);
+    const inset = shellStackInset(wall);
+    const floorTop = bottom + shellStackFloor(foot, wall);
+    // The raised floor and the room above it fit into the body's height.
+    if (top - floorTop < SHELL_STACK_MIN_DEPTH) throw new Error(STACK_TOO_LOW_MESSAGE);
     const rim = top - Math.min(0.3, total * 0.02);
     const faces = rimFaces(cad, solid, rim);
     if (!faces || faces.length === 0 || faces.every(({ openings }) => openings.length === 0)) throw new Error(STACK_NEEDS_TOP_MESSAGE);
-    // The foot of the box above must be as wide as the rim of the box below: a slice just above the floor.
+    // The foot of the box above goes into the opening of the box below: the outline at the bottom as wide as at the rim.
     const footPlane = bottom + Math.min(0.3, total * 0.02);
-    const foot = rimFaces(cad, solid, footPlane);
-    if (!foot) throw new Error(STACK_NOT_STRAIGHT_MESSAGE);
-    const top2 = outerArea(cad, faces);
-    const foot2 = outerArea(cad, foot);
-    if (Math.abs(top2 - foot2) > 0.01 * top2) throw new Error(STACK_NOT_STRAIGHT_MESSAGE);
-    const collarIn = wall / 2 - SHELL_STACK_PLAY / 2;
-    const grooveIn = wall / 2 + SHELL_STACK_PLAY / 2;
-    const collars: ShapeHandle[] = [];
-    const grooves: ShapeHandle[] = [];
-    for (const { outer } of faces) {
-      const outerFace = cad.makeFace(outer);
-      const collarInner = moved(cad, outer, -collarIn);
-      const grooveInner = moved(cad, outer, -grooveIn);
-      const wide = moved(cad, outer, 1);
-      if (!collarInner || !grooveInner || !wide) throw new Error(STACK_FAILED_MESSAGE);
-      // Down into the wall by half a millimetre, so the collar is one with it.
-      collars.push(cad.cut(block(cad, outerFace, rim, top - 0.5, top + stack), block(cad, collarInner, rim, top - 1, top + stack + 1)));
-      const depth = stack + SHELL_STACK_EXTRA;
-      grooves.push(cad.cut(block(cad, wide, rim, bottom - 1, bottom + depth), block(cad, grooveInner, rim, bottom - 2, bottom + depth + 1)));
+    const footFaces = rimFaces(cad, solid, footPlane);
+    if (!footFaces) throw new Error(STACK_NOT_STRAIGHT_MESSAGE);
+    const topArea = outerArea(cad, faces);
+    if (Math.abs(topArea - outerArea(cad, footFaces)) > 0.01 * topArea) throw new Error(STACK_NOT_STRAIGHT_MESSAGE);
+    const keep: ShapeHandle[] = [];
+    for (const { outer } of footFaces) {
+      const footFace = moved(cad, outer, -inset);
+      const lowest = moved(cad, outer, -(inset + SHELL_STACK_FOOT_CHAMFER));
+      if (!footFace) throw new Error(STACK_FAILED_MESSAGE);
+      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, foot / 2);
+      if (lowest && chamfer > 0) {
+        // The lowest edge: widening at 45 degrees from the chamfer's inset to the foot's.
+        keep.push(cad.draftPrism(cad.translate(lowest, 0, bottom - footPlane, 0), 0, chamfer, 0, -45));
+        keep.push(block(cad, footFace, footPlane, bottom + chamfer, bottom + foot));
+      } else {
+        keep.push(block(cad, footFace, footPlane, bottom - 1, bottom + foot));
+      }
+      // Above the foot, widening at 45 degrees to the full outline.
+      keep.push(cad.draftPrism(cad.translate(footFace, 0, bottom + foot - footPlane, 0), 0, inset, 0, -45));
     }
-    let body = cad.fuseAll([solid, ...collars]);
-    body = cad.cutAll(body, grooves);
+    const wide = { x0: box.xmin - 1, z0: box.zmin - 1, x1: box.xmax + 1, z1: box.zmax + 1 };
+    const slab = (low: number, high: number) => cad.makeBoxFromCorners({ x: wide.x0, y: low, z: wide.z0 }, { x: wide.x1, y: high, z: wide.z1 });
+    keep.push(slab(bottom + foot + inset - 0.01, top + 1));
+    // The floor raised to the top of the widening: the foot is solid.
+    const filled = cad.fuseAll([solid, cad.common(original, slab(bottom - 1, floorTop))]);
+    let body = cad.common(filled, cad.fuseAll(keep));
     body = cad.simplify(body);
     const solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
     if (solids.length !== 1 || !cad.isValid(solids[0]) || cad.getVolume(solids[0]) <= 0) throw new Error(STACK_FAILED_MESSAGE);
