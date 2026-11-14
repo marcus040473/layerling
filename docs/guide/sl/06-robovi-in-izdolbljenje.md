@@ -79,6 +79,8 @@ Stene rastejo navznoter. Zunaj ostane vse, kot je.
 
 Če je zgornja stran edina odprta, {{ui:shell.stack}} naredi škatlo zložljivo na kup: zunanja polovica stene štrli nad rob kot rob ({{ui:shell.stackHeight}}, na začetku 3 mm), pod steno pa se izreže utor, globlji za milimeter, ki sprejme rob spodnje škatle. Ena škatla potem stoji trdno na drugi. Dno in spodnja stran ostaneta ravni, zato se škatla še vedno tiska stoje na dnu, brez česar koli v zraku. Potrebne so ravne stene, stena vsaj 1,2 mm in telo, ki je jasno višje od roba; če ne gre, okno orodja pove zakaj.
 
+Če je zgornja stran edina odprta, {{ui:shell.grid}} vstavi v dno osnovno ploščo Gridfinity: dno postane debelo 6,2 mm in za vsako celo celico 42 mm, ki jo notranjost sprejme, se izreže vdolbina. {{ui:shell.gridCells}} določi, koliko jih je največ; drsnik se konča pri številu, ki gre noter, pri manjšem so celice čim bližje sredini. {{ui:shell.gridFit}} odebeli stene, da je notranjost natanko celice z 0,5 mm zračnosti: škatla potem sprejme zabojnike Gridfinity, in če telo povečaš, raste tudi število vdolbin. {{ui:shell.dividers}} stojijo na dnu med stenami, {{ui:shell.dividersAcross}} in {{ui:shell.dividersAlong}} do 8, enakomerno razporejene in debele 1,2 mm. Dno potrebuje 6,2 mm in notranjost 3 mm nad njim, zato mora biti telo visoko vsaj 9,2 mm.
+
 ![Rezultat: lupina s steno 3 mm, zgoraj odprta.](shot:hollow-result)
 
 ![Isti kvader, odprt samo na sprednji strani: reža za predal.](shot:hollow-sides)

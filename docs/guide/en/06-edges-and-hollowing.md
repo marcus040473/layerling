@@ -80,6 +80,8 @@ The {{ui:shell.edges}} only matter where the inner walls move apart - at a step 
 
 With the top as the only open side, {{ui:shell.stack}} makes the box stackable: the outer half of the wall rises above the top as a collar ({{ui:shell.stackHeight}}, 3 mm to begin with), and under the wall a groove one millimetre deeper is cut that takes the collar of the box below. One box then stands on the next without sliding. The floor and the bottom stay flat, so the box still prints standing on its floor with nothing hanging in the air. It needs walls that go straight up, a wall of at least 1.2 mm and a body clearly taller than the collar; if it does not work, the tool window says why.
 
+With the top as the only open side, {{ui:shell.grid}} puts a Gridfinity baseplate into the floor: the floor becomes 6.2 mm thick and a socket is cut into it for every whole 42 mm cell the inside holds. {{ui:shell.gridCells}} sets how many at most; the slider ends at the number that fits, and with fewer the cells lie nearest the middle. {{ui:shell.gridFit}} thickens the walls so the inside is exactly the cells with 0.5 mm of play: the box then holds Gridfinity bins, and when you make the body larger, the number of sockets grows with it. {{ui:shell.dividers}} stand on the floor between the walls, {{ui:shell.dividersAcross}} and {{ui:shell.dividersAlong}} up to 8 each, evenly spaced and 1.2 mm thick. The floor needs 6.2 mm and the inside 3 mm above it, so the body must be at least 9.2 mm high.
+
 ![The result: a shell with a 3 mm wall, open at the top.](shot:hollow-result)
 
 ![The same box with only the front side open: a slot for a drawer.](shot:hollow-sides)

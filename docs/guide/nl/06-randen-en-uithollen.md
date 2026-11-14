@@ -79,6 +79,8 @@ De {{ui:shell.edges}} doen er alleen toe waar de binnenwanden uit elkaar gaan: b
 
 Als de bovenkant de enige open zijde is, maakt {{ui:shell.stack}} de doos stapelbaar: de buitenste helft van de wand steekt als kraag boven de rand uit ({{ui:shell.stackHeight}}, in het begin 3 mm), en onder de wand wordt een groef gemaakt die een millimeter dieper is en de kraag van de doos eronder opneemt. Een doos staat dan stevig op de volgende. De bodem en de onderkant blijven vlak, dus de doos wordt nog steeds op zijn bodem staand geprint zonder iets in de lucht. Er zijn rechte wanden nodig, een wand van minstens 1,2 mm en een lichaam dat duidelijk hoger is dan de kraag; lukt het niet, dan zegt het gereedschapsvenster waarom.
 
+Als de bovenkant de enige open zijde is, legt {{ui:shell.grid}} een Gridfinity-basisplaat in de bodem: de bodem wordt 6,2 mm dik en voor elke hele cel van 42 mm die de binnenkant bevat wordt een uitsparing gemaakt. {{ui:shell.gridCells}} stelt in hoeveel er hooguit zijn; de schuifregelaar eindigt bij het aantal dat past en bij minder liggen de cellen het dichtst bij het midden. {{ui:shell.gridFit}} maakt de wanden dikker zodat de binnenkant precies de cellen is met 0,5 mm speling: de doos bevat dan Gridfinity-bakjes en maak je het lichaam groter, dan groeit het aantal uitsparingen mee. {{ui:shell.dividers}} staan op de bodem tussen de wanden, {{ui:shell.dividersAcross}} en {{ui:shell.dividersAlong}} elk tot 8, gelijkmatig verdeeld en 1,2 mm dik. De bodem heeft 6,2 mm nodig en de binnenkant 3 mm erboven, dus het lichaam moet minstens 9,2 mm hoog zijn.
+
 ![Het resultaat: een schaal met een wand van 3 mm, aan de bovenkant open.](shot:hollow-result)
 
 ![Hetzelfde blok met alleen de voorkant open: een sleuf voor een lade.](shot:hollow-sides)

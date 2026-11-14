@@ -1,4 +1,5 @@
 import { CONCAVE_FILLET_STRAIGHT_MESSAGE } from "@/lib/cadConcaveFillet";
+import { DIVIDERS_FAILED_MESSAGE, DIVIDERS_NEEDS_TOP_MESSAGE, GRID_FAILED_MESSAGE, GRID_NEEDS_TOP_MESSAGE, GRID_NO_CELL_MESSAGE, GRID_TOO_LOW_MESSAGE } from "@/lib/shellGridLimits";
 import { STACK_FAILED_MESSAGE, STACK_NEEDS_TOP_MESSAGE, STACK_NOT_STRAIGHT_MESSAGE, STACK_TOO_LOW_MESSAGE, STACK_WALL_THIN_MESSAGE } from "@/lib/shellStackMessages";
 import { TREATMENT_LOST_FACES_MESSAGE } from "@/lib/cadLostFaces";
 import { t } from "@/lib/i18n";
@@ -401,6 +402,12 @@ export function cadModifierUserErrorMessage(rawError: string | null | undefined)
   ) {
     return t("edge.errorWorkerFailed");
   }
+  if (rawError.includes(GRID_NEEDS_TOP_MESSAGE)) return t("shell.errorGridNeedsTop");
+  if (rawError.includes(GRID_TOO_LOW_MESSAGE)) return t("shell.errorGridTooLow");
+  if (rawError.includes(GRID_NO_CELL_MESSAGE)) return t("shell.errorGridNoCell");
+  if (rawError.includes(GRID_FAILED_MESSAGE)) return t("shell.errorGridFailed");
+  if (rawError.includes(DIVIDERS_NEEDS_TOP_MESSAGE)) return t("shell.errorDividersNeedsTop");
+  if (rawError.includes(DIVIDERS_FAILED_MESSAGE)) return t("shell.errorDividersFailed");
   if (rawError.includes(STACK_NEEDS_TOP_MESSAGE)) return t("shell.errorStackNeedsTop");
   if (rawError.includes(STACK_WALL_THIN_MESSAGE)) return t("shell.errorStackWallThin");
   if (rawError.includes(STACK_TOO_LOW_MESSAGE)) return t("shell.errorStackTooLow");

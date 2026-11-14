@@ -80,6 +80,8 @@ Die {{ui:shell.edges}} wirken nur dort, wo die Innenwände auseinanderlaufen - a
 
 Ist oben die einzige offene Seite, macht {{ui:shell.stack}} die Box stapelbar: Die äußere Hälfte der Wand ragt als Kragen über den Rand ({{ui:shell.stackHeight}}, zu Beginn 3 mm), und unter der Wand wird eine um einen Millimeter tiefere Nut ausgespart, die den Kragen der Box darunter aufnimmt. Eine Box steht dann rutschfest auf der nächsten. Boden und Unterseite bleiben flach, die Box wird also weiter auf dem Boden stehend gedruckt, ohne dass etwas in der Luft hängt. Es braucht gerade Wände, eine Wand von mindestens 1,2 mm und einen Körper, der deutlich höher ist als der Kragen; geht es nicht, sagt das Werkzeugfenster warum.
 
+Ist oben die einzige offene Seite, legt {{ui:shell.grid}} eine Gridfinity-Grundplatte in den Boden: Der Boden wird 6,2 mm dick, und für jedes ganze 42-mm-Feld, das der Innenraum fasst, wird eine Mulde ausgespart. {{ui:shell.gridCells}} legt fest, wie viele es höchstens sind; der Regler endet bei der Zahl, die hineinpasst, und bei weniger liegen die Felder am nächsten zur Mitte. {{ui:shell.gridFit}} verdickt die Wände, sodass der Innenraum genau die Felder mit 0,5 mm Spiel ist: Die Box fasst dann Gridfinity-Boxen, und machst du den Körper größer, wächst die Zahl der Mulden mit. {{ui:shell.dividers}} stehen auf dem Boden zwischen den Wänden, {{ui:shell.dividersAcross}} und {{ui:shell.dividersAlong}} je bis zu 8, gleichmäßig verteilt und 1,2 mm dick. Der Boden braucht 6,2 mm und der Innenraum 3 mm darüber, der Körper muss also mindestens 9,2 mm hoch sein.
+
 ![Das Ergebnis: eine Schale mit 3 mm Wand, oben offen.](shot:hollow-result)
 
 ![Derselbe Quader, nur an der Vorderseite offen: ein Schlitz für eine Schublade.](shot:hollow-sides)
