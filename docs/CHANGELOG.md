@@ -6,6 +6,8 @@ code still carries it - so a lower number further down is older, not newer.
 
 ## Unreleased
 
+- **A pasted copy of a small part lands in view (Discussion #1764):** A plain paste set every copy 12 mm along x and z from its original, so the copy of a part a few millimetres across landed out of view while zoomed in on it. The step is now half the larger side of what was copied, seen from above, between 1 and 12 mm (`pasteNudgeFor` in `lib/pasteCentering.ts`); large parts still move 12 mm, and the parts of one paste still move together. Duplicate is unchanged. Checked in the editor: a 4 x 3 mm box at (5, 5) pastes at (7, 7). Unit tests in `pasteCentering`. Suggested by @uninteressant2026.
+
 ## 1.165.1
 
 - **A slope angle typed with Keep proportions on changes the angle (Issue #1763):** A wedge's Slope angle and a teardrop's Tip angle are reached by changing the height alone, and they reported that as a height typed in; with Keep proportions on, the length and width were scaled along, the whole body grew and the angle stayed. The two angle fields now say they are an angle (`angle` in `ShapeInspectorUpdateOptions`), and `keepsProportionsForUpdate` in `lib/keepProportions.ts` leaves Keep proportions out for them. Checked in the editor: a 20 mm wedge with Keep proportions on, 30 typed as its angle, is 20 x 20 mm and 11.55 mm high (before: scaled, still 45°). Unit test in `keepProportions`. Reported by @uninteressant2026.
