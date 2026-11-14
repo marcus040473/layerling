@@ -65,6 +65,7 @@ import {
   lidClickBumpsFit,
   lidFlipTopFits,
   lidHandleFits,
+  lidLatchesFit,
   lidNeckDiameter,
   lidNeckFit,
   lidTakesExtras,
@@ -79,6 +80,7 @@ import {
   slideFrameNeeded,
   type LidOptions,
 } from "@/lib/lidTool";
+import { MAX_LID_LATCHES, MAX_LID_LATCH_GRIP, MAX_LID_LATCH_WIDTH, MIN_LID_LATCH_GRIP, MIN_LID_LATCH_WIDTH, lidLatchMeasures } from "@/lib/lidLatch";
 import { numberLocale, t } from "@/lib/i18n";
 import { fromPrinterPlay } from "@/lib/printerPlay";
 import { useLanguage } from "@/lib/useLanguage";
@@ -146,7 +148,7 @@ export function LidPanel({
   const magnetsFit = lidTakesMagnets(settings);
   const tooThin = settings.magnets && magnetsFit && settings.thickness < needed - 1e-9;
   const millimetres = (value: number) => value.toLocaleString(numberLocale());
-  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap" | "hingeGap" | "hingePinPlay" | "clickBumpHeight", min: number, max: number, step: number) => (
+  const slider = (label: string, key: "gap" | "depth" | "wall" | "magnetDiameter" | "magnetHeight" | "magnetGap" | "hingeGap" | "hingePinPlay" | "clickBumpHeight" | "latchWidth" | "latchGrip", min: number, max: number, step: number) => (
     <EdgeModifierSlider
       label={label}
       value={settings[key]}
@@ -195,6 +197,8 @@ export function LidPanel({
   const flipTopNeeds = flipTopThickness(settings);
   // A slide-in lid's frame must leave the wall whole above the slot: thinner, it says how much is needed.
   const frameNeeds = slideFrameNeeded(settings);
+  // Latches go on a plug or flat lid whose plate lies on the rim; a pivot lid lies in the opening.
+  const latchesFit = lidLatchesFit(settings) && !(settings.hinge && settings.hingeStyle === "pivot");
   return (
     <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel lid-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
@@ -675,6 +679,41 @@ export function LidPanel({
           <ToolHint text={t("lid.hingeHint", { diameter: millimetres(Math.round(2 * hingeKnuckleRadius(settings) * 10) / 10) })} />
         </ToolGroup>
         {!hingeFits && extras && !slide ? <ToolHint text={t("lid.hingeTypeHint")} /> : null}
+
+        {/* Latches: a clip over a pin on the body and one on the lid, on the side the lid opens at (and the back without a hinge). */}
+        {extras && !slide ? (<>
+          <ToolGroup
+            tool="lid-latches"
+            label={t("lid.latches")}
+            checked={latchesFit && settings.latches > 0}
+            disabled={busy || !latchesFit}
+            onCheck={(on) => onChange({ latches: on ? 1 : 0 })}
+          >
+            <EdgeModifierSlider
+              label={t("lid.latches")}
+              value={latchesFit ? settings.latches : 0}
+              min={0}
+              max={MAX_LID_LATCHES}
+              step={1}
+              workspace={workspace}
+              decimals={0}
+              disabled={busy || !latchesFit}
+              onChange={(value) => onChange({ latches: normalizeLidOptions({ latches: value }).latches })}
+            />
+            {settings.latches > 0 && latchesFit ? (<>
+              {settings.hinge ? null : (
+                <label className="edge-modifier-field offset-copy">
+                  <input type="checkbox" checked={settings.latchBack} disabled={busy} onChange={(event) => onChange({ latchBack: event.target.checked })} />
+                  <span>{t("lid.latchBack")}</span>
+                </label>
+              )}
+              {slider(t("lid.latchWidth"), "latchWidth", MIN_LID_LATCH_WIDTH, MAX_LID_LATCH_WIDTH, 0.5)}
+              {slider(t("lid.latchGrip"), "latchGrip", MIN_LID_LATCH_GRIP, MAX_LID_LATCH_GRIP, 0.05)}
+              <ToolHint text={t(settings.hinge ? "lid.latchHintHinge" : "lid.latchHint", { pin: millimetres(Math.round(2 * lidLatchMeasures(settings.latchWidth, settings.latchGrip).pin * 10) / 10) })} />
+            </>) : null}
+          </ToolGroup>
+          {!latchesFit ? <ToolHint text={t("lid.error.latchLidType")} /> : null}
+        </>) : null}
 
         <ToolGroup
           tool="lid-click"
