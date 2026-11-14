@@ -665,6 +665,7 @@ export const MESSAGES_HU: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Kiüregelve, falvastagság: {size} mm, minden oldalon zárt: az üreg belül van, csak a metszetnézetben látszik",
   "status.shelledMcp": "Az MCP kiüregelte az objektumot, falvastagság: {size} mm",
   "status.shellRebuilt": "Falak újraszámolva, ismét {size} mm vastagok",
+  "status.shellRoundingSkipped": "Az élek lekerekítését nem sikerült újra felvinni az új falakra, ezért kimaradt.",
   "status.shellRebuildFailed": "A kiüregelést ennél a méretnél nem sikerült újraszámolni. A falak a testtel együtt méreteződtek.",
   "status.sketchRebuildFailed": "A vázlattestet ennél a méretnél nem sikerült újraépíteni. Az élletörés és a lekerekítés újra működik rajta, amint szerkeszted a vázlatot.",
   "edge.revertShell": "Kiüregelés ({size} mm-es falak)",

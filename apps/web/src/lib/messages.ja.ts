@@ -1301,6 +1301,7 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "{size} mmの壁で中空にしました。全面が閉じているため、空洞は内部にあり断面表示でのみ見えます",
   "status.shelledMcp": "MCPがオブジェクトを{size} mmの壁で中空にしました",
   "status.shellRebuilt": "壁を計算し直し、厚さを再び{size} mmにしました",
+  "status.shellRoundingSkipped": "角の丸めは新しい壁に付け直せなかったため、省きました。",
   "status.shellRebuildFailed": "このサイズでは中空の壁を計算し直せませんでした。壁はボディと一緒に拡大縮小されました。",
   "status.sketchRebuildFailed": "このサイズではスケッチボディを再構築できませんでした。スケッチを編集すると、面取りとフィレットが再び使えるようになります。",
   "edge.revertShell": "中空にする（{size} mmの壁）",

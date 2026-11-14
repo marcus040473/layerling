@@ -1298,6 +1298,7 @@ export const MESSAGES_EN = {
   "status.shelledClosed": "Hollowed with {size} mm walls, closed all round: the cavity is inside and shows only in the section view",
   "status.shelledMcp": "MCP hollowed the object with {size} mm walls",
   "status.shellRebuilt": "Walls recalculated, {size} mm thick again",
+  "status.shellRoundingSkipped": "The rounding of the edges could not be laid again on the new walls and was left out.",
   "status.shellRebuildFailed": "The hollowing could not be recalculated at this size. The walls were scaled along with the body.",
   "status.sketchRebuildFailed": "The sketch body could not be rebuilt at this size. Chamfer and fillet work on it again once you edit the sketch.",
   "edge.revertShell": "Hollowing ({size} mm walls)",

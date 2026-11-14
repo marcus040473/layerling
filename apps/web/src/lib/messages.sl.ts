@@ -1015,6 +1015,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Izdolbeno s stenami {size} mm, zaprto z vseh strani: votlina je znotraj in se vidi le v prerezu",
   "status.shelledMcp": "MCP je izdolbel objekt s stenami {size} mm",
   "status.shellRebuilt": "Stene ponovno izračunane, spet debele {size} mm",
+  "status.shellRoundingSkipped": "Zaobljenosti robov ni bilo mogoče znova položiti na nove stene, zato je izpuščena.",
   "status.shellRebuildFailed": "Dolbljenja pri tej velikosti ni bilo mogoče ponovno izračunati. Stene so bile skalirane skupaj s telesom.",
   "status.sketchRebuildFailed": "Telesa skice pri tej velikosti ni bilo mogoče znova zgraditi. Posnetje in zaokrožitev spet delujeta, ko urediš skico.",
   "edge.revertShell": "Dolbljenje (stene {size} mm)",

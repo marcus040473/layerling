@@ -1292,6 +1292,7 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Urgröpt med {size} mm väggar, sluten runt om: hålrummet är inuti och syns bara i snittvyn",
   "status.shelledMcp": "MCP gröpte ur objektet med {size} mm väggar",
   "status.shellRebuilt": "Väggarna omräknade, {size} mm tjocka igen",
+  "status.shellRoundingSkipped": "Rundningen av kanterna kunde inte läggas om på de nya väggarna och utelämnades.",
   "status.shellRebuildFailed": "Urgröpningen kunde inte räknas om vid den här storleken. Väggarna skalades tillsammans med kroppen.",
   "status.sketchRebuildFailed": "Skisskroppen kunde inte byggas om vid den här storleken. Fasning och avrundning fungerar på den igen när du redigerar skissen.",
   "edge.revertShell": "Urgröpning ({size} mm väggar)",

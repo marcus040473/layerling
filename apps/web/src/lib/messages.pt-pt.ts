@@ -1178,6 +1178,7 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Cavidade criada com paredes de {size} mm, totalmente fechada: a cavidade é interior e só é visível na vista em corte",
   "status.shelledMcp": "O MCP criou uma cavidade no objeto com paredes de {size} mm",
   "status.shellRebuilt": "Paredes recalculadas, novamente com {size} mm de espessura",
+  "status.shellRoundingSkipped": "O arredondamento das arestas não pôde ser refeito nas novas paredes e foi omitido.",
   "status.shellRebuildFailed": "Não foi possível recalcular a cavidade com estas dimensões. As paredes foram redimensionadas juntamente com o sólido.",
   "status.sketchRebuildFailed": "Não foi possível reconstruir o sólido do esboço com estas dimensões. Poderás voltar a chanfrá-lo e arredondá-lo depois de editares o esboço.",
   "edge.revertShell": "Cavidade (paredes de {size} mm)",

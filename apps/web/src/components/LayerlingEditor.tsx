@@ -8615,6 +8615,21 @@ export function LayerlingEditor({
     if (edgeModifier) invalidateCadModifierSession();
     closeSplit();
     const smallest = Math.min(shapeWidth(selectedShape), shapeDepth(selectedShape), selectedShape.height);
+    // A body hollowed already starts with the settings it was hollowed with: Apply then changes the hollowing instead of starting over.
+    const hollow = shellRebuildEntry(selectedShape)?.feature;
+    if (hollow) {
+      setShellTool({
+        thickness: hollow.amount,
+        openings: hollow.openings ?? "top",
+        edges: hollow.shellEdges ?? "round",
+        ...(hollow.shellStack ? { stack: hollow.shellStack } : {}),
+        ...(hollow.shellGrid ? { gridCells: hollow.shellGrid.cells, gridFit: hollow.shellGrid.fit === true } : {}),
+        ...(hollow.shellDividers ? { dividers: hollow.shellDividers } : {}),
+        busy: false,
+        error: null,
+      });
+      return;
+    }
     setShellTool({ thickness: Math.max(0.2, Math.min(2, Number((smallest / 5).toFixed(1)))), openings: "top", edges: "round", busy: false, error: null });
   }, [refuseLockedSelection, closeSplit, edgeModifier, invalidateCadModifierSession, selectedShape, selectedShapes.length, shellTool, refuseBodyLockedSelection]);
 
@@ -9371,7 +9386,16 @@ export function LayerlingEditor({
     // Fillets and chamfers laid after the hollowing go on again, on the same edges of the fresh walls.
     const after = edgeTreatmentsAfterShell(stale) ?? [];
     let rebuilt = await shellShape(before, amount, openings ?? "none", shellEdges ?? "round", watched, undefined, replace ? replace.extras : { stack: entry.feature.shellStack ?? 0, grid: normalizeShellGrid(entry.feature.shellGrid), dividers: normalizeShellDividers(entry.feature.shellDividers) });
-    for (const later of after) rebuilt = await relaidEdgeTreatment(rebuilt, later);
+    for (const later of after) {
+      try {
+        rebuilt = await relaidEdgeTreatment(rebuilt, later);
+      } catch (error) {
+        // Hollowed again with other settings (a collar, a floor, dividers), the edges of an old rounding may not be there any more:
+        // that rounding is left out, and the new settings still apply. After a resize it stays an error.
+        if (!replace) throw error;
+        setNotice(t("status.shellRoundingSkipped"));
+      }
+    }
     return rebuilt;
   }, [relaidEdgeTreatment, shellShape]);
 

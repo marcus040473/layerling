@@ -1254,6 +1254,7 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "已抽壳，壁厚 {size} mm，四周封闭：内腔仅在剖视图中可见",
   "status.shelledMcp": "MCP 已对对象抽壳，壁厚 {size} mm",
   "status.shellRebuilt": "已重新计算壁，厚度恢复为 {size} mm",
+  "status.shellRoundingSkipped": "边缘的圆角无法重新加到新的壁上，已略去。",
   "status.shellRebuildFailed": "无法按此尺寸重新计算抽壳。壁已随实体一同缩放。",
   "status.sketchRebuildFailed": "无法按此尺寸重建草图实体。编辑草图后，倒角和圆角才能再次作用于它。",
   "edge.revertShell": "抽壳（壁厚 {size} mm）",

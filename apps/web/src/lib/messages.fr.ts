@@ -1288,6 +1288,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Creux avec des parois {size} mm, fermé de tous côtés : la cavité est à l'intérieur et n'apparaît que dans la vue en coupe",
   "status.shelledMcp": "MCP a creusé l'objet avec des parois {size} mm",
   "status.shellRebuilt": "Murs recalculés, {size} mm d'épaisseur à nouveau",
+  "status.shellRoundingSkipped": "L'arrondi des arêtes n'a pas pu être refait sur les nouvelles parois et a été laissé de côté.",
   "status.shellRebuildFailed": "Le creusement n’a pas pu être recalculé à cette taille. Les murs ont été escaladés avec le corps.",
   "status.sketchRebuildFailed": "Le corps de l'esquisse n'a pas pu être reconstruit à cette taille. Le chanfrein et le congé fonctionnent à nouveau une fois que vous modifiez l'esquisse.",
   "edge.revertShell": "Creux (murs {size} mm)",

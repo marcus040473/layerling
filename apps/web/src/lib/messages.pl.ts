@@ -1253,6 +1253,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Wydrążono ze ściankami {size} mm, zamknięte ze wszystkich stron: wnęka jest w środku i widać ją tylko w widoku przekroju",
   "status.shelledMcp": "MCP wydrążył obiekt ze ściankami {size} mm",
   "status.shellRebuilt": "Ścianki przeliczone, znów mają {size} mm",
+  "status.shellRoundingSkipped": "Zaokrąglenia krawędzi nie udało się ponownie nałożyć na nowe ścianki i pominięto je.",
   "status.shellRebuildFailed": "Nie udało się przeliczyć wydrążenia w tym rozmiarze. Ścianki zostały przeskalowane razem z bryłą.",
   "status.sketchRebuildFailed": "Nie udało się odbudować bryły ze szkicu w tym rozmiarze. Fazowanie i zaokrąglanie zadziałają znowu po edycji szkicu.",
   "edge.revertShell": "Wydrążenie (ścianki {size} mm)",

@@ -1290,6 +1290,7 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Corpo svuotato con pareti di {size} mm, chiuso su tutti i lati: la cavità è all'interno e si vede solo nella vista in sezione",
   "status.shelledMcp": "MCP ha svuotato l'oggetto con pareti di {size} mm",
   "status.shellRebuilt": "Pareti ricalcolate, nuovamente spesse {size} mm",
+  "status.shellRoundingSkipped": "L'arrotondamento degli spigoli non si è potuto rifare sulle nuove pareti ed è stato tralasciato.",
   "status.shellRebuildFailed": "Non è stato possibile ricalcolare lo svuotamento con questo spessore. Le pareti sono state ridimensionate insieme al corpo.",
   "status.sketchRebuildFailed": "Non è stato possibile ricostruire il corpo dello schizzo con queste dimensioni. Raccordi e smussi torneranno disponibili dopo aver modificato lo schizzo.",
   "edge.revertShell": "Svuotamento (pareti di {size} mm)",

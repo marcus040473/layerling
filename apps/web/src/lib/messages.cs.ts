@@ -1441,6 +1441,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "status.shelledClosed": "Vytvořena dutina se stěnami {size} mm, uzavřená ze všech stran: dutina je uvnitř a je vidět jen v řezu",
   "status.shelledMcp": "MCP vytvořilo dutinu v objektu se stěnami {size} mm",
   "status.shellRebuilt": "Stěny byly přepočítány na tloušťku {size} mm",
+  "status.shellRoundingSkipped": "Zaoblení hran se nepodařilo znovu položit na nové stěny a bylo vynecháno.",
   "status.shellRebuildFailed": "Dutinu při těchto rozměrech nelze přepočítat. Tloušťka stěn se změnila společně s rozměry tělesa.",
   "status.sketchRebuildFailed": "Těleso z náčrtu nelze při těchto rozměrech znovu sestavit. Po úpravě náčrtu budou zaoblení a zkosení opět dostupné.",
   "edge.revertShell": "Dutina (stěny {size} mm)",
