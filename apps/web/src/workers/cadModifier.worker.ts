@@ -8,6 +8,8 @@ import { innerCornerEdges, treatAfterInnerCorners } from "@/lib/cadInnerCorners"
 import { OcctKernel, type OcctModuleFactory, type ShapeHandle } from "occt-wasm";
 import { assertCadKernelRunnable } from "@/lib/wasmSupport";
 import { STACK_NEEDS_TOP_MESSAGE, shellStackSolid } from "@/lib/cadShellStack";
+import { shellDividersSolid, shellGridSolid } from "@/lib/cadShellGrid";
+import { DIVIDERS_NEEDS_TOP_MESSAGE, GRID_NEEDS_TOP_MESSAGE, SHELL_GRID_FLOOR, normalizeShellDividers, normalizeShellGrid } from "@/lib/shellGridLimits";
 import { shellOpenSides } from "@/lib/shellLimits";
 import { CANNOT_OFFSET_MESSAGE, offsetSolid, offsetSolidSideways, orientedFaceNormal, shellSolid, shellThreadByCore, threadShellCoreOf, type ThreadShellCore } from "@/lib/cadShell";
 import { chamfilletSolid } from "@/lib/cadChamfillet";
@@ -1358,6 +1360,25 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
         component = threadShellCore && baseSolids.length === 1
           ? shellThreadByCore(activeCad, solid, threadShellCore, request.amount, request.shellOpenings ?? "none", request.shellEdges)
           : shellSolid(activeCad, solid, request.amount, request.shellOpenings ?? "none", request.shellEdges);
+        // A Gridfinity floor and dividers, only for a body hollowed with its top open; the stacking comes last.
+        const grid = normalizeShellGrid(request.shellGrid);
+        const dividers = normalizeShellDividers(request.shellDividers);
+        if (grid || dividers) {
+          const open = shellOpenSides(request.shellOpenings);
+          if (open.length !== 1 || open[0] !== "top") throw new Error(grid ? GRID_NEEDS_TOP_MESSAGE : DIVIDERS_NEEDS_TOP_MESSAGE);
+          let floorTop: number | null = null;
+          if (grid) {
+            const floored = shellGridSolid(activeCad, solid, component, grid);
+            floorTop = activeCad.getBoundingBox(floored).ymin + SHELL_GRID_FLOOR;
+            activeCad.release(component);
+            component = floored;
+          }
+          if (dividers) {
+            const divided = shellDividersSolid(activeCad, solid, component, dividers, floorTop);
+            activeCad.release(component);
+            component = divided;
+          }
+        }
         // Stacking: a collar round the top and a groove under the wall, only for a body hollowed with its top open.
         if (request.shellStack && request.shellStack > 0) {
           const open = shellOpenSides(request.shellOpenings);

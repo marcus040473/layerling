@@ -901,6 +901,10 @@ export type EdgeTreatmentFeature = {
   shellEdges?: ShellEdges;
   /** Only for "shell" with the top open: the height in mm of the collar round the top and of the groove under the wall, so one stands on the next; missing means none. */
   shellStack?: number;
+  /** Only for "shell" with the top open: a Gridfinity baseplate in the floor with at most `cells` cells; with `fit` the walls are thickened to the cells. */
+  shellGrid?: { cells: number; fit?: boolean };
+  /** Only for "shell" with the top open: this many dividers across (x) and along (z) the inside, evenly spaced. */
+  shellDividers?: { x: number; z: number };
   /** Only for "offset": the faces moved inward, the body shrunk; missing means grown. */
   offsetShrink?: boolean;
   /** Only for "offset" (#1057): only the sides moved, flat tops and bottoms kept at their heights; missing means every face. */

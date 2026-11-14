@@ -9,6 +9,7 @@ import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL } from "@/lib/shellStackLimits";
+import { MAX_SHELL_DIVIDERS, type ShellDividers } from "@/lib/shellGridLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import type { ShellEdges, ShellOpenings, WorkplaneWorkspaceSettings } from "@/types/layerling";
 
@@ -35,6 +36,10 @@ export function ShellPanel({
   edges,
   stack,
   stackOffered,
+  gridCells,
+  gridFit,
+  gridMax,
+  dividers,
   workspace,
   busy,
   error,
@@ -48,6 +53,8 @@ export function ShellPanel({
   onOpeningsChange,
   onEdgesChange,
   onStackChange,
+  onGridChange,
+  onDividersChange,
   onApply,
   onCancel,
 }: {
@@ -60,6 +67,12 @@ export function ShellPanel({
   stack: number;
   /** Stacking is offered only with the top as the one open side. */
   stackOffered: boolean;
+  /** A Gridfinity baseplate in the floor with this many cells at most (0 for none), the walls fitted to the grid, and how many cells the inside holds at most. */
+  gridCells: number;
+  gridFit: boolean;
+  gridMax: number;
+  /** Dividers across (x) and along (z) the inside; null for none. */
+  dividers: ShellDividers | null;
   workspace: WorkplaneWorkspaceSettings;
   busy: boolean;
   error: string | null;
@@ -75,6 +88,8 @@ export function ShellPanel({
   onOpeningsChange: (value: ShellOpenings) => void;
   onEdgesChange: (value: ShellEdges) => void;
   onStackChange: (value: number) => void;
+  onGridChange: (cells: number, fit: boolean) => void;
+  onDividersChange: (value: ShellDividers | null) => void;
   onApply: () => void;
   onCancel: () => void;
 }) {
@@ -157,6 +172,81 @@ export function ShellPanel({
           <span className="shell-openings-summary">{openSides.length === 0 ? t("shell.sidesNone") : t("shell.sidesHint")}</span>
         </div>
       </ToolSection>
+
+      {stackOffered ? (<>
+        <div className="edge-modifier-field shell-openings shell-grid" role="group" aria-label={t("shell.grid")}>
+          <span>{t("shell.grid")}</span>
+          <div className="shell-opening-options">
+            <button
+              type="button"
+              aria-pressed={gridCells > 0}
+              className={gridCells > 0 ? "active" : ""}
+              disabled={busy || gridMax < 1}
+              onClick={() => onGridChange(gridCells > 0 ? 0 : Math.max(1, gridMax), gridFit)}
+            >
+              {t("shell.grid")}
+            </button>
+          </div>
+          {gridCells > 0 ? (<>
+            <EdgeModifierSlider
+              label={t("shell.gridCells")}
+              value={Math.min(gridCells, Math.max(1, gridMax))}
+              min={1}
+              max={Math.max(1, gridMax)}
+              step={1}
+              workspace={workspace}
+              decimals={0}
+              disabled={busy}
+              onChange={(value) => onGridChange(Math.round(value), gridFit)}
+            />
+            <label className="edge-modifier-field offset-copy">
+              <input type="checkbox" checked={gridFit} disabled={busy} onChange={(event) => onGridChange(gridCells, event.target.checked)} />
+              <span>{t("shell.gridFit")}</span>
+            </label>
+          </>) : null}
+          <ToolHint text={gridMax < 1 ? t("shell.gridNoCell") : t("shell.gridHint")} />
+        </div>
+
+        <div className="edge-modifier-field shell-openings shell-dividers" role="group" aria-label={t("shell.dividers")}>
+          <span>{t("shell.dividers")}</span>
+          <div className="shell-opening-options">
+            <button
+              type="button"
+              aria-pressed={dividers !== null}
+              className={dividers !== null ? "active" : ""}
+              disabled={busy}
+              onClick={() => onDividersChange(dividers ? null : { x: 1, z: 1 })}
+            >
+              {t("shell.dividers")}
+            </button>
+          </div>
+          {dividers ? (<>
+            <EdgeModifierSlider
+              label={t("shell.dividersAcross")}
+              value={dividers.x}
+              min={0}
+              max={MAX_SHELL_DIVIDERS}
+              step={1}
+              workspace={workspace}
+              decimals={0}
+              disabled={busy}
+              onChange={(value) => onDividersChange({ ...dividers, x: Math.round(value) })}
+            />
+            <EdgeModifierSlider
+              label={t("shell.dividersAlong")}
+              value={dividers.z}
+              min={0}
+              max={MAX_SHELL_DIVIDERS}
+              step={1}
+              workspace={workspace}
+              decimals={0}
+              disabled={busy}
+              onChange={(value) => onDividersChange({ ...dividers, z: Math.round(value) })}
+            />
+          </>) : null}
+          <ToolHint text={t("shell.dividersHint")} />
+        </div>
+      </>) : null}
 
       {stackOffered ? (
         <div className="edge-modifier-field shell-openings shell-stack" role="group" aria-label={t("shell.stack")}>

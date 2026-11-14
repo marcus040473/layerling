@@ -1,6 +1,19 @@
 [
   {
     "title": {
+      "de": "Gridfinity-Boden, Raster-Anpassung und Trennstege",
+      "en": "Gridfinity floor, fit to the grid and dividers"
+    },
+    "body": {
+      "de": "Eine Box mit offener Oberseite kann beim Aushöhlen jetzt eine Gridfinity-Grundplatte im Boden bekommen.\n\n– „Gridfinity-Boden“ macht den Boden 6,2 mm dick und spart für jedes ganze 42-mm-Feld eine Mulde aus. Der Regler „Felder im Boden“ legt fest, wie viele es höchstens sind.\n– „Wände ans Raster anpassen“ verdickt die Wände, sodass der Innenraum genau die Felder mit 0,5 mm Spiel ist. Machst du den Körper größer, wächst die Zahl der Mulden mit.\n– „Trennstege“ stellt gleichmäßig verteilte Wände auf den Boden, quer und längs je bis zu 8.",
+      "en": "A box with its top open can now get a Gridfinity baseplate in its floor when you hollow it.\n\n– Gridfinity floor makes the floor 6.2 mm thick and cuts a socket for every whole 42 mm cell. The Cells in the floor slider sets how many at most.\n– Fit the walls to the grid thickens the walls so the inside is exactly the cells with 0.5 mm of play. Make the body larger and the number of sockets grows with it.\n– Dividers stands evenly spaced walls on the floor, up to 8 across and 8 along."
+    },
+    "guide": {
+      "section": "hollowing"
+    }
+  },
+  {
+    "title": {
       "de": "Stapelbare Boxen",
       "en": "Stackable boxes"
     },
