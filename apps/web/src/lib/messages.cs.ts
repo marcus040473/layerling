@@ -1187,6 +1187,8 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "status.lidMadeHingeFlushPlugs": "Víko hotovo ({type}) se zapuštěným pantem: {count} kloubků ve stěně, otvor pro čep {pin} mm dlouhý {length} mm a dvě koncové zátky, které ho uzavírají. Víko a zátky leží vedle těla, připravené k tisku.",
   "status.lidMadeHingeFlushCorners": "Víko hotovo ({type}) se zapuštěným pantem: {count} kloubků ve stěně, krajní vyplňují zaoblené rohy, a otvor pro čep {pin} mm dlouhý {length} mm. Víko leží obrácené vedle těla, připravené k tisku.",
   "lid.error.hingeLidType": "Pant jde jen s vkládacím nebo plochým víkem: okraj kolem dokola by při otevírání narazil do zadní stěny.",
+  "lid.error.stackTopType": "Stohovací vanička jde jen se zasunutým víkem, bez pantu nebo s pantem za zadní stěnou.",
+  "lid.error.stackTopExtras": "Stohovací vanička zatím nejde s magnety, západkami, cvakacími výstupky ani úchytem.",
   "lid.error.hingeNoBack": "Na zvolené straně není místo pro tři kloubky: je příliš krátká nebo příliš zakřivená.",
   "lid.error.hingeTooLow": "Tělo je na pant příliš nízké: pod kloubky je potřeba místo pro jejich šikminu. Vezměte tenčí čep nebo vyšší tělo.",
   "lid.error.hingeKernel": "Pant se nepodařilo spojit s tělem.",

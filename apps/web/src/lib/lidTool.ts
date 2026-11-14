@@ -6,6 +6,7 @@ import { createLocalId } from "@/lib/localIds";
 import { DEFAULT_LID_LATCH_GRIP, DEFAULT_LID_LATCH_WIDTH, MAX_LID_LATCHES, MAX_LID_LATCH_GRIP, MAX_LID_LATCH_WIDTH, MIN_LID_LATCH_GRIP, MIN_LID_LATCH_WIDTH, lidLatchClipProfile, lidLatchMeasures, type LidLatchMeasures } from "@/lib/lidLatch";
 import { splitShapeFromWorldPositions } from "@/lib/modelSplit";
 import { printerPlayStart } from "@/lib/printerPlay";
+import { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER } from "@/lib/shellStackLimits";
 import { sceneShape } from "@/lib/shapeCatalog";
 import { roundSideCount } from "@/lib/roundSideCount";
 import { canonicalizeShape, isNonSolidShape, shapeHasShapeDeform, shellRebuildEntry } from "@/lib/workplaneShapes";
@@ -173,6 +174,7 @@ export type LidOptions = {
   latchBack: boolean;
   latchWidth: number;
   latchGrip: number;
+  stackTop: boolean;
 };
 
 export const LID_TYPES: readonly LidType[] = ["plug", "cap", "both", "flat", "screw", "screwIn", "bayonet", "slide"];
@@ -182,7 +184,7 @@ export const LID_DEFAULTS: LidOptions = {
   clickBumps: false, clickBumpHeight: 0.4, handle: "none", threadPitch: 3, threadTurns: 2, threadOffset: 0, threadStandard: "own",
   bayonetLugs: 3, bayonetDepth: 8, bayonetAxialGap: 0.3, bayonetDetent: 0.3, bayonetTurn: 0, tether: false,
   flipTop: false, flipTopOpening: 8, topEdge: "square", topEdgeSize: 1, slideSide: "front", slideFrame: 0,
-  latches: 0, latchBack: false, latchWidth: DEFAULT_LID_LATCH_WIDTH, latchGrip: DEFAULT_LID_LATCH_GRIP,
+  latches: 0, latchBack: false, latchWidth: DEFAULT_LID_LATCH_WIDTH, latchGrip: DEFAULT_LID_LATCH_GRIP, stackTop: false,
 };
 /**
  * What a lid starts from with this printer's play (printerPlay.ts): the gap per side and the hinge pin's play take it,
@@ -265,6 +267,8 @@ export const HINGE_PRINTED_PIN_GRIP = 0.15;
 const HINGE_KNUCKLE_WALL = 1.6;
 /** A knuckle is at least this wide along the axis, in mm. */
 const MIN_KNUCKLE_WIDTH = 3;
+/** A stacking top's flare is built up in steps this high and as wide, in mm: 45 degrees, finer than a layer. */
+const STACK_TOP_STEP = 0.1;
 /** How far the hinge stays from the ends of the straight back side, in mm (its corners may be rounded). */
 const HINGE_END_MARGIN = 0.5;
 /** How much of a knuckle a teardrop hole leaves above its point, in mm: a point that would reach closer is cut flat. */
@@ -758,6 +762,7 @@ export function normalizeLidOptions(value?: Partial<Record<keyof LidOptions, unk
   if ((LID_HINGE_SIDES as readonly string[]).includes(slideSide)) result.slideSide = slideSide as LidHingeSide;
   const slideFrame = finiteNumber(value?.slideFrame);
   if (slideFrame !== null) result.slideFrame = clamp(slideFrame, 0, MAX_SLIDE_FRAME);
+  if (value?.stackTop === true || value?.stackTop === "true") result.stackTop = true;
   // Whole degrees; 0 leaves the turn to the lugs, and one set by hand is MIN_BAYONET_TURN at least.
   const turn = finiteNumber(value?.bayonetTurn);
   if (turn !== null) {
@@ -1423,6 +1428,7 @@ export function lidThicknessForMagnets(options: Pick<LidOptions, "magnetHeight">
 export type LidError =
   | { code: "notClosed" | "notOpen" | "rimNotLevel" | "tooSmall" | "tooShallow" | "empty" | "magnetsNoRoom" | "hingeLidType" | "hingeNoBack" | "hingeTooLow" | "hingeStyleStraight" | "hingeStyleMagnets" | "pivotNoSides" }
   | { code: "endPlugsFlush" | "endPlugsShort" }
+  | { code: "stackTopType" | "stackTopExtras" }
   | { code: "clickBumpsNoLip" | "clickBumpsNoRoom" | "handlePivot" | "handleSideShort" | "handleNotchNoRoom" }
   | { code: "screwExtras" | "screwNotRound" | "screwThinWall" }
   | { code: "screwTooLow" | "screwRimRound"; height: number }
@@ -3082,12 +3088,37 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     // Latches need the lid's plate over the body's wall, and a handle would sit where they go.
     if (options.latches > 0 && (!lidLatchesFit(options) || (options.hinge && options.hingeStyle === "pivot"))) return { error: { code: "latchLidType" } };
     if (options.latches > 0 && options.handle !== "none") return { error: { code: "latchHandle" } };
+    // A stacking top (variant A of stacking, the way Gridfinity bins stack): the lid prints upright as it closes, its lip
+    // a solid foot with a small chamfer at the bottom, widening at 45 degrees above the rim to the body's outline, the
+    // plate over that, and on the plate a rim like the body's round a tray the next box's foot goes into. With a hinge, the
+    // lid is as tall as the knuckles need for a 45 degree slope from its back face, so they print without support.
+    const stackTop = options.stackTop;
+    if (stackTop && (options.type !== "plug" || !hasOpening || (options.hinge && options.hingeStyle !== "outside"))) return { error: { code: "stackTopType" } };
+    if (stackTop && (options.magnets || options.latches > 0 || options.clickBumps || options.handle !== "none")) return { error: { code: "stackTopExtras" } };
+    let flareHeight = 0;
+    let lidTop = top + options.thickness;
+    if (stackTop) {
+      const lip = keep(created, opening.offset(-options.gap, "Round", 2, 48));
+      if (lip.area() < MIN_OPENING_AREA) return { error: { code: "tooSmall" } };
+      // Grown with mitred corners, so a square corner is reached when the sides are, not a wall's width later.
+      while (keep(created, outline.subtract(keep(created, lip.offset(flareHeight, "Miter", 2, 48)))).area() > 1e-3) {
+        flareHeight += STACK_TOP_STEP;
+        if (flareHeight > 30) return { error: { code: "tooSmall" } };
+      }
+      const plateTop = top + flareHeight + options.thickness;
+      lidTop = plateTop + DEFAULT_SHELL_STACK_HEIGHT;
+      if (options.hinge) {
+        const radius = hingeKnuckleRadius(options);
+        lidTop = Math.max(lidTop, top + flareHeight + radius + options.hingeGap + radius * Math.SQRT2 + radius + 0.05);
+      }
+    }
+    const hingeOptions = stackTop ? { ...options, thickness: lidTop - top } : options;
     // A hinge on another side is worked out with that side turned to the back, and its pieces turned back after.
     const turn = HINGE_SIDE_TURN[options.hingeSide];
     const turnedOutline = turnedPolygons(outline.toPolygons() as Point[][], turn);
     const turnedOpening = hasOpening ? turnedPolygons(opening.toPolygons() as Point[][], turn) : [];
     const innerBack = turnedOpening.length ? Math.max(...turnedOpening.flat().map(([, y]) => y)) : undefined;
-    const plan = options.hinge && style !== "pivot" ? hingePlan(turnedOutline, options, top, box.min[2], innerBack) : null;
+    const plan = options.hinge && style !== "pivot" ? hingePlan(turnedOutline, hingeOptions, top, box.min[2], innerBack) : null;
     if (plan && "error" in plan) return { error: plan.error };
     // In the wall, a knuckle needs the wall to run straight along it.
     if (plan && style === "flush" && plan.curved) return { error: { code: "hingeStyleStraight" } };
@@ -3210,6 +3241,20 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       slide = { plan, cuts: back(solids.cuts), bumps: solids.bumps };
     } else if (options.type === "flat") {
       parts.push(prism(outline, top, top + options.thickness));
+    } else if (stackTop) {
+      const lip = keep(created, opening.offset(-options.gap, "Round", 2, 48));
+      const bottom = top - options.depth;
+      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, options.depth / 4);
+      for (let step = 0; step < 4; step += 1) {
+        const low = bottom + (chamfer * step) / 4;
+        parts.push(prism(keep(created, lip.offset(-chamfer * (1 - (step + 0.5) / 4), "Round", 2, 48)), low, low + chamfer / 4));
+      }
+      parts.push(prism(lip, bottom + chamfer, top));
+      for (let height = STACK_TOP_STEP; height < flareHeight + 1e-9; height += STACK_TOP_STEP) {
+        parts.push(prism(keep(created, keep(created, lip.offset(height, "Miter", 2, 48)).intersect(outline)), top + height - STACK_TOP_STEP, top + height));
+      }
+      parts.push(prism(outline, top + flareHeight, top + flareHeight + options.thickness));
+      parts.push(prism(keep(created, outline.subtract(opening)), top + flareHeight + options.thickness - 0.01, lidTop));
     } else {
       parts.push(prism(options.type === "plug" ? outline : outer, top, top + options.thickness));
       if (options.type !== "cap") {
@@ -3390,24 +3435,34 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       const lidPieces: ManifoldSolid[] = [];
       const bodyPieces: ManifoldSolid[] = [];
       const stripTop = Math.min(plan.axisZ, top - options.hingeGap);
+      // As tall as the lid: its plate's, or with a stacking top up to the tray's rim.
+      const lidThickness = lidTop - top;
+      // With a stacking top the axis is above the rim, so the body's strip reaches down from just below it.
+      const stripLow = Math.min(plan.low, stripTop - 1);
       // On a round side the wall falls away from the hinge's line: the lid's web reaches in to its plate's edge, and
       // under each of the body's knuckles a block reaches in to the wall, its underside on the same 45 degree slope.
       const webReach = plan.curved ? plan.reach : 0.3;
-      const blockLow = Math.max(box.min[2] + 0.4, plan.low - plan.reach);
+      const blockLow = Math.max(box.min[2] + 0.4, stripLow - plan.reach);
       plan.segments.forEach(([from, to], index) => {
         const round = along(from, to, plan.radius, plan.axisY, plan.axisZ);
         if (index % 2) {
-          const web = keep(created, keep(created, runtime.Manifold.cube([to - from, plan.axisY - plan.backY + webReach, options.thickness])).translate([from, plan.backY - webReach, top]));
-          lidPieces.push(round, web);
+          if (stackTop) {
+            // Printed upright: the knuckle on a 45 degree slope from the lid's back face above the flare.
+            const strip = keep(created, keep(created, runtime.Manifold.cube([to - from, webReach, lidTop - top - flareHeight])).translate([from, plan.backY - webReach, top + flareHeight]));
+            lidPieces.push(keep(created, runtime.Manifold.hull([round, strip])));
+          } else {
+            const web = keep(created, keep(created, runtime.Manifold.cube([to - from, plan.axisY - plan.backY + webReach, options.thickness])).translate([from, plan.backY - webReach, top]));
+            lidPieces.push(round, web);
+          }
         } else {
           if (plan.curved) {
-            const block = acrossAlong(from, to, [[plan.backY - plan.reach, blockLow], [plan.backY, plan.low], [plan.backY, stripTop], [plan.backY - plan.reach, stripTop]]);
+            const block = acrossAlong(from, to, [[plan.backY - plan.reach, blockLow], [plan.backY, stripLow], [plan.backY, stripTop], [plan.backY - plan.reach, stripTop]]);
             if (block) bodyPieces.push(block);
           }
-          const strip = keep(created, keep(created, runtime.Manifold.cube([to - from, 0.4, stripTop - plan.low])).translate([from, plan.backY - 0.4, plan.low]));
+          const strip = keep(created, keep(created, runtime.Manifold.cube([to - from, 0.4, stripTop - stripLow])).translate([from, plan.backY - 0.4, stripLow]));
           // The hull rises steeply from the strip to the knuckle, close past the plate's back edge: what lies within
           // the gap behind the back and above the gap below the plate is taken off, so the gap is kept there too.
-          const clear = keep(created, keep(created, runtime.Manifold.cube([to - from + 2, options.hingeGap + 1, options.thickness + options.hingeGap + 2 * plan.radius])).translate([from - 1, plan.backY - 1, top - options.hingeGap]));
+          const clear = keep(created, keep(created, runtime.Manifold.cube([to - from + 2, options.hingeGap + 1, lidThickness + options.hingeGap + 2 * plan.radius])).translate([from - 1, plan.backY - 1, top - options.hingeGap]));
           bodyPieces.push(keep(created, keep(created, runtime.Manifold.hull([round, strip])).subtract(clear)));
         }
       });
@@ -3415,7 +3470,8 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       // point faces the lid's inside. The pin turns in the lid's round part, with its play; in the body's it sits tight
       // (#1220). The body's point is the lower for its smaller round, so it keeps more than TEARDROP_WALL above it.
       const holeFor = (radius: number, tip: 1 | -1) => unturned(options.hingeTeardrop ? teardropAlong(plan.start - 1, plan.end + 1, radius, tip, plan.radius - TEARDROP_WALL, plan.axisY, plan.axisZ) : along(plan.start - 1, plan.end + 1, radius, plan.axisY, plan.axisZ));
-      made = keep(created, keep(created, made.add(unturned(keep(created, runtime.Manifold.union(lidPieces))))).subtract(holeFor(plan.lidHole, -1)));
+      // With a stacking top the lid prints upright too, so its point faces up as well.
+      made = keep(created, keep(created, made.add(unturned(keep(created, runtime.Manifold.union(lidPieces))))).subtract(holeFor(plan.lidHole, stackTop ? 1 : -1)));
       let knuckleBody = unturned(keep(created, runtime.Manifold.union(bodyPieces)));
       // A block reaching in past a thin round wall is kept out of the opening.
       if (plan.curved) knuckleBody = keep(created, knuckleBody.subtract(keep(created, keep(created, opening.extrude(top - box.min[2] + 2)).translate([0, 0, box.min[2] - 1]))));
@@ -3570,7 +3626,8 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       made = keep(created, made.subtract(keep(created, runtime.Manifold.union(pockets))));
     }
     // Turned over about the x axis (y and z change sign, nothing is mirrored), then laid beside the body on its bottom.
-    const turned = keep(created, made.transform([1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1]));
+    // A stacking top prints upright, as it closes: its foot on the plate.
+    const turned = stackTop ? made : keep(created, made.transform([1, 0, 0, 0, 0, -1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1]));
     const lidBox = turned.boundingBox();
     const shift: [number, number, number] = [
       box.max[0] + LID_SPACING - lidBox.min[0],
@@ -3745,6 +3802,10 @@ export function lidErrorMessage(error: LidError) {
       return t("lid.error.magnetsThinLid", { thickness: error.thickness.toLocaleString(numberLocale()) });
     case "hingeLidType":
       return t("lid.error.hingeLidType");
+    case "stackTopType":
+      return t("lid.error.stackTopType");
+    case "stackTopExtras":
+      return t("lid.error.stackTopExtras");
     case "hingeNoBack":
       return t("lid.error.hingeNoBack");
     case "hingeTooLow":

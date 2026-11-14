@@ -1041,6 +1041,8 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "status.lidMadeHingeFlushPlugs": "Deksel gemaakt ({type}) met een verzonken scharnier: {count} knokkels in de wand, een gat voor een pen van {pin} mm en {length} mm lang, en twee eindpluggen die het afsluiten. Het deksel en de pluggen liggen naast het lichaam, klaar om te printen.",
   "status.lidMadeHingeFlushCorners": "Deksel gemaakt ({type}) met een verzonken scharnier: {count} knokkels in de wand, waarvan de buitenste de afgeronde hoeken vullen, en een gat voor een pen van {pin} mm en {length} mm lang. Het deksel ligt omgekeerd naast het lichaam, klaar om te printen.",
   "lid.error.hingeLidType": "Een scharnier gaat alleen met een insteekdeksel of een plat deksel: een rand rondom zou bij het openklappen tegen de achterwand stoten.",
+  "lid.error.stackTopType": "Een stapelbak bovenop gaat alleen met een insteekdeksel, zonder scharnier of met een scharnier achter de achterwand.",
+  "lid.error.stackTopExtras": "Een stapelbak bovenop gaat nog niet samen met magneten, sluitingen, klikbolletjes of een handgreep.",
   "lid.error.hingeNoBack": "De gekozen kant heeft geen ruimte voor drie knokkels: hij is te kort of te sterk gebogen.",
   "lid.error.hingeTooLow": "Het lichaam is te laag voor het scharnier: onder de knokkels is ruimte nodig voor hun schuinte. Neem een dunnere pen of een hoger lichaam.",
   "lid.error.hingeKernel": "Het scharnier kon niet met het lichaam worden verbonden.",
