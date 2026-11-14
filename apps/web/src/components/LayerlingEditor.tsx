@@ -9294,7 +9294,7 @@ export function LayerlingEditor({
     // The slider at its right end means every cell that fits, kept as that: a body made larger gets more sockets, smaller fewer.
     const gridMax = shellGridEstimate(shapeWidth(target), shapeDepth(target), thickness).max;
     const gridCells = shellTool.gridCells ?? 0;
-    const grid = normalizeShellGrid({ cells: gridCells >= gridMax ? MAX_SHELL_GRID_CELLS : gridCells, fit: shellTool.gridFit });
+    const grid = normalizeShellGrid({ cells: gridCells > 0 && gridCells >= gridMax ? MAX_SHELL_GRID_CELLS : gridCells, fit: shellTool.gridFit });
     const dividers = normalizeShellDividers(shellTool.dividers);
     setShellTool((current) => current ? { ...current, busy: true, error: null } : current);
     if (shellTool.mode === "offset") {
