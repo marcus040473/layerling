@@ -1296,6 +1296,7 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "تم التفريغ بجدران {size} مم، مغلق من كل الجهات: التجويف في الداخل ولا يظهر إلا في عرض المقطع",
   "status.shelledMcp": "قام MCP بتفريغ الجسم بجدران {size} مم",
   "status.shellRebuilt": "أُعيد حساب الجدران، بسمك {size} مم مرة أخرى",
+  "status.shellRoundingSkipped": "تعذّرت إعادة تدوير الحواف على الجدران الجديدة فتم تركه.",
   "status.shellRebuildFailed": "تعذر إعادة حساب التفريغ بهذا الحجم. تغيّر حجم الجدران مع الجسم.",
   "status.sketchRebuildFailed": "تعذر إعادة بناء جسم الرسم التخطيطي بهذا الحجم. الشطف والتنعيم يعملان عليه مرة أخرى بمجرد تعديل الرسم التخطيطي.",
   "edge.revertShell": "التفريغ (جدران {size} مم)",

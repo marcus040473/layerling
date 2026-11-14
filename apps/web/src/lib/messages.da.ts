@@ -2110,6 +2110,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Udhulet med {size} mm vægge, lukket hele vejen rundt: hulrummet ligger indeni og ses kun i snitvisningen",
   "status.shelledMcp": "MCP udhulede objektet med {size} mm vægge",
   "status.shellRebuilt": "Vægge genberegnet, {size} mm tykke igen",
+  "status.shellRoundingSkipped": "Afrundingen af kanterne kunne ikke lægges igen på de nye vægge og blev udeladt.",
   "status.shellRebuildFailed": "Udhulingen kunne ikke genberegnes ved denne størrelse. Væggene blev skaleret sammen med formen.",
   "status.sketchRebuildFailed": "Skitseformen kunne ikke genopbygges ved denne størrelse. Fase og rund virker på den igen når du redigerer skitsen.",
   "edge.revertShell": "Udhuling ({size} mm vægge)",

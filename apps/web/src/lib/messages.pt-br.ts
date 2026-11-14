@@ -2354,6 +2354,7 @@ export const MESSAGES_PT_BR: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Vazado com paredes de {size} mm, fechado por todos os lados: a cavidade fica por dentro e só aparece na vista em corte",
   "status.shelledMcp": "O MCP vazou o objeto com paredes de {size} mm",
   "status.shellRebuilt": "Paredes recalculadas, de novo com {size} mm de espessura",
+  "status.shellRoundingSkipped": "O arredondamento das bordas não pôde ser refeito nas novas paredes e foi omitido.",
   "status.shellRebuildFailed": "Não foi possível recalcular o vazado neste tamanho. As paredes foram escaladas junto com o sólido.",
   "status.sketchRebuildFailed": "Não foi possível reconstruir a extrusão de esboço neste tamanho. Chanfro e arredondamento voltam a funcionar quando você editar o esboço.",
 

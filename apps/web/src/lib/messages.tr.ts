@@ -653,6 +653,7 @@ export const MESSAGES_TR: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "{size} mm duvarlarla içi boşaltıldı, her taraf kapalı: boşluk içeride ve yalnızca kesit görünümünde görünür",
   "status.shelledMcp": "MCP nesnenin içini {size} mm duvarlarla boşalttı",
   "status.shellRebuilt": "Duvarlar yeniden hesaplandı, yine {size} mm kalınlıkta",
+  "status.shellRoundingSkipped": "Kenarların yuvarlatması yeni duvarlara yeniden uygulanamadı ve atlandı.",
   "status.shellRebuildFailed": "İçi boşaltma bu boyutta yeniden hesaplanamadı. Duvarlar gövdeyle birlikte ölçeklendi.",
   "status.sketchRebuildFailed": "Eskiz gövdesi bu boyutta yeniden oluşturulamadı. Eskizi düzenlediğinde pah ve yuvarlatma yeniden çalışır.",
   "edge.revertShell": "İçini boşaltma ({size} mm duvarlar)",

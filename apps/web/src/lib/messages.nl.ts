@@ -1317,6 +1317,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "status.shelledClosed": "Uitgehold met wanden van {size} mm, rondom dicht: de holte zit binnenin en is alleen in de doorsnedeweergave te zien",
   "status.shelledMcp": "MCP heeft het object uitgehold met wanden van {size} mm",
   "status.shellRebuilt": "Wanden herberekend, weer {size} mm dik",
+  "status.shellRoundingSkipped": "De afronding van de randen kon niet opnieuw op de nieuwe wanden worden gelegd en is weggelaten.",
   "status.shellRebuildFailed": "De uitholling kon op deze maat niet worden herberekend. De wanden zijn mee geschaald met het lichaam.",
   "status.sketchRebuildFailed": "Het schetslichaam kon op deze maat niet opnieuw worden opgebouwd. Afschuining en afronding werken er weer op zodra je de schets bewerkt.",
   "edge.revertShell": "Uitholling (wanden van {size} mm)",

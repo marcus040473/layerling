@@ -1317,6 +1317,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "status.shelledClosed": "Mit {size} mm Wandstärke ausgehöhlt, rundum geschlossen: Der Hohlraum liegt innen und ist nur in der Schnittansicht zu sehen",
   "status.shelledMcp": "MCP hat das Objekt mit {size} mm Wandstärke ausgehöhlt",
   "status.shellRebuilt": "Wände neu berechnet, wieder {size} mm dick",
+  "status.shellRoundingSkipped": "Die Rundung der Kanten ließ sich auf den neuen Wänden nicht wieder anlegen und blieb weg.",
   "status.shellRebuildFailed": "In dieser Größe ließ sich die Aushöhlung nicht neu berechnen. Die Wände sind mitskaliert.",
   "status.sketchRebuildFailed": "Der Skizzenkörper ließ sich in dieser Größe nicht neu aufbauen. Fase und Rundung gehen an ihm erst wieder, wenn du die Skizze bearbeitest.",
   "edge.revertShell": "Aushöhlung ({size} mm Wand)",

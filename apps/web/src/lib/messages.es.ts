@@ -1300,6 +1300,7 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Vaciado con paredes de {size} mm y cerrado por completo: la cavidad queda dentro y solo se ve en la vista de sección",
   "status.shelledMcp": "MCP ha vaciado el objeto con paredes de {size} mm",
   "status.shellRebuilt": "Paredes recalculadas, otra vez de {size} mm de grosor",
+  "status.shellRoundingSkipped": "El redondeo de los bordes no pudo volver a hacerse en las paredes nuevas y se omitió.",
   "status.shellRebuildFailed": "No se ha podido recalcular el vaciado con este tamaño. Las paredes se han escalado junto con el cuerpo.",
   "status.sketchRebuildFailed": "No se ha podido reconstruir el cuerpo del boceto con este tamaño. El chaflán y el redondeo volverán a funcionar en él cuando edites el boceto.",
   "edge.revertShell": "Vaciado (paredes de {size} mm)",

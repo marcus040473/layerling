@@ -1316,6 +1316,7 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "status.shelledClosed": "Создана оболочка со стенками {size} мм, закрытая со всех сторон: полость внутри и видна только в режиме сечения",
   "status.shelledMcp": "MCP создал оболочку со стенками {size} мм",
   "status.shellRebuilt": "Стенки пересчитаны, снова {size} мм",
+  "status.shellRoundingSkipped": "Скругление рёбер не удалось снова наложить на новые стенки, и оно пропущено.",
   "status.shellRebuildFailed": "Не удалось пересчитать оболочку при таком размере. Стенки масштабированы вместе с телом.",
   "edge.revertShell": "Оболочка (стенки {size} мм)",
   "editor.tool.cutOut": "Вырезать",
