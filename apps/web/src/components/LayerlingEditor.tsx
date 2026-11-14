@@ -134,7 +134,7 @@ import { WhatsNewWindow } from "./workplane/WhatsNewWindow";
 import { InteractiveHelp } from "./InteractiveHelp";
 import { ShapeContextMenu, type ShapeContextMenuItem } from "./workplane/ShapeContextMenu";
 import { nextSelectionTransparency } from "@/lib/selectionTransparency";
-import { canonicalizeShape, cloneWorkplaneShapeTreeWithFreshIds, normalizeGroupResize, cleanNearZero, cleanRotationDegrees, isNonSolidShape, meshYawDegrees, preservesEdgeTreatmentSize, serializeShapesForSync, shapeDepth, shapeExtrudeDeformPatch, shapeHasShapeDeform, shapeTaperPatch, resizedShapeSize, shapeTransformShouldRemainEditable, shapeWidth, shapeWithParametricSource, patchTouchesBodyParameters, withHoleMode, workplaneShapesEqual, shellNeedingRebuild, hollowStretchSincePicture, shellRebuildReference, edgeTreatmentsAfterShell } from "@/lib/workplaneShapes";
+import { canonicalizeShape, cloneWorkplaneShapeTreeWithFreshIds, normalizeGroupResize, cleanNearZero, cleanRotationDegrees, isNonSolidShape, meshYawDegrees, preservesEdgeTreatmentSize, serializeShapesForSync, shapeDepth, shapeExtrudeDeformPatch, shapeHasShapeDeform, shapeTaperPatch, resizedShapeSize, shapeTransformShouldRemainEditable, shapeWidth, shapeWithParametricSource, patchTouchesBodyParameters, withHoleMode, workplaneShapesEqual, shellNeedingRebuild, shellRebuildEntry, hollowStretchSincePicture, shellRebuildReference, edgeTreatmentsAfterShell } from "@/lib/workplaneShapes";
 import { normalizeRibStyle, ribFootSwitch, ribGussetWallKeepingPlace, ribLengthKeepingPatch, ribThicknessOnFootPatch } from "@/lib/rib";
 import { pasteCenteringShift, pasteNudged } from "@/lib/pasteCentering";
 import { faceWorkplaneCenteringShift, workplaneCenteringOffset } from "@/lib/workplaneCentering";
@@ -9239,6 +9239,8 @@ export function LayerlingEditor({
           ? { state: "error", message: cableErrorMessage(cableSearch.result.error) }
           : { state: "idle" };
 
+  // Hollowing again with new settings (defined further down, as it builds on the rebuild after a resize).
+  const rehollowRef = useRef<((stale: WorkplaneShape, watched: WorkplaneShape, replace: { amount: number; openings: ShellOpenings; edges: ShellEdges; stack: number }) => Promise<WorkplaneShape | null>) | null>(null);
   const applyShellTool = useCallback(() => {
     if (!shellTool || shellTool.busy) return;
     const target = selectedShape;
@@ -9268,7 +9270,12 @@ export function LayerlingEditor({
         });
       return;
     }
-    void shellShape(target, thickness, openings, edges, target, undefined, stack)
+    // A body that is hollowed already is hollowed again from the state before, so the new settings replace the old.
+    const hollowed = shellRebuildEntry(target) !== null;
+    const make = hollowed
+      ? (rehollowRef.current ? rehollowRef.current(target, target, { amount: thickness, openings, edges, stack }) : Promise.resolve(null)).then((again) => again ?? shellShape(target, thickness, openings, edges, target, undefined, stack))
+      : shellShape(target, thickness, openings, edges, target, undefined, stack);
+    void make
       .then((modifiedShape) => {
         commitShapes(
           shapesRef.current.map((candidate) => candidate.id === target.id ? modifiedShape : candidate),
@@ -9332,10 +9339,12 @@ export function LayerlingEditor({
    * body in the scene the result replaces: the stale body itself, or the body before "Fit the body to the neck" resized
    * it (issue #1482). Null when its state before cannot be brought to that size.
    */
-  const rehollowedShape = useCallback(async (stale: WorkplaneShape, watched: WorkplaneShape = stale): Promise<WorkplaneShape | null> => {
-    const entry = shellNeedingRebuild(stale);
-    if (!entry) return stale;
-    const { amount, openings, shellEdges } = entry.feature;
+  const rehollowedShape = useCallback(async (stale: WorkplaneShape, watched: WorkplaneShape = stale, replace?: { amount: number; openings: ShellOpenings; edges: ShellEdges; stack: number }): Promise<WorkplaneShape | null> => {
+    // With `replace` the hollowing the body already has is done again with new settings, from the state before it (a body
+    // hollowed once more from its hollow walls fails with walls too thick).
+    const entry = replace ? shellRebuildEntry(stale) : shellNeedingRebuild(stale);
+    if (!entry) return replace ? null : stale;
+    const { amount, openings, shellEdges } = replace ? { amount: replace.amount, openings: replace.openings, shellEdges: replace.edges } : entry.feature;
     // Measured from where the last fillet after the hollowing left the body, if there is one (forum, 621472).
     const reference = shellRebuildReference(stale, entry);
     const stretch = hollowStretchSincePicture(stale, reference);
@@ -9349,11 +9358,12 @@ export function LayerlingEditor({
     if (Math.abs(shapeWidth(before) - width) > 0.05 || Math.abs(shapeDepth(before) - depth) > 0.05) return null;
     // Fillets and chamfers laid after the hollowing go on again, on the same edges of the fresh walls.
     const after = edgeTreatmentsAfterShell(stale) ?? [];
-    let rebuilt = await shellShape(before, amount, openings ?? "none", shellEdges ?? "round", watched, undefined, entry.feature.shellStack ?? 0);
+    let rebuilt = await shellShape(before, amount, openings ?? "none", shellEdges ?? "round", watched, undefined, replace ? replace.stack : entry.feature.shellStack ?? 0);
     for (const later of after) rebuilt = await relaidEdgeTreatment(rebuilt, later);
     return rebuilt;
   }, [relaidEdgeTreatment, shellShape]);
 
+  rehollowRef.current = rehollowedShape;
   const shellRebuildBusyRef = useRef(false);
   const shellRebuildFailedRef = useRef(new Set<string>());
   const [shellRebuildRound, setShellRebuildRound] = useState(0);
