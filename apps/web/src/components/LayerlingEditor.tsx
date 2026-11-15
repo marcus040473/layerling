@@ -15931,14 +15931,14 @@ export function LayerlingEditor({
         const stack = typeof params.stack === "number" && params.stack > 0 ? clampShellStackHeight(params.stack) : 0;
         const grid = normalizeShellGrid({ cells: params.gridCells, fit: params.gridFit === true });
         const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ });
-        const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth }) : null;
+        const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth, gripSides: params.stackGripSides, gripHeight: params.stackGripHeight, gripAt: params.stackGripAt }) : null;
         const modifiedShape = await shellShape(target, thickness, openings, edges, target, undefined, { stack, stackFoot, grid, dividers });
         commitShapes(
           shapesRef.current.map((candidate) => candidate.id === target.id ? modifiedShape : candidate),
           modifiedShape.id,
           t("status.shelledMcp", { size: Number(thickness.toFixed(2)) }),
         );
-        return { object: mcpShapeSummary(modifiedShape), thickness, openings, edges, ...(stack > 0 ? { stack } : {}), ...(stackFoot?.hollow ? { stackHollow: true } : {}), ...(stackFoot?.grip ? { stackGrip: stackFoot.grip, stackGripDepth: stackFoot.gripDepth } : {}), ...(grid ? { gridCells: grid.cells, gridFit: grid.fit } : {}), ...(dividers ? { dividersX: dividers.x, dividersZ: dividers.z } : {}) };
+        return { object: mcpShapeSummary(modifiedShape), thickness, openings, edges, ...(stack > 0 ? { stack } : {}), ...(stackFoot?.hollow ? { stackHollow: true } : {}), ...(stackFoot?.grip ? { stackGrip: stackFoot.grip, stackGripDepth: stackFoot.gripDepth, stackGripSides: stackFoot.gripSides, ...(stackFoot.gripHeight !== undefined ? { stackGripHeight: stackFoot.gripHeight } : {}), ...(stackFoot.gripAt ? { stackGripAt: stackFoot.gripAt } : {}) } : {}), ...(grid ? { gridCells: grid.cells, gridFit: grid.fit } : {}), ...(dividers ? { dividersX: dividers.x, dividersZ: dividers.z } : {}) };
       }
 
       if (command.action === "offset_object") {

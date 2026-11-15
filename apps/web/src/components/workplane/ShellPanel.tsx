@@ -8,7 +8,7 @@ import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
-import { DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
+import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { MAX_SHELL_DIVIDERS, type ShellDividers } from "@/lib/shellGridLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import type { ShellEdges, ShellOpenings, WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -358,6 +358,53 @@ export function ShellPanel({
                 disabled={busy}
                 onChange={(value) => onStackFootChange({ ...(stackFoot ?? {}), gripDepth: value })}
               />
+              <EdgeModifierSlider
+                label={t("shell.stackGripHeight")}
+                value={stackFoot?.gripHeight ?? stack + (stackFoot?.gripDepth ?? DEFAULT_SHELL_STACK_GRIP_DEPTH) + 1}
+                min={SHELL_STACK_GRIP_HEIGHT_MIN}
+                max={SHELL_STACK_GRIP_HEIGHT_MAX}
+                step={0.5}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => onStackFootChange({ ...(stackFoot ?? {}), gripHeight: value })}
+              />
+              {/* Where it sits up the side: 0 % at the bottom (to lift the box off the one below), 100 % just under the rim. */}
+              <EdgeModifierSlider
+                label={t("shell.stackGripAt")}
+                value={stackFoot?.gripAt ?? 0}
+                min={0}
+                max={SHELL_STACK_GRIP_AT_MAX}
+                step={5}
+                unit="%"
+                decimals={0}
+                workspace={workspace}
+                disabled={busy}
+                onChange={(value) => onStackFootChange({ ...(stackFoot ?? {}), gripAt: value })}
+              />
+              <ToolHint text={t("shell.stackGripAtHint")} />
+              {/* The sides it goes on, one or several; at least one stays. */}
+              <div className="edge-modifier-field shell-openings" role="group" aria-label={t("shell.stackGripSides")}>
+                <span>{t("shell.stackGripSides")}</span>
+                <div className="shell-opening-options">
+                  {SHELL_STACK_GRIP_SIDES.map((side) => {
+                    const sides = stackFoot?.gripSides?.length ? stackFoot.gripSides : ["front"];
+                    const on = sides.includes(side);
+                    return (
+                      <button
+                        key={side}
+                        type="button"
+                        aria-pressed={on}
+                        className={on ? "active" : ""}
+                        disabled={busy || (on && sides.length === 1)}
+                        onClick={() => onStackFootChange({ ...(stackFoot ?? {}), gripSides: SHELL_STACK_GRIP_SIDES.filter((candidate) => candidate === side ? !on : sides.includes(candidate)) })}
+                      >
+                        {t(`shell.side.${side}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <ToolHint text={t("shell.stackGripHint")} />
             </>) : null}
           </>) : null}

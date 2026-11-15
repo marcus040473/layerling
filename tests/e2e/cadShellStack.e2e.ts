@@ -111,6 +111,59 @@ describe("stacking a hollowed box with the real OCCT kernel", () => {
     }
   });
 
+  it("puts the grip on the sides asked for, as high as asked", () => {
+    const { original, hollow } = made();
+    const stacked = shellStackSolid(kernel, hollow, 3, 2, original, { grip: 20, gripDepth: 4, gripSides: ["back", "left"], gripHeight: 9 });
+    expect(kernel.isValid(stacked)).toBe(true);
+    expect(kernel.getSubShapes(stacked, "solid")).toHaveLength(1);
+    // At the back and on the left; the front and the right stay whole.
+    expect(at(stacked, 0, 2, -12)).toBe(false);
+    expect(at(stacked, -17, 2, 0)).toBe(false);
+    expect(at(stacked, 0, 2, 12)).toBe(true);
+    expect(at(stacked, 17, 2, 0)).toBe(true);
+    // 9 mm tall at the outside, where the default stops at 3 + 4 + 1 = 8 mm.
+    expect(at(stacked, 0, 8.5, -14.7)).toBe(false);
+    expect(at(stacked, 0, 9.5, -14.7)).toBe(true);
+    const above = kernel.translate(stacked, 0, 17, 0);
+    expect(kernel.getVolume(kernel.common(stacked, above))).toBeLessThan(1e-6);
+  });
+
+  it("puts the grip higher up the side, a pocket with a level floor, closed off inside by a hump sloping at 45 degrees", () => {
+    const { original, hollow } = made();
+    const stacked = shellStackSolid(kernel, hollow, 3, 2, original, { grip: 20, gripDepth: 4, gripAt: 50 });
+    expect(kernel.isValid(stacked)).toBe(true);
+    expect(kernel.getSubShapes(stacked, "solid")).toHaveLength(1);
+    // 8 mm tall, half way up the room for it (20 - 2 - 8 = 10 mm): from 5 to 13 mm.
+    expect(at(stacked, 0, 7, 14.7)).toBe(false);
+    expect(at(stacked, 0, 4, 13.5)).toBe(true);
+    expect(at(stacked, 0, 13.5, 14.7)).toBe(true);
+    // The bottom stays whole, and inside the hump closes the pocket off.
+    expect(at(stacked, 0, 2, 12)).toBe(true);
+    expect(at(stacked, 0, 9, 9.5)).toBe(true);
+    expect(at(stacked, 0, 9, 5)).toBe(false);
+  });
+
+  it("makes a round box's foot hollow too, with no slab left over it", () => {
+    const cylinder = yUp(kernel.makeCylinder(25, 20));
+    const stacked = shellStackSolid(kernel, shellSolid(kernel, cylinder, 2, "top"), 3, 2, cylinder, { hollow: true });
+    expect(kernel.isValid(stacked)).toBe(true);
+    expect(kernel.getSubShapes(stacked, "solid")).toHaveLength(1);
+    expect(at(stacked, 0, 1, 0)).toBe(true);
+    for (const y of [3, 4.5, 5.5, 6.5, 8]) expect(at(stacked, 0, y, 0), `at ${y}`).toBe(false);
+  });
+
+  it("leaves no hair-thin level face behind, which the mesher would fill as a sheet across the box", () => {
+    for (const style of [{ hollow: true }, {}]) {
+      const cylinder = yUp(kernel.makeCylinder(35, 40));
+      const stacked = shellStackSolid(kernel, shellSolid(kernel, cylinder, 2, "top"), 3, 2, cylinder, style);
+      // Level faces only where they belong: the bottom, the floor and the rim; none of a few mm² where parts meet.
+      const level = kernel.getSubShapes(stacked, "face")
+        .map((face) => ({ box: kernel.getBoundingBox(face), area: kernel.getSurfaceArea(face) }))
+        .filter(({ box }) => Math.abs(box.ymax - box.ymin) < 1e-6);
+      expect(level.every(({ area }) => area > 100), JSON.stringify(level.map(({ box, area }) => [box.ymin, area]))).toBe(true);
+    }
+  });
+
   it("stacks a round box as well", () => {
     const cylinder = yUp(kernel.makeCylinder(25, 20));
     const stacked = shellStackSolid(kernel, shellSolid(kernel, cylinder, 2, "top"), 3, 2, cylinder);

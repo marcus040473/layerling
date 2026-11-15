@@ -3201,14 +3201,22 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     const prism = (area: CrossSection, low: number, high: number) => keep(created, keep(created, area.extrude(high - low)).translate([0, 0, low]));
     // A stacking top's foot: `area` from `depth` below the rim up to it, with a small chamfer at the bottom against the
     // first layer's spreading, in four steps.
-    const stackFoot = (area: CrossSection) => {
-      const bottom = top - options.depth;
-      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, options.depth / 4);
-      const steps = [0, 1, 2, 3].map((step) => {
-        const low = bottom + (chamfer * step) / 4;
-        return prism(keep(created, area.offset(-chamfer * (1 - (step + 0.5) / 4), "Round", 2, 48)), low, low + chamfer / 4);
-      });
-      return keep(created, runtime.Manifold.union([...steps, prism(area, bottom + chamfer, top + 0.01)]));
+    // A slope at 45 degrees from `low` (at `lowZ`) out to `high` (at `highZ`): the hull of the two where both are convex, so
+    // its faces are true 45 degree faces; otherwise steps of STACK_TOP_STEP, as fine as the slope is steep.
+    const convex = (area: CrossSection) => area.area() > 0 && keep(created, area.hull()).area() - area.area() < 1e-3 * area.area() + 0.01;
+    const slope = (low: CrossSection, lowZ: number, high: CrossSection, highZ: number) => {
+      if (convex(low) && convex(high)) return keep(created, runtime.Manifold.hull([prism(low, lowZ, lowZ + 0.001), prism(high, highZ - 0.001, highZ)]));
+      const pieces: ManifoldSolid[] = [];
+      for (let z = lowZ + STACK_TOP_STEP; z < highZ + 1e-9; z += STACK_TOP_STEP) {
+        pieces.push(prism(keep(created, keep(created, low.offset(z - lowZ, "Miter", 2, 48)).intersect(high)), z - STACK_TOP_STEP, z));
+      }
+      return pieces.length ? keep(created, runtime.Manifold.union(pieces)) : prism(high, lowZ, highZ);
+    };
+    // A stacking top's foot: `area` from `bottom` (`depth` below the rim unless given) up to the rim, with a small chamfer at
+    // the bottom against the first layer's spreading.
+    const stackFoot = (area: CrossSection, bottom = top - options.depth) => {
+      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, (top - bottom) / 4);
+      return keep(created, runtime.Manifold.union([slope(keep(created, area.offset(-chamfer, "Round", 2, 48)), bottom, area, bottom + chamfer), prism(area, bottom + chamfer, top + 0.01)]));
     };
     const parts: ManifoldSolid[] = [];
     // The rim's inside and outside, for a cap and both.
@@ -3265,9 +3273,7 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     } else if (stackTop && options.type === "plug") {
       const lip = keep(created, opening.offset(-options.gap, "Round", 2, 48));
       parts.push(stackFoot(lip));
-      for (let height = STACK_TOP_STEP; height < flareHeight + 1e-9; height += STACK_TOP_STEP) {
-        parts.push(prism(keep(created, keep(created, lip.offset(height, "Miter", 2, 48)).intersect(outline)), top + height - STACK_TOP_STEP, top + height));
-      }
+      parts.push(slope(lip, top, outline, top + flareHeight));
       parts.push(prism(outline, top + flareHeight, top + flareHeight + options.thickness));
       parts.push(prism(keep(created, outline.subtract(opening)), top + flareHeight + options.thickness - 0.01, lidTop));
     } else {
@@ -3298,14 +3304,17 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     if (stackTop && options.type !== "plug") {
       const plateTop = top + options.thickness;
       if (options.type !== "flat") {
+        // Down to the lid's lowest point, a cap's rim's (a screw cap's reaches as far as its thread): the foot and the rim
+        // both stand on the plate as the lid prints upright, nothing over thin air.
+        const footBottom = Math.min(top - options.depth, made.boundingBox().min[2]);
         // As deep as the opening stays as wide: cut at the foot's bottom too.
-        const cutLow = keep(created, up.slice(top - options.depth));
+        const cutLow = keep(created, up.slice(footBottom + 0.01));
         const lower = keep(created, filled(runtime, cutLow, created).subtract(cutLow));
         const low = lower.area() >= MIN_OPENING_AREA ? lower : null;
         const area = keep(created, opening.offset(-options.gap, "Round", 2, 48));
         const foot = low ? keep(created, area.intersect(keep(created, low.offset(-options.gap, "Round", 2, 48)))) : area;
         if (foot.area() < MIN_OPENING_AREA) return { error: { code: "tooSmall" } };
-        made = keep(created, made.add(stackFoot(foot)));
+        made = keep(created, made.add(stackFoot(foot, footBottom)));
       }
       const own = filled(runtime, keep(created, made.slice(plateTop - 0.05)), created);
       made = keep(created, made.add(prism(keep(created, own.subtract(opening)), plateTop - 0.01, lidTop)));

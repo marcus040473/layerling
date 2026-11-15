@@ -41,13 +41,22 @@ export function shellStackFloor(height: number, wall: number) {
  * `grip`: a finger recess this wide (mm) at the front of the bottom, `gripDepth` deep, its ceiling at 45 degrees, to lift
  * the box off the one below; 0 or missing for none.
  */
-export type ShellStackFoot = { hollow?: boolean; grip?: number; gripDepth?: number };
+export type ShellStackGripSide = "front" | "back" | "left" | "right";
+export const SHELL_STACK_GRIP_SIDES: readonly ShellStackGripSide[] = ["front", "back", "left", "right"];
+export type ShellStackFoot = { hollow?: boolean; grip?: number; gripDepth?: number; gripSides?: ShellStackGripSide[]; gripHeight?: number; gripAt?: number };
 export const SHELL_STACK_GRIP_MIN = 10;
 export const SHELL_STACK_GRIP_MAX = 80;
 export const DEFAULT_SHELL_STACK_GRIP = 30;
 export const SHELL_STACK_GRIP_DEPTH_MIN = 2;
 export const SHELL_STACK_GRIP_DEPTH_MAX = 10;
 export const DEFAULT_SHELL_STACK_GRIP_DEPTH = 4;
+/** How tall the grip's recess is at the outside, in mm (`gripHeight`); missing: the foot, its depth and 1 mm. */
+export const SHELL_STACK_GRIP_HEIGHT_MIN = 4;
+export const SHELL_STACK_GRIP_HEIGHT_MAX = 40;
+/** Where the grip sits up the side (`gripAt`), in % of the room for it: 0 at the bottom, 100 just under the rim. */
+export const SHELL_STACK_GRIP_AT_MAX = 100;
+/** What the grip keeps below the rim at 100 %, in mm. */
+export const SHELL_STACK_GRIP_RIM = 2;
 
 /** The foot's settings kept to what is offered; null when it is the plain solid foot without a grip. */
 export function normalizeShellStackFoot(value: unknown): ShellStackFoot | null {
@@ -60,14 +69,24 @@ export function normalizeShellStackFoot(value: unknown): ShellStackFoot | null {
   const depthRaw = number(raw.gripDepth);
   const gripDepth = Number.isNaN(depthRaw) ? DEFAULT_SHELL_STACK_GRIP_DEPTH : Math.min(SHELL_STACK_GRIP_DEPTH_MAX, Math.max(SHELL_STACK_GRIP_DEPTH_MIN, Math.round(depthRaw * 2) / 2));
   if (!hollow && !grip) return null;
-  return { ...(hollow ? { hollow: true } : {}), ...(grip ? { grip, gripDepth } : {}) };
+  // The sides it goes on, in their order; the front when none is given.
+  const asked = Array.isArray(raw.gripSides) ? raw.gripSides : [];
+  const sides = SHELL_STACK_GRIP_SIDES.filter((side) => asked.includes(side));
+  const heightRaw = number(raw.gripHeight);
+  const gripHeight = Number.isNaN(heightRaw) ? null : Math.min(SHELL_STACK_GRIP_HEIGHT_MAX, Math.max(SHELL_STACK_GRIP_HEIGHT_MIN, Math.round(heightRaw * 2) / 2));
+  const atRaw = number(raw.gripAt);
+  const gripAt = Number.isNaN(atRaw) ? 0 : Math.min(SHELL_STACK_GRIP_AT_MAX, Math.max(0, Math.round(atRaw)));
+  return {
+    ...(hollow ? { hollow: true } : {}),
+    ...(grip ? { grip, gripDepth, gripSides: sides.length ? sides : ["front"], ...(gripHeight !== null ? { gripHeight } : {}), ...(gripAt > 0 ? { gripAt } : {}) } : {}),
+  };
 }
 
 /**
- * How high the grip's recess reaches up the front at the outside, from the box's bottom: its depth, so its ceiling comes
- * down at 45 degrees to 1 mm above the foot, and the foot's height, so a finger finds that much room above the rim of the
- * box below.
+ * How tall the grip's recess is at the outside: as asked, or by default the foot's height (at the bottom it stands in the
+ * box below), its depth and 1 mm, so its ceiling comes down at 45 degrees to 1 mm above the foot. Never less than its depth
+ * and half a millimetre, so the ceiling keeps above its floor.
  */
-export function shellStackGripHeight(height: number, gripDepth: number) {
-  return clampShellStackHeight(height) + 1 + gripDepth;
+export function shellStackGripHeight(height: number, gripDepth: number, asked?: number) {
+  return Math.max(asked ?? clampShellStackHeight(height) + gripDepth + 1, gripDepth + 0.5);
 }

@@ -1,6 +1,6 @@
 import type { OcctKernel, ShapeHandle } from "occt-wasm";
 import { block, moved, rimFaces, tracking } from "@/lib/cadLid";
-import { type ShellStackFoot, normalizeShellStackFoot, shellStackGripHeight, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_DEPTH, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight, shellStackFloor, shellStackInset } from "@/lib/shellStackLimits";
+import { type ShellStackFoot, SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_RIM, normalizeShellStackFoot, shellStackGripHeight, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_DEPTH, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight, shellStackFloor, shellStackInset } from "@/lib/shellStackLimits";
 import { STACK_FAILED_MESSAGE, STACK_NEEDS_TOP_MESSAGE, STACK_NOT_STRAIGHT_MESSAGE, STACK_TOO_LOW_MESSAGE, STACK_WALL_THIN_MESSAGE } from "@/lib/shellStackMessages";
 
 export { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_DEPTH, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight, shellStackFloor, shellStackInset };
@@ -79,12 +79,14 @@ export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: 
         keep.push(block(cad, footFace, lip, bottom - 1, bottom + foot));
       }
       // Above the foot, widening at 45 degrees to the full outline.
-      keep.push(cad.draftPrism(cad.translate(footFace, 0, bottom + foot - lip, 0), 0, inset, 0, -45));
+      // It runs on past the outline; the body's own outside cuts it back, so no hair-thin ring is left where they meet.
+      keep.push(cad.draftPrism(cad.translate(footFace, 0, bottom + foot - lip, 0), 0, inset + 1, 0, -45));
     }
     const wide = { x0: box.xmin - 1, z0: box.zmin - 1, x1: box.xmax + 1, z1: box.zmax + 1 };
     const slab = (low: number, high: number) => cad.makeBoxFromCorners({ x: wide.x0, y: low, z: wide.z0 }, { x: wide.x1, y: high, z: wide.z1 });
     const feet = cad.fuseAll(keep);
-    keep.push(slab(bottom + foot + inset - 0.01, top + 1));
+    // Starting inside the widening, which runs on past the outline: no hair-thin ring where they meet.
+    keep.push(slab(bottom + foot + inset + 0.3, top + 1));
     // The floor raised to the top of the widening: the foot is solid.
     // Within the cavity's outline only, from the bottom: the outside (a rounded bottom edge) is not touched twice.
     // The cavity's outline half way up, where the walls stand straight (the top may be narrowed by a rounded edge).
@@ -93,7 +95,26 @@ export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: 
     // Its inside widens a little higher than the outside, so the slope keeps the wall's thickness square to it.
     const rise = wall * (Math.SQRT2 - 1);
     const fillTop = style?.hollow ? bottom + foot + rise + inset : floorTop;
-    const fill = middle.flatMap(({ openings: holes }) => holes.map((hole) => block(cad, cad.makeFace(hole), midPlane, bottom, fillTop)));
+    // A hollow foot's inside: the wall's thickness in from the foot, from the floor (a wall thick) up, widening at 45 degrees
+    // to the inside above, and on up into it. It is left out of the fill rather than cut out after: filling and cutting
+    // the same place again leaves a sheet in the kernel where the two meet.
+    const hollow: ShapeHandle[] = [];
+    if (style?.hollow) {
+      for (const { hole, inner } of found.feet) {
+        if (!inner) continue;
+        // The widening runs on past the inside and is cut back to it, so it ends exactly on the inside's own wall: ending it
+        // there by itself leaves a ring a hundredth of a millimetre wide, which the mesher fills as a sheet across the box.
+        const column = block(cad, cad.makeFace(hole), lip, bottom + wall, fillTop + 1);
+        const widening = cad.draftPrism(cad.translate(inner, 0, bottom + foot + rise - lip, 0), 0, inset + 1, 0, -45);
+        hollow.push(cad.common(cad.fuse(block(cad, inner, lip, bottom + wall, bottom + foot + rise + 0.01), widening), column));
+      }
+    }
+    // A hair wider than the inside, into the wall: a fill face lying on a round wall leaves a sheet in the kernel.
+    const fill = middle.flatMap(({ openings: holes }) => holes.map((hole) => {
+      const wider = moved(cad, hole, 0.05);
+      const whole = block(cad, wider ?? cad.makeFace(hole), midPlane, bottom, fillTop);
+      return hollow.reduce((current, tool) => cad.cut(current, tool), whole);
+    }));
     if (!fill.length) throw new Error(STACK_FAILED_MESSAGE);
     const filled = cad.fuseAll([solid, ...fill]);
     let body = cad.common(filled, cad.fuseAll(keep));
@@ -103,40 +124,37 @@ export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: 
       body = cad.cut(filled, cad.cut(slab(bottom - 1, bottom + foot + inset - 0.005), feet));
       solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
     }
-    if (style?.hollow && solids.length === 1) {
-      // The foot's inside: the wall's thickness in from the foot, from the floor (a wall thick) up, widening at 45 degrees to
-      // the inside above, and joined to it.
-      const hollow: ShapeHandle[] = [];
-      for (const { hole, inner } of found.feet) {
-        if (!inner) continue;
-        hollow.push(block(cad, inner, lip, bottom + wall, bottom + foot + rise + 0.01));
-        hollow.push(cad.draftPrism(cad.translate(inner, 0, bottom + foot + rise - lip, 0), 0, inset, 0, -45));
-        hollow.push(block(cad, cad.makeFace(hole), lip, fillTop - 0.01, fillTop + 0.5));
-      }
-      body = cad.cut(solids[0], cad.fuseAll(hollow));
-      solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
-    }
     if (style?.grip && solids.length === 1) {
       // The grip: a recess at the front (+z) of the bottom, `grip` wide and `gripDepth` deep, its ceiling at 45 degrees so it
       // prints without support. Where it comes near the inside, a hump the wall's thickness round it closes it off.
+      // On each side asked for (the front by default), in the middle of it; never wider than that side less 2 mm each end.
       const depth = style.gripDepth ?? 4;
-      const reach = shellStackGripHeight(foot, depth);
-      const middleX = (box.xmin + box.xmax) / 2;
-      const front = box.zmax;
-      const profile = (width: number, inward: number, up: number) => {
-        const x0 = middleX - width / 2;
-        const points = [
-          { z: front + 1, y: bottom - 1 },
-          { z: front - inward, y: bottom - 1 },
-          { z: front - inward, y: bottom + up - inward },
-          { z: front, y: bottom + up },
-          { z: front + 1, y: bottom + up },
-        ].map(({ z, y }) => ({ x: x0, y, z }));
+      const gripWidth = style.grip;
+      const tall = Math.min(shellStackGripHeight(foot, depth, style.gripHeight), top - bottom - SHELL_STACK_GRIP_RIM);
+      // Up the side: at 0 % open at the bottom, at 100 % its top 2 mm under the rim; in between a pocket with a floor.
+      const at = Math.min(SHELL_STACK_GRIP_AT_MAX, Math.max(0, style.gripAt ?? 0)) / 100;
+      const low = at > 0 ? bottom + at * Math.max(0, top - SHELL_STACK_GRIP_RIM - tall - bottom) : bottom - 1;
+      const high = (at > 0 ? low : bottom) + tall;
+      const middle = { x: (box.xmin + box.xmax) / 2, z: (box.zmin + box.zmax) / 2 };
+      // Each side: the axis along it, the face's coordinate across it, and which way is out.
+      const sideOf = { front: { along: "x", face: box.zmax, out: 1 }, back: { along: "x", face: box.zmin, out: -1 }, right: { along: "z", face: box.xmax, out: 1 }, left: { along: "z", face: box.xmin, out: -1 } } as const;
+      // The recess seen from its side: its floor at `from` (level, it prints), its inner face `inward` in, its ceiling from
+      // `to` at the outside down at 45 degrees. The hump round it, a wall thicker, slopes at 45 degrees underneath too.
+      const profile = (side: keyof typeof sideOf, wide: number, inward: number, from: number, to: number, under = 0) => {
+        const { along, face, out } = sideOf[side];
+        const length = along === "x" ? box.xmax - box.xmin : box.zmax - box.zmin;
+        const width = Math.min(wide, length - 4);
+        const start = (along === "x" ? middle.x : middle.z) - width / 2;
+        // A point `o` outward of the face (negative: in) at height y, at the start of the width.
+        const at2 = (o: number, y: number) => (along === "x" ? { x: start, y, z: face + out * o } : { x: face + out * o, y, z: start });
+        const points = [at2(1, from - under), at2(-inward, from), at2(-inward, to - inward), at2(0, to), at2(1, to)];
         const edges = points.map((point, index) => cad.makeLineEdge(point, points[(index + 1) % points.length]));
-        return cad.extrude(cad.makeFace(cad.makeWire(edges)), width, 0, 0);
+        return cad.extrude(cad.makeFace(cad.makeWire(edges)), along === "x" ? width : 0, 0, along === "z" ? width : 0);
       };
-      const recess = profile(style.grip, depth, reach);
-      const hump = cad.common(profile(style.grip + 2 * wall, depth + wall, reach + wall * Math.SQRT2), cad.common(original, cad.fuseAll(keep)));
+      const sides = style.gripSides?.length ? style.gripSides : (["front"] as const);
+      const envelope = cad.common(original, cad.fuseAll(keep));
+      const recess = cad.fuseAll(sides.map((side) => profile(side, gripWidth, depth, low, high)));
+      const hump = cad.common(cad.fuseAll(sides.map((side) => profile(side, gripWidth + 2 * wall, depth + wall, at > 0 ? low - wall : low, high + wall * Math.SQRT2, at > 0 ? depth + wall + 1 : 0))), envelope);
       body = cad.cut(cad.fuse(solids[0], hump), recess);
       solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
     }
