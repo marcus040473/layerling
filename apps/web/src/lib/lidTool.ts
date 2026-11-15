@@ -875,6 +875,21 @@ function capWithTopEdge(runtime: ManifoldToplevel, cap: ManifoldSolid, centre: P
 }
 
 /**
+ * Where a latch's pin sits on a lid with a stacking top, which prints upright: high enough over the lid's flare that its
+ * cheeks, round the pin `reach` out from the face, grow out of the face above the flare at 45 degrees. Never lower than
+ * on a lid without one.
+ */
+export function stackLatchPin(measures: Pick<LidLatchMeasures, "reach" | "cheekRadius" | "rim">, top: number, flareHeight: number, thickness: number) {
+  return Math.max(top + thickness - measures.rim, top + flareHeight + measures.reach + measures.cheekRadius * Math.SQRT2 + 0.05);
+}
+
+/** The kinds of lid a stacking top goes with: all but the screw-in lid and the slide-in lid, so far. */
+export const LID_STACK_TOP_TYPES: readonly LidType[] = ["plug", "flat", "cap", "both", "screw", "bayonet"];
+export function lidStackTopFits(options: Pick<LidOptions, "type">) {
+  return LID_STACK_TOP_TYPES.includes(options.type);
+}
+
+/**
  * Whether a flip-top goes with this kind of lid: a cap that stays on while the flap in its plate opens, a screw lid's or
  * a bayonet lid's. A lid that is lifted off has no need of one.
  */
@@ -3093,11 +3108,13 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     // plate over that, and on the plate a rim like the body's round a tray the next box's foot goes into. With a hinge, the
     // lid is as tall as the knuckles need for a 45 degree slope from its back face, so they print without support.
     const stackTop = options.stackTop;
-    if (stackTop && (options.type !== "plug" || !hasOpening || (options.hinge && options.hingeStyle !== "outside"))) return { error: { code: "stackTopType" } };
-    if (stackTop && (options.magnets || options.latches > 0 || options.clickBumps || options.handle !== "none")) return { error: { code: "stackTopExtras" } };
+    if (stackTop && (!lidStackTopFits(options) || !hasOpening || (options.hinge && options.hingeStyle !== "outside"))) return { error: { code: "stackTopType" } };
+    if (stackTop && (options.magnets || options.clickBumps || options.handle !== "none" || options.tether || options.flipTop)) return { error: { code: "stackTopExtras" } };
+    // The tray's rim stands on the cap's top edge, so that stays square.
+    if (stackTop) options.topEdge = "square";
     let flareHeight = 0;
     let lidTop = top + options.thickness;
-    if (stackTop) {
+    if (stackTop && options.type === "plug") {
       const lip = keep(created, opening.offset(-options.gap, "Round", 2, 48));
       if (lip.area() < MIN_OPENING_AREA) return { error: { code: "tooSmall" } };
       // Grown with mitred corners, so a square corner is reached when the sides are, not a wall's width later.
@@ -3105,8 +3122,16 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
         flareHeight += STACK_TOP_STEP;
         if (flareHeight > 30) return { error: { code: "tooSmall" } };
       }
+    }
+    if (stackTop) {
       const plateTop = top + flareHeight + options.thickness;
       lidTop = plateTop + DEFAULT_SHELL_STACK_HEIGHT;
+      if (options.latches > 0) {
+        // The latches' cheeks on the lid grow out of its face at 45 degrees as it prints upright, so its pin sits that
+        // high; the lid is as tall as the cheeks round it.
+        const measures = lidLatchMeasures(options.latchWidth, options.latchGrip);
+        lidTop = Math.max(lidTop, stackLatchPin(measures, top, flareHeight, options.thickness) + measures.cheekRadius);
+      }
       if (options.hinge) {
         const radius = hingeKnuckleRadius(options);
         lidTop = Math.max(lidTop, top + flareHeight + radius + options.hingeGap + radius * Math.SQRT2 + radius + 0.05);
@@ -3189,6 +3214,25 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     }
 
     const prism = (area: CrossSection, low: number, high: number) => keep(created, keep(created, area.extrude(high - low)).translate([0, 0, low]));
+    // A stacking top's foot: `area` from `depth` below the rim up to it, with a small chamfer at the bottom against the
+    // first layer's spreading, in four steps.
+    // A slope at 45 degrees from `low` (at `lowZ`) out to `high` (at `highZ`): the hull of the two where both are convex, so
+    // its faces are true 45 degree faces; otherwise steps of STACK_TOP_STEP, as fine as the slope is steep.
+    const convex = (area: CrossSection) => area.area() > 0 && keep(created, area.hull()).area() - area.area() < 1e-3 * area.area() + 0.01;
+    const slope = (low: CrossSection, lowZ: number, high: CrossSection, highZ: number) => {
+      if (convex(low) && convex(high)) return keep(created, runtime.Manifold.hull([prism(low, lowZ, lowZ + 0.001), prism(high, highZ - 0.001, highZ)]));
+      const pieces: ManifoldSolid[] = [];
+      for (let z = lowZ + STACK_TOP_STEP; z < highZ + 1e-9; z += STACK_TOP_STEP) {
+        pieces.push(prism(keep(created, keep(created, low.offset(z - lowZ, "Miter", 2, 48)).intersect(high)), z - STACK_TOP_STEP, z));
+      }
+      return pieces.length ? keep(created, runtime.Manifold.union(pieces)) : prism(high, lowZ, highZ);
+    };
+    // A stacking top's foot: `area` from `bottom` (`depth` below the rim unless given) up to the rim, with a small chamfer at
+    // the bottom against the first layer's spreading.
+    const stackFoot = (area: CrossSection, bottom = top - options.depth) => {
+      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, (top - bottom) / 4);
+      return keep(created, runtime.Manifold.union([slope(keep(created, area.offset(-chamfer, "Round", 2, 48)), bottom, area, bottom + chamfer), prism(area, bottom + chamfer, top + 0.01)]));
+    };
     const parts: ManifoldSolid[] = [];
     // The rim's inside and outside, for a cap and both.
     const inner = keep(created, outline.offset(options.gap, "Round", 2, 48));
@@ -3241,18 +3285,10 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       slide = { plan, cuts: back(solids.cuts), bumps: solids.bumps };
     } else if (options.type === "flat") {
       parts.push(prism(outline, top, top + options.thickness));
-    } else if (stackTop) {
+    } else if (stackTop && options.type === "plug") {
       const lip = keep(created, opening.offset(-options.gap, "Round", 2, 48));
-      const bottom = top - options.depth;
-      const chamfer = Math.min(SHELL_STACK_FOOT_CHAMFER, options.depth / 4);
-      for (let step = 0; step < 4; step += 1) {
-        const low = bottom + (chamfer * step) / 4;
-        parts.push(prism(keep(created, lip.offset(-chamfer * (1 - (step + 0.5) / 4), "Round", 2, 48)), low, low + chamfer / 4));
-      }
-      parts.push(prism(lip, bottom + chamfer, top));
-      for (let height = STACK_TOP_STEP; height < flareHeight + 1e-9; height += STACK_TOP_STEP) {
-        parts.push(prism(keep(created, keep(created, lip.offset(height, "Miter", 2, 48)).intersect(outline)), top + height - STACK_TOP_STEP, top + height));
-      }
+      parts.push(stackFoot(lip));
+      parts.push(slope(lip, top, outline, top + flareHeight));
       parts.push(prism(outline, top + flareHeight, top + flareHeight + options.thickness));
       parts.push(prism(keep(created, outline.subtract(opening)), top + flareHeight + options.thickness - 0.01, lidTop));
     } else {
@@ -3277,6 +3313,27 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       tether = { plan, bead: solids.bead, part: solids.part };
     }
     let made = parts.length === 1 ? parts[0] : keep(created, runtime.Manifold.union(parts));
+    // A stacking top on any other lid that prints upright: a solid foot in the opening under a cap (so its plate does not
+    // hang over the opening as it prints; only the groove over the body's wall is bridged), and on the plate a rim round
+    // a tray as large as the opening, the lid's own top outline outside.
+    if (stackTop && options.type !== "plug") {
+      const plateTop = top + options.thickness;
+      if (options.type !== "flat") {
+        // Down to the lid's lowest point, a cap's rim's (a screw cap's reaches as far as its thread): the foot and the rim
+        // both stand on the plate as the lid prints upright, nothing over thin air.
+        const footBottom = Math.min(top - options.depth, made.boundingBox().min[2]);
+        // As deep as the opening stays as wide: cut at the foot's bottom too.
+        const cutLow = keep(created, up.slice(footBottom + 0.01));
+        const lower = keep(created, filled(runtime, cutLow, created).subtract(cutLow));
+        const low = lower.area() >= MIN_OPENING_AREA ? lower : null;
+        const area = keep(created, opening.offset(-options.gap, "Round", 2, 48));
+        const foot = low ? keep(created, area.intersect(keep(created, low.offset(-options.gap, "Round", 2, 48)))) : area;
+        if (foot.area() < MIN_OPENING_AREA) return { error: { code: "tooSmall" } };
+        made = keep(created, made.add(stackFoot(foot, footBottom)));
+      }
+      const own = filled(runtime, keep(created, made.slice(plateTop - 0.05)), created);
+      made = keep(created, made.add(prism(keep(created, own.subtract(opening)), plateTop - 0.01, lidTop)));
+    }
     // A flip-top: the opening and the flap's room cut out of the cap's plate, the flap and its hinge put in.
     let flipTop: FlipTopPlan | null = null;
     const capPlan = screw?.plan ?? bayonet?.plan;
@@ -3437,8 +3494,12 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       const stripTop = Math.min(plan.axisZ, top - options.hingeGap);
       // As tall as the lid: its plate's, or with a stacking top up to the tray's rim.
       const lidThickness = lidTop - top;
-      // With a stacking top the axis is above the rim, so the body's strip reaches down from just below it.
-      const stripLow = Math.min(plan.low, stripTop - 1);
+      // With a stacking top the axis is high over the rim: the body's knuckles are then grown out of the back wall as far
+      // below the rim as twice the axis is above it, so each stands on the wall with a broad, strong root (a strip just under
+      // the rim left the arm over the rim about a millimetre thick, which breaks off).
+      const stripLow = stackTop
+        ? Math.max(box.min[2] + 0.4, Math.min(plan.low, top - 2 * (plan.axisZ - top)))
+        : Math.min(plan.low, stripTop - 1);
       // On a round side the wall falls away from the hinge's line: the lid's web reaches in to its plate's edge, and
       // under each of the body's knuckles a block reaches in to the wall, its underside on the same 45 degree slope.
       const webReach = plan.curved ? plan.reach : 0.3;
@@ -3486,9 +3547,12 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     let latchMeasures: LidLatchMeasures | null = null;
     let latchCount = 0;
     if (options.latches > 0) {
-      const measures = lidLatchMeasures(options.latchWidth, options.latchGrip);
-      const lidPin = top + options.thickness - measures.rim;
-      const bodyPin = lidPin - measures.spacing;
+      const standard = lidLatchMeasures(options.latchWidth, options.latchGrip);
+      // The body's pin stays where it always is; with a stacking top the lid's is higher (see stackLatchPin) and the clip
+      // that much longer.
+      const bodyPin = top + options.thickness - standard.rim - standard.spacing;
+      const lidPin = stackTop ? stackLatchPin(standard, top, flareHeight, options.thickness) : top + options.thickness - standard.rim;
+      const measures = { ...standard, spacing: lidPin - bodyPin };
       const lowest = bodyPin - measures.rim - measures.tab;
       if (lowest < box.min[2]) return { error: { code: "latchBodyLow", height: Math.ceil((top - lowest) * 2) / 2 } };
       const embed = 0.4;
@@ -3518,13 +3582,22 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
               at(along, -embed, bodyPin - measures.reach - embed - measures.cheekRadius * Math.SQRT2),
             ]))));
             // The lid's cheek: a nose in the plate's layer out to the cheek's outside, and the cheek hanging from it.
-            const nose = keep(created, keep(created, runtime.Manifold.cube([measures.cheek, measures.reach + measures.cheekRadius + 1, options.thickness])).translate([Math.min(...ends), places.front - measures.reach - measures.cheekRadius, top]));
-            const hanging = keep(created, runtime.Manifold.hull(ends.flatMap((along) => [
-              ...disc(along, lidPin, measures.cheekRadius),
-              at(along, measures.reach - measures.cheekRadius, top + options.thickness),
-              at(along, measures.reach + measures.cheekRadius, top + options.thickness),
-            ])));
-            sideLid.push(nose, hanging);
+            if (stackTop) {
+              // Printed upright: the cheek grows out of the lid's face above its flare on a 45 degree slope.
+              sideLid.push(keep(created, runtime.Manifold.hull(ends.flatMap((along) => [
+                ...disc(along, lidPin, measures.cheekRadius),
+                at(along, -embed, top + flareHeight),
+                at(along, -embed, lidTop),
+              ]))));
+            } else {
+              const nose = keep(created, keep(created, runtime.Manifold.cube([measures.cheek, measures.reach + measures.cheekRadius + 1, options.thickness])).translate([Math.min(...ends), places.front - measures.reach - measures.cheekRadius, top]));
+              const hanging = keep(created, runtime.Manifold.hull(ends.flatMap((along) => [
+                ...disc(along, lidPin, measures.cheekRadius),
+                at(along, measures.reach - measures.cheekRadius, top + options.thickness),
+                at(along, measures.reach + measures.cheekRadius, top + options.thickness),
+              ])));
+              sideLid.push(nose, hanging);
+            }
           }
           const pinEnds = [middle - inside - measures.cheek / 2, middle + inside + measures.cheek / 2];
           sideBody.push(keep(created, runtime.Manifold.hull(pinEnds.flatMap((along) => disc(along, bodyPin, measures.pin)))));

@@ -559,6 +559,7 @@ export type CadModifierWorkerRequest =
       shellEdges?: ShellEdges;
       // Only for "shell" with the top open: the collar round the top and the groove under the wall, this high (mm).
       shellStack?: number;
+      shellStackFoot?: { hollow?: boolean; grip?: number; gripDepth?: number };
       // Only for "shell" with the top open: a Gridfinity floor with at most this many cells, the walls fitted to them, and dividers.
       shellGrid?: { cells: number; fit?: boolean };
       shellDividers?: { x: number; z: number };

@@ -30,7 +30,7 @@ import { limitedText } from "@/lib/textLength";
 import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textKerningPatch, textLetterSize, textLetterSizePatch, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
 import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, isIconLayerBody, normalizeIconTagCount } from "@/lib/iconTag";
 import { automaticFlexiJoints, automaticFoldJoints, DEFAULT_FLEXI_FOLD, FLEXI_DEFAULTS, normalizeFlexiOptions, type FlexiOptions } from "@/lib/flexiJoints";
-import { LID_HINGE_TYPES, groupedWithMagnets, lidClickBumpsFit, lidDefaults, lidFlipTopFits, lidHandleFits, lidLatchesFit, lidNeckFit, lidNeckFitPatch, lidStandardThread, lidTakesMagnets, lidTetherFits, lidTopEdgeFits, magnetPocketDepth, normalizeLidOptions, type LidOptions, type LidThreadStandard } from "@/lib/lidTool";
+import { LID_HINGE_TYPES, groupedWithMagnets, lidClickBumpsFit, lidStackTopFits, lidDefaults, lidFlipTopFits, lidHandleFits, lidLatchesFit, lidNeckFit, lidNeckFitPatch, lidStandardThread, lidTakesMagnets, lidTetherFits, lidTopEdgeFits, magnetPocketDepth, normalizeLidOptions, type LidOptions, type LidThreadStandard } from "@/lib/lidTool";
 import { FIT_TEST_CLEARANCES, getPrinterPlay, MAX_PRINTER_PLAY, MIN_PRINTER_PLAY, normalizePrinterPlay, PRINTER_PLAY_SETTINGS, printerPlayPrinter, printerPlaySource, printerPlayStart, setPrinterPlay, setPrinterPlayPrinter, withPrinterPlay } from "@/lib/printerPlay";
 import { FIT_TEST_PIN_DIAMETER, fitTestHoles, fitTestShape, fitTestSpot } from "@/lib/fitTest";
 import { fitTestPinBaseChosen } from "@/lib/breakawayBase";
@@ -114,9 +114,9 @@ import { MODEL_SCALE_RATIO_MAX, MODEL_SCALE_RATIO_MIN, modelScalePercent, type M
 import { isSameSize, resizedCopy, SAME_SIZE, shapeSize, sizeFactorsBetween, type ShapeSize, type SizeFactors } from "@/lib/duplicateResize";
 import { canToggleGroupColors, colorForParts, groupShowsPartColors } from "@/lib/groupColors";
 import { disposeBoundsTree } from "three-mesh-bvh";
-import { clampShellStackHeight, shellStackFloor } from "@/lib/shellStackLimits";
+import { clampShellStackHeight, normalizeShellStackFoot, shellStackFloor, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
-import { magnetsMeetGridCells } from "@/lib/shellGridMagnets";
+import { magnetsGridLeastSize, magnetsMeetGridCells } from "@/lib/shellGridMagnets";
 import { SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import { arrayCirclePivot, arrayFitGap, arrayFitShift, arrayFollowingPivot, arrayGridSize, arrayGroupsCopies, arrayWithFit, circleStepDegrees, clampArrayCount, gridOffsets, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing, type ArraySettings } from "@/lib/shapeArray";
@@ -3681,7 +3681,7 @@ export function LayerlingEditor({
   }, [sketchSelection, sketchTool, sketchActive]);
   const [edgeModifier, setEdgeModifier] = useState<EdgeModifierSession | null>(null);
   // `mode: "offset"` is the Offset tool (#919), which shares the hollow tool's state: `thickness` is then the distance.
-  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; gridCells?: number; gridFit?: boolean; gridColumns?: number; gridRows?: number; dividers?: { x: number; z: number } | null; busy: boolean; error: string | null } | null>(null);
+  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; stackFoot?: ShellStackFoot | null; gridCells?: number; gridFit?: boolean; gridColumns?: number; gridRows?: number; dividers?: { x: number; z: number } | null; busy: boolean; error: string | null } | null>(null);
   /** Cut out (#927): `partId` stays, a copy of it grown by `clearance` is cut out of `hostId`. */
   const [cutOutTool, setCutOutTool] = useState<{ partId: string; hostId: string; clearance: number; busy: boolean; error: string | null } | null>(null);
   const [punchTool, setPunchTool] = useState<{ punchId: string; targetId: string; axis: SectionPlaneAxis; clearance: number; busy: boolean; error: string | null } | null>(null);
@@ -5472,7 +5472,7 @@ export function LayerlingEditor({
     );
     const feature = entry.feature;
     if (feature.kind === "shell") {
-      setShellTool({ thickness: feature.amount, openings: feature.openings ?? "top", edges: feature.shellEdges ?? "round", ...(feature.shellStack ? { stack: feature.shellStack } : {}), ...(feature.shellGrid ? { gridCells: feature.shellGrid.cells, gridFit: feature.shellGrid.fit === true } : {}), ...(feature.shellDividers ? { dividers: feature.shellDividers } : {}), busy: false, error: null });
+      setShellTool({ thickness: feature.amount, openings: feature.openings ?? "top", edges: feature.shellEdges ?? "round", ...(feature.shellStack ? { stack: feature.shellStack } : {}), ...(feature.shellStackFoot ? { stackFoot: feature.shellStackFoot } : {}), ...(feature.shellGrid ? { gridCells: feature.shellGrid.cells, gridFit: feature.shellGrid.fit === true } : {}), ...(feature.shellDividers ? { dividers: feature.shellDividers } : {}), busy: false, error: null });
     } else if (feature.kind === "offset") {
       setShellTool({ mode: "offset", thickness: feature.amount, shrink: feature.offsetShrink === true, sideways: feature.offsetSideways === true, keepCopy: false, openings: "none", edges: feature.shellEdges ?? "round", busy: false, error: null });
     } else if (feature.kind !== "surfaceTexture") {
@@ -8408,8 +8408,9 @@ export function LayerlingEditor({
    */
   // `watched` is the body in the scene the result replaces; it is the shape
   // itself, except when a resized hollow body is hollowed again from its state before.
-  const shellShape = useCallback(async (shape: WorkplaneShape, thickness: number, openings: ShellOpenings, edges: ShellEdges = "round", watched: WorkplaneShape = shape, offset?: { shrink: boolean; sideways?: boolean }, extras: { stack?: number; grid?: ShellGrid | null; dividers?: ShellDividers | null } = {}) => {
+  const shellShape = useCallback(async (shape: WorkplaneShape, thickness: number, openings: ShellOpenings, edges: ShellEdges = "round", watched: WorkplaneShape = shape, offset?: { shrink: boolean; sideways?: boolean }, extras: { stack?: number; stackFoot?: ShellStackFoot | null; grid?: ShellGrid | null; dividers?: ShellDividers | null } = {}) => {
     const stack = extras.stack ?? 0;
+    const stackFoot = stack > 0 && !offset ? normalizeShellStackFoot(extras.stackFoot) : null;
     const grid = offset ? null : extras.grid ?? null;
     const dividers = offset ? null : extras.dividers ?? null;
     if (bodyLocked(shape) || isNonSolidShape(shape)) {
@@ -8429,6 +8430,7 @@ export function LayerlingEditor({
       shellOpenings: openings,
       shellEdges: edges,
       ...(stack > 0 && !offset ? { shellStack: stack } : {}),
+      ...(stackFoot ? { shellStackFoot: stackFoot } : {}),
       ...(grid ? { shellGrid: grid } : {}),
       ...(dividers ? { shellDividers: dividers } : {}),
       ...(offset ? { offsetShrink: offset.shrink } : {}),
@@ -8447,7 +8449,7 @@ export function LayerlingEditor({
       cadDisplayEdges: cadDisplayEdgesForShape(rawPreview, previewResponse.displayEdges),
       cadDisplayEdgesVersion: 2 as const,
     });
-    const feature = { kind: offset ? "offset" as const : "shell" as const, amount: thickness, edgeCount: 0, openings, ...(edges === "sharp" ? { shellEdges: edges } : {}), ...(stack > 0 && !offset ? { shellStack: stack } : {}), ...(grid ? { shellGrid: grid } : {}), ...(dividers ? { shellDividers: dividers } : {}), ...(offset?.shrink ? { offsetShrink: true } : {}), ...(offset?.sideways ? { offsetSideways: true } : {}) } satisfies NonNullable<WorkplaneShape["edgeTreatments"]>[number];
+    const feature = { kind: offset ? "offset" as const : "shell" as const, amount: thickness, edgeCount: 0, openings, ...(edges === "sharp" ? { shellEdges: edges } : {}), ...(stack > 0 && !offset ? { shellStack: stack } : {}), ...(stackFoot ? { shellStackFoot: stackFoot } : {}), ...(grid ? { shellGrid: grid } : {}), ...(dividers ? { shellDividers: dividers } : {}), ...(offset?.shrink ? { offsetShrink: true } : {}), ...(offset?.sideways ? { offsetSideways: true } : {}) } satisfies NonNullable<WorkplaneShape["edgeTreatments"]>[number];
     const session: EdgeModifierSession = {
       kind: offset ? "offset" : "shell",
       edges: response.edges,
@@ -8655,6 +8657,7 @@ export function LayerlingEditor({
         openings: hollow.openings ?? "top",
         edges: hollow.shellEdges ?? "round",
         ...(hollow.shellStack ? { stack: hollow.shellStack } : {}),
+        ...(hollow.shellStackFoot ? { stackFoot: hollow.shellStackFoot } : {}),
         ...(hollow.shellGrid ? { gridCells: hollow.shellGrid.cells, gridFit: hollow.shellGrid.fit === true } : {}),
         ...(hollow.shellDividers ? { dividers: hollow.shellDividers } : {}),
         busy: false,
@@ -8944,8 +8947,8 @@ export function LayerlingEditor({
    */
   const exactLid = useCallback(async (targets: readonly WorkplaneShape[], options: LidOptions, meshLid: WorkplaneShape, magnets?: { posts: WorkplaneShape[]; pockets: WorkplaneShape[] }): Promise<WorkplaneShape | null> => {
     // A hinged lid stays the mesh lid for now: the exact one has no knuckles, nor click bumps or a pull tab; nor a thread,
-    // screwed on or in, a bayonet's slots or a slide-in lid's tongues.
-    if (targets.length !== 1 || targets[0].hole || magnets?.posts.length || options.hinge || options.latches > 0 || options.clickBumps || options.handle === "tab" || options.type === "screw" || options.type === "screwIn" || options.type === "bayonet" || options.type === "slide") return null;
+    // screwed on or in, a bayonet's slots or a slide-in lid's tongues; nor a stacking top's foot and tray.
+    if (targets.length !== 1 || targets[0].hole || magnets?.posts.length || options.stackTop || options.hinge || options.latches > 0 || options.clickBumps || options.handle === "tab" || options.type === "screw" || options.type === "screwIn" || options.type === "bayonet" || options.type === "slide") return null;
     const pocketDepth = magnetPocketDepth(options);
     const request: CadLidRequest = {
       type: options.type,
@@ -8984,6 +8987,9 @@ export function LayerlingEditor({
     };
     const targets = (only ?? selectedShapes).filter((shape) => !isNonSolidShape(shape));
     if (!targets.some((shape) => !shape.hole)) return fail(t("lid.error.needsBody"));
+    // A body that has a hinge from an earlier lid: its knuckles stand over the rim, so no level rim is found under them.
+    const hingedBefore = (shape: WorkplaneShape): boolean => (shape.groupedShapes ?? []).some((part) => /-hinge-[^/]*$/.test(part.id) && !/-hinge-(pin|cuts|plugs)-/.test(part.id) || hingedBefore(part));
+    if (targets.some(hingedBefore)) return fail(t("lid.error.hingeAlready"));
     // What is not given starts from the printer's play where it follows it, as the panel does.
     const options = normalizeLidOptions(given, lidDefaults(getPrinterPlay()));
     // The pockets, the hinge's knuckles, the click bumps' dimples, a finger notch, a screw lid's thread (outside or in the
@@ -8999,7 +9005,15 @@ export function LayerlingEditor({
     if (!result.lid) return fail(result.error);
     if (changed()) return fail(t("lid.error.changed"));
     // Magnets in the corners of a box with a Gridfinity floor must stay clear of its cells: the box is made larger or has fewer.
-    if (options.magnets && result.magnets && targets.some((shape) => !shape.hole && magnetsMeetGridCells(shape, result.magnets!, shapeWidth(shape), shapeDepth(shape)))) return fail(t("lid.error.magnetsGrid"));
+    const crowded = options.magnets && result.magnets ? targets.find((shape) => !shape.hole && magnetsMeetGridCells(shape, result.magnets!, shapeWidth(shape), shapeDepth(shape))) : undefined;
+    if (crowded && result.magnets) {
+      // The smallest box that holds the same cells with these magnets, so the message says how large to make it.
+      const least = magnetsGridLeastSize(crowded, result.magnets, shapeWidth(crowded), shapeDepth(crowded));
+      const mm = (value: number) => value.toLocaleString(numberLocale(), { maximumFractionDigits: 1 });
+      return fail(least
+        ? t("lid.error.magnetsGridSize", { columns: least.columns, rows: least.rows, width: mm(least.width), depth: mm(least.depth) })
+        : t("lid.error.magnetsGrid"));
+    }
     const lid = (await exactLid(targets, options, result.lid, result.magnets)) ?? result.lid;
     if (changed()) return fail(t("lid.error.changed"));
     const type = t(`lid.type.${options.type}`);
@@ -9154,8 +9168,8 @@ export function LayerlingEditor({
       topEdge: lidTopEdgeFits(lidTool) ? topEdge : "square", topEdgeSize, slideSide, slideFrame,
       // Latches only where the panel shows them: a plug or flat lid lying on the rim.
       latches: lidLatchesFit(lidTool) && !(hinge && hingeStyle === "pivot") ? latches : 0, latchBack: latchBack && !hinge, latchWidth, latchGrip,
-      // A stacking top only where the panel shows it: a plug lid.
-      stackTop: stackTop && type === "plug",
+      // A stacking top only where the panel shows it.
+      stackTop: stackTop && lidStackTopFits(lidTool),
     }, targets).then((result) => {
       if (result.ok) setLidTool(null);
       else setLidTool((current) => current ? { ...current, busy: false, error: result.message } : current);
@@ -9302,7 +9316,7 @@ export function LayerlingEditor({
           : { state: "idle" };
 
   // Hollowing again with new settings (defined further down, as it builds on the rebuild after a resize).
-  const rehollowRef = useRef<((stale: WorkplaneShape, watched: WorkplaneShape, replace: { amount: number; openings: ShellOpenings; edges: ShellEdges; extras: { stack?: number; grid?: ShellGrid | null; dividers?: ShellDividers | null } }) => Promise<WorkplaneShape | null>) | null>(null);
+  const rehollowRef = useRef<((stale: WorkplaneShape, watched: WorkplaneShape, replace: { amount: number; openings: ShellOpenings; edges: ShellEdges; extras: { stack?: number; stackFoot?: ShellStackFoot | null; grid?: ShellGrid | null; dividers?: ShellDividers | null } }) => Promise<WorkplaneShape | null>) | null>(null);
   const applyShellTool = useCallback(() => {
     if (!shellTool || shellTool.busy) return;
     const target = selectedShape;
@@ -9337,7 +9351,7 @@ export function LayerlingEditor({
         });
       return;
     }
-    const extras = { stack, grid, dividers };
+    const extras = { stack, stackFoot: normalizeShellStackFoot(shellTool.stackFoot), grid, dividers };
     // The cells asked for as a number across and a number along: the body is made as large as holds exactly them (the wall
     // each side and the play the drawer fit leaves), and the floor takes every cell that fits.
     const columns = Math.round(shellTool.gridColumns ?? 0), rows = Math.round(shellTool.gridRows ?? 0);
@@ -9461,7 +9475,7 @@ export function LayerlingEditor({
    * body in the scene the result replaces: the stale body itself, or the body before "Fit the body to the neck" resized
    * it (issue #1482). Null when its state before cannot be brought to that size.
    */
-  const rehollowedShape = useCallback(async (stale: WorkplaneShape, watched: WorkplaneShape = stale, replace?: { amount: number; openings: ShellOpenings; edges: ShellEdges; extras: { stack?: number; grid?: ShellGrid | null; dividers?: ShellDividers | null } }): Promise<WorkplaneShape | null> => {
+  const rehollowedShape = useCallback(async (stale: WorkplaneShape, watched: WorkplaneShape = stale, replace?: { amount: number; openings: ShellOpenings; edges: ShellEdges; extras: { stack?: number; stackFoot?: ShellStackFoot | null; grid?: ShellGrid | null; dividers?: ShellDividers | null } }): Promise<WorkplaneShape | null> => {
     // With `replace` the hollowing the body already has is done again with new settings, from the state before it (a body
     // hollowed once more from its hollow walls fails with walls too thick).
     const entry = replace ? shellRebuildEntry(stale) : shellNeedingRebuild(stale);
@@ -9480,7 +9494,7 @@ export function LayerlingEditor({
     if (Math.abs(shapeWidth(before) - width) > 0.05 || Math.abs(shapeDepth(before) - depth) > 0.05) return null;
     // Fillets and chamfers laid after the hollowing go on again, on the same edges of the fresh walls.
     const after = edgeTreatmentsAfterShell(stale) ?? [];
-    let rebuilt = await shellShape(before, amount, openings ?? "none", shellEdges ?? "round", watched, undefined, replace ? replace.extras : { stack: entry.feature.shellStack ?? 0, grid: normalizeShellGrid(entry.feature.shellGrid), dividers: normalizeShellDividers(entry.feature.shellDividers) });
+    let rebuilt = await shellShape(before, amount, openings ?? "none", shellEdges ?? "round", watched, undefined, replace ? replace.extras : { stack: entry.feature.shellStack ?? 0, stackFoot: entry.feature.shellStackFoot ?? null, grid: normalizeShellGrid(entry.feature.shellGrid), dividers: normalizeShellDividers(entry.feature.shellDividers) });
     for (const later of after) {
       try {
         rebuilt = await relaidEdgeTreatment(rebuilt, later);
@@ -15920,13 +15934,14 @@ export function LayerlingEditor({
         const stack = typeof params.stack === "number" && params.stack > 0 ? clampShellStackHeight(params.stack) : 0;
         const grid = normalizeShellGrid({ cells: params.gridCells, fit: params.gridFit === true });
         const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ });
-        const modifiedShape = await shellShape(target, thickness, openings, edges, target, undefined, { stack, grid, dividers });
+        const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth, gripSides: params.stackGripSides, gripHeight: params.stackGripHeight, gripAt: params.stackGripAt }) : null;
+        const modifiedShape = await shellShape(target, thickness, openings, edges, target, undefined, { stack, stackFoot, grid, dividers });
         commitShapes(
           shapesRef.current.map((candidate) => candidate.id === target.id ? modifiedShape : candidate),
           modifiedShape.id,
           t("status.shelledMcp", { size: Number(thickness.toFixed(2)) }),
         );
-        return { object: mcpShapeSummary(modifiedShape), thickness, openings, edges, ...(stack > 0 ? { stack } : {}), ...(grid ? { gridCells: grid.cells, gridFit: grid.fit } : {}), ...(dividers ? { dividersX: dividers.x, dividersZ: dividers.z } : {}) };
+        return { object: mcpShapeSummary(modifiedShape), thickness, openings, edges, ...(stack > 0 ? { stack } : {}), ...(stackFoot?.hollow ? { stackHollow: true } : {}), ...(stackFoot?.grip ? { stackGrip: stackFoot.grip, stackGripDepth: stackFoot.gripDepth, stackGripSides: stackFoot.gripSides, ...(stackFoot.gripHeight !== undefined ? { stackGripHeight: stackFoot.gripHeight } : {}), ...(stackFoot.gripAt ? { stackGripAt: stackFoot.gripAt } : {}) } : {}), ...(grid ? { gridCells: grid.cells, gridFit: grid.fit } : {}), ...(dividers ? { dividersX: dividers.x, dividersZ: dividers.z } : {}) };
       }
 
       if (command.action === "offset_object") {
@@ -20162,6 +20177,8 @@ export function LayerlingEditor({
           stack={shellTool.stack ?? 0}
           stackOffered={shellOpenSides(shellTool.openings).length === 1 && shellOpenSides(shellTool.openings)[0] === "top"}
           onStackChange={(value) => setShellTool((current) => current ? { ...current, stack: value, error: null } : current)}
+          stackFoot={shellTool.stackFoot ?? null}
+          onStackFootChange={(value) => setShellTool((current) => current ? { ...current, stackFoot: value, error: null } : current)}
           onStackLid={makeStackLid}
           edges={shellTool.edges}
           onEdgesChange={(value) => setShellTool((current) => current ? { ...current, edges: value, error: null } : current)}

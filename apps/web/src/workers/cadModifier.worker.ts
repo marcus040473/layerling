@@ -8,6 +8,7 @@ import { innerCornerEdges, treatAfterInnerCorners } from "@/lib/cadInnerCorners"
 import { OcctKernel, type OcctModuleFactory, type ShapeHandle } from "occt-wasm";
 import { assertCadKernelRunnable } from "@/lib/wasmSupport";
 import { STACK_NEEDS_TOP_MESSAGE, shellStackFloor, shellStackSolid } from "@/lib/cadShellStack";
+import { normalizeShellStackFoot } from "@/lib/shellStackLimits";
 import { GRIDFINITY_FLOOR } from "@/lib/gridfinityGeometry";
 import { shellDividersSolid, shellGridSolid } from "@/lib/cadShellGrid";
 import { DIVIDERS_NEEDS_TOP_MESSAGE, GRID_NEEDS_TOP_MESSAGE, SHELL_GRID_FLOOR, normalizeShellDividers, normalizeShellGrid } from "@/lib/shellGridLimits";
@@ -1373,10 +1374,14 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
         const bottom = activeCad.getBoundingBox(component).ymin;
         let floorTop: number | null = null;
         if (stack) {
-          const stacked = shellStackSolid(activeCad, component, stack, request.amount, solid);
+          // A Gridfinity floor stands on a solid foot: hollow is left out with it.
+          const foot = normalizeShellStackFoot(request.shellStackFoot);
+          const footStyle = foot && grid ? { ...foot, hollow: false } : foot;
+          const stacked = shellStackSolid(activeCad, component, stack, request.amount, solid, footStyle);
           activeCad.release(component);
           component = stacked;
-          floorTop = bottom + shellStackFloor(stack, request.amount);
+          // A hollow foot's floor lies on the plate, a wall thick.
+          floorTop = footStyle?.hollow ? bottom + request.amount : bottom + shellStackFloor(stack, request.amount);
         }
         if (grid) {
           // On a stacking floor the sockets start where that floor ends.
