@@ -127,7 +127,7 @@ describe("the print check's window", () => {
     const { panel, calls } = mount();
     const hint = panel.querySelector<HTMLElement>(".print-check-export")!;
     expect(hint.textContent).toContain("Export");
-    click(hint.querySelector("button"));
+    click(hint.querySelector(".print-check-show"));
     expect(calls).toEqual(["export"]);
   });
 
