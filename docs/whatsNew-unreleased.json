@@ -11,51 +11,5 @@
     "guide": {
       "section": "hollowing"
     }
-  },
-  {
-    "title": {
-      "de": "Stapelbare Boxen",
-      "en": "Stackable boxes"
-    },
-    "body": {
-      "de": "Beim Aushöhlen einer Box mit offener Oberseite gibt es jetzt den Schalter „Stapelbar“. Die äußere Hälfte der Wand ragt als Kragen über den Rand, und unter der Wand sitzt eine Nut, die den Kragen der Box darunter aufnimmt. So steht eine Box rutschfest auf der nächsten.\n\n– Die Höhe des Kragens stellst du selbst ein (3 mm am Anfang).\n– Boden und Unterseite bleiben flach: Die Box wird weiter auf dem Boden stehend gedruckt.\n– Es braucht gerade Wände und eine Wand von mindestens 1,2 mm.",
-      "en": "When you hollow a box with its top open there is now a Stackable switch. The outer half of the wall rises above the rim as a collar, and under the wall sits a groove that takes the collar of the box below. One box then stands on the next without sliding.\n\n– You set the height of the collar yourself (3 mm to begin with).\n– The floor and the bottom stay flat: the box still prints standing on its floor.\n– It needs straight walls and a wall of at least 1.2 mm."
-    },
-    "guide": {
-      "section": "hollowing"
-    }
-  },
-  {
-    "title": {
-      "de": "Deckel mit Klipp-Verschlüssen",
-      "en": "Lid with clip latches"
-    },
-    "body": {
-      "de": "Im Deckel-Fenster gibt es neu „Latches“ (0 bis 4): Klipp-Verschlüsse wie bei einem Kamera-Akkufach. Der Körper bekommt dafür unter dem Rand je einen Zapfen zwischen zwei Wangen, der Deckel ebenso. Ein Klipp mit zwei C-förmigen Pfannen rastet auf beide Zapfen, bleibt am Deckel hängen und löst sich mit einem Zug am Griff.\n\nDie Klipps liegen als eigener Körper vor dem Deckel, auf der Seite, wie sie gedruckt werden, und die Wangen sind unten schräg, damit nichts Stützen braucht. Die Klippbreite (6 bis 30 mm) und der Sitz der Pfannen (Clip grip, 0,3 mm) sind einstellbar. Mit Scharnier sitzen die Verschlüsse auf der gegenüberliegenden Seite, ohne Scharnier auf Wunsch auch hinten. Es geht für den eingesetzten und den flachen Deckel auf dem Rand, nicht zusammen mit einem Griff. Gedruckt ist er noch nicht, der Sitz kann sich also noch ändern.",
-      "en": "The Lid panel has new Latches (0 to 4): clip latches like those on a camera battery box. The body gets a pin between two cheeks below its rim for each one, and the lid gets the same. A clip with two C-shaped sockets snaps over both pins, stays hanging on the lid and comes off with a pull at its tab.\n\nThe clips lie in front of the lid as a body of their own, on their side as they print, and the cheeks slope underneath so nothing needs support. Clip width (6 to 30 mm) and the fit of the sockets (Clip grip, 0.3 mm) can be set. With a hinge the latches sit on the opposite side, without one they can also go on the back. It works for the push-in and the flat lid lying on the rim, not together with a handle. It has not been printed yet, so the fit may still change."
-    },
-    "guide": {
-      "section": "lid"
-    }
-  },
-  {
-    "title": {
-      "de": "Textur auf dem Bauch einer gedrehten Vase",
-      "en": "Texture on the belly of a turned vase"
-    },
-    "body": {
-      "de": "Eine aus einer Skizze gedrehte Vase hat auf dem Bauch Punktreihen, die nur wenige Tausendstel Millimeter auseinanderliegen. Die Oberflächentextur hielt sie für scharfe Kanten, und die Rillen wurden auf dem Bauch zu kurzen waagerechten Strichen, während der Hals sauber blieb. Jetzt werden solche Punkte zusammengefasst: Die Rillen laufen vom Hals über den ganzen Bauch, und beim Anklicken von Flächen bricht die Suche nicht mehr mit einem Fehler ab.",
-      "en": "A vase turned from a sketch has rows of points on its belly that lie only a few thousandths of a millimetre apart. The surface texture took them for sharp edges, and on the belly the grooves came out as short horizontal dashes while the neck stayed clean. Now such points are joined: the grooves run from the neck over the whole belly, and picking faces no longer stops with an error."
-    }
-  },
-  {
-    "title": {
-      "de": "Text um einen Körper mit Seiten ohne Streifen",
-      "en": "Text round a body with sides without streaks"
-    },
-    "body": {
-      "de": "Lag ein breiter Text um einen Körper mit Seiten, etwa eine Platte mit 21 Seiten, wurden die Dreiecke der hinteren Seiten vor dem Schneiden nicht fein genug unterteilt, und die Buchstaben liefen dort als Streifen darüber. Jetzt werden die Seiten so fein unterteilt wie die Mitte, und der Text liest sich überall sauber.",
-      "en": "When a wide text lay round a body with sides, such as a plate with 21 sides, the triangles of the far sides were not split fine enough before the letters were cut, and the letters ran across them as streaks. Now the sides are split as fine as the middle, and the text reads cleanly everywhere."
-    }
   }
 ]

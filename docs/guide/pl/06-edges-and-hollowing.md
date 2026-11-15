@@ -82,6 +82,8 @@ Gdy góra jest jedyną otwartą stroną, {{ui:shell.stack}} sprawia, że pudełk
 
 Gdy góra jest jedyną otwartą stroną, {{ui:shell.grid}} wkłada do dna płytę bazową Gridfinity: dno ma wtedy 6,2 mm grubości, a dla każdego całego pola 42 mm, które mieści wnętrze, wycina się gniazdo. {{ui:shell.gridCells}} ustala, ile ich najwyżej; suwak kończy się na liczbie, która się mieści, a przy mniejszej pola leżą jak najbliżej środka. {{ui:shell.gridFit}} pogrubia ścianki, tak że wnętrze to dokładnie pola z luzem 0,5 mm: pudełko mieści wtedy pojemniki Gridfinity, a gdy powiększysz bryłę, rośnie też liczba gniazd. {{ui:shell.dividers}} stoją na dnie między ściankami, {{ui:shell.dividersAcross}} i {{ui:shell.dividersAlong}} po maksymalnie 8, równomiernie rozmieszczone i grubości 1,2 mm. Dno potrzebuje 6,2 mm, a wnętrze 3 mm nad nim, więc bryła musi mieć co najmniej 9,2 mm wysokości.
 
+Gdy jedyną otwartą stroną jest góra, {{ui:shell.shelf}} układa dookoła wnętrza ściany występ, na którym może spoczywać płyta, na przykład półka albo podwójne dno w pudełku ({{ui:shell.shelfWidth}}, na początku 1,5 mm, od 0,5 do 5 mm). {{ui:shell.shelfHeight}} mierzy się od wnętrza dna do górnej powierzchni występu (na początku 20 mm). Występ ma 2 mm grubości i podąża za kształtem wnętrza, także przy zaokrąglonych narożnikach i okrągłych pudełkach. Wymaga pionowych ścian i bryły wyraźnie wyższej niż wysokość występu; przy włączonym {{ui:shell.stack}} kołnierz powstaje wokół niego. Jeśli się nie da, okno narzędzia podaje powód.
+
 ![Wynik: skorupa ze ścianką 3 mm, otwarta u góry.](shot:hollow-result)
 
 ![To samo pudełko z otwartym tylko przodem: wnęka na szufladę.](shot:hollow-sides)

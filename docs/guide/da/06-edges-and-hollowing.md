@@ -82,6 +82,8 @@ Når toppen er den eneste åbne side, gør {{ui:shell.stack}} æsken stabelbar: 
 
 Når toppen er den eneste åbne side, lægger {{ui:shell.grid}} en Gridfinity-grundplade i bunden: bunden bliver 6,2 mm tyk, og der skæres en fordybning til hvert helt felt på 42 mm, som indersiden rummer. {{ui:shell.gridCells}} sætter, hvor mange der højst er; skyderen ender ved det antal, der kan være i, og med færre ligger felterne nærmest midten. {{ui:shell.gridFit}} gør væggene tykkere, så indersiden er præcis felterne med 0,5 mm spillerum: æsken rummer så Gridfinity-bakker, og gør du kroppen større, vokser antallet af fordybninger med. {{ui:shell.dividers}} står på bunden mellem væggene, {{ui:shell.dividersAcross}} og {{ui:shell.dividersAlong}} op til 8 hver, jævnt fordelt og 1,2 mm tykke. Bunden skal bruge 6,2 mm og indersiden 3 mm over den, så kroppen skal være mindst 9,2 mm høj.
 
+Når toppen er den eneste åbne side, lægger {{ui:shell.shelf}} en kant hele vejen rundt på indersiden af væggen, som en plade kan hvile på, for eksempel en hylde eller en mellembund i æsken ({{ui:shell.shelfWidth}}, til at begynde med 1,5 mm, 0,5 til 5 mm). {{ui:shell.shelfHeight}} måles fra indersiden af bunden til oversiden af kanten (til at begynde med 20 mm). Kanten er 2 mm tyk og følger indersidens form, også afrundede hjørner og runde æsker. Den kræver lodrette vægge og et legeme, der er tydeligt højere end kantens højde; med {{ui:shell.stack}} slået til bygges kraven rundt om den. Hvis det ikke virker, siger værktøjsvinduet hvorfor.
+
 ![Resultatet: en skal med 3 mm væg, åben foroven.](shot:hollow-result)
 
 ![Den samme kasse med kun forsiden åben: en slids til en skuffe.](shot:hollow-sides)

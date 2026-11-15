@@ -851,6 +851,38 @@ export function handleDimensionLimit(
   return Math.max(appDefault, plate, current);
 }
 
+/**
+ * How far the height handle pulls a body (Discussion #1558). The printer's height holds only while the body's height stands
+ * upright; a box laid on its side by placing it on the face of a lying rail has its height along the plate, and stopped at
+ * the printer's 200 mm while it was pulled along a rail twice as long. Tilted, it reaches as far as the plate does too.
+ */
+export function heightHandleLimit(
+  workspace: Pick<WorkplaneWorkspaceSettings, "width" | "depth" | "shapeCustomizations">,
+  kind: ShapeKind,
+  currentHeight: number,
+  printerHeight: number | null | undefined,
+  upright: boolean,
+) {
+  const height = handleDimensionLimit(workspace, kind, 180, "height", currentHeight, printerHeight);
+  return upright ? height : Math.max(height, handleDimensionLimit(workspace, kind, 220, "across", currentHeight));
+}
+
+/**
+ * How large a typed width, depth or height may make a body (Discussion #1444). Only the handles
+ * stop at the plate; a number typed in is taken as it is, for several bodies at once as for one,
+ * so a part larger than the plate (36 in for a bench) is a matter of typing it. A custom size
+ * limit for the shape still holds, but never shrinks a body that is already larger.
+ */
+export function typedDimensionLimit(
+  workspace: Pick<WorkplaneWorkspaceSettings, "shapeCustomizations">,
+  kind: ShapeKind,
+  currentSize: number,
+) {
+  const custom = workspace.shapeCustomizations[kind]?.maxDimension;
+  if (custom === undefined) return Number.POSITIVE_INFINITY;
+  return Math.max(custom, Number.isFinite(currentSize) ? currentSize : 0);
+}
+
 export function normalizeSnapGrid(value: unknown, fallback: GridSize = DEFAULT_SNAP_GRID): GridSize {
   if (parseCustomSnapGrid(value)) return value as GridSize;
   return fixedSnapGrids.includes(value as GridSize) ? (value as GridSize) : fallback;

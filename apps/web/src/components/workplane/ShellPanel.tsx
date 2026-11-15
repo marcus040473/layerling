@@ -10,6 +10,7 @@ import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { MAX_SHELL_DIVIDERS, type ShellDividers } from "@/lib/shellGridLimits";
+import { DEFAULT_SHELL_SHELF_WIDTH, SHELL_SHELF_MAX_HEIGHT, SHELL_SHELF_MAX_WIDTH, SHELL_SHELF_MIN_HEIGHT, SHELL_SHELF_MIN_WIDTH } from "@/lib/shellShelfLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import type { ShellEdges, ShellOpenings, WorkplaneWorkspaceSettings } from "@/types/layerling";
 
@@ -44,6 +45,9 @@ export function ShellPanel({
   gridColumns,
   gridRows,
   dividers,
+  shelf,
+  shelfHeight,
+  shelfOffered,
   workspace,
   busy,
   error,
@@ -61,6 +65,8 @@ export function ShellPanel({
   onGridChange,
   onGridSize,
   onDividersChange,
+  onShelfChange,
+  onShelfHeightChange,
   onApply,
   onCancel,
 }: {
@@ -85,6 +91,12 @@ export function ShellPanel({
   gridRows: number;
   /** Dividers across (x) and along (z) the inside; null for none. */
   dividers: ShellDividers | null;
+  /** The width in mm of the ledge round the inside of the wall for a plate to rest on; 0 for none (#1663). */
+  shelf: number;
+  /** How high in mm the top of the ledge lies above the inside of the floor. */
+  shelfHeight: number;
+  /** The ledge is offered only with the top as the one open side. */
+  shelfOffered: boolean;
   workspace: WorkplaneWorkspaceSettings;
   busy: boolean;
   error: string | null;
@@ -105,6 +117,8 @@ export function ShellPanel({
   onGridChange: (cells: number, fit: boolean) => void;
   onGridSize: (columns: number, rows: number) => void;
   onDividersChange: (value: ShellDividers | null) => void;
+  onShelfChange: (value: number) => void;
+  onShelfHeightChange: (value: number) => void;
   onApply: () => void;
   onCancel: () => void;
 }) {
@@ -415,6 +429,50 @@ export function ShellPanel({
           ) : null}
           {stack > 0 && onStackLid ? <ToolHint text={t("shell.stackLidHint")} /> : null}
           <ToolHint text={thickness < SHELL_STACK_MIN_WALL && stack > 0 ? t("shell.stackWallThin", { min: SHELL_STACK_MIN_WALL }) : t("shell.stackHint")} />
+        </div>
+      ) : null}
+
+      {shelfOffered ? (
+        <div className="edge-modifier-field shell-openings shell-shelf" role="group" aria-label={t("shell.shelf")}>
+          <span>{t("shell.shelf")}</span>
+          <div className="shell-opening-options">
+            <button
+              type="button"
+              aria-pressed={shelf > 0}
+              className={shelf > 0 ? "active" : ""}
+              disabled={busy}
+              onClick={() => onShelfChange(shelf > 0 ? 0 : DEFAULT_SHELL_SHELF_WIDTH)}
+            >
+              {t("shell.shelf")}
+            </button>
+          </div>
+          {shelf > 0 ? (
+            <>
+              <EdgeModifierSlider
+                label={t("shell.shelfWidth")}
+                value={shelf}
+                min={SHELL_SHELF_MIN_WIDTH}
+                max={SHELL_SHELF_MAX_WIDTH}
+                step={WALL_STEP}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={onShelfChange}
+              />
+              <EdgeModifierSlider
+                label={t("shell.shelfHeight")}
+                value={shelfHeight}
+                min={SHELL_SHELF_MIN_HEIGHT}
+                max={SHELL_SHELF_MAX_HEIGHT}
+                step={WALL_STEP}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={onShelfHeightChange}
+              />
+            </>
+          ) : null}
+          <span className="shell-openings-summary">{t("shell.shelfHint")}</span>
         </div>
       ) : null}
 

@@ -82,6 +82,8 @@ With the top as the only open side, {{ui:shell.stack}} makes the box stackable t
 
 With the top as the only open side, {{ui:shell.grid}} puts a Gridfinity baseplate into the floor: the floor becomes 6.2 mm thick and a socket is cut into it for every whole 42 mm cell the inside holds. {{ui:shell.gridCells}} sets how many at most; the slider ends at the number that fits, and with fewer the cells lie nearest the middle. {{ui:shell.gridFit}} thickens the walls so the inside is exactly the cells with 0.5 mm of play: the box then holds Gridfinity bins, and when you make the body larger, the number of sockets grows with it. {{ui:shell.dividers}} stand on the floor between the walls, {{ui:shell.dividersAcross}} and {{ui:shell.dividersAlong}} up to 8 each, evenly spaced and 1.2 mm thick. The floor needs 6.2 mm and the inside 3 mm above it, so the body must be at least 9.2 mm high.
 
+With the top as the only open side, {{ui:shell.shelf}} lays a ledge all round the inside of the wall for a plate to rest on, for example a shelf or a false floor in the box ({{ui:shell.shelfWidth}}, 1.5 mm to begin with, 0.5 to 5 mm). {{ui:shell.shelfHeight}} is measured from the inside of the floor to the top of the ledge (20 mm to begin with). The ledge is 2 mm thick and follows the shape of the inside, rounded corners and round boxes included. It needs walls that go straight up and a body clearly taller than the height of the ledge; with {{ui:shell.stack}} switched on, the collar is built round it. If it does not work, the tool window says why.
+
 ![The result: a shell with a 3 mm wall, open at the top.](shot:hollow-result)
 
 ![The same box with only the front side open: a slot for a drawer.](shot:hollow-sides)
