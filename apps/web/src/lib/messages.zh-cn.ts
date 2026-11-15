@@ -983,7 +983,7 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "lid.error.hingeLidType": "铰链只适用于插入式或平盖：外围的边在打开时会撞到后壁。",
   "lid.error.hingeAlready": "这个主体已经有之前盖子留下的铰链，铰链节高出边缘。请先撤销那个盖子（Ctrl+Z），或取消分组并删除铰链节。",
   "lid.error.stackTopType": "此类盖子或铰链暂不支持堆叠托盘。",
-  "lid.error.stackTopExtras": "堆叠托盘暂不能与磁铁、锁扣、卡扣凸点、把手、系绳或翻盖一起使用。",
+  "lid.error.stackTopExtras": "堆叠托盘暂不能与磁铁、卡扣凸点、把手、系绳或翻盖一起使用。",
   "lid.error.hingeNoBack": "所选一侧放不下三个铰节：太短或弯曲太大。",
   "lid.error.hingeTooLow": "主体太低，放不下铰链：铰节下面需要留出斜面的空间。请用更细的销钉或更高的主体。",
   "lid.error.hingeKernel": "无法把铰链与主体连接。",

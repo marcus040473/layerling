@@ -92,6 +92,7 @@ describe("a hinged lid with a stacking top, printed upright (real Manifold kerne
       expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, type: "screwIn", hinge: false }))).toEqual({ error: { code: "stackTopType" } });
       expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, hingeStyle: "flush" }))).toEqual({ error: { code: "stackTopType" } });
       expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, magnets: true }))).toEqual({ error: { code: "stackTopExtras" } });
+      expect(lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, clickBumps: true }))).toEqual({ error: { code: "stackTopExtras" } });
     } finally {
       Array.from(new Set(created)).forEach((value) => value.delete?.());
     }
@@ -235,6 +236,42 @@ describe("a stacking top on the other kinds of lid, each printed upright (real M
       }
     });
   }
+
+  it("takes latches: the lid's cheeks grow out of its face, the body's pins stay, the clip is that much longer", async () => {
+    const kernel = await runtime();
+    const created: Solid[] = [];
+    try {
+      const body = stackingBox(kernel, created);
+      for (const hinge of [false, true]) {
+        const options = normalizeLidOptions({ ...OPTIONS, hinge, latches: 2 });
+        const result = lidForSolid(kernel, body, options);
+        if ("error" in result) throw new Error(JSON.stringify(result.error));
+        created.push(result.lid);
+        expect(result.lid.decompose().length).toBe(1);
+        expect(result.latch?.count).toBe(2);
+        const parts = [body, result.latch!.body, ...(result.hinge ? [result.hinge.knuckles] : [])];
+        const whole = kernel.Manifold.union(parts);
+        created.push(result.latch!.body, result.latch!.clips, whole);
+        // Closed: its back at the body's back (behind it the knuckles with a hinge), its foot in the opening.
+        const radius = hingeKnuckleRadius(options);
+        const back = -DEPTH / 2 - (hinge ? 2 * radius + OPTIONS.hingeGap : 0);
+        const own = result.lid.boundingBox();
+        const lid = result.lid.translate([-WIDTH / 2 - own.min[0], HEIGHT - OPTIONS.depth - own.min[1], back - own.min[2]]);
+        created.push(lid);
+        const common = whole.intersect(lid);
+        created.push(common);
+        expect(common.volume()).toBeLessThan(1e-3);
+        // The clips are longer than without a stacking top.
+        const plain = lidForSolid(kernel, body, normalizeLidOptions({ ...OPTIONS, hinge, latches: 2, stackTop: false }));
+        if ("error" in plain) throw new Error(JSON.stringify(plain.error));
+        created.push(plain.lid, plain.latch!.clips, plain.latch!.body);
+        const length = (clips: Body) => { const box = clips.boundingBox(); return box.max[0] - box.min[0]; };
+        expect(length(result.latch!.clips)).toBeGreaterThan(length(plain.latch!.clips) + 5);
+      }
+    } finally {
+      Array.from(new Set(created)).forEach((value) => value.delete?.());
+    }
+  });
 
   it("flat with a hinge: swings open without touching the box", async () => {
     const kernel = await runtime();

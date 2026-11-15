@@ -924,7 +924,7 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "lid.error.hingeLidType": "Uma dobradiça só pode ser usada com uma tampa de encaixe interior ou uma tampa plana: um bordo exterior bateria na parede traseira ao abrir a tampa.",
   "lid.error.hingeAlready": "Este corpo já tem uma dobradiça de uma tampa anterior; os nós ficam acima da borda. Anula primeiro essa tampa (Ctrl+Z), ou desagrupa o corpo e apaga os nós da dobradiça.",
   "lid.error.stackTopType": "O tabuleiro para empilhar ainda não funciona com este tipo de tampa ou de dobradiça.",
-  "lid.error.stackTopExtras": "O tabuleiro para empilhar ainda não funciona com ímanes, fechos, saliências de clique, pega, fita de retenção ou tampa basculante.",
+  "lid.error.stackTopExtras": "O tabuleiro para empilhar ainda não funciona com ímanes, saliências de clique, pega, fita de retenção ou tampa basculante.",
   "lid.error.hingeNoBack": "O lado escolhido não tem espaço para três nós: é demasiado curto ou tem uma curvatura demasiado acentuada.",
   "lid.error.hingeTooLow": "O sólido é demasiado baixo para a dobradiça: é necessário espaço por baixo dos nós para a sua transição inclinada. Usa um pino mais fino ou um sólido mais alto.",
   "lid.error.hingeKernel": "Não foi possível unir a dobradiça ao sólido.",

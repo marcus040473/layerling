@@ -1038,7 +1038,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "lid.error.hingeLidType": "Une charnière ne va qu'avec un couvercle emboîté ou plat : un rebord tout autour heurterait la paroi arrière à l'ouverture.",
   "lid.error.hingeAlready": "Ce corps a déjà une charnière d'un couvercle précédent ; ses charnons dépassent du bord. Annule d'abord ce couvercle (Ctrl+Z), ou dissocie le corps et supprime les charnons.",
   "lid.error.stackTopType": "Le plateau d'empilage ne va pas encore avec ce type de couvercle ou de charnière.",
-  "lid.error.stackTopExtras": "Le plateau d'empilage ne va pas encore avec des aimants, des loquets, des bossages à clic, une poignée, une attache ou un bouchon à clapet.",
+  "lid.error.stackTopExtras": "Le plateau d'empilage ne va pas encore avec des aimants, des bossages à clic, une poignée, une attache ou un bouchon à clapet.",
   "lid.error.hingeNoBack": "Le côté choisi n'a pas la place pour trois nœuds : il est trop court ou trop courbé.",
   "lid.error.hingeTooLow": "Le corps est trop bas pour la charnière : sous les nœuds, il faut de la place pour leur pente. Prenez un axe plus fin ou un corps plus haut.",
   "lid.error.hingeKernel": "La charnière n'a pas pu être jointe au corps.",

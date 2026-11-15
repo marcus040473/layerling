@@ -1048,7 +1048,7 @@ export const MESSAGES_EN = {
   "lid.error.hingeLidType": "A hinge goes only with a lid that pushes in or a flat one: a rim round the outside would hit the back wall as the lid swings open.",
   "lid.error.hingeAlready": "This body already has a hinge from an earlier lid; its knuckles stand over the rim. Undo that lid first (Ctrl+Z), or ungroup the body and delete the hinge knuckles.",
   "lid.error.stackTopType": "A stacking top does not go with this kind of lid or hinge yet.",
-  "lid.error.stackTopExtras": "A stacking top does not go with magnets, latches, click bumps, a handle, a tether or a flip-top yet.",
+  "lid.error.stackTopExtras": "A stacking top does not go with magnets, click bumps, a handle, a tether or a flip-top yet.",
   "lid.error.hingeNoBack": "The side picked has no room for three knuckles: it is too short, or too sharply curved.",
   "lid.error.hingeTooLow": "The body is too low for the hinge: below the knuckles it needs room for their slope. Take a thinner pin or a taller body.",
   "lid.error.hingeKernel": "The hinge could not be joined to the body.",

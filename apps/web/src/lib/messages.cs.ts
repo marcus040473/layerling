@@ -1193,7 +1193,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "lid.error.hingeLidType": "Pant jde jen s vkládacím nebo plochým víkem: okraj kolem dokola by při otevírání narazil do zadní stěny.",
   "lid.error.hingeAlready": "Toto těleso už má pant z dřívějšího víka; jeho klouby stojí nad okrajem. Nejdřív to víko vrať zpět (Ctrl+Z), nebo zruš skupinu a klouby pantu smaž.",
   "lid.error.stackTopType": "Stohovací vanička zatím nejde s tímto druhem víka nebo pantu.",
-  "lid.error.stackTopExtras": "Stohovací vanička zatím nejde s magnety, západkami, cvakacími výstupky, úchytem, poutkem ani odklápěcím uzávěrem.",
+  "lid.error.stackTopExtras": "Stohovací vanička zatím nejde s magnety, cvakacími výstupky, úchytem, poutkem ani odklápěcím uzávěrem.",
   "lid.error.hingeNoBack": "Na zvolené straně není místo pro tři kloubky: je příliš krátká nebo příliš zakřivená.",
   "lid.error.hingeTooLow": "Tělo je na pant příliš nízké: pod kloubky je potřeba místo pro jejich šikminu. Vezměte tenčí čep nebo vyšší tělo.",
   "lid.error.hingeKernel": "Pant se nepodařilo spojit s tělem.",

@@ -874,6 +874,15 @@ function capWithTopEdge(runtime: ManifoldToplevel, cap: ManifoldSolid, centre: P
   return keep(created, cap.subtract(ring));
 }
 
+/**
+ * Where a latch's pin sits on a lid with a stacking top, which prints upright: high enough over the lid's flare that its
+ * cheeks, round the pin `reach` out from the face, grow out of the face above the flare at 45 degrees. Never lower than
+ * on a lid without one.
+ */
+export function stackLatchPin(measures: Pick<LidLatchMeasures, "reach" | "cheekRadius" | "rim">, top: number, flareHeight: number, thickness: number) {
+  return Math.max(top + thickness - measures.rim, top + flareHeight + measures.reach + measures.cheekRadius * Math.SQRT2 + 0.05);
+}
+
 /** The kinds of lid a stacking top goes with: all but the screw-in lid and the slide-in lid, so far. */
 export const LID_STACK_TOP_TYPES: readonly LidType[] = ["plug", "flat", "cap", "both", "screw", "bayonet"];
 export function lidStackTopFits(options: Pick<LidOptions, "type">) {
@@ -3100,7 +3109,7 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     // lid is as tall as the knuckles need for a 45 degree slope from its back face, so they print without support.
     const stackTop = options.stackTop;
     if (stackTop && (!lidStackTopFits(options) || !hasOpening || (options.hinge && options.hingeStyle !== "outside"))) return { error: { code: "stackTopType" } };
-    if (stackTop && (options.magnets || options.latches > 0 || options.clickBumps || options.handle !== "none" || options.tether || options.flipTop)) return { error: { code: "stackTopExtras" } };
+    if (stackTop && (options.magnets || options.clickBumps || options.handle !== "none" || options.tether || options.flipTop)) return { error: { code: "stackTopExtras" } };
     // The tray's rim stands on the cap's top edge, so that stays square.
     if (stackTop) options.topEdge = "square";
     let flareHeight = 0;
@@ -3117,6 +3126,12 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     if (stackTop) {
       const plateTop = top + flareHeight + options.thickness;
       lidTop = plateTop + DEFAULT_SHELL_STACK_HEIGHT;
+      if (options.latches > 0) {
+        // The latches' cheeks on the lid grow out of its face at 45 degrees as it prints upright, so its pin sits that
+        // high; the lid is as tall as the cheeks round it.
+        const measures = lidLatchMeasures(options.latchWidth, options.latchGrip);
+        lidTop = Math.max(lidTop, stackLatchPin(measures, top, flareHeight, options.thickness) + measures.cheekRadius);
+      }
       if (options.hinge) {
         const radius = hingeKnuckleRadius(options);
         lidTop = Math.max(lidTop, top + flareHeight + radius + options.hingeGap + radius * Math.SQRT2 + radius + 0.05);
@@ -3532,9 +3547,12 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     let latchMeasures: LidLatchMeasures | null = null;
     let latchCount = 0;
     if (options.latches > 0) {
-      const measures = lidLatchMeasures(options.latchWidth, options.latchGrip);
-      const lidPin = top + options.thickness - measures.rim;
-      const bodyPin = lidPin - measures.spacing;
+      const standard = lidLatchMeasures(options.latchWidth, options.latchGrip);
+      // The body's pin stays where it always is; with a stacking top the lid's is higher (see stackLatchPin) and the clip
+      // that much longer.
+      const bodyPin = top + options.thickness - standard.rim - standard.spacing;
+      const lidPin = stackTop ? stackLatchPin(standard, top, flareHeight, options.thickness) : top + options.thickness - standard.rim;
+      const measures = { ...standard, spacing: lidPin - bodyPin };
       const lowest = bodyPin - measures.rim - measures.tab;
       if (lowest < box.min[2]) return { error: { code: "latchBodyLow", height: Math.ceil((top - lowest) * 2) / 2 } };
       const embed = 0.4;
@@ -3564,13 +3582,22 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
               at(along, -embed, bodyPin - measures.reach - embed - measures.cheekRadius * Math.SQRT2),
             ]))));
             // The lid's cheek: a nose in the plate's layer out to the cheek's outside, and the cheek hanging from it.
-            const nose = keep(created, keep(created, runtime.Manifold.cube([measures.cheek, measures.reach + measures.cheekRadius + 1, options.thickness])).translate([Math.min(...ends), places.front - measures.reach - measures.cheekRadius, top]));
-            const hanging = keep(created, runtime.Manifold.hull(ends.flatMap((along) => [
-              ...disc(along, lidPin, measures.cheekRadius),
-              at(along, measures.reach - measures.cheekRadius, top + options.thickness),
-              at(along, measures.reach + measures.cheekRadius, top + options.thickness),
-            ])));
-            sideLid.push(nose, hanging);
+            if (stackTop) {
+              // Printed upright: the cheek grows out of the lid's face above its flare on a 45 degree slope.
+              sideLid.push(keep(created, runtime.Manifold.hull(ends.flatMap((along) => [
+                ...disc(along, lidPin, measures.cheekRadius),
+                at(along, -embed, top + flareHeight),
+                at(along, -embed, lidTop),
+              ]))));
+            } else {
+              const nose = keep(created, keep(created, runtime.Manifold.cube([measures.cheek, measures.reach + measures.cheekRadius + 1, options.thickness])).translate([Math.min(...ends), places.front - measures.reach - measures.cheekRadius, top]));
+              const hanging = keep(created, runtime.Manifold.hull(ends.flatMap((along) => [
+                ...disc(along, lidPin, measures.cheekRadius),
+                at(along, measures.reach - measures.cheekRadius, top + options.thickness),
+                at(along, measures.reach + measures.cheekRadius, top + options.thickness),
+              ])));
+              sideLid.push(nose, hanging);
+            }
           }
           const pinEnds = [middle - inside - measures.cheek / 2, middle + inside + measures.cheek / 2];
           sideBody.push(keep(created, runtime.Manifold.hull(pinEnds.flatMap((along) => disc(along, bodyPin, measures.pin)))));

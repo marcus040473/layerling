@@ -1047,7 +1047,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "lid.error.hingeLidType": "Een scharnier gaat alleen met een insteekdeksel of een plat deksel: een rand rondom zou bij het openklappen tegen de achterwand stoten.",
   "lid.error.hingeAlready": "Dit lichaam heeft al een scharnier van een eerder deksel; de knokkels staan boven de rand. Maak dat deksel eerst ongedaan (Ctrl+Z), of hef de groep op en verwijder de scharnierknokkels.",
   "lid.error.stackTopType": "Een stapelbak bovenop gaat nog niet met dit soort deksel of scharnier.",
-  "lid.error.stackTopExtras": "Een stapelbak bovenop gaat nog niet samen met magneten, sluitingen, klikbolletjes, een handgreep, een lusje of een klepdop.",
+  "lid.error.stackTopExtras": "Een stapelbak bovenop gaat nog niet samen met magneten, klikbolletjes, een handgreep, een lusje of een klepdop.",
   "lid.error.hingeNoBack": "De gekozen kant heeft geen ruimte voor drie knokkels: hij is te kort of te sterk gebogen.",
   "lid.error.hingeTooLow": "Het lichaam is te laag voor het scharnier: onder de knokkels is ruimte nodig voor hun schuinte. Neem een dunnere pen of een hoger lichaam.",
   "lid.error.hingeKernel": "Het scharnier kon niet met het lichaam worden verbonden.",
