@@ -1029,6 +1029,7 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushPlugs": "ふた（{type}）が埋めこみのヒンジ付きでできました。壁の中に{count}個のナックル、長さ{length} mmの{pin} mmのピンを通す穴、その穴をふさぐ2つのはしのせんがあります。ふたとせんはボディの横にあり、そのままプリントできます。",
   "status.lidMadeHingeFlushCorners": "ふた（{type}）が埋めこみのヒンジ付きでできました。壁の中に{count}個のナックルがあり、はしのナックルは丸い角をうめています。長さ{length} mmの{pin} mmのピンを通す穴があります。ふたはボディの横にひっくり返して置いてあり、そのままプリントできます。",
   "lid.error.hingeLidType": "ヒンジは、差しこむふたか平らなふたにしか付けられません。外側にかぶさるふちは、ふたを開くときにうしろの壁に当たってしまいます。",
+  "lid.error.hingeAlready": "この本体には以前のふたのヒンジがすでにあり、ナックルが縁より上に出ています。先にそのふたを元に戻す（Ctrl+Z）か、グループを解除してヒンジのナックルを削除してください。",
   "lid.error.stackTopType": "このふたやヒンジの種類では、スタック用トレイはまだ使えません。",
   "lid.error.stackTopExtras": "スタック用トレイは、マグネット、ラッチ、クリック突起、取っ手、つなぎひも、フリップトップとはまだ一緒に使えません。",
   "lid.error.hingeNoBack": "選んだ側にはナックル3個の場所がありません。短すぎるか、カーブがきつすぎます。",

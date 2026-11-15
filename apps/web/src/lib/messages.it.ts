@@ -1017,6 +1017,7 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "status.lidMadeHingeFlushPlugs": "Coperchio creato ({type}) con cerniera a filo: {count} nocche nella parete, un foro per un perno da {pin} mm lungo {length} mm e due tappi alle estremità che lo chiudono. Il coperchio e i tappi sono accanto al corpo, pronti per la stampa.",
   "status.lidMadeHingeFlushCorners": "Coperchio creato ({type}) con cerniera a filo: {count} nocche nella parete, quelle alle estremità riempiono gli angoli arrotondati, e un foro per un perno da {pin} mm lungo {length} mm. Il coperchio è capovolto accanto al corpo, pronto per la stampa.",
   "lid.error.hingeLidType": "Una cerniera va solo con un coperchio a incastro o piatto: un bordo all'esterno urterebbe la parete posteriore durante l'apertura.",
+  "lid.error.hingeAlready": "Questo corpo ha già una cerniera di un coperchio precedente; le nocche sporgono dal bordo. Annulla prima quel coperchio (Ctrl+Z), oppure separa il gruppo ed elimina le nocche della cerniera.",
   "lid.error.stackTopType": "Il vassoio per impilare non va ancora con questo tipo di coperchio o di cerniera.",
   "lid.error.stackTopExtras": "Il vassoio per impilare non va ancora con magneti, chiusure, bottoni a scatto, maniglia, laccetto o tappo a scatto.",
   "lid.error.hingeNoBack": "Il lato scelto non ha spazio per tre nocche: è troppo corto o troppo curvo.",

@@ -791,7 +791,7 @@ export function LidPanel({
 
       {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("lid.working")} /> : null}
       <div className="edge-modifier-footer">
-        <ToolOutcome text={t("lid.outcome")} />
+        <ToolOutcome text={t(settings.stackTop && lidStackTopFits(settings) ? "lid.outcomeUpright" : "lid.outcome")} />
         <ToolCancel onClick={onCancel} />
         {/* Not while the body is fitted to the neck: the lid would be made for it as it was. */}
         {/* Not while the body is fitted to the neck: the lid would be made for it as it was. */}
