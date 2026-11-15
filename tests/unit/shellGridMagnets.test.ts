@@ -25,6 +25,18 @@ describe("magnets in the corners of a box with a Gridfinity floor", () => {
     expect(magnetsMeetGridCells(fewer, posts(130.5, 88.5), 130.5, 88.5)).toBe(false);
   });
 
+  it("does not take the posts drawn as one mesh for all four corners as one huge post; their pockets count", () => {
+    // A box of 117 x 112 with 2 x 2 cells and 8 x 3 magnets: the pockets' walls reach 10.6 mm in, the cells begin 16.75 and 14.25 mm in.
+    const two = { ...body, edgeTreatmentHistory: [{ feature: { kind: "shell", amount: 2, shellGrid: { cells: 999 } } }] } as unknown as WorkplaneShape;
+    const at = (x: number, z: number) => ({ kind: "cylinder", x, z, width: 8.2, depth: 8.2 }) as unknown as WorkplaneShape;
+    const pockets = [at(-53.2, 50.7), at(53.2, 50.7), at(53.2, -50.7), at(-53.2, -50.7)];
+    const mesh = { kind: "mesh", x: 0, z: 0, width: 117, depth: 112 } as unknown as WorkplaneShape;
+    expect(magnetsMeetGridCells(two, { pockets, posts: [mesh] }, 117, 112)).toBe(false);
+    // In a box just large enough for the cells they do meet them.
+    const tight = [at(-37.9, 37.9), at(37.9, 37.9), at(37.9, -37.9), at(-37.9, -37.9)];
+    expect(magnetsMeetGridCells(two, { pockets: tight, posts: [mesh] }, 88.5, 88.5)).toBe(true);
+  });
+
   it("has nothing to say about a body without a Gridfinity floor", () => {
     expect(magnetsMeetGridCells({ x: 0, z: 0 } as WorkplaneShape, posts(130.5, 88.5), 130.5, 88.5)).toBe(false);
   });

@@ -12,6 +12,9 @@ import type { WorkplaneShape } from "@/types/layerling";
 
 type Point = { x: number; z: number };
 
+/** The wall round a magnet's pocket, in mm, as the Lid tool draws it (lidTool's MAGNET_WALL). */
+export const MAGNET_POCKET_WALL = 1.2;
+
 /** The Gridfinity floor a body was hollowed with: its wall, its most cells and the body's middle and size; null when it has none. */
 export function shellGridOf(shape: WorkplaneShape) {
   const hollow = [...(shape.edgeTreatmentHistory ?? [])].reverse().find((entry) => entry.feature.kind === "shell")?.feature;
@@ -61,5 +64,9 @@ export function magnetsMeetGridCells(shape: WorkplaneShape, magnets: LidShapeMag
   const meets = (part: WorkplaneShape, extra: number, cell: Point) => (part.kind === "box"
     ? turnedMeetsSquare(part.x, part.z, shapeWidth(part) + 2 * extra, shapeDepth(part) + 2 * extra, part.rotation ?? 0, cell, half)
     : circleMeetsSquare(part.x, part.z, shapeWidth(part) / 2 + extra, cell, half));
-  return cells.some((cell) => magnets.pockets.some((part) => meets(part, 0.8, cell)) || magnets.posts.some((part) => meets(part, 0, cell)));
+  // A pocket with the wall round it, as far as a post's round part reaches. A post the kernel could not draw exactly is one
+  // mesh for all four corners: its size says nothing about one corner, and it reaches no further towards the middle than
+  // its pocket's wall (the rest of it runs out to the corner), so only the exact parts, a cylinder or a box, are looked at.
+  const exact = magnets.posts.filter((part) => part.kind === "box" || part.kind === "cylinder");
+  return cells.some((cell) => magnets.pockets.some((part) => meets(part, MAGNET_POCKET_WALL, cell)) || exact.some((part) => meets(part, 0, cell)));
 }
