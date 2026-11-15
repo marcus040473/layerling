@@ -149,6 +149,16 @@ describe("a hinged lid with a stacking top, printed upright (real Manifold kerne
         const reach = -DEPTH / 2 - behind.boundingBox().min[2];
         expect(reach, `at ${y.toFixed(2)}`).toBeLessThanOrEqual(Math.max(0, y - plateLow) + 0.15);
       }
+      // The body's knuckles stand on the back wall with a strong root: just over the rim each is at least 3 mm thick.
+      const top = body.boundingBox().max[1];
+      const slice = kernel.Manifold.cube([WIDTH + 20, 0.02, 30]).translate([-WIDTH / 2 - 10, top + 1, -DEPTH / 2 - 20]);
+      const arms = knuckles.intersect(slice);
+      created.push(slice, arms);
+      for (const arm of arms.decompose()) {
+        created.push(arm);
+        const box = arm.boundingBox();
+        expect(box.max[2] - box.min[2], "an arm just over the rim").toBeGreaterThan(3);
+      }
       save("box", whole);
       save("lid-print", result.lid);
       save("lid-closed", lid);

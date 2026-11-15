@@ -3479,8 +3479,12 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       const stripTop = Math.min(plan.axisZ, top - options.hingeGap);
       // As tall as the lid: its plate's, or with a stacking top up to the tray's rim.
       const lidThickness = lidTop - top;
-      // With a stacking top the axis is above the rim, so the body's strip reaches down from just below it.
-      const stripLow = Math.min(plan.low, stripTop - 1);
+      // With a stacking top the axis is high over the rim: the body's knuckles are then grown out of the back wall as far
+      // below the rim as twice the axis is above it, so each stands on the wall with a broad, strong root (a strip just under
+      // the rim left the arm over the rim about a millimetre thick, which breaks off).
+      const stripLow = stackTop
+        ? Math.max(box.min[2] + 0.4, Math.min(plan.low, top - 2 * (plan.axisZ - top)))
+        : Math.min(plan.low, stripTop - 1);
       // On a round side the wall falls away from the hinge's line: the lid's web reaches in to its plate's edge, and
       // under each of the body's knuckles a block reaches in to the wall, its underside on the same 45 degree slope.
       const webReach = plan.curved ? plan.reach : 0.3;
