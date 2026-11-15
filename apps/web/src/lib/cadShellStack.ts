@@ -1,6 +1,6 @@
 import type { OcctKernel, ShapeHandle } from "occt-wasm";
 import { block, moved, rimFaces, tracking } from "@/lib/cadLid";
-import { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_DEPTH, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight, shellStackFloor, shellStackInset } from "@/lib/shellStackLimits";
+import { type ShellStackFoot, normalizeShellStackFoot, shellStackGripHeight, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_DEPTH, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight, shellStackFloor, shellStackInset } from "@/lib/shellStackLimits";
 import { STACK_FAILED_MESSAGE, STACK_NEEDS_TOP_MESSAGE, STACK_NOT_STRAIGHT_MESSAGE, STACK_TOO_LOW_MESSAGE, STACK_WALL_THIN_MESSAGE } from "@/lib/shellStackMessages";
 
 export { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_FOOT_CHAMFER, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_DEPTH, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, SHELL_STACK_PLAY, clampShellStackHeight, shellStackFloor, shellStackInset };
@@ -23,12 +23,13 @@ function outerArea(cad: OcctKernel, faces: Array<{ outer: ShapeHandle }>) {
  * The hollowed `solid` (made from `original`, the body before, which holds the cavity as solid) with the foot. Throws an error
  * with one of the messages above where it cannot be done; the caller shows it.
  */
-export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: number, wall: number, original: ShapeHandle): ShapeHandle {
+export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: number, wall: number, original: ShapeHandle, footStyle?: ShellStackFoot | null): ShapeHandle {
   const made: ShapeHandle[] = [];
   const cad = tracking(kernel, made);
   let result: ShapeHandle | null = null;
   try {
     const foot = clampShellStackHeight(height);
+    const style = normalizeShellStackFoot(footStyle);
     if (wall < SHELL_STACK_MIN_WALL - 1e-9) throw new Error(STACK_WALL_THIN_MESSAGE);
     const box = cad.getBoundingBox(solid);
     const top = box.ymax;
@@ -55,13 +56,13 @@ export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: 
     // narrows it a little). Above the foot the box widens at 45 degrees by the wall and the play.
     // Cut at the very top first; where the kernel cannot move that outline (its edges come out broken there, as after a
     // rounded bottom), a little lower, then half way up, where the walls stand straight.
-    let found: { lip: number; feet: Array<{ hole: ShapeHandle; foot: ShapeHandle; lowest: ShapeHandle | null }> } | null = null;
+    let found: { lip: number; feet: Array<{ hole: ShapeHandle; foot: ShapeHandle; lowest: ShapeHandle | null; inner: ShapeHandle | null }> } | null = null;
     for (const lip of [top - 0.02, top - 0.3, midPlane]) {
       const faces = rimFaces(cad, solid, lip);
       if (!faces || faces.every(({ openings: holes }) => holes.length === 0)) continue;
-      const feet = faces.flatMap(({ openings: holes }) => holes.map((hole) => ({ hole, foot: moved(cad, hole, -SHELL_STACK_PLAY), lowest: moved(cad, hole, -(SHELL_STACK_PLAY + SHELL_STACK_FOOT_CHAMFER)) })));
-      if (feet.every(({ foot: f }) => f)) {
-        found = { lip, feet: feet as Array<{ hole: ShapeHandle; foot: ShapeHandle; lowest: ShapeHandle | null }> };
+      const feet = faces.flatMap(({ openings: holes }) => holes.map((hole) => ({ hole, foot: moved(cad, hole, -SHELL_STACK_PLAY), lowest: moved(cad, hole, -(SHELL_STACK_PLAY + SHELL_STACK_FOOT_CHAMFER)), inner: style?.hollow ? moved(cad, hole, -(SHELL_STACK_PLAY + wall)) : null })));
+      if (feet.every(({ foot: f, inner }) => f && (!style?.hollow || inner))) {
+        found = { lip, feet: feet as Array<{ hole: ShapeHandle; foot: ShapeHandle; lowest: ShapeHandle | null; inner: ShapeHandle | null }> };
         break;
       }
     }
@@ -88,7 +89,11 @@ export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: 
     // Within the cavity's outline only, from the bottom: the outside (a rounded bottom edge) is not touched twice.
     // The cavity's outline half way up, where the walls stand straight (the top may be narrowed by a rounded edge).
     const middle = rimFaces(cad, solid, midPlane) ?? [];
-    const fill = middle.flatMap(({ openings: holes }) => holes.map((hole) => block(cad, cad.makeFace(hole), midPlane, bottom, floorTop)));
+    // A hollow foot: filled only up to where the inside's own 45 degree widening ends, then hollowed out again below.
+    // Its inside widens a little higher than the outside, so the slope keeps the wall's thickness square to it.
+    const rise = wall * (Math.SQRT2 - 1);
+    const fillTop = style?.hollow ? bottom + foot + rise + inset : floorTop;
+    const fill = middle.flatMap(({ openings: holes }) => holes.map((hole) => block(cad, cad.makeFace(hole), midPlane, bottom, fillTop)));
     if (!fill.length) throw new Error(STACK_FAILED_MESSAGE);
     const filled = cad.fuseAll([solid, ...fill]);
     let body = cad.common(filled, cad.fuseAll(keep));
@@ -96,6 +101,43 @@ export function shellStackSolid(kernel: OcctKernel, solid: ShapeHandle, height: 
     if (solids.length !== 1) {
       // The kernel sometimes loses that common part (a rounded bottom edge): the same cut the other way, as what goes away.
       body = cad.cut(filled, cad.cut(slab(bottom - 1, bottom + foot + inset - 0.005), feet));
+      solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
+    }
+    if (style?.hollow && solids.length === 1) {
+      // The foot's inside: the wall's thickness in from the foot, from the floor (a wall thick) up, widening at 45 degrees to
+      // the inside above, and joined to it.
+      const hollow: ShapeHandle[] = [];
+      for (const { hole, inner } of found.feet) {
+        if (!inner) continue;
+        hollow.push(block(cad, inner, lip, bottom + wall, bottom + foot + rise + 0.01));
+        hollow.push(cad.draftPrism(cad.translate(inner, 0, bottom + foot + rise - lip, 0), 0, inset, 0, -45));
+        hollow.push(block(cad, cad.makeFace(hole), lip, fillTop - 0.01, fillTop + 0.5));
+      }
+      body = cad.cut(solids[0], cad.fuseAll(hollow));
+      solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
+    }
+    if (style?.grip && solids.length === 1) {
+      // The grip: a recess at the front (+z) of the bottom, `grip` wide and `gripDepth` deep, its ceiling at 45 degrees so it
+      // prints without support. Where it comes near the inside, a hump the wall's thickness round it closes it off.
+      const depth = style.gripDepth ?? 4;
+      const reach = shellStackGripHeight(foot, depth);
+      const middleX = (box.xmin + box.xmax) / 2;
+      const front = box.zmax;
+      const profile = (width: number, inward: number, up: number) => {
+        const x0 = middleX - width / 2;
+        const points = [
+          { z: front + 1, y: bottom - 1 },
+          { z: front - inward, y: bottom - 1 },
+          { z: front - inward, y: bottom + up - inward },
+          { z: front, y: bottom + up },
+          { z: front + 1, y: bottom + up },
+        ].map(({ z, y }) => ({ x: x0, y, z }));
+        const edges = points.map((point, index) => cad.makeLineEdge(point, points[(index + 1) % points.length]));
+        return cad.extrude(cad.makeFace(cad.makeWire(edges)), width, 0, 0);
+      };
+      const recess = profile(style.grip, depth, reach);
+      const hump = cad.common(profile(style.grip + 2 * wall, depth + wall, reach + wall * Math.SQRT2), cad.common(original, cad.fuseAll(keep)));
+      body = cad.cut(cad.fuse(solids[0], hump), recess);
       solids = cad.isSolid(body) ? [body] : cad.getSubShapes(body, "solid");
     }
     body = cad.simplify(solids.length === 1 ? solids[0] : body);

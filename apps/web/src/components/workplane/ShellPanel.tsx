@@ -8,7 +8,7 @@ import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
-import { DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL } from "@/lib/shellStackLimits";
+import { DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { MAX_SHELL_DIVIDERS, type ShellDividers } from "@/lib/shellGridLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import type { ShellEdges, ShellOpenings, WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -36,6 +36,8 @@ export function ShellPanel({
   edges,
   stack,
   stackOffered,
+  stackFoot = null,
+  onStackFootChange,
   gridCells,
   gridFit,
   gridMax,
@@ -71,6 +73,9 @@ export function ShellPanel({
   stack: number;
   /** Stacking is offered only with the top as the one open side. */
   stackOffered: boolean;
+  /** The foot hollow or solid, and the grip recess at the front. */
+  stackFoot?: ShellStackFoot | null;
+  onStackFootChange?: (value: ShellStackFoot | null) => void;
   /** A Gridfinity baseplate in the floor with this many cells at most (0 for none), the walls fitted to the grid, and how many cells the inside holds at most. */
   gridCells: number;
   gridFit: boolean;
@@ -308,6 +313,54 @@ export function ShellPanel({
               onChange={onStackChange}
             />
           ) : null}
+          {stack > 0 && onStackFootChange ? (<>
+            {/* The foot hollow: the floor on the plate, less filament; a Gridfinity floor needs it solid. */}
+            <label className="edge-modifier-field offset-copy">
+              <input
+                type="checkbox"
+                checked={stackFoot?.hollow === true && gridCells === 0}
+                disabled={busy || gridCells > 0}
+                onChange={(event) => onStackFootChange({ ...(stackFoot ?? {}), hollow: event.target.checked })}
+              />
+              <span>{t("shell.stackHollow")}</span>
+            </label>
+            <ToolHint text={t(gridCells > 0 ? "shell.stackHollowGrid" : "shell.stackHollowHint")} />
+            {/* A grip at the front of the bottom, to lift the box off the one below. */}
+            <label className="edge-modifier-field offset-copy">
+              <input
+                type="checkbox"
+                checked={(stackFoot?.grip ?? 0) > 0}
+                disabled={busy}
+                onChange={(event) => onStackFootChange({ ...(stackFoot ?? {}), grip: event.target.checked ? DEFAULT_SHELL_STACK_GRIP : 0, gripDepth: stackFoot?.gripDepth ?? DEFAULT_SHELL_STACK_GRIP_DEPTH })}
+              />
+              <span>{t("shell.stackGrip")}</span>
+            </label>
+            {(stackFoot?.grip ?? 0) > 0 ? (<>
+              <EdgeModifierSlider
+                label={t("shell.stackGripWidth")}
+                value={stackFoot?.grip ?? DEFAULT_SHELL_STACK_GRIP}
+                min={SHELL_STACK_GRIP_MIN}
+                max={SHELL_STACK_GRIP_MAX}
+                step={1}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => onStackFootChange({ ...(stackFoot ?? {}), grip: value })}
+              />
+              <EdgeModifierSlider
+                label={t("shell.stackGripDepth")}
+                value={stackFoot?.gripDepth ?? DEFAULT_SHELL_STACK_GRIP_DEPTH}
+                min={SHELL_STACK_GRIP_DEPTH_MIN}
+                max={SHELL_STACK_GRIP_DEPTH_MAX}
+                step={0.5}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => onStackFootChange({ ...(stackFoot ?? {}), gripDepth: value })}
+              />
+              <ToolHint text={t("shell.stackGripHint")} />
+            </>) : null}
+          </>) : null}
           {stack > 0 && onStackLid ? (
             <div className="shell-opening-options">
               <button type="button" disabled={busy} onClick={onStackLid}>{t("shell.stackLid")}</button>

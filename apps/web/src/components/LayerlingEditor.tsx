@@ -114,7 +114,7 @@ import { MODEL_SCALE_RATIO_MAX, MODEL_SCALE_RATIO_MIN, modelScalePercent, type M
 import { isSameSize, resizedCopy, SAME_SIZE, shapeSize, sizeFactorsBetween, type ShapeSize, type SizeFactors } from "@/lib/duplicateResize";
 import { canToggleGroupColors, colorForParts, groupShowsPartColors } from "@/lib/groupColors";
 import { disposeBoundsTree } from "three-mesh-bvh";
-import { clampShellStackHeight, shellStackFloor } from "@/lib/shellStackLimits";
+import { clampShellStackHeight, normalizeShellStackFoot, shellStackFloor, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
 import { magnetsGridLeastSize, magnetsMeetGridCells } from "@/lib/shellGridMagnets";
 import { SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
@@ -3681,7 +3681,7 @@ export function LayerlingEditor({
   }, [sketchSelection, sketchTool, sketchActive]);
   const [edgeModifier, setEdgeModifier] = useState<EdgeModifierSession | null>(null);
   // `mode: "offset"` is the Offset tool (#919), which shares the hollow tool's state: `thickness` is then the distance.
-  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; gridCells?: number; gridFit?: boolean; gridColumns?: number; gridRows?: number; dividers?: { x: number; z: number } | null; busy: boolean; error: string | null } | null>(null);
+  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; stackFoot?: ShellStackFoot | null; gridCells?: number; gridFit?: boolean; gridColumns?: number; gridRows?: number; dividers?: { x: number; z: number } | null; busy: boolean; error: string | null } | null>(null);
   /** Cut out (#927): `partId` stays, a copy of it grown by `clearance` is cut out of `hostId`. */
   const [cutOutTool, setCutOutTool] = useState<{ partId: string; hostId: string; clearance: number; busy: boolean; error: string | null } | null>(null);
   const [punchTool, setPunchTool] = useState<{ punchId: string; targetId: string; axis: SectionPlaneAxis; clearance: number; busy: boolean; error: string | null } | null>(null);
@@ -5472,7 +5472,7 @@ export function LayerlingEditor({
     );
     const feature = entry.feature;
     if (feature.kind === "shell") {
-      setShellTool({ thickness: feature.amount, openings: feature.openings ?? "top", edges: feature.shellEdges ?? "round", ...(feature.shellStack ? { stack: feature.shellStack } : {}), ...(feature.shellGrid ? { gridCells: feature.shellGrid.cells, gridFit: feature.shellGrid.fit === true } : {}), ...(feature.shellDividers ? { dividers: feature.shellDividers } : {}), busy: false, error: null });
+      setShellTool({ thickness: feature.amount, openings: feature.openings ?? "top", edges: feature.shellEdges ?? "round", ...(feature.shellStack ? { stack: feature.shellStack } : {}), ...(feature.shellStackFoot ? { stackFoot: feature.shellStackFoot } : {}), ...(feature.shellGrid ? { gridCells: feature.shellGrid.cells, gridFit: feature.shellGrid.fit === true } : {}), ...(feature.shellDividers ? { dividers: feature.shellDividers } : {}), busy: false, error: null });
     } else if (feature.kind === "offset") {
       setShellTool({ mode: "offset", thickness: feature.amount, shrink: feature.offsetShrink === true, sideways: feature.offsetSideways === true, keepCopy: false, openings: "none", edges: feature.shellEdges ?? "round", busy: false, error: null });
     } else if (feature.kind !== "surfaceTexture") {
@@ -8408,8 +8408,9 @@ export function LayerlingEditor({
    */
   // `watched` is the body in the scene the result replaces; it is the shape
   // itself, except when a resized hollow body is hollowed again from its state before.
-  const shellShape = useCallback(async (shape: WorkplaneShape, thickness: number, openings: ShellOpenings, edges: ShellEdges = "round", watched: WorkplaneShape = shape, offset?: { shrink: boolean; sideways?: boolean }, extras: { stack?: number; grid?: ShellGrid | null; dividers?: ShellDividers | null } = {}) => {
+  const shellShape = useCallback(async (shape: WorkplaneShape, thickness: number, openings: ShellOpenings, edges: ShellEdges = "round", watched: WorkplaneShape = shape, offset?: { shrink: boolean; sideways?: boolean }, extras: { stack?: number; stackFoot?: ShellStackFoot | null; grid?: ShellGrid | null; dividers?: ShellDividers | null } = {}) => {
     const stack = extras.stack ?? 0;
+    const stackFoot = stack > 0 && !offset ? normalizeShellStackFoot(extras.stackFoot) : null;
     const grid = offset ? null : extras.grid ?? null;
     const dividers = offset ? null : extras.dividers ?? null;
     if (bodyLocked(shape) || isNonSolidShape(shape)) {
@@ -8429,6 +8430,7 @@ export function LayerlingEditor({
       shellOpenings: openings,
       shellEdges: edges,
       ...(stack > 0 && !offset ? { shellStack: stack } : {}),
+      ...(stackFoot ? { shellStackFoot: stackFoot } : {}),
       ...(grid ? { shellGrid: grid } : {}),
       ...(dividers ? { shellDividers: dividers } : {}),
       ...(offset ? { offsetShrink: offset.shrink } : {}),
@@ -8447,7 +8449,7 @@ export function LayerlingEditor({
       cadDisplayEdges: cadDisplayEdgesForShape(rawPreview, previewResponse.displayEdges),
       cadDisplayEdgesVersion: 2 as const,
     });
-    const feature = { kind: offset ? "offset" as const : "shell" as const, amount: thickness, edgeCount: 0, openings, ...(edges === "sharp" ? { shellEdges: edges } : {}), ...(stack > 0 && !offset ? { shellStack: stack } : {}), ...(grid ? { shellGrid: grid } : {}), ...(dividers ? { shellDividers: dividers } : {}), ...(offset?.shrink ? { offsetShrink: true } : {}), ...(offset?.sideways ? { offsetSideways: true } : {}) } satisfies NonNullable<WorkplaneShape["edgeTreatments"]>[number];
+    const feature = { kind: offset ? "offset" as const : "shell" as const, amount: thickness, edgeCount: 0, openings, ...(edges === "sharp" ? { shellEdges: edges } : {}), ...(stack > 0 && !offset ? { shellStack: stack } : {}), ...(stackFoot ? { shellStackFoot: stackFoot } : {}), ...(grid ? { shellGrid: grid } : {}), ...(dividers ? { shellDividers: dividers } : {}), ...(offset?.shrink ? { offsetShrink: true } : {}), ...(offset?.sideways ? { offsetSideways: true } : {}) } satisfies NonNullable<WorkplaneShape["edgeTreatments"]>[number];
     const session: EdgeModifierSession = {
       kind: offset ? "offset" : "shell",
       edges: response.edges,
@@ -8655,6 +8657,7 @@ export function LayerlingEditor({
         openings: hollow.openings ?? "top",
         edges: hollow.shellEdges ?? "round",
         ...(hollow.shellStack ? { stack: hollow.shellStack } : {}),
+        ...(hollow.shellStackFoot ? { stackFoot: hollow.shellStackFoot } : {}),
         ...(hollow.shellGrid ? { gridCells: hollow.shellGrid.cells, gridFit: hollow.shellGrid.fit === true } : {}),
         ...(hollow.shellDividers ? { dividers: hollow.shellDividers } : {}),
         busy: false,
@@ -9310,7 +9313,7 @@ export function LayerlingEditor({
           : { state: "idle" };
 
   // Hollowing again with new settings (defined further down, as it builds on the rebuild after a resize).
-  const rehollowRef = useRef<((stale: WorkplaneShape, watched: WorkplaneShape, replace: { amount: number; openings: ShellOpenings; edges: ShellEdges; extras: { stack?: number; grid?: ShellGrid | null; dividers?: ShellDividers | null } }) => Promise<WorkplaneShape | null>) | null>(null);
+  const rehollowRef = useRef<((stale: WorkplaneShape, watched: WorkplaneShape, replace: { amount: number; openings: ShellOpenings; edges: ShellEdges; extras: { stack?: number; stackFoot?: ShellStackFoot | null; grid?: ShellGrid | null; dividers?: ShellDividers | null } }) => Promise<WorkplaneShape | null>) | null>(null);
   const applyShellTool = useCallback(() => {
     if (!shellTool || shellTool.busy) return;
     const target = selectedShape;
@@ -9345,7 +9348,7 @@ export function LayerlingEditor({
         });
       return;
     }
-    const extras = { stack, grid, dividers };
+    const extras = { stack, stackFoot: normalizeShellStackFoot(shellTool.stackFoot), grid, dividers };
     // The cells asked for as a number across and a number along: the body is made as large as holds exactly them (the wall
     // each side and the play the drawer fit leaves), and the floor takes every cell that fits.
     const columns = Math.round(shellTool.gridColumns ?? 0), rows = Math.round(shellTool.gridRows ?? 0);
@@ -9469,7 +9472,7 @@ export function LayerlingEditor({
    * body in the scene the result replaces: the stale body itself, or the body before "Fit the body to the neck" resized
    * it (issue #1482). Null when its state before cannot be brought to that size.
    */
-  const rehollowedShape = useCallback(async (stale: WorkplaneShape, watched: WorkplaneShape = stale, replace?: { amount: number; openings: ShellOpenings; edges: ShellEdges; extras: { stack?: number; grid?: ShellGrid | null; dividers?: ShellDividers | null } }): Promise<WorkplaneShape | null> => {
+  const rehollowedShape = useCallback(async (stale: WorkplaneShape, watched: WorkplaneShape = stale, replace?: { amount: number; openings: ShellOpenings; edges: ShellEdges; extras: { stack?: number; stackFoot?: ShellStackFoot | null; grid?: ShellGrid | null; dividers?: ShellDividers | null } }): Promise<WorkplaneShape | null> => {
     // With `replace` the hollowing the body already has is done again with new settings, from the state before it (a body
     // hollowed once more from its hollow walls fails with walls too thick).
     const entry = replace ? shellRebuildEntry(stale) : shellNeedingRebuild(stale);
@@ -9488,7 +9491,7 @@ export function LayerlingEditor({
     if (Math.abs(shapeWidth(before) - width) > 0.05 || Math.abs(shapeDepth(before) - depth) > 0.05) return null;
     // Fillets and chamfers laid after the hollowing go on again, on the same edges of the fresh walls.
     const after = edgeTreatmentsAfterShell(stale) ?? [];
-    let rebuilt = await shellShape(before, amount, openings ?? "none", shellEdges ?? "round", watched, undefined, replace ? replace.extras : { stack: entry.feature.shellStack ?? 0, grid: normalizeShellGrid(entry.feature.shellGrid), dividers: normalizeShellDividers(entry.feature.shellDividers) });
+    let rebuilt = await shellShape(before, amount, openings ?? "none", shellEdges ?? "round", watched, undefined, replace ? replace.extras : { stack: entry.feature.shellStack ?? 0, stackFoot: entry.feature.shellStackFoot ?? null, grid: normalizeShellGrid(entry.feature.shellGrid), dividers: normalizeShellDividers(entry.feature.shellDividers) });
     for (const later of after) {
       try {
         rebuilt = await relaidEdgeTreatment(rebuilt, later);
@@ -15928,13 +15931,14 @@ export function LayerlingEditor({
         const stack = typeof params.stack === "number" && params.stack > 0 ? clampShellStackHeight(params.stack) : 0;
         const grid = normalizeShellGrid({ cells: params.gridCells, fit: params.gridFit === true });
         const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ });
-        const modifiedShape = await shellShape(target, thickness, openings, edges, target, undefined, { stack, grid, dividers });
+        const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth }) : null;
+        const modifiedShape = await shellShape(target, thickness, openings, edges, target, undefined, { stack, stackFoot, grid, dividers });
         commitShapes(
           shapesRef.current.map((candidate) => candidate.id === target.id ? modifiedShape : candidate),
           modifiedShape.id,
           t("status.shelledMcp", { size: Number(thickness.toFixed(2)) }),
         );
-        return { object: mcpShapeSummary(modifiedShape), thickness, openings, edges, ...(stack > 0 ? { stack } : {}), ...(grid ? { gridCells: grid.cells, gridFit: grid.fit } : {}), ...(dividers ? { dividersX: dividers.x, dividersZ: dividers.z } : {}) };
+        return { object: mcpShapeSummary(modifiedShape), thickness, openings, edges, ...(stack > 0 ? { stack } : {}), ...(stackFoot?.hollow ? { stackHollow: true } : {}), ...(stackFoot?.grip ? { stackGrip: stackFoot.grip, stackGripDepth: stackFoot.gripDepth } : {}), ...(grid ? { gridCells: grid.cells, gridFit: grid.fit } : {}), ...(dividers ? { dividersX: dividers.x, dividersZ: dividers.z } : {}) };
       }
 
       if (command.action === "offset_object") {
@@ -20170,6 +20174,8 @@ export function LayerlingEditor({
           stack={shellTool.stack ?? 0}
           stackOffered={shellOpenSides(shellTool.openings).length === 1 && shellOpenSides(shellTool.openings)[0] === "top"}
           onStackChange={(value) => setShellTool((current) => current ? { ...current, stack: value, error: null } : current)}
+          stackFoot={shellTool.stackFoot ?? null}
+          onStackFootChange={(value) => setShellTool((current) => current ? { ...current, stackFoot: value, error: null } : current)}
           onStackLid={makeStackLid}
           edges={shellTool.edges}
           onEdgesChange={(value) => setShellTool((current) => current ? { ...current, edges: value, error: null } : current)}

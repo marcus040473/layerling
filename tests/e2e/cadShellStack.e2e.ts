@@ -71,6 +71,46 @@ describe("stacking a hollowed box with the real OCCT kernel", () => {
     expect(() => shellStackSolid(kernel, shellSolid(kernel, cone, 2, "top"), 3, 2, cone)).toThrow(STACK_NOT_STRAIGHT_MESSAGE);
   });
 
+  it("makes the foot hollow: the floor lies on the plate, the wall follows the foot and its 45 degree widening", () => {
+    const { original, hollow } = made();
+    const solid = shellStackSolid(kernel, hollow, 3, 2, original);
+    const stacked = shellStackSolid(kernel, hollow, 3, 2, original, { hollow: true });
+    expect(kernel.isValid(stacked)).toBe(true);
+    expect(kernel.getSubShapes(stacked, "solid")).toHaveLength(1);
+    // The floor, a wall thick, on the plate; above it the inside goes down into the foot.
+    expect(at(stacked, 0, 1, 0)).toBe(true);
+    expect(at(stacked, 0, 3, 0)).toBe(false);
+    expect(at(stacked, 0, 7, 0)).toBe(false);
+    // The foot's wall: from 2.25 mm in to 4.25 mm in; the outside unchanged.
+    expect(at(stacked, -17, 1.5, 0)).toBe(true);
+    expect(at(stacked, -15.4, 3, 0)).toBe(false);
+    expect(at(stacked, -19, 1.5, 0)).toBe(false);
+    expect(at(stacked, -19.6, 6, 0)).toBe(true);
+    // Less filament than the solid foot, and it still stacks.
+    expect(kernel.getVolume(stacked)).toBeLessThan(kernel.getVolume(solid) - 500);
+    const above = kernel.translate(stacked, 0, 17, 0);
+    expect(kernel.getVolume(kernel.common(stacked, above))).toBeLessThan(1e-6);
+  });
+
+  it("cuts a grip into the front of the bottom, its ceiling at 45 degrees, closed off from the inside", () => {
+    const { original, hollow } = made();
+    for (const footStyle of [{ grip: 30, gripDepth: 4 }, { hollow: true, grip: 30, gripDepth: 4 }]) {
+      const stacked = shellStackSolid(kernel, hollow, 3, 2, original, footStyle);
+      expect(kernel.isValid(stacked)).toBe(true);
+      expect(kernel.getSubShapes(stacked, "solid")).toHaveLength(1);
+      // In the recess: 3 mm in from the front its ceiling is 8 - 3 = 5 mm up; beside it the foot is whole.
+      expect(at(stacked, 0, 2, 12)).toBe(false);
+      expect(at(stacked, 0, 6, 14.5)).toBe(false);
+      expect(at(stacked, -17, 2, 12)).toBe(true);
+      // Its ceiling is closed: just above it there is box.
+      expect(at(stacked, 0, 5.6, 12)).toBe(true);
+      // Behind it the hump closes it off, in a hollow foot too.
+      expect(at(stacked, 0, 4, 10.3)).toBe(true);
+      const above = kernel.translate(stacked, 0, 17, 0);
+      expect(kernel.getVolume(kernel.common(stacked, above))).toBeLessThan(1e-6);
+    }
+  });
+
   it("stacks a round box as well", () => {
     const cylinder = yUp(kernel.makeCylinder(25, 20));
     const stacked = shellStackSolid(kernel, shellSolid(kernel, cylinder, 2, "top"), 3, 2, cylinder);
