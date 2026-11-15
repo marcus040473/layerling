@@ -729,6 +729,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "status.cableMadeTight": "Kabelski kanal ustvarjen: {length} mm skozi {name}; en lok je ožji od želenega ({bend} mm).",
   "lid.title": "Pokrov",
   "lid.error.magnetsGrid": "Magneti v kotih segajo v celice Gridfinity na dnu. Povečaj škatlo, ali daj dnu manj celic (orodje Izdolbi), ali izklopi magnete.",
+  "lid.error.magnetsGridSize": "Magneti v kotih segajo v celice Gridfinity na dnu. S temi magneti potrebuje {columns} × {rows} celic škatlo vsaj {width} × {depth} mm. Povečaj škatlo na to velikost, daj dnu manj celic (orodje Izdolbi) ali izklopi magnete.",
   "lid.subtitle": "Pokrov za telo, ki je zgoraj odprto",
   "lid.cancel": "Zapri pokrov",
   "lid.help": "Pokrov sledi obrisu telesa in odprtini zgoraj. Telo najprej izdolbi z odprto zgornjo stranjo. Pokrov se pojavi poleg, obrnjen s ploščo navzdol, pripravljen za tisk.",

@@ -928,6 +928,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "lid.error.magnetsThinLid": "Pokrywka jest za cienka na te magnesy: zrób ją grubą na co najmniej {thickness} mm.",
   "lid.error.magnetsBundle": "Wiązka to nie jedna bryła. Najpierw ją zgrupuj, potem zrób pokrywkę z magnesami.",
   "lid.error.magnetsGrid": "Magnesy w narożnikach wchodzą w pola Gridfinity na dnie. Powiększ pudełko, albo daj dnu mniej pól (narzędzie Drążenie), albo wyłącz magnesy.",
+  "lid.error.magnetsGridSize": "Magnesy w narożnikach wchodzą w pola Gridfinity na dnie. Z tymi magnesami {columns} × {rows} pól potrzebuje pudełka co najmniej {width} × {depth} mm. Powiększ pudełko do tego rozmiaru, daj dnu mniej pól (narzędzie Drążenie) albo wyłącz magnesy.",
   "lid.error.magnetsKernel": "Nie udało się wyciąć gniazd na magnesy w bryle.",
   "lid.hinge": "Zawias",
   "lid.hingeSide": "Strona zawiasu",

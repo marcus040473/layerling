@@ -818,6 +818,7 @@ export const MESSAGES_ZH_TW: Partial<Record<MessageKey, string>> = {
   "status.cableMadeTight": "已產生線材通道：穿過 {name} 共 {length} mm；有一個彎比要求的更急（{bend} mm）。",
   "lid.title": "蓋子",
   "lid.error.magnetsGrid": "角落裡的磁鐵伸進了底部的 Gridfinity 格子。請把盒子做大，或減少底部格數（挖空工具），或關閉磁鐵。",
+  "lid.error.magnetsGridSize": "角落裡的磁鐵伸進了底部的 Gridfinity 格子。使用這些磁鐵時，{columns} × {rows} 格需要至少 {width} × {depth} mm 的盒子。請把盒子做到這麼大，或減少底部格數（挖空工具），或關閉磁鐵。",
   "lid.subtitle": "為頂部開口的實體做蓋子",
   "lid.cancel": "關閉蓋子",
   "lid.help": "蓋子會跟隨實體的輪廓和頂部開口。請先把實體挖空並讓頂部開口。蓋子會出現在實體旁邊，翻過來、平板朝下，可以直接列印。",

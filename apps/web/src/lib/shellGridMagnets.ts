@@ -70,3 +70,32 @@ export function magnetsMeetGridCells(shape: WorkplaneShape, magnets: LidShapeMag
   const exact = magnets.posts.filter((part) => part.kind === "box" || part.kind === "cylinder");
   return cells.some((cell) => magnets.pockets.some((part) => meets(part, MAGNET_POCKET_WALL, cell)) || exact.some((part) => meets(part, 0, cell)));
 }
+
+/**
+ * The smallest box, in mm, whose floor holds the same cells as now (columns x rows) with these magnets clear of them: the
+ * cells' 42 mm each and the same margin added to both sides, in steps of 0.1 mm, the magnets' pockets in the corners as
+ * the Lid tool puts them in a box with square corners. Null when the body has no Gridfinity floor, the magnets have no
+ * pockets, or no size up to 60 mm more fits.
+ */
+export function magnetsGridLeastSize(shape: WorkplaneShape, magnets: LidShapeMagnets, width: number, depth: number): { width: number; depth: number; columns: number; rows: number } | null {
+  const grid = shellGridOf(shape);
+  if (!grid || !magnets.pockets.length) return null;
+  const now = shellGridCellsOf(width, depth, grid.wall, grid.cells);
+  if (!now.length) return null;
+  const count = (values: number[]) => new Set(values.map((value) => Math.round(value * 1000))).size;
+  const columns = count(now.map((cell) => cell.x));
+  const rows = count(now.map((cell) => cell.z));
+  const diameter = Math.max(...magnets.pockets.map((pocket) => shapeWidth(pocket)));
+  // The Lid tool looks for each pocket's place in steps of 0.05 mm along the corner's diagonal, so it lands up to a step further in.
+  const reach = diameter / 2 + MAGNET_POCKET_WALL + 0.05 / Math.SQRT2;
+  const same = { x: 0, z: 0, edgeTreatmentHistory: [{ feature: { kind: "shell", amount: grid.wall, shellGrid: { cells: columns * rows } } }] } as unknown as WorkplaneShape;
+  for (let tenths = 0; tenths <= 600; tenths += 1) {
+    const w = Math.round((columns * GRIDFINITY_GRID + tenths / 10) * 10) / 10;
+    const d = Math.round((rows * GRIDFINITY_GRID + tenths / 10) * 10) / 10;
+    const cells = shellGridCellsOf(w, d, grid.wall, columns * rows);
+    if (cells.length !== columns * rows || count(cells.map((cell) => cell.x)) !== columns) continue;
+    const pockets = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => ({ kind: "cylinder", x: sx * (w / 2 - reach), z: sz * (d / 2 - reach), width: diameter, depth: diameter }) as unknown as WorkplaneShape);
+    if (!magnetsMeetGridCells(same, { pockets, posts: [] }, w, d)) return { width: w, depth: d, columns, rows };
+  }
+  return null;
+}

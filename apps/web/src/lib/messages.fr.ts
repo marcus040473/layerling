@@ -983,6 +983,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "lid.error.magnetsThinLid": "Le couvercle est trop fin pour ces aimants : donne-lui au moins {thickness} mm d'épaisseur.",
   "lid.error.magnetsBundle": "Un lot n'est pas un seul corps. Groupe-le d'abord, puis crée le couvercle avec aimants.",
   "lid.error.magnetsGrid": "Les aimants dans les coins empiètent sur les cellules Gridfinity du fond. Agrandis la boîte, ou donne moins de cellules au fond (outil Évider), ou désactive les aimants.",
+  "lid.error.magnetsGridSize": "Les aimants dans les coins empiètent sur les cellules Gridfinity du fond. Avec ces aimants, {columns} × {rows} cellules demandent une boîte d'au moins {width} × {depth} mm. Agrandis la boîte à cette taille, donne moins de cellules au fond (outil Évider), ou désactive les aimants.",
   "lid.error.magnetsKernel": "Les cavités des aimants n'ont pas pu être creusées dans le corps.",
   "lid.hinge": "Charnière",
   "lid.hingeSide": "Côté de la charnière",

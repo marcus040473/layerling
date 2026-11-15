@@ -975,6 +975,7 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "lid.error.magnetsThinLid": "La tapa es demasiado fina para estos imanes: hazla de {thickness} mm de grosor como mínimo.",
   "lid.error.magnetsBundle": "Un conjunto no es un solo cuerpo. Agrúpalo primero y después crea la tapa con imanes.",
   "lid.error.magnetsGrid": "Los imanes de las esquinas invaden las celdas Gridfinity del fondo. Agranda la caja, o pon menos celdas en el fondo (herramienta Vaciar), o desactiva los imanes.",
+  "lid.error.magnetsGridSize": "Los imanes de las esquinas invaden las celdas Gridfinity del fondo. Con estos imanes, {columns} × {rows} celdas necesitan una caja de al menos {width} × {depth} mm. Agranda la caja hasta ese tamaño, pon menos celdas en el fondo (herramienta Vaciar) o desactiva los imanes.",
   "lid.error.magnetsKernel": "No se han podido recortar en el cuerpo los alojamientos de los imanes.",
   "lid.hinge": "Bisagra",
   "lid.hingeSide": "Lado de la bisagra",

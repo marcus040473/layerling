@@ -1138,6 +1138,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "lid.error.magnetsThinLid": "Víko je pro tyto magnety příliš tenké: udělej ho alespoň {thickness} mm silné.",
   "lid.error.magnetsBundle": "Svazek není jedno těleso. Nejdřív ho seskup, pak udělej víko s magnety.",
   "lid.error.magnetsGrid": "Magnety v rozích zasahují do polí Gridfinity v dně. Zvětši krabici, nebo dej dnu méně polí (nástroj Vydlabat), nebo magnety vypni.",
+  "lid.error.magnetsGridSize": "Magnety v rozích zasahují do polí Gridfinity v dně. S těmito magnety potřebuje {columns} × {rows} polí krabici aspoň {width} × {depth} mm. Zvětši krabici na tuto velikost, dej dnu méně polí (nástroj Vydlabat), nebo magnety vypni.",
   "lid.error.magnetsKernel": "Kapsy pro magnety se nepodařilo vyříznout do tělesa.",
   "lid.hinge": "Pant",
   "lid.hingeSide": "Strana pantu",

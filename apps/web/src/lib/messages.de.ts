@@ -992,6 +992,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "lid.error.magnetsThinLid": "Der Deckel ist für diese Magnete zu dünn: Mach ihn mindestens {thickness} mm dick.",
   "lid.error.magnetsBundle": "Ein Bündel ist kein einzelner Körper. Gruppiere es zuerst und mach dann den Deckel mit Magneten.",
   "lid.error.magnetsGrid": "Die Magnete in den Ecken ragen in die Gridfinity-Felder des Bodens. Mach die Box größer oder gib dem Boden weniger Felder (Werkzeug Aushöhlen), oder schalte die Magnete aus.",
+  "lid.error.magnetsGridSize": "Die Magnete in den Ecken ragen in die Gridfinity-Felder des Bodens. Mit diesen Magneten brauchen {columns} × {rows} Felder eine Box von mindestens {width} × {depth} mm. Mach die Box so groß, gib dem Boden weniger Felder (Werkzeug Aushöhlen) oder schalte die Magnete aus.",
   "lid.error.magnetsKernel": "Die Taschen für die Magnete ließen sich nicht in den Körper schneiden.",
   "lid.hinge": "Scharnier",
   "lid.hingeSide": "Scharnierseite",

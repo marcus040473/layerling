@@ -992,6 +992,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "lid.error.magnetsThinLid": "Het deksel is te dun voor deze magneten: maak het minstens {thickness} mm dik.",
   "lid.error.magnetsBundle": "Een bundel is geen enkele vorm. Groepeer hem eerst en maak dan het deksel met magneten.",
   "lid.error.magnetsGrid": "De magneten in de hoeken reiken in de Gridfinity-cellen van de bodem. Maak de doos groter, of geef de bodem minder cellen (gereedschap Uithollen), of zet de magneten uit.",
+  "lid.error.magnetsGridSize": "De magneten in de hoeken reiken in de Gridfinity-cellen van de bodem. Met deze magneten hebben {columns} × {rows} cellen een doos van minstens {width} × {depth} mm nodig. Maak de doos zo groot, geef de bodem minder cellen (gereedschap Uithollen), of zet de magneten uit.",
   "lid.error.magnetsKernel": "De kuiltjes voor de magneten konden niet in de vorm gesneden worden.",
   "lid.hinge": "Scharnier",
   "lid.hingeSide": "Kant van het scharnier",

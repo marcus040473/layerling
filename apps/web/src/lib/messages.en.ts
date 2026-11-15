@@ -993,6 +993,7 @@ export const MESSAGES_EN = {
   "lid.error.magnetsThinLid": "The lid is too thin for these magnets: make it at least {thickness} mm thick.",
   "lid.error.magnetsBundle": "A bundle is not one body. Group it first, then make the lid with magnets.",
   "lid.error.magnetsGrid": "The magnets in the corners reach into the Gridfinity cells of the floor. Make the box larger, or give the floor fewer cells (Hollow tool), or switch the magnets off.",
+  "lid.error.magnetsGridSize": "The magnets in the corners reach into the Gridfinity cells of the floor. With these magnets, {columns} × {rows} cells need a box of at least {width} × {depth} mm. Make the box that large, give the floor fewer cells (Hollow tool), or switch the magnets off.",
   "lid.error.magnetsKernel": "The pockets for the magnets could not be cut into the body.",
   "lid.hinge": "Hinge",
   "lid.hingeSide": "Hinge side",

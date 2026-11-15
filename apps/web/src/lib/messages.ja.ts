@@ -866,6 +866,7 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "status.cableMadeTight": "ケーブルの通り道ができました：{name}の中を{length} mm。曲げが1か所、指定よりきつくなっています（{bend} mm）。",
   "lid.title": "ふた",
   "lid.error.magnetsGrid": "角の磁石が底の Gridfinity セルに入り込んでいます。箱を大きくするか、底のセル数を減らす（くり抜きツール）か、磁石をオフにしてください。",
+  "lid.error.magnetsGridSize": "角の磁石が底の Gridfinity セルに入り込んでいます。この磁石では {columns} × {rows} セルに少なくとも {width} × {depth} mm の箱が必要です。箱をその大きさにするか、底のセル数を減らす（くり抜きツール）か、磁石をオフにしてください。",
   "lid.subtitle": "上が開いたボディのふた",
   "lid.cancel": "ふたを閉じる",
   "lid.help": "ふたは、ボディの輪郭と上の開いたところに合わせて作られます。先にボディを、上を開けて中空にしてください。ふたはボディの横に、板を下にしてひっくり返した向きででき、そのままプリントできます。",

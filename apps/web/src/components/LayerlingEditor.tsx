@@ -116,7 +116,7 @@ import { canToggleGroupColors, colorForParts, groupShowsPartColors } from "@/lib
 import { disposeBoundsTree } from "three-mesh-bvh";
 import { clampShellStackHeight, shellStackFloor } from "@/lib/shellStackLimits";
 import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
-import { magnetsMeetGridCells } from "@/lib/shellGridMagnets";
+import { magnetsGridLeastSize, magnetsMeetGridCells } from "@/lib/shellGridMagnets";
 import { SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import { arrayCirclePivot, arrayFitGap, arrayFitShift, arrayFollowingPivot, arrayGridSize, arrayGroupsCopies, arrayWithFit, circleStepDegrees, clampArrayCount, gridOffsets, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing, type ArraySettings } from "@/lib/shapeArray";
@@ -8999,7 +8999,15 @@ export function LayerlingEditor({
     if (!result.lid) return fail(result.error);
     if (changed()) return fail(t("lid.error.changed"));
     // Magnets in the corners of a box with a Gridfinity floor must stay clear of its cells: the box is made larger or has fewer.
-    if (options.magnets && result.magnets && targets.some((shape) => !shape.hole && magnetsMeetGridCells(shape, result.magnets!, shapeWidth(shape), shapeDepth(shape)))) return fail(t("lid.error.magnetsGrid"));
+    const crowded = options.magnets && result.magnets ? targets.find((shape) => !shape.hole && magnetsMeetGridCells(shape, result.magnets!, shapeWidth(shape), shapeDepth(shape))) : undefined;
+    if (crowded && result.magnets) {
+      // The smallest box that holds the same cells with these magnets, so the message says how large to make it.
+      const least = magnetsGridLeastSize(crowded, result.magnets, shapeWidth(crowded), shapeDepth(crowded));
+      const mm = (value: number) => value.toLocaleString(numberLocale(), { maximumFractionDigits: 1 });
+      return fail(least
+        ? t("lid.error.magnetsGridSize", { columns: least.columns, rows: least.rows, width: mm(least.width), depth: mm(least.depth) })
+        : t("lid.error.magnetsGrid"));
+    }
     const lid = (await exactLid(targets, options, result.lid, result.magnets)) ?? result.lid;
     if (changed()) return fail(t("lid.error.changed"));
     const type = t(`lid.type.${options.type}`);

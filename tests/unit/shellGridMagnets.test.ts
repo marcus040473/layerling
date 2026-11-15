@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { magnetsMeetGridCells, shellGridCellsOf } from "@/lib/shellGridMagnets";
+import { magnetsGridLeastSize, magnetsMeetGridCells, shellGridCellsOf } from "@/lib/shellGridMagnets";
 import type { LidShapeMagnets } from "@/lib/lidTool";
 import type { WorkplaneShape } from "@/types/layerling";
 
@@ -35,6 +35,16 @@ describe("magnets in the corners of a box with a Gridfinity floor", () => {
     // In a box just large enough for the cells they do meet them.
     const tight = [at(-37.9, 37.9), at(37.9, 37.9), at(37.9, -37.9), at(-37.9, -37.9)];
     expect(magnetsMeetGridCells(two, { pockets: tight, posts: [mesh] }, 88.5, 88.5)).toBe(true);
+  });
+
+  it("says how large the box must be for the cells it has and the magnets asked for", () => {
+    const two = { ...body, edgeTreatmentHistory: [{ feature: { kind: "shell", amount: 2, shellGrid: { cells: 999 } } }] } as unknown as WorkplaneShape;
+    const pockets = (diameter: number) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sz]) => ({ kind: "cylinder", x: sx * 40, z: sz * 40, width: diameter + 0.2, depth: diameter + 0.2 }) as unknown as WorkplaneShape);
+    // 2 x 2 cells in a box of 88.5: the same numbers the Lid tool gives for 6, 8 and 10 mm magnets.
+    expect(magnetsGridLeastSize(two, { pockets: pockets(6), posts: [] }, 88.5, 88.5)).toEqual({ width: 98.3, depth: 98.3, columns: 2, rows: 2 });
+    expect(magnetsGridLeastSize(two, { pockets: pockets(8), posts: [] }, 88.5, 88.5)).toEqual({ width: 101.7, depth: 101.7, columns: 2, rows: 2 });
+    expect(magnetsGridLeastSize(two, { pockets: pockets(10), posts: [] }, 130.5, 88.5)).toEqual({ width: 147.1, depth: 105.1, columns: 3, rows: 2 });
+    expect(magnetsGridLeastSize({ x: 0, z: 0 } as WorkplaneShape, { pockets: pockets(8), posts: [] }, 88.5, 88.5)).toBeNull();
   });
 
   it("has nothing to say about a body without a Gridfinity floor", () => {

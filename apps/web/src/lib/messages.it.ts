@@ -965,6 +965,7 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "lid.error.magnetsThinLid": "Il coperchio è troppo sottile per questi magneti: portane lo spessore ad almeno {thickness} mm.",
   "lid.error.magnetsBundle": "Un gruppo non è un singolo corpo. Raggruppalo prima di creare il coperchio con i magneti.",
   "lid.error.magnetsGrid": "I magneti negli angoli invadono le celle Gridfinity del fondo. Ingrandisci la scatola, o riduci le celle del fondo (strumento Svuota), o disattiva i magneti.",
+  "lid.error.magnetsGridSize": "I magneti negli angoli invadono le celle Gridfinity del fondo. Con questi magneti, {columns} × {rows} celle richiedono una scatola di almeno {width} × {depth} mm. Ingrandisci la scatola fino a questa misura, riduci le celle del fondo (strumento Svuota) o disattiva i magneti.",
   "lid.error.magnetsKernel": "Impossibile creare le sedi dei magneti nel corpo.",
   "lid.hinge": "Cerniera",
   "lid.hingeSide": "Lato della cerniera",

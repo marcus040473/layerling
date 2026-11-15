@@ -987,6 +987,7 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "lid.error.magnetsThinLid": "Locket är för tunt för de här magneterna: gör det minst {thickness} mm tjockt.",
   "lid.error.magnetsBundle": "En bunt är inte en enda kropp. Gruppera den först och skapa sedan locket med magneter.",
   "lid.error.magnetsGrid": "Magneterna i hörnen når in i bottnens Gridfinity-rutor. Gör lådan större, eller ge botten färre rutor (verktyget Urholka), eller stäng av magneterna.",
+  "lid.error.magnetsGridSize": "Magneterna i hörnen når in i bottnens Gridfinity-rutor. Med de här magneterna behöver {columns} × {rows} rutor en låda på minst {width} × {depth} mm. Gör lådan så stor, ge botten färre rutor (verktyget Urholka), eller stäng av magneterna.",
   "lid.error.magnetsKernel": "Fickorna för magneterna kunde inte skäras ut i kroppen.",
   "lid.hinge": "Gångjärn",
   "lid.hingeSide": "Gångjärnssida",

@@ -272,6 +272,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "lid.error.magnetsThinLid": "Låget er for tyndt til disse magneter: gør det mindst {thickness} mm tykt.",
   "lid.error.magnetsBundle": "Et bundt er ikke ét legeme. Gruppér det først, og lav så låget med magneter.",
   "lid.error.magnetsGrid": "Magneterne i hjørnerne rager ind i bundens Gridfinity-felter. Gør æsken større, eller giv bunden færre felter (værktøjet Udhul), eller slå magneterne fra.",
+  "lid.error.magnetsGridSize": "Magneterne i hjørnerne rager ind i bundens Gridfinity-felter. Med disse magneter kræver {columns} × {rows} felter en æske på mindst {width} × {depth} mm. Gør æsken så stor, giv bunden færre felter (værktøjet Udhul), eller slå magneterne fra.",
   "lid.error.magnetsKernel": "Lommerne til magneterne kunne ikke skæres ind i legemet.",
   "lid.hinge": "Hængsel",
   "lid.hingeSide": "Hængslets side",

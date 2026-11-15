@@ -780,6 +780,7 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "status.cableMadeTight": "Canal para cabos criado: {length} mm através de {name}; uma curva tem um raio inferior ao pedido ({bend} mm).",
   "lid.title": "Tampa",
   "lid.error.magnetsGrid": "Os ímanes nos cantos invadem as células Gridfinity do fundo. Aumenta a caixa, ou dá menos células ao fundo (ferramenta Esvaziar), ou desliga os ímanes.",
+  "lid.error.magnetsGridSize": "Os ímanes nos cantos invadem as células Gridfinity do fundo. Com estes ímanes, {columns} × {rows} células precisam de uma caixa com pelo menos {width} × {depth} mm. Aumenta a caixa até esse tamanho, dá menos células ao fundo (ferramenta Esvaziar) ou desliga os ímanes.",
   "lid.subtitle": "Uma tampa para um sólido aberto no topo",
   "lid.cancel": "Fechar tampa",
   "lid.help": "A tampa acompanha o contorno do sólido e a abertura no topo. Cria primeiro uma cavidade no sólido, deixando o topo aberto. A tampa é criada ao lado, virada ao contrário e com a placa para baixo, pronta a imprimir.",
