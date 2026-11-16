@@ -2072,6 +2072,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "paint.magnetHint": "De lijn houdt zich aan plekken waar het oppervlak knikt, aan de omtrek van het lichaam en aan de randen van verf die er al op zit. Wat je erbinnen ziet, wordt geschilderd, zoals met de lasso.",
   "paint.smooth": "Gladmaken",
   "paint.smoothHint": "Strijkt een trillende hand en de trapjes van de lijn glad voordat hij wordt gelegd; hoeken blijven waar ze zijn. Bij 0 wordt hij gelegd zoals getekend.",
+  "paint.resizeHint": "Ctrl en het muiswiel, of [ en ], maken hem groter of kleiner. De doorzichtige bol laat zien waar hij schildert.",
   "paint.color": "Kleur",
   "paint.customColor": "Eigen kleur",
   "paint.eraser": "Gum",

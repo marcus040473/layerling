@@ -5822,6 +5822,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "Stregen holder sig til steder, hvor overfladen knækker, til legemets omrids og til kanterne af maling, der allerede er på. Det, du ser indenfor, bliver malet, som med lassoen.",
   "paint.smooth": "Udglatning",
   "paint.smoothHint": "Udjævner en rystende hånd og stregens trin, før den lægges; hjørner bliver, hvor de er. Ved 0 lægges den, som den er tegnet.",
+  "paint.resizeHint": "Ctrl og musehjulet eller [ og ] gør den større eller mindre. Den gennemsigtige kugle viser, hvor den maler.",
   "paint.color": "Farve",
   "paint.customColor": "Egen farve",
   "paint.eraser": "Viskelæder",

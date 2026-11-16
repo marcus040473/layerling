@@ -2072,6 +2072,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "paint.magnetHint": "Die Linie hält sich an Stellen, wo die Oberfläche knickt, an den Umriss des Körpers und an die Ränder schon gemalter Farbe. Was du darin siehst, wird bemalt, wie beim Lasso.",
   "paint.smooth": "Glätten",
   "paint.smoothHint": "Gleicht eine zittrige Hand und die Stufen der Linie aus, bevor sie gelegt wird; Ecken bleiben, wo sie sind. Bei 0 wird sie gelegt, wie gezeichnet.",
+  "paint.resizeHint": "Strg und das Mausrad oder [ und ] machen ihn größer oder kleiner. Die durchsichtige Kugel zeigt, wo er malt.",
   "paint.color": "Farbe",
   "paint.customColor": "Eigene Farbe",
   "paint.eraser": "Radierer",

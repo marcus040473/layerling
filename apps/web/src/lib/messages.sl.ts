@@ -5400,6 +5400,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "Črta se drži mest, kjer se površina lomi, obrisa telesa in robov že nanesene barve. Kar vidite znotraj, se pobarva, kot pri lasu.",
   "paint.smooth": "Glajenje",
   "paint.smoothHint": "Zgladi tresočo se roko in stopnice črte, preden se položi; vogali ostanejo, kjer so. Pri 0 se položi, kot je narisana.",
+  "paint.resizeHint": "Ctrl in kolesce miške ali [ in ] ga povečajo ali zmanjšajo. Prozorna krogla pokaže, kje barva.",
   "paint.color": "Barva",
   "paint.customColor": "Lastna barva",
   "paint.eraser": "Radirka",

@@ -2003,6 +2003,7 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "线会贴合表面转折处、物体轮廓以及已有颜色的边界。内部可见的部分会被上色，与套索相同。",
   "paint.smooth": "平滑",
   "paint.smoothHint": "在应用之前抹平手抖和线条的锯齿，角保持不变。为 0 时按画的样子应用。",
+  "paint.resizeHint": "按住 Ctrl 滚动鼠标滚轮，或按 [ 和 ]，可放大或缩小。半透明的球显示上色范围。",
   "paint.color": "颜色",
   "paint.customColor": "自定义颜色",
   "paint.eraser": "橡皮擦",

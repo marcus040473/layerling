@@ -2050,6 +2050,7 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "La línea sigue los lugares donde la superficie se dobla, el contorno del cuerpo y los bordes de la pintura ya aplicada. Lo que ves dentro se pinta, como con el lazo.",
   "paint.smooth": "Suavizado",
   "paint.smoothHint": "Iguala una mano temblorosa y los escalones de la línea antes de aplicarla; las esquinas se quedan donde están. Con 0 se aplica tal como se dibujó.",
+  "paint.resizeHint": "Ctrl y la rueda del ratón, o [ y ], lo agrandan o lo achican. La bola transparente muestra dónde pinta.",
   "paint.color": "Color",
   "paint.customColor": "Un color propio",
   "paint.eraser": "Borrador",

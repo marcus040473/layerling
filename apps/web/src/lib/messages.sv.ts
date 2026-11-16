@@ -2067,6 +2067,7 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "Linjen håller sig till ställen där ytan bryts, till kroppens kontur och till kanterna på färg som redan finns. Det du ser inuti målas, som med lasson.",
   "paint.smooth": "Utjämning",
   "paint.smoothHint": "Jämnar ut en darrig hand och linjens trappsteg innan den läggs; hörn stannar där de är. Vid 0 läggs den som den ritades.",
+  "paint.resizeHint": "Ctrl och mushjulet, eller [ och ], gör den större eller mindre. Den genomskinliga kulan visar var den målar.",
   "paint.color": "Färg",
   "paint.customColor": "En egen färg",
   "paint.eraser": "Suddgummi",

@@ -2039,6 +2039,7 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "La linea segue i punti in cui la superficie si piega, il contorno del corpo e i bordi della vernice già presente. Ciò che vedi all'interno viene dipinto, come con il lazo.",
   "paint.smooth": "Levigatura",
   "paint.smoothHint": "Uniforma una mano tremante e i gradini della linea prima di applicarla; gli angoli restano dove sono. A 0 viene applicata così come è disegnata.",
+  "paint.resizeHint": "Ctrl e la rotella del mouse, oppure [ e ], lo ingrandiscono o lo rimpiccioliscono. La sfera trasparente mostra dove dipinge.",
   "paint.color": "Colore",
   "paint.customColor": "Un colore tuo",
   "paint.eraser": "Gomma",

@@ -2062,6 +2062,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "La ligne suit les endroits où la surface se plie, le contour du corps et les bords de la peinture déjà posée. Ce que vous voyez à l'intérieur est peint, comme avec le lasso.",
   "paint.smooth": "Lissage",
   "paint.smoothHint": "Atténue une main tremblante et les marches de la ligne avant de la poser ; les angles restent en place. À 0, elle est posée telle que tracée.",
+  "paint.resizeHint": "Ctrl et la molette, ou [ et ], l'agrandissent ou le réduisent. La boule transparente montre où il peint.",
   "paint.color": "Couleur",
   "paint.customColor": "Une couleur à vous",
   "paint.eraser": "Gomme",

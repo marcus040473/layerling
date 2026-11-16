@@ -2211,6 +2211,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "paint.magnetHint": "Čára se drží míst, kde se povrch láme, obrysu tělesa a okrajů už namalované barvy. Co uvnitř vidíte, se namaluje, jako u lasa.",
   "paint.smooth": "Vyhlazení",
   "paint.smoothHint": "Vyrovná třesoucí se ruku a schůdky čáry, než se položí; rohy zůstanou, kde jsou. Při 0 se položí, jak byla nakreslena.",
+  "paint.resizeHint": "Ctrl a kolečko myši nebo [ a ] jej zvětší nebo zmenší. Průhledná koule ukazuje, kam maluje.",
   "paint.color": "Barva",
   "paint.customColor": "Vlastní barva",
   "paint.eraser": "Guma",

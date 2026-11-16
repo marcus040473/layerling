@@ -2057,6 +2057,7 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "線は表面が折れる所、本体の輪郭、すでに塗った塗装の境目に沿います。内側に見える部分が塗られます（投げ縄と同じ）。",
   "paint.smooth": "スムージング",
   "paint.smoothHint": "塗る前に、手ぶれや線の段差をならします。角はそのまま残ります。0 では描いたとおりに塗ります。",
+  "paint.resizeHint": "Ctrl とマウスホイール、または [ と ] で大きく・小さくできます。半透明の球が塗る範囲を示します。",
   "paint.color": "色",
   "paint.customColor": "自分の色",
   "paint.eraser": "消しゴム",

@@ -2073,6 +2073,7 @@ export const MESSAGES_EN = {
   "paint.magnetHint": "The line keeps to where the surface bends, to the body's outline and to the borders of paint already on it. What you see inside it is painted, as with the lasso.",
   "paint.smooth": "Smoothing",
   "paint.smoothHint": "Evens out a shaky hand and the steps of the line, before it is laid; corners stay where they are. 0 lays it as drawn.",
+  "paint.resizeHint": "Ctrl and the mouse wheel, or [ and ], make it larger or smaller. The see-through ball shows where it paints.",
   "paint.color": "Colour",
   "paint.customColor": "A colour of your own",
   "paint.eraser": "Eraser",

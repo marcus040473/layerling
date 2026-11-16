@@ -10727,6 +10727,18 @@ export function LayerlingEditor({
     });
   }, []);
 
+  /** Ctrl and the wheel, or [ and ], over the view: the brush or the circle larger or smaller, to a tenth of a millimetre. */
+  const resizePaint = useCallback((factor: number) => {
+    setPaintTool((current) => {
+      if (!current) return current;
+      const grown = current.settings.diameter * factor;
+      const diameter = Math.round(grown * 10) / 10 === current.settings.diameter ? current.settings.diameter + (factor > 1 ? 0.1 : -0.1) : Math.round(grown * 10) / 10;
+      const settings = normalizePaintTool({ ...current.settings, diameter });
+      paintSettingsRef.current = settings;
+      return { ...current, settings };
+    });
+  }, []);
+
   /** A stroke onto the painted body, as a step of the history; one that finds nothing on the body is not kept. */
   const addPaintStroke = useCallback(async (stroke: PaintStroke | null) => {
     const tool = paintTool;
@@ -19886,6 +19898,7 @@ export function LayerlingEditor({
           } : null}
           onPaintPick={paintAtPick}
           onPaintBrush={paintBrush}
+          onPaintResize={resizePaint}
           onPaintLasso={paintLasso}
           cadFacePick={historyViewState ? null : cadFacePick}
           onCadFacePick={deleteFaceTool ? toggleDeleteFace : toggleSurfaceFace}

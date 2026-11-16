@@ -2009,6 +2009,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "Linia trzyma się miejsc, gdzie powierzchnia się załamuje, obrysu bryły i brzegów już nałożonej farby. To, co widzisz w środku, zostanie pomalowane, jak przy lassie.",
   "paint.smooth": "Wygładzanie",
   "paint.smoothHint": "Wyrównuje drżącą rękę i schodki linii, zanim zostanie nałożona; narożniki zostają na miejscu. Przy 0 jest nakładana tak, jak narysowano.",
+  "paint.resizeHint": "Ctrl i kółko myszy albo [ i ] powiększają go lub zmniejszają. Przezroczysta kula pokazuje, gdzie maluje.",
   "paint.color": "Kolor",
   "paint.customColor": "Własny kolor",
   "paint.eraser": "Gumka",

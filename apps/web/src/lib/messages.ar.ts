@@ -2052,6 +2052,7 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "paint.magnetHint": "يلتزم الخط بالمواضع التي ينثني فيها السطح، وبمحيط الجسم، وبحدود الطلاء الموجود. ما تراه داخله يُطلى، كما مع اللاسو.",
   "paint.smooth": "التنعيم",
   "paint.smoothHint": "يسوّي ارتجاف اليد ودرجات الخط قبل تطبيقه؛ وتبقى الزوايا في مكانها. عند 0 يُطبَّق كما رُسم.",
+  "paint.resizeHint": "يكبّره Ctrl مع عجلة الفأرة، أو [ و]، أو يصغّره. وتُظهر الكرة الشفافة أين يطلي.",
   "paint.color": "اللون",
   "paint.customColor": "لون خاص بك",
   "paint.eraser": "الممحاة",

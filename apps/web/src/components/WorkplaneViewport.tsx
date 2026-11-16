@@ -119,7 +119,7 @@ import { useViewportKeyboardHooks } from "@/components/workplane/viewportKeyboar
 import { useViewportDoubleClick } from "@/components/workplane/useViewportDoubleClick";
 import { aimPickRay, firstShapeHit, paintLassoInView, pickImagePoint, pickLayFlatFace, pickMateFace, pickPaintFace, pickFaceCentre, pickRotationPivot, pickShapeAt, pointerRayFor, shapesUnderPointer, rayPointOnRotationPlane, RENDER_LAYER_SHAPES, splitAxisParameter, usePickOnlyPointer, worldTrianglePositions, type LayFlatPick, type PickOnlySelection } from "@/components/workplane/viewportPicking";
 import { fastEdgesGeometry } from "@/lib/fastEdgesGeometry";
-import { RENDER_LAYER_HELPERS, type PointCardOffset, type ThreeState, type MoveDimensionSession, type NoteOverlayState, type TapePoint, type TapeAttachment, type TapeEdgeAttachment, type TapeModel, type TapeOverlayState, type TapeCandidate, type DragItem, quaternionForShape, projectToScreen, syncMoveDimensionWorldLines, tapeShapeDimensions, tapePointWorld, tapeEdgeWorldPoints, tapeSegmentWorldPoints, tapeLengthMoverOf, tapeLengthRefusalText, syncTapeOverlay, tapeSegmentLengths, syncNoteOverlay, NoteOverlay, TapeOverlay, type RulerDimensionOverlayItem, type RulerDimensionOverlayState, syncRulerDimensionOverlay, RulerDimensionOverlay, type CornerRulerInstance, type CornerRulerOverlayState, syncCornerRulerToolOverlay, CornerRulerToolOverlay, syncOriginDimensionWorldLines, shapeCenter, shapeLocalExtents, projectShapeExtent, projectShapesExtent, type OriginDimensionFrame, formatMeasure, findShapeObject, releaseSharedShapeMaterials, disposeChildren, disposeObject } from "@/components/workplane/ViewportOverlays";
+import { RENDER_LAYER_HELPERS, setObjectRenderLayer, type PointCardOffset, type ThreeState, type MoveDimensionSession, type NoteOverlayState, type TapePoint, type TapeAttachment, type TapeEdgeAttachment, type TapeModel, type TapeOverlayState, type TapeCandidate, type DragItem, quaternionForShape, projectToScreen, syncMoveDimensionWorldLines, tapeShapeDimensions, tapePointWorld, tapeEdgeWorldPoints, tapeSegmentWorldPoints, tapeLengthMoverOf, tapeLengthRefusalText, syncTapeOverlay, tapeSegmentLengths, syncNoteOverlay, NoteOverlay, TapeOverlay, type RulerDimensionOverlayItem, type RulerDimensionOverlayState, syncRulerDimensionOverlay, RulerDimensionOverlay, type CornerRulerInstance, type CornerRulerOverlayState, syncCornerRulerToolOverlay, CornerRulerToolOverlay, syncOriginDimensionWorldLines, shapeCenter, shapeLocalExtents, projectShapeExtent, projectShapesExtent, type OriginDimensionFrame, formatMeasure, findShapeObject, releaseSharedShapeMaterials, disposeChildren, disposeObject } from "@/components/workplane/ViewportOverlays";
 import { MIN_SHAPE_SIZE, RENDER_LAYER_PREVIEWS, overhangUniforms, setEdgeLineStyle, setStrongHoles, setRulerInchScale, MODIFIER_EDGE_DEPTH_PULL, clamp, selectionFrameForShapes, refreshFrozenObjectMatrix, updateShapeObjectTransform, applySectionClipping, rebuildShapes, rebuildModifierEdges, setModifierEdgeHover, rebuildSelectionHelpers, cadFacePickLayerMesh, syncCadFaceLayer, syncBentTubeSegment, TRANSPARENT_SOLID_OPACITY, createShapeObject, onGroupDisplayReady } from "./workplane/viewportShapeObjects";
 import { movePivotToDepthUnder, WorkspaceSettings, createThreeScene, rebuildWorkplane, showWorkplanePlates, syncWorkplaneHoverPreview, updateSectionPlaneHelper, syncSplitPlane, type SplitConnectorMarks } from "./workplane/viewportScene";
 import { pointInsideOutline } from "@/lib/screenHull";
@@ -336,6 +336,8 @@ type WorkplaneViewportProps = {
   onPaintPick?: (pick: LayFlatPick | null) => void;
   /** A brush line drawn for the paint tool: the points it took over the body, in the world. */
   onPaintBrush?: (samples: PaintBrushSample[]) => void;
+  /** Ctrl and the mouse wheel, or [ and ], over the view with the brush or the circle: its diameter times `factor`. */
+  onPaintResize?: (factor: number) => void;
   /** A lasso drawn for the paint tool: the view it was drawn in, and the shape in that view (see PaintStroke.outline). */
   onPaintLasso?: (view: PaintLassoView, outline: Array<[number, number]>) => void;
   /**
@@ -1719,6 +1721,7 @@ export function WorkplaneViewport({
   onPaintPick,
   onPaintLasso,
   onPaintBrush,
+  onPaintResize,
   surfaceRegionDrawing = false,
   onSurfaceRegionLasso,
   cadFacePick = null,
@@ -2132,6 +2135,84 @@ export function WorkplaneViewport({
   onPaintLassoRef.current = onPaintLasso;
   const onPaintBrushRef = useRef(onPaintBrush);
   onPaintBrushRef.current = onPaintBrush;
+  const onPaintResizeRef = useRef(onPaintResize);
+  onPaintResizeRef.current = onPaintResize;
+  // The brush and the circle show where they paint: a see-through ball in the paint's colour, as large as the patch,
+  // on the body under the pointer (Discussion #1778). Where it cuts into the body is what a click or a line paints.
+  const paintCursorRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> | null>(null);
+  const paintCursorAtRef = useRef<{ x: number; y: number; pressure: number | null } | null>(null);
+  const placePaintCursor = useCallback((at: { x: number; y: number; pressure: number | null } | null) => {
+    paintCursorAtRef.current = at;
+    const state = threeRef.current;
+    const paint = paintPickRef.current;
+    if (!state) return;
+    const cursor = paintCursorRef.current;
+    const pick = at && paint && (paint.mode === "brush" || paint.mode === "circle") ? pickPaintFace(state, paint.shapeId, at.x, at.y) : null;
+    if (!pick || !paint) {
+      if (cursor?.visible) {
+        cursor.visible = false;
+        state.needsRender = true;
+      }
+      return;
+    }
+    let ball = cursor;
+    if (!ball) {
+      ball = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 32, 16),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.32, depthWrite: false }),
+      );
+      ball.name = "PaintCursor";
+      ball.renderOrder = 10;
+      setObjectRenderLayer(ball, RENDER_LAYER_HELPERS);
+      paintCursorRef.current = ball;
+    }
+    if (ball.parent !== state.scene) state.scene.add(ball);
+    const diameter = paint.mode === "brush" && paint.pressure !== false && at?.pressure != null ? pressureDiameter(paint.diameter ?? 1, at.pressure) : paint.diameter ?? 1;
+    ball.position.set(pick.point.x, pick.point.y, pick.point.z);
+    ball.scale.setScalar(Math.max(0.05, diameter / 2));
+    ball.material.color.set(paint.color ?? "#ffffff");
+    ball.visible = true;
+    state.needsRender = true;
+  }, []);
+  // A new size, colour or mode shows on the ball at once; another tool or none takes it away.
+  useEffect(() => {
+    placePaintCursor(paintCursorAtRef.current);
+  }, [paintPick?.color, paintPick?.diameter, paintPick?.mode, paintPick?.shapeId, placePaintCursor]);
+  useEffect(() => () => {
+    const ball = paintCursorRef.current;
+    if (!ball) return;
+    ball.removeFromParent();
+    ball.geometry.dispose();
+    ball.material.dispose();
+    paintCursorRef.current = null;
+  }, []);
+  // Ctrl (or Cmd) and the wheel make the brush or the circle larger or smaller instead of zooming; [ and ] do it a step at a time.
+  useEffect(() => {
+    const sized = () => {
+      const paint = paintPickRef.current;
+      return Boolean(paint && (paint.mode === "brush" || paint.mode === "circle") && onPaintResizeRef.current);
+    };
+    const onWheel = (event: WheelEvent) => {
+      const state = threeRef.current;
+      if (!state || !(event.ctrlKey || event.metaKey) || !sized()) return;
+      if (!(event.target instanceof Node) || !state.renderer.domElement.parentElement?.contains(event.target)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const factor = Math.min(1.25, Math.max(0.8, Math.exp(-event.deltaY * 0.0015)));
+      onPaintResizeRef.current?.(factor);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.key !== "[" && event.key !== "]") || event.ctrlKey || event.metaKey || !sized() || isTypingTarget(event.target)) return;
+      event.preventDefault();
+      onPaintResizeRef.current?.(event.key === "]" ? 1.15 : 1 / 1.15);
+    };
+    window.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("wheel", onWheel, { capture: true });
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
   // A brush line being drawn (Discussion #1778): the points it took over the body, and where they show in the view, each
   // with its width in pixels, for the line drawn over the view until it is laid.
   const paintBrushRef = useRef<{ pointerId: number; samples: PaintBrushSample[]; marks: Array<{ x: number; y: number; width: number }> } | null>(null);
@@ -7627,6 +7708,9 @@ export function WorkplaneViewport({
         syncLayFlatHover(threeRef.current, selectedIdsRef.current, resolvedThemeRef.current, event.clientX, event.clientY);
         return;
       }
+      if (paintPickRef.current && (paintPickRef.current.mode === "brush" || paintPickRef.current.mode === "circle")) {
+        placePaintCursor({ x: event.clientX, y: event.clientY, pressure: event.pointerType === "pen" ? event.pressure : null });
+      }
       const brush = paintBrushRef.current;
       if (brush) {
         const state = threeRef.current;
@@ -7835,7 +7919,7 @@ export function WorkplaneViewport({
         threeRef.current.needsRender = true;
       }
     },
-    [pickPlacementSurface, resolveMatePoint, setMarqueeFromState, toPlacementWorkplanePoint, toRawPlanePoint, toWorkplaneDragPoint, moveCruiseGhost, updateModifierEdgeHover, updateProtractorHover, updateTapeHover, updateTransform],
+    [pickPlacementSurface, resolveMatePoint, setMarqueeFromState, toPlacementWorkplanePoint, toRawPlanePoint, toWorkplaneDragPoint, moveCruiseGhost, updateModifierEdgeHover, updateProtractorHover, updateTapeHover, updateTransform, placePaintCursor, showPaintMagnet],
   );
 
   useEffect(() => {
@@ -7972,6 +8056,7 @@ export function WorkplaneViewport({
   cancelActiveDragRef.current = cancelActiveDrag;
 
   const handlePointerLeave = useCallback(() => {
+    placePaintCursor(null);
     if (workplaneModeRef.current) {
       syncWorkplaneHoverPreview(threeRef.current, null, workspaceRef.current, resolvedThemeRef.current);
     }
@@ -7980,7 +8065,7 @@ export function WorkplaneViewport({
       syncWorkplaneHoverPreview(threeRef.current, null, workspaceRef.current, resolvedThemeRef.current);
       setSplitPickOverFace(false);
     }
-  }, [clearModifierEdgeHover]);
+  }, [clearModifierEdgeHover, placePaintCursor]);
 
   const finishDrag = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {

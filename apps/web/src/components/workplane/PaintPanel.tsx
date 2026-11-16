@@ -163,6 +163,7 @@ export function PaintPanel({
           onChange={(value) => onChange({ diameter: value })}
         />
       ) : null}
+      {settings.mode === "circle" || settings.mode === "brush" ? <ToolHint text={t("paint.resizeHint")} /> : null}
       {settings.mode === "brush" ? (<>
         <label className="edge-modifier-field offset-copy">
           <input type="checkbox" checked={settings.pressure} onChange={(event) => onChange({ pressure: event.target.checked })} />
