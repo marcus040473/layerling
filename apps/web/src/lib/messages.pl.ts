@@ -1333,6 +1333,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Przegrody w poprzek",
   "shell.dividersAlong": "Przegrody wzdłuż",
   "shell.dividersHint": "Ścianki stojące na dnie, równomiernie rozmieszczone we wnętrzu, na początek grubości 1,2 mm.",
+  "shell.dividersNoGrid": "Z dnem Gridfinity nie ma przegródek: pojemniki wypełniają pola, a między nimi jest tylko 0,5 mm. Przegródkami są wtedy pojemniki.",
   "shell.dividerHeightHint": "Mierzona od dna, co najmniej 3 mm. Przesunięte do końca sięgają krawędzi.",
   "shell.dividerHeightQuick": "Szybkie wysokości",
   "shell.dividerHeightFlush": "Równo",

@@ -1399,6 +1399,7 @@ export const MESSAGES_EN = {
   "shell.dividersAcross": "Dividers across",
   "shell.dividersAlong": "Dividers along",
   "shell.dividersHint": "Walls that stand on the floor, evenly spaced across the inside, 1.2 mm thick to begin with.",
+  "shell.dividersNoGrid": "With a Gridfinity floor there are no dividers: the bins fill the cells, with only 0.5 mm between them. The bins are the compartments then.",
   "shell.dividerHeightHint": "Measured from the floor, at least 3 mm. Pulled all the way up, they reach the rim.",
   "shell.dividerHeightQuick": "Quick heights",
   "shell.dividerHeightFlush": "Flush",

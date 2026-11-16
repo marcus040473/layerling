@@ -1539,7 +1539,7 @@ export const tools = [
         stackGripAt: { type: "number", description: "With stackGrip: where the recess sits up the side, in % of the room for it, 0 to 100 (default 0): 0 open at the bottom, to lift the box off the one below; above 0 a pocket with a level floor, at 100 its top 2 mm under the rim. Inside, a hump a wall thick closes it off, its underside sloping at 45 degrees so it prints without support." },
         gridCells: { type: "integer", description: "Gridfinity cells in the floor, at most (top open only); leave out for none." },
         gridFit: { type: "boolean", description: "With gridCells: thicken the walls so the inside is exactly the cells." },
-        dividersX: { type: "integer", description: "Dividers across the inside, 0 to 8 (top open only)." },
+        dividersX: { type: "integer", description: "Dividers across the inside, 0 to 8 (top open only; not with gridCells: a Gridfinity floor's bins fill the cells, with only 0.5 mm between them, so asking for both is refused)." },
         dividersZ: { type: "integer", description: "Dividers along the inside, 0 to 8 (top open only)." },
         dividerHeight: { type: "number", description: "With dividers: how high they stand over the floor, in mm, at least 3; unset, 0, or within 0.1 mm of the rim or over it: up to the rim. The same rule as gridfinityDividerHeight." },
         dividerThickness: { type: "number", description: "With dividers: their thickness in mm, 0.8 to 3. Default 1.2." },

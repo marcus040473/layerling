@@ -1389,6 +1389,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Séparateurs en travers",
   "shell.dividersAlong": "Séparateurs en long",
   "shell.dividersHint": "Parois posées sur le fond, régulièrement réparties dans l'intérieur, de 1,2 mm au départ.",
+  "shell.dividersNoGrid": "Avec un fond Gridfinity, pas de séparations : les bacs remplissent les cases, avec seulement 0,5 mm entre eux. Les bacs servent alors de compartiments.",
   "shell.dividerHeightHint": "Mesurée depuis le fond, au moins 3 mm. Tout en haut, elles montent jusqu'au bord.",
   "shell.dividerHeightQuick": "Hauteurs rapides",
   "shell.dividerHeightFlush": "Affleurant",

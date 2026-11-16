@@ -662,6 +662,7 @@ export const MESSAGES_HU: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Válaszfalak keresztben",
   "shell.dividersAlong": "Válaszfalak hosszában",
   "shell.dividersHint": "A fenéken álló falak, egyenletesen elosztva a belső térben, kezdetben 1,2 mm vastagok.",
+  "shell.dividersNoGrid": "Gridfinity-fenékkel nincsenek válaszfalak: a tárolók kitöltik a mezőket, köztük csak 0,5 mm a hézag. Ilyenkor a tárolók a rekeszek.",
   "shell.dividerHeightHint": "A fenéktől mérve, legalább 3 mm. Egészen felhúzva a peremig érnek.",
   "shell.dividerHeightQuick": "Gyors magasságok",
   "shell.dividerHeightFlush": "Peremig",

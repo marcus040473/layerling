@@ -1334,6 +1334,7 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "横向隔板",
   "shell.dividersAlong": "纵向隔板",
   "shell.dividersHint": "立在底上的壁，在内部均匀分布，起初厚 1.2 毫米。",
+  "shell.dividersNoGrid": "有 Gridfinity 底板时没有隔板：收纳盒填满格子，盒间只有 0.5 毫米。此时收纳盒就是隔间。",
   "shell.dividerHeightHint": "从底面量起，至少 3 毫米。拉到最高时一直到边缘。",
   "shell.dividerHeightQuick": "快速高度",
   "shell.dividerHeightFlush": "齐平",

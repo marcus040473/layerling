@@ -30,6 +30,7 @@ export const GRID_TOO_LOW_MESSAGE = "The body is too low for a Gridfinity floor:
 export const GRID_NO_CELL_MESSAGE = "Not even one whole Gridfinity cell fits into the inside of this box.";
 export const GRID_FAILED_MESSAGE = "The Gridfinity floor could not be built on this body. Switch it off or choose another wall.";
 export const DIVIDERS_NEEDS_TOP_MESSAGE = "Dividers need a body hollowed with only its top open.";
+export const DIVIDERS_WITH_GRID_MESSAGE = "Dividers do not go with a Gridfinity floor: its bins fill the cells, with only 0.5 mm between them. Use the bins as compartments, or switch the Gridfinity floor off.";
 export const DIVIDERS_FAILED_MESSAGE = "The dividers could not be built on this body. Switch them off or choose fewer.";
 
 /** A number of cells, or of dividers, kept to a whole number from 0 to `max`. */

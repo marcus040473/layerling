@@ -2191,6 +2191,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Skillevægge på tværs",
   "shell.dividersAlong": "Skillevægge på langs",
   "shell.dividersHint": "Vægge, der står på bunden, jævnt fordelt over indersiden, til at begynde med 1,2 mm tykke.",
+  "shell.dividersNoGrid": "Med Gridfinity-bund er der ingen skillevægge: kasserne fylder felterne med kun 0,5 mm imellem. Brug kasserne som rum.",
   "shell.dividerHeightHint": "Måles fra bunden, mindst 3 mm. Trukket helt op når de til kanten.",
   "shell.dividerHeightQuick": "Hurtige højder",
   "shell.dividerHeightFlush": "Flugter",

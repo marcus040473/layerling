@@ -1397,6 +1397,7 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Перегородки поперёк",
   "shell.dividersAlong": "Перегородки вдоль",
   "shell.dividersHint": "Стенки, стоящие на дне, равномерно распределённые внутри, сначала толщиной 1,2 мм.",
+  "shell.dividersNoGrid": "С полом Gridfinity перегородок нет: контейнеры заполняют ячейки, между ними всего 0,5 мм. Отделениями тогда служат контейнеры.",
   "shell.dividerHeightHint": "Отсчитывается от дна, не меньше 3 мм. Если поднять до конца, стенки доходят до края.",
   "shell.dividerHeightQuick": "Быстрые высоты",
   "shell.dividerHeightFlush": "Вровень",

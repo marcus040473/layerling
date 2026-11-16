@@ -1376,6 +1376,7 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "فواصل عرضية",
   "shell.dividersAlong": "فواصل طولية",
   "shell.dividersHint": "جدران تقف على القاع، موزعة بالتساوي داخل الصندوق، بسماكة 1.2 مم في البداية.",
+  "shell.dividersNoGrid": "مع أرضية Gridfinity لا توجد فواصل: الحاويات تملأ الخانات وبينها 0.5 مم فقط. استخدم الحاويات كأقسام.",
   "shell.dividerHeightHint": "تُقاس من القاع، 3 مم على الأقل. عند سحبها إلى الأعلى تصل إلى الحافة.",
   "shell.dividerHeightQuick": "ارتفاعات سريعة",
   "shell.dividerHeightFlush": "مستوية",

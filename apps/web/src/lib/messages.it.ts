@@ -1370,6 +1370,7 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Divisori trasversali",
   "shell.dividersAlong": "Divisori longitudinali",
   "shell.dividersHint": "Pareti appoggiate sul fondo, distribuite in modo uniforme nell'interno, spesse 1,2 mm all'inizio.",
+  "shell.dividersNoGrid": "Con il fondo Gridfinity niente divisori: i contenitori riempiono le celle con solo 0,5 mm tra loro. Sono loro gli scomparti.",
   "shell.dividerHeightHint": "Misurata dal fondo, almeno 3 mm. Al massimo arrivano fino al bordo.",
   "shell.dividerHeightQuick": "Altezze rapide",
   "shell.dividerHeightFlush": "A filo",

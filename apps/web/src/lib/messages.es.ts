@@ -1380,6 +1380,7 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Separadores transversales",
   "shell.dividersAlong": "Separadores longitudinales",
   "shell.dividersHint": "Paredes que se apoyan en el fondo, repartidas por igual por el interior, de 1,2 mm al principio.",
+  "shell.dividersNoGrid": "Con suelo Gridfinity no hay separadores: los contenedores llenan las celdas con solo 0,5 mm entre ellos. Los contenedores son entonces los compartimentos.",
   "shell.dividerHeightHint": "Se mide desde el fondo, al menos 3 mm. Al máximo, llegan hasta el borde.",
   "shell.dividerHeightQuick": "Alturas rápidas",
   "shell.dividerHeightFlush": "Enrasado",

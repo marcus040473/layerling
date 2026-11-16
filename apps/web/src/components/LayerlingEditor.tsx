@@ -119,7 +119,7 @@ import { disposeBoundsTree } from "three-mesh-bvh";
 import { clampShellStackHeight, normalizeShellStackFoot, shellStackFloor, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
 import { magnetsGridLeastSize, magnetsMeetGridCells } from "@/lib/shellGridMagnets";
-import { SHELL_GRID_FLOOR, SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
+import { DIVIDERS_WITH_GRID_MESSAGE, SHELL_GRID_FLOOR, SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
 import { DEFAULT_SHELL_SHELF_HEIGHT, clampShellShelfHeight, clampShellShelfWidth } from "@/lib/shellShelfLimits";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import { arrayCirclePivot, arrayFitGap, arrayFitShift, arrayFollowingPivot, arrayGridSize, arrayGroupsCopies, arrayWithFit, circleStepDegrees, clampArrayCount, gridOffsets, moveAlongRadius, rotateAroundVertical, rowOffset, singleAxisSpacing, type ArraySettings } from "@/lib/shapeArray";
@@ -9415,7 +9415,8 @@ export function LayerlingEditor({
     const gridMax = shellGridEstimate(shapeWidth(target), shapeDepth(target), thickness).max;
     const gridCells = shellTool.gridCells ?? 0;
     const grid = normalizeShellGrid({ cells: gridCells > 0 && gridCells >= gridMax ? MAX_SHELL_GRID_CELLS : gridCells, fit: shellTool.gridFit });
-    const dividers = normalizeShellDividers(shellTool.dividers);
+    // Not with a Gridfinity floor: its bins fill the cells.
+    const dividers = grid ? null : normalizeShellDividers(shellTool.dividers);
     const shelf = shellTool.shelf ? { width: shellTool.shelf, height: shellTool.shelfHeight ?? DEFAULT_SHELL_SHELF_HEIGHT } : undefined;
     setShellTool((current) => current ? { ...current, busy: true, error: null } : current);
     if (shellTool.mode === "offset") {
@@ -16070,6 +16071,7 @@ export function LayerlingEditor({
         const stack = typeof params.stack === "number" && params.stack > 0 ? clampShellStackHeight(params.stack) : 0;
         const grid = normalizeShellGrid({ cells: params.gridCells, fit: params.gridFit === true });
         const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness });
+        if (grid && dividers) throw new Error(DIVIDERS_WITH_GRID_MESSAGE);
         const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth, gripSides: params.stackGripSides, gripHeight: params.stackGripHeight, gripAt: params.stackGripAt }) : null;
         const shelf = typeof params.shelf === "number" && params.shelf > 0
           ? { width: clampShellShelfWidth(params.shelf), height: clampShellShelfHeight(typeof params.shelfHeight === "number" ? params.shelfHeight : DEFAULT_SHELL_SHELF_HEIGHT) }
@@ -20330,7 +20332,8 @@ export function LayerlingEditor({
           // The dividers' full height over the floor: the body's height less its floor (the Gridfinity floor's 6.2 mm, or the wall).
           // Under a shelf ledge, up to its top: the ledge's height is measured from the wall's floor.
           dividerFullHeight={Math.max(0, Math.round((Math.min(selectedShape.height, (shellTool.shelf ?? 0) > 0 ? shellTool.thickness + (shellTool.shelfHeight ?? DEFAULT_SHELL_SHELF_HEIGHT) : Infinity) - ((shellTool.gridCells ?? 0) > 0 ? SHELL_GRID_FLOOR : shellTool.thickness)) * 10) / 10)}
-          onGridChange={(cells, fit) => setShellTool((current) => current ? { ...current, gridCells: cells, gridFit: fit, error: null } : current)}
+          // A Gridfinity floor takes the dividers away: its bins fill the cells, with no room for a divider.
+          onGridChange={(cells, fit) => setShellTool((current) => current ? { ...current, gridCells: cells, gridFit: fit, ...(cells > 0 ? { dividers: null } : {}), error: null } : current)}
           onDividersChange={(value) => setShellTool((current) => current ? { ...current, dividers: value, error: null } : current)}
           stack={shellTool.stack ?? 0}
           stackOffered={shellOpenSides(shellTool.openings).length === 1 && shellOpenSides(shellTool.openings)[0] === "top"}

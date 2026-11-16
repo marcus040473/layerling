@@ -1392,6 +1392,7 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Skiljeväggar tvärs",
   "shell.dividersAlong": "Skiljeväggar på längden",
   "shell.dividersHint": "Väggar som står på botten, jämnt fördelade över insidan, till att börja med 1,2 mm tjocka.",
+  "shell.dividersNoGrid": "Med Gridfinity-botten finns inga skiljeväggar: lådorna fyller rutorna med bara 0,5 mm emellan. Lådorna blir då facken.",
   "shell.dividerHeightHint": "Mäts från botten, minst 3 mm. Dras de ända upp når de kanten.",
   "shell.dividerHeightQuick": "Snabba höjder",
   "shell.dividerHeightFlush": "Jäms",

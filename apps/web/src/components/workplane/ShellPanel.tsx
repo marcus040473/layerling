@@ -267,15 +267,16 @@ export function ShellPanel({
           <div className="shell-opening-options">
             <button
               type="button"
-              aria-pressed={dividers !== null}
-              className={dividers !== null ? "active" : ""}
-              disabled={busy}
+              aria-pressed={dividers !== null && gridCells === 0}
+              className={dividers !== null && gridCells === 0 ? "active" : ""}
+              // The bins fill a Gridfinity floor's cells with 0.5 mm between them: no room for a divider anywhere.
+              disabled={busy || gridCells > 0}
               onClick={() => onDividersChange(dividers ? null : { x: 1, z: 1 })}
             >
               {t("shell.dividers")}
             </button>
           </div>
-          {dividers ? (<>
+          {dividers && gridCells === 0 ? (<>
             <EdgeModifierSlider
               label={t("shell.dividersAcross")}
               value={dividers.x}
@@ -354,7 +355,7 @@ export function ShellPanel({
               <ToolHint text={t("shell.dividerHeightHint")} />
             </>) : null}
           </>) : null}
-          <ToolHint text={t("shell.dividersHint")} />
+          <ToolHint text={t(gridCells > 0 ? "shell.dividersNoGrid" : "shell.dividersHint")} />
         </div>
       </>) : null}
 

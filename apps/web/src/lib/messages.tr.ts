@@ -649,6 +649,7 @@ export const MESSAGES_TR: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Enine bölmeler",
   "shell.dividersAlong": "Boyuna bölmeler",
   "shell.dividersHint": "Tabanın üzerinde duran, iç kısma eşit aralıklarla yerleştirilen duvarlar; başlangıçta 1,2 mm kalınlığında.",
+  "shell.dividersNoGrid": "Gridfinity tabanla ara bölme olmaz: kutular hücreleri doldurur, aralarında yalnızca 0,5 mm kalır. Bölmeler bu durumda kutulardır.",
   "shell.dividerHeightHint": "Tabandan ölçülür, en az 3 mm. Sonuna kadar çekilirse kenara kadar uzanır.",
   "shell.dividerHeightQuick": "Hızlı yükseklikler",
   "shell.dividerHeightFlush": "Kenarla aynı",

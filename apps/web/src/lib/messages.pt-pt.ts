@@ -1259,6 +1259,7 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Divisórias na largura",
   "shell.dividersAlong": "Divisórias no comprimento",
   "shell.dividersHint": "Paredes que ficam sobre o fundo, distribuídas por igual pelo interior, com 1,2 mm de início.",
+  "shell.dividersNoGrid": "Com piso Gridfinity não há divisórias: as caixas preenchem as células, com só 0,5 mm entre elas. As caixas passam a ser os compartimentos.",
   "shell.dividerHeightHint": "Medida a partir do fundo, no mínimo 3 mm. No máximo, chegam ao rebordo.",
   "shell.dividerHeightQuick": "Alturas rápidas",
   "shell.dividerHeightFlush": "Rente",

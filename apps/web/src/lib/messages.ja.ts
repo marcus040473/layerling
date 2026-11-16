@@ -1381,6 +1381,7 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "横方向の仕切り",
   "shell.dividersAlong": "縦方向の仕切り",
   "shell.dividersHint": "底に立つ壁を内側に等間隔に並べます。厚さは初め 1.2 mm です。",
+  "shell.dividersNoGrid": "Gridfinity 床では仕切りは使えません。ビンがマスを埋め、間は 0.5 mm しかありません。ビンが仕切りの代わりになります。",
   "shell.dividerHeightHint": "底から測り、3 mm 以上。いちばん上まで上げると縁まで届きます。",
   "shell.dividerHeightQuick": "クイック高さ",
   "shell.dividerHeightFlush": "縁まで",

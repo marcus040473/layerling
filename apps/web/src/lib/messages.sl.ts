@@ -5554,6 +5554,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "shell.dividersAcross": "Predelne stene počez",
   "shell.dividersAlong": "Predelne stene po dolžini",
   "shell.dividersHint": "Stene, ki stojijo na dnu, enakomerno razporejene po notranjosti, na začetku debele 1,2 mm.",
+  "shell.dividersNoGrid": "S tlemi Gridfinity ni pregrad: posodice zapolnijo polja, med njimi je le 0,5 mm. Predalčki so potem posodice.",
   "shell.dividerHeightHint": "Merjeno od dna, najmanj 3 mm. Povlečene do konca segajo do roba.",
   "shell.dividerHeightQuick": "Hitre višine",
   "shell.dividerHeightFlush": "Poravnano",

@@ -1398,6 +1398,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "shell.dividersAcross": "Tussenschotten dwars",
   "shell.dividersAlong": "Tussenschotten in de lengte",
   "shell.dividersHint": "Wanden die op de bodem staan, gelijkmatig verdeeld over de binnenkant, in het begin 1,2 mm dik.",
+  "shell.dividersNoGrid": "Met een Gridfinity-bodem zijn er geen tussenschotten: de bakjes vullen de vakken met maar 0,5 mm ertussen. De bakjes zijn dan de vakken.",
   "shell.dividerHeightHint": "Gemeten vanaf de bodem, minstens 3 mm. Helemaal omhoog reiken ze tot de rand.",
   "shell.dividerHeightQuick": "Snelle hoogtes",
   "shell.dividerHeightFlush": "Gelijk",

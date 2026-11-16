@@ -1398,6 +1398,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "shell.dividersAcross": "Trennstege quer",
   "shell.dividersAlong": "Trennstege längs",
   "shell.dividersHint": "Wände, die auf dem Boden stehen, gleichmäßig über den Innenraum verteilt, zu Beginn 1,2 mm dick.",
+  "shell.dividersNoGrid": "Mit Gridfinity-Boden gibt es keine Trennstege: Die Behälter füllen die Felder, dazwischen sind nur 0,5 mm Luft. Die Behälter sind dann die Fächer.",
   "shell.dividerHeightHint": "Gemessen vom Boden, mindestens 3 mm. Ganz nach oben gezogen reichen sie bis zum Rand.",
   "shell.dividerHeightQuick": "Schnelle Höhen",
   "shell.dividerHeightFlush": "Bündig",

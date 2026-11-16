@@ -1544,6 +1544,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "shell.dividersAcross": "Přepážky napříč",
   "shell.dividersAlong": "Přepážky podél",
   "shell.dividersHint": "Stěny stojící na dně, rovnoměrně rozmístěné ve vnitřku, zpočátku silné 1,2 mm.",
+  "shell.dividersNoGrid": "S podlahou Gridfinity nejsou přepážky možné: krabičky vyplní pole a mezi nimi je jen 0,5 mm. Použijte krabičky jako přihrádky.",
   "shell.dividerHeightHint": "Měří se ode dna, nejméně 3 mm. Posunuto až nahoru sahají k okraji.",
   "shell.dividerHeightQuick": "Rychlé výšky",
   "shell.dividerHeightFlush": "Zarovnat",

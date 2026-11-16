@@ -1404,7 +1404,8 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
           activeCad.release(component);
           component = floored;
         }
-        if (dividers) {
+        // With a Gridfinity floor no dividers (its bins fill the cells): a design saved with both keeps its floor.
+        if (dividers && !grid) {
           const divided = shellDividersSolid(activeCad, solid, component, dividers, floorTop, shelfTop);
           activeCad.release(component);
           component = divided;
