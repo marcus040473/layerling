@@ -42,6 +42,7 @@ function mount(props: { settings?: Partial<PaintToolSettings>; strokes?: number;
       workspace: DEFAULT_WORKPLANE_WORKSPACE,
       onChange: (patch) => calls.push(JSON.stringify(patch)),
       onClear: () => calls.push("clear"),
+      onFillGaps: () => calls.push("fill-gaps"),
       onClose: () => calls.push("close"),
     }));
   });
@@ -55,16 +56,17 @@ describe("the paint tool's window", () => {
   it("offers fill, circle, brush, lasso and the magnetic lasso, with the fill's angle and what a click does", () => {
     const { panel, calls } = mount();
     const modes = [...panel.querySelectorAll<HTMLButtonElement>("[role=radiogroup] [role=radio]")].filter((entry) => entry.textContent);
-    expect(modes.map((entry) => entry.textContent)).toEqual(["Fill", "Circle", "Brush", "Lasso", "Magnetic lasso"]);
-    expect(modes.map((entry) => entry.getAttribute("aria-checked"))).toEqual(["true", "false", "false", "false", "false"]);
+    expect(modes.map((entry) => entry.textContent)).toEqual(["Fill", "Circle", "Brush", "Height band", "Lasso", "Magnetic lasso"]);
+    expect(modes.map((entry) => entry.getAttribute("aria-checked"))).toEqual(["true", "false", "false", "false", "false", "false"]);
     expect(panel.querySelector("[role=status] small")?.textContent).toBe("Click a face to fill it up to its sharp edges.");
     expect(panel.textContent).toContain("Stop at edges sharper than");
     expect(panel.textContent).not.toContain("Diameter");
     click(modes[1]);
-    click(modes[3]);
-    click(modes[2]);
     click(modes[4]);
-    expect(calls).toEqual(["circle", "lasso", "brush", "magnet"].map((mode) => JSON.stringify({ mode })));
+    click(modes[2]);
+    click(modes[5]);
+    click(modes[3]);
+    expect(calls).toEqual(["circle", "lasso", "brush", "magnet", "height"].map((mode) => JSON.stringify({ mode })));
   });
 
   it("gives the brush its width and the pen's pressure (Discussion #1778)", () => {
@@ -76,6 +78,24 @@ describe("the paint tool's window", () => {
     click(pressure);
     expect(calls).toEqual([JSON.stringify({ pressure: false })]);
     expect(panel.textContent).toContain("a light touch paints thinner");
+  });
+
+  it("paints as a ball when asked, gives a band its height, and fills gaps (Discussion #1778)", () => {
+    const circle = mount({ settings: { mode: "circle" }, strokes: 2 });
+    const ball = [...circle.panel.querySelectorAll<HTMLInputElement>("input[type=checkbox]")].find((entry) => entry.parentElement?.textContent?.includes("As a ball"))!;
+    expect(ball.checked).toBe(false);
+    click(ball);
+    expect(circle.panel.textContent).toContain("Ctrl and the mouse wheel");
+    click(button(circle.panel, "Fill gaps"));
+    expect(circle.calls).toEqual([JSON.stringify({ ball: true }), "fill-gaps"]);
+    act(() => root?.unmount());
+    container?.remove();
+    const band = mount({ settings: { mode: "height" } });
+    expect(band.panel.textContent).toContain("Band height");
+    expect(band.panel.textContent).not.toContain("As a ball");
+    expect(band.panel.querySelector("[role=status] small")?.textContent).toBe("Click the body at the height the band should run round.");
+    // Nothing painted yet, nothing to fill.
+    expect(button(band.panel, "Fill gaps")?.disabled).toBe(true);
   });
 
   it("tells how the magnetic lasso is laid, closed and taken back, with no size to set", () => {
@@ -137,7 +157,7 @@ describe("the paint tool's window", () => {
     await setLanguage("de", false);
     const { panel } = mount({ settings: { mode: "lasso" } });
     expect(panel.textContent).toContain("Bemalen");
-    expect([...panel.querySelectorAll("[role=radio]")].map((entry) => entry.textContent).filter(Boolean)).toEqual(["Füllen", "Kreis", "Pinsel", "Lasso", "Magnet-Lasso"]);
+    expect([...panel.querySelectorAll("[role=radio]")].map((entry) => entry.textContent).filter(Boolean)).toEqual(["Füllen", "Kreis", "Pinsel", "Höhenband", "Lasso", "Magnet-Lasso"]);
     expect(panel.querySelector("[role=status] small")?.textContent).toBe("Halte die Maustaste gedrückt und umfahre den Bereich.");
   });
 });

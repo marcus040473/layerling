@@ -332,7 +332,7 @@ type WorkplaneViewportProps = {
    * when `pressure`), in `color` (null for the eraser); in magnet mode clicks lay a lasso along the body's edges. A lasso's
    * outline is smoothed by `smooth` (0 to 100) before it is laid.
    */
-  paintPick?: { shapeId: string; mode: PaintToolMode; color?: string | null; diameter?: number; pressure?: boolean; smooth?: number } | null;
+  paintPick?: { shapeId: string; mode: PaintToolMode; color?: string | null; diameter?: number; pressure?: boolean; smooth?: number; band?: number } | null;
   onPaintPick?: (pick: LayFlatPick | null) => void;
   /** A brush line drawn for the paint tool: the points it took over the body, in the world. */
   onPaintBrush?: (samples: PaintBrushSample[]) => void;
@@ -2141,12 +2141,42 @@ export function WorkplaneViewport({
   // on the body under the pointer (Discussion #1778). Where it cuts into the body is what a click or a line paints.
   const paintCursorRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> | null>(null);
   const paintCursorAtRef = useRef<{ x: number; y: number; pressure: number | null } | null>(null);
+  // The height band shows as a see-through ring round the body at the pointer's height, as tall as the band.
+  const paintBandRef = useRef<THREE.Mesh<THREE.CylinderGeometry, THREE.MeshBasicMaterial> | null>(null);
   const placePaintCursor = useCallback((at: { x: number; y: number; pressure: number | null } | null) => {
     paintCursorAtRef.current = at;
     const state = threeRef.current;
     const paint = paintPickRef.current;
     if (!state) return;
     const cursor = paintCursorRef.current;
+    const band = paintBandRef.current;
+    const bandPick = at && paint?.mode === "height" ? pickPaintFace(state, paint.shapeId, at.x, at.y) : null;
+    const body = bandPick && paint ? findShapeObject(state, paint.shapeId) : null;
+    if (bandPick && body && paint) {
+      let ring = band;
+      if (!ring) {
+        ring = new THREE.Mesh(
+          new THREE.CylinderGeometry(1, 1, 1, 96, 1, true),
+          new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide }),
+        );
+        ring.name = "PaintBand";
+        ring.renderOrder = 10;
+        setObjectRenderLayer(ring, RENDER_LAYER_HELPERS);
+        paintBandRef.current = ring;
+      }
+      if (ring.parent !== state.scene) state.scene.add(ring);
+      const box = new THREE.Box3().setFromObject(body);
+      const centre = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      ring.position.set(centre.x, bandPick.point.y, centre.z);
+      ring.scale.set((Math.hypot(size.x, size.z) / 2) * 1.04, Math.max(0.05, paint.band ?? 1), (Math.hypot(size.x, size.z) / 2) * 1.04);
+      ring.material.color.set(paint.color ?? "#ffffff");
+      ring.visible = true;
+      state.needsRender = true;
+    } else if (band?.visible) {
+      band.visible = false;
+      state.needsRender = true;
+    }
     const pick = at && paint && (paint.mode === "brush" || paint.mode === "circle") ? pickPaintFace(state, paint.shapeId, at.x, at.y) : null;
     if (!pick || !paint) {
       if (cursor?.visible) {
@@ -2177,14 +2207,16 @@ export function WorkplaneViewport({
   // A new size, colour or mode shows on the ball at once; another tool or none takes it away.
   useEffect(() => {
     placePaintCursor(paintCursorAtRef.current);
-  }, [paintPick?.color, paintPick?.diameter, paintPick?.mode, paintPick?.shapeId, placePaintCursor]);
+  }, [paintPick?.band, paintPick?.color, paintPick?.diameter, paintPick?.mode, paintPick?.shapeId, placePaintCursor]);
   useEffect(() => () => {
-    const ball = paintCursorRef.current;
-    if (!ball) return;
-    ball.removeFromParent();
-    ball.geometry.dispose();
-    ball.material.dispose();
-    paintCursorRef.current = null;
+    for (const ref of [paintCursorRef, paintBandRef] as const) {
+      const mesh = ref.current;
+      if (!mesh) continue;
+      mesh.removeFromParent();
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+      ref.current = null;
+    }
   }, []);
   // Ctrl (or Cmd) and the wheel make the brush or the circle larger or smaller instead of zooming; [ and ] do it a step at a time.
   useEffect(() => {
@@ -7708,7 +7740,7 @@ export function WorkplaneViewport({
         syncLayFlatHover(threeRef.current, selectedIdsRef.current, resolvedThemeRef.current, event.clientX, event.clientY);
         return;
       }
-      if (paintPickRef.current && (paintPickRef.current.mode === "brush" || paintPickRef.current.mode === "circle")) {
+      if (paintPickRef.current && (paintPickRef.current.mode === "brush" || paintPickRef.current.mode === "circle" || paintPickRef.current.mode === "height")) {
         placePaintCursor({ x: event.clientX, y: event.clientY, pressure: event.pointerType === "pen" ? event.pressure : null });
       }
       const brush = paintBrushRef.current;

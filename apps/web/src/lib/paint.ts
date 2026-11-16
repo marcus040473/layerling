@@ -12,6 +12,12 @@
  * - "brush" is a line painted with the button held (Discussion #1778): round patches `diameter` across
  *   along the way the pointer took over the surface, each laid along the surface's normal where it was,
  *   and with a pen as wide as it was pressed (`diameters`).
+ * - "height" is a band round the body (a headband, a stripe): every face between two levels `band` apart,
+ *   centred on the level clicked, measured along the print's up direction (`normal`).
+ * - With `ball`, a circle and a brush paint as a ball does: everything of the surface inside it, round
+ *   corners and edges too, not only what lies along the surface where it was put.
+ * - "gaps" paints nothing of its own: patches of one colour smaller than `area` take the colour round them,
+ *   so specks left by earlier strokes go and the printer has fewer colour changes.
  * - "lasso" is a shape drawn on the screen: the surface inside it that the eye saw, not the back of
  *   the body behind it. The magnetic lasso makes one too: its outline is laid along the body's edges
  *   and the borders of its paint as the view shows them (paintMagnet.ts), then it is a lasso like any.
@@ -25,9 +31,9 @@ import { groupShowsPartColors } from "@/lib/groupColors";
 import { isNonSolidShape } from "@/lib/workplaneShapes";
 import type { WorkplaneShape } from "@/types/layerling";
 
-export type PaintMode = "fill" | "circle" | "brush" | "lasso";
-/** What the panel offers: the stroke kinds, and the magnetic lasso, which makes lasso strokes. */
-export type PaintToolMode = PaintMode | "magnet";
+export type PaintMode = "fill" | "circle" | "brush" | "height" | "lasso" | "gaps";
+/** What the panel offers: the stroke kinds made in the view, and the magnetic lasso, which makes lasso strokes. */
+export type PaintToolMode = Exclude<PaintMode, "gaps"> | "magnet";
 export type PaintVec3 = [number, number, number];
 
 /**
@@ -41,10 +47,16 @@ export type PaintStroke = {
   color?: string;
   /** Width, height and depth of the body when the stroke was made, in mm. */
   size: PaintVec3;
-  /** fill and circle: the point clicked on the surface. */
+  /** fill, circle and height: the point clicked on the surface. */
   point?: PaintVec3;
-  /** fill and circle: the surface's outward normal there, of length 1. */
+  /** fill and circle: the surface's outward normal there, of length 1; height: the print's up direction. */
   normal?: PaintVec3;
+  /** circle and brush: paint everything inside the ball (or the balls along the line), round edges too. */
+  ball?: boolean;
+  /** height: how tall the band is, in mm. */
+  band?: number;
+  /** gaps: patches of one colour smaller than this many mm² take the colour round them. */
+  area?: number;
   /** fill: how sharp an edge, in degrees between the faces, stops the fill. */
   angle?: number;
   /** circle: how wide the patch is, in mm; brush: how wide the line is where no pen pressure says otherwise. */
@@ -86,6 +98,12 @@ export type PaintToolSettings = {
   pressure: boolean;
   /** lasso and magnetic lasso: how much the outline is smoothed before it is laid, 0 to 100 (outlineSmooth.ts). */
   smooth: number;
+  /** circle and brush: paint as a ball, round edges too. */
+  ball: boolean;
+  /** height: the band's height in mm. */
+  band: number;
+  /** Fill gaps: patches smaller than this many mm² go. */
+  gapArea: number;
 };
 
 export const PAINT_DEFAULT_ANGLE = 30;
@@ -98,6 +116,12 @@ export const PAINT_MAX_DIAMETER = 1000;
 export const PAINT_MAX_STROKES = 500;
 /** A brush line is kept with this many points at most; a longer one is thinned out evenly. */
 export const PAINT_MAX_PATH_POINTS = 400;
+export const PAINT_DEFAULT_BAND = 5;
+export const PAINT_MIN_BAND = 0.2;
+export const PAINT_MAX_BAND = 1000;
+export const PAINT_DEFAULT_GAP_AREA = 4;
+export const PAINT_MIN_GAP_AREA = 0.1;
+export const PAINT_MAX_GAP_AREA = 500;
 /** How much a lasso's outline is smoothed to begin with, 0 to 100: a shaky hand's steps go, its corners stay. */
 export const PAINT_DEFAULT_SMOOTH = 40;
 /** A pen pressed as lightly as it reports still paints this share of the diameter. */
@@ -115,10 +139,13 @@ export const DEFAULT_PAINT_TOOL: PaintToolSettings = {
   diameter: PAINT_DEFAULT_DIAMETER,
   pressure: true,
   smooth: PAINT_DEFAULT_SMOOTH,
+  ball: false,
+  band: PAINT_DEFAULT_BAND,
+  gapArea: PAINT_DEFAULT_GAP_AREA,
 };
 
-const TOOL_MODES: readonly PaintToolMode[] = ["fill", "circle", "brush", "lasso", "magnet"];
-const STROKE_MODES: readonly PaintMode[] = ["fill", "circle", "brush", "lasso"];
+const TOOL_MODES: readonly PaintToolMode[] = ["fill", "circle", "brush", "height", "lasso", "magnet"];
+const STROKE_MODES: readonly PaintMode[] = ["fill", "circle", "brush", "height", "lasso", "gaps"];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -138,6 +165,9 @@ export function normalizePaintTool(settings: Partial<PaintToolSettings>): PaintT
     diameter: clamp(finite(settings.diameter) ? settings.diameter : PAINT_DEFAULT_DIAMETER, PAINT_MIN_DIAMETER, PAINT_MAX_DIAMETER),
     pressure: settings.pressure !== false,
     smooth: Math.round(clamp(finite(settings.smooth) ? settings.smooth : PAINT_DEFAULT_SMOOTH, 0, 100)),
+    ball: settings.ball === true,
+    band: clamp(finite(settings.band) ? settings.band : PAINT_DEFAULT_BAND, PAINT_MIN_BAND, PAINT_MAX_BAND),
+    gapArea: clamp(finite(settings.gapArea) ? settings.gapArea : PAINT_DEFAULT_GAP_AREA, PAINT_MIN_GAP_AREA, PAINT_MAX_GAP_AREA),
   };
 }
 
@@ -183,14 +213,22 @@ export function normalizePaintStroke(value: unknown): PaintStroke | null {
   const round = (entry: number, digits = 4) => Number(entry.toFixed(digits));
   const roundVec = (entry: PaintVec3, digits = 4): PaintVec3 => [round(entry[0], digits), round(entry[1], digits), round(entry[2], digits)];
   const stroke: PaintStroke = { mode, ...(color ? { color } : {}), size: roundVec(size) };
-  if (mode === "fill" || mode === "circle") {
+  if (mode === "gaps") {
+    // It paints nothing itself, so it has no colour.
+    delete stroke.color;
+    stroke.area = round(clamp(finite(raw.area) ? raw.area : PAINT_DEFAULT_GAP_AREA, PAINT_MIN_GAP_AREA, PAINT_MAX_GAP_AREA), 3);
+    return stroke;
+  }
+  if (mode === "fill" || mode === "circle" || mode === "height") {
     const point = vec3(raw.point);
     const normal = unit(raw.normal);
     if (!point || !normal) return null;
     stroke.point = roundVec(point);
     stroke.normal = roundVec(normal, 6);
     if (mode === "fill") stroke.angle = round(clamp(finite(raw.angle) ? raw.angle : PAINT_DEFAULT_ANGLE, PAINT_MIN_ANGLE, PAINT_MAX_ANGLE), 2);
+    else if (mode === "height") stroke.band = round(clamp(finite(raw.band) ? raw.band : PAINT_DEFAULT_BAND, PAINT_MIN_BAND, PAINT_MAX_BAND));
     else stroke.diameter = round(clamp(finite(raw.diameter) ? raw.diameter : PAINT_DEFAULT_DIAMETER, PAINT_MIN_DIAMETER, PAINT_MAX_DIAMETER));
+    if (mode === "circle" && raw.ball === true) stroke.ball = true;
     return stroke;
   }
   if (mode === "brush") {
@@ -213,6 +251,7 @@ export function normalizePaintStroke(value: unknown): PaintStroke | null {
     stroke.path = kept.map((entry) => roundVec(entry.point));
     stroke.normals = kept.map((entry) => roundVec(entry.normal, 6));
     if (kept.some((entry) => entry.diameter !== null)) stroke.diameters = kept.map((entry) => round(entry.diameter ?? stroke.diameter!));
+    if (raw.ball === true) stroke.ball = true;
     return stroke;
   }
   const origin = vec3(raw.origin);

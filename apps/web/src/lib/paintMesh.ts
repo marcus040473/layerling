@@ -57,6 +57,8 @@ const PAINT_CIRCLE_SIDE = 0.4;
 const PAINT_BRUSH_SIDE = 0.5;
 /** Two points of a brush line whose normals differ by less than this many degrees are joined by one solid (their hull). */
 const PAINT_BRUSH_JOIN = 30;
+/** A brush line painted as a ball is made of at most this many balls. */
+const PAINT_BALL_POINTS = 150;
 /** A face is part of a brush line when its middle lies within this many half widths of it (the surface bends away under a patch). */
 const PAINT_BRUSH_REACH = 1.15;
 /** ... and its corners within this many times as far (a corner on the rim of a patch on a strongly bent surface lies further off). */
@@ -106,13 +108,16 @@ export function paintStrokeAt(shape: WorkplaneShape, point: THREE.Vector3Like, n
   const inverse = paintBodyMatrix(shape).invert();
   const local = new THREE.Vector3(point.x, point.y, point.z).applyMatrix4(inverse);
   const direction = new THREE.Vector3(normal.x, normal.y, normal.z).transformDirection(inverse);
+  const mode = settings.mode === "circle" || settings.mode === "height" ? settings.mode : "fill";
+  // A band runs level round the body as it is printed: across the world's up, whatever the face clicked.
+  const up = new THREE.Vector3(0, 1, 0).transformDirection(inverse);
   const raw = {
-    mode: settings.mode === "circle" ? "circle" : "fill",
+    mode,
     ...(settings.erase ? {} : { color: settings.color }),
     size: size3(shape),
     point: local.toArray(),
-    normal: direction.toArray(),
-    ...(settings.mode === "circle" ? { diameter: settings.diameter } : { angle: settings.angle }),
+    normal: (mode === "height" ? up : direction).toArray(),
+    ...(mode === "circle" ? { diameter: settings.diameter, ball: settings.ball } : mode === "height" ? { band: settings.band } : { angle: settings.angle }),
   };
   return normalizePaintStroke(raw);
 }
@@ -151,6 +156,7 @@ export function paintBrushStroke(shape: WorkplaneShape, samples: readonly PaintB
     path,
     normals,
     ...(usePressure ? { diameters } : {}),
+    ball: settings.ball,
   });
 }
 
@@ -649,6 +655,117 @@ function brushVolume(runtime: ManifoldToplevel, stroke: PaintStroke, made: Array
   return { solid, frame: new THREE.Matrix4() };
 }
 
+/** A ball painted with a circle: the sphere round its point, as wide as the circle. */
+function ballVolume(runtime: ManifoldToplevel, stroke: PaintStroke, made: Array<{ delete(): void }>) {
+  const radius = (stroke.diameter ?? 0) / 2;
+  const sphere = runtime.Manifold.sphere(radius, Math.min(96, Math.max(24, Math.ceil((Math.PI * 2 * radius) / PAINT_CIRCLE_SIDE))));
+  made.push(sphere);
+  return { solid: sphere, frame: new THREE.Matrix4().makeTranslation(...(stroke.point as [number, number, number])) };
+}
+
+/**
+ * A brush line painted as a ball: a sphere at its points, each joined to the next by their hull, so all of the surface
+ * within its half width of the line is inside, round edges too. Its points are taken at least a third of the width apart
+ * and PAINT_BALL_POINTS at most, as a solid each takes time.
+ */
+function ballLineVolume(runtime: ManifoldToplevel, stroke: PaintStroke, made: Array<{ delete(): void }>) {
+  const path = stroke.path ?? [];
+  if (!path.length) return null;
+  let kept: number[] = [0];
+  path.forEach((point, index) => {
+    if (index === 0) return;
+    const last = path[kept[kept.length - 1]];
+    const gap = Math.min(brushDiameter(stroke, index), brushDiameter(stroke, kept[kept.length - 1])) / 3;
+    if (Math.hypot(point[0] - last[0], point[1] - last[1], point[2] - last[2]) >= gap || index === path.length - 1) kept.push(index);
+  });
+  if (kept.length > PAINT_BALL_POINTS) kept = Array.from({ length: PAINT_BALL_POINTS }, (_, at) => kept[Math.round((at * (kept.length - 1)) / (PAINT_BALL_POINTS - 1))]);
+  const spheres = kept.map((index) => {
+    const radius = brushDiameter(stroke, index) / 2;
+    const sphere = runtime.Manifold.sphere(radius, Math.min(48, Math.max(16, Math.ceil((Math.PI * 2 * radius) / PAINT_BRUSH_SIDE))));
+    made.push(sphere);
+    const placed = sphere.translate(path[index] as [number, number, number]);
+    made.push(placed);
+    return placed;
+  });
+  const pieces = spheres.length === 1 ? spheres : spheres.slice(1).map((sphere, index) => {
+    const hull = runtime.Manifold.hull([spheres[index], sphere]);
+    made.push(hull);
+    return hull;
+  });
+  const solid = pieces.length === 1 ? pieces[0] : runtime.Manifold.union(pieces);
+  if (solid !== pieces[0]) made.push(solid);
+  return { solid, frame: new THREE.Matrix4() };
+}
+
+/** A band's volume: a slab `band` thick across its up direction through its point, wider than the body. */
+function bandVolume(runtime: ManifoldToplevel, stroke: PaintStroke, frameBox: THREE.Box3, made: Array<{ delete(): void }>) {
+  const centre = new THREE.Vector3(...stroke.point!);
+  const up = new THREE.Vector3(...stroke.normal!).normalize();
+  const across = (frameBox.getSize(new THREE.Vector3()).length() + frameBox.distanceToPoint(centre)) * 3 + 10;
+  const slab = runtime.Manifold.cube([across, across, stroke.band ?? 0], true);
+  made.push(slab);
+  const turn = new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), up));
+  return { solid: slab, frame: new THREE.Matrix4().makeTranslation(centre.x, centre.y, centre.z).multiply(turn) };
+}
+
+/**
+ * Specks gone (a "gaps" stroke): every patch of faces in one colour (the body's own counts as one) smaller than `limit`
+ * mm² takes the colour it shares the longest border with. The patches are found on the colours as they were before.
+ */
+function fillGaps(mesh: WorkMesh, limit: number) {
+  const count = mesh.faces.length / 3;
+  const p = mesh.positions;
+  const neighbours = faceNeighbours(mesh);
+  const area = new Float64Array(count);
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const triangle = new THREE.Triangle(a, b, c);
+  for (let face = 0; face < count; face += 1) {
+    const [i, j, k] = [mesh.faces[face * 3] * 3, mesh.faces[face * 3 + 1] * 3, mesh.faces[face * 3 + 2] * 3];
+    a.set(p[i], p[i + 1], p[i + 2]);
+    b.set(p[j], p[j + 1], p[j + 2]);
+    c.set(p[k], p[k + 1], p[k + 2]);
+    area[face] = triangle.getArea();
+  }
+  const patch = new Int32Array(count).fill(-1);
+  const before = mesh.colors.slice();
+  let changed = 0;
+  for (let seed = 0; seed < count; seed += 1) {
+    if (patch[seed] >= 0) continue;
+    const members = [seed];
+    patch[seed] = seed;
+    let size = 0;
+    const border = new Map<string | null, number>();
+    for (let at = 0; at < members.length; at += 1) {
+      const face = members[at];
+      size += area[face];
+      for (let corner = 0; corner < 3; corner += 1) {
+        const next = neighbours[face * 3 + corner];
+        if (next < 0) continue;
+        if (before[next] === before[face]) {
+          if (patch[next] < 0) {
+            patch[next] = seed;
+            members.push(next);
+          }
+          continue;
+        }
+        const from = mesh.faces[face * 3 + corner] * 3;
+        const to = mesh.faces[face * 3 + ((corner + 1) % 3)] * 3;
+        const length = Math.hypot(p[to] - p[from], p[to + 1] - p[from + 1], p[to + 2] - p[from + 2]);
+        border.set(before[next], (border.get(before[next]) ?? 0) + length);
+      }
+    }
+    if (size >= limit || !border.size) continue;
+    const [colour] = [...border.entries()].sort((left, right) => right[1] - left[1])[0];
+    members.forEach((face) => {
+      mesh.colors[face] = colour;
+    });
+    changed += members.length;
+  }
+  return changed;
+}
+
 /** Whether a point in the stroke's frame lies within a brush line: no further from it than half its width there. */
 function nearBrush(stroke: PaintStroke, point: THREE.Vector3) {
   const path = stroke.path ?? [];
@@ -922,6 +1039,10 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
     const color = stroke.color ?? null;
     const box = bounds(mesh);
     let region: Uint8Array | null = null;
+    if (stroke.mode === "gaps") {
+      fillGaps(mesh, stroke.area ?? 0);
+      continue;
+    }
     if (stroke.mode === "fill") {
       const normals = faceNormals(mesh);
       const point = new THREE.Vector3(...stroke.point!).multiply(stretch);
@@ -946,10 +1067,12 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
         const made: Array<{ delete(): void }> = [];
         try {
           const volume = stroke.mode === "circle"
-            ? circleVolume(runtime, stroke, frameBox, made)
+            ? (stroke.ball ? ballVolume(runtime, stroke, made) : circleVolume(runtime, stroke, frameBox, made))
             : stroke.mode === "brush"
-              ? brushVolume(runtime, stroke, made)
-              : lassoVolume(runtime, stroke, frameBox, made);
+              ? (stroke.ball ? ballLineVolume(runtime, stroke, made) : brushVolume(runtime, stroke, made))
+              : stroke.mode === "height"
+                ? bandVolume(runtime, stroke, frameBox, made)
+                : lassoVolume(runtime, stroke, frameBox, made);
           if (volume) {
             const placed = volume.solid.transform(kernelMatrix(stretchMatrix.clone().multiply(volume.frame)));
             made.push(placed);
@@ -981,7 +1104,11 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
         const radius = (stroke.diameter ?? 0) / 2;
         for (let face = 0; face < inside.length; face += 1) {
           centroid(mesh, face, middle).divide(stretch);
-          if (stroke.mode === "circle") {
+          if (stroke.mode === "circle" && stroke.ball) {
+            inside[face] = middle.distanceTo(centre!) <= radius ? 1 : 0;
+          } else if (stroke.mode === "height") {
+            inside[face] = Math.abs(middle.clone().sub(centre!).dot(axis!)) <= (stroke.band ?? 0) / 2 ? 1 : 0;
+          } else if (stroke.mode === "circle") {
             const offset = middle.sub(centre!);
             inside[face] = offset.clone().addScaledVector(axis!, -offset.dot(axis!)).length() <= radius ? 1 : 0;
           } else if (stroke.mode === "brush") {
@@ -992,7 +1119,10 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
         }
       }
       const normals = faceNormals(mesh);
-      if (stroke.mode === "circle") {
+      if (stroke.ball || stroke.mode === "height") {
+        // A ball or a band paints all of the surface inside it, round edges and on the back too.
+        region = inside.some(Boolean) ? inside : null;
+      } else if (stroke.mode === "circle") {
         const point = new THREE.Vector3(...stroke.point!).multiply(stretch);
         const normal = new THREE.Vector3(...stroke.normal!).divide(stretch).normalize();
         const seed = seedFace(mesh, normals, point, normal, reachFor(box), inside);
@@ -1020,7 +1150,7 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
   for (let index = 0; index < mesh.positions.length; index += 3) vertices.push([mesh.positions[index], mesh.positions[index + 1], mesh.positions[index + 2]]);
   const faces: [number, number, number][] = [];
   for (let index = 0; index < mesh.faces.length; index += 3) faces.push([mesh.faces[index], mesh.faces[index + 1], mesh.faces[index + 2]]);
-  return { vertices, faces, colors: mesh.colors, skipped, cut: cut && strokes.some((stroke) => stroke.mode !== "fill") };
+  return { vertices, faces, colors: mesh.colors, skipped, cut: cut && strokes.some((stroke) => stroke.mode !== "fill" && stroke.mode !== "gaps") };
 }
 
 const MAX_PAINTED_MESHES = 16;
