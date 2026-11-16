@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Schiebe-Riegel für Deckel",
+      "en": "Slide latches for lids"
+    },
+    "body": {
+      "de": "Im Deckel-Werkzeug gibt es bei „Verschlüsse“ jetzt die Art „Schieber“: eine Schiene am Körper, eine Nase am Deckel und ein flach gedruckter Schieber mit Griffrillen, Pfeil und eingraviertem „OPEN“, der von rechts in die Schiene geschoben wird. Nach links hält er den Deckel, nach rechts gibt er ihn frei.",
+      "en": "The Lid tool's Latches now come as Sliders too: a rail on the body, a nose on the lid, and a slider printed flat with grip grooves, an arrow and OPEN cut in, slid into the rail from the right. Slid left it holds the lid, slid right it lets go."
+    }
+  },
+  {
+    "title": {
       "de": "Niedrigere Trennstege in ausgehöhlten Boxen",
       "en": "Lower dividers in hollowed boxes"
     },

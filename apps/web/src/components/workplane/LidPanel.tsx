@@ -8,6 +8,12 @@ import { LoaderCircle, X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolGroup, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
+  LID_LATCH_STYLES,
+  MAX_LID_LATCH_LABEL,
+  MAX_LID_SLIDER_PLAY,
+  MAX_LID_SLIDER_WIDTH,
+  MIN_LID_SLIDER_PLAY,
+  MIN_LID_SLIDER_WIDTH,
   LID_FITS,
   LID_HANDLES,
   LID_HINGE_SIDES,
@@ -715,15 +721,35 @@ export function LidPanel({
               onChange={(value) => onChange({ latches: normalizeLidOptions({ latches: value }).latches })}
             />
             {settings.latches > 0 && latchesFit ? (<>
+              <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.latchStyle")}>
+                <span>{t("lid.latchStyle")}</span>
+                <div className="shell-opening-options">
+                  {LID_LATCH_STYLES.map((style) => (
+                    <button key={style} type="button" role="radio" aria-checked={settings.latchStyle === style} className={settings.latchStyle === style ? "active" : ""} disabled={busy} onClick={() => onChange({ latchStyle: style })}>
+                      {t(`lid.latchStyle.${style}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {settings.hinge ? null : (
                 <label className="edge-modifier-field offset-copy">
                   <input type="checkbox" checked={settings.latchBack} disabled={busy} onChange={(event) => onChange({ latchBack: event.target.checked })} />
                   <span>{t("lid.latchBack")}</span>
                 </label>
               )}
-              {slider(t("lid.latchWidth"), "latchWidth", MIN_LID_LATCH_WIDTH, MAX_LID_LATCH_WIDTH, 0.5)}
-              {slider(t("lid.latchGrip"), "latchGrip", MIN_LID_LATCH_GRIP, MAX_LID_LATCH_GRIP, 0.05)}
-              <ToolHint text={t(settings.hinge ? "lid.latchHintHinge" : "lid.latchHint", { pin: millimetres(Math.round(2 * lidLatchMeasures(settings.latchWidth, settings.latchGrip).pin * 10) / 10) })} />
+              {settings.latchStyle === "slider" ? (<>
+                <EdgeModifierSlider label={t("lid.sliderWidth")} value={settings.sliderWidth} min={MIN_LID_SLIDER_WIDTH} max={MAX_LID_SLIDER_WIDTH} step={1} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ sliderWidth: value })} />
+                <EdgeModifierSlider label={t("lid.sliderPlay")} value={settings.sliderPlay} min={MIN_LID_SLIDER_PLAY} max={MAX_LID_SLIDER_PLAY} step={0.05} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ sliderPlay: value })} />
+                <label className="edge-modifier-field lid-latch-label">
+                  <span>{t("lid.latchLabel")}</span>
+                  <input type="text" value={settings.latchLabel} maxLength={MAX_LID_LATCH_LABEL} disabled={busy} onChange={(event) => onChange({ latchLabel: event.target.value })} />
+                </label>
+                <ToolHint text={t("lid.sliderHint")} />
+              </>) : (<>
+                {slider(t("lid.latchWidth"), "latchWidth", MIN_LID_LATCH_WIDTH, MAX_LID_LATCH_WIDTH, 0.5)}
+                {slider(t("lid.latchGrip"), "latchGrip", MIN_LID_LATCH_GRIP, MAX_LID_LATCH_GRIP, 0.05)}
+                <ToolHint text={t(settings.hinge ? "lid.latchHintHinge" : "lid.latchHint", { pin: millimetres(Math.round(2 * lidLatchMeasures(settings.latchWidth, settings.latchGrip).pin * 10) / 10) })} />
+              </>)}
             </>) : null}
           </ToolGroup>
           {!latchesFit ? <ToolHint text={t("lid.error.latchLidType")} /> : null}
