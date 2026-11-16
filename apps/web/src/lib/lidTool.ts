@@ -177,9 +177,15 @@ export type LidOptions = {
   /**
    * The latches' kind (Discussion #1587): `clip`, the camera-battery-box clips; `slider`, a slide latch as on a tool case:
    * a rail on the body's wall below the rim, a slider in it in front of a nose hanging from the lid's plate, its tongue
-   * slid sideways into a pocket in the nose to hold the lid down, and slid back to let it go.
+   * slid sideways into a pocket in the nose to hold the lid down, and slid back to let it go; `bolt`, a barrel bolt as on
+   * a door, printed in place in a tube along the body's wall below the rim, slid sideways by its knob into a keeper
+   * hanging from the lid, the knob tipped forward into a notch at either end to keep it there.
    */
   latchStyle: LidLatchStyle;
+  /** The bolt's diameter, its play per side in the tube and how far it goes into the keeper, in mm (it slides 2 mm more). */
+  boltDiameter: number;
+  boltPlay: number;
+  boltTravel: number;
   /** The slider's width along the wall and its play per side in the rail, in mm. */
   sliderWidth: number;
   sliderPlay: number;
@@ -188,8 +194,14 @@ export type LidOptions = {
   stackTop: boolean;
 };
 
-export type LidLatchStyle = "clip" | "slider";
-export const LID_LATCH_STYLES: readonly LidLatchStyle[] = ["clip", "slider"];
+export type LidLatchStyle = "clip" | "slider" | "bolt";
+export const LID_LATCH_STYLES: readonly LidLatchStyle[] = ["clip", "slider", "bolt"];
+export const MIN_LID_BOLT_DIAMETER = 5;
+export const MAX_LID_BOLT_DIAMETER = 10;
+export const MIN_LID_BOLT_PLAY = 0.15;
+export const MAX_LID_BOLT_PLAY = 0.5;
+export const MIN_LID_BOLT_TRAVEL = 3;
+export const MAX_LID_BOLT_TRAVEL = 8;
 export const MIN_LID_SLIDER_WIDTH = 16;
 export const MAX_LID_SLIDER_WIDTH = 40;
 export const MIN_LID_SLIDER_PLAY = 0.15;
@@ -204,7 +216,7 @@ export const LID_DEFAULTS: LidOptions = {
   bayonetLugs: 3, bayonetDepth: 8, bayonetAxialGap: 0.3, bayonetDetent: 0.3, bayonetTurn: 0, tether: false,
   flipTop: false, flipTopOpening: 8, topEdge: "square", topEdgeSize: 1, slideSide: "front", slideFrame: 0,
   latches: 0, latchBack: false, latchWidth: DEFAULT_LID_LATCH_WIDTH, latchGrip: DEFAULT_LID_LATCH_GRIP,
-  latchStyle: "clip", sliderWidth: 22, sliderPlay: 0.3, latchLabel: "OPEN", stackTop: false,
+  latchStyle: "clip", boltDiameter: 6, boltPlay: 0.3, boltTravel: 4, sliderWidth: 22, sliderPlay: 0.3, latchLabel: "OPEN", stackTop: false,
 };
 /**
  * What a lid starts from with this printer's play (printerPlay.ts): the gap per side and the hinge pin's play take it,
@@ -806,6 +818,12 @@ export function normalizeLidOptions(value?: Partial<Record<keyof LidOptions, unk
   if (latchGrip !== null) result.latchGrip = clamp(latchGrip, MIN_LID_LATCH_GRIP, MAX_LID_LATCH_GRIP);
   const latchStyle = typeof value?.latchStyle === "string" ? value.latchStyle.trim() : "";
   if ((LID_LATCH_STYLES as readonly string[]).includes(latchStyle)) result.latchStyle = latchStyle as LidLatchStyle;
+  const boltDiameter = finiteNumber(value?.boltDiameter);
+  if (boltDiameter !== null) result.boltDiameter = clamp(boltDiameter, MIN_LID_BOLT_DIAMETER, MAX_LID_BOLT_DIAMETER);
+  const boltPlay = finiteNumber(value?.boltPlay);
+  if (boltPlay !== null) result.boltPlay = clamp(boltPlay, MIN_LID_BOLT_PLAY, MAX_LID_BOLT_PLAY);
+  const boltTravel = finiteNumber(value?.boltTravel);
+  if (boltTravel !== null) result.boltTravel = clamp(boltTravel, MIN_LID_BOLT_TRAVEL, MAX_LID_BOLT_TRAVEL);
   const sliderWidth = finiteNumber(value?.sliderWidth);
   if (sliderWidth !== null) result.sliderWidth = clamp(sliderWidth, MIN_LID_SLIDER_WIDTH, MAX_LID_SLIDER_WIDTH);
   const sliderPlay = finiteNumber(value?.sliderPlay);
@@ -3057,7 +3075,12 @@ export type LidFlipTop = { opening: number; flap: number; hingeWidth: number; hi
  * `style` "slider", how far they slide, and where each slider's label goes (its middle on the slider's face, which lies on
  * the plate, in the scene's frame; its width and letter height).
  */
-export type LidLatch = { body: ManifoldSolid; clips: ManifoldSolid; count: number; width: number; pin: number; style?: LidLatchStyle; travel?: number; labels?: { point: [number, number, number]; width: number; height: number }[] };
+export type LidLatch = {
+  body: ManifoldSolid; clips: ManifoldSolid; count: number; width: number; pin: number; style?: LidLatchStyle; travel?: number;
+  labels?: { point: [number, number, number]; width: number; height: number }[];
+  /** For bolts: each label's right end on the body's wall and the wall's outward direction, in the scene's frame. */
+  boltLabels?: { point: [number, number, number]; normal: [number, number, number]; height: number }[];
+};
 
 export type LidResult = { lid: ManifoldSolid; magnets?: LidMagnets; hinge?: LidHinge; latch?: LidLatch; clickBumps?: LidClickBumps; handle?: LidHandleResult; screw?: LidScrew; bayonet?: LidBayonet; slide?: LidSlide; tether?: LidTether; flipTop?: LidFlipTop } | { error: LidError };
 
@@ -3143,7 +3166,7 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     if (stackTop && (!lidStackTopFits(options) || !hasOpening || (options.hinge && options.hingeStyle !== "outside"))) return { error: { code: "stackTopType" } };
     if (stackTop && (options.magnets || options.clickBumps || options.handle !== "none" || options.tether || options.flipTop)) return { error: { code: "stackTopExtras" } };
     // A slider's nose hangs from the lid's plate as it prints turned over; a stacking lid prints upright.
-    if (stackTop && options.latches > 0 && options.latchStyle === "slider") return { error: { code: "sliderStackTop" } };
+    if (stackTop && options.latches > 0 && options.latchStyle !== "clip") return { error: { code: "sliderStackTop" } };
     // The tray's rim stands on the cap's top edge, so that stays square.
     if (stackTop) options.topEdge = "square";
     let flareHeight = 0;
@@ -3592,6 +3615,105 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
     let sliderSolid: ManifoldSolid | null = null;
     const sliderLabelSpots: { point: [number, number, number]; width: number; height: number }[] = [];
     let sliderMeasures: { width: number; travel: number; play: number } | null = null;
+    // Barrel bolts (Discussion #1587), as on a door, in the same turned frame (`out` from the wall's face outward): a tube
+    // along the wall just below the rim, its bore a teardrop pointing up and its underside sloping to the wall at 45
+    // degrees, and the bolt in it printed in place, its knob standing up through a slot in the tube's top. Slid right by
+    // `boltTravel` its end goes into a keeper hanging from the lid's plate in front of the wall, and the lid is held; at
+    // either end of the slot the knob tips forward into a notch and keeps the bolt there. The bolts stay where they print,
+    // a body of their own; the label stands raised on the wall below the tube under the knob's open place.
+    let boltSolid: ManifoldSolid | null = null;
+    const boltLabelSpots: { point: [number, number, number]; normal: [number, number, number]; height: number }[] = [];
+    if (options.latches > 0 && options.latchStyle === "bolt") {
+      const rb = options.boltDiameter / 2;
+      const g = options.boltPlay;
+      const travel = options.boltTravel + 2;
+      const rt = rb + g + 1.6;
+      const axisOut = rt - 0.4;
+      const zc = top - g - rt;
+      const knobW = 3;
+      const knobT = Math.min(3, rb);
+      const knobUp = 4;
+      const boltLength = Math.max(18, travel + knobW + 10);
+      const tubeLength = boltLength + 1;
+      const keeperLength = travel + 1;
+      const span = tubeLength + 0.6 + keeperLength;
+      // The tube's underside: a keel pointing down at 45 degrees under the tube, and from it a 45 degree slope to the wall
+      // down to here, so nothing of it hangs flatter than that.
+      const lowest = zc - rt * Math.SQRT2 - axisOut;
+      const zb = box.min[2];
+      if (lowest < zb) return { error: { code: "latchBodyLow", height: Math.ceil((top - lowest + 1) * 2) / 2 } };
+      const frontTurn = options.hinge ? turn : 0;
+      const sides = [frontTurn, ...(options.latchBack && !options.hinge ? [frontTurn + 180] : [])];
+      const bodyPieces: ManifoldSolid[] = [];
+      const lidPieces: ManifoldSolid[] = [];
+      const boltPieces: ManifoldSolid[] = [];
+      const cube = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number) => keep(created, keep(created, runtime.Manifold.cube([Math.abs(x1 - x0), Math.abs(y1 - y0), Math.abs(z1 - z0)])).translate([Math.min(x0, x1), Math.min(y0, y1), Math.min(z0, z1)]));
+      for (const sideTurn of sides) {
+        const places = lidLatchPlaces(turnedPolygons(outline.toPolygons() as Point[][], sideTurn), options.latches, span + 2);
+        if (!places) return { error: { code: "latchSideShort" } };
+        const front = places.front;
+        const ay = front - axisOut;
+        // A round rod along x from x0 to x1 about the tube's axis; with `tear`, a 45 degree roof over it to `tear` times
+        // its radius above the axis (pointing down when negative).
+        const rod = (x0: number, x1: number, radius: number, tear = 0) => {
+          const round = keep(created, keep(created, keep(created, runtime.Manifold.cylinder(x1 - x0, radius, radius, HINGE_SIDES * 2)).rotate([0, 90, 0])).translate([x0, ay, zc]));
+          if (!tear) return round;
+          const tip = cube(x0, ay - 0.01, zc + tear * radius * Math.SQRT2 - 0.01, x1, ay + 0.01, zc + tear * radius * Math.SQRT2 + 0.01);
+          return keep(created, runtime.Manifold.hull([round, tip]));
+        };
+        const aboutAxis = (solid: ManifoldSolid, degrees: number) => keep(created, keep(created, keep(created, solid.translate([0, -ay, -zc])).rotate([degrees, 0, 0])).translate([0, ay, zc]));
+        const sideBody: ManifoldSolid[] = [];
+        const sideLid: ManifoldSolid[] = [];
+        const sideBolt: ManifoldSolid[] = [];
+        for (const m of places.places) {
+          const xa = m - span / 2;
+          const xb = xa + tubeLength;
+          // The tube and the web to the wall under it, sloping at 45 degrees; the bore, and the slot for the knob with a
+          // notch at each end the knob tips forward into.
+          let tube = keep(created, runtime.Manifold.hull([rod(xa, xb, rt, -1), cube(xa, front - 0.01, lowest, xb, front + 0.4, zc + rt)]));
+          tube = keep(created, tube.subtract(rod(xa - 1, xb + 1, rb + g, 1)));
+          const knobOpen = xa + 4;
+          const slot = cube(knobOpen - g, ay - knobT / 2 - g, zc, knobOpen + knobW + travel + g, ay + knobT / 2 + g, zc + rt + 1);
+          tube = keep(created, tube.subtract(slot));
+          for (const at of [knobOpen, knobOpen + travel]) {
+            const band = cube(at - g, ay - knobT / 2 - g, zc, at + knobW + g, ay + knobT / 2 + g, zc + rt + 1);
+            tube = keep(created, tube.subtract(keep(created, runtime.Manifold.union(Array.from({ length: 15 }, (_, step) => aboutAxis(band, (step + 1) * 5))))));
+          }
+          sideBody.push(tube);
+          // The bolt, where it is open, with its knob standing up through the slot.
+          sideBolt.push(keep(created, rod(xa, xa + boltLength, rb).add(cube(knobOpen, ay - knobT / 2, zc + rb - 0.5, knobOpen + knobW, ay + knobT / 2, zc + rt + knobUp))));
+          // The keeper beside the tube's right end, hanging from the lid's plate in front of the wall to below the tube, its
+          // hole a teardrop pointing down (up as the lid prints turned over), its mouth widened to lead the bolt in.
+          const k0 = xb + 0.6;
+          const k1 = k0 + keeperLength;
+          let keeper = keep(created, cube(k0, ay - rt, zc - rt, k1, front - g, top + options.thickness).add(cube(k0, ay - rt, top, k1, front + 1, top + options.thickness)));
+          keeper = keep(created, keeper.subtract(rod(k0 - 1, k1 + 1, rb + 0.4, -1)));
+          keeper = keep(created, keeper.subtract(keep(created, keep(created, keep(created, runtime.Manifold.cylinder(0.8, rb + 1.2, rb + 0.4, HINGE_SIDES * 2)).rotate([0, 90, 0])).translate([k0 - 0.01, ay, zc]))));
+          sideLid.push(keeper);
+          // The label's right end on the wall under the tube's slope, below the knob's open place.
+          const labelZ = lowest - 3.5;
+          if (labelZ - 3 > zb + 0.5) {
+            const back = (point: [number, number, number]): [number, number, number] => {
+              const a = (-sideTurn * Math.PI) / 180;
+              return [point[0] * Math.cos(a) - point[1] * Math.sin(a), point[0] * Math.sin(a) + point[1] * Math.cos(a), point[2]];
+            };
+            const spot = back([knobOpen + knobW + 6, front, labelZ]);
+            const normal = back([0, -1, 0]);
+            boltLabelSpots.push({ point: [spot[0], spot[2], -spot[1]], normal: [normal[0], normal[2], -normal[1]], height: 5 });
+          }
+          latchCount += 1;
+        }
+        const back = (solid: ManifoldSolid) => (sideTurn ? keep(created, solid.rotate([0, 0, -sideTurn])) : solid);
+        bodyPieces.push(back(unionOf(sideBody)));
+        lidPieces.push(back(unionOf(sideLid)));
+        boltPieces.push(back(unionOf(sideBolt)));
+      }
+      let tubes = keep(created, unionOf(bodyPieces));
+      if (hasOpening) tubes = keep(created, tubes.subtract(prism(opening, box.min[2] - 1, top + 1)));
+      latchBody = tubes;
+      made = keep(created, made.add(unionOf(lidPieces)));
+      boltSolid = unionOf(boltPieces);
+    }
     if (options.latches > 0 && options.latchStyle === "slider") {
       const g = options.sliderPlay;
       const sw = options.sliderWidth;
@@ -3692,7 +3814,7 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       made = keep(created, made.add(unionOf(lidPieces)));
       sliderSolid = sliderMade;
       sliderMeasures = { width: sw, travel, play: g };
-    } else if (options.latches > 0) {
+    } else if (options.latches > 0 && options.latchStyle === "clip") {
       const standard = lidLatchMeasures(options.latchWidth, options.latchGrip);
       // The body's pin stays where it always is; with a stacking top the lid's is higher (see stackLatchPin) and the clip
       // that much longer.
@@ -3925,6 +4047,17 @@ export function lidForSolid(runtime: ManifoldToplevel, body: ManifoldSolid, give
       handed.add(body);
       handed.add(laid);
       latch = { body, clips: laid, count: latchCount, width: latchMeasures.width, pin: 2 * latchMeasures.pin };
+    }
+    if (latchBody && boltSolid) {
+      // The bolts stay in their tubes, where they print; a body of their own.
+      const body = latchBody.transform(UP_TO_SCENE);
+      const bolts = boltSolid.transform(UP_TO_SCENE);
+      handed.add(body);
+      handed.add(bolts);
+      latch = {
+        body, clips: bolts, count: latchCount, width: options.boltDiameter, pin: 0, style: "bolt", travel: options.boltTravel + 2,
+        boltLabels: boltLabelSpots,
+      };
     }
     if (latchBody && sliderSolid && sliderMeasures) {
       // One slider for each latch, laid flat on its front (the label and the arrow cut into the face on the plate) in a
@@ -4214,7 +4347,7 @@ export type LidShapeSlide = { cuts: WorkplaneShape; side: LidHingeSide; depth: n
 export type LidShapeTether = { part: WorkplaneShape; bead: WorkplaneShape; strap: number; neckRing: number; capRing: number };
 
 /** With latches, the body's cheeks and pins (grouped with it), the clips (a body of their own beside the lid) and how many. */
-export type LidShapeLatch = { body: WorkplaneShape; clips: WorkplaneShape; count: number; width: number; pin: number; style?: LidLatchStyle; travel?: number; labels?: { point: [number, number, number]; width: number; height: number }[] };
+export type LidShapeLatch = { body: WorkplaneShape; clips: WorkplaneShape; count: number; width: number; pin: number; style?: LidLatchStyle; travel?: number; labels?: { point: [number, number, number]; width: number; height: number }[]; boltLabels?: { point: [number, number, number]; normal: [number, number, number]; height: number }[] };
 
 export type LidShapeResult = { lid: WorkplaneShape; magnets?: LidShapeMagnets; hinge?: LidShapeHinge; latch?: LidShapeLatch; clickBumps?: LidShapeClickBumps; handle?: LidShapeHandle; screw?: LidShapeScrew; bayonet?: LidShapeBayonet; slide?: LidShapeSlide; tether?: LidShapeTether; flipTop?: LidFlipTop } | { lid: null; error: string };
 
@@ -4311,12 +4444,15 @@ export async function lidForShapes(targets: readonly WorkplaneShape[], given: Li
     // The latches' cheeks and pins are grouped with the body as a hinge's knuckles are; the clips lie beside the lid.
     let latch: LidShapeLatch | undefined;
     if (result.latch) {
-      const sliding = result.latch.style === "slider";
-      const body = splitShapeFromWorldPositions(source, positionsOf(result.latch.body.getMesh()), createLocalId(`${source.id}-latch-${sliding ? "rails" : "cheeks"}`), t(sliding ? "lid.latchRailsName" : "lid.latchCheeksName", { name: source.name }));
-      const clips = splitShapeFromWorldPositions(source, positionsOf(result.latch.clips.getMesh()), createLocalId(`${source.id}-latch-${sliding ? "sliders" : "clips"}`), t(sliding ? "lid.latchSlidersName" : "lid.latchClipsName", { name: source.name }));
+      const style = result.latch.style ?? "clip";
+      const names = style === "slider" ? ["rails", "sliders", "lid.latchRailsName", "lid.latchSlidersName"] as const
+        : style === "bolt" ? ["tubes", "bolts", "lid.latchTubesName", "lid.latchBoltsName"] as const
+        : ["cheeks", "clips", "lid.latchCheeksName", "lid.latchClipsName"] as const;
+      const body = splitShapeFromWorldPositions(source, positionsOf(result.latch.body.getMesh()), createLocalId(`${source.id}-latch-${names[0]}`), t(names[2], { name: source.name }));
+      const clips = splitShapeFromWorldPositions(source, positionsOf(result.latch.clips.getMesh()), createLocalId(`${source.id}-latch-${names[1]}`), t(names[3], { name: source.name }));
       if (!body || !clips) return { lid: null, error: lidErrorMessage({ code: "empty" }) };
-      const { count, width, pin, style, travel, labels } = result.latch;
-      latch = { body: canonicalizeShape({ ...body, hidden: false }), clips: canonicalizeShape({ ...clips, hidden: false }), count, width, pin, ...(style ? { style } : {}), ...(travel !== undefined ? { travel } : {}), ...(labels ? { labels } : {}) };
+      const { count, width, pin, travel, labels, boltLabels } = result.latch;
+      latch = { body: canonicalizeShape({ ...body, hidden: false }), clips: canonicalizeShape({ ...clips, hidden: false }), count, width, pin, style, ...(travel !== undefined ? { travel } : {}), ...(labels ? { labels } : {}), ...(boltLabels ? { boltLabels } : {}) };
     }
     // The dimples and the finger notch are holes grouped with the body too.
     const holeShape = (solid: ManifoldSolid, suffix: string, name: string) => {

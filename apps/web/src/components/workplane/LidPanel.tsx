@@ -11,6 +11,12 @@ import {
   LID_LATCH_STYLES,
   MAX_LID_LATCH_LABEL,
   MAX_LID_SLIDER_PLAY,
+  MAX_LID_BOLT_DIAMETER,
+  MAX_LID_BOLT_PLAY,
+  MAX_LID_BOLT_TRAVEL,
+  MIN_LID_BOLT_DIAMETER,
+  MIN_LID_BOLT_PLAY,
+  MIN_LID_BOLT_TRAVEL,
   MAX_LID_SLIDER_WIDTH,
   MIN_LID_SLIDER_PLAY,
   MIN_LID_SLIDER_WIDTH,
@@ -737,7 +743,16 @@ export function LidPanel({
                   <span>{t("lid.latchBack")}</span>
                 </label>
               )}
-              {settings.latchStyle === "slider" ? (<>
+              {settings.latchStyle === "bolt" ? (<>
+                <EdgeModifierSlider label={t("lid.boltDiameter")} value={settings.boltDiameter} min={MIN_LID_BOLT_DIAMETER} max={MAX_LID_BOLT_DIAMETER} step={0.5} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ boltDiameter: value })} />
+                <EdgeModifierSlider label={t("lid.boltTravel")} value={settings.boltTravel} min={MIN_LID_BOLT_TRAVEL} max={MAX_LID_BOLT_TRAVEL} step={0.5} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ boltTravel: value })} />
+                <EdgeModifierSlider label={t("lid.boltPlay")} value={settings.boltPlay} min={MIN_LID_BOLT_PLAY} max={MAX_LID_BOLT_PLAY} step={0.05} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ boltPlay: value })} />
+                <label className="edge-modifier-field lid-latch-label">
+                  <span>{t("lid.latchLabel")}</span>
+                  <input type="text" value={settings.latchLabel} maxLength={MAX_LID_LATCH_LABEL} disabled={busy} onChange={(event) => onChange({ latchLabel: event.target.value })} />
+                </label>
+                <ToolHint text={t("lid.boltHint")} />
+              </>) : settings.latchStyle === "slider" ? (<>
                 <EdgeModifierSlider label={t("lid.sliderWidth")} value={settings.sliderWidth} min={MIN_LID_SLIDER_WIDTH} max={MAX_LID_SLIDER_WIDTH} step={1} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ sliderWidth: value })} />
                 <EdgeModifierSlider label={t("lid.sliderPlay")} value={settings.sliderPlay} min={MIN_LID_SLIDER_PLAY} max={MAX_LID_SLIDER_PLAY} step={0.05} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ sliderPlay: value })} />
                 <label className="edge-modifier-field lid-latch-label">
