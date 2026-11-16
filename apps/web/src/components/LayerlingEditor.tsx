@@ -30,6 +30,7 @@ import { limitedText } from "@/lib/textLength";
 import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textKerningPatch, textLetterSize, textLetterSizePatch, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
 import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, isIconLayerBody, normalizeIconTagCount } from "@/lib/iconTag";
 import { automaticFlexiJoints, automaticFoldJoints, DEFAULT_FLEXI_FOLD, FLEXI_DEFAULTS, normalizeFlexiOptions, type FlexiOptions } from "@/lib/flexiJoints";
+import { MOLD_DEFAULTS, normalizeMoldOptions, type MoldOptions } from "@/lib/moldTool";
 import { LID_HINGE_TYPES, groupedWithMagnets, lidClickBumpsFit, lidStackTopFits, lidDefaults, lidFlipTopFits, lidHandleFits, lidLatchesFit, lidNeckFit, lidNeckFitPatch, lidStandardThread, lidTakesMagnets, lidTetherFits, lidTopEdgeFits, magnetPocketDepth, normalizeLidOptions, type LidOptions, type LidThreadStandard } from "@/lib/lidTool";
 import { FIT_TEST_CLEARANCES, getPrinterPlay, MAX_PRINTER_PLAY, MIN_PRINTER_PLAY, normalizePrinterPlay, PRINTER_PLAY_SETTINGS, printerPlayPrinter, printerPlaySource, printerPlayStart, setPrinterPlay, setPrinterPlayPrinter, withPrinterPlay } from "@/lib/printerPlay";
 import { FIT_TEST_PIN_DIAMETER, fitTestHoles, fitTestShape, fitTestSpot } from "@/lib/fitTest";
@@ -74,6 +75,7 @@ import { MAX_PUNCH_CLEARANCE, MAX_PUNCH_SEGMENTS, punchAxisBetween, punchHoleSha
 import { COOKIE_CUTTER_SETTINGS_DEFAULTS, CookieCutterPanel, type CookieCutterSettings } from "./workplane/CookieCutterPanel";
 import { FlexiPanel, type FlexiToolSettings } from "./workplane/FlexiPanel";
 import { LidPanel } from "./workplane/LidPanel";
+import { MoldPanel } from "./workplane/MoldPanel";
 import { DeleteFacePanel } from "./workplane/DeleteFacePanel";
 import { MateFacesPanel } from "./workplane/MateFacesPanel";
 import { ALL_MATE_AXES, concentricMotion, mateMotion, pointMotion, pointTurnAboutAxis, pointTurnAboutPivot, turnedAbout, type FacePick, type MateAxes, type MateMode, type PointPick } from "@/lib/mateFaces";
@@ -273,7 +275,7 @@ import { FOOTPRINT_CUT_HEIGHT, footprintCutOffset, projectSectionPoint, SECTION_
 import type { AlignAxis, AlignHandleStatus, AlignSpread, AlignTarget, EdgeTreatmentFeature, GridSize, ParametricSource, ProjectAsset, ProjectAttachment, ShapeAsset, ShapeCustomization, ShapeKind, SketchImage, SketchOperation, SketchPoint, SketchProfile, SketchRevolveSettings, SketchSegment, ShellEdges, ShellOpenings, ShellSide, SweepAnchor, WorkplaneNote, WorkplaneShape, WorkplaneWorkspaceSettings } from "@/types/layerling";
 import { type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, meshReachAlong, formatTriangleCount, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey, sameShapeApartFromPlacement } from "@/lib/editorMeshCore";
 import { meshPartCount } from "@/lib/meshPartCount";
-import { buildGroupedShapeOffThread, exportSolidVolumeOffThread, callOffFaceRead, faceReadInWorker, createFaceReadKeeper, faceReadPositionsOffThread, simplifyTrianglePositionsOffThread, splitShapesByPlaneOffThread, previewSplitConnectorsOffThread, articulateShapesOffThread, lidForShapesOffThread, lidTopOffThread, checkClearanceOffThread, checkPrintOffThread, subscribeGeometryBusy, warmGeometryWorker } from "@/lib/geometryWorker";
+import { buildGroupedShapeOffThread, exportSolidVolumeOffThread, callOffFaceRead, faceReadInWorker, createFaceReadKeeper, faceReadPositionsOffThread, simplifyTrianglePositionsOffThread, splitShapesByPlaneOffThread, previewSplitConnectorsOffThread, articulateShapesOffThread, lidForShapesOffThread, lidTopOffThread, moldForShapesOffThread, checkClearanceOffThread, checkPrintOffThread, subscribeGeometryBusy, warmGeometryWorker } from "@/lib/geometryWorker";
 import { roundedAlignedValue } from "@/lib/alignRounding";
 import { buildSketchLoftFromSelection, canSketchLoft } from "@/lib/sketchLoft";
 import { alignBounds, sizeAlignmentState, sizedShapesForSelection } from "@/lib/alignSize";
@@ -3690,6 +3692,7 @@ export function LayerlingEditor({
   const [flexiTool, setFlexiTool] = useState<(FlexiToolSettings & { targetIds: string[]; busy: boolean; error: string | null }) | null>(null);
   /** A lid (#1009) for the bodies `targetIds`, open at the top; it comes out beside them. */
   const [lidTool, setLidTool] = useState<(LidOptions & { targetIds: string[]; busy: boolean; error: string | null }) | null>(null);
+  const [moldTool, setMoldTool] = useState<(MoldOptions & { targetIds: string[]; busy: boolean; error: string | null }) | null>(null);
   /** The cable channel: the body, the two ends clicked on it, which end a click sets now, and its settings. */
   const [cableTool, setCableTool] = useState<(CableChannelOptions & { targetId: string; entry: CableEnd | null; exit: CableEnd | null; picking: CableChannelEndName | null; busy: boolean; error: string | null }) | null>(null);
   const [cableSearch, setCableSearch] = useState<{ working: boolean; result: CableChannelResult | null } | null>(null);
@@ -9147,6 +9150,7 @@ export function LayerlingEditor({
     }
     if (edgeModifier) invalidateCadModifierSession();
     closeSplit();
+    setMoldTool(null);
     // The gap and the hinge pin's play start from the printer's play when it is measured (printerPlay.ts).
     setLidTool({ ...lidDefaults(getPrinterPlay()), targetIds: targets.map((shape) => shape.id), busy: false, error: null });
   }, [closeSplit, edgeModifier, invalidateCadModifierSession, lidTool, selectedShapes]);
@@ -9179,6 +9183,83 @@ export function LayerlingEditor({
       else setLidTool((current) => current ? { ...current, busy: false, error: result.message } : current);
     });
   }, [lidTool, makeLid]);
+
+  /**
+   * A mold or a die for the selected master (the bodies joined, their holes taken off): its parts laid out beside it as
+   * they print, the master left as it is. The same code the MCP action uses.
+   */
+  const makeMold = useCallback(async (given?: Partial<Record<keyof MoldOptions, unknown>>, only?: readonly WorkplaneShape[]) => {
+    const fail = (message: string) => {
+      setNotice(message);
+      return { ok: false as const, message };
+    };
+    const targets = (only ?? selectedShapes).filter((shape) => !isNonSolidShape(shape));
+    if (!targets.some((shape) => !shape.hole)) return fail(t("mold.error.needsBody"));
+    const options = normalizeMoldOptions(given, MOLD_DEFAULTS);
+    const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
+    const sourceProjectId = projectInfoRef.current.projectId;
+    setNotice(t("mold.working"), true);
+    const result = await moldForShapesOffThread(targets, options);
+    if (!result.parts) return fail(result.error);
+    if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) return fail(t("lid.error.changed"));
+    // Beside the master, moved on along x past whatever already stands there (an earlier mold of the same master).
+    const extent = (shape: WorkplaneShape) => {
+      const half = Math.hypot(shapeWidth(shape), shapeDepth(shape)) / 2;
+      const across = shape.rotation % 180 || shape.rotationX || shape.rotationZ ? half : null;
+      const w = across ?? shapeWidth(shape) / 2;
+      const d = across ?? shapeDepth(shape) / 2;
+      return { x0: shape.x - w, x1: shape.x + w, z0: shape.z - d, z1: shape.z + d };
+    };
+    const made = result.parts.map(extent);
+    const own = { x0: Math.min(...made.map((box) => box.x0)), x1: Math.max(...made.map((box) => box.x1)), z0: Math.min(...made.map((box) => box.z0)), z1: Math.max(...made.map((box) => box.z1)) };
+    const others = shapesRef.current.filter((shape) => !shape.hidden && !targets.some((target) => target.id === shape.id)).map(extent);
+    let shift = 0;
+    for (let tries = 0; tries < 400; tries += 1) {
+      const blocking = others.filter((box) => box.x0 < own.x1 + shift + 5 && box.x1 > own.x0 + shift - 5 && box.z0 < own.z1 + 5 && box.z1 > own.z0 - 5);
+      if (!blocking.length) break;
+      shift = Math.max(...blocking.map((box) => box.x1)) + 15 - own.x0;
+    }
+    const parts = shift ? result.parts.map((part) => ({ ...part, x: part.x + shift })) : result.parts;
+    const message = [t(`mold.made.${options.kind}`, { count: parts.length }), ...result.notes].join(" ");
+    commitShapes([...shapesRef.current, ...parts], parts.map((part) => part.id), message);
+    return { ok: true as const, ids: parts.map((part) => part.id), notes: result.notes, kind: options.kind };
+  }, [commitShapes, selectedShapes]);
+
+  const startMoldTool = useCallback(() => {
+    if (moldTool) {
+      setMoldTool(null);
+      return;
+    }
+    const targets = selectedShapes.filter((shape) => !isNonSolidShape(shape));
+    if (!targets.some((shape) => !shape.hole)) {
+      setNotice(t("mold.error.needsBody"));
+      return;
+    }
+    if (edgeModifier) invalidateCadModifierSession();
+    closeSplit();
+    setLidTool(null);
+    setMoldTool({ ...MOLD_DEFAULTS, targetIds: targets.map((shape) => shape.id), busy: false, error: null });
+  }, [closeSplit, edgeModifier, invalidateCadModifierSession, moldTool, selectedShapes]);
+
+  const applyMoldTool = useCallback(() => {
+    if (!moldTool || moldTool.busy) return;
+    const targets = shapesRef.current.filter((shape) => moldTool.targetIds.includes(shape.id));
+    if (!targets.length) {
+      setMoldTool(null);
+      return;
+    }
+    const { targetIds: _ids, busy: _busy, error: _error, ...options } = moldTool;
+    setMoldTool((current) => current ? { ...current, busy: true, error: null } : current);
+    void makeMold(options, targets).then((result) => {
+      if (result.ok) setMoldTool(null);
+      else setMoldTool((current) => current ? { ...current, busy: false, error: result.message } : current);
+    });
+  }, [makeMold, moldTool]);
+
+  // The panel belongs to the bodies it was opened for; another selection closes it.
+  useEffect(() => {
+    setMoldTool((current) => current && !current.busy && !(selectedIds.length === current.targetIds.length && current.targetIds.every((id) => selectedIds.includes(id))) ? null : current);
+  }, [selectedIds]);
 
   // The panel belongs to the bodies it was opened for; another selection closes it.
   useEffect(() => {
@@ -11683,7 +11764,7 @@ export function LayerlingEditor({
   // (Opened itself, it closes the tool before it, as every tool docked in the column does.)
   const otherToolPanelOpen = Boolean(
     arrayTool || scalePercentTool || simplifyToolId || holePatternTool || faceTool || supportRibTool || stencilBridgeTool || mateTool || cookieCutterTool || flexiTool
-    || lidTool || cableTool || cutOutTool || punchTool || shellTool || deleteFaceTool || splitSession || edgeModifier,
+    || lidTool || moldTool || cableTool || cutOutTool || punchTool || shellTool || deleteFaceTool || splitSession || edgeModifier,
   );
   /**
    * Checks the selection, or every visible object when nothing is selected (as the export takes them). A new check
@@ -15362,6 +15443,18 @@ export function LayerlingEditor({
         return { object: made ? mcpShapeSummary(made) : { id: result.id }, joints: result.joints, links: result.links, swing: result.swing, axis: result.axis === "x" ? "X" : "Y", bend: result.bend };
       }
 
+      if (command.action === "make_mold") {
+        const ids = new Set(mcpStringArray(params.ids));
+        const targets = currentShapes().filter((shape) => ids.has(shape.id));
+        if (!targets.length) throw new Error("Pass the ids of the master to make a mold or die for");
+        const { ids: _ids, ...given } = params;
+        // A parting height given means that height, unless the search is asked for too.
+        if (given.parting !== undefined && given.autoParting === undefined) given.autoParting = false;
+        const result = await makeMold(given as Partial<Record<keyof MoldOptions, unknown>>, targets);
+        if (!result.ok) throw new Error(result.message);
+        const made = currentShapes().filter((shape) => result.ids.includes(shape.id));
+        return { kind: result.kind, parts: made.map((shape) => mcpShapeSummary(shape)), notes: result.notes };
+      }
       if (command.action === "make_lid") {
         const ids = new Set(mcpStringArray(params.ids));
         let targets = currentShapes().filter((shape) => ids.has(shape.id));
@@ -19232,6 +19325,7 @@ export function LayerlingEditor({
         flexiActive={Boolean(flexiTool)}
         canLid={!selectionLocked && selectedShapes.some((shape) => !shape.hole && !isNonSolidShape(shape))}
         lidActive={Boolean(lidTool)}
+        moldActive={Boolean(moldTool)}
         canCableChannel={!selectionLocked && selectedShapes.length === 1 && !selectedShapes[0].hole && !isNonSolidShape(selectedShapes[0])}
         cableChannelActive={Boolean(cableTool)}
         onCableChannel={startCableTool}
@@ -19325,6 +19419,7 @@ export function LayerlingEditor({
         onCookieCutter={startCookieCutterTool}
         onFlexi={startFlexiTool}
         onLid={startLidTool}
+        onMold={startMoldTool}
         onLoftSketches={() => void loftSketches()}
         intersectPreviewActive={Boolean(intersectPreviewIds)}
         onClearanceCheck={toggleClearanceCheck}
@@ -20111,6 +20206,18 @@ export function LayerlingEditor({
             fitting: lidNeckFitting,
             onFit: fitLidNeck,
           } : null}
+        />
+      ) : null}
+      {moldTool ? (
+        <MoldPanel
+          targetName={shapesRef.current.filter((shape) => moldTool.targetIds.includes(shape.id)).map((shape) => shape.name).join(", ")}
+          settings={moldTool}
+          workspace={workspaceSettings}
+          busy={moldTool.busy}
+          error={moldTool.error}
+          onChange={(patch) => setMoldTool((current) => current ? { ...current, ...patch, error: null } : current)}
+          onApply={applyMoldTool}
+          onCancel={() => setMoldTool(null)}
         />
       ) : null}
       {cableTool ? (

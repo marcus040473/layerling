@@ -147,6 +147,21 @@ Pick {{ui:lid.type.slide}} for a lid that slides in like a wooden pencil box's: 
 
 To sink the lid below the rim, set {{ui:lid.slideFrame}} (0 to begin with). The lid and its grooves then sit that much lower, and the walls keep their full height above them, a frame round the lid. The wall it slides in through is then not cut down either: it keeps its full height, with a slot through it where the lid passes, and the lid's end fills the slot, flush with the outside. Above the lid the slot leaves the same play as at its sides ({{ui:lid.gap}}), and with {{ui:lid.clickBumps}} the bump's height more, so the lid can bow up over its bump on the way out; at least 1 mm of the wall must stay above it, and a lower frame is refused with the frame needed (1.2 mm with a gap of 0.2 mm). The box still prints upright: the slot's top is the one place printed over air, a short, level bridge across the lid's width, which most printers bridge without support. The thumb grooves then sit just behind that wall, and a pull tab stands out of the slot.
 
+## Molds and dies
+
+{{ui:editor.tool.mold}} turns a body into a mold to cast it, or into a punch and die to press it into sheet. The body is the master, the shape you want to copy. Select it and click {{ui:editor.tool.mold}}. In the window you choose what to make:
+
+- {{ui:mold.kind.twoPart}}: a rigid mold in two halves, printed and cast in directly: resin, plaster, wax, soap, chocolate or concrete. Cone keys line the halves up (one is smaller, so the mold closes only one way), a funnel and a sprue lead the material in at the master's highest point, and vents let the air out where it would be trapped. Pry slots on the seam help to part the halves, and clamp ears with bolt holes hold them together if you like.
+- {{ui:mold.kind.box}}: a frame and a base plate to pour silicone round the printed master. The master sits in a shallow seat, the frame stands in a groove so nothing runs out. The window says how much silicone it takes.
+- {{ui:mold.kind.tray}}: a one-part mold open at the top, for a master with a flat side. The flat side becomes the open top; pour it to the brim.
+- {{ui:mold.kind.die}}: a punch and a die for leather, card, foil or thin metal. The punch is the master's outline seen from above on a plate, the die a plate with the outline as a cavity. For {{ui:mold.dieMode.form}} the gap all round is the {{ui:mold.material}}, and the punch's edge is rounded so the sheet does not tear; for {{ui:mold.dieMode.cut}} the gap is a few per cent of it and the die is open below, so the cut-out falls through. Guide pins keep both in line.
+
+Click {{ui:mold.apply}}: the parts lie beside the master the way they print, without support: the halves with their parting face up, the die ready to be turned over onto the punch. The master stays as it is.
+
+The most common trouble with molds is a cast that sticks. Where the master is wider above than below the parting, the window warns of an undercut: move the {{ui:mold.parting}} to where the master is widest, turn the master, or take the silicone pour box, which lets go of undercuts.
+
+> **Tip:** Seal a printed mold (with resin or wax) and use release agent, or the cast keys into the layer lines. PLA softens from about 55 °C: for hot wax, soap or resin that gets hot as it sets, print the mold in PETG or ASA.
+
 ## A cable channel through a body
 
 {{ui:editor.tool.cableChannel}} runs a round tunnel through a body for a cable or an LED lead, from where it goes in to where it comes out, and finds the way itself. Select the body and click {{ui:editor.tool.cableChannel}}, then click on the body where the cable goes in ({{ui:cable.entry}}) and where it comes out ({{ui:cable.exit}}). The way starts and ends straight along the surface, runs straight where it can and bends where it must, never tighter than {{ui:cable.minBend}}, and keeps as far from the outside as it can, never closer than {{ui:cable.minWall}}. A cable pushes through a bend of about five times its diameter; {{ui:cable.diameter}} is the channel's own.
