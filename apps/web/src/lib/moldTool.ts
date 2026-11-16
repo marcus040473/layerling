@@ -84,6 +84,8 @@ export const MOLD_LIMITS = {
 } as const;
 type Limited = keyof typeof MOLD_LIMITS;
 
+/** Millilitres in a US fluid ounce. */
+export const MOLD_ML_PER_US_FL_OZ = 29.5735;
 /** A wall thinner than this warps or breaks under a pour, in mm. */
 export const MOLD_MIN_STRONG_WALL = 3;
 /** A pour box's frame stands this deep in the base's groove, with this play per side, in mm. */
@@ -575,7 +577,11 @@ export function moldErrorMessage(error: "notClosed" | "tooSmall" | "empty" | "ke
 /** The warnings in words, and the volume, as the status line says them. */
 export function moldNotes(result: Extract<MoldResult, { parts: unknown }>, kind: MoldKind) {
   const notes: string[] = [];
-  if (kind !== "die") notes.push(t(kind === "box" ? "mold.note.silicone" : "mold.note.volume", { ml: (Math.round(result.volume * 10) / 10).toLocaleString(numberLocale()) }));
+  // In ml and in US fluid ounces, the unit resin and silicone are sold by in the US.
+  if (kind !== "die") notes.push(t(kind === "box" ? "mold.note.silicone" : "mold.note.volume", {
+    ml: (Math.round(result.volume * 10) / 10).toLocaleString(numberLocale()),
+    oz: (Math.round((result.volume / MOLD_ML_PER_US_FL_OZ) * 100) / 100).toLocaleString(numberLocale()),
+  }));
   if (result.parting !== undefined) notes.push(t(result.partingFound ? "mold.note.partingFound" : "mold.note.parting", { percent: result.parting.toLocaleString(numberLocale()) }));
   if (result.clearance !== undefined) notes.push(t("mold.note.clearance", { mm: result.clearance.toLocaleString(numberLocale()) }));
   for (const warning of result.warnings) notes.push(t(`mold.warning.${warning}`));
