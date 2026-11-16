@@ -87,6 +87,27 @@ describe("a Gridfinity floor, fit and dividers with the real OCCT kernel", () =>
     expect(kernel.getVolume(divided)).toBeGreaterThan(kernel.getVolume(shelled));
   });
 
+  it("makes dividers lower and thicker, by the Gridfinity compartments' rule (Discussion #1560)", () => {
+    const { original, shelled } = hollow(100, 80, 40);
+    // The floor is the 2 mm wall: 15 mm over it the dividers end at 17, not at the rim (40).
+    const low = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0, height: 15, thickness: 2.4 }, null);
+    expect(kernel.getSubShapes(low, "solid")).toHaveLength(1);
+    expect(solid(low, 0, 16.9, 5)).toBe(true);
+    expect(solid(low, 0, 17.1, 5)).toBe(false);
+    // 2.4 mm thick: 1 mm off the middle is still in it.
+    expect(solid(low, 1, 10, 5)).toBe(true);
+    // At least 3 mm over the floor.
+    const lowest = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0, height: 1 }, null);
+    expect(solid(lowest, 0, 4.8, 5)).toBe(true);
+    expect(solid(lowest, 0, 5.1, 5)).toBe(false);
+    // Within 0.1 mm of the rim, or over it: up to the rim.
+    const full = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0, height: 37.95 }, null);
+    expect(solid(full, 0, 39.9, 5)).toBe(true);
+    // The default stays 1.2 mm thick: 1 mm off the middle is open.
+    const plain = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0 }, null);
+    expect(solid(plain, 1, 10, 5)).toBe(false);
+  });
+
   it("stands on a Gridfinity floor, with dividers and a stack", () => {
     const { original, shelled } = hollow(100, 80, 40);
     // As the worker does it: the foot first, the sockets on its floor, then the dividers.

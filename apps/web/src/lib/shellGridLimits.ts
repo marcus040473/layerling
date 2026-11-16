@@ -1,4 +1,4 @@
-import { GRIDFINITY_BASEPLATE_HEIGHT, GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_FLOOR, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS } from "@/lib/gridfinityGeometry";
+import { DEFAULT_GRIDFINITY_DIVIDER_THICKNESS, GRIDFINITY_BASEPLATE_HEIGHT, GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_FLOOR, GRIDFINITY_GRID, MAX_GRIDFINITY_DIVIDER_THICKNESS, MAX_GRIDFINITY_LARGE_PLATE_UNITS, MIN_GRIDFINITY_DIVIDER_HEIGHT, MIN_GRIDFINITY_DIVIDER_THICKNESS } from "@/lib/gridfinityGeometry";
 
 /* What the Gridfinity floor, the fit to the grid and the dividers of a hollowed box offer; no kernel in here, so the panel can use it. */
 
@@ -10,12 +10,20 @@ export const SHELL_GRID_MIN_DEPTH = 3;
 export const SHELL_GRID_PLAY = GRIDFINITY_DRAWER_CLEARANCE;
 export const MAX_SHELL_GRID_CELLS = MAX_GRIDFINITY_LARGE_PLATE_UNITS * MAX_GRIDFINITY_LARGE_PLATE_UNITS;
 
-/** A divider is this thick, in mm, and a box has at most this many across and along. */
-export const SHELL_DIVIDER_THICKNESS = 1.2;
+/**
+ * A divider is this thick unless set otherwise, in mm, and a box has at most this many across and along. Thickness and
+ * height keep to the Gridfinity compartments' (Discussion #1560, PR #1796), so a hollowed box and a bin work alike.
+ */
+export const SHELL_DIVIDER_THICKNESS = DEFAULT_GRIDFINITY_DIVIDER_THICKNESS;
+export const MIN_SHELL_DIVIDER_THICKNESS = MIN_GRIDFINITY_DIVIDER_THICKNESS;
+export const MAX_SHELL_DIVIDER_THICKNESS = MAX_GRIDFINITY_DIVIDER_THICKNESS;
+/** A divider set lower stands at least this high over the floor, in mm; 0 (or unset) is the full height, up to the rim. */
+export const MIN_SHELL_DIVIDER_HEIGHT = MIN_GRIDFINITY_DIVIDER_HEIGHT;
 export const MAX_SHELL_DIVIDERS = 8;
 
 export type ShellGrid = { cells: number; fit: boolean };
-export type ShellDividers = { x: number; z: number };
+/** `height`: over the floor, in mm, 0 or unset the full height; `thickness`: in mm, unset 1.2. */
+export type ShellDividers = { x: number; z: number; height?: number; thickness?: number };
 
 export const GRID_NEEDS_TOP_MESSAGE = "A Gridfinity floor needs a body hollowed with only its top open.";
 export const GRID_TOO_LOW_MESSAGE = "The body is too low for a Gridfinity floor: the floor takes 6.2 mm and the cavity needs 3 mm above it.";
@@ -41,8 +49,14 @@ export function normalizeShellGrid(value: unknown): ShellGrid | null {
 /** The dividers as stored: null when there are none. */
 export function normalizeShellDividers(value: unknown): ShellDividers | null {
   if (!value || typeof value !== "object") return null;
-  const { x, z } = value as Record<string, unknown>;
-  const out = { x: clampShellCount(x, MAX_SHELL_DIVIDERS), z: clampShellCount(z, MAX_SHELL_DIVIDERS) };
+  const { x, z, height, thickness } = value as Record<string, unknown>;
+  const out: ShellDividers = { x: clampShellCount(x, MAX_SHELL_DIVIDERS), z: clampShellCount(z, MAX_SHELL_DIVIDERS) };
+  // A height over 0 is kept as set (the kernel holds it to at least 3 mm and to the rim); 0 or less is the full height.
+  if (typeof height === "number" && Number.isFinite(height) && height > 0) out.height = Math.round(height * 1000) / 1000;
+  if (typeof thickness === "number" && Number.isFinite(thickness)) {
+    const t = Math.min(MAX_SHELL_DIVIDER_THICKNESS, Math.max(MIN_SHELL_DIVIDER_THICKNESS, Math.round(thickness * 1000) / 1000));
+    if (Math.abs(t - SHELL_DIVIDER_THICKNESS) > 1e-9) out.thickness = t;
+  }
   return out.x + out.z > 0 ? out : null;
 }
 

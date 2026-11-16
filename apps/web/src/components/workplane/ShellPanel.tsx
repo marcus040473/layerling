@@ -9,7 +9,7 @@ import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
-import { MAX_SHELL_DIVIDERS, type ShellDividers } from "@/lib/shellGridLimits";
+import { MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
 import { DEFAULT_SHELL_SHELF_WIDTH, SHELL_SHELF_MAX_HEIGHT, SHELL_SHELF_MAX_WIDTH, SHELL_SHELF_MIN_HEIGHT, SHELL_SHELF_MIN_WIDTH } from "@/lib/shellShelfLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import type { ShellEdges, ShellOpenings, WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -45,6 +45,7 @@ export function ShellPanel({
   gridColumns,
   gridRows,
   dividers,
+  dividerFullHeight = 0,
   shelf,
   shelfHeight,
   shelfOffered,
@@ -91,6 +92,8 @@ export function ShellPanel({
   gridRows: number;
   /** Dividers across (x) and along (z) the inside; null for none. */
   dividers: ShellDividers | null;
+  /** About how high the dividers stand at full height, over the floor, in mm: the most the height slider offers. */
+  dividerFullHeight?: number;
   /** The width in mm of the ledge round the inside of the wall for a plate to rest on; 0 for none (#1663). */
   shelf: number;
   /** How high in mm the top of the ledge lies above the inside of the floor. */
@@ -295,6 +298,35 @@ export function ShellPanel({
               disabled={busy}
               onChange={(value) => onDividersChange({ ...dividers, z: Math.round(value) })}
             />
+            <EdgeModifierSlider
+              label={t("prop.gridfinityDividerThickness")}
+              value={dividers.thickness ?? SHELL_DIVIDER_THICKNESS}
+              min={MIN_SHELL_DIVIDER_THICKNESS}
+              max={MAX_SHELL_DIVIDER_THICKNESS}
+              step={0.1}
+              workspace={workspace}
+              length
+              disabled={busy}
+              onChange={(value) => onDividersChange({ ...dividers, thickness: value })}
+            />
+            {dividerFullHeight > MIN_SHELL_DIVIDER_HEIGHT ? (<>
+              <EdgeModifierSlider
+                label={t("prop.gridfinityDividerHeight")}
+                value={Math.min(dividers.height ?? dividerFullHeight, dividerFullHeight)}
+                min={MIN_SHELL_DIVIDER_HEIGHT}
+                max={dividerFullHeight}
+                step={0.5}
+                workspace={workspace}
+                length
+                disabled={busy}
+                // Up at the full height it is the full height again, so it follows the box when the box changes.
+                onChange={(value) => {
+                  const { height: _height, ...rest } = dividers;
+                  onDividersChange(value >= dividerFullHeight - 0.1 ? rest : { ...rest, height: value });
+                }}
+              />
+              <ToolHint text={t("shell.dividerHeightHint")} />
+            </>) : null}
           </>) : null}
           <ToolHint text={t("shell.dividersHint")} />
         </div>

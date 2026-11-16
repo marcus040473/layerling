@@ -14,6 +14,12 @@ describe("what the Gridfinity floor, the dividers and the stacking of a hollow b
   it("keeps the dividers to whole numbers up to the most", () => {
     expect(normalizeShellDividers({ x: 2, z: 0 })).toEqual({ x: 2, z: 0 });
     expect(normalizeShellDividers({ x: 0, z: 0 })).toBeNull();
+    // Height and thickness as the Gridfinity compartments keep them: 0 or less is the full height, the thickness 0.8 to 3,
+    // and the default 1.2 is not stored.
+    expect(normalizeShellDividers({ x: 1, z: 0, height: 15, thickness: 2.4 })).toEqual({ x: 1, z: 0, height: 15, thickness: 2.4 });
+    expect(normalizeShellDividers({ x: 1, z: 0, height: 0, thickness: 1.2 })).toEqual({ x: 1, z: 0 });
+    expect(normalizeShellDividers({ x: 1, z: 0, height: -3, thickness: 9 })).toEqual({ x: 1, z: 0, thickness: 3 });
+    expect(normalizeShellDividers({ x: 1, z: 0, thickness: 0.2 })).toEqual({ x: 1, z: 0, thickness: 0.8 });
     expect(normalizeShellDividers({ x: 99, z: -3 })).toEqual({ x: MAX_SHELL_DIVIDERS, z: 0 });
     expect(normalizeShellDividers(undefined)).toBeNull();
   });

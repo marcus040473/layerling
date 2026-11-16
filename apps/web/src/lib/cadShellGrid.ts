@@ -1,6 +1,6 @@
 import type { OcctKernel, ShapeHandle, Vec3 } from "occt-wasm";
 import { block, rimFaces, tracking } from "@/lib/cadLid";
-import { GRIDFINITY_BASEPLATE_HEIGHT, GRIDFINITY_BASEPLATE_RADIUS, GRIDFINITY_GRID, GRIDFINITY_SOCKET, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
+import { GRIDFINITY_BASEPLATE_HEIGHT, GRIDFINITY_BASEPLATE_RADIUS, GRIDFINITY_GRID, GRIDFINITY_SOCKET, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityDividerHeightTop, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
 import {
   DIVIDERS_FAILED_MESSAGE,
   DIVIDERS_NEEDS_TOP_MESSAGE,
@@ -177,7 +177,8 @@ export function shellGridSolid(kernel: OcctKernel, original: ShapeHandle, shelle
 
 /**
  * The body with dividers: `dividers.x` walls across (along z) and `dividers.z` along, evenly spaced over the inside, from
- * the floor (`floorTop`, the top of the Gridfinity floor if there is one) to the rim, clipped to the box's outline.
+ * the floor (`floorTop`, the top of the Gridfinity floor if there is one) to the rim or `dividers.height` over the floor,
+ * `dividers.thickness` thick, clipped to the box's outline.
  */
 export function shellDividersSolid(kernel: OcctKernel, original: ShapeHandle, body: ShapeHandle, dividers: ShellDividers, floorTop: number | null): ShapeHandle {
   const made: ShapeHandle[] = [];
@@ -189,14 +190,17 @@ export function shellDividersSolid(kernel: OcctKernel, original: ShapeHandle, bo
     // The floor of a plain hollow body is as thick as its wall: found from the cavity's lowest point.
     const base = floorTop ?? cavityFloor(cad, body, polygon, bottom, top);
     const pieces: ShapeHandle[] = [];
-    const t = SHELL_DIVIDER_THICKNESS;
+    const t = dividers.thickness ?? SHELL_DIVIDER_THICKNESS;
+    // Lower dividers by the rule the Gridfinity compartments keep (#1560): at least 3 mm over the floor, the full height
+    // when unset, 0, or within 0.1 mm of the rim.
+    const dividerTop = gridfinityDividerHeightTop(dividers.height, base, top);
     for (let i = 1; i <= dividers.x; i += 1) {
       const x = b.minX + ((b.maxX - b.minX) * i) / (dividers.x + 1);
-      pieces.push(cad.makeBoxFromCorners({ x: x - t / 2, y: base - 0.2, z: b.minZ - 1 }, { x: x + t / 2, y: top, z: b.maxZ + 1 }));
+      pieces.push(cad.makeBoxFromCorners({ x: x - t / 2, y: base - 0.2, z: b.minZ - 1 }, { x: x + t / 2, y: dividerTop, z: b.maxZ + 1 }));
     }
     for (let i = 1; i <= dividers.z; i += 1) {
       const z = b.minZ + ((b.maxZ - b.minZ) * i) / (dividers.z + 1);
-      pieces.push(cad.makeBoxFromCorners({ x: b.minX - 1, y: base - 0.2, z: z - t / 2 }, { x: b.maxX + 1, y: top, z: z + t / 2 }));
+      pieces.push(cad.makeBoxFromCorners({ x: b.minX - 1, y: base - 0.2, z: z - t / 2 }, { x: b.maxX + 1, y: dividerTop, z: z + t / 2 }));
     }
     const clipped = cad.common(original, cad.fuseAll(pieces));
     const joined = cad.simplify(cad.fuseAll([body, clipped]));
@@ -222,7 +226,17 @@ function cavityFloor(cad: OcctKernel, body: ShapeHandle, polygon: readonly Cell[
   const steps = 200;
   for (let k = 0; k <= steps; k += 1) {
     const y = bottom + ((top - bottom) * k) / steps;
-    if (!cad.containsPoint(body, { x, y, z })) return y;
+    if (cad.containsPoint(body, { x, y, z })) continue;
+    // Narrowed down between the last step in the floor and this one, to a hundredth of a millimetre, so a divider height
+    // set over the floor comes out as set.
+    let low = k > 0 ? bottom + ((top - bottom) * (k - 1)) / steps : bottom;
+    let high = y;
+    while (high - low > 0.005) {
+      const mid = (low + high) / 2;
+      if (cad.containsPoint(body, { x, y: mid, z })) low = mid;
+      else high = mid;
+    }
+    return high;
   }
   return bottom;
 }

@@ -1541,6 +1541,8 @@ export const tools = [
         gridFit: { type: "boolean", description: "With gridCells: thicken the walls so the inside is exactly the cells." },
         dividersX: { type: "integer", description: "Dividers across the inside, 0 to 8 (top open only)." },
         dividersZ: { type: "integer", description: "Dividers along the inside, 0 to 8 (top open only)." },
+        dividerHeight: { type: "number", description: "With dividers: how high they stand over the floor, in mm, at least 3; unset, 0, or within 0.1 mm of the rim or over it: up to the rim. The same rule as gridfinityDividerHeight." },
+        dividerThickness: { type: "number", description: "With dividers: their thickness in mm, 0.8 to 3. Default 1.2." },
         shelf: { type: "number", description: "Width in millimetres (0.5 to 5) of a ledge all round the inside of the wall for a plate to rest on (#1663); only with the top as the one open side; leave out for none." },
         shelfHeight: { type: "number", description: "With shelf: how high in millimetres (4 to 200) the top of the ledge lies above the inside of the floor; default 20." },
       },

@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Niedrigere Trennstege in ausgehöhlten Boxen",
+      "en": "Lower dividers in hollowed boxes"
+    },
+    "body": {
+      "de": "Hat eine ausgehöhlte Box Trennstege, lassen sich jetzt auch ihre Dicke (0,8 bis 3 mm) und ihre Höhe über dem Boden (ab 3 mm bis zum Rand) einstellen, nach derselben Regel wie die Trennwandhöhe in Gridfinity-Behältern.",
+      "en": "A hollowed box's dividers now take a thickness (0.8 to 3 mm) and a height over the floor (from 3 mm up to the rim), by the same rule as the divider height in Gridfinity bins."
+    }
+  },
+  {
+    "title": {
       "de": "Gussformen und Stanzwerkzeuge aus einem Teil",
       "en": "Casting molds and punch-and-die sets from a part"
     },
