@@ -1403,6 +1403,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "shell.dividerHeightFlush": "Bündig",
   "shell.dividerHeightFlushHint": "Die Trennstege reichen bis zum Rand, bündig mit ihm.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % der vollen Höhe.",
+  "shell.dividersUnderShelf": "Mit Regalauflage enden die Trennstege auf ihrer Höhe, der Einlegeboden liegt dann auch auf ihnen.",
   "shell.errorGridNeedsTop": "Ein Gridfinity-Boden geht nur bei einem Körper, der nur oben offen ausgehöhlt ist.",
   "shell.errorGridTooLow": "Der Körper ist zu niedrig für einen Gridfinity-Boden: Der Boden braucht 6,2 mm und der Hohlraum 3 mm darüber.",
   "shell.errorGridNoCell": "Nicht einmal ein ganzes Gridfinity-Feld passt in den Innenraum dieser Box.",

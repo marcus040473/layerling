@@ -1375,6 +1375,7 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "A filo",
   "shell.dividerHeightFlushHint": "I divisori arrivano fino al bordo, a filo con esso.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % dell'altezza piena.",
+  "shell.dividersUnderShelf": "Con un bordo per ripiano i divisori finiscono alla sua altezza e il ripiano poggia anche su di essi.",
   "shell.errorGridNeedsTop": "Un fondo Gridfinity richiede un corpo svuotato con solo il lato superiore aperto.",
   "shell.errorGridTooLow": "Il corpo è troppo basso per un fondo Gridfinity: il fondo occupa 6,2 mm e la cavità ne richiede 3 sopra.",
   "shell.errorGridNoCell": "Nell'interno di questa scatola non entra nemmeno una cella Gridfinity intera.",

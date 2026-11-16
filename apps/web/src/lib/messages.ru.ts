@@ -1402,6 +1402,7 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Вровень",
   "shell.dividerHeightFlushHint": "Перегородки доходят до края, вровень с ним.",
   "shell.dividerHeightPercent": "{mm} мм = {percent} % полной высоты.",
+  "shell.dividersUnderShelf": "С опорой под полку перегородки заканчиваются на её высоте, и полка лежит и на них.",
   "shell.errorGridNeedsTop": "Дно Gridfinity требует тела, выдолбленного с открытым только верхом.",
   "shell.errorGridTooLow": "Тело слишком низкое для дна Gridfinity: дно занимает 6,2 мм, а полости нужно 3 мм над ним.",
   "shell.errorGridNoCell": "В коробку не помещается даже одна целая ячейка Gridfinity.",

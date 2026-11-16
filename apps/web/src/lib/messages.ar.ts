@@ -1381,6 +1381,7 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "مستوية",
   "shell.dividerHeightFlushHint": "تصل الفواصل إلى الحافة، مستوية معها.",
   "shell.dividerHeightPercent": "{mm} مم = {percent} % من الارتفاع الكامل.",
+  "shell.dividersUnderShelf": "مع رف داخلي تنتهي الفواصل عند مستوى حافة الرف، فيستند لوح الرف عليها أيضًا.",
   "shell.errorGridNeedsTop": "يحتاج قاع Gridfinity إلى جسم مجوّف مفتوح من الأعلى فقط.",
   "shell.errorGridTooLow": "الجسم منخفض جدًا لقاع Gridfinity: يأخذ القاع 6.2 مم ويحتاج التجويف إلى 3 مم فوقه.",
   "shell.errorGridNoCell": "لا تتسع حتى خلية Gridfinity واحدة كاملة داخل هذا الصندوق.",

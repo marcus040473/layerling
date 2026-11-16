@@ -1404,6 +1404,7 @@ export const MESSAGES_EN = {
   "shell.dividerHeightFlush": "Flush",
   "shell.dividerHeightFlushHint": "The dividers reach the rim, flush with it.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % of the full height.",
+  "shell.dividersUnderShelf": "With a shelf ledge the dividers end level with it, so the shelf plate rests on them too.",
   "shell.errorGridNeedsTop": "A Gridfinity floor needs a body hollowed with only its top open.",
   "shell.errorGridTooLow": "The body is too low for a Gridfinity floor: the floor takes 6.2 mm and the cavity needs 3 mm above it.",
   "shell.errorGridNoCell": "Not even one whole Gridfinity cell fits into the inside of this box.",

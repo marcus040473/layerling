@@ -1394,6 +1394,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Affleurant",
   "shell.dividerHeightFlushHint": "Les séparations montent jusqu'au bord, à fleur de celui-ci.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % de la hauteur totale.",
+  "shell.dividersUnderShelf": "Avec un rebord d'étagère, les séparations s'arrêtent à sa hauteur et la tablette repose aussi sur elles.",
   "shell.errorGridNeedsTop": "Un fond Gridfinity demande un corps évidé dont seul le haut est ouvert.",
   "shell.errorGridTooLow": "Le corps est trop bas pour un fond Gridfinity : le fond prend 6,2 mm et la cavité a besoin de 3 mm au-dessus.",
   "shell.errorGridNoCell": "Pas même une cellule Gridfinity entière ne tient dans l'intérieur de cette boîte.",

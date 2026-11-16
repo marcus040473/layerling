@@ -1549,6 +1549,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "shell.dividerHeightFlush": "Zarovnat",
   "shell.dividerHeightFlushHint": "Stěny sahají až k okraji, zarovnané s ním.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % plné výšky.",
+  "shell.dividersUnderShelf": "S lištou pro polici končí přepážky v její výšce, takže deska police leží i na nich.",
   "shell.errorGridNeedsTop": "Dno Gridfinity vyžaduje vydlabané těleso otevřené jen nahoře.",
   "shell.errorGridTooLow": "Těleso je příliš nízké na dno Gridfinity: dno zabere 6,2 mm a dutina potřebuje nad ním 3 mm.",
   "shell.errorGridNoCell": "Do vnitřku této krabice se nevejde ani jedno celé pole Gridfinity.",

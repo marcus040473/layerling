@@ -5559,6 +5559,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Poravnano",
   "shell.dividerHeightFlushHint": "Pregrade segajo do roba, poravnane z njim.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % polne višine.",
+  "shell.dividersUnderShelf": "Z naslonom za polico se pregrade končajo v njegovi višini, zato polica leži tudi na njih.",
   "shell.errorGridNeedsTop": "Dno Gridfinity potrebuje izdolbeno telo, odprto samo zgoraj.",
   "shell.errorGridTooLow": "Telo je prenizko za dno Gridfinity: dno vzame 6,2 mm, votlina pa potrebuje nad njim 3 mm.",
   "shell.errorGridNoCell": "V notranjost te škatle ne gre niti ena cela celica Gridfinity.",

@@ -1339,6 +1339,7 @@ export const MESSAGES_ZH_TW: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "齊平",
   "shell.dividerHeightFlushHint": "隔板一直到邊緣，與邊緣齊平。",
   "shell.dividerHeightPercent": "{mm} 公釐 = 全高的 {percent} %。",
+  "shell.dividersUnderShelf": "有層板托時，隔板在托的高度處結束，層板也擱在隔板上。",
   "shell.errorGridNeedsTop": "Gridfinity 底需要只有頂部開口的挖空實體。",
   "shell.errorGridTooLow": "實體太矮，放不下 Gridfinity 底：底佔 6.2 公釐，其上空腔還需要 3 公釐。",
   "shell.errorGridNoCell": "這個盒子的內部連一個完整的 Gridfinity 格子都放不下。",

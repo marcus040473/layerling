@@ -348,7 +348,7 @@ export function ShellPanel({
                       {t("shell.dividerHeightFlush")}
                     </button>
                   </div>
-                  <ToolHint text={flush ? t("shell.dividerHeightFlushHint") : t("shell.dividerHeightPercent", { mm: height.toLocaleString(numberLocale()), percent })} />
+                  <ToolHint text={flush ? t(shelf > 0 ? "shell.dividersUnderShelf" : "shell.dividerHeightFlushHint") : t("shell.dividerHeightPercent", { mm: height.toLocaleString(numberLocale()), percent })} />
                 </>);
               })()}
               <ToolHint text={t("shell.dividerHeightHint")} />

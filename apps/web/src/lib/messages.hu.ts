@@ -667,6 +667,7 @@ export const MESSAGES_HU: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Peremig",
   "shell.dividerHeightFlushHint": "A válaszfalak a peremig érnek, egy síkban vele.",
   "shell.dividerHeightPercent": "{mm} mm = a teljes magasság {percent} %-a.",
+  "shell.dividersUnderShelf": "Polctartó perem esetén a válaszfalak annak magasságában végződnek, így a polclap rájuk is felfekszik.",
   "shell.errorGridNeedsTop": "A Gridfinity-fenékhez olyan kivájt test kell, amelynek csak a teteje nyitott.",
   "shell.errorGridTooLow": "A test túl alacsony Gridfinity-fenékhez: a fenék 6,2 mm, és az üregnek fölötte 3 mm kell.",
   "shell.errorGridNoCell": "Ebbe a dobozba még egyetlen egész Gridfinity-cella sem fér bele.",

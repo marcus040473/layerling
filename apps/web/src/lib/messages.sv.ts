@@ -1397,6 +1397,7 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Jäms",
   "shell.dividerHeightFlushHint": "Skiljeväggarna når kanten, jäms med den.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % av full höjd.",
+  "shell.dividersUnderShelf": "Med en hyllkant slutar skiljeväggarna i jämnhöjd med den, så hyllplanet vilar även på dem.",
   "shell.errorGridNeedsTop": "En Gridfinity-botten kräver en urholkad kropp där bara toppen är öppen.",
   "shell.errorGridTooLow": "Kroppen är för låg för en Gridfinity-botten: botten tar 6,2 mm och hålrummet behöver 3 mm ovanför.",
   "shell.errorGridNoCell": "Inte ens en hel Gridfinity-ruta får plats på insidan av den här lådan.",

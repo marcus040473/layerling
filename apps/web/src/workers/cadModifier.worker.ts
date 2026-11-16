@@ -13,7 +13,7 @@ import { GRIDFINITY_FLOOR } from "@/lib/gridfinityGeometry";
 import { shellDividersSolid, shellGridSolid } from "@/lib/cadShellGrid";
 import { DIVIDERS_NEEDS_TOP_MESSAGE, GRID_NEEDS_TOP_MESSAGE, SHELL_GRID_FLOOR, normalizeShellDividers, normalizeShellGrid } from "@/lib/shellGridLimits";
 import { SHELF_NEEDS_TOP_MESSAGE, shellShelfSolid } from "@/lib/cadShellShelf";
-import { DEFAULT_SHELL_SHELF_HEIGHT } from "@/lib/shellShelfLimits";
+import { DEFAULT_SHELL_SHELF_HEIGHT, clampShellShelfHeight } from "@/lib/shellShelfLimits";
 import { shellOpenSides } from "@/lib/shellLimits";
 import { CANNOT_OFFSET_MESSAGE, offsetSolid, offsetSolidSideways, orientedFaceNormal, shellSolid, shellThreadByCore, threadShellCoreOf, type ThreadShellCore } from "@/lib/cadShell";
 import { chamfilletSolid } from "@/lib/cadChamfillet";
@@ -1364,8 +1364,11 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
         component = threadShellCore && baseSolids.length === 1
           ? shellThreadByCore(activeCad, solid, threadShellCore, request.amount, request.shellOpenings ?? "none", request.shellEdges)
           : shellSolid(activeCad, solid, request.amount, request.shellOpenings ?? "none", request.shellEdges);
-        // The shelf ledge (#1663) goes in first, so the foot, the floor and the dividers come after it.
+        // The shelf ledge (#1663) goes in first, so the foot, the floor and the dividers come after it. Its top, so the
+        // dividers end level with it and a shelf plate lies on both.
+        let shelfTop: number | null = null;
         if (request.shellShelf && request.shellShelf > 0) {
+          shelfTop = activeCad.getBoundingBox(component).ymin + request.amount + clampShellShelfHeight(request.shellShelfHeight ?? DEFAULT_SHELL_SHELF_HEIGHT);
           const open = shellOpenSides(request.shellOpenings);
           if (open.length !== 1 || open[0] !== "top") throw new Error(SHELF_NEEDS_TOP_MESSAGE);
           const shelved = shellShelfSolid(activeCad, component, request.shellShelf, request.shellShelfHeight ?? DEFAULT_SHELL_SHELF_HEIGHT, request.amount);
@@ -1402,7 +1405,7 @@ async function bearbeiteAnfrage(request: CadModifierWorkerRequest, halter: { cad
           component = floored;
         }
         if (dividers) {
-          const divided = shellDividersSolid(activeCad, solid, component, dividers, floorTop);
+          const divided = shellDividersSolid(activeCad, solid, component, dividers, floorTop, shelfTop);
           activeCad.release(component);
           component = divided;
         }

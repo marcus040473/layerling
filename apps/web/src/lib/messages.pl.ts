@@ -1338,6 +1338,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Równo",
   "shell.dividerHeightFlushHint": "Przegródki sięgają krawędzi, równo z nią.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % pełnej wysokości.",
+  "shell.dividersUnderShelf": "Z półką oporową przegródki kończą się na jej wysokości, więc półka opiera się też na nich.",
   "shell.errorGridNeedsTop": "Dno Gridfinity wymaga wydrążonej bryły otwartej tylko od góry.",
   "shell.errorGridTooLow": "Bryła jest za niska na dno Gridfinity: dno zajmuje 6,2 mm, a wnęka potrzebuje nad nim 3 mm.",
   "shell.errorGridNoCell": "Do wnętrza tego pudełka nie mieści się nawet jedno całe pole Gridfinity.",

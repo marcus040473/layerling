@@ -654,6 +654,7 @@ export const MESSAGES_TR: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Kenarla aynı",
   "shell.dividerHeightFlushHint": "Ara bölmeler kenara kadar uzanır, onunla aynı hizada.",
   "shell.dividerHeightPercent": "{mm} mm = tam yüksekliğin %{percent}'i.",
+  "shell.dividersUnderShelf": "Raf çıkıntısı varken ara bölmeler onun hizasında biter, raf plakası onların üzerine de oturur.",
   "shell.errorGridNeedsTop": "Gridfinity tabanı için yalnızca üstü açık oyulmuş bir gövde gerekir.",
   "shell.errorGridTooLow": "Gövde Gridfinity tabanı için çok alçak: taban 6,2 mm yer kaplar ve boşluğun üstünde 3 mm daha gerekir.",
   "shell.errorGridNoCell": "Bu kutunun içine tek bir tam Gridfinity hücresi bile sığmıyor.",

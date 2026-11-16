@@ -20328,7 +20328,8 @@ export function LayerlingEditor({
           onGridSize={(columns, rows) => setShellTool((current) => current ? { ...current, gridColumns: columns, gridRows: rows, error: null } : current)}
           dividers={shellTool.dividers ?? null}
           // The dividers' full height over the floor: the body's height less its floor (the Gridfinity floor's 6.2 mm, or the wall).
-          dividerFullHeight={Math.max(0, Math.round((selectedShape.height - ((shellTool.gridCells ?? 0) > 0 ? SHELL_GRID_FLOOR : shellTool.thickness)) * 10) / 10)}
+          // Under a shelf ledge, up to its top: the ledge's height is measured from the wall's floor.
+          dividerFullHeight={Math.max(0, Math.round((Math.min(selectedShape.height, (shellTool.shelf ?? 0) > 0 ? shellTool.thickness + (shellTool.shelfHeight ?? DEFAULT_SHELL_SHELF_HEIGHT) : Infinity) - ((shellTool.gridCells ?? 0) > 0 ? SHELL_GRID_FLOOR : shellTool.thickness)) * 10) / 10)}
           onGridChange={(cells, fit) => setShellTool((current) => current ? { ...current, gridCells: cells, gridFit: fit, error: null } : current)}
           onDividersChange={(value) => setShellTool((current) => current ? { ...current, dividers: value, error: null } : current)}
           stack={shellTool.stack ?? 0}

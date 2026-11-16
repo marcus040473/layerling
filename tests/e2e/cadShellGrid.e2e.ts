@@ -108,6 +108,16 @@ describe("a Gridfinity floor, fit and dividers with the real OCCT kernel", () =>
     expect(solid(plain, 1, 10, 5)).toBe(false);
   });
 
+  it("ends the dividers level with a shelf ledge, so the shelf plate lies on them too", () => {
+    const { original, shelled } = hollow(100, 80, 40);
+    const under = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0 }, null, 10);
+    expect(solid(under, 0, 9.9, 5)).toBe(true);
+    expect(solid(under, 0, 10.1, 5)).toBe(false);
+    // A height set lower than the ledge stays lower.
+    const lower = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0, height: 4 }, null, 10);
+    expect(solid(lower, 0, 6.1, 5)).toBe(false);
+  });
+
   it("stands on a Gridfinity floor, with dividers and a stack", () => {
     const { original, shelled } = hollow(100, 80, 40);
     // As the worker does it: the foot first, the sockets on its floor, then the dividers.

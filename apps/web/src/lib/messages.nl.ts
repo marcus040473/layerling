@@ -1403,6 +1403,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "shell.dividerHeightFlush": "Gelijk",
   "shell.dividerHeightFlushHint": "De tussenschotten reiken tot de rand, gelijk ermee.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % van de volle hoogte.",
+  "shell.dividersUnderShelf": "Met een plankrand eindigen de tussenschotten op die hoogte, zodat de plank ook op hen rust.",
   "shell.errorGridNeedsTop": "Een Gridfinity-bodem vraagt een uitgehold lichaam waarvan alleen de bovenkant open is.",
   "shell.errorGridTooLow": "Het lichaam is te laag voor een Gridfinity-bodem: de bodem neemt 6,2 mm en de holte heeft 3 mm erboven nodig.",
   "shell.errorGridNoCell": "Zelfs geen hele Gridfinity-cel past in de binnenkant van deze doos.",

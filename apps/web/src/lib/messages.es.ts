@@ -1385,6 +1385,7 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Enrasado",
   "shell.dividerHeightFlushHint": "Los separadores llegan hasta el borde, enrasados con él.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % de la altura completa.",
+  "shell.dividersUnderShelf": "Con un saliente para balda, los separadores acaban a su altura y la balda se apoya también en ellos.",
   "shell.errorGridNeedsTop": "Un fondo Gridfinity requiere un cuerpo vaciado con solo la parte superior abierta.",
   "shell.errorGridTooLow": "El cuerpo es demasiado bajo para un fondo Gridfinity: el fondo ocupa 6,2 mm y la cavidad necesita 3 mm encima.",
   "shell.errorGridNoCell": "Ni siquiera cabe una celda Gridfinity entera en el interior de esta caja.",

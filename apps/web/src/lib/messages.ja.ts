@@ -1386,6 +1386,7 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "縁まで",
   "shell.dividerHeightFlushHint": "仕切りは縁まで届き、縁と面一になります。",
   "shell.dividerHeightPercent": "{mm} mm = 全高の {percent} %。",
+  "shell.dividersUnderShelf": "棚受けがあると、仕切りはその高さで終わり、棚板は仕切りの上にも載ります。",
   "shell.errorGridNeedsTop": "Gridfinity の底は、上だけが開いた中空の形状でのみ使えます。",
   "shell.errorGridTooLow": "形状が低すぎて Gridfinity の底を作れません。底に 6.2 mm、その上に空洞 3 mm が必要です。",
   "shell.errorGridNoCell": "この箱の内側には、完全な Gridfinity セルが 1 つも入りません。",

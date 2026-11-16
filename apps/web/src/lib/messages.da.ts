@@ -2196,6 +2196,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Flugter",
   "shell.dividerHeightFlushHint": "Skillevæggene går op til kanten og flugter med den.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % af den fulde højde.",
+  "shell.dividersUnderShelf": "Med en hyldekant ender skillevæggene i højde med den, så hyldepladen også hviler på dem.",
   "shell.errorGridNeedsTop": "En Gridfinity-bund kræver en udhulet krop, hvor kun toppen er åben.",
   "shell.errorGridTooLow": "Kroppen er for lav til en Gridfinity-bund: bunden tager 6,2 mm, og hulrummet skal have 3 mm over den.",
   "shell.errorGridNoCell": "Ikke engang ét helt Gridfinity-felt er der plads til inden i denne æske.",

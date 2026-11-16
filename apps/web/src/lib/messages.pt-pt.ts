@@ -1264,6 +1264,7 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "shell.dividerHeightFlush": "Rente",
   "shell.dividerHeightFlushHint": "As divisórias chegam ao rebordo, rentes a ele.",
   "shell.dividerHeightPercent": "{mm} mm = {percent} % da altura total.",
+  "shell.dividersUnderShelf": "Com um apoio para prateleira, as divisórias terminam à altura dele e a prateleira também assenta nelas.",
   "shell.errorGridNeedsTop": "Um fundo Gridfinity exige um corpo esvaziado com apenas o topo aberto.",
   "shell.errorGridTooLow": "O corpo é baixo demais para um fundo Gridfinity: o fundo ocupa 6,2 mm e a cavidade precisa de 3 mm acima.",
   "shell.errorGridNoCell": "Nem uma célula Gridfinity inteira cabe no interior desta caixa.",
