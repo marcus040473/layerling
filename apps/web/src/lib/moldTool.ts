@@ -302,7 +302,9 @@ function airTraps(solid: ManifoldSolid, cell: number, above: number) {
 
 /** Where the master is highest: of its points within 0.2 mm of its top the one nearest their middle. */
 function topSpot(points: [number, number, number][]) {
-  const top = Math.max(...points.map((point) => point[2]));
+  // A loop, not Math.max(...): a fine master has hundreds of thousands of points, more than a call takes arguments.
+  let top = Number.NEGATIVE_INFINITY;
+  for (const point of points) if (point[2] > top) top = point[2];
   const near = points.filter((point) => point[2] >= top - 0.2);
   const mx = near.reduce((sum, point) => sum + point[0], 0) / near.length;
   const my = near.reduce((sum, point) => sum + point[1], 0) / near.length;

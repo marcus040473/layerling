@@ -141,6 +141,24 @@ describe("molds and dies", () => {
     }
   });
 
+  it("makes a two-part mold of a fine master with hundreds of thousands of points (reported: maximum call stack exceeded)", async () => {
+    const kernel = await runtime();
+    const created: Solid[] = [];
+    try {
+      // A dome of 1024 segments round on a block: about 130,000 points, more than Math.max(...points) takes.
+      const keep = <T extends Solid>(value: T) => (created.push(value), value);
+      const base = keep(kernel.Manifold.cube([30, 30, 6], true).translate([0, 0, 3]));
+      const dome = keep(keep(keep(kernel.Manifold.sphere(12, 1024)).trimByPlane([0, 0, 1], 0)).translate([0, 0, 6]));
+      const master = toScene(keep(base.add(dome)), created);
+      expect(master.numVert()).toBeGreaterThan(120_000);
+      const result = made(kernel, master, { kind: "twoPart", sprue: true, vents: true });
+      created.push(...result.parts.map((part) => part.solid as Solid));
+      expect(result.parts.length).toBeGreaterThanOrEqual(2);
+    } finally {
+      created.forEach((entry) => entry.delete());
+    }
+  }, 300000);
+
   it("vents the peaks the sprue does not reach", async () => {
     const kernel = await runtime();
     const created: Solid[] = [];
