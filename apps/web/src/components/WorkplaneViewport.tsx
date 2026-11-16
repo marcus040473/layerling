@@ -2141,6 +2141,7 @@ export function WorkplaneViewport({
   // on the body under the pointer (Discussion #1778). Where it cuts into the body is what a click or a line paints.
   const paintCursorRef = useRef<THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial> | null>(null);
   const paintCursorAtRef = useRef<{ x: number; y: number; pressure: number | null } | null>(null);
+  const paintCursorFrameRef = useRef<number | null>(null);
   // The height band shows as a see-through ring round the body at the pointer's height, as tall as the band.
   const paintBandRef = useRef<THREE.Mesh<THREE.CylinderGeometry, THREE.MeshBasicMaterial> | null>(null);
   const placePaintCursor = useCallback((at: { x: number; y: number; pressure: number | null } | null) => {
@@ -2247,7 +2248,8 @@ export function WorkplaneViewport({
   }, []);
   // A brush line being drawn (Discussion #1778): the points it took over the body, and where they show in the view, each
   // with its width in pixels, for the line drawn over the view until it is laid.
-  const paintBrushRef = useRef<{ pointerId: number; samples: PaintBrushSample[]; marks: Array<{ x: number; y: number; width: number }> } | null>(null);
+  // With the circle, a press that is not dragged lays one round patch where it landed (`press`).
+  const paintBrushRef = useRef<{ pointerId: number; samples: PaintBrushSample[]; marks: Array<{ x: number; y: number; width: number }>; press?: LayFlatPick } | null>(null);
   const [paintBrushMarks, setPaintBrushMarks] = useState<Array<{ x: number; y: number; width: number }> | null>(null);
   // The magnetic lasso being laid: its clicks and the line along the edges between them (paintMagnet.ts), and the line
   // ahead to the pointer. The view stays where it is meanwhile, as the clicks are places in it.
@@ -2283,7 +2285,7 @@ export function WorkplaneViewport({
   const [paintLassoPoints, setPaintLassoPoints] = useState<string | null>(null);
   // The tool closed or turned to another mode: a brush line or a magnetic lasso half drawn goes with it.
   useEffect(() => {
-    if (paintPick?.mode !== "brush" && paintBrushRef.current) {
+    if (paintPick?.mode !== "brush" && paintPick?.mode !== "circle" && paintBrushRef.current) {
       paintBrushRef.current = null;
       setPaintBrushMarks(null);
       const state = threeRef.current;
@@ -7175,16 +7177,21 @@ export function WorkplaneViewport({
       if (paintPickRef.current) {
         event.preventDefault();
         const paint = paintPickRef.current;
-        if (paint.mode === "brush") {
-          // Pressed on the body, the line is drawn while the button is held; beside it, the view turns as ever.
+        if (paint.mode === "brush" || paint.mode === "circle") {
+          // Pressed on the body, the line is drawn while the button is held; beside it, the view turns as ever. A circle
+          // clicked lays one round patch; dragged, it paints a line as wide as itself, as the brush does.
           const pick = pickPaintFace(state, paint.shapeId, event.clientX, event.clientY);
-          if (!pick) return;
+          if (!pick) {
+            if (paint.mode === "circle") onPaintPickRef.current?.(null);
+            return;
+          }
           capturePointer(event.currentTarget, event.pointerId);
           const pressure = event.pointerType === "pen" ? event.pressure : null;
           paintBrushRef.current = {
             pointerId: event.pointerId,
             samples: [{ point: pick.point, normal: pick.normal, pressure }],
             marks: [{ x: event.clientX - rect.left, y: event.clientY - rect.top, width: brushWidthInView(state, pick.point, paint, pressure) }],
+            ...(paint.mode === "circle" ? { press: pick } : {}),
           };
           setPaintBrushMarks(paintBrushRef.current.marks.slice());
           state.controls.enabled = false;
@@ -7741,7 +7748,14 @@ export function WorkplaneViewport({
         return;
       }
       if (paintPickRef.current && (paintPickRef.current.mode === "brush" || paintPickRef.current.mode === "circle" || paintPickRef.current.mode === "height")) {
-        placePaintCursor({ x: event.clientX, y: event.clientY, pressure: event.pointerType === "pen" ? event.pressure : null });
+        // Once a frame at most: a large body's pick each time the mouse reports would make the pointer lag.
+        paintCursorAtRef.current = { x: event.clientX, y: event.clientY, pressure: event.pointerType === "pen" ? event.pressure : null };
+        if (paintCursorFrameRef.current === null) {
+          paintCursorFrameRef.current = requestAnimationFrame(() => {
+            paintCursorFrameRef.current = null;
+            placePaintCursor(paintCursorAtRef.current);
+          });
+        }
       }
       const brush = paintBrushRef.current;
       if (brush) {
@@ -8108,8 +8122,13 @@ export function WorkplaneViewport({
         if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
         const state = threeRef.current;
         if (state) state.controls.enabled = true;
-        // A cancelled press (the browser took the pen for a gesture) paints nothing.
-        if (event.type !== "pointercancel") onPaintBrushRef.current?.(brush.samples);
+        // A cancelled press (the browser took the pen for a gesture) paints nothing; a circle that was not dragged is one patch.
+        if (event.type !== "pointercancel") {
+          const first = brush.marks[0];
+          const dragged = brush.marks.some((mark) => Math.hypot(mark.x - first.x, mark.y - first.y) > 4);
+          if (brush.press && !dragged) onPaintPickRef.current?.(brush.press);
+          else onPaintBrushRef.current?.(brush.samples);
+        }
         onInteractionActiveChange?.(false);
         return;
       }
@@ -9594,7 +9613,7 @@ export function WorkplaneViewport({
               <polygon points={paintLassoPoints} />
             </svg>
           ) : null}
-          {paintPick?.mode === "brush" && paintBrushMarks?.length ? (
+          {(paintPick?.mode === "brush" || paintPick?.mode === "circle") && paintBrushMarks?.length ? (
             <svg className="paint-lasso-overlay paint-brush-overlay" aria-hidden="true" style={{ color: paintPick.color ?? "#ffffff" }}>
               {paintBrushMarks.length === 1 ? <circle cx={paintBrushMarks[0].x} cy={paintBrushMarks[0].y} r={paintBrushMarks[0].width / 2} /> : null}
               {paintBrushMarks.slice(1).map((mark, index) => (

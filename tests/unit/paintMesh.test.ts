@@ -499,6 +499,26 @@ describe("a ball, a band and filling gaps (Discussion #1778)", () => {
   });
 });
 
+describe("strokes added one at a time", () => {
+  it("lays only the new stroke onto the mesh the earlier ones left, with the same result as all of them at once", () => {
+    const strokes = [
+      stroke({ mode: "circle", point: [-4, 20, 0], normal: [0, 1, 0], diameter: 6 }),
+      stroke({ mode: "circle", color: GREEN, point: [3, 20, 2], normal: [0, 1, 0], diameter: 5 }),
+      normalizePaintStroke({ mode: "brush", color: RED, size: [20, 20, 20], diameter: 2, path: [[-8, 20, -6], [8, 20, -6]], normals: [[0, 1, 0], [0, 1, 0]] })!,
+      stroke({ mode: "circle", color: undefined, point: [-4, 20, 0], normal: [0, 1, 0], diameter: 2 }),
+    ];
+    const base = body("box");
+    let step: PaintedMesh | null = null;
+    for (let count = 1; count <= strokes.length; count += 1) step = paintedBodyMesh({ ...base, paint: strokes.slice(0, count) });
+    const once = paintMeshWithStrokes(kernel, paintBaseMesh(base), strokes, [20, 20, 20]);
+    expect(meshIsClosed(step!.faces, step!.vertices.length)).toBe(true);
+    expect(step!.cut).toBe(true);
+    for (const color of [RED, GREEN, null]) expect(areaOf(step!, (entry) => entry === color)).toBeCloseTo(areaOf(once, (entry) => entry === color), 3);
+    // Undo: the strokes before are found again as they were.
+    expect(paintedBodyMesh({ ...base, paint: strokes.slice(0, 2) })!.colors.filter(Boolean).length).toBeGreaterThan(0);
+  });
+});
+
 describe("closing the seams of a cut", () => {
   it("splits the face along an edge that the other side has a corner on", () => {
     // A square of two triangles below, and above it a single triangle whose bottom edge the square's top corner splits.

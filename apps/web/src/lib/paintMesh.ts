@@ -42,6 +42,8 @@ export type PaintedMesh = {
   skipped: number;
   /** Whether the circles and lassos were cut into the mesh; false when whole faces were coloured instead. */
   cut: boolean;
+  /** Whether every stroke that needed a cut got one (true when none needed it): what a stroke laid on later carries on from. */
+  cutOk?: boolean;
 };
 
 /** Faces turned away from a circle's normal by more than this many degrees stop it: the back of a thin wall, a side face it grazes. */
@@ -1020,14 +1022,18 @@ function brushRegion(mesh: WorkMesh, normals: Float64Array, inside: Uint8Array, 
  * A mesh with its strokes laid on, in the frame the mesh is in (the body's own, at its size now, `size`).
  * `runtime` is the geometry kernel; without it (null) the circles and lassos colour whole faces.
  */
-export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: MeshData, strokes: readonly PaintStroke[], size: PaintVec3): PaintedMesh {
+export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: MeshData, strokes: readonly PaintStroke[], size: PaintVec3, startColors?: readonly (string | null)[]): PaintedMesh {
   // The corners shared as far as they are the same: an import comes with three of its own to each face.
   const flat: number[] = [];
   source.vertices.forEach(([x, y, z]) => flat.push(x, y, z));
   const sourceFaces: number[] = [];
   source.faces.forEach(([a, b, c]) => sourceFaces.push(a, b, c));
   const shared = closeSeams(flat, sourceFaces, 1e-6);
-  let mesh: WorkMesh = { positions: shared.positions, faces: shared.faces, colors: shared.faces.length ? new Array(shared.faces.length / 3).fill(null) : [] };
+  // A mesh painted already (its colours given) keeps them: its faces as closeSeams left them, each with its face's colour.
+  const colors = startColors && startColors.length === source.faces.length
+    ? shared.source.map((face) => startColors[face] ?? null)
+    : shared.faces.length ? new Array(shared.faces.length / 3).fill(null) : [];
+  let mesh: WorkMesh = { positions: shared.positions, faces: shared.faces, colors };
   const canCut = Boolean(runtime) && shared.closed && mesh.faces.length / 3 <= PAINT_CUT_TRIANGLE_LIMIT;
   let cut = canCut;
   let skipped = 0;
@@ -1150,7 +1156,7 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
   for (let index = 0; index < mesh.positions.length; index += 3) vertices.push([mesh.positions[index], mesh.positions[index + 1], mesh.positions[index + 2]]);
   const faces: [number, number, number][] = [];
   for (let index = 0; index < mesh.faces.length; index += 3) faces.push([mesh.faces[index], mesh.faces[index + 1], mesh.faces[index + 2]]);
-  return { vertices, faces, colors: mesh.colors, skipped, cut: cut && strokes.some((stroke) => stroke.mode !== "fill" && stroke.mode !== "gaps") };
+  return { vertices, faces, colors: mesh.colors, skipped, cut: cut && strokes.some((stroke) => stroke.mode !== "fill" && stroke.mode !== "gaps"), cutOk: cut || !strokes.some((stroke) => stroke.mode !== "fill" && stroke.mode !== "gaps") };
 }
 
 const MAX_PAINTED_MESHES = 16;
@@ -1179,7 +1185,31 @@ export function paintedBodyMesh(shape: WorkplaneShape): PaintedMesh | null {
     paintedMeshCache.push(entry);
     return entry.painted;
   }
-  const painted = paintMeshWithStrokes(runtime, paintBaseMesh(shape), shape.paint, size3(shape));
+  // A stroke added to strokes laid already (the paint tool adds one at a time): only the new ones are laid, onto the mesh
+  // as those left it, instead of every stroke again - on a large body each takes a cut of the whole mesh.
+  const strokes = shape.paint;
+  const unpainted = { ...shape, paint: undefined };
+  let earlier: { painted: PaintedMesh; count: number } | null = null;
+  for (const entry of paintedMeshCache) {
+    const kept = entry.shape.paint ?? [];
+    if (entry.revision !== revision || kept.length >= strokes.length || (earlier && kept.length <= earlier.count)) continue;
+    if (!kept.every((stroke, at) => stroke === strokes[at])) continue;
+    if (!sameShapeApartFromPlacement({ ...entry.shape, paint: undefined }, unpainted)) continue;
+    earlier = { painted: entry.painted, count: kept.length };
+  }
+  let painted: PaintedMesh;
+  if (earlier) {
+    const added = paintMeshWithStrokes(runtime, { name: shape.name, vertices: earlier.painted.vertices, faces: earlier.painted.faces }, strokes.slice(earlier.count), size3(shape), earlier.painted.colors);
+    const cutOk = (earlier.painted.cutOk ?? earlier.painted.cut) && (added.cutOk ?? added.cut);
+    painted = {
+      ...added,
+      skipped: earlier.painted.skipped + added.skipped,
+      cutOk,
+      cut: cutOk && strokes.some((stroke) => stroke.mode !== "fill" && stroke.mode !== "gaps"),
+    };
+  } else {
+    painted = paintMeshWithStrokes(runtime, paintBaseMesh(shape), strokes, size3(shape));
+  }
   paintedMeshCache.push({ shape: { ...shape }, revision, painted });
   while (paintedMeshCache.length > MAX_PAINTED_MESHES) paintedMeshCache.shift();
   return painted;
