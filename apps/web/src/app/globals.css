@@ -3270,6 +3270,43 @@ html[data-theme="dark"] .model-scale-result {
   stroke-linejoin: round;
 }
 
+/* A brush line being drawn: in the paint's colour, as wide as it paints, until it is laid on the body. */
+.paint-brush-overlay line,
+.paint-brush-overlay circle {
+  stroke: currentColor;
+  fill: currentColor;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+/* The magnetic lasso: the line laid along the edges, the way on to the pointer, and the clicks (the first one larger, to close on). */
+.paint-magnet-overlay polyline {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.paint-magnet-overlay polyline.laid {
+  stroke: #d3710c;
+}
+
+.paint-magnet-overlay polyline.ahead {
+  stroke: #d3710c;
+  stroke-dasharray: 5 4;
+  opacity: 0.8;
+}
+
+.paint-magnet-overlay circle {
+  fill: #ffffff;
+  stroke: #d3710c;
+  stroke-width: 2;
+}
+
+.paint-magnet-overlay circle.first {
+  fill: #fff1e0;
+}
+
 .shell-opening-options button.active {
   color: #9f5508;
   background: #fff1e0;

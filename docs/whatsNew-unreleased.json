@@ -1,6 +1,16 @@
 [
   {
     "title": {
+      "de": "Pinsel und Magnet-Lasso beim Bemalen",
+      "en": "Brush and magnetic lasso for painting"
+    },
+    "body": {
+      "de": "Das Mal-Werkzeug hat zwei neue Arten. „Pinsel“: Mit gedrückter Maustaste oder dem Stift malst du eine Linie auf den Körper, über Rundungen und Kanten hinweg; mit einem Stift oder Zeichentablett malt leichter Druck dünner. „Magnet-Lasso“: Klicke ungefähr entlang einer Kante, einer Rundung oder des Rands schon gemalter Farbe, und die Linie legt sich daran an, wie das Magnet-Lasso beim Nachzeichnen von Bildern. Es folgt auch sanften Wölbungen wie dem Rand einer Augenhöhle, und „Glätten“ macht die Linie von Lasso und Magnet-Lasso ruhiger, ohne Ecken abzurunden.",
+      "en": "The Paint tool has two new kinds. Brush: hold the mouse button or a pen down and paint a line on the body, over curves and edges; with a pen or a drawing tablet a light touch paints thinner. Magnetic lasso: click roughly along an edge, a bend or the border of paint already on the body, and the line clings to it, as the magnetic lasso does when tracing a picture. It follows gentle bends too, such as the rim of an eye socket, and Smoothing evens out the line of the lasso and the magnetic lasso without rounding its corners."
+    }
+  },
+  {
+    "title": {
       "de": "Schiebe-Riegel und Türriegel für Deckel",
       "en": "Slide latches and barrel bolts for lids"
     },

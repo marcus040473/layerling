@@ -8,7 +8,7 @@ import { DEFAULT_PAINT_TOOL, normalizePaintTool, type PaintToolSettings } from "
 import { DEFAULT_WORKPLANE_WORKSPACE } from "@/lib/workplaneSettings";
 
 /**
- * The paint tool's window: fill, circle and lasso, the design's colours and one of one's own, the eraser, the angle of
+ * The paint tool's window: fill, circle, brush, lasso and the magnetic lasso, the design's colours and one of one's own, the eraser, the angle of
  * a fill and the size of a circle, how many strokes the body carries, Clear all and Done.
  */
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -52,17 +52,39 @@ const click = (element: Element | null | undefined) => act(() => (element as HTM
 const button = (panel: HTMLElement, text: string) => [...panel.querySelectorAll<HTMLButtonElement>("button")].find((entry) => entry.textContent?.trim() === text);
 
 describe("the paint tool's window", () => {
-  it("offers fill, circle and lasso, with the fill's angle and what a click does", () => {
+  it("offers fill, circle, brush, lasso and the magnetic lasso, with the fill's angle and what a click does", () => {
     const { panel, calls } = mount();
     const modes = [...panel.querySelectorAll<HTMLButtonElement>("[role=radiogroup] [role=radio]")].filter((entry) => entry.textContent);
-    expect(modes.map((entry) => entry.textContent)).toEqual(["Fill", "Circle", "Lasso"]);
-    expect(modes.map((entry) => entry.getAttribute("aria-checked"))).toEqual(["true", "false", "false"]);
+    expect(modes.map((entry) => entry.textContent)).toEqual(["Fill", "Circle", "Brush", "Lasso", "Magnetic lasso"]);
+    expect(modes.map((entry) => entry.getAttribute("aria-checked"))).toEqual(["true", "false", "false", "false", "false"]);
     expect(panel.querySelector("[role=status] small")?.textContent).toBe("Click a face to fill it up to its sharp edges.");
     expect(panel.textContent).toContain("Stop at edges sharper than");
     expect(panel.textContent).not.toContain("Diameter");
     click(modes[1]);
+    click(modes[3]);
     click(modes[2]);
-    expect(calls).toEqual([JSON.stringify({ mode: "circle" }), JSON.stringify({ mode: "lasso" })]);
+    click(modes[4]);
+    expect(calls).toEqual(["circle", "lasso", "brush", "magnet"].map((mode) => JSON.stringify({ mode })));
+  });
+
+  it("gives the brush its width and the pen's pressure (Discussion #1778)", () => {
+    const { panel, calls } = mount({ settings: { mode: "brush" } });
+    expect(panel.textContent).toContain("Diameter");
+    expect(panel.querySelector("[role=status] small")?.textContent).toBe("Hold the button down on the body and paint a line.");
+    const pressure = [...panel.querySelectorAll<HTMLInputElement>("input[type=checkbox]")].find((entry) => entry.parentElement?.textContent?.includes("Pen pressure sets the width"))!;
+    expect(pressure.checked).toBe(true);
+    click(pressure);
+    expect(calls).toEqual([JSON.stringify({ pressure: false })]);
+    expect(panel.textContent).toContain("a light touch paints thinner");
+  });
+
+  it("tells how the magnetic lasso is laid, closed and taken back, with no size to set", () => {
+    const { panel } = mount({ settings: { mode: "magnet" } });
+    expect(panel.querySelector("[role=status] small")?.textContent).toContain("Click roughly along an edge; the line finds it.");
+    expect(panel.querySelector("[role=status] small")?.textContent).toContain("Backspace takes a point back");
+    expect(panel.textContent).toContain("borders of paint already on it");
+    expect(panel.textContent).not.toContain("Diameter");
+    expect(panel.textContent).not.toContain("Pen pressure");
   });
 
   it("shows the circle's diameter in circle mode, and the eraser's own words", () => {
@@ -115,7 +137,7 @@ describe("the paint tool's window", () => {
     await setLanguage("de", false);
     const { panel } = mount({ settings: { mode: "lasso" } });
     expect(panel.textContent).toContain("Bemalen");
-    expect([...panel.querySelectorAll("[role=radio]")].map((entry) => entry.textContent).filter(Boolean)).toEqual(["Füllen", "Kreis", "Lasso"]);
+    expect([...panel.querySelectorAll("[role=radio]")].map((entry) => entry.textContent).filter(Boolean)).toEqual(["Füllen", "Kreis", "Pinsel", "Lasso", "Magnet-Lasso"]);
     expect(panel.querySelector("[role=status] small")?.textContent).toBe("Halte die Maustaste gedrückt und umfahre den Bereich.");
   });
 });

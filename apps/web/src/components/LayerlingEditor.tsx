@@ -82,7 +82,7 @@ import { ALL_MATE_AXES, concentricMotion, mateMotion, pointMotion, pointTurnAbou
 import { roundFaceNear } from "@/lib/roundFaceAxis";
 import { carriedOntoFace } from "@/lib/carryOntoFace";
 import { HolePatternPanel } from "./workplane/HolePatternPanel";
-import { PAINT_VIEW_SIDES, paintedBodyMesh, paintedExportFaceColors, paintLassoStroke, paintSideLasso, paintStrokeAt, paintSurfaceNormalAt, rebasePaintStrokes, type PaintLassoView } from "@/lib/paintMesh";
+import { PAINT_VIEW_SIDES, paintBrushStroke, paintedBodyMesh, paintedExportFaceColors, paintLassoStroke, paintSideLasso, paintStrokeAt, paintSurfaceNormalAt, rebasePaintStrokes, type PaintBrushSample, type PaintLassoView } from "@/lib/paintMesh";
 import { canPaintShape, DEFAULT_PAINT_TOOL, designPaintColors, normalizePaintTool, paintColors, paintStartColor, PAINT_MAX_STROKES, type PaintStroke, type PaintToolSettings } from "@/lib/paint";
 import { normalizeHexColor } from "@/lib/coloredImport";
 import { PaintPanel } from "./workplane/PaintPanel";
@@ -10764,6 +10764,13 @@ export function LayerlingEditor({
     void addPaintStroke(paintStrokeAt(source, pick.point, pick.normal, tool.settings));
   }, [addPaintStroke, paintTool]);
 
+  const paintBrush = useCallback((samples: PaintBrushSample[]) => {
+    const tool = paintTool;
+    const source = tool ? shapesRef.current.find((shape) => shape.id === tool.sourceId) : null;
+    if (!tool || !source) return;
+    void addPaintStroke(paintBrushStroke(source, samples, tool.settings));
+  }, [addPaintStroke, paintTool]);
+
   const paintLasso = useCallback((view: PaintLassoView, outline: Array<[number, number]>) => {
     const tool = paintTool;
     const source = tool ? shapesRef.current.find((shape) => shape.id === tool.sourceId) : null;
@@ -14677,8 +14684,8 @@ export function LayerlingEditor({
         for (const [index, entry] of requested.entries()) {
           if (!entry || typeof entry !== "object") throw new Error(`strokes[${index}] must be an object`);
           const raw = entry as Record<string, unknown>;
-          const mode = raw.mode === "circle" || raw.mode === "lasso" || raw.mode === "fill" ? raw.mode : null;
-          if (!mode) throw new Error(`strokes[${index}].mode must be fill, circle or lasso`);
+          const mode = raw.mode === "circle" || raw.mode === "lasso" || raw.mode === "fill" || raw.mode === "brush" ? raw.mode : null;
+          if (!mode) throw new Error(`strokes[${index}].mode must be fill, circle, brush or lasso`);
           const erase = raw.erase === true || raw.color === null;
           const color = erase ? DEFAULT_PAINT_TOOL.color : normalizeHexColor(typeof raw.color === "string" ? raw.color : undefined);
           if (!color) throw new Error(`strokes[${index}].color must be a colour as #rrggbb (or erase: true)`);
@@ -14693,6 +14700,16 @@ export function LayerlingEditor({
             if (outline.length < 3) throw new Error(`strokes[${index}].outline needs at least three points`);
             const lasso = paintSideLasso(side, outline);
             stroke = paintLassoStroke(target, lasso.view, lasso.outline, settings);
+          } else if (mode === "brush") {
+            const path = Array.isArray(raw.path) ? raw.path.map(vec3) : [];
+            if (!path.length || path.some((point) => !point)) throw new Error(`strokes[${index}].path must be a list of points [x, y, z] on the body's surface (y is the height)`);
+            const normals = Array.isArray(raw.normals) ? raw.normals.map(vec3) : [];
+            const samples = (path as THREE.Vector3[]).map((point, at) => {
+              const normal = normals[at] ?? paintSurfaceNormalAt(target, point);
+              if (!normal || normal.lengthSq() < 1e-12) throw new Error(`strokes[${index}].path[${at}] is not on the body's surface`);
+              return { point, normal };
+            });
+            stroke = paintBrushStroke(target, samples, settings);
           } else {
             const point = vec3(raw.point);
             if (!point) throw new Error(`strokes[${index}].point must be [x, y, z] on the body's surface (y is the height)`);
@@ -19859,8 +19876,16 @@ export function LayerlingEditor({
             : null}
           onMatePointPick={pickMatePoint}
           onMateFacePick={mateTool ? pickMateFace : faceTool ? (pick) => void pickFaceToolFace(pick) : supportRibTool ? (pick) => void pickSupportRibFace(pick) : (pick) => void pickHolePatternFace(pick)}
-          paintPick={paintTool && !historyViewState ? { shapeId: paintTool.sourceId, mode: paintTool.settings.mode } : null}
+          paintPick={paintTool && !historyViewState ? {
+            shapeId: paintTool.sourceId,
+            mode: paintTool.settings.mode,
+            color: paintTool.settings.erase ? null : paintTool.settings.color,
+            diameter: paintTool.settings.diameter,
+            pressure: paintTool.settings.pressure,
+            smooth: paintTool.settings.smooth,
+          } : null}
           onPaintPick={paintAtPick}
+          onPaintBrush={paintBrush}
           onPaintLasso={paintLasso}
           cadFacePick={historyViewState ? null : cadFacePick}
           onCadFacePick={deleteFaceTool ? toggleDeleteFace : toggleSurfaceFace}

@@ -5,7 +5,8 @@
  * its angle. A circle and a lasso have edges of their own that run through the faces, and a circle on a
  * box face of two triangles would come out as a few coloured triangles. So the mesh is cut along them
  * first: the body is split by the stroke's volume with the geometry kernel (a cylinder along the normal
- * for a circle, the drawn shape drawn out along the line of sight for a lasso), and of each half only the
+ * for a circle, short ones along the line joined for a brush, the drawn shape drawn out along the line of
+ * sight for a lasso), and of each half only the
  * faces that come from the body's own surface are kept, the cut faces dropped. Put back together, the
  * two halves are the body's surface as it was, with the region's edge as edges of the mesh; their
  * corners along the cut are welded, and where the kernel tidied a corner away on one side only, the face
@@ -14,7 +15,8 @@
  *
  * Of the faces inside the volume, a circle paints those it reaches from the point clicked without going
  * over a face turned away from it by more than 80° (the cylinder goes through the whole body, and the
- * back of it or a side face it grazes keeps its colour); a lasso paints those the eye saw: turned towards
+ * back of it or a side face it grazes keeps its colour), a brush the same from its points, each face held
+ * to the normal of the point nearest to it; a lasso paints those the eye saw: turned towards
  * it and with nothing of the body between them and the eye.
  *
  * Without the kernel (not loaded yet) or for a mesh it cannot take (an open import), the same regions are
@@ -26,7 +28,7 @@ import { MeshBVH } from "three-mesh-bvh";
 import { meshForShape, sameShapeApartFromPlacement, type MeshData, type Vec3 } from "@/lib/editorMeshCore";
 import { weldOnGrid } from "@/lib/gridWeld";
 import { loadedManifoldRuntime, manifoldRevision, requestManifoldRuntime } from "@/lib/manifoldHandle";
-import { canPaintShape, normalizePaintStroke, type PaintStroke, type PaintToolSettings, type PaintVec3 } from "@/lib/paint";
+import { canPaintShape, normalizePaintStroke, pressureDiameter, type PaintStroke, type PaintToolSettings, type PaintVec3 } from "@/lib/paint";
 import { mirroredAxisCount, mirrorSign, shapeDepth, shapeWidth } from "@/lib/workplaneShapes";
 import type { WorkplaneShape } from "@/types/layerling";
 
@@ -51,6 +53,16 @@ const PAINT_SEED_REACH = 0.05;
 const PAINT_SEED_SHARE = 0.02;
 /** A circle is cut as a polygon of sides about this long (mm), with at least 32 and at most 256 of them. */
 const PAINT_CIRCLE_SIDE = 0.4;
+/** A brush's patches are cut as polygons of sides about this long (mm), with 12 to 64 of them: there are many. */
+const PAINT_BRUSH_SIDE = 0.5;
+/** Two points of a brush line whose normals differ by less than this many degrees are joined by one solid (their hull). */
+const PAINT_BRUSH_JOIN = 30;
+/** A face is part of a brush line when its middle lies within this many half widths of it (the surface bends away under a patch). */
+const PAINT_BRUSH_REACH = 1.15;
+/** ... and its corners within this many times as far (a corner on the rim of a patch on a strongly bent surface lies further off). */
+const PAINT_BRUSH_CORNER_REACH = 1.4;
+/** A brush line is looked for on the body from at most this many of its points. */
+const PAINT_BRUSH_SEEDS = 16;
 /** Above this many faces the mesh is coloured in whole faces: a cut per stroke would take seconds. */
 export const PAINT_CUT_TRIANGLE_LIMIT = 400_000;
 
@@ -103,6 +115,43 @@ export function paintStrokeAt(shape: WorkplaneShape, point: THREE.Vector3Like, n
     ...(settings.mode === "circle" ? { diameter: settings.diameter } : { angle: settings.angle }),
   };
   return normalizePaintStroke(raw);
+}
+
+/** A point of a brush line as the view gives it: where it lies on the body and the face's normal, in the world, and the pen's pressure. */
+export type PaintBrushSample = { point: THREE.Vector3Like; normal: THREE.Vector3Like; pressure?: number | null };
+
+/**
+ * A brush stroke along points the pointer took over the body, in the world (Discussion #1778). Points closer
+ * than a tenth of the line's width to the one kept before are left out; a pen's pressure sets each point's
+ * width when the tool takes it (`pressure` set and a pressure given).
+ */
+export function paintBrushStroke(shape: WorkplaneShape, samples: readonly PaintBrushSample[], settings: PaintToolSettings): PaintStroke | null {
+  if (!samples.length) return null;
+  const inverse = paintBodyMatrix(shape).invert();
+  const usePressure = settings.pressure && samples.some((sample) => typeof sample.pressure === "number" && Number.isFinite(sample.pressure));
+  const path: PaintVec3[] = [];
+  const normals: PaintVec3[] = [];
+  const diameters: number[] = [];
+  const gap = Math.max(0.02, settings.diameter / 10);
+  let last: THREE.Vector3 | null = null;
+  samples.forEach((sample, index) => {
+    const local = new THREE.Vector3(sample.point.x, sample.point.y, sample.point.z).applyMatrix4(inverse);
+    // The last point stays wherever it is, so the line ends where the pointer was lifted.
+    if (last && local.distanceTo(last) < gap && index < samples.length - 1) return;
+    last = local;
+    path.push(local.toArray());
+    normals.push(new THREE.Vector3(sample.normal.x, sample.normal.y, sample.normal.z).transformDirection(inverse).toArray());
+    diameters.push(usePressure ? pressureDiameter(settings.diameter, sample.pressure ?? 1) : settings.diameter);
+  });
+  return normalizePaintStroke({
+    mode: "brush",
+    ...(settings.erase ? {} : { color: settings.color }),
+    size: size3(shape),
+    diameter: settings.diameter,
+    path,
+    normals,
+    ...(usePressure ? { diameters } : {}),
+  });
 }
 
 /**
@@ -208,6 +257,8 @@ export function rebasePaintStrokes(strokes: readonly PaintStroke[], from: Workpl
       right: along(stroke.right),
       up: along(stroke.up),
       forward: along(stroke.forward),
+      path: stroke.path?.map((entry) => point(entry)),
+      normals: stroke.normals?.map((entry) => new THREE.Vector3(...entry).divide(stretch).transformDirection(into).toArray()),
     });
     return moved ? [moved] : [];
   });
@@ -489,6 +540,138 @@ function circleVolume(runtime: ManifoldToplevel, stroke: PaintStroke, frameBox: 
   return { solid: cylinder, frame: new THREE.Matrix4().makeTranslation(centre.x, centre.y, centre.z).multiply(turn) };
 }
 
+/** The width of a brush line at its `index`-th point, in mm. */
+function brushDiameter(stroke: PaintStroke, index: number) {
+  return stroke.diameters?.[index] ?? stroke.diameter ?? 0;
+}
+
+/**
+ * A brush line's volume in the stroke's frame. The line is taken in runs whose normals stay within
+ * PAINT_BRUSH_JOIN of the run's first: each run is drawn flat across its own direction (the mean of its
+ * points' normals) - a round patch at every point, each joined to the next by their hull, as wide as the line
+ * is there - and drawn out along it, from one and a half radii plus a little under its deepest point to as far
+ * over its highest (enough for the surface to bend away under a patch). A run reaches on to the next run's
+ * first point and back to the last of the one before, so no gap opens round a bend between two points far
+ * apart, and is cut off where the next run begins: by the plane through the line where the two runs' surfaces
+ * meet (their tangent planes at the points either side of the bend), half way between their directions. So a
+ * line over the edge of a box is drawn by one solid on the top and one down the side, which meet at the edge
+ * and reach no further. Drawn flat, a run is one cut however many points it has; a solid at each point would
+ * take seconds.
+ */
+function brushVolume(runtime: ManifoldToplevel, stroke: PaintStroke, made: Array<{ delete(): void }>) {
+  const path = (stroke.path ?? []).map((entry) => new THREE.Vector3(...entry));
+  const normals = (stroke.normals ?? []).map((entry) => new THREE.Vector3(...entry).normalize());
+  if (!path.length) return null;
+  const join = Math.cos(THREE.MathUtils.degToRad(PAINT_BRUSH_JOIN));
+  const own: number[][] = [];
+  let run: number[] = [0];
+  for (let index = 1; index < path.length; index += 1) {
+    if (normals[index].dot(normals[run[0]]) < join) {
+      own.push(run);
+      run = [];
+    }
+    run.push(index);
+  }
+  own.push(run);
+  const axes = own.map((members) => {
+    const axis = members.reduce((sum, index) => sum.add(normals[index]), new THREE.Vector3());
+    return axis.lengthSq() > 1e-12 ? axis.normalize() : normals[members[0]].clone();
+  });
+  // Between run k and run k + 1: the plane through the line where their tangent planes meet, its normal towards run k.
+  const bends = own.slice(0, -1).map((members, index) => {
+    const [a, b] = [axes[index], axes[index + 1]];
+    const normal = a.clone().sub(b);
+    const length = normal.length();
+    if (length < 0.05) return null;
+    const offset = (a.dot(path[members[members.length - 1]]) - b.dot(path[own[index + 1][0]])) / length;
+    return { normal: normal.divideScalar(length), offset };
+  });
+  const solids: Manifold[] = [];
+  for (const [runIndex, ownMembers] of own.entries()) {
+    const members = [
+      ...(runIndex > 0 ? [own[runIndex - 1][own[runIndex - 1].length - 1]] : []),
+      ...ownMembers,
+      ...(runIndex + 1 < own.length ? [own[runIndex + 1][0]] : []),
+    ];
+    const axis = axes[runIndex];
+    const across = Math.abs(axis.x) < 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+    const right = across.addScaledVector(axis, -across.dot(axis)).normalize();
+    const up = new THREE.Vector3().crossVectors(axis, right);
+    let low = Number.POSITIVE_INFINITY;
+    let high = Number.NEGATIVE_INFINITY;
+    const discs = members.map((index) => {
+      const radius = brushDiameter(stroke, index) / 2;
+      const depth = path[index].dot(axis);
+      low = Math.min(low, depth - radius * 1.5 - 0.2);
+      high = Math.max(high, depth + radius * 1.5 + 0.2);
+      const x = path[index].dot(right);
+      const y = path[index].dot(up);
+      const sides = Math.min(64, Math.max(12, Math.ceil((Math.PI * 2 * radius) / PAINT_BRUSH_SIDE)));
+      return Array.from({ length: sides }, (_, side): [number, number] => {
+        const angle = (side / sides) * Math.PI * 2;
+        return [x + Math.cos(angle) * radius, y + Math.sin(angle) * radius];
+      });
+    });
+    const parts: CrossSection[] = [];
+    if (discs.length === 1) {
+      const disc = new runtime.CrossSection([discs[0]], "NonZero");
+      made.push(disc);
+      parts.push(disc);
+    }
+    for (let index = 0; index + 1 < discs.length; index += 1) {
+      const hull = runtime.CrossSection.hull([discs[index], discs[index + 1]]);
+      made.push(hull);
+      parts.push(hull);
+    }
+    const flat = parts.length === 1 ? parts[0] : runtime.CrossSection.union(parts);
+    if (flat !== parts[0]) made.push(flat);
+    if (flat.area() <= 1e-12) continue;
+    const prism = flat.extrude(high - low);
+    made.push(prism);
+    const frame = new THREE.Matrix4().makeBasis(right, up, axis).setPosition(axis.clone().multiplyScalar(low));
+    let placed = prism.transform(kernelMatrix(frame));
+    made.push(placed);
+    const before = runIndex > 0 ? bends[runIndex - 1] : null;
+    const after = runIndex < bends.length ? bends[runIndex] : null;
+    if (before) {
+      placed = placed.trimByPlane([-before.normal.x, -before.normal.y, -before.normal.z], -before.offset);
+      made.push(placed);
+    }
+    if (after) {
+      placed = placed.trimByPlane([after.normal.x, after.normal.y, after.normal.z], after.offset);
+      made.push(placed);
+    }
+    if (!placed.isEmpty()) solids.push(placed);
+  }
+  if (!solids.length) return null;
+  const solid = solids.length === 1 ? solids[0] : runtime.Manifold.union(solids);
+  if (solid !== solids[0]) made.push(solid);
+  return { solid, frame: new THREE.Matrix4() };
+}
+
+/** Whether a point in the stroke's frame lies within a brush line: no further from it than half its width there. */
+function nearBrush(stroke: PaintStroke, point: THREE.Vector3) {
+  const path = stroke.path ?? [];
+  const from = new THREE.Vector3();
+  const to = new THREE.Vector3();
+  const closest = new THREE.Vector3();
+  const segment = new THREE.Line3();
+  for (let index = 0; index < path.length; index += 1) {
+    from.set(...path[index]);
+    if (index + 1 >= path.length) {
+      if (from.distanceTo(point) <= brushDiameter(stroke, index) / 2) return true;
+      continue;
+    }
+    to.set(...path[index + 1]);
+    segment.set(from, to);
+    const t = segment.closestPointToPointParameter(point, true);
+    segment.at(t, closest);
+    const radius = (brushDiameter(stroke, index) * (1 - t) + brushDiameter(stroke, index + 1) * t) / 2;
+    if (closest.distanceTo(point) <= radius) return true;
+  }
+  return false;
+}
+
 /** A lasso's volume in the stroke's frame: the shape drawn, drawn out along the line of sight over the body's depth. */
 function lassoVolume(runtime: ManifoldToplevel, stroke: PaintStroke, frameBox: THREE.Box3, made: Array<{ delete(): void }>) {
   const origin = new THREE.Vector3(...stroke.origin!);
@@ -650,6 +833,73 @@ function seenFaces(mesh: WorkMesh, normals: Float64Array, candidates: Uint8Array
 }
 
 /**
+ * The faces a brush line paints, of those inside its volume: reached from the faces under its points without
+ * going over one turned away by more than PAINT_CIRCLE_TURN from the normal of the line's point nearest to it.
+ * Null when none of its points lies on the body.
+ */
+function brushRegion(mesh: WorkMesh, normals: Float64Array, inside: Uint8Array, stroke: PaintStroke, stretch: THREE.Vector3, reach: number) {
+  const points = (stroke.path ?? []).map((entry) => new THREE.Vector3(...entry).multiply(stretch));
+  const pointNormals = (stroke.normals ?? []).map((entry) => new THREE.Vector3(...entry).divide(stretch).normalize());
+  if (!points.length) return null;
+  // A face counts when its middle lies within the line's half width, with some room: the surface bends away under a patch.
+  const grow = (stretch.x + stretch.y + stretch.z) / 3;
+  const radii = points.map((_, index) => (brushDiameter(stroke, index) / 2) * grow * PAINT_BRUSH_REACH + 0.05);
+  const segment = new THREE.Line3();
+  const closest = new THREE.Vector3();
+  const nearLine = (point: THREE.Vector3, share = 1) => {
+    if (points.length === 1) return point.distanceTo(points[0]) <= radii[0] * share;
+    for (let index = 0; index + 1 < points.length; index += 1) {
+      segment.set(points[index], points[index + 1]);
+      const t = segment.closestPointToPointParameter(point, true);
+      if (segment.at(t, closest).distanceTo(point) <= (radii[index] * (1 - t) + radii[index + 1] * t) * share) return true;
+    }
+    return false;
+  };
+  // A long thin face of the cut that runs away from the line round a bend has a corner far from it.
+  const corner = new THREE.Vector3();
+  const cornersNear = (face: number) => {
+    for (let at = 0; at < 3; at += 1) {
+      const index = mesh.faces[face * 3 + at] * 3;
+      if (!nearLine(corner.set(mesh.positions[index], mesh.positions[index + 1], mesh.positions[index + 2]), PAINT_BRUSH_CORNER_REACH)) return false;
+    }
+    return true;
+  };
+  const limit = Math.cos(THREE.MathUtils.degToRad(PAINT_CIRCLE_TURN));
+  const middle = new THREE.Vector3();
+  const facing = new Int8Array(inside.length);
+  const faces = (face: number) => {
+    if (facing[face]) return facing[face] > 0;
+    centroid(mesh, face, middle);
+    let nearest = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    points.forEach((point, index) => {
+      const distance = point.distanceToSquared(middle);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = index;
+      }
+    });
+    const normal = pointNormals[nearest];
+    const ok = normals[face * 3] * normal.x + normals[face * 3 + 1] * normal.y + normals[face * 3 + 2] * normal.z >= limit && nearLine(middle) && cornersNear(face);
+    facing[face] = ok ? 1 : -1;
+    return ok;
+  };
+  const neighbours = faceNeighbours(mesh);
+  const region = new Uint8Array(inside.length);
+  const step = Math.max(1, Math.ceil(points.length / PAINT_BRUSH_SEEDS));
+  const seeds = points.map((_, index) => index).filter((index) => index % step === 0 || index === points.length - 1);
+  let found = false;
+  for (const index of seeds) {
+    const seed = seedFace(mesh, normals, points[index], pointNormals[index], reach, inside);
+    if (seed < 0 || region[seed]) continue;
+    const reached = spread(mesh, neighbours, seed, (_, to) => inside[to] === 1 && faces(to));
+    for (let face = 0; face < reached.length; face += 1) if (reached[face]) region[face] = 1;
+    found = true;
+  }
+  return found ? region : null;
+}
+
+/**
  * A mesh with its strokes laid on, in the frame the mesh is in (the body's own, at its size now, `size`).
  * `runtime` is the geometry kernel; without it (null) the circles and lassos colour whole faces.
  */
@@ -695,7 +945,11 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
       if (canCut && runtime) {
         const made: Array<{ delete(): void }> = [];
         try {
-          const volume = stroke.mode === "circle" ? circleVolume(runtime, stroke, frameBox, made) : lassoVolume(runtime, stroke, frameBox, made);
+          const volume = stroke.mode === "circle"
+            ? circleVolume(runtime, stroke, frameBox, made)
+            : stroke.mode === "brush"
+              ? brushVolume(runtime, stroke, made)
+              : lassoVolume(runtime, stroke, frameBox, made);
           if (volume) {
             const placed = volume.solid.transform(kernelMatrix(stretchMatrix.clone().multiply(volume.frame)));
             made.push(placed);
@@ -730,6 +984,8 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
           if (stroke.mode === "circle") {
             const offset = middle.sub(centre!);
             inside[face] = offset.clone().addScaledVector(axis!, -offset.dot(axis!)).length() <= radius ? 1 : 0;
+          } else if (stroke.mode === "brush") {
+            inside[face] = nearBrush(stroke, middle) ? 1 : 0;
           } else {
             inside[face] = insideLasso(stroke, middle) ? 1 : 0;
           }
@@ -745,6 +1001,8 @@ export function paintMeshWithStrokes(runtime: ManifoldToplevel | null, source: M
           const facing = (face: number) => normals[face * 3] * normal.x + normals[face * 3 + 1] * normal.y + normals[face * 3 + 2] * normal.z >= limit;
           region = spread(mesh, faceNeighbours(mesh), seed, (_, to) => inside![to] === 1 && facing(to));
         }
+      } else if (stroke.mode === "brush") {
+        region = brushRegion(mesh, normals, inside, stroke, stretch, reachFor(box));
       } else {
         const eye = stroke.perspective ? new THREE.Vector3(...stroke.origin!).multiply(stretch) : null;
         const look = new THREE.Vector3(...stroke.forward!).multiply(stretch).normalize();

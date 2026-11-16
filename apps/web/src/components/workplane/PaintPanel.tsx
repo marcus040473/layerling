@@ -8,16 +8,17 @@ import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/Movable
 import { ToolApply, ToolHint, ToolSection, ToolSelection } from "@/components/workplane/ToolPanelParts";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { t } from "@/lib/i18n";
-import { PAINT_MAX_ANGLE, PAINT_MIN_ANGLE, PAINT_MIN_DIAMETER, type PaintMode, type PaintToolSettings } from "@/lib/paint";
+import { PAINT_MAX_ANGLE, PAINT_MIN_ANGLE, PAINT_MIN_DIAMETER, type PaintToolMode, type PaintToolSettings } from "@/lib/paint";
 import { useLanguage } from "@/lib/useLanguage";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
-const MODES: readonly PaintMode[] = ["fill", "circle", "lasso"];
+const MODES: readonly PaintToolMode[] = ["fill", "circle", "brush", "lasso", "magnet"];
 
 /**
  * "Paint" (paint.ts): colours on parts of the body's surface, for printing in several colours. The panel
  * holds the tool, the colour and the eraser; the strokes themselves are made in the view, a click for a
- * fill or a circle, a shape drawn round the place for the lasso. Each stroke is a step of the history, so
+ * fill or a circle, a line drawn with the button held for the brush, a shape drawn round the place for the
+ * lasso, clicks along the body's edges for the magnetic lasso. Each stroke is a step of the history, so
  * Undo takes the last one back; "Clear all" takes them all off at once.
  */
 export function PaintPanel({
@@ -149,7 +150,7 @@ export function PaintPanel({
           onChange={(value) => onChange({ angle: value })}
         />
       ) : null}
-      {settings.mode === "circle" ? (
+      {settings.mode === "circle" || settings.mode === "brush" ? (
         <EdgeModifierSlider
           label={t("paint.diameter")}
           value={settings.diameter}
@@ -162,7 +163,28 @@ export function PaintPanel({
           onChange={(value) => onChange({ diameter: value })}
         />
       ) : null}
+      {settings.mode === "brush" ? (<>
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={settings.pressure} onChange={(event) => onChange({ pressure: event.target.checked })} />
+          <span>{t("paint.pressure")}</span>
+        </label>
+        <ToolHint text={t("paint.pressureHint")} />
+      </>) : null}
       {settings.mode === "fill" ? <ToolHint text={t("paint.angleHint")} /> : null}
+      {settings.mode === "lasso" || settings.mode === "magnet" ? (<>
+        <EdgeModifierSlider
+          label={t("paint.smooth")}
+          value={settings.smooth}
+          min={0}
+          max={100}
+          step={5}
+          unit="%"
+          workspace={workspace}
+          onChange={(value) => onChange({ smooth: value })}
+        />
+        <ToolHint text={t("paint.smoothHint")} />
+      </>) : null}
+      {settings.mode === "magnet" ? <ToolHint text={t("paint.magnetHint")} /> : null}
 
       {wholeFaces ? <ToolHint text={t("paint.wholeFaces")} /> : null}
       <p className="cylinder-wrap-hint paint-count">

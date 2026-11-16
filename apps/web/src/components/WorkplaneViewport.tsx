@@ -45,8 +45,10 @@ import { useWheelField } from "@/lib/useWheelField";
 import { wheelBaseStep, wheelNextValue } from "@/lib/wheelValueStep";
 import { createLatestRunner, type LatestRunner } from "@/lib/latestRunner";
 import { onManifoldReady } from "@/lib/manifoldHandle";
-import type { PaintMode } from "@/lib/paint";
-import type { PaintLassoView } from "@/lib/paintMesh";
+import { pressureDiameter, type PaintToolMode } from "@/lib/paint";
+import { smoothOutline } from "@/lib/outlineSmooth";
+import type { PaintBrushSample, PaintLassoView } from "@/lib/paintMesh";
+import { addMagnetAnchor, closeMagnet, dropMagnetAnchor, magnetLine, paintMagnetPicture, type PaintMagnetDraft } from "@/components/workplane/paintMagnet";
 import { onCustomFontsChanged } from "@/lib/textFonts";
 import { readSavedViews, readStartView, SAVED_VIEW_KEYS, savedViewForKey, writeStartView } from "@/lib/designView";
 import { readCornerRulers, writeCornerRulers } from "@/lib/cornerRulerStore";
@@ -324,9 +326,16 @@ type WorkplaneViewportProps = {
    */
   matePointPick?: { shapeIds: string[]; picking: boolean; marks: PointMark[] } | null;
   onMatePointPick?: (pick: PointPick | null) => void;
-  /** The paint tool (paint.ts) on this body: a click paints where it lands; in lasso mode a shape drawn with the button held does. */
-  paintPick?: { shapeId: string; mode: PaintMode } | null;
+  /**
+   * The paint tool (paint.ts) on this body: a click paints where it lands; in lasso mode a shape drawn with the button held
+   * does; in brush mode a line drawn on the body with the button held, `diameter` wide (with a pen as hard as it is pressed,
+   * when `pressure`), in `color` (null for the eraser); in magnet mode clicks lay a lasso along the body's edges. A lasso's
+   * outline is smoothed by `smooth` (0 to 100) before it is laid.
+   */
+  paintPick?: { shapeId: string; mode: PaintToolMode; color?: string | null; diameter?: number; pressure?: boolean; smooth?: number } | null;
   onPaintPick?: (pick: LayFlatPick | null) => void;
+  /** A brush line drawn for the paint tool: the points it took over the body, in the world. */
+  onPaintBrush?: (samples: PaintBrushSample[]) => void;
   /** A lasso drawn for the paint tool: the view it was drawn in, and the shape in that view (see PaintStroke.outline). */
   onPaintLasso?: (view: PaintLassoView, outline: Array<[number, number]>) => void;
   /**
@@ -1584,6 +1593,18 @@ function MovableSectionPanel({ children }: { children: (handleProps: ReturnType<
   );
 }
 
+/** How wide a brush line is in the view, in pixels, where it lies at `point`: its width there in mm, as many pixels as the view shows it. */
+function brushWidthInView(state: ThreeState, point: THREE.Vector3Like, paint: { diameter?: number; pressure?: boolean }, pressure: number | null) {
+  const diameter = paint.pressure !== false && pressure !== null ? pressureDiameter(paint.diameter ?? 1, pressure) : paint.diameter ?? 1;
+  const rect = state.renderer.domElement.getBoundingClientRect();
+  const camera = state.camera;
+  camera.updateMatrixWorld();
+  const at = new THREE.Vector3(point.x, point.y, point.z);
+  const aside = at.clone().add(new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).normalize().multiplyScalar(diameter));
+  const [a, b] = [at.project(camera), aside.project(camera)];
+  return Math.max(1, Math.hypot(((b.x - a.x) * rect.width) / 2, ((b.y - a.y) * rect.height) / 2));
+}
+
 export function WorkplaneViewport({
   shapes,
   selectedIds,
@@ -1697,6 +1718,7 @@ export function WorkplaneViewport({
   paintPick = null,
   onPaintPick,
   onPaintLasso,
+  onPaintBrush,
   surfaceRegionDrawing = false,
   onSurfaceRegionLasso,
   cadFacePick = null,
@@ -2108,6 +2130,36 @@ export function WorkplaneViewport({
   onPaintPickRef.current = onPaintPick;
   const onPaintLassoRef = useRef(onPaintLasso);
   onPaintLassoRef.current = onPaintLasso;
+  const onPaintBrushRef = useRef(onPaintBrush);
+  onPaintBrushRef.current = onPaintBrush;
+  // A brush line being drawn (Discussion #1778): the points it took over the body, and where they show in the view, each
+  // with its width in pixels, for the line drawn over the view until it is laid.
+  const paintBrushRef = useRef<{ pointerId: number; samples: PaintBrushSample[]; marks: Array<{ x: number; y: number; width: number }> } | null>(null);
+  const [paintBrushMarks, setPaintBrushMarks] = useState<Array<{ x: number; y: number; width: number }> | null>(null);
+  // The magnetic lasso being laid: its clicks and the line along the edges between them (paintMagnet.ts), and the line
+  // ahead to the pointer. The view stays where it is meanwhile, as the clicks are places in it.
+  const paintMagnetRef = useRef<PaintMagnetDraft | null>(null);
+  const [paintMagnetDraw, setPaintMagnetDraw] = useState<{ laid: string; ahead: string; anchors: Array<{ x: number; y: number }> } | null>(null);
+  const showPaintMagnet = useCallback((draft: PaintMagnetDraft | null, pointer?: { x: number; y: number } | null) => {
+    if (!draft || !draft.anchors.length) {
+      setPaintMagnetDraw(null);
+      return;
+    }
+    const line = magnetLine(draft, pointer, paintPickRef.current?.smooth ?? 0);
+    const text = (points: Array<{ x: number; y: number }>) => points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+    setPaintMagnetDraw({ laid: text(line.laid), ahead: text(line.ahead), anchors: draft.anchors });
+  }, []);
+  const endPaintMagnet = useCallback((close: boolean) => {
+    const draft = paintMagnetRef.current;
+    paintMagnetRef.current = null;
+    setPaintMagnetDraw(null);
+    const state = threeRef.current;
+    if (state) state.controls.enabled = true;
+    if (!close || !draft || !state) return;
+    const outline = closeMagnet(draft, paintPickRef.current?.smooth ?? 0);
+    const drawn = outline ? paintLassoInView(state, outline) : null;
+    if (drawn) onPaintLassoRef.current?.(drawn.view, drawn.outline);
+  }, []);
   const surfaceRegionDrawingRef = useRef(surfaceRegionDrawing);
   surfaceRegionDrawingRef.current = surfaceRegionDrawing;
   const onSurfaceRegionLassoRef = useRef(onSurfaceRegionLasso);
@@ -2116,6 +2168,46 @@ export function WorkplaneViewport({
   // a surface texture's region keeps where the press landed on the face (`region`).
   const paintLassoRef = useRef<{ pointerId: number; points: Array<[number, number]>; region?: LayFlatPick } | null>(null);
   const [paintLassoPoints, setPaintLassoPoints] = useState<string | null>(null);
+  // The tool closed or turned to another mode: a brush line or a magnetic lasso half drawn goes with it.
+  useEffect(() => {
+    if (paintPick?.mode !== "brush" && paintBrushRef.current) {
+      paintBrushRef.current = null;
+      setPaintBrushMarks(null);
+      const state = threeRef.current;
+      if (state) state.controls.enabled = true;
+    }
+    if (paintPick?.mode !== "magnet" && paintMagnetRef.current) endPaintMagnet(false);
+  }, [endPaintMagnet, paintPick?.mode]);
+  // The magnetic lasso's keys, ahead of the editor's: Enter closes it, Backspace takes the last click back, Escape throws it away.
+  const magnetDrafting = paintMagnetDraw !== null;
+  useEffect(() => {
+    if (!magnetDrafting) return;
+    const onKey = (event: KeyboardEvent) => {
+      const draft = paintMagnetRef.current;
+      if (!draft || isTypingTarget(event.target)) return;
+      if (event.key === "Enter" && draft.anchors.length >= 3) {
+        event.preventDefault();
+        event.stopPropagation();
+        endPaintMagnet(true);
+      } else if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        event.stopPropagation();
+        const next = dropMagnetAnchor(draft);
+        if (next.anchors.length) {
+          paintMagnetRef.current = next;
+          showPaintMagnet(next);
+        } else {
+          endPaintMagnet(false);
+        }
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        markEscapeHandled(event);
+        endPaintMagnet(false);
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [endPaintMagnet, magnetDrafting, showPaintMagnet]);
   // The tool closed or turned to another mode: a lasso half drawn goes with it.
   useEffect(() => {
     if (paintPick?.mode === "lasso" || surfaceRegionDrawing || !paintLassoRef.current) return;
@@ -6970,6 +7062,45 @@ export function WorkplaneViewport({
       if (paintPickRef.current) {
         event.preventDefault();
         const paint = paintPickRef.current;
+        if (paint.mode === "brush") {
+          // Pressed on the body, the line is drawn while the button is held; beside it, the view turns as ever.
+          const pick = pickPaintFace(state, paint.shapeId, event.clientX, event.clientY);
+          if (!pick) return;
+          capturePointer(event.currentTarget, event.pointerId);
+          const pressure = event.pointerType === "pen" ? event.pressure : null;
+          paintBrushRef.current = {
+            pointerId: event.pointerId,
+            samples: [{ point: pick.point, normal: pick.normal, pressure }],
+            marks: [{ x: event.clientX - rect.left, y: event.clientY - rect.top, width: brushWidthInView(state, pick.point, paint, pressure) }],
+          };
+          setPaintBrushMarks(paintBrushRef.current.marks.slice());
+          state.controls.enabled = false;
+          onInteractionActiveChange?.(true);
+          return;
+        }
+        if (paint.mode === "magnet") {
+          // Each click lays the line on to it along the edges; a double click, or one on the first point, closes it.
+          const spot = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+          let draft = paintMagnetRef.current;
+          if (draft && draft.anchors.length >= 3) {
+            const first = draft.anchors[0];
+            if (event.detail >= 2 || Math.hypot(first.x - spot.x, first.y - spot.y) <= 8) {
+              endPaintMagnet(true);
+              return;
+            }
+          }
+          if (event.detail >= 2) return;
+          if (!draft) {
+            const picture = paintMagnetPicture(state, paint.shapeId);
+            if (!picture) return;
+            draft = { picture, anchors: [], segments: [] };
+            state.controls.enabled = false;
+          }
+          draft = addMagnetAnchor(draft, spot);
+          paintMagnetRef.current = draft;
+          showPaintMagnet(draft, spot);
+          return;
+        }
         if (paint.mode === "lasso") {
           // The shape is drawn while the button is held; the view stays where it is meanwhile.
           capturePointer(event.currentTarget, event.pointerId);
@@ -7430,7 +7561,7 @@ export function WorkplaneViewport({
       if (
         event.pointerType === "mouse" &&
         event.buttons === 0 &&
-        (dragRef.current || transformRef.current || marqueeRef.current || paintLassoRef.current)
+        (dragRef.current || transformRef.current || marqueeRef.current || paintLassoRef.current || paintBrushRef.current)
       ) {
         finishDragRef.current?.(event);
         return;
@@ -7494,6 +7625,36 @@ export function WorkplaneViewport({
       }
       if (layFlatPickModeRef.current) {
         syncLayFlatHover(threeRef.current, selectedIdsRef.current, resolvedThemeRef.current, event.clientX, event.clientY);
+        return;
+      }
+      const brush = paintBrushRef.current;
+      if (brush) {
+        const state = threeRef.current;
+        const paint = paintPickRef.current;
+        if (brush.pointerId !== event.pointerId || !state || !paint) return;
+        const rect = state.renderer.domElement.getBoundingClientRect();
+        // A pen reports many more points than the screen draws; each counts, so a quick stroke stays round.
+        const events = typeof event.nativeEvent.getCoalescedEvents === "function" ? event.nativeEvent.getCoalescedEvents() : [];
+        let added = false;
+        for (const entry of events.length ? events : [event.nativeEvent]) {
+          const x = entry.clientX - rect.left;
+          const y = entry.clientY - rect.top;
+          const last = brush.marks[brush.marks.length - 1];
+          if (last && Math.hypot(x - last.x, y - last.y) < 2) continue;
+          const pick = pickPaintFace(state, paint.shapeId, entry.clientX, entry.clientY);
+          if (!pick) continue;
+          const pressure = entry.pointerType === "pen" ? entry.pressure : null;
+          brush.samples.push({ point: pick.point, normal: pick.normal, pressure });
+          brush.marks.push({ x, y, width: brushWidthInView(state, pick.point, paint, pressure) });
+          added = true;
+        }
+        if (added) setPaintBrushMarks(brush.marks.slice());
+        return;
+      }
+      const magnet = paintMagnetRef.current;
+      if (magnet && threeRef.current) {
+        const rect = threeRef.current.renderer.domElement.getBoundingClientRect();
+        showPaintMagnet(magnet, { x: event.clientX - rect.left, y: event.clientY - rect.top });
         return;
       }
       const lasso = paintLassoRef.current;
@@ -7823,6 +7984,18 @@ export function WorkplaneViewport({
 
   const finishDrag = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
+      const brush = paintBrushRef.current;
+      if (brush && brush.pointerId === event.pointerId) {
+        paintBrushRef.current = null;
+        setPaintBrushMarks(null);
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+        const state = threeRef.current;
+        if (state) state.controls.enabled = true;
+        // A cancelled press (the browser took the pen for a gesture) paints nothing.
+        if (event.type !== "pointercancel") onPaintBrushRef.current?.(brush.samples);
+        onInteractionActiveChange?.(false);
+        return;
+      }
       const lasso = paintLassoRef.current;
       if (lasso && lasso.pointerId === event.pointerId) {
         paintLassoRef.current = null;
@@ -7835,7 +8008,9 @@ export function WorkplaneViewport({
           const xs = lasso.points.map(([x]) => x);
           const ys = lasso.points.map(([, y]) => y);
           if (lasso.points.length >= 3 && Math.max(...xs) - Math.min(...xs) + Math.max(...ys) - Math.min(...ys) > 6) {
-            const drawn = paintLassoInView(state, lasso.points);
+            // A lasso of the paint tool is smoothed as its panel says; a surface texture's region is laid as drawn.
+            const smooth = !lasso.region ? paintPickRef.current?.smooth ?? 0 : 0;
+            const drawn = paintLassoInView(state, smooth ? smoothOutline(lasso.points, smooth, true) : lasso.points);
             if (drawn && lasso.region) onSurfaceRegionLassoRef.current?.(lasso.region, drawn.view, drawn.outline);
             else if (drawn) onPaintLassoRef.current?.(drawn.view, drawn.outline);
           }
@@ -9300,6 +9475,21 @@ export function WorkplaneViewport({
           {(paintPick || surfaceRegionDrawing) && paintLassoPoints ? (
             <svg className="paint-lasso-overlay" aria-hidden="true">
               <polygon points={paintLassoPoints} />
+            </svg>
+          ) : null}
+          {paintPick?.mode === "brush" && paintBrushMarks?.length ? (
+            <svg className="paint-lasso-overlay paint-brush-overlay" aria-hidden="true" style={{ color: paintPick.color ?? "#ffffff" }}>
+              {paintBrushMarks.length === 1 ? <circle cx={paintBrushMarks[0].x} cy={paintBrushMarks[0].y} r={paintBrushMarks[0].width / 2} /> : null}
+              {paintBrushMarks.slice(1).map((mark, index) => (
+                <line key={index} x1={paintBrushMarks[index].x} y1={paintBrushMarks[index].y} x2={mark.x} y2={mark.y} strokeWidth={(mark.width + paintBrushMarks[index].width) / 2} />
+              ))}
+            </svg>
+          ) : null}
+          {paintPick?.mode === "magnet" && paintMagnetDraw ? (
+            <svg className="paint-lasso-overlay paint-magnet-overlay" aria-hidden="true">
+              <polyline className="laid" points={paintMagnetDraw.laid} />
+              {paintMagnetDraw.ahead ? <polyline className="ahead" points={paintMagnetDraw.ahead} /> : null}
+              {paintMagnetDraw.anchors.map((anchor, index) => <circle key={index} className={index === 0 ? "first" : undefined} cx={anchor.x} cy={anchor.y} r={index === 0 ? 5 : 3.5} />)}
             </svg>
           ) : null}
           {!workplaneMode && !splitActive && moveDimensionsEnabled && !dimensionsHidden && moveDimensionOverlay ? (

@@ -212,11 +212,13 @@ Pro tisk ve dvou barvách zapněte {{ui:inspector.surfacePatternPart}}, u jakéh
 
 ## Malování více barvami
 
-Pro tisk více barvami obarví {{ui:paint.title}} části tělesa přímo v návrhu: plochu, kulatou stěnu, vnitřek otvoru, kulatou skvrnu nebo oblast, kterou obtáhnete. Funguje to jako malovací nástroje sliceru, jen barva zůstane uložená v návrhu. Vyberte jedno těleso a klikněte ve skupině {{ui:editor.section.surface}} na {{ui:paint.title}}, vedle {{ui:inspector.surfaceTexture}}. Panel nabízí barvy vašeho návrhu a {{ui:paint.customColor}} namíchá vlastní. Pak malujte v pohledu jedním ze tří nástrojů:
+Pro tisk více barvami obarví {{ui:paint.title}} části tělesa přímo v návrhu: plochu, kulatou stěnu, vnitřek otvoru, kulatou skvrnu nebo oblast, kterou obtáhnete. Funguje to jako malovací nástroje sliceru, jen barva zůstane uložená v návrhu. Vyberte jedno těleso a klikněte ve skupině {{ui:editor.section.surface}} na {{ui:paint.title}}, vedle {{ui:inspector.surfaceTexture}}. Panel nabízí barvy vašeho návrhu a {{ui:paint.customColor}} namíchá vlastní. Pak malujte v pohledu jedním z pěti nástrojů:
 
 - {{ui:paint.mode.fill}}: kliknutí vyplní plochu až k jejím ostrým hranám, jako kyblík barvy v kreslicím programu: horní stranu kvádru, stěnu válce, dno kapsy nebo vnitřek otvoru, vždy jedním kliknutím. {{ui:paint.angle}} říká, jak ostrá musí hrana být, aby výplň zastavila; při 90° přejde přes hrany kvádru.
 - {{ui:paint.mode.circle}}: kliknutí položí na povrch kulatou skvrnu nastaveného průměru ({{ui:paint.diameter}}), se středem tam, kam kliknete, i na zakřivený povrch. Zastaví se na ostrých hranách tělesa a nikdy neprojde na zadní stranu stěny.
+- {{ui:paint.mode.brush}}: podržte tlačítko myši nebo pero na tělese a malujte čáru širokou {{ui:paint.diameter}}. Sleduje povrch přes oblouky a hrany a nikdy neprojde na zadní stranu stěny. S perem nebo grafickým tabletem zajistí {{ui:paint.pressure}}, že lehký dotek maluje tenčeji, až na pětinu průměru: dobré na oči, zuby a jemné čáry.
 - {{ui:paint.mode.lasso}}: podržte tlačítko myši a obtáhněte oblast. Obarví se to, co uvnitř tvaru vidíte; zadní strana tělesa za ním ne.
+- {{ui:paint.mode.magnet}}: klikejte zhruba podél hrany a čára ji najde: místo, kde se povrch láme, obrys tělesa proti tomu, co je za ním, nebo okraj už namalované barvy. Klikněte na první bod, dvakrát klikněte nebo stiskněte [[Enter]] pro uzavření; [[Backspace]] vezme poslední bod zpět, [[Esc]] čáru zahodí. Co uvnitř vidíte, se namaluje, jako u lasa: chcete-li vyplnit oko obtažené štětcem, klikněte jednou podél jeho okraje. Vnímá i jemná vyklenutí modelovaného povrchu, třeba okraj očnice. {{ui:paint.smooth}} čáru před položením vyrovná, i u lasa; rohy zůstanou, kde jsou.
 
 ![Kvádr obarvený třemi nástroji: horní strana vyplněná žlutě, vpředu bílý kruh a na boku zelená hvězda obtažená lasem; vedle panel Malování.](shot:paint)
 
