@@ -1,6 +1,26 @@
 [
   {
     "title": {
+      "de": "Text auf den Etikettenleisten von Gridfinity-Schalen",
+      "en": "Text on a Gridfinity tray's label shelves"
+    },
+    "body": {
+      "de": "Auch die Etikettenleisten einer Gridfinity-Schale können jetzt einen Text tragen, an der Wand oder in einem Fach, mit Schriftart, Buchstabenfarbe und Buchstabengröße wie bei einem Behälter. Eine Leiste mit Text sitzt 0,4 mm tiefer, sodass die Buchstaben bündig mit der Oberkante der Schale enden. Tipp den Text im Eigenschaften-Fenster unter der Leiste bei „Text“ ein.",
+      "en": "A Gridfinity tray's label shelves now take a text too, along a wall or in a compartment, with the same font, letter colour and letter size as a bin's. A shelf with a text sits 0.4 mm lower, so the letters end level with the tray's top. Type the text under \"Text\" below the shelf in the Properties panel."
+    }
+  },
+  {
+    "title": {
+      "de": "Bodenplatten, passend zum Drucker geteilt",
+      "en": "Baseplates split to fit your printer"
+    },
+    "body": {
+      "de": "Ist dein Drucker in den Arbeitsbereich-Einstellungen gewählt, hat eine Bodenplatte, die größer ist als sein Druckbett, im Eigenschaften-Fenster den Knopf „Passend zum Drucker teilen“. Er teilt die Platte an den Zellgrenzen in so wenige Platten wie möglich, die auf das Druckbett passen, jede mit „Swallowtail“, und legt die Verbinder davor, die sie zusammenhalten. Die Platten bleiben, wo ihre Zellen waren, also schiebe oder drehe sie eine nach der anderen auf das Druckbett.",
+      "en": "With your printer chosen in the workspace settings, a baseplate larger than the printer's bed has \"Split to fit the printer\" in its Properties panel. It cuts the plate on its cell lines into the fewest plates that fit the bed, each with \"Swallowtail\", and lays out the keys that hold them together. The plates stay where their cells were, so move or turn them onto the bed one by one."
+    }
+  },
+  {
+    "title": {
       "de": "Gridfinity-Boden, Raster-Anpassung und Trennstege",
       "en": "Gridfinity floor, fit to the grid and dividers"
     },

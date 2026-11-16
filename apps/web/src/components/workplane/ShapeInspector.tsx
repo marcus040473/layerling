@@ -328,6 +328,7 @@ import {
   gridfinityOutlineRemovalPatch,
   gridfinityPaddingPatch,
   gridfinityPlan,
+  gridfinityPlateSplit,
   gridfinityScoopFits,
   gridfinityScoopMaxRadius,
   gridfinityScoopRadius,
@@ -2024,8 +2025,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         if (limits.offset > 0) {
           properties.push({ id: keys.offset, label: t("prop.gridfinityLabelOffset"), value: clamp(shape[keys.offset] ?? 0, -limits.offset, limits.offset), min: -limits.offset, max: limits.offset, step: 1, onChange: (value) => onUpdate({ [keys.offset]: value }) });
         }
-        // The letters raised on the shelf (#1308); none on a tray, where they would stand above its top.
-        if (plan.type === "bin") properties.push(gridfinityLabelTextProperty(fields, wall, shape[GRIDFINITY_LABEL_TEXT_KEYS[wall]], (text) => onUpdate({ [GRIDFINITY_LABEL_TEXT_KEYS[wall]]: text })));
+        // The letters raised on the shelf (#1308).
+        properties.push(gridfinityLabelTextProperty(fields, wall, shape[GRIDFINITY_LABEL_TEXT_KEYS[wall]], (text) => onUpdate({ [GRIDFINITY_LABEL_TEXT_KEYS[wall]]: text })));
       });
       const shelves = compartments
         ? compartments.cells.some((cell) => gridfinityCompartmentLabel(fields, cell.column, cell.row))
@@ -4657,6 +4658,7 @@ export function ShapeInspector({
   onVaseAccessories,
   onGridfinityKeys,
   onMakeBoxLid,
+  onGridfinitySplit,
   onLayerText,
   onTextTags,
   onTextBlock,
@@ -4717,6 +4719,8 @@ export function ShapeInspector({
   onGridfinityKeys?: () => void;
   /** A box generator box: lays out a matching lid beside it, with the box's own outline, wall, play and stacking. */
   onMakeBoxLid?: () => void;
+  /** Splits this baseplate into plates that fit the printer, with their keys (#1388). */
+  onGridfinitySplit?: () => void;
   /** Splits a text into layers, or builds a layered text again with new words, font or layers (#215). */
   onLayerText?: (patch: TextLayerPatch) => void;
   /** One tag like this text or stack per name, laid out in rows (#215). */
@@ -4757,6 +4761,9 @@ export function ShapeInspector({
   // Lock shape (#1277): where the part stands and how it turns stay free; its size, settings and name do not.
   const shapeLocked = Boolean(shape.shapeLocked);
   const frozen = locked || holdsShapeLock(shape);
+  // A baseplate larger than the chosen printer's bed is offered the split (#1388), unless a single cell does not fit it either.
+  const splitPrinter = onGridfinitySplit ? printerPresetById(workspace.printer) : null;
+  const gridfinitySplit = splitPrinter ? gridfinityPlateSplit({ ...shape, depth: shapeDepth(shape) }, splitPrinter) : null;
   // A calculation typed into a field (#180) is noted just before the field's change and rides
   // along in that one change, so undo takes value and formula back together. A note nobody
   // picks up is dropped again right after.
@@ -5450,60 +5457,6 @@ export function ShapeInspector({
         <p className="inspector-bundle-note">{t(nameTagStack || iconTag?.isTag ? "nameTag.bundleNote" : "inspector.bundleNote")}</p>
       ) : null}
 
-      {onWrapAroundCylinder ? (
-        <CylinderWrapCard
-          key={shape.id}
-          shape={shape}
-          workspace={workspace}
-          disabled={frozen}
-          onWrap={onWrapAroundCylinder}
-          onInteractionActiveChange={onInteractionActiveChange}
-        />
-      ) : null}
-
-      {onSurfaceTexture ? (
-        <SurfaceTextureCard
-          key={`surface-${shape.id}`}
-          shape={shape}
-          workspace={workspace}
-          disabled={frozen}
-          onApply={onSurfaceTexture}
-          onRemove={onRemoveSurfaceTexture}
-          open={surfaceTextureOpen}
-          onOpenChange={onSurfaceTextureOpenChange}
-          onInteractionActiveChange={onInteractionActiveChange}
-          facePicking={surfaceFacePicking}
-          pickedFaces={surfacePickedFaces}
-          facesShown={surfaceFacesShown}
-          onFacePick={onSurfaceFacePick}
-          regionDrawing={surfaceRegionDrawing}
-          drawnRegion={surfaceDrawnRegion}
-          onRegionDraw={onSurfaceRegionDraw}
-        />
-      ) : null}
-
-      {offersSurfaceTextureMask(shape) ? (
-        <div className="property-card">
-          <div className="property-list cylinder-wrap-body">
-            <SelectProperty
-              type="select"
-              label={t("inspector.surfaceMask")}
-              value={shape.surfaceTextureMask ?? "none"}
-              options={(["none", ...SURFACE_TEXTURE_MASK_MODES] as const).map((value) => ({ value, label: t(SURFACE_TEXTURE_LABELS.mask[value]) }))}
-              disabled={frozen}
-              // A mask is a helper one looks through: it turns transparent on the way.
-              onChange={(value) => onUpdate(value === "none" ? { surfaceTextureMask: undefined } : { surfaceTextureMask: value as SurfaceTextureMaskMode, transparent: true })}
-            />
-            {shape.surfaceTextureMask ? (
-              <p className="cylinder-wrap-hint">
-                {t("inspector.surfaceMaskHint")}
-                <GuideHelpLink section="surfaceTexture" className="inspector-help-link" />
-              </p>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
       {onTextTags && shape.kind === "text" ? (
         <NameListCard key={`names-${shape.id}`} shapeId={shape.id} disabled={frozen} onTextTags={onTextTags} onInteractionActiveChange={onInteractionActiveChange} />
       ) : null}
@@ -5721,6 +5674,15 @@ export function ShapeInspector({
                 </button>
               </>
             ) : null}
+            {splitPrinter && gridfinitySplit ? (
+              <>
+                <p className="cylinder-wrap-hint">{t("gridfinity.splitHint", { count: gridfinitySplit.length, printer: `${splitPrinter.vendor} ${splitPrinter.model}` })}</p>
+                <button className="inspector-action-button" type="button" disabled={frozen} onClick={onGridfinitySplit}>
+                  <Grid3x3 size={17} strokeWidth={2.5} />
+                  <span>{t("inspector.gridfinitySplit")}</span>
+                </button>
+              </>
+            ) : null}
             {onShapeDefaultsChange && propertyDefaults ? (
               <div className="property-defaults-actions">
                 <button type="button" disabled={frozen || sameDefaults} title={t("inspector.saveDefaultsHint")} onClick={() => onShapeDefaultsChange(shape.kind, defaultsToSave)}>
@@ -5877,6 +5839,40 @@ export function ShapeInspector({
           ) : null}
         </div>
       ) : null}
+      {onWrapAroundCylinder ? (
+        <CylinderWrapCard
+          key={shape.id}
+          shape={shape}
+          workspace={workspace}
+          disabled={frozen}
+          onWrap={onWrapAroundCylinder}
+          onInteractionActiveChange={onInteractionActiveChange}
+        />
+      ) : null}
+
+      {onSurfaceTexture ? (
+        <SurfaceTextureCard
+          key={`surface-${shape.id}`}
+          shape={shape}
+          workspace={workspace}
+          disabled={frozen}
+          onApply={onSurfaceTexture}
+          onRemove={onRemoveSurfaceTexture}
+          open={surfaceTextureOpen}
+          onOpenChange={onSurfaceTextureOpenChange}
+          onInteractionActiveChange={onInteractionActiveChange}
+          facePicking={surfaceFacePicking}
+          pickedFaces={surfacePickedFaces}
+          facesShown={surfaceFacesShown}
+          onFacePick={onSurfaceFacePick}
+          regionDrawing={surfaceRegionDrawing}
+          drawnRegion={surfaceDrawnRegion}
+          onRegionDraw={onSurfaceRegionDraw}
+          maskMode={offersSurfaceTextureMask(shape) ? shape.surfaceTextureMask ?? "none" : undefined}
+          onMaskChange={(value) => onUpdate(value === "none" ? { surfaceTextureMask: undefined } : { surfaceTextureMask: value, transparent: true })}
+        />
+      ) : null}
+
       {isThread ? (
         <div className={`property-card ${threadOpen ? "" : "collapsed"}`}>
           <button
@@ -7066,6 +7062,8 @@ export function SurfaceTextureCard({
   regionDrawing = false,
   drawnRegion = null,
   onRegionDraw,
+  maskMode,
+  onMaskChange,
 }: {
   shape: WorkplaneShape;
   workspace: WorkplaneWorkspaceSettings;
@@ -7090,6 +7088,8 @@ export function SurfaceTextureCard({
   regionDrawing?: boolean;
   drawnRegion?: { region: SurfaceTextureRegion } | null;
   onRegionDraw?: (drawing: boolean) => void;
+  maskMode?: "none" | SurfaceTextureMaskMode;
+  onMaskChange?: (mode: "none" | SurfaceTextureMaskMode) => void;
 }) {
   const [ownOpen, setOwnOpen] = useState(false);
   const open = openProp ?? ownOpen;
@@ -7824,6 +7824,7 @@ export function SurfaceTextureCard({
       <div className="property-card collapsed surface-texture-card" ref={cardRef}>
         <button className="property-card-header" type="button" aria-expanded={open} aria-controls={open ? bodyId : undefined} onClick={() => setOpen(!open)}>
           <span>{title}</span>
+          {maskMode && maskMode !== "none" ? <small className="property-card-summary">{t("inspector.surfaceMask")}: {t(SURFACE_TEXTURE_LABELS.mask[maskMode])}</small> : null}
           {applied ? <small className="property-card-summary">{[applied.pattern, ...(shape.surfaceTextureLayers ?? []).map((layer) => layer.pattern)].map(patternLabel).join(" + ")}</small> : null}
           <ChevronRight size={22} strokeWidth={2.6} />
         </button>
@@ -7843,6 +7844,20 @@ export function SurfaceTextureCard({
               </div>
               <div className="tool-panel-body" id={bodyId}>
                 <ToolSection title={t("toolSidebar.selection")}>
+                  {/* Whether this body is a mask that keeps the texture off where it touches (Discussion #1573). */}
+                  {maskMode && onMaskChange ? (
+                    <>
+                      <SelectProperty
+                        type="select"
+                        label={t("inspector.surfaceMask")}
+                        value={maskMode}
+                        options={(["none", ...SURFACE_TEXTURE_MASK_MODES] as const).map((value) => ({ value, label: t(SURFACE_TEXTURE_LABELS.mask[value]) }))}
+                        disabled={disabled}
+                        onChange={(value) => onMaskChange(value as "none" | SurfaceTextureMaskMode)}
+                      />
+                      {maskMode !== "none" ? <ToolHint className="cylinder-wrap-hint" text={t("inspector.surfaceMaskHint")} /> : null}
+                    </>
+                  ) : null}
                   {/* Several patterns on one body: a tab per layer, the first taking the faces the others leave. */}
                   {!appliedOnly && onFacePick ? (
                     <div className="surface-layers" role="tablist" aria-label={t("inspector.surfaceLayers")}>
@@ -8316,7 +8331,7 @@ function GridfinityCompartmentsCard({
           });
         }
         properties.push({ id: "gridfinityCompartmentLabelWidth", label: t("prop.gridfinityLabelWidth"), value: built.width, min: MIN_GRIDFINITY_LABEL_WIDTH, max: Math.max(MIN_GRIDFINITY_LABEL_WIDTH, maxWidth), step: 0.5, onChange: (value) => change({ width: clamp(value, MIN_GRIDFINITY_LABEL_WIDTH, maxWidth) }) });
-        if (normalizeGridfinityType(fields.gridfinityType) === "bin") properties.push(gridfinityLabelTextProperty(fields, { column, row }, stored.text, (text) => change({ text })));
+        properties.push(gridfinityLabelTextProperty(fields, { column, row }, stored.text, (text) => change({ text })));
       }
     }
   }

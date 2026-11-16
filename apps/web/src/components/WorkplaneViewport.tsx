@@ -263,6 +263,8 @@ type WorkplaneViewportProps = {
   /** Lays the selected Swallowtail baseplate's keys out in front of it (#1061). */
   onGridfinityKeys?: () => void;
   onMakeBoxLid?: () => void;
+  /** Splits the selected baseplate into plates that fit the printer (#1388). */
+  onGridfinitySplit?: () => void;
   onLayerText?: (patch: TextLayerPatch) => void;
   onTextTags?: (names: string[], gap: number) => void;
   /** Several lines of text under one another, one text each (#1207). */
@@ -1658,6 +1660,7 @@ export function WorkplaneViewport({
   onVaseAccessories,
   onGridfinityKeys,
   onMakeBoxLid,
+  onGridfinitySplit,
   onLayerText,
   onTextTags,
   onTextBlock,
@@ -9555,6 +9558,7 @@ export function WorkplaneViewport({
           onVaseAccessories={onVaseAccessories}
           onGridfinityKeys={onGridfinityKeys}
           onMakeBoxLid={onMakeBoxLid}
+          onGridfinitySplit={onGridfinitySplit}
           onLayerText={onLayerText}
           onTextTags={onTextTags}
           onTextBlock={onTextBlock}

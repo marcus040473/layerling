@@ -95,7 +95,8 @@ import type { GridfinityCompartmentLabel, GridfinityLabelCorner, GridfinityOpeni
  * over the shelf, its front and the shelves it meets leave there
  * (gridfinityLabelTextPlaces). The fonts live on the page, so the letters come
  * in as outlines (gridfinityLabelText.ts) and are joined last, after every cut.
- * A tray has none.
+ * On a tray, whose shelves run up to its top, a shelf with a text sits 0.4 mm
+ * lower, so its letters end level with the top (#1501).
  *
  * A bin can also be open on any of its sides (#682), so that bins standing side
  * by side make one long run: above the floor an open side has no wall and no
@@ -223,7 +224,7 @@ const LABEL_DROP = 0.85;
 const LABEL_LAND = 1.2;
 /** The rise of the shelf's underside from the wall: 36 degrees. */
 const LABEL_RISE = Math.tan((36 * Math.PI) / 180);
-/** How far above the floor the widest shelf's underside ends, rather than on the floor's edge. */
+/** How far above the floor the widest shelf's underside ends, rather than on the floor's edge; 0.1 mm on a tray's shelf lowered for a text. */
 const LABEL_FLOOR_CLEARANCE = 0.5;
 /** The shortest set length; anything shorter would be a peg, not a shelf for a label. */
 const LABEL_MIN_LENGTH = 10;
@@ -387,6 +388,11 @@ function floorMinHeight(type: GridfinityType) {
 /** Where the label shelves and dividers stop: 0.85 mm under the top, clear of a stacked bin's feet, or at a tray's top. */
 function gridfinityDividerTop(type: GridfinityType, top: number) {
   return type === "tray" ? top : top - LABEL_DROP;
+}
+
+/** A label shelf's top: the dividers', or 0.4 mm lower on a tray where it carries a text, so its letters end level with the tray's top (#1501). */
+function labelTop(plan: GridfinityPlan, lettered: boolean) {
+  return lettered && plan.type === "tray" ? plan.dividerTop - GRIDFINITY_LABEL_TEXT_HEIGHT : plan.dividerTop;
 }
 
 /** A tray's box (#837): its width, depth and height in mm as they are, kept to the tray's limits. */
@@ -960,6 +966,115 @@ export function gridfinitySceneWithKeys(shapes: WorkplaneShape[], plateId: strin
   return [...shapes.filter((shape) => shape.gridfinityKeyOf !== plateId), ...keys];
 }
 
+/**
+ * A piece of a baseplate split to fit the printer (#1388): its units, its padding and its middle, in the plate's x and z,
+ * and how many keys it carries: one for each pocket at its back and right that meets another piece.
+ */
+export type GridfinityPlatePiece = { count: { x: number; z: number }; padding: Record<GridfinityWall, number>; x: number; z: number; keys: number };
+
+/** How far past each edge of the bed a plate may reach and still fit: the bed warning's own hair (BED_EDGE_TOLERANCE in printBed.ts). */
+const GRIDFINITY_SPLIT_BED_TOLERANCE = 0.01;
+
+/**
+ * One axis of a plate cut on its cell lines into k pieces (#1388): each piece's cells, the plate's padding it keeps at its
+ * start and end, its size and its middle, and the size of the largest. The cells left over go to the pieces with the least
+ * padding, a tie to the one further left or back, so 7 cells with 30 mm of padding on the left become 3 + 4 cells, 156 and
+ * 168 mm, not 198 and 126.
+ */
+function gridfinitySplitAxis(cells: number, k: number, start: number, end: number) {
+  const pieces = Array.from({ length: k }, (_, i) => ({ count: Math.floor(cells / k), start: i === 0 ? start : 0, end: i === k - 1 ? end : 0, size: 0, middle: 0 }));
+  [...pieces].sort((a, b) => a.start + a.end - b.start - b.end).slice(0, cells % k).forEach((piece) => { piece.count += 1; });
+  let at = -(cells * GRIDFINITY_GRID + start + end) / 2;
+  for (const piece of pieces) {
+    // To 0.01 mm, as gridfinitySize stores a plate's size and the bed warning reads it.
+    piece.size = Math.round((piece.count * GRIDFINITY_GRID + piece.start + piece.end) * 100) / 100;
+    piece.middle = at + piece.size / 2;
+    at += piece.size;
+  }
+  return { pieces, largest: Math.max(...pieces.map((piece) => piece.size)) };
+}
+
+/**
+ * A baseplate larger than the printer's bed cut on its cell lines into the fewest plates that fit the bed (#1388); null
+ * without a printer, when the plate fits already, when a single cell with its padding does not, for a hole, which is not
+ * printed, and for anything but a baseplate of whole units lying flat. A plate fits as for the bed warning: it may reach
+ * 0.01 mm past each edge, so a plate of the bed's size fits, and a round bed takes it as far as its rounded corners reach. The pieces all fit as they lie or
+ * all turned a quarter; when two cuts give as many pieces, the one that needs fewer keys wins.
+ */
+export function gridfinityPlateSplit(shape: GridfinityShapeFields & GridfinityPlacement & Pick<WorkplaneShape, "kind" | "hole">, bed: { width: number; depth: number; round?: boolean } | null): GridfinityPlatePiece[] | null {
+  if (!bed || shape.kind !== "gridfinity" || shape.hole || normalizeGridfinityType(shape.gridfinityType) !== "baseplate" || normalizeGridfinityOutline(shape.gridfinityOutline) || !gridfinityPlateFlat(shape)) return null;
+  const count = gridfinityUnits(shape);
+  const padding = gridfinityPadding(shape);
+  const radius = bed.round ? gridfinityCornerRadius(shape) : 0;
+  // Half the plate against half the bed, as the bed warning measures each side. On a round bed a plate reaches furthest at its
+  // corners' rounding: this takes the true arc, the bed warning the plate's mesh, which reaches about 0.02 mm less.
+  const fits = (width: number, depth: number) => bed.round
+    ? Math.hypot(width / 2 - radius, depth / 2 - radius) + radius - bed.width / 2 <= GRIDFINITY_SPLIT_BED_TOLERANCE
+    : width / 2 - bed.width / 2 <= GRIDFINITY_SPLIT_BED_TOLERANCE && depth / 2 - bed.depth / 2 <= GRIDFINITY_SPLIT_BED_TOLERANCE;
+  const cuts = (cells: number, start: number, end: number) => Array.from({ length: cells }, (_, k) => gridfinitySplitAxis(cells, k + 1, start, end));
+  const deeps = cuts(count.z, padding.back, padding.front);
+  let best: { across: (typeof deeps)[number]; deep: (typeof deeps)[number]; plates: number; keys: number } | null = null;
+  for (const across of cuts(count.x, padding.left, padding.right)) {
+    // The largest piece each way decides, and a cut deeper only adds pieces and keys: the first that fits is the best for this one across.
+    const deep = deeps.find((d) => fits(across.largest, d.largest) || fits(d.largest, across.largest));
+    if (!deep) continue;
+    const plates = across.pieces.length * deep.pieces.length;
+    // A key for every cell along a seam.
+    const keys = (across.pieces.length - 1) * count.z + (deep.pieces.length - 1) * count.x;
+    if (!best || plates < best.plates || (plates === best.plates && keys < best.keys)) best = { across, deep, plates, keys };
+  }
+  if (!best || best.plates === 1) return null;
+  const { across, deep } = best;
+  return deep.pieces.flatMap((d, j) => across.pieces.map((a, i) => ({
+    count: { x: a.count, z: d.count },
+    padding: { back: d.start, front: d.end, left: a.start, right: a.end },
+    x: a.middle,
+    z: d.middle,
+    keys: (i < across.pieces.length - 1 ? d.count : 0) + (j > 0 ? a.count : 0),
+  })));
+}
+
+/**
+ * The plates a baseplate is split into (#1388): the plate's settings with Swallowtail on, each piece's units, padding and
+ * size, its name numbered, and laid where its cells were, turned and mirrored as the plate is. Large plate is on only for a
+ * piece over 6 units; the turning pivot, a share of the plate's size, goes. A painted plate's strokes lie in its own frame,
+ * so `repaint` moves them into each piece's (rebasePaintStrokes in the editor), and a piece keeps the paint on its cells.
+ */
+export function gridfinityPlatePieces(plate: WorkplaneShape, pieces: GridfinityPlatePiece[], name: string, newId: () => string, repaint: (piece: WorkplaneShape) => NonNullable<WorkplaneShape["paint"]>): WorkplaneShape[] {
+  return pieces.map((piece, k) => {
+    const made: WorkplaneShape = {
+      ...plate,
+      ...gridfinityPlateToWorld(piece, plate),
+      id: newId(),
+      name: `${name} ${k + 1}`,
+      gridfinitySwallowtail: true,
+      gridfinityLargePlate: Math.max(piece.count.x, piece.count.z) > MAX_GRIDFINITY_UNITS ? true : undefined,
+      gridfinityPaddingBack: piece.padding.back,
+      gridfinityPaddingFront: piece.padding.front,
+      gridfinityPaddingLeft: piece.padding.left,
+      gridfinityPaddingRight: piece.padding.right,
+      ...gridfinitySize("baseplate", { ...piece.count, y: 1 }, false, GRIDFINITY_GRID, piece.padding, true),
+      rotationPivot: undefined,
+    };
+    return plate.paint?.length ? { ...made, paint: repaint(made) } : made;
+  });
+}
+
+/**
+ * The keys for the seams of a split plate (#1388): one for each pair of pockets across a seam, none for the plate's outer
+ * sides, in one row in front of the plate's box. Each belongs to the piece left of or in front of its seam, whose pocket at
+ * its right or back it fills, so that Add keys on that piece later replaces it.
+ */
+export function gridfinityPlatePieceKeys(pieces: WorkplaneShape[], split: GridfinityPlatePiece[], box: { minX: number; maxZ: number; minY: number }, key: WorkplaneShape, keyDepth: number, name: string, newId: () => string): WorkplaneShape[] {
+  const owners = pieces.flatMap((piece, k) => Array<string>(split[k].keys).fill(piece.id));
+  return gridfinitySwallowtailKeys(pieces[0], box, key, keyDepth, owners.length, name, newId).map((made, k) => ({ ...made, gridfinityKeyOf: owners[k] }));
+}
+
+/** The scene with a plate split into its pieces (#1388): the pieces in the plate's place, its keys from before gone, the new keys last. */
+export function gridfinitySceneWithPieces(shapes: WorkplaneShape[], plateId: string, pieces: WorkplaneShape[], keys: WorkplaneShape[]) {
+  return gridfinitySceneWithKeys(shapes.flatMap((shape) => (shape.id === plateId ? pieces : [shape])), plateId, keys);
+}
+
 /** The clearance of a Swallowtail plate's keys on every side (#1061), to 0.01 mm. */
 export function gridfinitySwallowtailClearance(shape: Pick<GridfinityShapeFields, "gridfinitySwallowtailClearance">) {
   return Math.round(clampLabel(shape.gridfinitySwallowtailClearance, DEFAULT_GRIDFINITY_SWALLOWTAIL_CLEARANCE, 0, MAX_GRIDFINITY_SWALLOWTAIL_CLEARANCE) * 100) / 100;
@@ -1394,7 +1509,9 @@ export function gridfinityLabelPieces(shape: GridfinityShapeFields): GridfinityL
     const centre = clamp(sign * offset, -along + length / 2, along - length / 2);
     return { centre, length, short: [centre - length / 2 > -along + snap, centre + length / 2 < along - snap] };
   };
-  return labelPiecesIn({ hx, hz, walls, widthOf, spanOf, size, round, top: plan.dividerTop, floor: plan.floor, open: plan.open, wallThickness: plan.wallThickness, lean: labelTextLean(plan) });
+  // On a tray a text lowers the shelves under it (#1501); they meet in the corners, so they all go down together.
+  const top = labelTop(plan, walls.some((wall) => gridfinityLabelText(shape[GRIDFINITY_LABEL_TEXT_KEYS[wall]]) !== ""));
+  return labelPiecesIn({ hx, hz, walls, widthOf, spanOf, size, round, top, floor: plan.floor, open: plan.open, wallThickness: plan.wallThickness, lean: labelTextLean(plan) });
 }
 
 /** A shelf's middle and length along its wall, and whether each end (0 at u = -along, 1 at u = along) stops short of the wall there. */
@@ -2001,8 +2118,9 @@ function compartmentLabelPieces(shape: GridfinityShapeFields, cell: GridfinityCo
     const to = short[1] ? half - snapped(half - centre - length / 2) : centre + length / 2;
     return { centre: (from + to) / 2, length: to - from, short };
   };
-  // A divider stops at the shelf's top: only the bin's wall has the lip's support leaning over the letters.
-  return labelPiecesIn({ hx: cell.hx, hz: cell.hz, walls: [side], widthOf: () => width, spanOf, size, round, top: plan.dividerTop, floor: plan.floor, open: cell.open, wallThickness: plan.wallThickness, lean: cell.onWall[side] ? labelTextLean(plan) : 0 });
+  const text = gridfinityLabelText(shape.gridfinityCompartmentLabels?.find((l) => l.column === cell.column && l.row === cell.row)?.text);
+  // A divider stops at the shelf's top, or 0.4 mm over a tray's shelf with a text: only the bin's wall has the lip's support leaning over the letters.
+  return labelPiecesIn({ hx: cell.hx, hz: cell.hz, walls: [side], widthOf: () => width, spanOf, size, round, top: labelTop(plan, text !== ""), floor: plan.floor, open: cell.open, wallThickness: plan.wallThickness, lean: cell.onWall[side] ? labelTextLean(plan) : 0 });
 }
 
 /**
@@ -2044,7 +2162,7 @@ export const GRIDFINITY_LABEL_FONTS = ["Multilanguage", "Sans", "Serif", "Script
 export const GRIDFINITY_LABEL_TEXT_KEYS = { back: "gridfinityLabelBackText", front: "gridfinityLabelFrontText", left: "gridfinityLabelLeftText", right: "gridfinityLabelRightText" } as const;
 
 /** A shelf's text as it is built, without the spaces at its ends; empty for none, also when nothing in it draws a letter. */
-function gridfinityLabelText(value: string | undefined) {
+export function gridfinityLabelText(value: string | undefined) {
   const text = value?.trim() ?? "";
   return /[^\s\p{Cf}]/u.test(text) ? text : "";
 }
@@ -2093,12 +2211,12 @@ const LABEL_TEXT_FRAMES: Record<GridfinityWall, { along: FlatPoint; up: FlatPoin
 };
 
 /**
- * Where the letters of each shelf with a text go (#1308): the shelves of a bin, or its compartments', none on a tray,
- * where they would stand above its top. A mirrored bin has its letters laid out for the wall each shelf ends up on and
- * mirrored back, so they come out of the mirror the right way round; turned upside down by a mirror, they read from below.
+ * Where the letters of each shelf with a text go (#1308): the shelves of a bin or a tray, or its compartments', none on a
+ * baseplate. A mirrored bin has its letters laid out for the wall each shelf ends up on and mirrored back, so they come
+ * out of the mirror the right way round; turned upside down by a mirror, they read from below.
  */
 export function gridfinityLabelTextPlaces(shape: GridfinityShapeFields): GridfinityLabelTextPlace[] {
-  if (normalizeGridfinityType(shape.gridfinityType) !== "bin" || !gridfinityLabelTextGiven(shape)) return [];
+  if (!gridfinityLabelTextGiven(shape)) return [];
   const [sx, sz] = [shape.mirrorX ? -1 : 1, shape.mirrorZ ? -1 : 1];
   const flip = shape.mirrorY ? -1 : 1;
   const frame = (wall: GridfinityWall) => {
