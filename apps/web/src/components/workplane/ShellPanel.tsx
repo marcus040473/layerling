@@ -6,7 +6,7 @@ import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, T
 import { X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
-import { t } from "@/lib/i18n";
+import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
@@ -325,6 +325,32 @@ export function ShellPanel({
                   onDividersChange(value >= dividerFullHeight - 0.1 ? rest : { ...rest, height: value });
                 }}
               />
+              {(() => {
+                // Quick heights as a share of the full height (floor to rim), and the height set as a share of it.
+                // Stored in mm like the Gridfinity compartments' divider height; "flush" is the full height, up to the rim.
+                const height = Math.min(dividers.height ?? dividerFullHeight, dividerFullHeight);
+                const flush = dividers.height === undefined || height >= dividerFullHeight - 0.1;
+                const percent = Math.round((height / dividerFullHeight) * 100);
+                const at = (share: number) => Math.max(MIN_SHELL_DIVIDER_HEIGHT, Math.round(dividerFullHeight * share * 10) / 10);
+                const { height: _height, ...rest } = dividers;
+                return (<>
+                  <div className="shell-opening-options shell-divider-quick" role="group" aria-label={t("shell.dividerHeightQuick")}>
+                    {[0.25, 0.5, 0.75].map((share) => {
+                      const value = at(share);
+                      const pressed = !flush && Math.abs(height - value) < 0.05;
+                      return (
+                        <button key={share} type="button" aria-pressed={pressed} className={pressed ? "active" : ""} disabled={busy} onClick={() => onDividersChange({ ...rest, height: value })}>
+                          {`${share * 100} %`}
+                        </button>
+                      );
+                    })}
+                    <button type="button" aria-pressed={flush} className={flush ? "active" : ""} disabled={busy} onClick={() => onDividersChange(rest)}>
+                      {t("shell.dividerHeightFlush")}
+                    </button>
+                  </div>
+                  <ToolHint text={flush ? t("shell.dividerHeightFlushHint") : t("shell.dividerHeightPercent", { mm: height.toLocaleString(numberLocale()), percent })} />
+                </>);
+              })()}
               <ToolHint text={t("shell.dividerHeightHint")} />
             </>) : null}
           </>) : null}
