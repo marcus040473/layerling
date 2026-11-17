@@ -1,8 +1,9 @@
 "use client";
 
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, X } from "lucide-react";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolApply, ToolCancel, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -54,8 +55,11 @@ export function MateFacesPanel({
   // Pairs 2 and 3 of "Point to point" turn the body instead of moving it.
   const turnPair = mode === "point" && pair !== 1 ? pair : null;
   const turning = turnPair !== null;
+  const stepText = t(mode === "concentric" ? `mate.stepRound.${step}` : mode === "point" ? (turnPair ? `mate.stepPoint${turnPair}.${step}` : `mate.stepPoint.${step}`) : `mate.step.${step}`);
+  const noAxis = mode === "point" && !(axes.x || axes.y || axes.z);
+  const ready = step === "ready" && !noAxis;
   return (
-    <MovableToolPanel className="edge-modifier-panel mate-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel mate-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -63,76 +67,75 @@ export function MateFacesPanel({
           <span>{t("mate.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="layFlat" />
           <button type="button" aria-label={t("mate.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{t(mode === "concentric" ? `mate.stepRound.${step}` : mode === "point" ? (turnPair ? `mate.stepPoint${turnPair}.${step}` : `mate.stepPoint.${step}`) : `mate.step.${step}`)}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={step === "ready"} confirm text={targetName} detail={stepText} />
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("mate.mode")}>
-        <span>{t("mate.mode")}</span>
-        <div className="shell-opening-options">
-          {MATE_MODES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={mode === option}
-              className={mode === option ? "active" : ""}
-              onClick={() => onModeChange(option)}
-            >
-              {t(`mate.mode.${option}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {turning ? null : mode === "point" ? (
-        <div className="edge-modifier-field shell-openings" role="group" aria-label={t("mate.axes")}>
-          <span>{t("mate.axes")}</span>
-          <div className="shell-opening-options punch-axis-options">
-            {MATE_AXES.map((axis) => (
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("mate.mode")}>
+          <span>{t("mate.mode")}</span>
+          <div className="shell-opening-options">
+            {MATE_MODES.map((option) => (
               <button
-                key={axis}
+                key={option}
                 type="button"
-                aria-pressed={axes[axis]}
-                className={axes[axis] ? "active" : ""}
-                // One axis at least stays on: with none the body would not move at all.
-                onClick={() => {
-                  const next = { ...axes, [axis]: !axes[axis] };
-                  if (next.x || next.y || next.z) onAxesChange(next);
-                }}
+                role="radio"
+                aria-checked={mode === option}
+                className={mode === option ? "active" : ""}
+                onClick={() => onModeChange(option)}
               >
-                {axis.toUpperCase()}
+                {t(`mate.mode.${option}`)}
               </button>
             ))}
           </div>
         </div>
-      ) : mode === "concentric" ? null : (
-        <EdgeModifierSlider
-          label={t("mate.gap")}
-          value={gap}
-          min={0}
-          max={MAX_GAP}
-          step={0.1}
-          workspace={workspace}
-          length
-          onChange={onGapChange}
-        />
-      )}
 
-      {mode === "point" ? <p className="edge-modifier-note" role="note">{t(turnPair ? `mate.turnHint${turnPair}` : "mate.axesHint")}</p> : null}
+        {turning ? null : mode === "point" ? (
+          <div className="edge-modifier-field shell-openings" role="group" aria-label={t("mate.axes")}>
+            <span>{t("mate.axes")}</span>
+            <div className="shell-opening-options punch-axis-options">
+              {MATE_AXES.map((axis) => (
+                <button
+                  key={axis}
+                  type="button"
+                  aria-pressed={axes[axis]}
+                  className={axes[axis] ? "active" : ""}
+                  // One axis at least stays on: with none the body would not move at all.
+                  onClick={() => {
+                    const next = { ...axes, [axis]: !axes[axis] };
+                    if (next.x || next.y || next.z) onAxesChange(next);
+                  }}
+                >
+                  {axis.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : mode === "concentric" ? null : (
+          <EdgeModifierSlider
+            label={t("mate.gap")}
+            value={gap}
+            min={0}
+            max={MAX_GAP}
+            step={0.1}
+            workspace={workspace}
+            length
+            onChange={onGapChange}
+          />
+        )}
+        {mode === "point" ? <ToolHint text={t(turnPair ? `mate.turnHint${turnPair}` : "mate.axesHint")} /> : null}
+      </ToolSection>
 
+      <ToolStatus state={ready ? "ready" : "needed"} text={ready ? t("toolSidebar.ready") : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t(turning ? "mate.done" : "common.cancel")}</button>
-        <button type="button" className="primary" disabled={step !== "ready" || (mode === "point" && !(axes.x || axes.y || axes.z))} onClick={onApply}>
-          <Check size={17} />
-          {t(turning ? "mate.turn" : "mate.apply")}
-        </button>
+        {turning ? <ToolCancel label={t("mate.done")} onClick={onCancel} /> : <ToolCancel onClick={onCancel} />}
+        <ToolApply label={t(turning ? "mate.turn" : "mate.apply")} disabled={!ready} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

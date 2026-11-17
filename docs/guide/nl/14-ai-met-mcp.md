@@ -93,7 +93,7 @@ De AI werkt met dezelfde functies als jij, via dezelfde weg als jouw bediening i
 | `layerling_import_mesh` | brengt een driehoeksmesh in het ontwerp |
 | `layerling_update_object` | wijzigt maten, positie, kleur, naam, lichaam of gat en al het andere wat de vorm bepaalt, de letterrand van een tekst inbegrepen |
 | `layerling_align_objects` | lijnt objecten ten opzichte van elkaar uit |
-| `layerling_scale_objects` | schaalt objecten met een percentage, samen of elk op zijn plek |
+| `layerling_scale_objects` | schaalt objecten met een percentage, samen of elk op zijn plek, of naar een modelschaal zoals 1:87 |
 | `layerling_lay_flat` | legt een object met één vlak op de plaat |
 | `layerling_place_on_face` | zet objecten neer op een vlak van een ander, ook op schuine, zoals de C-toets |
 | `layerling_perforate_face` | snijdt een gatenpatroon in een plat vlak of rond de wand van een cilinder, buis of boring; de gaten blijven gaten, gegroepeerd met het lichaam |
@@ -115,6 +115,7 @@ De AI werkt met dezelfde functies als jij, via dezelfde weg als jouw bediening i
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
 | `layerling_flexi_joints` | cuts a flat body into links with joints printed in place that swing to the sides (Flexi joints) |
 | `layerling_make_lid` | makes a lid for a body open at the top: pushed in, over the top or flat, with the fit you choose and magnets if you like (Lid) |
+| `layerling_make_mold` | makes a mold or a die from a master: a two-part mold to cast in, a silicone pour box, an open mold, or a stamp and die for sheet (Mold & die) |
 | `layerling_make_cable_channel` | runs a round channel for a cable through a body from an entry to an exit, finding the way itself with gentle bends (Cable channel) |
 | `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | splitst een vorm in zijn losse delen, een schetslichaam in één lichaam per omtrek |
@@ -139,6 +140,7 @@ De AI werkt met dezelfde functies als jij, via dezelfde weg als jouw bediening i
 | `layerling_show_overhangs` | zet de overhangarcering aan of uit, stelt de hoek in en meldt per lichaam het oppervlak dat support nodig zou hebben |
 | `layerling_estimate_print` | schat volume, gewicht en filament voor de selectie of het hele ontwerp: voor een massief lichaam en als grove schatting met wanden en infill zoals in het exportvenster |
 | `layerling_check_clearance` | controleert vóór het printen welke onderdelen overlappen, elkaar raken of dichter bij elkaar komen dan een minimale speling (Speling controleren), ook de losse delen van één object |
+=======
 | `layerling_printer_play` | leest, zet of wist de speling van de printer ({{ui:workspace.printerPlay}} in de instellingen) en legt de pastest neer die hem meet |
 | `layerling_check_print` | controleert vóór het printen wat er mis zou gaan: te dunne wanden voor de nozzle, zwevende delen, weinig houvast op de plaat, overhangen en open meshes (Print controleren) |
 | `layerling_add_reference_points` | markeert referentiepunten - op het midden, de hoeken of de randmiddens van objecten, of op exacte posities - waarop vormen snappen |
@@ -166,6 +168,9 @@ De AI werkt met dezelfde functies als jij, via dezelfde weg als jouw bediening i
 | `layerling_saved_view` | slaat de huidige weergave op onder de toets 7, 8, 9 of 0 en gaat ernaar terug, zoals Shift+toets en de toets (alleen de weergave); stelt ook de startweergave van nieuwe ontwerpen in |
 | `layerling_build_plates` | toont, voegt toe, benoemt, ordent en verwijdert de bouwplaten, zet objecten op een plaat en verdeelt ze over de platen, zoals de platenbalk |
 | `layerling_clear_history` | verwijdert definitief elke stap voor ongedaan maken, zoals de knop "Geschiedenis verwijderen" van de geschiedenisweergave; vereist `confirm: true` |
+| `layerling_delete_history_steps` | verwijdert losse toestanden van de geschiedenis definitief, nooit de huidige, zoals de prullenbak naast een stap in de lijst van de geschiedenisweergave; vraagt `steps` en `confirm: true` |
+| `layerling_list_backups` | toont de automatische back-ups (Eerdere versies) van het geopende ontwerp, of met `all: true` van alle ontwerpen in deze browser |
+| `layerling_open_backup` | opent een back-up via zijn `id` als nieuw ontwerp, nooit gekoppeld aan het oorspronkelijke bestand |
 | `layerling_set_history_view` | kijkt terug naar een eerdere toestand van het project, zoals de geschiedenisweergave (het echte ontwerp blijft onaangeroerd; gereedschappen die iets wijzigen wachten tot hij gesloten is) |
 | `layerling_restore_from_history` | haalt objecten (ook onderdelen in groepen) uit een eerdere toestand als kopieën terug in het ontwerp, zoals „In het ontwerp halen” in de geschiedenisweergave - één stap die ongedaan maken terugneemt |
 | `layerling_export_section_svg` | geeft de contouren op een doorsnedevlak terug als SVG op 1:1, van dezelfde lichamen als de export |

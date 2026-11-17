@@ -93,7 +93,7 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_import_mesh` | vloží trojúhelníkovou síť |
 | `layerling_update_object` | změní rozměry, polohu, barvu, název, režim tělesa/výřezu a další vlastnosti včetně hran písmen |
 | `layerling_align_objects` | vzájemně zarovná objekty |
-| `layerling_scale_objects` | změní velikost o procenta společně nebo samostatně na místě |
+| `layerling_scale_objects` | změní velikost o procenta společně nebo samostatně na místě nebo na modelářské měřítko, třeba 1:87 |
 | `layerling_lay_flat` | položí objekt vybranou plochou na podložku |
 | `layerling_place_on_face` | umístí objekty na plochu jiného tělesa, i šikmou, jako klávesa C |
 | `layerling_perforate_face` | vytvoří rastr otvorů na rovinné ploše nebo dokola na stěně válce, trubky či díry; výřezy zůstanou sloučené s tělesem |
@@ -115,6 +115,7 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
 | `layerling_flexi_joints` | cuts a flat body into links with joints printed in place that swing to the sides (Flexi joints) |
 | `layerling_make_lid` | makes a lid for a body open at the top: pushed in, over the top or flat, with the fit you choose and magnets if you like (Lid) |
+| `layerling_make_mold` | makes a mold or a die from a master: a two-part mold to cast in, a silicone pour box, an open mold, or a stamp and die for sheet (Mold & die) |
 | `layerling_make_cable_channel` | runs a round channel for a cable through a body from an entry to an exit, finding the way itself with gentle bends (Cable channel) |
 | `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | rozdělí tvar na jeho nespojené části, těleso z náčrtu na jedno těleso za každý obrys |
@@ -139,6 +140,7 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_show_overhangs` | zapne šrafování převisů, nastaví úhel a oznámí plochu vyžadující podpěry pro každé těleso |
 | `layerling_estimate_print` | odhadne objem, hmotnost a délku filamentu výběru nebo projektu, pro plný tisk i přibližně se stěnami a výplní |
 | `layerling_check_clearance` | před tiskem zkontroluje, které díly se překrývají, dotýkají nebo jsou blíž než minimální vůle (Zkontrolovat vůli), i oddělené díly jednoho objektu |
+=======
 | `layerling_printer_play` | načte, nastaví nebo smaže vůli tiskárny ({{ui:workspace.printerPlay}} v nastavení) a položí test vůle, který ji změří |
 | `layerling_check_print` | před tiskem zkontroluje, co by se pokazilo: příliš tenké stěny pro trysku, díly ve vzduchu, malou opěru na podložce, převisy a otevřené sítě (Zkontrolovat tisk) |
 | `layerling_add_reference_points` | vytvoří referenční body na středech, rozích, středech hran nebo zadaných souřadnicích |
@@ -166,6 +168,9 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_saved_view` | uloží aktuální pohled pod klávesu 7, 8, 9 nebo 0 a vrátí se k němu, jako Shift+klávesa a klávesa (jen pohled); nastaví také úvodní pohled nových návrhů |
 | `layerling_build_plates` | vypíše, přidá, pojmenuje, seřadí a odebere tiskové podložky, přesune objekty na podložku a rozmístí je na podložky, jako lišta podložek |
 | `layerling_clear_history` | trvale vymaže historii kroků zpět, vyžaduje `confirm: true` |
+| `layerling_delete_history_steps` | natrvalo smaže jednotlivé stavy historie, nikdy ten aktuální, jako koš vedle kroku v seznamu zobrazení historie; potřebuje `steps` a `confirm: true` |
+| `layerling_list_backups` | vypíše automatické zálohy (Dřívější verze) otevřeného návrhu, s `all: true` všech návrhů v tomto prohlížeči |
+| `layerling_open_backup` | otevře zálohu podle jejího `id` jako nový návrh, nikdy nesvázaný s původním souborem |
 | `layerling_set_history_view` | zobrazí starší stav projektu bez změny současného; editační nástroje počkají na zavření historie |
 | `layerling_restore_from_history` | vrátí objekty (i díly ve skupinách) ze staršího stavu do návrhu jako kopie, jako tlačítko „Vrátit do návrhu“ v historii - jeden krok, který Zpět vrátí |
 | `layerling_export_section_svg` | vrátí obrysy řezu jako SVG v měřítku 1:1 ze stejných těles jako běžný export |

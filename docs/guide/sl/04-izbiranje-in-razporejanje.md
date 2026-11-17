@@ -21,8 +21,8 @@ Pri mnogih delih v pogledu zlahka izgubiš pregled. Seznam objektov ({{ui:editor
 
 ![Seznam objektov: skupina »Skupina« z dvema delama in ob njej krogla. Ikona mape odpre skupino.](shot:object-list)
 
-- Klik na vnos izbere obliko, tudi dele znotraj skupine. S [[Shift]] dodaš še druge vnose ali jih spet odvzameš, popolnoma enako kot v pogledu. Puščice zložijo in razpro skupine.
-- Oznaka kaže, ali je del {{ui:outliner.solid}} ali {{ui:outliner.hole}}.
+- Klik na vnos izbere obliko, tudi dele znotraj skupine. Kot v upravitelju datotek [[Ctrl]] ([[Cmd]] na Macu) doda vnos ali ga spet odvzame, [[Shift]] pa izbere vse vnose od zadnjega kliknjenega do tega, v vrstnem redu seznama; [[Ctrl]]+[[Shift]] jih doda k izbiri. V pogledu pa dodaja in odvzema [[Shift]]. Puščice zložijo in razpro skupine.
+- Črka za imenom pokaže, ali je del {{ui:outliner.solid}} ali {{ui:outliner.hole}}: to je prva črka besede, cela beseda pa se pokaže, ko greš z miško nadnjo.
 - Pod imenom piše, kakšna oblika je. Telo, ki ni več preprosta oblika (zaobljeno, izdolbeno ali uvoženo), kaže {{ui:shape.exactBody}}, ko ga izvoz STEP zapiše natančno, in {{ui:shape.mesh}}, ko je sestavljeno le iz trikotnikov in gre ven kot STL. Zoženje, nagib ali zasuk, dodan šele po zaobljanju ali dolbenju telesa, upogne samo njegovo mrežo, zato takrat piše {{ui:shape.mesh}}.
 - Ključavnica in oko zaklenita in skrijeta posamezne dele.
 - Z {{ui:outliner.rename}} daš delu lastno ime; svinčnik ob imenu zgoraj v nastavitvah naredi isto za izbrano obliko. Smiselna imena pri večjih načrtih zelo pomagajo.
@@ -32,7 +32,7 @@ Pri mnogih delih v pogledu zlahka izgubiš pregled. Seznam objektov ({{ui:editor
 - Iskalno polje najde oblike po imenu in po vrsti, torej tudi »valj« ali »luknja«. Išče tudi v skupinah, ne glede na to, kako globoko so ugnezdene: skupina z zadetkom ostane na seznamu in se razpre, tako da so vidni ustrezni deli in skupine na poti do njih. Če ime same skupine ustreza, pokaže razpro vse svoje dele.
 - Puščica čisto levo v naslovni vrstici zloži seznam do naslovne vrstice in ga spet razpre.
 
-Seznam je zasidran desno ob orientacijski kocki. Za naslovno vrstico ga povlečeš na katerokoli mesto delovne površine; pri tem drsi pod orientacijsko kocko in vrstico pogleda. Če ga odložiš ob orientacijski kocki ali dvokliknes naslovno vrstico, se spet zasidra. Kje je stal in ali je bil zložen, si brskalnik zapomni.
+Seznam je zasidran desno ob orientacijski kocki. Za naslovno vrstico ga povlečeš na katerokoli mesto delovne površine; pri tem drsi pod orientacijsko kocko in vrstico pogleda. Če ga odložiš ob orientacijski kocki ali dvokliknes naslovno vrstico, se spet zasidra. Kje je stal in ali je bil zložen, si brskalnik zapomni. Seznam razširiš ali zožiš tako, da povlečeš njegov spodnji desni kot, od 240 do 600 pikslov; tudi širino si brskalnik zapomni.
 
 ## Vpiši lego
 
@@ -45,6 +45,8 @@ Obliko lahko povlečeš čez rob plošče in jo pustiš tam, približno za širi
 ## Zaskakovanje med premikanjem
 
 Če oblika vlečeš čez delovno ravnino, se zaskoči na druge oblike: njen levi, desni, sprednji ali zadnji rob ali njena sredina se položi natanko na rob ali sredino druge oblike. Roza pomožna črta kaže, na kaj je ravno pripeta. Tako postaviš dva dela poravnana drug ob drugega ali sredinsko drug za drugim, ne da bi vpisoval številke. To velja tudi, če je mreža izklopljena. Šteje tudi sredina delovne ravnine: rožnate črte pokažejo, kdaj oblika stoji na sredini plošče vzdolž X, Y ali obeh.
+
+Pripenjanje deluje tudi pri spreminjanju velikosti: ko vlečeš stranski ročaj, se ta stranica ustavi na robovih in središčih drugih oblik in ob steni, v katero zadene, tudi ob notranji steni škatle, izdolbenega telesa ali uvoženega ohišja, rožnata črta pa pokaže kje. Ta mera ostane natančno taka, zunaj mreže. Tako del zapolni ohišje od stene do stene: prisloni ga k eni steni in njegovo drugo stranico povleci do nasprotne. Z [[Alt]] oblika raste iz sredine in vlečena stranica se pripne enako; s [[Shift]] obdrži razmerja in se ne pripne. To deluje na ravni delovni ravnini za oblike, ki stojijo pokonci s stranicami vzdolž X in Y, {{ui:workspace.objectSnap}} pa to izklopi skupaj s pripenjanjem med premikanjem.
 
 Če pri vlečenju držiš [[Shift]], ostane gibanje na eni osi: oblika sledi smeri, X ali Y, v katero si vlekel dalje, drugo pa pusti nedotaknjeno. Najbolje je, da [[Shift]] pritisneš šele, ko že vlečeš; na obliki, ki še ni izbrana, klik s [[Shift]] samo doda k izboru.
 
@@ -70,7 +72,7 @@ Ob srednji točki vsake črte stoji širša točka s črtico na vsaki strani. Ra
 
 Brez plošče najprej drži [[Shift]] in klikni prazno mesto podlage: podlaga je nato fiksna oblika, enaki razmiki razporedijo oblike po vsej podlagi z enakim razmikom do robov, druge točke pa jih poravnajo na njene robove ali sredino. Ponoven klik s [[Shift]] na prazno podlago jo izpusti. Klik na prazno mesto brez [[Shift]] konča poravnavo, tako kot [[L]] in [[Esc]].
 
-Drži [[Alt]] in klikni točko, da sam vpišeš razmik, na primer 5 mm: oblike se postavijo tako daleč narazen, od prve oblike ali od tiste, ki si jo kliknil najprej; na plošči pride vrsta na sredino. Zaklenjena oblika ostane na mestu, zato ena med zunanjima oblikama prepreči enake razmike.
+Drži [[Alt]] in klikni točko, da sam vpišeš razmik, na primer 5 mm: oblike se postavijo tako daleč narazen, od prve oblike ali od tiste, ki si jo kliknil najprej; na plošči pride vrsta na sredino. Zaklenjena oblika ostane na mestu, zato ena med zunanjima oblikama prepreči enake razmike. Na tablici, ki nima tipke Alt, isto naredi stikalo {{ui:align.sizeSwitch}} ob pikah: ko ga vklopite, pike ostanejo kvadratki in pika razmika odpre svoje polje, dokler stikala ne izklopite.
 
 ## Zrcaljenje
 
@@ -159,6 +161,8 @@ Luknje sprejme tudi okrogla stena valja, cevi ali izvrtine: lonček za svinčnik
 
 Umetna inteligenca lahko isto naredi prek vmesnika MCP, z `layerling_perforate_face` (glej poglavje [Umetna inteligenca z MCP](chapter:ai-z-mcp)).
 
+Na plošči ali pokrovu z zarezami ob straneh {{ui:holePattern.arrangement.perimeter}} razporedi luknje neenakomerno. Zato ima {{ui:holePattern.title}} poleg {{ui:holePattern.mode.pattern}} še drugi zavihek, {{ui:holePattern.mode.mounting}}: luknje postavi v vogale najmanjšega pravokotnika okoli izbrane ploskve, v enaki razdalji od njegovih stranic, tudi na zasukani ali zarezani plošči. {{ui:holePattern.mounting.distance}} se meri do roba luknje, vključno z glavo vijaka, ali z {{ui:holePattern.mounting.toCenter}} do njenega središča. Z {{ui:holePattern.mounting.count}} gredo štiri v vogale, ostale pa v parih, enakomerno razporejene ob stranicah, na primer za vodotesen pokrov. Na okrogli ploskvi, na primer na pokrovu okrogle škatle, se enakomerno razporedijo po krogu, tri ali več. Vrsta in mere lukenj so enake kot pri vzorcu: navadna, z valjastim ali stožčastim povrtanjem, skoznja ali do globine. Nastanejo kot navadne oblike lukenj, združene s telesom v skupino, zato nanje deluje tudi {{ui:inspector.groupHoleDiameter}} skupine.
+
 ## Vlečenje ploskve navzven ali navznoter
 
 Za debelejšo steno, dvignjeno ploščico na ploskvi ali vanjo izrezan žep orodje {{ui:faceTool.title}} dela na eni ravni ploskvi. Deluje tudi na uvoženem STL, ki nima skice za spreminjanje. Izberi natanko eno telo in v skupini {{ui:editor.section.mirrorPattern}} orodne vrstice klikni {{ui:faceTool.title}}, tik ob vzorcu lukenj. Lahko tudi z desnim gumbom klikneš na telo ali ga poiščeš s [[Ctrl]]+[[K]].
@@ -187,6 +191,8 @@ Umetna inteligenca lahko isto naredi prek vmesnika MCP, z `layerling_push_face` 
 
 Pri {{ui:scalePercent.percent}} vpišeš novo velikost v odstotkih sedanje: 120 % je petino večje, 50 % pol manjše. Širina, globina in višina se pri tem spremenijo enako, razmerja torej ostanejo. Spodnja stran ostane, kjer je, tako da nič ne zdrsne v ploščo.
 
+Za modelarstvo zgoraj izberi {{ui:scalePercent.by.scale}} namesto {{ui:scalePercent.by.percent}}. {{ui:scalePercent.scalePresets}} ponuja običajne velikosti od Z (1:220) do 16mm (1:19,05), v {{ui:scalePercent.ratio}} pa vpišeš katero koli drugo merilo, npr. 35 za 1:35. Če je model narejen v pravi velikosti izvirnika, pusti izbrano {{ui:scalePercent.original.fullSize}}: 1:87 ga pomanjša 87-krat. Če si ga naredil v poljubni velikosti, izberi {{ui:scalePercent.original.realSize}}, nato {{ui:scalePercent.axis.height}} ali {{ui:scalePercent.axis.length}} (najdaljša stranica na plošči) in v {{ui:scalePercent.realSize}} vpiši, kako velik je izvirnik v resnici, v metrih (pri palčnih enotah v čevljih). Drevo, ki je v resnici visoko 16 m, je tako v H0 visoko 16.000 mm / 87 = 184 mm, ne glede na to, kako veliko je bilo prej. Nova velikost je vidna pod polji, preden pritisneš {{ui:scalePercent.apply}}. Merilo ostane nastavljeno, dokler je urejevalnik odprt.
+
 Pri več delih izbereš, kako rastejo:
 
 - **{{ui:scalePercent.mode.together}}:** Deli rastejo okoli skupne sredine, razdalje rastejo z njimi. Celota postane večja, kot da bi bila en del.
@@ -207,3 +213,5 @@ Dve stvari lahko vzameš s seboj iz prejšnjega stanja. {{ui:historyView.createP
 V načrt lahko vrneš tudi posamezne objekte. Klikni objekt v prikazanem stanju - [[Shift]]+klik doda več ali enega odstrani, klik v prazno ne izbere ničesar - in izberi {{ui:historyView.bringBack}}. Pogled se zapre in kopija vsakega objekta pride v trenutni načrt natanko takšna, kot je bila v tem stanju, in na mesto, kjer je bila, izbrana, poleg vsega, kar načrt vsebuje zdaj; nič drugega se ne spremeni. To je en korak, razveljavitev ga vzame nazaj. Uporabi ga za različico dela, ki si ga medtem spremenil ali izbrisal. Skupina se vrne cela; opombe in referenčne točke na objektu ostanejo. Njegovo ime nosi čas tega stanja, na primer »Kvader (12:32)«, da ga zlahka ločiš od trenutne različice. Če želiš vrniti del iz skupine, izberi skupino in izberi {{ui:historyView.openGroup}} ali pritisni [[E]], kot v načrtu: njeni deli se razporedijo tja, kamor bi jih postavilo urejanje skupine, pripravljeni za izbiro, vrstica pa pove, v kateri skupini si. {{ui:historyView.backOut}} jo spet zapre. To je samo za ogled - skupina, načrt in zgodovina ostanejo, kot so.
 
 {{ui:historyView.delete}} stoji sam levo spodaj v vrstici. Po vprašanju za vedno odstrani vse prejšnje korake: načrt ohrani stanje, ki ga ima zdaj (ne tistega, ki je prikazano), Razveljavi nima več kam nazaj, datoteka, shranjena pozneje, pa ne nosi zgodovine. Uporabi ga, če želiš deliti načrt brez njegove preteklosti ali začeti korake razveljavitve znova. Razveljaviti ga ni mogoče; če želiš deliti datoteko, ne da bi se dotaknil svojega načrta, raje pri izvozu izberi {{ui:export.historyNone}}.
+
+Če želite velik projekt olajšati, ne da bi izgubili celotno zgodovino, izbrišite posamezne korake. Ko je seznam odprt, vsak korak na desni pokaže, koliko prostora bi približno sprostil njegov izbris, šteto tako, kot se projekt shrani: mreža, ki si jo deli več korakov, ne šteje nobenemu od njih posebej, koraki, ki sprostijo manj kot 10 KB, pa ne pokažejo ničesar. Zavrteno telo se po vsakem vrtenju shrani kot nova mreža, zato so običajno prav ti koraki veliki. Koš ob koraku po vprašanju izbriše samo ta korak: projekt ostane, kot je, Razveljavi pa s koraka za njim skoči naravnost na korak pred njim. Koraka, na katerem stoji projekt, ni mogoče izbrisati. Nad seznamom piše, koliko zaseda celotna zgodovina, {{ui:historyView.deleteLargest}} pa izbere vsak korak, ki sam sprosti 1 MB ali več, in vpraša, preden jih izbriše skupaj. Ko je projekt prevelik, da bi ga brskalnik shranil s celotno zgodovino, ima obvestilo o tem gumb {{ui:notice.projectHistoryTrimmedOpen}}, ki odpre ta seznam.

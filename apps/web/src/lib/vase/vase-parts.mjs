@@ -511,6 +511,36 @@ export function buildParts(input, { outward = 0 } = {}) {
     }
     if (p.lamp !== 'keine') return
     if (p.insertMode === 'stecker' || p.insertMode === 'roehrchen') return
+    if (p.lidMode === 'stopfen') {
+      // Stopper, as on a decanter: a round plug that tapers by 2 degrees down into the neck, so it seals as it is pressed
+      // in, with the fit at its upper end; above it a head as wide as the rim, chamfered on top. An O-ring groove if wanted.
+      if (p.body !== 'hohl') {
+        notes.push('Ein Steckstopfen braucht eine hohle Vase – Bauart „Hohl mit Wand“ wählen.')
+        return
+      }
+      const L = p.lidDepth
+      let neck = Infinity
+      for (let i = 0; i <= 12; i++) for (let k = 0; k < 720; k++) neck = Math.min(neck, cavity((2 * Math.PI * k) / 720, H - L + (L * i) / 12))
+      const rTop = neck - p.lidClearance
+      const rLow = rTop - L * Math.tan((2 * Math.PI) / 180)
+      if (rLow < 3) throw new Error('die Öffnung ist zu eng für einen Stopfen')
+      let rimMin = Infinity
+      for (let k = 0; k < 360; k++) rimMin = Math.min(rimMin, shape.outerAt((2 * Math.PI * k) / 360, H))
+      const head = Math.max(rTop + 2, Math.min(rimMin, rTop + 8))
+      const t = Math.max(p.lidThickness + 2, 4)
+      const chamfer = Math.min(1.5, t / 3)
+      const ring = p.stopperRing === 'ja' && L >= 8 && rLow > 6
+      // Groove for an O-ring of 2 mm cord: 1.5 mm deep, 2.4 mm high, flanks at 45 degrees, in the plug's middle.
+      const zr = H - L / 2
+      const at = (z) => rLow + ((rTop - rLow) * (z - (H - L))) / L
+      const profile = [[0, H - L], [at(H - L) - 0.8, H - L], [at(H - L + 0.8), H - L + 0.8]]
+      if (ring) profile.push([at(zr - 1.95), zr - 1.95], [at(zr - 1.95) - 1.5, zr - 0.45], [at(zr + 0.45) - 1.5, zr + 0.45], [at(zr + 1.95), zr + 1.95])
+      profile.push([rTop, H], [head, H], [head, H + t - chamfer], [head - chamfer, H + t], [0, H + t])
+      const b = new MeshBuilder()
+      b.lathe(profile, 96)
+      parts.push({ id: 'deckel', name: LID_MODES.stopfen, mesh: b.mesh(), z: 0, merge: false, flip: true, info: `Steckstopfen Ø ${fmt(rTop * 2)} mm oben, ${fmt(L)} mm lang, 2° konisch${ring ? ', Nut für einen O-Ring mit 2 mm Schnurstärke' : ''}` })
+      return
+    }
     const lid = shape.lid
     if (p.lidMode !== 'stuelp' && !lid) {
       notes.push(`Ein ${LID_MODES[p.lidMode]} braucht eine hohle Vase – Bauart „Hohl mit Wand“ wählen.`)

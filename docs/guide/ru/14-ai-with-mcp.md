@@ -93,7 +93,7 @@ Claude Desktop не читает файлы проекта. Впишите се�
 | `layerling_import_mesh` | приносит треугольную сетку в проект |
 | `layerling_update_object` | меняет размеры, положение, цвет, имя, режим тела или отверстия и всё остальное, из чего состоит фигура, включая кромку букв текста |
 | `layerling_align_objects` | выравнивает объекты друг относительно друга |
-| `layerling_scale_objects` | масштабирует объекты в процентах — все вместе или каждый на месте |
+| `layerling_scale_objects` | масштабирует объекты в процентах — все вместе или каждый на месте или к модельному масштабу, например 1:87 |
 | `layerling_lay_flat` | укладывает объект одной из граней на стол |
 | `layerling_place_on_face` | ставит объекты на грань другого объекта, в том числе наклонную, — как клавиша C |
 | `layerling_perforate_face` | прорезает узор отверстий в плоской грани или по кругу в стенке цилиндра, трубы или отверстия; отверстия остаются отверстиями, сгруппированными с телом |
@@ -115,6 +115,7 @@ Claude Desktop не читает файлы проекта. Впишите се�
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
 | `layerling_flexi_joints` | cuts a flat body into links with joints printed in place that swing to the sides (Flexi joints) |
 | `layerling_make_lid` | makes a lid for a body open at the top: pushed in, over the top or flat, with the fit you choose and magnets if you like (Lid) |
+| `layerling_make_mold` | makes a mold or a die from a master: a two-part mold to cast in, a silicone pour box, an open mold, or a stamp and die for sheet (Mold & die) |
 | `layerling_make_cable_channel` | runs a round channel for a cable through a body from an entry to an exit, finding the way itself with gentle bends (Cable channel) |
 | `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | разделяет фигуру на её отдельные части, тело эскиза — на тело для каждого контура |
@@ -139,6 +140,7 @@ Claude Desktop не читает файлы проекта. Впишите се�
 | `layerling_show_overhangs` | включает и выключает штриховку нависаний, задаёт угол и сообщает для каждого тела, какая площадь потребовала бы поддержек |
 | `layerling_estimate_print` | оценивает объём, вес и расход филамента для выделения или всего проекта: для сплошного тела, а также грубо — со стенками и заполнением, как в окне экспорта |
 | `layerling_check_clearance` | перед печатью проверяет, какие детали пересекаются, касаются или сближаются сильнее минимального зазора (Проверить зазор), в том числе отдельные части одного объекта |
+=======
 | `layerling_printer_play` | читает, задаёт или сбрасывает зазор принтера ({{ui:workspace.printerPlay}} в настройках) и кладёт тест посадки, который его измеряет |
 | `layerling_check_print` | перед печатью проверяет, что пойдёт не так: слишком тонкие для сопла стенки, детали в воздухе, малую опору на столе, нависания и открытые сетки (Проверить печать) |
 | `layerling_add_reference_points` | ставит опорные точки — по центру, углам или серединам рёбер объектов, либо в точных позициях, — к которым привязываются фигуры |
@@ -166,6 +168,9 @@ Claude Desktop не читает файлы проекта. Впишите се�
 | `layerling_saved_view` | сохраняет текущий вид под клавишей 7, 8, 9 или 0 и возвращается к нему, как Shift+клавиша и сама клавиша (только вид); также задаёт начальный вид новых проектов |
 | `layerling_build_plates` | показывает, добавляет, называет, упорядочивает и удаляет столы печати, переносит объекты на стол и раскладывает их по столам, как панель столов |
 | `layerling_clear_history` | удаляет все шаги отмены навсегда, как кнопка «Удалить историю» в панели истории; требует confirm: true |
+| `layerling_delete_history_steps` | навсегда удаляет отдельные состояния истории, но никогда не текущее, как корзина рядом с шагом в списке просмотра истории; нужны `steps` и `confirm: true` |
+| `layerling_list_backups` | выводит автоматические резервные копии («Предыдущие версии») открытого проекта, а с `all: true` — всех проектов в этом браузере |
+| `layerling_open_backup` | открывает копию по её `id` как новый проект, никогда не связанный с исходным файлом |
 | `layerling_set_history_view` | показывает более раннее состояние проекта, как панель истории (сам проект остаётся нетронутым; инструменты правки ждут, пока она закрыта) |
 | `layerling_restore_from_history` | возвращает объекты (и детали внутри групп) из более раннего состояния в проект как копии, как кнопка «Вернуть в проект» в просмотре истории, - один шаг, который снимает отмена |
 | `layerling_export_section_svg` | возвращает контуры на плоскости сечения как SVG в масштабе 1:1, из тех же тел, что и при экспорте |

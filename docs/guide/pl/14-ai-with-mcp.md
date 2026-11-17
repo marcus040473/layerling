@@ -97,7 +97,7 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_import_mesh` | wprowadza siatkę trójkątów do projektu |
 | `layerling_update_object` | zmienia wymiary, pozycję, kolor, nazwę, bryłę albo otwór i wszystko inne, co tworzy kształt, także krawędź liter tekstu |
 | `layerling_align_objects` | wyrównuje obiekty względem siebie |
-| `layerling_scale_objects` | skaluje obiekty o procent, razem albo każdy w miejscu |
+| `layerling_scale_objects` | skaluje obiekty o procent, razem albo każdy w miejscu albo do skali modelarskiej, np. 1:87 |
 | `layerling_lay_flat` | kładzie obiekt jedną ścianą na płycie |
 | `layerling_place_on_face` | odkłada obiekty na ścianę innego, także skośną, jak klawisz C |
 | `layerling_perforate_face` | wycina wzór otworów w płaskiej ścianie albo dookoła ścianki walca, rury lub otworu. Otwory zostają otworami zgrupowanymi z bryłą |
@@ -119,6 +119,7 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_cookie_cutter` | robi z obiektów foremkę do ciastek: ściankę z ostrzem i kołnierz wokół odbitego konturu (Foremka do ciastek) |
 | `layerling_flexi_joints` | tnie płaską bryłę na ogniwa z przegubami drukowanymi w miejscu, które wychylają się na boki (Przeguby flexi) |
 | `layerling_make_lid` | robi pokrywkę do bryły otwartej u góry: wciskaną, nakładaną albo płaską, z wybranym pasowaniem (Pokrywka) |
+| `layerling_make_mold` | tworzy formę albo matrycę z wzorca: dwuczęściową formę do odlewania, skrzynkę do silikonu, formę otwartą albo stempel i matrycę do cienkiego materiału (Forma i matryca) |
 | `layerling_make_cable_channel` | prowadzi okrągły kanał na kabel przez bryłę, od wejścia do wyjścia, i sam znajduje drogę łagodnymi łukami (Kanał na kabel) |
 | `layerling_loft_sketches` | łączy dwie bryły ze szkicu w przejście od jednego konturu do drugiego (Przejście między szkicami) |
 | `layerling_separate_parts` | rozdziela kształt na jego luźne części, bryłę ze szkicu na jedną bryłę na kontur |
@@ -143,6 +144,7 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_show_overhangs` | włącza albo wyłącza kreskowanie nawisów, ustawia kąt i podaje dla każdej bryły powierzchnię, która wymagałaby podpór |
 | `layerling_estimate_print` | szacuje objętość, masę i filament dla zaznaczenia albo całego projektu: dla pełnej bryły oraz zgrubnie ze ściankami i wypełnieniem, jak okno eksportu |
 | `layerling_check_clearance` | sprawdza przed drukiem, które części nachodzą na siebie, stykają się lub są bliżej niż minimalny luz, także osobne części jednego obiektu |
+=======
 | `layerling_printer_play` | odczytuje, ustawia lub czyści luz drukarki ({{ui:workspace.printerPlay}} w ustawieniach) i kładzie test pasowania, który go mierzy |
 | `layerling_check_print` | sprawdza przed drukiem, co poszłoby źle: zbyt cienkie ścianki dla dyszy, części w powietrzu, mały styk z płytą, nawisy i otwarte siatki |
 | `layerling_add_reference_points` | stawia punkty odniesienia (na środku, narożnikach albo środkach krawędzi obiektów albo w dokładnych pozycjach), do których przyciągają się kształty |
@@ -170,6 +172,9 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_saved_view` | zapisuje bieżący widok pod klawiszem 7, 8, 9 lub 0 i do niego wraca, jak Shift+klawisz i sam klawisz (tylko widok); ustawia też widok startowy nowych projektów |
 | `layerling_build_plates` | wyświetla, dodaje, nazywa, porządkuje i usuwa stoły robocze, przenosi obiekty na stół i rozkłada je na stołach, jak pasek stołów |
 | `layerling_clear_history` | usuwa na dobre wszystkie kroki cofania, tak jak przycisk „Usuń historię” w widoku historii. Wymaga `confirm: true` |
+| `layerling_delete_history_steps` | trwale usuwa pojedyncze stany historii, nigdy bieżący, jak kosz obok kroku na liście widoku historii; wymaga `steps` i `confirm: true` |
+| `layerling_list_backups` | wyświetla automatyczne kopie (Wcześniejsze wersje) otwartego projektu, a z `all: true` wszystkich projektów w tej przeglądarce |
+| `layerling_open_backup` | otwiera kopię po jej `id` jako nowy projekt, nigdy niepowiązany z oryginalnym plikiem |
 | `layerling_set_history_view` | pokazuje wcześniejszy stan projektu, jak widok historii (prawdziwy projekt zostaje nietknięty, a narzędzia zmieniające czekają, aż widok zostanie zamknięty) |
 | `layerling_restore_from_history` | przywraca obiekty (także części wewnątrz grup) z wcześniejszego stanu do projektu jako kopie, jak przycisk Przywróć do projektu w widoku historii. To jeden krok, który cofanie wycofuje |
 | `layerling_export_section_svg` | zwraca kontury na płaszczyźnie cięcia jako SVG w skali 1:1, z tych samych brył co eksport |

@@ -97,7 +97,7 @@ AI 使用与你相同的功能，走的是与你在编辑器中的操作相同�
 | `layerling_import_mesh` | 把三角网格带入设计 |
 | `layerling_update_object` | 修改尺寸、位置、颜色、名称、实体或孔，以及构成形状的其他一切，包括文字的字母边缘 |
 | `layerling_align_objects` | 让对象彼此对齐 |
-| `layerling_scale_objects` | 按百分比缩放对象，可整体缩放或各自在原位缩放 |
+| `layerling_scale_objects` | 按百分比缩放对象，可整体缩放或各自在原位缩放，或缩放到 1:87 等模型比例 |
 | `layerling_lay_flat` | 让对象的一个面贴在平台上 |
 | `layerling_place_on_face` | 把对象放到另一个对象的某个面上，斜面也可以，如同 C 键 |
 | `layerling_perforate_face` | 在平面上或绕圆柱、圆管、孔的侧壁切出孔阵列；孔仍作为孔与实体分组在一起 |
@@ -119,6 +119,7 @@ AI 使用与你相同的功能，走的是与你在编辑器中的操作相同�
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
 | `layerling_flexi_joints` | cuts a flat body into links with joints printed in place that swing to the sides (Flexi joints) |
 | `layerling_make_lid` | makes a lid for a body open at the top: pushed in, over the top or flat, with the fit you choose and magnets if you like (Lid) |
+| `layerling_make_mold` | makes a mold or a die from a master: a two-part mold to cast in, a silicone pour box, an open mold, or a stamp and die for sheet (Mold & die) |
 | `layerling_make_cable_channel` | runs a round channel for a cable through a body from an entry to an exit, finding the way itself with gentle bends (Cable channel) |
 | `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | 把形状分离成松散的部件，把草图实体按轮廓分离为每个轮廓一个实体 |
@@ -143,6 +144,7 @@ AI 使用与你相同的功能，走的是与你在编辑器中的操作相同�
 | `layerling_show_overhangs` | 开启或关闭悬垂剖面线，设置角度，并报告每个实体需要支撑的面积 |
 | `layerling_estimate_print` | 估算选中项或整个设计的体积、重量和耗材：既给出实体件的数值，也按与导出窗口相同的壁和填充给出粗略估计 |
 | `layerling_check_clearance` | 打印前检查哪些部件重叠、接触或间距小于最小间隙，也检查同一对象中彼此分离的部件 |
+=======
 | `layerling_printer_play` | 读取、设置或清除打印机间隙（设置中的{{ui:workspace.printerPlay}}），并放置用来测量它的配合测试件 |
 | `layerling_check_print` | 打印前检查会出什么问题：对喷嘴来说过薄的壁、悬空的零件、与平台接触过少、悬垂和开放网格 |
 | `layerling_add_reference_points` | 标记参考点——可位于对象的中心、角或边中点，也可位于精确位置——形状会吸附到这些点 |
@@ -170,6 +172,9 @@ AI 使用与你相同的功能，走的是与你在编辑器中的操作相同�
 | `layerling_saved_view` | 把当前视图保存在按键 7、8、9 或 0 下，并可回到该视图，如同 Shift+按键和单独按该键（仅改变视图）；也可设置新设计的起始视图 |
 | `layerling_build_plates` | 列出、添加、命名、排序和删除打印板，把对象移到某个打印板并分布到各打印板上，如同打印板栏 |
 | `layerling_clear_history` | 永久删除所有撤销步骤，如同历史记录视图的“删除历史记录”按钮；需要 `confirm: true` |
+| `layerling_delete_history_steps` | 永久删除历史中的单个状态（不会删除当前状态），与历史视图列表中步骤旁的垃圾桶相同；需要 `steps` 和 `confirm: true` |
+| `layerling_list_backups` | 列出当前设计的自动备份（早期版本），使用 `all: true` 时列出此浏览器中所有设计的备份 |
+| `layerling_open_backup` | 按 `id` 将备份作为新设计打开，绝不与原文件关联 |
 | `layerling_set_history_view` | 回看项目更早的状态，如同历史记录视图（实际设计不受影响；会改动设计的工具会等到它关闭） |
 | `layerling_restore_from_history` | 把对象（也包括分组内的部件）从更早的状态作为副本带回设计，如同历史记录视图的“带入设计”——撤销会一次性撤回这一步 |
 | `layerling_export_section_svg` | 以 1:1 的 SVG 返回剖切平面上的轮廓，所用实体与导出相同 |

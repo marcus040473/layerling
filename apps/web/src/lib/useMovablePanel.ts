@@ -206,6 +206,20 @@ export function useMovablePanel<T extends HTMLElement = HTMLDivElement>(storageK
     return placed?.position ?? null;
   }, [place]);
 
+  /** Lets the panel float at `next` and remembers the spot, as if it had been dragged and dropped there. */
+  const floatAt = useCallback((next: PanelPosition, screenWidth?: number) => {
+    const placed = place(next, screenWidth);
+    if (!placed) return;
+    setPlacement(placed);
+    store(placed.position);
+  }, [place, store]);
+
+  /** Puts the panel back where the stylesheet places it, as a double click on the title bar does. */
+  const dock = useCallback(() => {
+    setPlacement(null);
+    store(null);
+  }, [store]);
+
   /** Keeps where the panel stands now, after a move that was not a drag of the title bar. */
   const keepPosition = useCallback(() => {
     const position = placementRef.current?.position;
@@ -278,6 +292,8 @@ export function useMovablePanel<T extends HTMLElement = HTMLDivElement>(storageK
     currentPosition,
     moveTo,
     keepPosition,
+    floatAt,
+    dock,
     handleProps: { onPointerDown, onPointerMove, onPointerUp: endDrag, onPointerCancel: endDrag, onDoubleClick },
   };
 }

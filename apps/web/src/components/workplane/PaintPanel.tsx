@@ -2,21 +2,23 @@
 
 import type { CSSProperties } from "react";
 import { useEffect, useRef } from "react";
-import { Check, Eraser, X } from "lucide-react";
+import { Eraser, X } from "lucide-react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolApply, ToolHint, ToolSection, ToolSelection } from "@/components/workplane/ToolPanelParts";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { t } from "@/lib/i18n";
-import { PAINT_MAX_ANGLE, PAINT_MIN_ANGLE, PAINT_MIN_DIAMETER, type PaintMode, type PaintToolSettings } from "@/lib/paint";
+import { PAINT_MAX_ANGLE, PAINT_MAX_GAP_AREA, PAINT_MIN_ANGLE, PAINT_MIN_BAND, PAINT_MIN_DIAMETER, PAINT_MIN_GAP_AREA, type PaintToolMode, type PaintToolSettings } from "@/lib/paint";
 import { useLanguage } from "@/lib/useLanguage";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
-const MODES: readonly PaintMode[] = ["fill", "circle", "lasso"];
+const MODES: readonly PaintToolMode[] = ["fill", "circle", "brush", "height", "lasso", "magnet"];
 
 /**
  * "Paint" (paint.ts): colours on parts of the body's surface, for printing in several colours. The panel
  * holds the tool, the colour and the eraser; the strokes themselves are made in the view, a click for a
- * fill or a circle, a shape drawn round the place for the lasso. Each stroke is a step of the history, so
+ * fill or a circle, a line drawn with the button held for the brush, a shape drawn round the place for the
+ * lasso, clicks along the body's edges for the magnetic lasso. Each stroke is a step of the history, so
  * Undo takes the last one back; "Clear all" takes them all off at once.
  */
 export function PaintPanel({
@@ -28,6 +30,7 @@ export function PaintPanel({
   workspace,
   onChange,
   onClear,
+  onFillGaps,
   onClose,
 }: {
   targetName: string;
@@ -41,6 +44,8 @@ export function PaintPanel({
   workspace: WorkplaneWorkspaceSettings;
   onChange: (patch: Partial<PaintToolSettings>) => void;
   onClear: () => void;
+  /** Fill gaps: a stroke that gives specks smaller than the area set the colour round them. */
+  onFillGaps: () => void;
   onClose: () => void;
 }) {
   useLanguage();
@@ -63,7 +68,7 @@ export function PaintPanel({
   const hint = settings.erase ? t(`paint.hint.erase.${settings.mode}`) : t(`paint.hint.${settings.mode}`);
 
   return (
-    <MovableToolPanel className="edge-modifier-panel paint-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel paint-panel" ariaLabel={title} dock="withObject" onClose={onClose}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -71,16 +76,17 @@ export function PaintPanel({
           <span>{t("paint.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="paint" />
           <button type="button" aria-label={t("paint.close")} onClick={onClose}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{hint}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready confirm text={targetName} detail={hint} />
+      </ToolSection>
 
+      <ToolSection title={t("toolSidebar.settings")}>
       <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("paint.mode")}>
         <span>{t("paint.mode")}</span>
         <div className="shell-opening-options">
@@ -147,7 +153,7 @@ export function PaintPanel({
           onChange={(value) => onChange({ angle: value })}
         />
       ) : null}
-      {settings.mode === "circle" ? (
+      {settings.mode === "circle" || settings.mode === "brush" ? (
         <EdgeModifierSlider
           label={t("paint.diameter")}
           value={settings.diameter}
@@ -160,21 +166,75 @@ export function PaintPanel({
           onChange={(value) => onChange({ diameter: value })}
         />
       ) : null}
-      {settings.mode === "fill" ? <p className="cylinder-wrap-hint">{t("paint.angleHint")}</p> : null}
+      {settings.mode === "circle" || settings.mode === "brush" ? (<>
+        <ToolHint text={t("paint.resizeHint")} />
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={settings.ball} onChange={(event) => onChange({ ball: event.target.checked })} />
+          <span>{t("paint.ball")}</span>
+        </label>
+        <ToolHint text={t("paint.ballHint")} />
+      </>) : null}
+      {settings.mode === "height" ? (
+        <EdgeModifierSlider
+          label={t("paint.band")}
+          value={settings.band}
+          min={PAINT_MIN_BAND}
+          max={100}
+          step={0.5}
+          coarse={{ step: 0.5, max: 100 }}
+          workspace={workspace}
+          length
+          onChange={(value) => onChange({ band: value })}
+        />
+      ) : null}
+      {settings.mode === "brush" ? (<>
+        <label className="edge-modifier-field offset-copy">
+          <input type="checkbox" checked={settings.pressure} onChange={(event) => onChange({ pressure: event.target.checked })} />
+          <span>{t("paint.pressure")}</span>
+        </label>
+        <ToolHint text={t("paint.pressureHint")} />
+      </>) : null}
+      {settings.mode === "fill" ? <ToolHint text={t("paint.angleHint")} /> : null}
+      {settings.mode === "lasso" || settings.mode === "magnet" ? (<>
+        <EdgeModifierSlider
+          label={t("paint.smooth")}
+          value={settings.smooth}
+          min={0}
+          max={100}
+          step={5}
+          unit="%"
+          workspace={workspace}
+          onChange={(value) => onChange({ smooth: value })}
+        />
+        <ToolHint text={t("paint.smoothHint")} />
+      </>) : null}
+      {settings.mode === "magnet" ? <ToolHint text={t("paint.magnetHint")} /> : null}
 
-      {wholeFaces ? <p className="cylinder-wrap-hint">{t("paint.wholeFaces")}</p> : null}
+      {wholeFaces ? <ToolHint text={t("paint.wholeFaces")} /> : null}
+      <div className="paint-gaps">
+        <EdgeModifierSlider
+          label={t("paint.gapArea")}
+          value={settings.gapArea}
+          min={PAINT_MIN_GAP_AREA}
+          max={Math.min(PAINT_MAX_GAP_AREA, 100)}
+          step={0.5}
+          unit="mm²"
+          workspace={workspace}
+          onChange={(value) => onChange({ gapArea: value })}
+        />
+        <button type="button" className="paint-eraser paint-gaps-button" disabled={!strokes} onClick={onFillGaps}>{t("paint.gaps")}</button>
+        <ToolHint text={t("paint.gapsHint")} />
+      </div>
       <p className="cylinder-wrap-hint paint-count">
         {strokes ? t("paint.strokes", { count: strokes }) : t("paint.noStrokes")}
       </p>
+      </ToolSection>
 
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" disabled={!strokes} onClick={onClear}>
           {t("paint.clear")}
         </button>
-        <button type="button" className="primary" onClick={onClose}>
-          <Check size={17} />
-          {t("paint.done")}
-        </button>
+        <ToolApply label={t("paint.done")} onClick={onClose} />
       </div>
       </>)}
     </MovableToolPanel>

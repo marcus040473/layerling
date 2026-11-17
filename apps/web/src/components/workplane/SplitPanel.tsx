@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, LoaderCircle, MousePointerClick, X } from "lucide-react";
+import { MousePointerClick, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useWheelField } from "@/lib/useWheelField";
 import { wheelBaseStep, wheelNextValue } from "@/lib/wheelValueStep";
@@ -8,7 +8,8 @@ import { displayStepFromMillimeters, displayToMillimeters, formatMeasurementNumb
 import { SPLIT_AXIS_DISPLAY_ORDER, splitAxisLabel, splitRotationAxes, type SplitRotation } from "@/lib/modelSplit";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { fromPrinterPlay } from "@/lib/printerPlay";
 import {
@@ -186,7 +187,7 @@ export function SplitPanel({
   };
 
   return (
-    <MovableToolPanel className="split-panel" ariaLabel={t("split.title")} focusOnOpen>
+    <MovableToolPanel className="split-panel edge-modifier-panel" ariaLabel={t("split.title")} focusOnOpen dock="alone" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="split-panel-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -194,284 +195,297 @@ export function SplitPanel({
           <span>{t(mode === "stretch" ? "split.stretchSubtitle" : "split.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="splitting" />
           <button type="button" aria-label={t("split.cancelAria")} onClick={onCancel}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="split-panel-target">
-        <strong>{targetCount === 1 ? t("split.targetOne") : t("split.targetMany", { count: targetCount })}</strong>
-        <span>{t(mode === "stretch" ? "split.stretchTargetHint" : "split.targetHint")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={targetCount > 0} text={targetCount === 1 ? t("split.targetOne") : t("split.targetMany", { count: targetCount })} detail={t(mode === "stretch" ? "split.stretchTargetHint" : "split.targetHint")} />
+      </ToolSection>
 
-      <fieldset className="split-axis-control split-mode-control" disabled={busy}>
-        <legend>{t("split.mode")}</legend>
-        <div>
-          {SPLIT_MODES.map((entry) => (
-            <button
-              type="button"
-              className={mode === entry.mode ? "active" : ""}
-              aria-pressed={mode === entry.mode}
-              key={entry.mode}
-              title={t(entry.hint)}
-              onClick={() => onModeChange(entry.mode)}
-            >
-              {t(entry.label)}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <ToolSection title={t("toolSidebar.settings")}>
+        <fieldset className="split-axis-control split-mode-control" disabled={busy}>
+          <legend>{t("split.mode")}</legend>
+          <div>
+            {SPLIT_MODES.map((entry) => (
+              <button
+                type="button"
+                className={mode === entry.mode ? "active" : ""}
+                aria-pressed={mode === entry.mode}
+                key={entry.mode}
+                title={t(entry.hint)}
+                onClick={() => onModeChange(entry.mode)}
+              >
+                {t(entry.label)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="split-axis-control" disabled={busy}>
+          <legend>{t("split.orientation")}</legend>
+          <div>
+            {SPLIT_AXIS_DISPLAY_ORDER.map((candidate) => (
+              <button
+                type="button"
+                className={axis === candidate ? "active" : ""}
+                aria-pressed={axis === candidate}
+                key={candidate}
+                onClick={() => onAxisChange(candidate)}
+              >
+                {splitAxisLabel(candidate)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
-      <fieldset className="split-axis-control" disabled={busy}>
-        <legend>{t("split.orientation")}</legend>
-        <div>
-          {SPLIT_AXIS_DISPLAY_ORDER.map((candidate) => (
-            <button
-              type="button"
-              className={axis === candidate ? "active" : ""}
-              aria-pressed={axis === candidate}
-              key={candidate}
-              onClick={() => onAxisChange(candidate)}
-            >
-              {splitAxisLabel(candidate)}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+        <fieldset className="split-axis-control split-workplane-control" disabled={busy}>
+          <legend>{t("split.workplane")}</legend>
+          <div>
+            {SPLIT_WORKPLANE_DIRECTIONS.map(({ direction, label, hint }) => (
+              <button type="button" key={direction} title={t(hint)} onClick={() => onAlignToWorkplane(direction)}>
+                {t(label)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
-      <fieldset className="split-axis-control split-workplane-control" disabled={busy}>
-        <legend>{t("split.workplane")}</legend>
-        <div>
-          {SPLIT_WORKPLANE_DIRECTIONS.map(({ direction, label, hint }) => (
-            <button type="button" key={direction} title={t(hint)} onClick={() => onAlignToWorkplane(direction)}>
-              {t(label)}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      <div className="split-position-control">
-        <span>
-          <strong>{t("split.position")}</strong>
-          <span className="split-position-value">
-            <input
-              ref={positionInputRef}
-              type="text"
-              inputMode="decimal"
-              value={positionEditing ? positionDraft : formattedPosition}
-              aria-label={t("split.positionAria")}
-              aria-describedby="split-position-unit"
-              disabled={busy}
-              onFocus={(event) => {
-                positionWheelShownRef.current = null;
-                setPositionDraft(formattedPosition);
-                setPositionEditing(true);
-                selectWholeValue(event.currentTarget);
-              }}
-              onChange={(event) => {
-                positionWheelShownRef.current = null;
-                setPositionDraft(event.currentTarget.value);
-              }}
-              onBlur={commitPositionDraft}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  event.currentTarget.blur();
-                } else if (event.key === "Escape") {
-                  event.preventDefault();
-                  event.stopPropagation();
+        <div className="split-position-control">
+          <span>
+            <strong>{t("split.position")}</strong>
+            <span className="split-position-value">
+              <input
+                ref={positionInputRef}
+                type="text"
+                inputMode="decimal"
+                value={positionEditing ? positionDraft : formattedPosition}
+                aria-label={t("split.positionAria")}
+                aria-describedby="split-position-unit"
+                disabled={busy}
+                onFocus={(event) => {
+                  positionWheelShownRef.current = null;
                   setPositionDraft(formattedPosition);
-                  setPositionEditing(false);
-                }
-              }}
-            />
-            <small id="split-position-unit">{unit}</small>
-            <button
-              type="button"
-              className={`split-position-pick ${picking ? "active" : ""}`}
-              aria-pressed={picking}
-              aria-label={t("split.pickFace")}
-              title={t("split.pickFaceHint")}
-              disabled={busy}
-              onClick={onPickToggle}
-            >
-              <MousePointerClick size={17} />
-            </button>
+                  setPositionEditing(true);
+                  selectWholeValue(event.currentTarget);
+                }}
+                onChange={(event) => {
+                  positionWheelShownRef.current = null;
+                  setPositionDraft(event.currentTarget.value);
+                }}
+                onBlur={commitPositionDraft}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.currentTarget.blur();
+                  } else if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setPositionDraft(formattedPosition);
+                    setPositionEditing(false);
+                  }
+                }}
+              />
+              <small id="split-position-unit">{unit}</small>
+              <button
+                type="button"
+                className={`split-position-pick ${picking ? "active" : ""}`}
+                aria-pressed={picking}
+                aria-label={t("split.pickFace")}
+                title={t("split.pickFaceHint")}
+                disabled={busy}
+                onClick={onPickToggle}
+              >
+                <MousePointerClick size={17} />
+              </button>
+            </span>
           </span>
-        </span>
-        <input
-          type="range"
-          min={displayMin}
-          max={displayMax}
-          step={displayStep}
-          value={displayPosition}
-          aria-label={t("split.positionSliderAria")}
-          aria-valuetext={t("split.positionValue", { value: formattedPosition, unit })}
-          disabled={busy}
-          onChange={(event) => applyDisplayPosition(event.currentTarget.valueAsNumber)}
-        />
-      </div>
-
-      {rotationAxes.map((rotationAxis, index) => (
-        <SplitRotationControl
-          key={rotationAxis}
-          axisLabel={splitAxisLabel(rotationAxis)}
-          // A tilt about Y turns the right-handed way (#182): minus the inside turn about z.
-          rotation={rotationAxis === "z" ? -rotation[index] || 0 : rotation[index]}
-          busy={busy}
-          onChange={(value) => onRotationChange(index as 0 | 1, rotationAxis === "z" ? -value || 0 : value)}
-        />
-      ))}
-
-      {mode === "stretch" ? (<>
-        <EdgeModifierSlider
-          label={t("split.stretchLength")}
-          value={stretch}
-          min={-STRETCH_SLIDER_LIMIT}
-          max={STRETCH_SLIDER_LIMIT}
-          step={0.5}
-          decimals={2}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={onStretchChange}
-        />
-        <p className="split-panel-help">{t("split.stretchHelp")}</p>
-      </>) : (<>
-      <fieldset className="split-axis-control split-connector-control" disabled={busy}>
-        <legend>{t("split.connectors")}</legend>
-        <div>
-          {SPLIT_CONNECTOR_KINDS.map((kind) => (
-            <button
-              type="button"
-              className={connectors.kind === kind ? "active" : ""}
-              aria-pressed={connectors.kind === kind}
-              key={kind}
-              title={t(`split.connectors.${kind}Hint`)}
-              onClick={() => onConnectorsChange({ kind })}
-            >
-              {t(`split.connectors.${kind}`)}
-            </button>
-          ))}
+          <input
+            type="range"
+            min={displayMin}
+            max={displayMax}
+            step={displayStep}
+            value={displayPosition}
+            aria-label={t("split.positionSliderAria")}
+            aria-valuetext={t("split.positionValue", { value: formattedPosition, unit })}
+            disabled={busy}
+            onChange={(event) => applyDisplayPosition(event.currentTarget.valueAsNumber)}
+          />
         </div>
-      </fieldset>
-      {connectors.kind === "none" ? null : (<>
-        <p className="split-panel-help">{t(`split.connectors.${connectors.kind}Hint`)}</p>
-        <EdgeModifierSlider
-          label={t("split.connectorCount")}
-          value={connectors.count}
-          min={0}
-          max={MAX_CONNECTOR_COUNT}
-          step={1}
-          decimals={0}
-          workspace={workspace}
-          disabled={busy}
-          onChange={(value) => onConnectorsChange({ count: value })}
-        />
-        {connectors.kind === "dovetail" ? (<>
+
+        {rotationAxes.map((rotationAxis, index) => (
+          <SplitRotationControl
+            key={rotationAxis}
+            axisLabel={splitAxisLabel(rotationAxis)}
+            // A tilt about Y turns the right-handed way (#182): minus the inside turn about z.
+            rotation={rotationAxis === "z" ? -rotation[index] || 0 : rotation[index]}
+            busy={busy}
+            onChange={(value) => onRotationChange(index as 0 | 1, rotationAxis === "z" ? -value || 0 : value)}
+          />
+        ))}
+
+        {mode === "stretch" ? (<>
           <EdgeModifierSlider
-            label={t("split.dovetailWidth")}
-            value={connectors.dovetailWidth}
-            min={MIN_DOVETAIL_WIDTH}
-            max={MAX_DOVETAIL_WIDTH}
+            label={t("split.stretchLength")}
+            value={stretch}
+            min={-STRETCH_SLIDER_LIMIT}
+            max={STRETCH_SLIDER_LIMIT}
             step={0.5}
+            decimals={2}
             workspace={workspace}
             length
             disabled={busy}
-            onChange={(value) => onConnectorsChange({ dovetailWidth: value })}
+            onChange={onStretchChange}
           />
+          <ToolHint text={t("split.stretchHelp")} />
+        </>) : null}
+
+        <ToolHelp>{t("split.help")}</ToolHelp>
+      </ToolSection>
+
+      {/* Connectors that line the halves up again (Discussion #832); Stretch leaves the body in one piece. */}
+      {mode === "stretch" ? null : <ToolSection title={t("split.connectors")}>
+        <fieldset className="split-axis-control split-connector-control" disabled={busy}>
+          <div>
+            {SPLIT_CONNECTOR_KINDS.map((kind) => (
+              <button
+                type="button"
+                className={connectors.kind === kind ? "active" : ""}
+                aria-pressed={connectors.kind === kind}
+                key={kind}
+                title={t(`split.connectors.${kind}Hint`)}
+                onClick={() => onConnectorsChange({ kind })}
+              >
+                {t(`split.connectors.${kind}`)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        {connectors.kind === "none" ? null : (<>
+          <ToolHint className="cylinder-wrap-hint" text={t(`split.connectors.${connectors.kind}Hint`)} />
           <EdgeModifierSlider
-            label={t("split.dovetailDepth")}
-            value={connectors.dovetailDepth}
-            min={MIN_DOVETAIL_DEPTH}
-            max={MAX_DOVETAIL_DEPTH}
-            step={0.5}
-            workspace={workspace}
-            length
-            disabled={busy}
-            onChange={(value) => onConnectorsChange({ dovetailDepth: value })}
-          />
-          <EdgeModifierSlider
-            label={t("split.dovetailAngle")}
-            value={connectors.dovetailAngle}
-            min={MIN_DOVETAIL_ANGLE}
-            max={MAX_DOVETAIL_ANGLE}
+            label={t("split.connectorCount")}
+            value={connectors.count}
+            min={0}
+            max={MAX_CONNECTOR_COUNT}
             step={1}
-            unit="°"
+            decimals={0}
             workspace={workspace}
             disabled={busy}
-            onChange={(value) => onConnectorsChange({ dovetailAngle: value })}
+            onChange={(value) => onConnectorsChange({ count: value })}
           />
+          {connectors.kind === "dovetail" ? (<>
+            <EdgeModifierSlider
+              label={t("split.dovetailWidth")}
+              value={connectors.dovetailWidth}
+              min={MIN_DOVETAIL_WIDTH}
+              max={MAX_DOVETAIL_WIDTH}
+              step={0.5}
+              workspace={workspace}
+              length
+              disabled={busy}
+              onChange={(value) => onConnectorsChange({ dovetailWidth: value })}
+            />
+            <EdgeModifierSlider
+              label={t("split.dovetailDepth")}
+              value={connectors.dovetailDepth}
+              min={MIN_DOVETAIL_DEPTH}
+              max={MAX_DOVETAIL_DEPTH}
+              step={0.5}
+              workspace={workspace}
+              length
+              disabled={busy}
+              onChange={(value) => onConnectorsChange({ dovetailDepth: value })}
+            />
+            <EdgeModifierSlider
+              label={t("split.dovetailAngle")}
+              value={connectors.dovetailAngle}
+              min={MIN_DOVETAIL_ANGLE}
+              max={MAX_DOVETAIL_ANGLE}
+              step={1}
+              unit="°"
+              workspace={workspace}
+              disabled={busy}
+              onChange={(value) => onConnectorsChange({ dovetailAngle: value })}
+            />
+            <EdgeModifierSlider
+              label={t("split.dovetailTurn")}
+              value={connectors.dovetailTurn}
+              min={-MAX_DOVETAIL_TURN}
+              max={MAX_DOVETAIL_TURN}
+              step={1}
+              unit="°"
+              workspace={workspace}
+              disabled={busy}
+              onChange={(value) => onConnectorsChange({ dovetailTurn: value })}
+            />
+          </>) : (<>
+            <EdgeModifierSlider
+              label={t("split.connectorDiameter")}
+              value={connectors.diameter}
+              min={MIN_CONNECTOR_DIAMETER}
+              max={MAX_CONNECTOR_DIAMETER}
+              step={0.5}
+              workspace={workspace}
+              length
+              disabled={busy}
+              onChange={(value) => onConnectorsChange({ diameter: value })}
+            />
+            <EdgeModifierSlider
+              label={t("split.connectorDepth")}
+              value={connectors.depth}
+              min={MIN_CONNECTOR_DEPTH}
+              max={MAX_CONNECTOR_DEPTH}
+              step={0.5}
+              workspace={workspace}
+              length
+              disabled={busy}
+              onChange={(value) => onConnectorsChange({ depth: value })}
+            />
+            {connectors.kind === "dowels" ? (
+              // For a printer whose bed moves, where the standing dowels wobble loose (breakawayBase.ts).
+              <label className="edge-modifier-check" title={t("split.dowelBaseHint")}>
+                <input type="checkbox" checked={connectors.dowelBase} disabled={busy} onChange={(event) => onConnectorsChange({ dowelBase: event.currentTarget.checked })} />
+                <span>{t("split.dowelBase")}</span>
+              </label>
+            ) : null}
+          </>)}
           <EdgeModifierSlider
-            label={t("split.dovetailTurn")}
-            value={connectors.dovetailTurn}
-            min={-MAX_DOVETAIL_TURN}
-            max={MAX_DOVETAIL_TURN}
-            step={1}
-            unit="°"
-            workspace={workspace}
-            disabled={busy}
-            onChange={(value) => onConnectorsChange({ dovetailTurn: value })}
-          />
-        </>) : (<>
-          <EdgeModifierSlider
-            label={t("split.connectorDiameter")}
-            value={connectors.diameter}
-            min={MIN_CONNECTOR_DIAMETER}
-            max={MAX_CONNECTOR_DIAMETER}
-            step={0.5}
+            label={t("split.connectorClearance")}
+            value={connectors.clearance}
+            min={0}
+            max={MAX_CONNECTOR_CLEARANCE}
+            step={0.05}
             workspace={workspace}
             length
             disabled={busy}
-            onChange={(value) => onConnectorsChange({ diameter: value })}
+            onChange={(value) => onConnectorsChange({ clearance: value })}
           />
-          <EdgeModifierSlider
-            label={t("split.connectorDepth")}
-            value={connectors.depth}
-            min={MIN_CONNECTOR_DEPTH}
-            max={MAX_CONNECTOR_DEPTH}
-            step={0.5}
-            workspace={workspace}
-            length
-            disabled={busy}
-            onChange={(value) => onConnectorsChange({ depth: value })}
-          />
-          {connectors.kind === "dowels" ? (
-            // For a printer whose bed moves, where the standing dowels wobble loose (breakawayBase.ts).
-            <label className="edge-modifier-check" title={t("split.dowelBaseHint")}>
-              <input type="checkbox" checked={connectors.dowelBase} disabled={busy} onChange={(event) => onConnectorsChange({ dowelBase: event.currentTarget.checked })} />
-              <span>{t("split.dowelBase")}</span>
-            </label>
-          ) : null}
+          {fromPrinterPlay("split.connectorClearance", connectors.clearance, printerPlay) ? <span className="shell-openings-summary">{t("printerPlay.fromFitTest")}</span> : null}
+          <div className="split-connector-summary" role="status">
+            {splitConnectorSummary(connectorPreview, connectors.kind).map((line) => <span key={line}>{line}</span>)}
+          </div>
         </>)}
-        <EdgeModifierSlider
-          label={t("split.connectorClearance")}
-          value={connectors.clearance}
-          min={0}
-          max={MAX_CONNECTOR_CLEARANCE}
-          step={0.05}
-          workspace={workspace}
-          length
-          disabled={busy}
-          onChange={(value) => onConnectorsChange({ clearance: value })}
+      </ToolSection>}
+
+
+      {error ? <div className="split-panel-error" role="alert">{error}</div> : busy || max - min <= 0.0001 ? (
+        <ToolStatus
+          state={busy ? "working" : "needed"}
+          text={busy ? t(mode === "stretch" ? "split.stretchApplying" : "split.applying") : t("split.error.movePlane")}
         />
-        {fromPrinterPlay("split.connectorClearance", connectors.clearance, printerPlay) ? <span className="shell-openings-summary">{t("printerPlay.fromFitTest")}</span> : null}
-        <div className="split-connector-summary" role="status">
-          {splitConnectorSummary(connectorPreview, connectors.kind).map((line) => <span key={line}>{line}</span>)}
-        </div>
-      </>)}
-      </>)}
+      ) : null}
 
-      <p className="split-panel-help">{t("split.help")}</p>
-      {error ? <div className="split-panel-error" role="alert">{error}</div> : null}
-
-      <div className="split-panel-footer">
-        <button type="button" className="secondary" disabled={busy} onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={busy || max - min <= 0.0001 || (mode === "stretch" && Math.abs(stretch) < 0.001)} onClick={onApply}>
-          {busy ? <LoaderCircle className="split-panel-spinner" size={17} /> : <Check size={17} />}
-          {mode === "stretch" ? (busy ? t("split.stretchApplying") : t("split.stretchApply")) : busy ? t("split.applying") : t("split.apply")}
-        </button>
+      <div className="split-panel-footer edge-modifier-footer">
+        <ToolCancel disabled={busy} onClick={onCancel} />
+        <ToolApply
+          label={t(mode === "stretch" ? "split.stretchApply" : "split.apply")}
+          busy={busy}
+          busyLabel={t(mode === "stretch" ? "split.stretchApplying" : "split.applying")}
+          disabled={busy || max - min <= 0.0001 || (mode === "stretch" && Math.abs(stretch) < 0.001)}
+          onClick={onApply}
+        />
       </div>
       </>)}
     </MovableToolPanel>

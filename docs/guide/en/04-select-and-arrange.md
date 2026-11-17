@@ -21,8 +21,8 @@ With many parts it is easy to lose track in the view. The object list ({{ui:edit
 
 ![The object list: the group "Group" with two parts and a sphere beside it. A folder icon opens the group.](shot:object-list)
 
-- A click on an entry selects the shape, including parts inside a group. With [[Shift]] held you add more entries or take them away again, just as in the view. The arrows fold groups open and shut.
-- The label shows whether a part is {{ui:outliner.solid}} or {{ui:outliner.hole}}.
+- A click on an entry selects the shape, including parts inside a group. As in a file manager, [[Ctrl]] ([[Cmd]] on a Mac) adds an entry or takes it away again, and [[Shift]] selects every entry from the one clicked last to this one, in the order the list shows; [[Ctrl]]+[[Shift]] adds them to what is selected. In the view, [[Shift]] adds and takes away instead. The arrows fold groups open and shut.
+- The letter after the name says whether a part is {{ui:outliner.solid}} or {{ui:outliner.hole}}: it is the first letter of the word, and the word shows when you hold the mouse over it.
 - Under the name stands what kind of shape it is. A body that is no longer a plain shape (rounded, hollowed or imported) says {{ui:shape.exactBody}} when the STEP export writes it exactly, and {{ui:shape.mesh}} when it is only triangles and goes as STL. A taper, lean or twist set after rounding or hollowing a body bends only its mesh, so it then says {{ui:shape.mesh}}.
 - Padlock and eye lock and hide single parts.
 - {{ui:outliner.rename}} gives a part a name of its own; the pencil beside the name at the top of the settings does the same for the selected shape. Sensible names help enormously in larger designs.
@@ -32,7 +32,7 @@ With many parts it is easy to lose track in the view. The object list ({{ui:edit
 - The search field finds shapes by name and by kind, so also "cylinder" or "hole". It also looks inside groups, however deeply nested: a group holding a match stays in the list and folds open to show the matching parts and the groups that lead to them. A group found by its own name shows all its parts when you open it.
 - The arrow on the far left of the title bar folds the list down to its title bar and back.
 
-The list sits docked just right of the view cube. Drag it by its title bar to put it anywhere on the workplane; it passes underneath the view cube and the view bar. Drop it back beside the view cube, or double-click the title bar, and it docks again. Where it was and whether it was folded are remembered in this browser.
+The list sits docked just right of the view cube. Drag it by its title bar to put it anywhere on the workplane; it passes underneath the view cube and the view bar. Drop it back beside the view cube, or double-click the title bar, and it docks again. Where it was and whether it was folded are remembered in this browser. To make the list wider or narrower, drag its lower right corner, from 240 to 600 pixels; the width is remembered in this browser as well.
 
 ## Typing a position
 
@@ -45,6 +45,8 @@ You can drag a shape past the edge of the plate and leave it there, about one pl
 ## Snapping while moving
 
 When you drag a shape across the workplane, it snaps to other shapes: its left, right, front or back edge or its centre lands exactly on an edge or centre of another shape. A pink guide line shows what it is holding on to. That way two parts sit flush side by side or centred one behind the other without typing numbers. It works with the grid switched off, too. The centre of the workplane counts too: the pink lines show when the shape sits in the middle of the plate along X, along Y or both.
+
+Resizing snaps too: when you drag a side handle, that side stops at the edges and centres of other shapes and at the wall it runs into, the inside wall of a box, a hollowed body or an imported case as well, and the pink line shows where. That size is kept exactly, off the grid. So a part fills a case from wall to wall: put it against one wall and drag its other side to the opposite one. With [[Alt]] the shape grows from its middle and the dragged side snaps the same way; with [[Shift]] it keeps its proportions and does not snap. This works on the flat workplane, for shapes standing upright with their sides along X and Y, and {{ui:workspace.objectSnap}} switches it off together with snapping while moving.
 
 Hold [[Shift]] while dragging to keep the move on one axis: the shape follows whichever direction, X or Y, you have dragged further in, and leaves the other alone. Best press [[Shift]] once you are already dragging; on a shape that is not selected yet, a click with [[Shift]] only adds it to the selection.
 
@@ -76,7 +78,7 @@ If a board (a base the others stand on, such as a flat box, not an SBC board) is
 
 Without a board, hold [[Shift]] and click an empty spot of the plate first: the plate is then the fixed shape, equal gaps spread the shapes over the whole plate with the same gap to its edges, and the other dots line them up on its edges or its middle. Another click with [[Shift]] on the empty plate lets it go. A click on empty space without [[Shift]] ends Align, as [[L]] and [[Esc]] do.
 
-Hold [[Alt]] and click the dot to type the gap yourself, say 5 mm: the shapes line up that far apart, starting at the first shape or at the one you clicked first; on a board the row comes to its middle. A locked shape stays where it is, so one between the outer shapes stops the equal gaps.
+Hold [[Alt]] and click the dot to type the gap yourself, say 5 mm: the shapes line up that far apart, starting at the first shape or at the one you clicked first; on a board the row comes to its middle. A locked shape stays where it is, so one between the outer shapes stops the equal gaps. On a tablet, which has no Alt key, the switch {{ui:align.sizeSwitch}} beside the dots does the same: switch it on and the dots stay squares and the gap dot opens its field, until you switch it off.
 
 ## Mirroring
 
@@ -163,6 +165,8 @@ The round wall of a cylinder, a tube or a bore takes holes too: a pen holder, a 
 
 An AI can do the same through the MCP bridge with `layerling_perforate_face` (see the chapter [AI with MCP](chapter:ai-with-mcp)).
 
+On a plate or lid with notches in its sides, {{ui:holePattern.arrangement.perimeter}} spreads the holes unevenly. For that the {{ui:holePattern.title}} has a second tab next to {{ui:holePattern.mode.pattern}}, {{ui:holePattern.mode.mounting}}: it puts the holes in the corners of the smallest rectangle round the picked face, the same distance from its sides, even on a turned or notched plate. The {{ui:holePattern.mounting.distance}} is measured to the hole's edge, a screw head included, or with {{ui:holePattern.mounting.toCenter}} to its middle. With the {{ui:holePattern.mounting.count}}, four go in the corners and the rest in pairs, evenly spaced along the sides, for example for a watertight lid. On a round face, such as the lid of a round box, they go evenly round a circle, three or more. Hole type and sizes are the same as for the pattern: plain, counterbore or countersink, through or to a depth. They are made as ordinary hole shapes grouped with the body, so the group's {{ui:inspector.groupHoleDiameter}} works on them too.
+
 ## Pushing a face out or in
 
 For a thicker wall, a raised pad on a face or a pocket cut into it, the {{ui:faceTool.title}} tool works on one flat face. It works on an imported STL too, where there is no sketch to change. Select exactly one body and click {{ui:faceTool.title}} in the {{ui:editor.section.mirrorPattern}} group of the ribbon, next to the hole pattern. You can also right-click the body, or find it with [[Ctrl]]+[[K]].
@@ -191,6 +195,8 @@ To make one or several parts larger or smaller by the same share, say all the pa
 
 Under {{ui:scalePercent.percent}} you type the new size as a percentage of the current one: 120 % is a fifth larger, 50 % half the size. Width, depth and height change alike, so the proportions stay. The bottom stays where it is, so nothing sinks into the plate.
 
+For model making, choose {{ui:scalePercent.by.scale}} instead of {{ui:scalePercent.by.percent}} at the top. {{ui:scalePercent.scalePresets}} offers the usual gauges from Z (1:220) to 16mm (1:19.05), and in {{ui:scalePercent.ratio}} you type any other scale, such as 35 for 1:35. If the model is built at the original's real size, leave {{ui:scalePercent.original.fullSize}} chosen: 1:87 makes it 87 times smaller. If you built it at some other size, choose {{ui:scalePercent.original.realSize}}, pick {{ui:scalePercent.axis.height}} or {{ui:scalePercent.axis.length}} (the longest side across the plate) and type in {{ui:scalePercent.realSize}} how big the original really is, in metres (in feet with imperial units). A tree that is 16 m tall in real life then becomes 16,000 mm / 87 = 184 mm tall in H0, whatever size it had before. The new size shows under the fields before you press {{ui:scalePercent.apply}}. The scale stays set while the editor is open.
+
 With several parts you choose how they grow:
 
 - **{{ui:scalePercent.mode.together}}:** The parts grow around their common centre, and the gaps grow with them. The whole becomes larger as if it were one part.
@@ -211,3 +217,5 @@ Two things you can take along from an earlier state. {{ui:historyView.createProj
 You can also bring single objects back into the design. Click an object in the state shown - [[Shift]]+click adds more or takes one off again, a click on empty space picks nothing - and choose {{ui:historyView.bringBack}}. The view closes and a copy of each object lands in the current design exactly as it was in that state and at the spot it had there, selected, next to whatever the design holds now; nothing else changes. It is one step, so undo takes it back. Use it for a version of a part you changed since, or for one you deleted. A group comes back whole; notes and reference points on an object stay behind. Its name carries the time of that state, such as “Box (12:32)”, so it is easy to tell from the version the design has now. To bring back a part from inside a group, select the group and choose {{ui:historyView.openGroup}} or press [[E]], as in the design: its parts are laid out where editing the group would put them, ready to pick, and the bar says which group you are in. {{ui:historyView.backOut}} closes it again. This is only to look - the group, the design and the history stay as they are.
 
 {{ui:historyView.delete}} sits alone at the bottom left of the bar. After a question it removes every earlier step for good: the design keeps the state it has now (not the one shown), Undo has nothing to go back to and a file saved afterwards carries no history. Use it to share a design without its past, or to start the undo steps over. It cannot be undone; to share a file without touching your own design, choose {{ui:export.historyNone}} when exporting instead.
+
+To make a large design lighter without losing its whole history, delete single steps. With the list open, each step shows on the right about how much room deleting it would free, counted as the design is stored: a mesh that several steps share counts for none of them alone, and steps that free less than 10 KB show nothing. A turned body is stored as a new mesh after every turn, so those steps are usually the large ones. The bin beside a step deletes that step alone after a question: the design stays as it is, and Undo from the step after it goes straight to the one before. The step the design stands at cannot be deleted. Above the list stands how much the whole history takes, and {{ui:historyView.deleteLargest}} picks every step that frees 1 MB or more on its own and asks before deleting them together. When a design is too large for the browser to store with its whole history, the note that says so has a {{ui:notice.projectHistoryTrimmedOpen}} button that opens this list.

@@ -100,7 +100,11 @@ describe("the hinge's leaves in its settings", () => {
     expect(select(panel, "fingers").value).toBe("fingers");
     expect(row(panel, "Screw holes per leaf")).toBeUndefined();
     expect(row(panel, "Hole diameter")).toBeUndefined();
-    expect(panel.textContent).toContain("join them to your model");
+    // The hint shows its first sentence; how the fingers are joined is behind its More.
+    const hint = [...panel.querySelectorAll<HTMLElement>(".tool-hint")].find((entry) => entry.textContent?.startsWith("Each knuckle carries its own finger"))!;
+    expect(hint.textContent).not.toContain("join them to your model");
+    act(() => hint.querySelector<HTMLButtonElement>(".tool-hint-more")!.click());
+    expect(hint.textContent).toContain("join them to your model");
   });
 
   it("offers nut pockets with the nut's width, and says how deep the pocket goes", () => {
@@ -122,6 +126,8 @@ describe("the hinge's leaves in its settings", () => {
     expect(patches).toEqual([{ hingeLeafStyle: "raised" }, { hingeAngle: -90 }]);
     const raised = mount({ hingeLeafStyle: "raised" });
     expect(select(raised, "raised").value).toBe("raised");
+    // In this build the hint shows its first sentence; the supports are behind its More.
+    act(() => raised.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(raised.textContent).toContain("Print it with supports under the raised leaf.");
     expect(field(mount({ hingeAngle: -500 }), "Opening angle").value).toBe("-180");
   });
@@ -149,5 +155,22 @@ describe("the hinge's leaves in its settings", () => {
     expect(row(liftOff, "Knuckle width (max)")).toBeUndefined();
     expect(row(liftOff, "Pin diameter")).toBeTruthy();
     expect(liftOff.textContent).toContain("the upper one is a sleeve that lifts off it");
+  });
+
+  it("has a snap-on style with a grip that says how wide the opening is, and the pin's own diameter (#1520)", () => {
+    const patches: Partial<WorkplaneShape>[] = [];
+    const panel = mount({}, (patch) => patches.push(patch));
+    expect([...select(panel, "snap").options].map((option) => option.value)).toEqual(["pin", "pinless", "cone", "liftOff", "snap"]);
+    expect(row(panel, "Snap grip")).toBeUndefined();
+    choose(select(panel, "snap"), "snap");
+    const snap = mount({ hingeStyle: "snap" }, (patch) => patches.push(patch));
+    expect(select(snap, "snap").value).toBe("snap");
+    expect(snap.textContent).toContain("the other's are clips open on top");
+    expect(row(snap, "Knuckles")).toBeTruthy();
+    expect(row(snap, "Pin diameter")).toBeTruthy();
+    expect(field(snap, "Snap grip").value).toBe("0.30");
+    expect(row(snap, "Snap grip")!.nextElementSibling?.textContent).toBe("How much narrower the clips' opening is than the pin. Now 2.7 mm for a 3 mm pin. More holds tighter but takes more force to click in.");
+    type(field(snap, "Snap grip"), "0.5");
+    expect(patches).toEqual([{ hingeStyle: "snap", hingePinless: undefined }, { hingeSnapGrip: 0.5 }]);
   });
 });

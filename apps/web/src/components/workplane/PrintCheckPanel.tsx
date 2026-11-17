@@ -1,14 +1,17 @@
 "use client";
 
-import { AlertTriangle, CircleCheck, CircleSlash, Eye, LoaderCircle, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, CircleCheck, CircleSlash, Download, Eye, LoaderCircle, RefreshCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { formatClearanceLength } from "@/components/workplane/ClearancePanel";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import type { ClearanceBox } from "@/lib/clearanceCheck";
+import { COMMAND_SHORTCUTS } from "@/lib/commandKeywords";
 import { formatEstimateNumber } from "@/lib/editorBooleans";
 import { formatTriangleCount } from "@/lib/editorMeshCore";
-import { t } from "@/lib/i18n";
+import { getLanguage, t } from "@/lib/i18n";
+import { LANGUAGE_INFO } from "@/lib/languages";
 import { overhangFiguresText } from "@/lib/overhangFigures";
 import {
   PRINT_CHECK_CONTACT_MM2_PER_MM,
@@ -232,6 +235,15 @@ function NozzleChoice({ nozzle, disabled, workspace, onChange }: { nozzle: numbe
  * red on the bodies all the while, Show brings the camera there; the parts in the air, on too little of the plate or
  * with an open mesh are selected; the overhangs switch "Show overhangs" on.
  */
+/** A shortcut as the reader's keyboard names it: Strg+E in German, ⌘E on a Mac. */
+function localShortcut(shortcut: string) {
+  if (typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
+    return shortcut.replace(/Ctrl\+/g, "⌘").replace(/Shift\+/g, "⇧");
+  }
+  const names = LANGUAGE_INFO[getLanguage()]?.keyNames ?? {};
+  return shortcut.split("+").map((key) => names[key] ?? key).join("+");
+}
+
 export function PrintCheckPanel({
   scope,
   settings,
@@ -245,6 +257,7 @@ export function PrintCheckPanel({
   onChange,
   onCheck,
   onShow,
+  onExport,
   onClose,
 }: {
   /** What is checked, in words: the selection or every visible body. */
@@ -262,6 +275,8 @@ export function PrintCheckPanel({
   onChange: (patch: Partial<PrintCheckSettings>) => void;
   onCheck: () => void;
   onShow: (line: PrintCheckLine) => void;
+  /** Closes the check and opens the export window. */
+  onExport: () => void;
   onClose: () => void;
 }) {
   useLanguage();
@@ -270,7 +285,8 @@ export function PrintCheckPanel({
   const warnings = result ? printCheckWarnings(result) : 0;
   const summary = !result ? null : warnings === 0 ? t("printCheck.allClear") : t("printCheck.warnings", { count: warnings, total: PRINT_CHECK_LINES.length });
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel clearance-panel print-check-panel" ariaLabel={title}>
+    // Docked alone in the right column, as every tool of this build: it checks no one object, so the object's tab stays away.
+    <MovableToolPanel className="edge-modifier-panel shell-panel clearance-panel print-check-panel" ariaLabel={title} dock="alone" onClose={onClose}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -278,27 +294,40 @@ export function PrintCheckPanel({
           <span>{t("printCheck.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="printCheck" />
           <button type="button" aria-label={t("printCheck.close")} onClick={onClose}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{scope}</strong>
-        <span>{t("printCheck.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={scope} />
+        <ToolHelp>{t("printCheck.help")}</ToolHelp>
+      </ToolSection>
 
-      <NozzleChoice nozzle={settings.nozzle} disabled={running} workspace={workspace} onChange={(nozzle) => onChange({ nozzle })} />
+      <ToolSection title={t("toolSidebar.settings")}>
+        {/* Someone looking for the way to the printer lands here by the printer icon (Discussion #1715): say that
+            this only checks, and open the export from here. */}
+        <div className="print-check-export">
+          <ToolHint text={t("printCheck.exportHint", { shortcut: localShortcut(COMMAND_SHORTCUTS.export) })} />
+          <button type="button" className="print-check-show" onClick={onExport}>
+            <Download size={14} aria-hidden="true" />
+            {t("printCheck.openExport")}
+          </button>
+        </div>
+        <NozzleChoice nozzle={settings.nozzle} disabled={running} workspace={workspace} onChange={(nozzle) => onChange({ nozzle })} />
+      </ToolSection>
 
+      <ToolSection title={t("printCheck.listLabel")}>
       {error ? <p className="edge-modifier-error" role="alert">{error}</p> : null}
 
       <div className="clearance-status" role="status" aria-live="polite">
         {running ? (
-          <span><LoaderCircle className="edge-modifier-spinner" size={16} aria-hidden="true" />{t("printCheck.running")}</span>
+          <ToolStatus state="working" text={t("printCheck.running")} />
         ) : stale ? (
           <button type="button" className="clearance-stale" onClick={onCheck}><RefreshCw size={15} aria-hidden="true" />{t("printCheck.stale")}</button>
         ) : summary ? (
-          <span>{summary}</span>
+          <ToolStatus state={warnings > 0 ? "needed" : "ready"} text={summary} />
         ) : null}
       </div>
 
@@ -346,13 +375,11 @@ export function PrintCheckPanel({
           {result.joined ? "" : ` ${t("printCheck.notJoined")}`}
         </p>
       ) : null}
+      </ToolSection>
 
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onClose}>{t("printCheck.close")}</button>
-        <button type="button" className="primary" disabled={running} onClick={onCheck}>
-          <RefreshCw size={17} aria-hidden="true" />
-          {result ? t("printCheck.checkAgain") : t("printCheck.check")}
-        </button>
+        <ToolCancel label={t("printCheck.close")} onClick={onClose} />
+        <ToolApply label={result ? t("printCheck.checkAgain") : t("printCheck.check")} busy={running} busyLabel={t("printCheck.running")} disabled={running} onClick={onCheck} />
       </div>
       </>)}
     </MovableToolPanel>

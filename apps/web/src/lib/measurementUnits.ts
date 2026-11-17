@@ -1,4 +1,4 @@
-import { t, type MessageKey } from "@/lib/i18n";
+import { numberLocale, t, type MessageKey } from "@/lib/i18n";
 import type { MeasurementAccuracy, WorkplaneWorkspaceSettings } from "@/types/layerling";
 
 const MILLIMETERS_PER_INCH = 25.4;
@@ -216,13 +216,29 @@ export function resolveMeasurementInput(raw: string | number, current: number) {
   return current * (percent / 100);
 }
 
+const decimalMarks = new Map<string, string>();
+
+/**
+ * A number as the reader's language writes it: 0,2 in German, 0.2 in English. Only what is shown changes; a field
+ * takes either mark when typed in (parseMeasurementInput).
+ */
+export function localDecimals(text: string) {
+  const locale = numberLocale();
+  let mark = decimalMarks.get(locale);
+  if (mark === undefined) {
+    mark = (1.5).toLocaleString(locale).charAt(1);
+    decimalMarks.set(locale, mark);
+  }
+  return mark === "." ? text : text.replace(".", mark);
+}
+
 export function formatMeasurementNumber(value: number, accuracy: MeasurementAccuracy, _step?: number) {
   let decimals = accuracy;
   while (decimals < 6 && value !== 0 && Math.abs(value) < 0.5 * 10 ** -decimals) {
     decimals += 1;
   }
   const zeroThreshold = 0.5 * 10 ** -decimals;
-  return (Math.abs(value) < zeroThreshold ? 0 : value).toFixed(decimals);
+  return localDecimals((Math.abs(value) < zeroThreshold ? 0 : value).toFixed(decimals));
 }
 
 /**
@@ -274,7 +290,7 @@ export function formatLengthMm(value: number, accuracy: number) {
   const shown = millimetersToDisplay(value, lengthUnit);
   const normalized = Math.abs(shown) < zeroThreshold ? 0 : shown;
   if (lengthDisplayUnit(lengthUnit).label === "in" && showsInchFractions(lengthUnit)) return formatFractionalInches(normalized);
-  return normalized.toFixed(accuracy);
+  return localDecimals(normalized.toFixed(accuracy));
 }
 
 /** What the user types is in the workspace unit; the result is millimetres. */

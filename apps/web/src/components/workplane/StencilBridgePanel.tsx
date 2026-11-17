@@ -1,8 +1,9 @@
 "use client";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, X } from "lucide-react";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolApply, ToolCancel, ToolSection, ToolSelection } from "@/components/workplane/ToolPanelParts";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
@@ -65,7 +66,7 @@ export function StencilBridgePanel({
   const ready = Boolean(plan?.ok && plan.parts > 0 && bridgeCount > 0);
 
   return (
-    <MovableToolPanel className="edge-modifier-panel stencil-bridge-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel stencil-bridge-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -73,16 +74,17 @@ export function StencilBridgePanel({
           <span>{t("stencilBridges.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="stencilBridges" />
           <button type="button" aria-label={t("stencilBridges.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{status}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready confirm text={targetName} detail={status} />
+      </ToolSection>
 
+      <ToolSection title={t("toolSidebar.settings")}>
       <EdgeModifierSlider
         label={t("stencilBridges.width")}
         value={settings.width}
@@ -131,15 +133,11 @@ export function StencilBridgePanel({
           ))}
         </div>
       </div>
+      </ToolSection>
 
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>
-          {t("common.cancel")}
-        </button>
-        <button type="button" className="primary" disabled={!ready || busy} onClick={onApply}>
-          <Check size={17} />
-          {t("stencilBridges.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("stencilBridges.apply")} busy={busy} disabled={!ready || busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

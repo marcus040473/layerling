@@ -1,5 +1,6 @@
 import { canonicalizeShape } from "@/lib/workplaneShapes";
 import { regularPolygonAspect } from "@/lib/regularPolygonFootprint";
+import { normalizePolygonCornerRadius } from "@/lib/roundedPolygonGeometry";
 import { normalizePyramidTop } from "@/lib/pyramidGeometry";
 import { createLocalId } from "@/lib/localIds";
 import { DEFAULT_CURVED_CONE_BEND, DEFAULT_CURVED_CONE_TOP, normalizeCurvedConeBend, normalizeCurvedConeTop } from "@/lib/curvedCone";
@@ -20,6 +21,7 @@ import {
   MAX_GEAR_BACKLASH,
   gearSizeForModule,
   gearToothProfile,
+  gearTypeIsModular,
   gearUsesModule,
   involuteGearDiameter,
   normalizeGearCenterHoleSize,
@@ -31,6 +33,8 @@ import {
   normalizeGearToothSize,
   normalizeGearToothWidth,
   normalizeGearType,
+  normalizeRingRackHelixAngle,
+  normalizeBevelHelixAngle,
   rackToothHeight,
 } from "@/lib/gearGeometry";
 import {
@@ -106,6 +110,7 @@ import {
   normalizeCrescentThickness,
   normalizeCrescentTipFillet,
 } from "@/lib/crescentGeometry";
+import { DEFAULT_SECTOR_ANGLE, DEFAULT_SECTOR_DIAMETER, DEFAULT_SECTOR_END_RADIUS, DEFAULT_SECTOR_HEIGHT, DEFAULT_SECTOR_INNER_DIAMETER, normalizeSectorAngle, normalizeSectorEndRadius, normalizeSectorInnerDiameter } from "@/lib/sectorGeometry";
 import {
   DEFAULT_SLOT_WIDTH,
   DEFAULT_SLOT_DEPTH,
@@ -151,6 +156,14 @@ import {
   normalizeDovetailNeckWidth,
 } from "@/lib/dovetailGeometry";
 import {
+  DEFAULT_BOX_GENERATOR_DEPTH,
+  DEFAULT_BOX_GENERATOR_HEIGHT,
+  DEFAULT_BOX_GENERATOR_WIDTH,
+  boxGeneratorFieldsOf,
+  normalizeBoxGenerator,
+  normalizeBoxGeneratorFields,
+} from "@/lib/boxGeneratorGeometry";
+import {
   DEFAULT_HINGE_CLEARANCE,
   DEFAULT_HINGE_DEPTH,
   DEFAULT_HINGE_HEIGHT,
@@ -165,8 +178,9 @@ import {
   normalizeHingePinDiameter,
   normalizeHingeScrewDiameter,
   normalizeHingeScrewHoles,
+  normalizeHingeSnapGrip,
 } from "@/lib/hingeGeometry";
-import { DEFAULT_GRIDFINITY_LIP, DEFAULT_GRIDFINITY_MAGNETS, DEFAULT_GRIDFINITY_TRAY_SIZE, DEFAULT_GRIDFINITY_TYPE, DEFAULT_GRIDFINITY_UNITS, gridfinityFootprintPatch, gridfinityPadding, gridfinitySize, normalizeGridfinityType } from "@/lib/gridfinityGeometry";
+import { DEFAULT_GRIDFINITY_LIP, DEFAULT_GRIDFINITY_MAGNETS, DEFAULT_GRIDFINITY_TRAY_SIZE, DEFAULT_GRIDFINITY_TYPE, DEFAULT_GRIDFINITY_UNITS, gridfinityFootprintPatch, gridfinityGrowth, gridfinityPadding, gridfinitySize, normalizeGridfinityType } from "@/lib/gridfinityGeometry";
 import {
   DEFAULT_KNURL_ANGLE,
   DEFAULT_KNURL_CHAMFER,
@@ -201,7 +215,6 @@ import {
   DEFAULT_ROUNDED_BOX_QUALITY,
   normalizeCornerFillet,
   normalizeEndFillets,
-  normalizeTopBottomFillet,
   normalizeRoundedBoxQuality,
 } from "@/lib/roundedBoxGeometry";
 import {
@@ -244,6 +257,7 @@ const SHAPE_LABEL_KEYS: Record<string, MessageKey> = {
   star: "shape.star",
   heart: "shape.heart",
   crescent: "shape.crescent",
+  sector: "shape.sector",
   gear: "shape.gear",
   hirth: "shape.hirth",
   pulley: "shape.pulley",
@@ -251,6 +265,7 @@ const SHAPE_LABEL_KEYS: Record<string, MessageKey> = {
   hinge: "shape.hinge",
   knurl: "shape.knurl",
   dovetail: "shape.dovetail",
+  boxGenerator: "shape.boxGenerator",
   screwBoss: "shape.screwBoss",
   snapFit: "shape.snapFit",
   rib: "shape.rib",
@@ -287,6 +302,7 @@ export const toolbarShapeAssets: ToolbarShapeAsset[] = [
   { id: "paraboloid", name: "Paraboloid", src: "assets/editor/shape-icons-gray/paraboloid.png", menuIcon: "assets/editor/shape-icons-gray/paraboloid.png", kind: "paraboloid", color: "#8fdc5a" },
   { id: "curvedCone", name: "Curved Cone", src: "assets/editor/shape-icons-gray/curvedCone.png", menuIcon: "assets/editor/shape-icons-gray/curvedCone.png", kind: "curvedCone", color: "#9b59b6" },
   { id: "torus", name: "Torus", src: "assets/editor/shape-icons-gray/torus.png", menuIcon: "assets/editor/shape-icons-gray/torus.png", kind: "torus", color: "#0098c7" },
+  { id: "sector", name: "Sector", src: "assets/editor/shape-icons-gray/sector.png", menuIcon: "assets/editor/shape-icons-gray/sector.png", kind: "sector", color: "#2f9e6e" },
   { id: "loft", name: "Loft", src: "assets/editor/shape-icons-gray/loft.png", menuIcon: "assets/editor/shape-icons-gray/loft.png", kind: "loft", color: "#c0703a" },
   { id: "vase", name: "Vase", src: "assets/editor/shape-icons-gray/vase.png", menuIcon: "assets/editor/shape-icons-gray/vase.png", kind: "vase", color: "#2e8b8b" },
   { id: "tube", name: "Tube", src: "assets/editor/shape-icons-gray/tube.png", menuIcon: "assets/editor/shape-icons-gray/tube.png", kind: "tube", color: "#ce7013" },
@@ -307,6 +323,7 @@ export const toolbarShapeAssets: ToolbarShapeAsset[] = [
   { id: "knurl", name: "Knurl", src: "assets/editor/shape-icons-gray/knurl.png", menuIcon: "assets/editor/shape-icons-gray/knurl.png", kind: "knurl", color: "#7a8a99" },
   { id: "hinge", name: "Hinge", src: "assets/editor/shape-icons-gray/hinge.png", menuIcon: "assets/editor/shape-icons-gray/hinge.png", kind: "hinge", color: "#3f8f6b" },
   { id: "dovetail", name: "Dovetail", src: "assets/editor/shape-icons-gray/dovetail.png", menuIcon: "assets/editor/shape-icons-gray/dovetail.png", kind: "dovetail", color: "#a0522d" },
+  { id: "boxGenerator", name: "Box generator", src: "assets/editor/shape-icons-gray/boxGenerator.png", menuIcon: "assets/editor/shape-icons-gray/boxGenerator.png", kind: "boxGenerator", color: "#4f7cac" },
   { id: "screwBoss", name: "Screw boss", src: "assets/editor/shape-icons-gray/screwBoss.png", menuIcon: "assets/editor/shape-icons-gray/screwBoss.png", kind: "screwBoss", color: "#8c7b6b" },
   { id: "snapFit", name: "Snap-fit", src: "assets/editor/shape-icons-gray/snapFit.png", menuIcon: "assets/editor/shape-icons-gray/snapFit.png", kind: "snapFit", color: "#4f8f7a" },
   { id: "rib", name: "Rib", src: "assets/editor/shape-icons-gray/rib.png", menuIcon: "assets/editor/shape-icons-gray/rib.png", kind: "rib", color: "#7b8794" },
@@ -459,6 +476,9 @@ export function shapeAssetDefaultDimensions(kind: ShapeKind) {
   if (kind === "heart") {
     return { width: DEFAULT_HEART_WIDTH, depth: DEFAULT_HEART_DEPTH, height: DEFAULT_HEART_HEIGHT };
   }
+  if (kind === "sector") {
+    return { width: DEFAULT_SECTOR_DIAMETER, depth: DEFAULT_SECTOR_DIAMETER, height: DEFAULT_SECTOR_HEIGHT };
+  }
   if (kind === "crescent") {
     return { width: DEFAULT_CRESCENT_WIDTH, depth: DEFAULT_CRESCENT_DEPTH, height: DEFAULT_CRESCENT_HEIGHT };
   }
@@ -483,6 +503,9 @@ export function shapeAssetDefaultDimensions(kind: ShapeKind) {
   if (kind === "port") {
     const preset = PORT_PRESETS[DEFAULT_PORT_PRESET];
     return { width: preset.width, depth: DEFAULT_PORT_DEPTH, height: preset.height };
+  }
+  if (kind === "boxGenerator") {
+    return { width: DEFAULT_BOX_GENERATOR_WIDTH, depth: DEFAULT_BOX_GENERATOR_DEPTH, height: DEFAULT_BOX_GENERATOR_HEIGHT };
   }
   if (kind === "dovetail") {
     return { width: DEFAULT_DOVETAIL_WIDTH, depth: DEFAULT_DOVETAIL_DEPTH, height: DEFAULT_DOVETAIL_HEIGHT };
@@ -596,6 +619,9 @@ export function shapeAssetSpecialDefaults(kind: ShapeKind, dimensions = shapeAss
       heartQuality: DEFAULT_HEART_QUALITY,
     };
   }
+  if (kind === "sector") {
+    return { sectorAngle: DEFAULT_SECTOR_ANGLE, sectorInnerDiameter: DEFAULT_SECTOR_INNER_DIAMETER, sectorEndRadius: DEFAULT_SECTOR_END_RADIUS };
+  }
   if (kind === "crescent") {
     return {
       crescentThickness: DEFAULT_CRESCENT_THICKNESS,
@@ -628,6 +654,30 @@ export function shapeAssetSpecialDefaults(kind: ShapeKind, dimensions = shapeAss
   }
   if (kind === "loft") {
     return loftFieldsFromMeasures(normalizeLoftMeasures(DEFAULT_LOFT));
+  }
+  if (kind === "boxGenerator") {
+    const box = normalizeBoxGenerator(dimensions);
+    return {
+      boxShape: box.boxShape,
+      boxSides: box.boxSides,
+      boxCornerRadius: box.boxCornerRadius,
+      boxWall: box.boxWall,
+      boxFloor: box.boxFloor,
+      boxColumns: box.boxColumns,
+      boxRows: box.boxRows,
+      boxDivider: box.boxDivider,
+      boxPart: box.boxPart,
+      boxLidStyle: box.boxLidStyle,
+      boxLidPlate: box.boxLidPlate,
+      boxFit: box.boxFit,
+      boxGridfinity: box.boxGridfinity,
+      boxGridfinityColumns: box.boxGridfinityColumns,
+      boxGridfinityRows: box.boxGridfinityRows,
+      boxGridfinityFloor: box.boxGridfinityFloor,
+      boxGridfinityPlate: box.boxGridfinityPlate,
+      boxStackable: box.boxStackable,
+      boxStackHeight: box.boxStackHeight,
+    };
   }
   if (kind === "dovetail") {
     return {
@@ -782,6 +832,8 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     gearRim: shape.gearRim,
     helixAngle: shape.helixAngle,
     bevelHelixAngle: shape.bevelHelixAngle,
+    ringRackHelixAngle: shape.ringRackHelixAngle,
+    ringRackHerringbone: shape.ringRackHerringbone,
     helixQuality: shape.helixQuality,
     gearProfile: shape.gearProfile,
     gearPressureAngle: shape.gearPressureAngle,
@@ -827,6 +879,9 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     crescentThickness: shape.crescentThickness,
     crescentTipFillet: shape.crescentTipFillet,
     crescentQuality: shape.crescentQuality,
+    sectorAngle: shape.sectorAngle,
+    sectorInnerDiameter: shape.sectorInnerDiameter,
+    sectorEndRadius: shape.sectorEndRadius,
     honeycombCellSize: shape.honeycombCellSize,
     honeycombWallThickness: shape.honeycombWallThickness,
     honeycombFrameWidth: shape.honeycombFrameWidth,
@@ -834,6 +889,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     hingeKnuckleWidth: shape.hingeKnuckleWidth,
     hingeConeSize: shape.hingeConeSize,
     hingeStyle: shape.hingeStyle,
+    hingeSnapGrip: shape.hingeSnapGrip,
     hingePinDiameter: shape.hingePinDiameter,
     hingeLeafThickness: shape.hingeLeafThickness,
     hingeClearance: shape.hingeClearance,
@@ -896,11 +952,19 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     gridfinityPaddingFront: shape.gridfinityPaddingFront,
     gridfinityPaddingLeft: shape.gridfinityPaddingLeft,
     gridfinityPaddingRight: shape.gridfinityPaddingRight,
+    gridfinityOverhangBack: shape.gridfinityOverhangBack,
+    gridfinityOverhangFront: shape.gridfinityOverhangFront,
+    gridfinityOverhangLeft: shape.gridfinityOverhangLeft,
+    gridfinityOverhangRight: shape.gridfinityOverhangRight,
+    gridfinityOverhangChamfer: shape.gridfinityOverhangChamfer,
+    gridfinityOverhangSolid: shape.gridfinityOverhangSolid,
+    gridfinityOverhangLipOnGrid: shape.gridfinityOverhangLipOnGrid,
     gridfinityCornerRadius: shape.gridfinityCornerRadius,
     gridfinityBinCornerRadius: shape.gridfinityBinCornerRadius,
     gridfinityCompartmentsX: shape.gridfinityCompartmentsX,
     gridfinityCompartmentsZ: shape.gridfinityCompartmentsZ,
     gridfinityDividerThickness: shape.gridfinityDividerThickness,
+    gridfinityDividerHeight: shape.gridfinityDividerHeight,
     gridfinityDividerPositionsX: shape.gridfinityDividerPositionsX,
     gridfinityDividerPositionsZ: shape.gridfinityDividerPositionsZ,
     gridfinityCompartmentLabels: shape.gridfinityCompartmentLabels,
@@ -915,6 +979,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     knurlChamfer: shape.knurlChamfer,
     dovetailNeckWidth: shape.dovetailNeckWidth,
     dovetailClearance: shape.dovetailClearance,
+    ...boxGeneratorFieldsOf(shape),
     loftBottomOutline: shape.loftBottomOutline,
     loftTopOutline: shape.loftTopOutline,
     loftBottomWidth: shape.loftBottomWidth,
@@ -942,6 +1007,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     drillPointAngle: shape.drillPointAngle,
     screwHoleSlot: shape.screwHoleSlot,
     screwHoleRecess: shape.screwHoleRecess,
+    screwHoleChamfer: shape.screwHoleChamfer,
     portProfile: shape.portProfile,
     portClearance: shape.portClearance,
     cornerFillet: shape.cornerFillet,
@@ -1083,8 +1149,16 @@ export function makeShapeFromAsset(
     gridfinityPaddingFront: customization.gridfinityPaddingFront,
     gridfinityPaddingLeft: customization.gridfinityPaddingLeft,
     gridfinityPaddingRight: customization.gridfinityPaddingRight,
+    gridfinityOverhangBack: customization.gridfinityOverhangBack,
+    gridfinityOverhangFront: customization.gridfinityOverhangFront,
+    gridfinityOverhangLeft: customization.gridfinityOverhangLeft,
+    gridfinityOverhangRight: customization.gridfinityOverhangRight,
+    gridfinityOverhangChamfer: customization.gridfinityOverhangChamfer,
+    gridfinityOverhangSolid: customization.gridfinityOverhangSolid,
+    gridfinityOverhangLipOnGrid: customization.gridfinityOverhangLipOnGrid,
   };
-  const gridfinityPaddingSize = gridfinityPadding(gridfinityPaddingFields);
+  // An overhung bin's overhang likewise (gridfinityGrowth).
+  const gridfinityPaddingSize = gridfinityGrowth(gridfinityPaddingFields);
   // A new tray (#837) has a tray's size, not the bin's.
   const gridfinityDefaults = normalizeGridfinityType(customization.gridfinityType) === "tray" ? DEFAULT_GRIDFINITY_TRAY_SIZE : defaults;
   const gridfinityFootprint = asset.kind === "gridfinity" ? gridfinityFootprintPatch({
@@ -1230,7 +1304,12 @@ export function makeShapeFromAsset(
     gearType,
     gearRim,
     helixAngle: asset.kind === "gear" ? normalizeGearHelixAngle(customization.helixAngle ?? DEFAULT_GEAR_HELIX_ANGLE) : undefined,
+    // Slanted teeth on a ring gear or a rack (Discussion #1627); straight ones keep no angle.
+    ringRackHelixAngle: asset.kind === "gear" && gearTypeIsModular(gearType) && normalizeRingRackHelixAngle(customization.ringRackHelixAngle) !== 0 ? normalizeRingRackHelixAngle(customization.ringRackHelixAngle) : undefined,
+    ringRackHerringbone: asset.kind === "gear" && gearTypeIsModular(gearType) && normalizeRingRackHelixAngle(customization.ringRackHelixAngle) !== 0 && customization.ringRackHerringbone === true ? true : undefined,
     helixQuality: asset.kind === "gear" ? normalizeGearHelixQuality(customization.helixQuality ?? DEFAULT_GEAR_HELIX_QUALITY) : undefined,
+    // A spiral bevel gear; a straight one keeps no angle, as the inspector leaves it.
+    bevelHelixAngle: asset.kind === "gear" && gearType === "bevel" && normalizeBevelHelixAngle(customization.bevelHelixAngle) !== 0 ? normalizeBevelHelixAngle(customization.bevelHelixAngle) : undefined,
     gearProfile,
     gearPressureAngle: gearProfile === "involute" ? normalizeGearPressureAngle(customization.gearPressureAngle) : undefined,
     gearBacklash: gearUsesModule(gearProfile) ? Math.max(0, Math.min(MAX_GEAR_BACKLASH, customization.gearBacklash ?? DEFAULT_GEAR_BACKLASH)) : undefined,
@@ -1267,6 +1346,9 @@ export function makeShapeFromAsset(
     crescentThickness: asset.kind === "crescent" ? normalizeCrescentThickness(customization.crescentThickness ?? DEFAULT_CRESCENT_THICKNESS, width) : undefined,
     crescentTipFillet: asset.kind === "crescent" ? normalizeCrescentTipFillet(customization.crescentTipFillet ?? DEFAULT_CRESCENT_TIP_FILLET) : undefined,
     crescentQuality: asset.kind === "crescent" ? normalizeCrescentQuality(customization.crescentQuality ?? DEFAULT_CRESCENT_QUALITY) : undefined,
+    sectorAngle: asset.kind === "sector" ? normalizeSectorAngle(customization.sectorAngle ?? DEFAULT_SECTOR_ANGLE) : undefined,
+    sectorInnerDiameter: asset.kind === "sector" ? normalizeSectorInnerDiameter(customization.sectorInnerDiameter ?? DEFAULT_SECTOR_INNER_DIAMETER, width) : undefined,
+    sectorEndRadius: asset.kind === "sector" ? normalizeSectorEndRadius(customization.sectorEndRadius ?? DEFAULT_SECTOR_END_RADIUS, width, customization.sectorInnerDiameter ?? DEFAULT_SECTOR_INNER_DIAMETER, customization.sectorAngle ?? DEFAULT_SECTOR_ANGLE) : undefined,
     honeycombCellSize: asset.kind === "honeycomb" ? normalizeHoneycombCellSize(customization.honeycombCellSize ?? DEFAULT_HONEYCOMB_CELL_SIZE) : undefined,
     honeycombWallThickness: asset.kind === "honeycomb" ? normalizeHoneycombWallThickness(customization.honeycombWallThickness ?? DEFAULT_HONEYCOMB_WALL_THICKNESS) : undefined,
     honeycombFrameWidth: asset.kind === "honeycomb" ? normalizeHoneycombFrameWidth(customization.honeycombFrameWidth ?? DEFAULT_HONEYCOMB_FRAME_WIDTH) : undefined,
@@ -1316,16 +1398,25 @@ export function makeShapeFromAsset(
     gridfinityPaddingFront: asset.kind === "gridfinity" ? customization.gridfinityPaddingFront : undefined,
     gridfinityPaddingLeft: asset.kind === "gridfinity" ? customization.gridfinityPaddingLeft : undefined,
     gridfinityPaddingRight: asset.kind === "gridfinity" ? customization.gridfinityPaddingRight : undefined,
+    gridfinityOverhangBack: asset.kind === "gridfinity" ? customization.gridfinityOverhangBack : undefined,
+    gridfinityOverhangFront: asset.kind === "gridfinity" ? customization.gridfinityOverhangFront : undefined,
+    gridfinityOverhangLeft: asset.kind === "gridfinity" ? customization.gridfinityOverhangLeft : undefined,
+    gridfinityOverhangRight: asset.kind === "gridfinity" ? customization.gridfinityOverhangRight : undefined,
+    gridfinityOverhangChamfer: asset.kind === "gridfinity" ? customization.gridfinityOverhangChamfer : undefined,
+    gridfinityOverhangSolid: asset.kind === "gridfinity" ? customization.gridfinityOverhangSolid : undefined,
+    gridfinityOverhangLipOnGrid: asset.kind === "gridfinity" ? customization.gridfinityOverhangLipOnGrid : undefined,
     gridfinityCornerRadius: asset.kind === "gridfinity" ? customization.gridfinityCornerRadius : undefined,
     gridfinityBinCornerRadius: asset.kind === "gridfinity" ? customization.gridfinityBinCornerRadius : undefined,
     gridfinityCompartmentsX: asset.kind === "gridfinity" ? customization.gridfinityCompartmentsX : undefined,
     gridfinityCompartmentsZ: asset.kind === "gridfinity" ? customization.gridfinityCompartmentsZ : undefined,
     gridfinityDividerThickness: asset.kind === "gridfinity" ? customization.gridfinityDividerThickness : undefined,
+    gridfinityDividerHeight: asset.kind === "gridfinity" ? customization.gridfinityDividerHeight : undefined,
     hingeClearance: asset.kind === "hinge" ? normalizeHingeClearance(customization.hingeClearance ?? DEFAULT_HINGE_CLEARANCE) : undefined,
     hingePinless: asset.kind === "hinge" ? customization.hingePinless === true : undefined,
     hingeKnuckleWidth: asset.kind === "hinge" ? normalizeHingeKnuckleWidth(customization.hingeKnuckleWidth) : undefined,
-    hingeStyle: asset.kind === "hinge" && (customization.hingeStyle === "cone" || customization.hingeStyle === "pinless" || customization.hingeStyle === "liftOff") ? customization.hingeStyle : undefined,
+    hingeStyle: asset.kind === "hinge" && (customization.hingeStyle === "cone" || customization.hingeStyle === "pinless" || customization.hingeStyle === "liftOff" || customization.hingeStyle === "snap") ? customization.hingeStyle : undefined,
     hingeConeSize: asset.kind === "hinge" && customization.hingeStyle === "cone" && Number.isFinite(customization.hingeConeSize) ? customization.hingeConeSize : undefined,
+    hingeSnapGrip: asset.kind === "hinge" && customization.hingeStyle === "snap" && Number.isFinite(customization.hingeSnapGrip) ? normalizeHingeSnapGrip(customization.hingeSnapGrip) : undefined,
     // Screw holes and round corners only when the defaults ask for them; the geometry fits them to the leaf.
     hingeScrewHoles: asset.kind === "hinge" && normalizeHingeScrewHoles(customization.hingeScrewHoles) > 0 ? normalizeHingeScrewHoles(customization.hingeScrewHoles) : undefined,
     hingeScrewDiameter: asset.kind === "hinge" && Number.isFinite(customization.hingeScrewDiameter) ? normalizeHingeScrewDiameter(customization.hingeScrewDiameter) : undefined,
@@ -1356,6 +1447,7 @@ export function makeShapeFromAsset(
     vase: asset.kind === "vase" ? normalizeVaseSettings(undefined) : undefined,
     dovetailNeckWidth: asset.kind === "dovetail" ? normalizeDovetailNeckWidth(customization.dovetailNeckWidth, width) : undefined,
     dovetailClearance: asset.kind === "dovetail" ? normalizeDovetailClearance(customization.dovetailClearance ?? DEFAULT_DOVETAIL_CLEARANCE) : undefined,
+    ...(asset.kind === "boxGenerator" ? normalizeBoxGeneratorFields({ width, depth, height }, customization) : {}),
     screwHoleShaft: asset.kind === "counterbore" || asset.kind === "countersink" || asset.kind === "doubleCountersink" ? normalizeScrewHoleShaft(customization.screwHoleShaft ?? DEFAULT_SCREW_HOLE_SHAFT, width)
       : asset.kind === "finishingWasher" ? customization.screwHoleShaft ?? DEFAULT_FINISHING_WASHER_SHAFT : undefined,
     screwHoleHeadDepth: asset.kind === "counterbore" ? normalizeScrewHoleHeadDepth(customization.screwHoleHeadDepth ?? DEFAULT_SCREW_HOLE_HEAD_DEPTH, height)
@@ -1366,8 +1458,12 @@ export function makeShapeFromAsset(
     // A slotted hole and a recessed head (Discussion #1531); left out when off, as the editor leaves them.
     screwHoleSlot: (asset.kind === "counterbore" || asset.kind === "countersink" || asset.kind === "doubleCountersink") && customization.screwHoleSlot ? true : undefined,
     screwHoleRecess: (asset.kind === "countersink" || asset.kind === "doubleCountersink") && (customization.screwHoleRecess ?? 0) > 0 ? customization.screwHoleRecess : undefined,
+    // A chamfer at the rim of a counterbore (Discussion #1632); left out when off, as the editor leaves it.
+    screwHoleChamfer: asset.kind === "counterbore" && (customization.screwHoleChamfer ?? 0) > 0 ? customization.screwHoleChamfer : undefined,
     cornerFillet: asset.kind === "roundedBox" ? normalizeCornerFillet(customization.cornerFillet ?? DEFAULT_ROUNDED_BOX_CORNER_FILLET, Math.min(width, depth) / 2)
-      : asset.kind === "port" ? normalizePortCorner(customization.cornerFillet, width, height, customization.portProfile) : undefined,
+      : asset.kind === "port" ? normalizePortCorner(customization.cornerFillet, width, height, customization.portProfile)
+        // A polygon's rounded corners (roundedPolygonGeometry.ts); left out while they are sharp.
+        : asset.kind === "polygon" && (customization.cornerFillet ?? 0) > 0 ? normalizePolygonCornerRadius(customization.cornerFillet, width, depth, customization.sides ?? 6) : undefined,
     portProfile: asset.kind === "port" ? normalizePortProfile(customization.portProfile) : undefined,
     portClearance: asset.kind === "port" && normalizePortClearance(customization.portClearance) > 0 ? normalizePortClearance(customization.portClearance) : undefined,
     ...(asset.kind === "roundedBox"

@@ -59,7 +59,9 @@ describe("the lid's panel with a hinge", () => {
     act(() => root?.unmount());
     const on = mount({ hinge: true });
     for (const label of ["Hinge side", "Pin diameter", "Hinge clearance", "Pin play (per side)", "Knuckles (0 = automatic)"]) expect(texts(on.panel)).toContain(label);
-    // The play is the lid's: in the body's knuckles the pin sits tight (#1220).
+    // The play is the lid's: in the body's knuckles the pin sits tight (#1220). In this build a hint shows its first part
+    // and keeps the rest behind its More.
+    act(() => [...on.panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more")].find((more) => more.parentElement?.textContent?.startsWith("Only the lid's"))?.click());
     expect(texts(on.panel)).toContain("Only the lid's holes have this play, so the lid turns freely; in the body's holes the pin sits tight");
     expect(checkbox(on.panel, "Print the pin too")).not.toBeNull();
     // Teardrop holes are on to start with, and can be turned off.
@@ -67,6 +69,11 @@ describe("the lid's panel with a hinge", () => {
     expect(teardrop.checked).toBe(true);
     act(() => teardrop.click());
     expect(on.changes.at(-1)).toEqual({ hingeTeardrop: false });
+    // The hint shows its first sentence; the pin and the knuckles' size are behind its More.
+    expect(texts(on.panel)).toContain("with a hole for the pin through all of them.");
+    const more = [...on.panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more")]
+      .find((button) => button.parentElement?.textContent?.includes("Knuckles take turns"))!;
+    act(() => more.click());
     // The knuckles' size for a 1.75 mm pin: its hole with 0.15 mm play and a 1.6 mm wall round it.
     // 1.75 mm pin, 0.2 mm of play and a 1.6 mm wall round it: 5.35 mm across.
     expect(texts(on.panel)).toContain("Knuckles 5.4 mm");
@@ -123,6 +130,8 @@ describe("the lid's panel with a hinge", () => {
     act(() => root?.unmount());
     const on = mount({ hinge: true, hingeStyle: "flush", hingeEndPlugs: true });
     expect(checkbox(on.panel, "End plugs")!.checked).toBe(true);
+    // The hint folds after its first sentence in the docked panel: unfold it to read it whole.
+    act(() => on.panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(texts(on.panel)).toContain("A square plug closes each end of the pin's hole, flush with the outside of the box, so the pin stays hidden and cannot slide out. Push the pin in first, then press in the plugs.");
     act(() => checkbox(on.panel, "End plugs")!.click());
     expect(on.changes.at(-1)).toEqual({ hingeEndPlugs: false });
@@ -162,7 +171,8 @@ describe("the lid's panel with click bumps and a handle (#1234, #1230)", () => {
       const box = checkbox(refused.panel, "Click bumps")!;
       expect(box.disabled).toBe(true);
       expect(box.checked).toBe(false);
-      expect(texts(refused.panel)).toContain("Not for a flat lid or pivot pins.");
+      // The sidebar shows the reason (its hint folds after the first sentence).
+      expect(texts(refused.panel)).toContain("Click bumps need a lip or a rim to sit on");
       act(() => root?.unmount());
     }
   });
@@ -177,6 +187,9 @@ describe("the lid's panel with click bumps and a handle (#1234, #1230)", () => {
     expect(height).not.toBeNull();
     expect(Number(height.value)).toBeCloseTo(0.4, 9);
     expect([Number(height.min), Number(height.max), Number(height.step)]).toEqual([0.2, 0.8, 0.05]);
+    // In this build a hint shows its first sentence and keeps the rest behind its More.
+    expect(texts(on.panel)).toContain("How far each bump reaches into the body's wall.");
+    act(() => on.panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(texts(on.panel)).toContain("How far each bump reaches into the body's wall. Less for a small box or a stiff lip, more for a firmer click.");
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(height, "0.25");
@@ -301,7 +314,8 @@ describe("the lid's panel with a bayonet lid (Discussion #1424)", () => {
     expect(slider(panel, "Rim wall")).not.toBeNull();
     expect(slider(panel, "Lip depth")).toBeNull();
     expect(slider(panel, "Thread pitch")).toBeNull();
-    // Three lugs: a turn of 40 degrees.
+    // Three lugs: a turn of 40 degrees. The docked panel folds a hint after its first sentence: unfold them to read them whole.
+    act(() => panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(texts(panel)).toContain("3 lugs on the outside of the body's top, sized from its diameter, and an L-shaped slot for each inside the cap's rim. Push the cap down over them and turn it 40° clockwise until it clicks.");
     expect(texts(panel)).toContain("A small rib behind each locked lug");
     drag(panel, "Rim depth", "12");
@@ -313,18 +327,27 @@ describe("the lid's panel with a bayonet lid (Discussion #1424)", () => {
     drag(panel, "Lugs", "4");
     expect(changes.at(-1)).toEqual({ bayonetLugs: 4 });
     act(() => root?.unmount());
-    // Four lugs turn 30 degrees, two 45.
-    expect(texts(mount({ type: "bayonet", bayonetLugs: 4 }).panel)).toContain("turn it 30° clockwise");
+    // Four lugs turn 30 degrees, two 45 (the folded hints unfolded first).
+    const unfolded = (options: Parameters<typeof mount>[0]) => {
+      const { panel: shown } = mount(options);
+      act(() => shown.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
+      return texts(shown);
+    };
+    expect(unfolded({ type: "bayonet", bayonetLugs: 4 })).toContain("turn it 30° clockwise");
     act(() => root?.unmount());
-    expect(texts(mount({ type: "bayonet", bayonetLugs: 2 }).panel)).toContain("2 lugs on the outside");
-    expect(texts(mount({ type: "bayonet", bayonetLugs: 2 }).panel)).toContain("turn it 45° clockwise");
+    expect(unfolded({ type: "bayonet", bayonetLugs: 2 })).toContain("2 lugs on the outside");
+    act(() => root?.unmount());
+    expect(unfolded({ type: "bayonet", bayonetLugs: 2 })).toContain("turn it 45° clockwise");
   });
 
   it("asks how far the cap turns, 0 for the lugs' own turn, up to a quarter turn, and says that a turn that does not fit is held to what fits", () => {
+    // The hints are folded in the docked panel: unfold them before reading.
+    const unfold = (shown: HTMLElement) => act(() => shown.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     const { panel, changes } = mount({ type: "bayonet" });
     const turn = slider(panel, "Turn (0 = automatic)")!;
     expect(turn.value).toBe("0");
     expect([turn.min, turn.max, turn.step]).toEqual(["0", "90", "5"]);
+    unfold(panel);
     expect(texts(panel)).toContain("turn it 40° clockwise");
     expect(texts(panel)).not.toContain("a quarter turn");
     drag(panel, "Turn (0 = automatic)", "90");
@@ -335,6 +358,7 @@ describe("the lid's panel with a bayonet lid (Discussion #1424)", () => {
     act(() => root?.unmount());
     const quarter = mount({ type: "bayonet", bayonetLugs: 2, bayonetTurn: 90 });
     expect(slider(quarter.panel, "Turn (0 = automatic)")!.value).toBe("90");
+    unfold(quarter.panel);
     expect(texts(quarter.panel)).toContain("2 lugs on the outside");
     expect(texts(quarter.panel)).toContain("turn it 90° clockwise");
     expect(texts(quarter.panel)).toContain("Up to 90°, a quarter turn, which two lugs leave room for. More lugs or a small body leave less room for the slots and the stops between them: a turn that does not fit is then held to what fits, and the status bar says so.");
@@ -359,52 +383,9 @@ describe("the lid's panel with a bayonet lid (Discussion #1424)", () => {
   });
 });
 
-describe("the lid's panel with a standard bottle's or jar's thread", () => {
-  const thread = (panel: HTMLElement) => panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Thread"]');
-
-  it("offers a screw lid its own thread or a standard's, its own to begin with", () => {
-    const { panel, changes } = mount({ type: "screw" });
-    const group = thread(panel)!;
-    expect(group).not.toBeNull();
-    const options = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
-    expect(options.map((button) => button.textContent)).toEqual(["Custom", "PCO 1881", "PCO 1810", "GL 45", "Mason 70", "Mason 86"]);
-    expect(group.querySelector('[aria-checked="true"]')?.textContent).toBe("Custom");
-    expect(options[3].title).toBe("Laboratory bottles with the GL 45 thread (DIN 168).");
-    expect(slider(panel, "Thread pitch")).not.toBeNull();
-    expect(slider(panel, "Turns")).not.toBeNull();
-    act(() => options[1].click());
-    expect(changes.at(-1)).toEqual({ threadStandard: "pco1881" });
-    act(() => root?.unmount());
-    // Only a screw lid has a thread to choose.
-    for (const type of ["plug", "cap", "bayonet"] as const) {
-      expect(thread(mount({ type, threadStandard: "gl45" }).panel), type).toBeNull();
-      act(() => root?.unmount());
-    }
-  });
-
-  it("hides pitch and turns with a standard and says what it is, what the cap fits and which body gets the neck's thread", () => {
-    const { panel } = mount({ type: "screw", threadStandard: "pco1881" });
-    expect(thread(panel)!.querySelector('[aria-checked="true"]')?.textContent).toBe("PCO 1881");
-    expect(slider(panel, "Thread pitch")).toBeNull();
-    expect(slider(panel, "Turns")).toBeNull();
-    expect(slider(panel, "Gap per side")).not.toBeNull();
-    expect(slider(panel, "Rim wall")).not.toBeNull();
-    expect(texts(panel)).toContain("Most water and soft-drink bottles: the 28 mm neck with the short thread.");
-    expect(texts(panel)).toContain("The cap fits a PCO 1881 neck: 27.4 mm across its thread, 2.7 mm a turn; it reaches 10 mm down. A body whose top is as wide as the neck under the thread (23.94 to 25.14 mm) gets the neck's thread; any other stays as it is, and only the cap is made.");
-    // The own thread's line about its depth stays away.
-    expect(texts(panel)).not.toContain("The flanks are at 45°");
-    act(() => root?.unmount());
-    const jar = mount({ type: "screw", threadStandard: "mason86" }).panel;
-    expect(texts(jar)).toContain("Mason jars with a wide mouth.");
-    expect(texts(jar)).toContain("try the cap on your jar first");
-    expect(texts(jar)).toContain("85.85 mm across its thread, 6.35 mm a turn; it reaches 13 mm down");
-    expect(texts(jar)).toContain("(81.25 to 82.45 mm)");
-  });
-});
-
 describe("the lid's panel with a tether (asked in the Layerling User Group on Facebook)", () => {
   it("offers a tether for a screw or bayonet lid only, and says what it is and what to print it in once ticked", () => {
-    for (const type of ["plug", "cap", "both", "flat"] as const) {
+    for (const type of ["plug", "cap", "both", "flat", "screwIn", "slide"] as const) {
       const { panel } = mount({ type, tether: true });
       expect(checkbox(panel, "Tether"), type).toBeNull();
       expect(texts(panel), type).not.toContain("Keeps the cap with the body");
@@ -420,6 +401,8 @@ describe("the lid's panel with a tether (asked in the Layerling User Group on Fa
       expect(off.changes.at(-1)).toEqual({ tether: true });
       act(() => root?.unmount());
       const on = mount({ type, tether: true });
+      // The hints are folded in the docked panel: unfold them before reading.
+      act(() => on.panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
       expect(checkbox(on.panel, "Tether")!.checked).toBe(true);
       expect(texts(on.panel)).toContain("Keeps the cap with the body when it is open, as on a drinks bottle");
       expect(texts(on.panel)).toContain("best in PETG or TPU");
@@ -432,7 +415,7 @@ describe("the lid's panel with a tether (asked in the Layerling User Group on Fa
 
 describe("the lid's panel with a flip-top", () => {
   it("offers a flip-top with a screw lid and a bayonet lid only, off to begin with", () => {
-    for (const type of ["plug", "cap", "both", "flat"] as const) {
+    for (const type of ["plug", "cap", "both", "flat", "screwIn", "slide"] as const) {
       expect(checkbox(mount({ type }).panel, "Flip-top"), type).toBeNull();
       act(() => root?.unmount());
     }
@@ -453,6 +436,8 @@ describe("the lid's panel with a flip-top", () => {
     const opening = slider(panel, "Opening")!;
     expect(opening.value).toBe("8");
     expect([opening.min, opening.max]).toEqual(["4", "40"]);
+    // The hints are folded in the docked panel: unfold them before reading.
+    act(() => panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(texts(panel)).toContain("A thin strip at the flap's back is its hinge, so the cap stays on and the flap never comes off.");
     expect(texts(panel)).toContain("in PLA the strip breaks after a few bends");
     act(() => {
@@ -465,6 +450,53 @@ describe("the lid's panel with a flip-top", () => {
     expect(texts(panel)).not.toContain("too thin for a flip-top");
     act(() => root?.unmount());
     expect(texts(mount({ type: "bayonet", flipTop: true, thickness: 1.4 }).panel)).toContain("The lid is too thin for a flip-top's flap and hinge: make it at least 1.8 mm thick.");
+  });
+});
+
+describe("the lid's panel with a standard bottle's or jar's thread", () => {
+  const thread = (panel: HTMLElement) => panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Thread"]');
+
+  it("offers a screw lid its own thread or a standard's, its own to begin with", () => {
+    const { panel, changes } = mount({ type: "screw" });
+    const group = thread(panel)!;
+    expect(group).not.toBeNull();
+    const options = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
+    expect(options.map((button) => button.textContent)).toEqual(["Custom", "PCO 1881", "PCO 1810", "GL 45", "Mason 70", "Mason 86"]);
+    expect(group.querySelector('[aria-checked="true"]')?.textContent).toBe("Custom");
+    expect(options[3].title).toBe("Laboratory bottles with the GL 45 thread (DIN 168).");
+    expect(slider(panel, "Thread pitch")).not.toBeNull();
+    expect(slider(panel, "Turns")).not.toBeNull();
+    act(() => options[1].click());
+    expect(changes.at(-1)).toEqual({ threadStandard: "pco1881" });
+    act(() => root?.unmount());
+    // Only a screw lid has a thread to choose.
+    for (const type of ["plug", "cap", "screwIn", "bayonet", "slide"] as const) {
+      expect(thread(mount({ type, threadStandard: "gl45" }).panel), type).toBeNull();
+      act(() => root?.unmount());
+    }
+  });
+
+  it("hides pitch and turns with a standard and says what it is, what the cap fits and which body gets the neck's thread", () => {
+    const { panel } = mount({ type: "screw", threadStandard: "pco1881" });
+    expect(thread(panel)!.querySelector('[aria-checked="true"]')?.textContent).toBe("PCO 1881");
+    expect(slider(panel, "Thread pitch")).toBeNull();
+    expect(slider(panel, "Turns")).toBeNull();
+    expect(slider(panel, "Gap per side")).not.toBeNull();
+    expect(slider(panel, "Rim wall")).not.toBeNull();
+    // The hints are folded in the docked panel: unfold them before reading.
+    const unfold = (shown: HTMLElement) => act(() => shown.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
+    unfold(panel);
+    expect(texts(panel)).toContain("Most water and soft-drink bottles: the 28 mm neck with the short thread.");
+    expect(texts(panel)).toContain("The cap fits a PCO 1881 neck: 27.4 mm across its thread, 2.7 mm a turn; it reaches 10 mm down. A body whose top is as wide as the neck under the thread (23.94 to 25.14 mm) gets the neck's thread; any other stays as it is, and only the cap is made.");
+    // The own thread's line about its depth stays away.
+    expect(texts(panel)).not.toContain("The flanks are at 45°");
+    act(() => root?.unmount());
+    const jar = mount({ type: "screw", threadStandard: "mason86" }).panel;
+    unfold(jar);
+    expect(texts(jar)).toContain("Mason jars with a wide mouth.");
+    expect(texts(jar)).toContain("try the cap on your jar first");
+    expect(texts(jar)).toContain("85.85 mm across its thread, 6.35 mm a turn; it reaches 13 mm down");
+    expect(texts(jar)).toContain("(81.25 to 82.45 mm)");
   });
 });
 
@@ -490,7 +522,9 @@ describe("the lid's panel with a screw-in lid (Discussion #1432)", () => {
     expect(slider(panel, "Lip wall")).toBeNull();
     expect(slider(panel, "Lip depth")).toBeNull();
     expect(slider(panel, "Rim depth")).toBeNull();
-    // 3 mm pitch: 0.9 mm deep; two turns: 6 mm of plug.
+    // 3 mm pitch: 0.9 mm deep; two turns: 6 mm of plug. The hints are folded in the docked panel: unfold them before reading.
+    const unfold = (shown: HTMLElement) => act(() => shown.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
+    unfold(panel);
     expect(texts(panel)).toContain("The body gets a thread 0.9 mm deep inside its opening, the lid the same one on a plug below its plate, which reaches 6 mm down. Where there is room, the plug is a ring with a 1.6 mm wall.");
     expect(texts(panel)).toContain("A plate on the rim with a threaded plug below it");
     expect(texts(panel)).not.toContain("on the outside of its top");
@@ -504,6 +538,7 @@ describe("the lid's panel with a screw-in lid (Discussion #1432)", () => {
     act(() => root?.unmount());
     // A coarse pitch, and a wall thinner than the plug keeps: 0.8 mm at least.
     const coarse = mount({ type: "screwIn", threadPitch: 6, threadTurns: 1.5, wall: 0.4 });
+    unfold(coarse.panel);
     expect(texts(coarse.panel)).toContain("a thread 1.5 mm deep inside its opening");
     expect(texts(coarse.panel)).toContain("which reaches 9 mm down");
     expect(texts(coarse.panel)).toContain("a ring with a 0.8 mm wall");
@@ -525,7 +560,7 @@ describe("the lid's panel with a screw-in lid (Discussion #1432)", () => {
 });
 
 describe("the lid's panel with a slide-in lid (Discussion #1443)", () => {
-  it("offers a slide-in lid as the last kind, the push-in lid still the one to begin with", () => {
+  it("offers a slide-in lid as an eighth kind, the push-in lid still the one to begin with", () => {
     const { panel, changes } = mount();
     const group = panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Kind"]')!;
     const kinds = [...group.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
@@ -548,6 +583,8 @@ describe("the lid's panel with a slide-in lid (Discussion #1443)", () => {
     expect(slider(panel, "Lid thickness")).not.toBeNull();
     expect(slider(panel, "Gap per side")).not.toBeNull();
     for (const name of ["Lip depth", "Rim depth", "Lip wall", "Rim wall", "Thread pitch", "Lugs"]) expect(slider(panel, name), name).toBeNull();
+    // The hints are folded in the docked panel: unfold them before reading.
+    act(() => panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(texts(panel)).toContain("The lid's edges run in grooves in three walls; the fourth is cut down to the lid's underside");
     act(() => root?.unmount());
     const back = mount({ type: "slide", slideSide: "back" }).panel.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Slides in from"]')!;
@@ -572,14 +609,24 @@ describe("the lid's panel with a slide-in lid (Discussion #1443)", () => {
     act(() => root?.unmount());
     const on = mount({ type: "slide", clickBumps: true, handle: "notch" }).panel;
     expect(slider(on, "Bump height")).not.toBeNull();
-    expect(texts(on)).toContain("A small bump under the lid's end clicks past the inner edge of the cut wall");
+    expect(texts(on)).toContain("A small bump under the lid's end clicks past the inner edge of the wall it slides in through");
     expect(texts(on)).not.toContain("snap into dimples in the body");
-    expect(texts(on)).toContain("Four grooves across the lid's top near its end at the cut wall, for a thumb to push it out.");
+    expect(texts(on)).toContain("Four grooves across the lid's top near its end at the wall it slides in through, for a thumb to push it out.");
     expect(texts(on)).not.toContain("A recess in the body's front wall");
     const handles = on.querySelector<HTMLElement>('[role="radiogroup"][aria-label="Handle"]')!;
     expect([...handles.querySelectorAll<HTMLButtonElement>('[role="radio"]')].every((button) => !button.disabled)).toBe(true);
     act(() => root?.unmount());
-    expect(texts(mount({ type: "slide", handle: "tab" }).panel)).toContain("A tab as thick as the plate, 6 mm out from the lid's end at the cut wall, to pull it out by.");
+    expect(texts(mount({ type: "slide", handle: "tab" }).panel)).toContain("A tab as thick as the plate, 6 mm out from the lid's end at the wall it slides in through, to pull it out by.");
+    act(() => root?.unmount());
+    // With a frame that wall is not cut down but has a slot (#1497): the hints for the bump, the grip and the tab hold
+    // for both, so none of them speaks of a cut wall.
+    for (const handle of ["notch", "tab"] as const) {
+      const framed = texts(mount({ type: "slide", slideFrame: 2, clickBumps: true, handle }).panel);
+      expect(framed).toContain("clicks past the inner edge of the wall it slides in through");
+      expect(framed).toContain(handle === "tab" ? "A tab as thick as the plate" : "Four grooves across the lid's top");
+      expect(framed).not.toContain("cut wall");
+      act(() => root?.unmount());
+    }
   });
 
   it("asks how far below the rim the lid sits, framed by the walls, 0 to begin with, says what changes and how low a frame is too low", () => {
@@ -588,6 +635,8 @@ describe("the lid's panel with a slide-in lid (Discussion #1443)", () => {
     expect(frame).not.toBeNull();
     expect(frame.value).toBe("0");
     expect(frame.max).toBe("5");
+    // Hints are folded in the docked panel: open them first.
+    act(() => panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(texts(panel)).toContain("How far the lid sits below the rim, with the walls standing round it as a frame. 0: the lid is flush with the rim.");
     expect(texts(panel)).toContain("the fourth is cut down to the lid's underside");
     act(() => {
@@ -597,6 +646,7 @@ describe("the lid's panel with a slide-in lid (Discussion #1443)", () => {
     expect(changes.at(-1)).toEqual({ slideFrame: 2 });
     act(() => root?.unmount());
     const framed = mount({ type: "slide", slideFrame: 2 }).panel;
+    act(() => framed.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(texts(framed)).toContain("it slides in through a slot in the fourth, which keeps its full height above it");
     expect(texts(framed)).not.toContain("the fourth is cut down to the lid's underside");
     expect(texts(framed)).not.toContain("The frame is too low");

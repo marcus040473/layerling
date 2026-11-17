@@ -97,7 +97,7 @@ AI 使用的是與你相同的功能，走的也是你在編輯器中操作時�
 | `layerling_import_mesh` | 把三角網格帶入設計 |
 | `layerling_update_object` | 修改尺寸、位置、顏色、名稱、實體或孔，以及構成該形狀的其他所有設定，包括文字的字母邊緣 |
 | `layerling_align_objects` | 讓物件彼此對齊 |
-| `layerling_scale_objects` | 依百分比縮放物件，可一起縮放，或各自在原位縮放 |
+| `layerling_scale_objects` | 依百分比縮放物件，可一起縮放，或各自在原位縮放，或縮放到 1:87 等模型比例 |
 | `layerling_lay_flat` | 讓物件以某個面平放在平台上 |
 | `layerling_place_on_face` | 把物件放到另一個物件的面上，斜面也可以，就像 C 鍵 |
 | `layerling_perforate_face` | 在平面上或繞圓柱、圓管、孔的側壁切出孔陣列；孔仍會以孔的形式與實體群組在一起 |
@@ -119,6 +119,7 @@ AI 使用的是與你相同的功能，走的也是你在編輯器中操作時�
 | `layerling_cookie_cutter` | makes a cookie cutter from the objects: a wall and a rim round the outline (Cookie cutter) |
 | `layerling_flexi_joints` | cuts a flat body into links with joints printed in place that swing to the sides (Flexi joints) |
 | `layerling_make_lid` | makes a lid for a body open at the top: pushed in, over the top or flat, with the fit you choose and magnets if you like (Lid) |
+| `layerling_make_mold` | makes a mold or a die from a master: a two-part mold to cast in, a silicone pour box, an open mold, or a stamp and die for sheet (Mold & die) |
 | `layerling_make_cable_channel` | runs a round channel for a cable through a body from an entry to an exit, finding the way itself with gentle bends (Cable channel) |
 | `layerling_loft_sketches` | joins two sketch bodies into a loft from one outline to the other (Loft sketches) |
 | `layerling_separate_parts` | 把形狀分離成各自的鬆散部件；草圖實體則依輪廓拆成每個輪廓一個實體 |
@@ -143,6 +144,7 @@ AI 使用的是與你相同的功能，走的也是你在編輯器中操作時�
 | `layerling_show_overhangs` | 開啟或關閉懸垂剖面線、設定角度，並回報每個實體需要支撐的面積 |
 | `layerling_estimate_print` | 估算選取範圍或整個設計的體積、重量與線材用量：以實心實體計算，也像匯出視窗那樣以壁厚與填充做粗略估計 |
 | `layerling_check_clearance` | 列印前檢查哪些零件重疊、接觸或間距小於最小間隙，也檢查同一物件中彼此分離的零件 |
+=======
 | `layerling_printer_play` | 讀取、設定或清除印表機間隙（設定中的{{ui:workspace.printerPlay}}），並放置用來測量它的配合測試件 |
 | `layerling_check_print` | 列印前檢查會出什麼問題：對噴嘴來說過薄的壁、懸空的零件、與平台接觸過少、懸垂和開放網格 |
 | `layerling_add_reference_points` | 標記參考點——可落在物件的中心、角落或邊中點，也可指定精確位置——形狀會吸附到這些點 |
@@ -170,6 +172,9 @@ AI 使用的是與你相同的功能，走的也是你在編輯器中操作時�
 | `layerling_saved_view` | 把目前檢視儲存到按鍵 7、8、9 或 0，之後可回到該檢視，就像 Shift+按鍵與單按該鍵（只影響檢視）；也可設定新設計的起始視圖 |
 | `layerling_build_plates` | 列出、新增、命名、排序和移除列印板，把物件移到某個列印板並分配到各列印板上，如同列印板列 |
 | `layerling_clear_history` | 永久刪除所有復原步驟，就像歷史記錄檢視的「刪除歷史記錄」按鈕；需要 `confirm: true` |
+| `layerling_delete_history_steps` | 永久刪除歷史記錄中的單一狀態（不會刪除目前狀態），與歷史記錄檢視清單中步驟旁的垃圾桶相同；需要 `steps` 和 `confirm: true` |
+| `layerling_list_backups` | 列出目前設計的自動備份（早期版本），使用 `all: true` 時列出此瀏覽器中所有設計的備份 |
+| `layerling_open_backup` | 依 `id` 將備份作為新設計開啟，絕不與原檔案關聯 |
 | `layerling_set_history_view` | 回看專案較早的狀態，就像歷史記錄檢視（實際設計不受影響；會修改設計的工具會等到它關閉） |
 | `layerling_restore_from_history` | 把物件（也包括群組內的部件）從較早的狀態以副本帶回設計，就像歷史記錄檢視的「帶入設計」——復原時一步就能撤回 |
 | `layerling_export_section_svg` | 以 1:1 的 SVG 回傳剖切平面上的輪廓，所用實體與匯出時相同 |
