@@ -68,3 +68,8 @@ Auftrag: die beiden Konstruktionsanweisungen, „einmal durchprogrammieren“, a
 
 ## Notiz für den Upstream (Stefan)
 Eigenständig übernehmbar wären: der Analysekern (`layerCheck.ts`, `findings.ts` + Tests), die Worker-Fortschrittsmeldung, die Gussform-Logik in `moldTool.ts` (+ beide Testdateien) und `MoldPreviewOverlay.ts`. Das Druckanalyse-Fenster und die Gussform-Fenster-Erweiterung müssten für Stefans Kartenansicht angepasst werden.
+
+## Prüfläufe (17.11.2026)
+- `npm run typecheck`: grün.
+- Unit-Tests: 641 Dateien, 6.041 Tests, alle grün.
+- E2E-Tests: 1.607 von 1.611 grün. Die 4 roten (`surfaceMaskFoldPanel.e2e.ts` 3×, `surfaceTexturePanel.e2e.ts` 1×, Texture-Maske) sind auf `origin/marcus` ohne meine Änderungen genauso rot, also schon vorher kaputt.
