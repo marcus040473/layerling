@@ -64,7 +64,7 @@ Auftrag: die beiden Konstruktionsanweisungen, „einmal durchprogrammieren“, a
 
 ## Offene Punkte
 - Bei den Sprachen ohne eigene Begriffe (pt-br, tr) und bei pl/da („Błąd“, „Fejl“ für Problem) sollten Muttersprachler drüberschauen.
-- Bilder für das eingebaute Handbuch (guide-scenes) gibt es noch nicht; die Bilder liegen hier unter `bilder/`.
+- Bilder für das eingebaute Handbuch (guide-scenes) gibt es noch nicht; die beschrifteten Schritt-Bilder liegen hier unter `bilder/` und in `ANLEITUNG.md`.
 
 ## Notiz für den Upstream (Stefan)
 Eigenständig übernehmbar wären: der Analysekern (`layerCheck.ts`, `findings.ts` + Tests), die Worker-Fortschrittsmeldung, die Gussform-Logik in `moldTool.ts` (+ beide Testdateien) und `MoldPreviewOverlay.ts`. Das Druckanalyse-Fenster und die Gussform-Fenster-Erweiterung müssten für Stefans Kartenansicht angepasst werden.
