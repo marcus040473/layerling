@@ -1,8 +1,8 @@
 # Beiträge für Facebook und GitHub (Deutsch und Englisch)
 
 Bilder-Links für GitHub (fester Stand, gehen nicht kaputt):
-`https://raw.githubusercontent.com/marcus040473/layerling/f1b660c565be4edb39326722b7a46f7d6141297a/uebergabe/druckanalyse-gussform/bilder/<Name>.webp`
-Für Facebook die Bilder aus dem Ordner `bilder/` hochladen. Gute Auswahl: A3, A4, B3, B6, D2.
+`https://raw.githubusercontent.com/marcus040473/layerling/320fde933cb004e078444a88f635aac3ba335114/uebergabe/druckanalyse-gussform/bilder/<Name>.webp`
+Für Facebook die Bilder hochladen: deutsch aus `bilder/`, englisch aus `bilder/en/`. Gute Auswahl: A3, A4, B3, B6, D2.
 
 ---
 
@@ -63,7 +63,7 @@ ich habe an zwei Dingen weitergebaut, die hier und in der Facebook-Gruppe gewün
 **Druckanalyse (neben „Druck prüfen“)**
 Sie schneidet die gewählten Teile in Schichten und vergleicht jede Schicht mit der darunter, alles in einem Durchgang und im Hintergrund, mit Fortschrittsbalken und Abbrechen. Das Ergebnis ist eine Befundliste: im Druckbett, schwebend, Netz offen, größer als der Bauraum, ohne Auflage, Überhang (Hinweis ab 45°, Problem ab 60°), Brücke über 10 mm, dünne Wand, kleine Insel, Haftfläche. Gleiche Befunde in aufeinanderfolgenden Schichten werden zu einem zusammengefasst. Ein Klick öffnet die Schichtansicht an der richtigen Stelle. Dort gibt es einen senkrechten Regler mit Markierungen, ein Diagramm der Querschnittsfläche, „Bis hierher / Nur diese Schicht / Von–bis“, Tasten und Abspielen. Ein Teil mit 100.000 Dreiecken dauert bei 0,2 mm etwa eine Sekunde. Für KI-Helfer gibt es das MCP-Werkzeug `layerling_check_layers`.
 
-![Schichtansicht](https://raw.githubusercontent.com/marcus040473/layerling/f1b660c565be4edb39326722b7a46f7d6141297a/uebergabe/druckanalyse-gussform/bilder/A4-schichtansicht.webp)
+![Schichtansicht](https://raw.githubusercontent.com/marcus040473/layerling/320fde933cb004e078444a88f635aac3ba335114/uebergabe/druckanalyse-gussform/bilder/A4-schichtansicht.webp)
 
 **Gussform & Prägestempel**
 - Die Öffnungsrichtung wird vorgeschlagen (X, Y oder Z, mit Vergleichswerten). Hinterschnitte werden Fläche für Fläche mit einer Sichtprüfung gefunden, nicht nur über die Richtung der Flächennormalen.
@@ -71,7 +71,7 @@ Sie schneidet die gewählten Teile in Schichten und vergleicht jede Schicht mit 
 - Die Teile merken sich ihre Einstellungen, „Gussform neu erzeugen“ ersetzt sie in einem Rückgängig-Schritt.
 - Prägestempel: Modus „Relief prägen“, unsymmetrische Führungsstifte, Warnung bei zu feinen Stellen.
 
-![Hinterschnitt](https://raw.githubusercontent.com/marcus040473/layerling/f1b660c565be4edb39326722b7a46f7d6141297a/uebergabe/druckanalyse-gussform/bilder/B3-hinterschnitt.webp)
+![Hinterschnitt](https://raw.githubusercontent.com/marcus040473/layerling/320fde933cb004e078444a88f635aac3ba335114/uebergabe/druckanalyse-gussform/bilder/B3-hinterschnitt.webp)
 
 Der Stand liegt in meinem Fork im Zweig `claude/upbeat-hypatia-9lluo2`, mit 26 neuen Tests. Bewusst noch nicht drin sind eine freie Öffnungsrichtung mit Drehgriff und Einguss und Entlüftungen zum Ziehen mit der Maus. Ich freue mich über Rückmeldungen, vor allem zu den Grenzwerten und zu den Vorgaben für das Schwindmaß.
 
@@ -91,7 +91,7 @@ I've kept working on two things people asked for here and in the Facebook group.
 **Print analysis (next to Print check)**
 It cuts the selected parts into layers and compares each layer with the one below, in one go and in the background, with a progress bar and a stop button. The result is a list of findings: in the bed, floating, open mesh, larger than the build volume, no support underneath, overhang (hint from 45°, problem from 60°), bridge over 10 mm, thin wall, small island, bed adhesion. The same finding on layers in a row counts as one. A click opens the layer view at the right spot. It has an upright slider with marks, a chart of the cross-section over the height, "Up to here / Only this layer / From – to", keys and playback. A part with 100,000 triangles takes about a second at 0.2 mm. AI helpers can use the MCP tool `layerling_check_layers`.
 
-![Layer view](https://raw.githubusercontent.com/marcus040473/layerling/f1b660c565be4edb39326722b7a46f7d6141297a/uebergabe/druckanalyse-gussform/bilder/A4-schichtansicht.webp)
+![Layer view](https://raw.githubusercontent.com/marcus040473/layerling/320fde933cb004e078444a88f635aac3ba335114/uebergabe/druckanalyse-gussform/bilder/en/A4-schichtansicht.webp)
 
 **Mold & die**
 - The opening direction is suggested (X, Y or Z, with the figures side by side). Undercuts are found face by face with a visibility check, not just from the direction of the face normals.
@@ -99,7 +99,7 @@ It cuts the selected parts into layers and compares each layer with the one belo
 - The parts remember their settings, and "Make the mold again" replaces them in one undo step.
 - Stamp & die: an "Emboss relief" mode, asymmetric guide pins, a warning for details that are too fine.
 
-![Undercut](https://raw.githubusercontent.com/marcus040473/layerling/f1b660c565be4edb39326722b7a46f7d6141297a/uebergabe/druckanalyse-gussform/bilder/B3-hinterschnitt.webp)
+![Undercut](https://raw.githubusercontent.com/marcus040473/layerling/320fde933cb004e078444a88f635aac3ba335114/uebergabe/druckanalyse-gussform/bilder/en/B3-hinterschnitt.webp)
 
 It's on the branch `claude/upbeat-hypatia-9lluo2` in my fork, with 26 new tests. Not in yet, on purpose: a free opening direction with a rotate handle, and dragging the sprue and vents with the mouse. I'd be glad to hear what you think, especially about the limits and the shrinkage presets.
 
