@@ -5967,4 +5967,6 @@ export const MESSAGES_HU: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Elforgatás a függőleges körül",
   "mold.openHint": "Húzd a lila gombot a nézetben, vagy állítsd be itt a dőlést és az elforgatást: 0° fel-le nyit, 90° oldalra. A Szabad melletti szám az alámetszése.",
   "mold.note.directionFree": "{tilt}°-kal a függőlegestől megdöntve, {turn}°-kal elforgatva nyílik.",
+  "shell.gridMagnets": "Mágneslyukak",
+  "shell.gridMagnetsHint": "Négy 6,5 × 2,4 mm-es lyuk minden mélyedés alatt, ahol egy tároló mágnesei ülnek (a mező közepétől 13 mm-re), 6 × 2 mm-es mágnesekhez. Az alj 8,6 mm vastag lesz, hogy a lyukak alatt 1,2 mm maradjon.",
 };

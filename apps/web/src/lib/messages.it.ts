@@ -6152,4 +6152,6 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Rotazione attorno alla verticale",
   "mold.openHint": "Trascina la manopola viola nella vista, o imposta qui inclinazione e rotazione: 0° apre in alto e in basso, 90° di lato. Il numero accanto a Libera è il suo sottosquadro.",
   "mold.note.directionFree": "Si apre inclinato di {tilt}° dalla verticale, ruotato di {turn}°.",
+  "shell.gridMagnets": "Fori per magneti",
+  "shell.gridMagnetsHint": "Quattro fori da 6,5 × 2,4 mm sotto ogni alloggiamento, dove stanno i magneti di un contenitore (a 13 mm dal centro della cella), per magneti 6 × 2 mm. Il fondo diventa spesso 8,6 mm, così sotto i fori restano 1,2 mm.",
 };

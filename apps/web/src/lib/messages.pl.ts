@@ -6180,4 +6180,6 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Obrót wokół pionu",
   "mold.openHint": "Przeciągnij fioletowe pokrętło w widoku albo ustaw tu pochylenie i obrót: 0° otwiera w górę i w dół, 90° na bok. Liczba przy Dowolny to jego podcięcie.",
   "mold.note.directionFree": "Otwiera się pochylony o {tilt}° od pionu, obrócony o {turn}°.",
+  "shell.gridMagnets": "Otwory na magnesy",
+  "shell.gridMagnetsHint": "Cztery otwory 6,5 × 2,4 mm pod każdym gniazdem, tam gdzie są magnesy pojemnika (13 mm od środka pola), na magnesy 6 × 2 mm. Dno ma wtedy 8,6 mm, aby pod otworami zostało 1,2 mm.",
 };

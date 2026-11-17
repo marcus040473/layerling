@@ -6204,4 +6204,6 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "mold.openTurn": "Draaiing om verticaal",
   "mold.openHint": "Sleep de paarse knop in het beeld of stel kanteling en draaiing hier in: 0° kanteling opent naar boven en onder, 90° opzij. Het getal naast Vrij is zijn ondersnijding.",
   "mold.note.directionFree": "Opent {tilt}° gekanteld t.o.v. verticaal, {turn}° gedraaid.",
+  "shell.gridMagnets": "Magneetgaten",
+  "shell.gridMagnetsHint": "Vier gaten van 6,5 × 2,4 mm onder elke kom, waar de magneten van een bak zitten (13 mm van het midden van het vak), voor magneten van 6 × 2 mm. De bodem wordt 8,6 mm dik, zodat er 1,2 mm onder de gaten blijft.",
 };

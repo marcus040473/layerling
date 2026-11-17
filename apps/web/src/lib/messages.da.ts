@@ -6178,4 +6178,6 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Drejning om lodret",
   "mold.openHint": "Træk den lilla knap i visningen, eller indstil hældning og drejning her: 0° hældning åbner op og ned, 90° til siden. Tallet ved Fri er dens underskæring.",
   "mold.note.directionFree": "Åbner hældet {tilt}° fra lodret, drejet {turn}°.",
+  "shell.gridMagnets": "Magnethuller",
+  "shell.gridMagnetsHint": "Fire huller 6,5 × 2,4 mm under hver fordybning, hvor en beholders magneter sidder (13 mm fra feltets midte), til magneter på 6 × 2 mm. Bunden bliver 8,6 mm tyk, så der er 1,2 mm under hullerne.",
 };

@@ -6156,4 +6156,6 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "绕竖直的旋转",
   "mold.openHint": "在视图中拖动紫色旋钮，或在此设置倾斜和旋转：倾斜 0° 向上下开模，90° 向侧面开模。“自由”旁的数字是它的倒扣。",
   "mold.note.directionFree": "沿相对竖直倾斜 {tilt}°、旋转 {turn}° 的方向开模。",
+  "shell.gridMagnets": "磁铁孔",
+  "shell.gridMagnetsHint": "每个凹槽下方 4 个 6.5 × 2.4 mm 的孔，位于收纳盒磁铁所在处（距格子中心 13 mm），用于 6 × 2 mm 磁铁。底板变为 8.6 mm 厚，使孔下仍留 1.2 mm。",
 };

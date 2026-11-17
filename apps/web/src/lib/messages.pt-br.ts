@@ -5133,4 +5133,6 @@ export const MESSAGES_PT_BR: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Giro em torno da vertical",
   "mold.openHint": "Arraste o botão roxo na vista ou ajuste aqui inclinação e giro: 0° abre para cima e para baixo, 90° de lado. O número ao lado de Livre é seu contrassaque.",
   "mold.note.directionFree": "Abre inclinado {tilt}° da vertical, girado {turn}°.",
+  "shell.gridMagnets": "Furos para ímãs",
+  "shell.gridMagnetsHint": "Quatro furos de 6,5 × 2,4 mm sob cada encaixe, onde ficam os ímãs de uma caixa (a 13 mm do centro da célula), para ímãs de 6 × 2 mm. O fundo passa a ter 8,6 mm, para sobrar 1,2 mm sob os furos.",
 };

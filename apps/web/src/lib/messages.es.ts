@@ -6177,4 +6177,6 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Giro alrededor de la vertical",
   "mold.openHint": "Arrastra el pomo violeta en la vista o ajusta aquí inclinación y giro: 0° abre hacia arriba y abajo, 90° de lado. La cifra junto a Libre es su contrasalida.",
   "mold.note.directionFree": "Se abre inclinado {tilt}° desde la vertical, girado {turn}°.",
+  "shell.gridMagnets": "Agujeros para imanes",
+  "shell.gridMagnetsHint": "Cuatro agujeros de 6,5 × 2,4 mm bajo cada hueco, donde van los imanes de una caja (a 13 mm del centro de la celda), para imanes de 6 × 2 mm. El fondo pasa a 8,6 mm para que queden 1,2 mm bajo los agujeros.",
 };

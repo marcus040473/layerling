@@ -6182,4 +6182,6 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Zasuk okoli navpičnice",
   "mold.openHint": "Povleci vijolični gumb v pogledu ali tu nastavi nagib in zasuk: nagib 0° odpira gor in dol, 90° vstran. Število ob Prosto je njegova spodrezanost.",
   "mold.note.directionFree": "Odpira se nagnjeno {tilt}° od navpičnice, zasukano {turn}°.",
+  "shell.gridMagnets": "Luknje za magnete",
+  "shell.gridMagnetsHint": "Štiri luknje 6,5 × 2,4 mm pod vsako vdolbino, kjer sedijo magneti posode (13 mm od sredine polja), za magnete 6 × 2 mm. Dno postane debelo 8,6 mm, da pod luknjami ostane 1,2 mm.",
 };

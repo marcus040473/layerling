@@ -6198,4 +6198,6 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Vridning runt lodrätt",
   "mold.openHint": "Dra den lila knoppen i vyn eller ställ in lutning och vridning här: 0° lutning öppnar upp och ned, 90° åt sidan. Talet bredvid Fri är dess släppvinkelfel.",
   "mold.note.directionFree": "Öppnas lutad {tilt}° från lodrätt, vriden {turn}°.",
+  "shell.gridMagnets": "Magnethål",
+  "shell.gridMagnetsHint": "Fyra hål 6,5 × 2,4 mm under varje fack, där en låda har sina magneter (13 mm från rutans mitt), för magneter 6 × 2 mm. Botten blir 8,6 mm tjock, så att 1,2 mm blir kvar under hålen.",
 };

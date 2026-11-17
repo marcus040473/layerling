@@ -6203,4 +6203,6 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "mold.openTurn": "Natočení kolem svislice",
   "mold.openHint": "Táhněte fialový knoflík v pohledu nebo nastavte sklon a natočení zde: sklon 0° otevírá nahoru a dolů, 90° do strany. Číslo vedle Volně je jeho podkos.",
   "mold.note.directionFree": "Otevírá se se sklonem {tilt}° od svislice, natočeno o {turn}°.",
+  "shell.gridMagnets": "Otvory pro magnety",
+  "shell.gridMagnetsHint": "Čtyři otvory 6,5 × 2,4 mm pod každou jamkou, tam kde sedí magnety nádoby (13 mm od středu pole), pro magnety 6 × 2 mm. Dno bude 8,6 mm silné, aby pod otvory zůstalo 1,2 mm.",
 };

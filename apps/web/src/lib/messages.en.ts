@@ -6204,6 +6204,8 @@ export const MESSAGES_EN = {
   "mold.openTurn": "Turn about upright",
   "mold.openHint": "Drag the violet knob in the view, or set tilt and turn here: 0° tilt opens up and down, 90° sideways. The figure beside Free is its undercut.",
   "mold.note.directionFree": "Opens tilted {tilt}° from upright, turned {turn}°.",
+  "shell.gridMagnets": "Magnet holes",
+  "shell.gridMagnetsHint": "Four holes 6.5 × 2.4 mm under each socket, where a bin's own magnets sit (13 mm from the middle of the cell), for 6 × 2 mm magnets. The floor becomes 8.6 mm thick, so 1.2 mm stays under the holes.",
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_EN;

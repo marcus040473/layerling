@@ -3816,4 +3816,6 @@ export const MESSAGES_TR: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Dikey etrafında dönüş",
   "mold.openHint": "Görünümdeki mor düğmeyi sürükleyin ya da eğimi ve dönüşü buradan ayarlayın: 0° eğim yukarı ve aşağı açar, 90° yana. Serbest'in yanındaki sayı onun kalıp çıkmazıdır.",
   "mold.note.directionFree": "Dikeyden {tilt}° eğik, {turn}° döndürülmüş açılır.",
+  "shell.gridMagnets": "Mıknatıs delikleri",
+  "shell.gridMagnetsHint": "Her yuvanın altında, bir kutunun mıknatıslarının durduğu yerde (hücre ortasından 13 mm) 6,5 × 2,4 mm dört delik, 6 × 2 mm mıknatıslar için. Taban 8,6 mm kalınlığa çıkar, deliklerin altında 1,2 mm kalır.",
 };

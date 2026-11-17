@@ -6180,4 +6180,6 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "Rotation autour de la verticale",
   "mold.openHint": "Faites glisser le bouton violet dans la vue, ou réglez inclinaison et rotation ici : 0° s’ouvre vers le haut et le bas, 90° sur le côté. Le chiffre à côté de Libre est sa contre-dépouille.",
   "mold.note.directionFree": "S’ouvre incliné de {tilt}° depuis la verticale, tourné de {turn}°.",
+  "shell.gridMagnets": "Trous pour aimants",
+  "shell.gridMagnetsHint": "Quatre trous de 6,5 × 2,4 mm sous chaque logement, là où se trouvent les aimants d’un bac (à 13 mm du milieu de la case), pour des aimants de 6 × 2 mm. Le fond fait alors 8,6 mm, pour garder 1,2 mm sous les trous.",
 };

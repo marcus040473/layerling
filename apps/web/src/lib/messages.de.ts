@@ -6203,4 +6203,6 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "mold.openTurn": "Drehung um die Senkrechte",
   "mold.openHint": "Zieh den violetten Knopf im Bild oder stell Neigung und Drehung hier ein: 0° Neigung öffnet nach oben und unten, 90° zur Seite. Die Zahl neben „Frei“ ist sein Hinterschnitt.",
   "mold.note.directionFree": "Öffnet {tilt}° aus der Senkrechten geneigt, {turn}° gedreht.",
+  "shell.gridMagnets": "Magnetlöcher",
+  "shell.gridMagnetsHint": "Vier Löcher 6,5 × 2,4 mm unter jeder Mulde, dort wo die Magnete eines Behälters sitzen (13 mm von der Feldmitte), für Magnete 6 × 2 mm. Der Boden wird 8,6 mm dick, damit unter den Löchern 1,2 mm bleiben.",
 };

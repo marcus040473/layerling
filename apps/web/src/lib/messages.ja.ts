@@ -6090,4 +6090,6 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "mold.openTurn": "鉛直まわりの回転",
   "mold.openHint": "ビューの紫のノブをドラッグするか、ここで傾きと回転を設定します。傾き 0° は上下に、90° は横に開きます。「自由」の横の数値はそのアンダーカットです。",
   "mold.note.directionFree": "鉛直から {tilt}° 傾け、{turn}° 回して開きます。",
+  "shell.gridMagnets": "マグネット穴",
+  "shell.gridMagnetsHint": "各ソケットの下に 6.5 × 2.4 mm の穴を 4 つ。ビンのマグネットがある位置 (セル中心から 13 mm) で、6 × 2 mm のマグネット用です。穴の下に 1.2 mm 残るよう、床は 8.6 mm の厚さになります。",
 };
