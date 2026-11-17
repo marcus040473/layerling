@@ -34,6 +34,7 @@ Follow-up to the Mold & die tool, with the wishes from the Facebook group and Di
 - **Opening direction:** all three directions (X, Y, Z) are rated with a visibility check per face, not only from the face normals, and the best one is suggested. Each button shows the share of the surface that would stick. Undercuts are painted red on the master.
 - **Casting material** (silicone, casting resin, plaster, wax, soap, concrete …): silicone gives way, so small undercuts are only a hint there; the material also sets shrinkage and density.
 - **Check before making:** outside size, pour volume with the sprue (ml and fl oz), cast weight, undercut, and an **air trap** finding with a red dot where air would stay. Vents can be switched on and off one by one.
+- **Several masters, several sprues:** a mold of several parts (a tray of six soap bars, say) gives each separate cavity its own sprue and funnel, so every one fills; before, only the highest got one.
 - **Outside:** a block or a **contour shell** (saves filament, prints without support), plus bolt holes, rubber band grooves, sprue shift (X/Y), draft check, and an assembled output.
 - **Make the mold again:** the parts remember their settings; select a half, change something, and the parts are replaced in one undo step.
 - **Stamp & die:** a new **Emboss relief** mode copies the relief of a coin or logo into the stamp; the fourth guide pin is thinner so the die fits only one way; a warning for details too fine for the sheet.
@@ -48,8 +49,8 @@ Follow-up to the Mold & die tool, with the wishes from the Facebook group and Di
 
 - [x] `npm run typecheck`
 - [x] `npm test` (634 files, 5943 tests)
-- [x] e2e: `moldTool` and the new `moldDirections` (20 tests)
-- [x] Manually tested the affected workflow (block and contour shell, air trap with a vent switched off, relief die)
+- [x] e2e: `moldTool` and the new `moldDirections` (22 tests)
+- [x] Manually tested the affected workflow (block and contour shell, air trap with a vent switched off, six masters in one mold, relief die)
 
 ## Notes
 
