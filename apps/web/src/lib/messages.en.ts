@@ -6187,6 +6187,19 @@ export const MESSAGES_EN = {
   "mold.error.masterGone": "The master of this mold is no longer there, so it cannot be made again.",
   "mold.made.again": "Mold made again with the new settings.",
   "mold.note.sprues": "{count} separate cavities, each with its own sprue and funnel.",
+  "boltSplit.halfName": "{name} – half {number}",
+  "boltSplit.keyName": "{name} – key",
+  "boltSplit.error.notBolt": "Only a screw or a threaded rod can be split lengthwise.",
+  "boltSplit.error.notClosed": "The body is not closed, so it cannot be split.",
+  "boltSplit.error.kernel": "Could not split: {message}",
+  "inspector.boltSplit": "Split lengthwise and lay flat",
+  "inspector.boltSplitHint": "For printing: cut in two through its axis, each half lying on its cut face. A thread printed lying down is much stronger than one printed standing. Glue the halves together afterwards.",
+  "inspector.boltSplitKey": "With key",
+  "inspector.boltSplitKeyHint": "A square bar ({side} mm) in a V-groove in both halves lines them up and stiffens the joint. The groove's sides slope at 45°, so it prints without support.",
+  "inspector.boltSplitKeyTooThin": "The thread is too thin for a key.",
+  "status.boltSplit": "{name} split lengthwise: two halves lying on their cut faces.",
+  "status.boltSplitKey": "{name} split lengthwise: two halves lying on their cut faces and a key {side} × {side} × {length} mm.",
+  "status.boltSplitKeyLeftOut": "{name} split lengthwise: two halves, without a key (the thread is too thin or too short for one).",
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_EN;

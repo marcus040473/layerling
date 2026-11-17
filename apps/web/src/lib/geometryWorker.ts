@@ -4,6 +4,7 @@ import { buildGroupedShapeFromSelection, exportSolidVolume, faceReadJoins, faceR
 import { packValue, packedTransfer, unpackValue } from "@/lib/geometryTransfer";
 import { articulateShapes, type FlexiOptions, type FlexiShapesResult } from "@/lib/flexiJoints";
 import { lidForShapes, lidTopForShapes, type LidOptions, type LidShapeResult } from "@/lib/lidTool";
+import { splitBoltForShape, type BoltSplitOptions, type BoltSplitShapeResult } from "@/lib/boltSplit";
 import { analyseMoldForShapes, moldForShapes, type MoldAnalysisResult, type MoldOptions, type MoldShapeResult } from "@/lib/moldTool";
 import { checkPrint, type PrintCheckOptions, type PrintCheckResult } from "@/lib/printCheck";
 import { checkLayers, type LayerCheckOptions, type LayerCheckResult } from "@/lib/layerCheck";
@@ -345,6 +346,12 @@ export function lidForShapesOffThread(targets: readonly WorkplaneShape[], option
   const onPage = () => lidForShapes([...targets], options);
   if (containsText([...targets])) return onPage();
   return runGeometryTask<LidShapeResult>("lid", { targets: [...targets], options }, onPage, () => ({ lid: null, error: t("status.computeTimedOut") }), signal);
+}
+
+/** splitBoltForShape (lib/boltSplit.ts) off the page: a screw or rod cut lengthwise and laid flat for printing. */
+export function splitBoltOffThread(shape: WorkplaneShape, options: Partial<BoltSplitOptions>, signal?: AbortSignal): Promise<BoltSplitShapeResult> {
+  const onPage = () => splitBoltForShape(shape, options);
+  return runGeometryTask<BoltSplitShapeResult>("boltSplit", { shape, options }, onPage, () => ({ parts: null, error: t("status.computeTimedOut") }), signal);
 }
 
 /** moldForShapes (lib/moldTool.ts) off the page: the mold or die for a master. */

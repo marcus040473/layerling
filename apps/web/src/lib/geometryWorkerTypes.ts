@@ -3,7 +3,7 @@ import type { PreparedImportedMeshDisplay } from "@/lib/importedMeshDisplay";
 import type { WorkplaneShape } from "@/types/layerling";
 
 /** What the page asks the geometry worker (workers/geometry.worker.ts) to work out. */
-export type GeometryTask = "group" | "split" | "splitConnectors" | "stl" | "obj" | "step" | "stepExport" | "estimate" | "simplify" | "face" | "flexi" | "lid" | "lidTop" | "mold" | "moldCheck" | "clearance" | "printCheck" | "layerCheck" | "warm";
+export type GeometryTask = "group" | "split" | "splitConnectors" | "stl" | "obj" | "step" | "stepExport" | "estimate" | "simplify" | "face" | "flexi" | "lid" | "lidTop" | "mold" | "moldCheck" | "boltSplit" | "clearance" | "printCheck" | "layerCheck" | "warm";
 
 export interface GeometryWorkerRequest {
   requestId: number;
@@ -42,6 +42,7 @@ export function resultMeshes(task: GeometryTask, result: unknown): Array<Importe
     const made = result as { lid?: WorkplaneShape | null; magnets?: { posts?: WorkplaneShape[] } };
     return [made.lid?.importedMesh, ...(made.magnets?.posts ?? []).map((post) => post.importedMesh)];
   }
+  if (task === "boltSplit") return ((result as { parts?: WorkplaneShape[] | null }).parts ?? []).map((part) => part.importedMesh);
   if (task === "mold") return ((result as { parts?: WorkplaneShape[] | null }).parts ?? []).map((part) => part.importedMesh);
   if (task === "stl") return [(result as WorkplaneShape).importedMesh];
   if (task === "obj" || task === "step") return ((result as { shapes?: WorkplaneShape[] }).shapes ?? []).map((shape) => shape.importedMesh);

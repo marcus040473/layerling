@@ -2019,6 +2019,19 @@ export const tools = [
     },
   },
   {
+    name: "layerling_split_bolt",
+    description: "Split a screw or threaded rod (a thread object of role screw or rod, not a hole) lengthwise for printing, like the Split lengthwise and lay flat button in its properties: a thread printed lying down is far stronger than one printed standing, whose layers part under load. The body is cut in two through its own axis (however it is turned on the workplane) and both halves are laid on their cut faces where it stood, side by side, ready to print without support; glue them together afterwards. With `key` (default true) a V-groove (45 degree sides, so it prints without a bridge) runs along the axis in both cut faces, clear of the chamfered ends and, on a screw, of the drive's floor, and a square key, `keyPlay` (default the printer's play, else 0.15 mm) smaller per side and 0.3 mm shorter at each end, is laid out beside the halves to line them up and stiffen the joint; its side is 0.42 of the thread's core diameter over the square root of 2, and a thread whose key would be under 1.2 mm (about M5 and smaller) or too short is split without one (keyLeftOut tooThin or tooShort). The screw is replaced by the parts (mesh bodies named \"<name> - half 1\", \"... half 2\", \"... key\") in one undo step, and they are selected. Returns the parts, keySide and keyLength in mm.",
+    inputSchema: {
+      ...editorTargetSchema,
+      properties: {
+        ...editorTargetSchema.properties,
+        id: { type: "string", description: "The screw or rod to split. Left out: the one selected object." },
+        key: { type: "boolean", description: "Cut a V-groove into both halves and lay out a square key for it. Default true." },
+        keyPlay: { type: "number", minimum: 0, maximum: 0.5, description: "The key's play per side in its groove, mm. Default the printer's play, else 0.15." },
+      },
+    },
+  },
+  {
     name: "layerling_add_reference_points",
     description: "Mark reference points - bare marks in space that shapes snap to when they are dragged, like pencil marks and layout points in a workshop. They are not part of any body, are never printed or exported, and are saved with the design. Mark the centre, the four corners or the four edge middles of objects (on their top face), or pass exact positions with `points`. Points already marked are not added twice. Returns the new points with their ids; shapes can then be placed on them with layerling_update_object.",
     inputSchema: {

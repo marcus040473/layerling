@@ -6074,5 +6074,18 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "mold.error.masterGone": "O modelo mestre deste molde já não existe, por isso não é possível criá-lo novamente.",
   "mold.made.again": "Molde criado novamente com as novas definições.",
   "mold.note.sprues": "{count} cavidades separadas, cada uma com o seu próprio canal de vazamento e funil.",
+  "boltSplit.halfName": "{name} – metade {number}",
+  "boltSplit.keyName": "{name} – chaveta",
+  "boltSplit.error.notBolt": "Só um parafuso ou um varão roscado pode ser dividido no comprimento.",
+  "boltSplit.error.notClosed": "O corpo não está fechado e não pode ser dividido.",
+  "boltSplit.error.kernel": "Não foi possível dividir: {message}",
+  "inspector.boltSplit": "Dividir no comprimento e deitar",
+  "inspector.boltSplitHint": "Para imprimir: cortado em dois pelo eixo, cada metade deitada sobre a face de corte. Uma rosca impressa deitada é muito mais forte do que de pé. Depois cole as metades.",
+  "inspector.boltSplitKey": "Com chaveta",
+  "inspector.boltSplitKeyHint": "Uma barra quadrada ({side} mm) num rasgo em V nas duas metades alinha-as e reforça a junta. Os lados do rasgo ficam a 45°, por isso imprime sem suportes.",
+  "inspector.boltSplitKeyTooThin": "A rosca é demasiado fina para uma chaveta.",
+  "status.boltSplit": "{name} dividido no comprimento: duas metades sobre as faces de corte.",
+  "status.boltSplitKey": "{name} dividido no comprimento: duas metades sobre as faces de corte e uma chaveta de {side} × {side} × {length} mm.",
+  "status.boltSplitKeyLeftOut": "{name} dividido no comprimento: duas metades sem chaveta (a rosca é demasiado fina ou curta).",
 };
 
