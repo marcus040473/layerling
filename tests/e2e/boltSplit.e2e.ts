@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import manifoldModule from "manifold-3d";
 import { thread } from "./helpers/threadHarness";
 import { rememberManifoldRuntime } from "@/lib/manifoldHandle";
-import { boltKeySide, boltSplitFits, splitBoltForShape } from "@/lib/boltSplit";
+import { boltPinDiameter, boltSplitFits, splitBoltForShape } from "@/lib/boltSplit";
 import type { WorkplaneShape } from "@/types/layerling";
 
 const kernel = vi.hoisted(() => ({ runtime: null as Promise<unknown> | null }));
@@ -38,6 +38,21 @@ function areaOnBed(shape: WorkplaneShape) {
   return area;
 }
 
+/** The area of faces that look straight down above the bed: bridges, which would need support. */
+function areaFacingDown(shape: WorkplaneShape) {
+  const p = shape.importedMesh!.positions;
+  let area = 0;
+  for (let i = 0; i < p.length; i += 9) {
+    if (Math.min(p[i + 1], p[i + 4], p[i + 7]) < 0.05) continue;
+    const ux = p[i + 3] - p[i], uy = p[i + 4] - p[i + 1], uz = p[i + 5] - p[i + 2];
+    const vx = p[i + 6] - p[i], vy = p[i + 7] - p[i + 1], vz = p[i + 8] - p[i + 2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const length = Math.hypot(nx, ny, nz);
+    if (length > 0 && ny / length < -0.95) area += length / 2;
+  }
+  return area;
+}
+
 const screw = (extra: Partial<WorkplaneShape> = {}) => thread({ threadRole: "screw", threadDiameter: 10, threadPitch: 1.5, threadHead: "cylinder", height: 40, ...extra } as Partial<WorkplaneShape>);
 
 describe("splitting a screw lengthwise to print it lying flat", () => {
@@ -48,12 +63,12 @@ describe("splitting a screw lengthwise to print it lying flat", () => {
     expect(boltSplitFits(thread({ threadRole: "bore", hole: true } as Partial<WorkplaneShape>))).toBe(false);
   });
 
-  it("cuts an M10 screw in two equal halves lying on their cut faces, with a key that fits its groove", async () => {
+  it("cuts an M10 screw in two equal halves lying on their cut faces, with a centring pin in the head and on the thread", async () => {
     const shape = screw();
-    const result = await splitBoltForShape(shape, { key: true, keyPlay: 0.15 });
+    const result = await splitBoltForShape(shape, { pins: true, pinPlay: 0.15 });
     if (!result.parts) throw new Error(result.error);
     expect(result.parts).toHaveLength(3);
-    const [a, b, key] = result.parts;
+    const [a, b, pins] = result.parts;
     // The halves: as long as the screw, as high as the head's radius, on the bed.
     for (const half of [a, b]) {
       expect(half.elevation).toBeCloseTo(0, 3);
@@ -64,44 +79,59 @@ describe("splitting a screw lengthwise to print it lying flat", () => {
     const va = volumeOf(a);
     const vb = volumeOf(b);
     expect(Math.abs(va - vb) / va).toBeLessThan(0.03);
-    // Each lies on its flat cut face: most of the core's length times its width is on the bed (the V-groove aside).
-    const side = boltKeySide(shape)!;
-    for (const half of [a, b]) expect(areaOnBed(half)).toBeGreaterThan(0.6 * 8 * shape.height - side * Math.SQRT2 * shape.height);
-    // The key: a square bar, play off each side, shorter than its groove, lying flat.
-    expect(result.keySide).toBeCloseTo(side - 0.3, 2);
-    expect(key.height).toBeCloseTo(result.keySide, 2);
-    expect(key.depth).toBeCloseTo(result.keySide, 2);
-    expect(key.width).toBeCloseTo(result.keyLength, 2);
-    expect(result.keyLength).toBeGreaterThan(shape.height / 2);
-    expect(result.keyLength).toBeLessThan(shape.height - 3);
-    // Nothing is lost but the groove: the two halves and the groove make up the screw.
-    const grooveVolume = side * side * (result.keyLength + 0.6);
-    const whole = await splitBoltForShape(shape, { key: false });
-    if (!whole.parts) throw new Error(whole.error);
-    const wholeVolume = volumeOf(whole.parts[0]) + volumeOf(whole.parts[1]);
-    expect(Math.abs(va + vb + grooveVolume - wholeVolume) / wholeVolume).toBeLessThan(0.01);
+    // Each lies on its flat cut face: most of the core's length times its width is on the bed.
+    for (const half of [a, b]) expect(areaOnBed(half)).toBeGreaterThan(0.5 * 8 * shape.height);
+    // One pin in the head, one on the thread (40 mm with the head: one is enough).
+    expect(result.placed.head).toBe(1);
+    expect(result.placed.thread).toBeGreaterThanOrEqual(1);
+    expect(result.pins).toBe(result.placed.head + result.placed.thread);
+    expect(result.pinDiameter).toBe(boltPinDiameter(shape));
+    // The pins stand upright, as long as asked, in a row.
+    expect(pins.height).toBeCloseTo(result.pinLength, 1);
+    expect(pins.elevation).toBeCloseTo(0, 3);
+    // The holes: the halves lose the pins' holes and nothing else, the same in both.
+    const plain = await splitBoltForShape(shape, { pins: false });
+    if (!plain.parts) throw new Error(plain.error);
+    expect(plain.parts).toHaveLength(2);
+    const lost = volumeOf(plain.parts[0]) + volumeOf(plain.parts[1]) - va - vb;
+    const r = result.pinDiameter / 2 + 0.15;
+    const depth = (result.pinLength + 0.6) / 2;
+    const perHole = Math.PI * r * r * 2 * depth + (2 * Math.PI * r * r * r) / 3;
+    expect(lost / (result.pins * perHole)).toBeGreaterThan(0.95);
+    expect(lost / (result.pins * perHole)).toBeLessThan(1.05);
+    // The pins fit their holes: shorter and thinner by the play.
+    expect(volumeOf(pins)).toBeLessThan(result.pins * perHole);
     // Laid out side by side, not overlapping.
     const zs = result.parts.map((part) => [part.z - (part.depth ?? 0) / 2, part.z + (part.depth ?? 0) / 2]).sort((p, q) => p[0] - q[0]);
     for (let index = 1; index < zs.length; index += 1) expect(zs[index][0]).toBeGreaterThan(zs[index - 1][1]);
   });
 
+  it("gives a long rod pins spread along it, in holes that end in a cone, so nothing needs support", async () => {
+    const rod = thread({ threadRole: "rod", threadDiameter: 12, threadPitch: 1.75, height: 70 } as Partial<WorkplaneShape>);
+    const result = await splitBoltForShape(rod, { pins: true });
+    if (!result.parts) throw new Error(result.error);
+    expect(result.placed.head).toBe(0);
+    expect(result.placed.thread).toBe(3);
+    for (const part of result.parts) expect(areaFacingDown(part)).toBeLessThan(0.5);
+  });
+
   it("splits along the screw's own axis whatever way it is turned", async () => {
-    const upright = await splitBoltForShape(screw(), { key: true });
-    const lying = await splitBoltForShape(screw({ rotationX: 90, rotationZ: 30 }), { key: true });
+    const upright = await splitBoltForShape(screw(), { pins: true });
+    const lying = await splitBoltForShape(screw({ rotationX: 90, rotationZ: 30 }), { pins: true });
     if (!upright.parts || !lying.parts) throw new Error("no parts");
+    expect(lying.parts).toHaveLength(upright.parts.length);
     upright.parts.forEach((part, index) => {
       expect(lying.parts![index].width).toBeCloseTo(part.width, 2);
       expect(lying.parts![index].height).toBeCloseTo(part.height, 2);
     });
   });
 
-  it("leaves the key out of a thread too thin for one, and splits it all the same", async () => {
+  it("leaves the pins out where a thread is too thin for them, and splits it all the same", async () => {
     const rod = thread({ threadRole: "rod", threadDiameter: 4, threadPitch: 0.7, height: 30 } as Partial<WorkplaneShape>);
-    expect(boltKeySide(rod)).toBeNull();
-    const result = await splitBoltForShape(rod, { key: true });
+    const result = await splitBoltForShape(rod, { pins: true });
     if (!result.parts) throw new Error(result.error);
     expect(result.parts).toHaveLength(2);
-    expect(result.keyLeftOut).toBe("tooThin");
+    expect(result.pins).toBe(0);
   });
 
   it("refuses a nut", async () => {

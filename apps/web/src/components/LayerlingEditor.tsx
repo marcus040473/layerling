@@ -13277,8 +13277,8 @@ export function LayerlingEditor({
   }, [commitShapes]);
 
   /**
-   * A screw or threaded rod split lengthwise for printing: the two halves lie on their cut faces where it stood, with a
-   * key for a V-groove in both if asked for (lib/boltSplit.ts), in its place and selected. One undo step. The same code
+   * A screw or threaded rod split lengthwise for printing: the two halves lie on their cut faces where it stood, with
+   * centring pins in both if asked for (lib/boltSplit.ts), in its place and selected. One undo step. The same code
    * the MCP's split_bolt uses.
    */
   const splitBoltForPrint = useCallback(async (shapeId: string, given?: Partial<BoltSplitOptions>) => {
@@ -13290,7 +13290,7 @@ export function LayerlingEditor({
     if (!bolt || !boltSplitFits(bolt)) return fail(t("boltSplit.error.notBolt"));
     if (bolt.locked) return fail(t("status.objectLocked"));
     if (holdsShapeLock(bolt)) return fail(t("status.shapeLockHeld", { name: displayShapeName(bolt) }));
-    const options = { key: true, keyPlay: Math.min(0.5, getPrinterPlay() ?? 0.15), ...given };
+    const options = { pins: true, pinPlay: Math.min(0.5, getPrinterPlay() ?? 0.15), ...given };
     const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
     const sourceProjectId = projectInfoRef.current.projectId;
     const result = await splitBoltOffThread({ ...bolt, name: displayShapeName(bolt) }, options);
@@ -13298,14 +13298,13 @@ export function LayerlingEditor({
     if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) return fail(t("status.gridfinityKeysChanged"));
     if (historyViewStateRef.current) return fail(t("status.historyViewBlocksEdits"));
     const name = displayShapeName(bolt);
-    const key = result.parts.length > 2;
-    const message = key
-      ? t("status.boltSplitKey", { name, side: result.keySide.toLocaleString(numberLocale()), length: result.keyLength.toLocaleString(numberLocale()) })
-      : options.key ? t("status.boltSplitKeyLeftOut", { name }) : t("status.boltSplit", { name });
+    const message = result.pins
+      ? t("status.boltSplitPins", { name, count: result.pins, diameter: result.pinDiameter.toLocaleString(numberLocale()), length: result.pinLength.toLocaleString(numberLocale()) })
+      : options.pins ? t("status.boltSplitNoPins", { name }) : t("status.boltSplit", { name });
     const at = shapesRef.current.findIndex((shape) => shape.id === bolt.id);
     const next = [...shapesRef.current.slice(0, at), ...result.parts, ...shapesRef.current.slice(at + 1)];
     commitShapes(next, result.parts.map((part) => part.id), message);
-    return { ok: true as const, parts: result.parts, keySide: result.keySide, keyLength: result.keyLength, ...(result.keyLeftOut ? { keyLeftOut: result.keyLeftOut } : {}) };
+    return { ok: true as const, parts: result.parts, pins: result.pins, pinDiameter: result.pinDiameter, pinLength: result.pinLength, placed: result.placed };
   }, [commitShapes]);
 
   /**
@@ -16945,16 +16944,17 @@ export function LayerlingEditor({
         if (!bolt) throw new Error("Pass the id of a screw or threaded rod, or select one");
         if (!boltSplitFits(bolt)) throw new Error("Only a screw or a threaded rod (a thread of role screw or rod, not a hole) can be split lengthwise");
         const options: Partial<BoltSplitOptions> = {
-          ...(typeof params.key === "boolean" ? { key: params.key } : {}),
-          ...(typeof params.keyPlay === "number" ? { keyPlay: params.keyPlay } : {}),
+          ...(typeof params.pins === "boolean" ? { pins: params.pins } : {}),
+          ...(typeof params.pinPlay === "number" ? { pinPlay: params.pinPlay } : {}),
         };
         const result = await splitBoltForPrint(bolt.id, options);
         if (!result.ok) throw new Error(result.message);
         return {
           parts: result.parts.map((part) => mcpShapeSummary(part)),
-          keySide: result.keySide,
-          keyLength: result.keyLength,
-          ...(result.keyLeftOut ? { keyLeftOut: result.keyLeftOut } : {}),
+          pins: result.pins,
+          pinDiameter: result.pinDiameter,
+          pinLength: result.pinLength,
+          placed: result.placed,
         };
       }
 
@@ -20253,7 +20253,7 @@ export function LayerlingEditor({
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
           onMakeBoxLid={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLid(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
-          onBoltSplit={selectedShapes.length === 1 && selectedShape && boltSplitFits(selectedShape) && !historyViewState ? (key) => void splitBoltForPrint(selectedShape.id, { key }) : undefined}
+          onBoltSplit={selectedShapes.length === 1 && selectedShape && boltSplitFits(selectedShape) && !historyViewState ? (pins) => void splitBoltForPrint(selectedShape.id, { pins }) : undefined}
           onGridfinitySplit={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && !historyViewState ? () => void splitGridfinityPlate(selectedShape.id) : undefined}
           onLayerText={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? layerSelectedText : undefined}
           onTextTags={selectedShapes.length === 1 && offersTextLayers(selectedShape) ? makeTextTags : undefined}

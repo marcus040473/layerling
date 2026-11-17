@@ -11,7 +11,7 @@ import { useInspectorCard } from "@/lib/inspectorCards";
 import { Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
-import { boltKeySide, boltSplitFits } from "@/lib/boltSplit";
+import { boltPinDiameter, boltSplitFits } from "@/lib/boltSplit";
 import { Fragment, createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import {
   DEFAULT_GEAR_HELIX_ANGLE,
@@ -4823,8 +4823,8 @@ export function ShapeInspector({
   onMakeBoxLid?: () => void;
   /** Splits this baseplate into plates that fit the printer, with their keys (#1388). */
   onGridfinitySplit?: () => void;
-  /** A screw or rod split lengthwise and laid flat for printing, with a key in a V-groove or without (lib/boltSplit.ts). */
-  onBoltSplit?: (key: boolean) => void;
+  /** A screw or rod split lengthwise and laid flat for printing, with centring pins or without (lib/boltSplit.ts). */
+  onBoltSplit?: (pins: boolean) => void;
   /** Splits a text into layers, or builds a layered text again with new words, font or layers (#215). */
   onLayerText?: (patch: TextLayerPatch) => void;
   /** One tag like this text or stack per name, laid out in rows (#215). */
@@ -4882,8 +4882,8 @@ export function ShapeInspector({
   };
   // The section of a loft the rows are about (#1034), back to the first for another body.
   const [loftSection, setLoftSection] = useState(0);
-  const [boltKey, setBoltKey] = useState(true);
-  const boltSplit = onBoltSplit && boltSplitFits(shape) ? { keySide: boltKeySide(shape) } : null;
+  const [boltPins, setBoltPins] = useState(true);
+  const boltSplit = onBoltSplit && boltSplitFits(shape) ? { pinDiameter: boltPinDiameter(shape) } : null;
   useEffect(() => setLoftSection(0), [shape.id]);
   const printerPlay = usePrinterPlay();
   const properties = withFitTestNotes(getShapeProperties(shape, onUpdate, workspace, { loftSection, setLoftSection, portPresetWithScrewHoles: onPortPresetWithScrewHoles }), shape.kind, printerPlay);
@@ -5788,16 +5788,12 @@ export function ShapeInspector({
             {boltSplit && onBoltSplit ? (
               <>
                 <p className="cylinder-wrap-hint">{t("inspector.boltSplitHint")}</p>
-                {boltSplit.keySide !== null ? (
-                  <>
-                    <label className="check-property bolt-split-key">
-                      <input type="checkbox" checked={boltKey} disabled={frozen} data-testid="bolt-split-key" onChange={(event) => setBoltKey(event.currentTarget.checked)} />
-                      <span>{t("inspector.boltSplitKey")}</span>
-                    </label>
-                    {boltKey ? <p className="cylinder-wrap-hint">{t("inspector.boltSplitKeyHint", { side: boltSplit.keySide.toLocaleString(numberLocale()) })}</p> : null}
-                  </>
-                ) : <p className="cylinder-wrap-hint">{t("inspector.boltSplitKeyTooThin")}</p>}
-                <button className="inspector-action-button" type="button" disabled={frozen} data-testid="bolt-split" onClick={() => onBoltSplit(boltKey && boltSplit.keySide !== null)}>
+                <label className="check-property bolt-split-pins">
+                  <input type="checkbox" checked={boltPins} disabled={frozen} data-testid="bolt-split-pins" onChange={(event) => setBoltPins(event.currentTarget.checked)} />
+                  <span>{t("inspector.boltSplitPins")}</span>
+                </label>
+                {boltPins ? <p className="cylinder-wrap-hint">{t("inspector.boltSplitPinsHint", { diameter: boltSplit.pinDiameter.toLocaleString(numberLocale()) })}</p> : null}
+                <button className="inspector-action-button" type="button" disabled={frozen} data-testid="bolt-split" onClick={() => onBoltSplit(boltPins)}>
                   <Scissors size={17} strokeWidth={2.5} />
                   <span>{t("inspector.boltSplit")}</span>
                 </button>

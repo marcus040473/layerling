@@ -276,7 +276,7 @@ type WorkplaneViewportProps = {
   onMakeBoxLid?: () => void;
   /** Splits the selected baseplate into plates that fit the printer (#1388). */
   onGridfinitySplit?: () => void;
-  onBoltSplit?: (key: boolean) => void;
+  onBoltSplit?: (pins: boolean) => void;
   onLayerText?: (patch: TextLayerPatch) => void;
   onTextTags?: (names: string[], gap: number) => void;
   /** Several lines of text under one another, one text each (#1207). */
