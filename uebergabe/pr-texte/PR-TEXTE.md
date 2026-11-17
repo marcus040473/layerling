@@ -131,7 +131,7 @@ Hollow and Lid: Gridfinity floor, dividers, stacking with a foot, stacking tops,
 Boxes made with Hollow and Lid, from Discussions #1693, #1560 and #1587 and the Facebook group.
 
 **Hollow (top open)**
-- **Gridfinity floor** (#1693): the floor becomes a Gridfinity baseplate, 6.2 mm thick, with a socket for each whole 42 mm cell the inside holds (as many as set). *Fit the walls to the grid* thickens the walls so the inside is exactly the cells with 0.5 mm play; *Cells across/along* sizes the box from cells.
+- **Gridfinity floor** (#1693): the floor becomes a Gridfinity baseplate, 6.2 mm thick, with a socket for each whole 42 mm cell the inside holds (as many as set). *Fit the walls to the grid* thickens the walls so the inside is exactly the cells with 0.5 mm play; *Cells across/along* sizes the box from cells. **Magnet holes** (as mlugo-apx asked in #1693): four 6.5 × 2.4 mm holes under each socket where a bin's magnets sit, the floor then 8.6 mm.
 - **Dividers** across and along, with height and thickness as in a Gridfinity bin (#1560); they end level with a shelf ledge.
 - **Stacking with a foot**, the way Gridfinity bins stack: the bottom becomes a foot, narrower by the wall and 0.25 mm per side, that goes into the box below, widening at 45° – so every lid still fits. Works with rounded corners and edges. Optional **hollow foot** and **grip recesses** on any sides (width, depth, height, position), all printable without support.
 - A body changed after hollowing says why it cannot be hollowed again; surface texture treats Gridfinity sockets as inside.
@@ -150,8 +150,8 @@ Boxes made with Hollow and Lid, from Discussions #1693, #1560 and #1587 and the 
 
 - [x] `npm run typecheck`
 - [x] `npm test` (635 files, 5948 tests)
-- [x] e2e: all `cadShell*`, `lid*`, `cadGridfinity*`, `gridfinity*Panel` and `surfaceTexture*` (47 files, 483 tests), new ones among them: `cadShellGrid`, `cadShellStackRounded`, `lidStackTop`, `lidSlider`, `surfaceTextureGridFloor`
-- [x] Manually tested the affected workflow (Hollow with Gridfinity floor and stacking, lids with sliders and bolts)
+- [x] e2e: all `cadShell*` (the magnet holes among them), `lid*`, `cadGridfinity*`, `gridfinity*Panel` and `surfaceTexture*` (47 files, 483 tests), new ones among them: `cadShellGrid`, `cadShellStackRounded`, `lidStackTop`, `lidSlider`, `surfaceTextureGridFloor`
+- [x] Manually tested the affected workflow (Hollow with Gridfinity floor, magnet holes and stacking, lids with sliders and bolts)
 
 ## Notes
 
