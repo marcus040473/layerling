@@ -7,6 +7,7 @@ Jeder PR ist ein eigener Zweig in deinem Fork, frisch auf Stefans neuestem `main
 | 1 Gussform & Prägestempel | `mold-die` | https://github.com/henmedia/layerling/compare/main...marcus040473:layerling:mold-die?expand=1 |
 | 2 Druckanalyse mit Schichtansicht | `layer-check` | https://github.com/henmedia/layerling/compare/main...marcus040473:layerling:layer-check?expand=1 |
 | 3 Boxen & Gridfinity (Aushöhlen + Deckel) | `box-gridfinity` | https://github.com/henmedia/layerling/compare/main...marcus040473:layerling:box-gridfinity?expand=1 |
+| 4 Schraube längs teilen, mit Zentrierstiften | `bolt-split` | https://github.com/henmedia/layerling/compare/main...marcus040473:layerling:bolt-split?expand=1 |
 
 So geht's: Link öffnen → oben steht „Able to merge“ → Titel und Text aus dem Kasten unten hineinkopieren → **Create pull request**. Stefan ist bis 22.11. weg, er sieht sie danach.
 
@@ -155,6 +156,50 @@ Boxes made with Hollow and Lid, from Discussions #1693, #1560 and #1587 and the 
 - Built on the current `main`, in the floating panel style.
 - **Stacking changes:** the earlier collar-and-groove stacking is replaced by the foot, so stackable boxes take any lid.
 - The box generator (a Box shape with compartments) is not part of this; it is still being reworked.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+https://claude.ai/code/session_01U6NM2J7dd79pkwCMPxv7JA
+```
+
+---
+
+## PR 4 – Schraube längs teilen und flach legen
+
+**Titel:**
+
+```
+Screws and threaded rods: split lengthwise and lay flat for printing, with centring pins
+```
+
+**Text:**
+
+```markdown
+## Summary
+
+A screw printed standing breaks along its layers under the first real load; printed lying down its thread is many times stronger (an idea from the Facebook group and GitHub).
+
+- A new button in the properties of a screw or threaded rod, **Split lengthwise and lay flat**, cuts it in two through its own axis (however it is turned on the workplane) and lays both halves on their cut faces where it stood, in one undo step. The thread's flanks rise from the bed without support; the halves are glued afterwards.
+- **Centring pins** (on by default) line the halves up exactly, along the axis too, so the turns of both halves meet and the nut does not jam: always one in the head (on the axis past the drive's floor, else beside the drive) and one to three along the thread by its length (a rod gets one near each end). Where the thread's own pin does not fit, thinner pins (down to 1.5 mm) and a thinner wall are tried; under M6 the core is too thin and only the head gets one.
+- The holes are square to the cut face and end in a 45 degree cone, so no hole needs a bridge; the pins print standing, chamfered, with the printer's play.
+- MCP: new tool `layerling_split_bolt` (`pins`, `pinPlay`). Guide chapters 9 and 14, texts in all languages.
+
+![The button](https://raw.githubusercontent.com/marcus040473/layerling/5f3defb545bb7eae8f4736c82ec1868e582847b0/uebergabe/schraube-teilen/bilder/en/E1-knopf.webp)
+![Two halves and the pins](https://raw.githubusercontent.com/marcus040473/layerling/5f3defb545bb7eae8f4736c82ec1868e582847b0/uebergabe/schraube-teilen/bilder/en/E2-ergebnis.webp)
+![The holes in a half, turned over for the picture](https://raw.githubusercontent.com/marcus040473/layerling/5f3defb545bb7eae8f4736c82ec1868e582847b0/uebergabe/schraube-teilen/bilder/en/E3-nut.webp)
+
+## Testing
+
+- [x] `npm run typecheck`
+- [x] `npm test` (633 files, 5939 tests)
+- [x] e2e: new `boltSplit` (13 tests: halves equal and flat on their cut faces, holes in the same places in both, nothing facing down above the bed, a pin in the head and in the thread from M6 to M16 with cylinder, countersunk, hex, wing and knob heads, a 70 mm rod gets three, a turned screw is split along its own axis)
+- [x] Manually tested the affected workflow (M12 hex screw: two halves and two pins, undo)
+
+## Notes
+
+- Built on the current `main`, in the floating panel style.
+- The head stays split with its half rather than being a separate piece screwed on: simpler and stronger.
+- Why pins and not a key in a groove: the glued face carries the load (each half takes its share from the head through its own turns into the nut, and the flanks press the halves together); what matters is that the halves meet exactly along the axis, which a lengthwise key cannot hold.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
