@@ -57,7 +57,8 @@ function badge(kernel: Kernel, created: Solid[]) {
 }
 
 function made(kernel: Kernel, body: Body, options: Partial<MoldOptions>, layout = true) {
-  const result = moldForSolid(kernel, body, normalizeMoldOptions({ ...MOLD_DEFAULTS, ...options }), layout);
+  // These cases were written for a mold opening up and down; the direction chosen by itself has tests of its own.
+  const result = moldForSolid(kernel, body, normalizeMoldOptions({ ...MOLD_DEFAULTS, direction: "z", shrinkage: 0, ...options }), layout);
   if ("error" in result) throw new Error(`${result.error} ${result.message ?? ""}`);
   return result;
 }
