@@ -1,4 +1,5 @@
 "use client";
+import { polygonCornerDragPatch } from "@/lib/roundedPolygonGeometry";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import type { TextBlockOptions } from "@/lib/textBlock";
 import type { SurfaceTextureFace, SurfaceTextureRegion, SurfaceTextureSettings } from "@/lib/surfaceTexture";
@@ -41,6 +42,7 @@ import { openSecondViewWindow, SecondViewWindow, useSecondViewSupported } from "
 import { starSettingsForSize } from "@/lib/starGeometry";
 import { carriedOntoFace } from "@/lib/carryOntoFace";
 import { keepsProportionsForUpdate, keepsProportionsOnAxis } from "@/lib/keepProportions";
+import type { GroupHoleChange } from "@/lib/groupHoles";
 import { useWheelField } from "@/lib/useWheelField";
 import { wheelBaseStep, wheelNextValue } from "@/lib/wheelValueStep";
 import { createLatestRunner, type LatestRunner } from "@/lib/latestRunner";
@@ -233,6 +235,7 @@ type WorkplaneViewportProps = {
   onOpenGroup?: (id: string) => void;
   /** A hull built again with its parts' holes kept open or filled (Discussion #1440). */
   onHullKeepHolesChange?: (id: string, keepHoles: boolean) => void;
+  onGroupHoleDiameters?: (id: string, change: GroupHoleChange) => void;
   canSeparateParts?: boolean;
   onSeparateParts?: () => void;
   /** Several parts selected (#183): solid or hole, a colour and locking for all of them. */
@@ -1661,6 +1664,7 @@ export function WorkplaneViewport({
   onEditSketch,
   onOpenGroup,
   onHullKeepHolesChange,
+  onGroupHoleDiameters,
   canSeparateParts = false,
   onSeparateParts,
   onSelectionHole,
@@ -4980,7 +4984,7 @@ export function WorkplaneViewport({
         if (transform.handleKey.startsWith("corner-radius")) {
           const start = transform.startShape;
           const index = transform.handleKey === "corner-radius" ? undefined : Number(transform.handleKey.slice("corner-radius-".length));
-          onUpdateShape(start.id, cornerRadiusDragPatch(start, snapValue(rawDelta, step), index));
+          onUpdateShape(start.id, start.kind === "polygon" ? polygonCornerDragPatch(start, snapValue(rawDelta, step)) : cornerRadiusDragPatch(start, snapValue(rawDelta, step), index));
           return true;
         }
         if (transform.handleKey === "slope-end") {
@@ -9867,6 +9871,7 @@ export function WorkplaneViewport({
           onEditSketch={selectedShape.sketchProfile ? onEditSketch : undefined}
           onOpenGroup={selectedShape.groupedShapes?.length && onOpenGroup ? () => onOpenGroup(selectedShape.id) : undefined}
           onHullKeepHolesChange={selectedShape.groupOperation === "hull" && onHullKeepHolesChange ? (keepHoles) => onHullKeepHolesChange(selectedShape.id, keepHoles) : undefined}
+          onGroupHoleDiameters={selectedShape.groupedShapes?.length && onGroupHoleDiameters ? (change) => onGroupHoleDiameters(selectedShape.id, change) : undefined}
           canSeparateParts={canSeparateParts}
           onSeparateParts={onSeparateParts}
           onWrapAroundCylinder={onWrapAroundCylinder}

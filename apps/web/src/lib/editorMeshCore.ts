@@ -14,6 +14,7 @@ import { createFinishingWasherGeometry } from "@/lib/finishingWasherGeometry";
 import { createStarGeometry } from "@/lib/starGeometry";
 import { createHeartGeometry } from "@/lib/heartGeometry";
 import { createCrescentGeometry } from "@/lib/crescentGeometry";
+import { createSectorGeometry } from "@/lib/sectorGeometry";
 import { createSlotGeometry } from "@/lib/slotGeometry";
 import { createDovetailGeometry } from "@/lib/dovetailGeometry";
 import { boxGeneratorFieldsOf, createBoxGeneratorGeometry } from "@/lib/boxGeneratorGeometry";
@@ -32,6 +33,7 @@ import { createHoneycombGeometry } from "@/lib/honeycombGeometry";
 import { createRoundedBoxGeometry } from "@/lib/roundedBoxGeometry";
 import { createBentTubeGeometry } from "@/lib/bentTubeGeometry";
 import { createPrismGeometry } from "@/lib/prismGeometry";
+import { createRoundedPolygonGeometry } from "@/lib/roundedPolygonGeometry";
 import { shapeHasAlongDeform, slopeMesh } from "@/lib/slopeAlong";
 import { createBooleanHalfSphereGeometry, createBooleanHollowCylinderGeometry, createBooleanRoundRoofGeometry, createParaboloidGeometry } from "@/lib/roundBodyGeometry";
 import { createCurvedConeGeometry } from "@/lib/curvedCone";
@@ -504,6 +506,16 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         heartQuality: shape.heartQuality,
       });
       break;
+    case "sector":
+      geometry = createSectorGeometry({
+        width,
+        depth,
+        height,
+        sectorAngle: shape.sectorAngle,
+        sectorInnerDiameter: shape.sectorInnerDiameter,
+        sectorEndRadius: shape.sectorEndRadius,
+      });
+      break;
     case "crescent":
       geometry = createCrescentGeometry({
         width,
@@ -628,6 +640,13 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         gridfinityPaddingFront: shape.gridfinityPaddingFront,
         gridfinityPaddingLeft: shape.gridfinityPaddingLeft,
         gridfinityPaddingRight: shape.gridfinityPaddingRight,
+        gridfinityOverhangBack: shape.gridfinityOverhangBack,
+        gridfinityOverhangFront: shape.gridfinityOverhangFront,
+        gridfinityOverhangLeft: shape.gridfinityOverhangLeft,
+        gridfinityOverhangRight: shape.gridfinityOverhangRight,
+        gridfinityOverhangChamfer: shape.gridfinityOverhangChamfer,
+        gridfinityOverhangSolid: shape.gridfinityOverhangSolid,
+        gridfinityOverhangLipOnGrid: shape.gridfinityOverhangLipOnGrid,
         gridfinityCornerRadius: shape.gridfinityCornerRadius,
         gridfinityBinCornerRadius: shape.gridfinityBinCornerRadius,
         gridfinityCompartmentsX: shape.gridfinityCompartmentsX,
@@ -770,7 +789,9 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
       geometry = createBooleanWedgeGeometry(width, height, depth);
       break;
     case "polygon":
-      geometry = createPrismGeometry(width, height, depth, shape.sides ?? 6);
+      geometry = (shape.cornerFillet ?? 0) > 0
+        ? createRoundedPolygonGeometry(width, height, depth, shape.sides ?? 6, shape.cornerFillet ?? 0)
+        : createPrismGeometry(width, height, depth, shape.sides ?? 6);
       break;
     case "icosahedron":
       geometry = new THREE.IcosahedronGeometry(size / 2, 1);
