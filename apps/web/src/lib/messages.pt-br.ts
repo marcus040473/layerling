@@ -5128,4 +5128,9 @@ export const MESSAGES_PT_BR: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Pinos Ø {diameter} mm, um na cabeça e de um a três na rosca conforme o comprimento, em furos perpendiculares à face de corte: alinham as metades com exatidão, também no comprimento, para que as voltas coincidam. Os furos terminam num cone de 45°, então tudo imprime sem suporte.",
   "status.boltSplitPins": "{name} dividido no comprimento: duas metades sobre as faces de corte e {count} pinos de centragem Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} dividido no comprimento: duas metades sem pinos de centragem (não há espaço para eles).",
+  "mold.direction.free": "Livre",
+  "mold.openTilt": "Inclinação a partir da vertical",
+  "mold.openTurn": "Giro em torno da vertical",
+  "mold.openHint": "Arraste o botão roxo na vista ou ajuste aqui inclinação e giro: 0° abre para cima e para baixo, 90° de lado. O número ao lado de Livre é seu contrassaque.",
+  "mold.note.directionFree": "Abre inclinado {tilt}° da vertical, girado {turn}°.",
 };

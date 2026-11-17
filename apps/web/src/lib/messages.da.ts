@@ -6173,4 +6173,9 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Stifter Ø {diameter} mm, én i hovedet og én til tre i gevindet efter længden, i huller vinkelret på snitfladen: de retter halvdelene præcist ind, også på langs, så gevindgangene mødes. Hullerne ender i en 45°-kegle, så alt printes uden støtte.",
   "status.boltSplitPins": "{name} delt på langs: to halvdele på deres snitflader og {count} styrestifter Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} delt på langs: to halvdele uden styrestifter (der er ikke plads til dem).",
+  "mold.direction.free": "Fri",
+  "mold.openTilt": "Hældning fra lodret",
+  "mold.openTurn": "Drejning om lodret",
+  "mold.openHint": "Træk den lilla knap i visningen, eller indstil hældning og drejning her: 0° hældning åbner op og ned, 90° til siden. Tallet ved Fri er dens underskæring.",
+  "mold.note.directionFree": "Åbner hældet {tilt}° fra lodret, drejet {turn}°.",
 };

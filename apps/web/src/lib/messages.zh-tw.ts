@@ -6151,4 +6151,9 @@ export const MESSAGES_ZH_TW: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Ø {diameter} mm 的銷，頭部一根，螺紋部分依長度一到三根，裝在垂直於剖切面的孔中：把兩半精確對齊，包括軸向，使螺紋圈對上。孔以 45° 錐面收尾，所有零件都不需支撐即可列印。",
   "status.boltSplitPins": "{name} 已縱向剖分：兩半以剖切面朝下，另有 {count} 根定位銷 Ø {diameter} × {length} mm。",
   "status.boltSplitNoPins": "{name} 已縱向剖分：兩半，無定位銷（沒有空間）。",
+  "mold.direction.free": "自由",
+  "mold.openTilt": "相對垂直的傾斜",
+  "mold.openTurn": "繞垂直的旋轉",
+  "mold.openHint": "在視圖中拖曳紫色旋鈕，或在此設定傾斜與旋轉：傾斜 0° 向上下開模，90° 向側面開模。「自由」旁的數字是它的倒扣。",
+  "mold.note.directionFree": "沿相對垂直傾斜 {tilt}°、旋轉 {turn}° 的方向開模。",
 };

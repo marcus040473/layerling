@@ -166,6 +166,20 @@ Ohne Befund steht im Fenster „Die Luft kann entweichen“.
 
 ---
 
+### B8 – Freie Öffnungsrichtung mit Drehgriff
+
+![Freie Richtung](bilder/B8-freie-richtung.webp)
+
+1. **Frei**: Die Form öffnet in jeder beliebigen Richtung, etwa für ein Urmodell, das schräg am besten herauskommt. Die Zahl ist ihr Hinterschnitt, zum Vergleich mit den drei geraden Richtungen.
+2. **Neigung aus der Senkrechten**: 0° öffnet nach oben und unten, 90° zur Seite.
+3. **Drehung um die Senkrechte**: 0° nach rechts, 90° nach hinten.
+4. **Violetter Knopf**: mit der Maus ziehen, Pfeil, Trennebene und Bewertung folgen. Die Werte 2 und 3 stellen sich dabei mit.
+5. **Ring**: die Bahn, auf der der Knopf läuft.
+
+Die Hälften liegen zum Drucken trotzdem flach mit der Trennfläche nach oben. Tipp: Bei Teilen mit geraden, parallelen Wänden zählt jedes Grad – ein Urmodell mit etwas Entformungsschräge verzeiht mehr.
+
+---
+
 ## Teil C – Prägestempel & Matrize mit Relief
 
 ### C1 – Relief prägen

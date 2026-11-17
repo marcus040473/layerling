@@ -6172,4 +6172,9 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Pasadores Ø {diameter} mm, uno en la cabeza y de uno a tres en la rosca según la longitud, en agujeros perpendiculares a la cara de corte: alinean las mitades con exactitud, también a lo largo, para que las vueltas coincidan. Los agujeros terminan en un cono de 45°, así que todo se imprime sin soportes.",
   "status.boltSplitPins": "{name} dividido a lo largo: dos mitades sobre sus caras de corte y {count} pasadores de centrado Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} dividido a lo largo: dos mitades sin pasadores de centrado (no hay sitio para ellos).",
+  "mold.direction.free": "Libre",
+  "mold.openTilt": "Inclinación desde la vertical",
+  "mold.openTurn": "Giro alrededor de la vertical",
+  "mold.openHint": "Arrastra el pomo violeta en la vista o ajusta aquí inclinación y giro: 0° abre hacia arriba y abajo, 90° de lado. La cifra junto a Libre es su contrasalida.",
+  "mold.note.directionFree": "Se abre inclinado {tilt}° desde la vertical, girado {turn}°.",
 };

@@ -166,6 +166,20 @@ Without a finding, the window says "The air can escape".
 
 ---
 
+### B8 – Free opening direction with a drag handle
+
+![Free direction](bilder/en/B8-freie-richtung.webp)
+
+1. **Free**: the mold opens in any direction at all, for a master that comes out best at a slant. The figure is its undercut, to compare with the three straight ways.
+2. **Tilt from upright**: 0° opens up and down, 90° sideways.
+3. **Turn about upright**: 0° to the right, 90° to the back.
+4. **Violet knob**: drag it with the mouse; the arrow, the parting face and the rating follow, and 2 and 3 change with it.
+5. **Ring**: the path the knob goes round on.
+
+The halves still lie flat with their parting face up to print. Tip: with straight, parallel walls every degree counts; a master with a little draft is more forgiving.
+
+---
+
 ## Part C – Stamp & die with relief
 
 ### C1 – Emboss relief

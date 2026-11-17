@@ -5962,4 +5962,9 @@ export const MESSAGES_HU: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Ø {diameter} mm-es csapok, egy a fejben és hossztól függően egy–három a menetben, a vágott lapra merőleges furatokban: pontosan egymáshoz igazítják a feleket, hosszirányban is, hogy a menetek összeérjenek. A furatok 45°-os kúpban végződnek, így minden támasz nélkül nyomtatható.",
   "status.boltSplitPins": "{name} hosszában felosztva: két fél a vágott lapján és {count} illesztőcsap, Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} hosszában felosztva: két fél illesztőcsapok nélkül (nincs hely számukra).",
+  "mold.direction.free": "Szabad",
+  "mold.openTilt": "Dőlés a függőlegestől",
+  "mold.openTurn": "Elforgatás a függőleges körül",
+  "mold.openHint": "Húzd a lila gombot a nézetben, vagy állítsd be itt a dőlést és az elforgatást: 0° fel-le nyit, 90° oldalra. A Szabad melletti szám az alámetszése.",
+  "mold.note.directionFree": "{tilt}°-kal a függőlegestől megdöntve, {turn}°-kal elforgatva nyílik.",
 };

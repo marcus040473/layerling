@@ -6199,4 +6199,9 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "inspector.boltSplitPinsHint": "Pennen Ø {diameter} mm, één in de kop en één tot drie in de draad naargelang de lengte, in gaten haaks op het snijvlak: ze lijnen de helften precies uit, ook in de lengte, zodat de gangen op elkaar aansluiten. De gaten eindigen in een kegel van 45°, dus alles print zonder support.",
   "status.boltSplitPins": "{name} in de lengte gedeeld: twee helften op hun snijvlak en {count} centreerpennen Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} in de lengte gedeeld: twee helften, zonder centreerpennen (er is geen plaats voor).",
+  "mold.direction.free": "Vrij",
+  "mold.openTilt": "Kanteling t.o.v. verticaal",
+  "mold.openTurn": "Draaiing om verticaal",
+  "mold.openHint": "Sleep de paarse knop in het beeld of stel kanteling en draaiing hier in: 0° kanteling opent naar boven en onder, 90° opzij. Het getal naast Vrij is zijn ondersnijding.",
+  "mold.note.directionFree": "Opent {tilt}° gekanteld t.o.v. verticaal, {turn}° gedraaid.",
 };

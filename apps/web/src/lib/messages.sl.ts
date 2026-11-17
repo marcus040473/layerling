@@ -6177,4 +6177,9 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Zatiči Ø {diameter} mm, eden v glavi in glede na dolžino eden do trije v navoju, v luknjah pravokotno na rezno ploskev: polovici natančno poravnajo, tudi po dolžini, da se navoji ujemajo. Luknje se končajo s 45° stožcem, zato se vse tiska brez podpor.",
   "status.boltSplitPins": "{name} razdeljeno po dolžini: dve polovici na reznih ploskvah in centrirni zatiči ({count}) Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} razdeljeno po dolžini: dve polovici brez centrirnih zatičev (zanje ni prostora).",
+  "mold.direction.free": "Prosto",
+  "mold.openTilt": "Nagib od navpičnice",
+  "mold.openTurn": "Zasuk okoli navpičnice",
+  "mold.openHint": "Povleci vijolični gumb v pogledu ali tu nastavi nagib in zasuk: nagib 0° odpira gor in dol, 90° vstran. Število ob Prosto je njegova spodrezanost.",
+  "mold.note.directionFree": "Odpira se nagnjeno {tilt}° od navpičnice, zasukano {turn}°.",
 };

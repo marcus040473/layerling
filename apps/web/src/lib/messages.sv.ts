@@ -6193,4 +6193,9 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Pinnar Ø {diameter} mm, en i huvudet och en till tre i gängan efter längden, i hål vinkelrätt mot snittytan: de riktar in halvorna exakt, även på längden, så att gängvarven möts. Hålen slutar i en 45°-kon, så allt skrivs ut utan stöd.",
   "status.boltSplitPins": "{name} delad på längden: två halvor på sina snittytor och {count} styrpinnar Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} delad på längden: två halvor utan styrpinnar (det finns ingen plats för dem).",
+  "mold.direction.free": "Fri",
+  "mold.openTilt": "Lutning från lodrätt",
+  "mold.openTurn": "Vridning runt lodrätt",
+  "mold.openHint": "Dra den lila knoppen i vyn eller ställ in lutning och vridning här: 0° lutning öppnar upp och ned, 90° åt sidan. Talet bredvid Fri är dess släppvinkelfel.",
+  "mold.note.directionFree": "Öppnas lutad {tilt}° från lodrätt, vriden {turn}°.",
 };

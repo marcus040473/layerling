@@ -6198,4 +6198,9 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "inspector.boltSplitPinsHint": "Kolíky Ø {diameter} mm, jeden v hlavě a podle délky jeden až tři v závitu, v otvorech kolmých k řezné ploše: přesně vyrovnají poloviny, i podélně, aby na sebe závity navazovaly. Otvory končí kuželem 45°, vše se tiskne bez podpěr.",
   "status.boltSplitPins": "{name} rozděleno podélně: dvě poloviny na řezných plochách a {count} středicí kolíky Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} rozděleno podélně: dvě poloviny bez středicích kolíků (není pro ně místo).",
+  "mold.direction.free": "Volně",
+  "mold.openTilt": "Sklon od svislice",
+  "mold.openTurn": "Natočení kolem svislice",
+  "mold.openHint": "Táhněte fialový knoflík v pohledu nebo nastavte sklon a natočení zde: sklon 0° otevírá nahoru a dolů, 90° do strany. Číslo vedle Volně je jeho podkos.",
+  "mold.note.directionFree": "Otevírá se se sklonem {tilt}° od svislice, natočeno o {turn}°.",
 };

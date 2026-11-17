@@ -6199,6 +6199,11 @@ export const MESSAGES_EN = {
   "inspector.boltSplitPinsHint": "Pins Ø {diameter} mm, one in the head and one to three along the thread by its length, in holes square to the cut face: they line the halves up exactly, along the axis too, so the turns meet. The holes end in a 45° cone, so everything prints without support.",
   "status.boltSplitPins": "{name} split lengthwise: two halves lying on their cut faces and {count} centring pins Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} split lengthwise: two halves, without centring pins (there is no room for them).",
+  "mold.direction.free": "Free",
+  "mold.openTilt": "Tilt from upright",
+  "mold.openTurn": "Turn about upright",
+  "mold.openHint": "Drag the violet knob in the view, or set tilt and turn here: 0° tilt opens up and down, 90° sideways. The figure beside Free is its undercut.",
+  "mold.note.directionFree": "Opens tilted {tilt}° from upright, turned {turn}°.",
 } as const;
 
 export type MessageKey = keyof typeof MESSAGES_EN;

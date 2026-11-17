@@ -6085,4 +6085,9 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Ø {diameter} mm のピンを頭部に 1 本、ねじ部に長さに応じて 1～3 本、切断面に垂直な穴に入れます。軸方向も含めて半分同士を正確に合わせるので、ねじ山がずれません。穴の先は 45° の円錐なので、すべてサポートなしで印刷できます。",
   "status.boltSplitPins": "{name} を縦に分割: 切断面を下にした二つの半分と位置決めピン {count} 本 (Ø {diameter} × {length} mm)。",
   "status.boltSplitNoPins": "{name} を縦に分割: 位置決めピンなしの二つの半分 (ピンを入れる場所がありません)。",
+  "mold.direction.free": "自由",
+  "mold.openTilt": "鉛直からの傾き",
+  "mold.openTurn": "鉛直まわりの回転",
+  "mold.openHint": "ビューの紫のノブをドラッグするか、ここで傾きと回転を設定します。傾き 0° は上下に、90° は横に開きます。「自由」の横の数値はそのアンダーカットです。",
+  "mold.note.directionFree": "鉛直から {tilt}° 傾け、{turn}° 回して開きます。",
 };

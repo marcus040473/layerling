@@ -6175,4 +6175,9 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Kołki Ø {diameter} mm, jeden w łbie i od jednego do trzech w gwincie zależnie od długości, w otworach prostopadłych do powierzchni cięcia: dokładnie wyrównują połowy, także wzdłuż, aby zwoje się zgadzały. Otwory kończą się stożkiem 45°, więc wszystko drukuje się bez podpór.",
   "status.boltSplitPins": "{name} podzielone wzdłuż: dwie połowy na powierzchniach cięcia i kołki ustalające ({count}) Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} podzielone wzdłuż: dwie połowy bez kołków ustalających (nie ma na nie miejsca).",
+  "mold.direction.free": "Dowolny",
+  "mold.openTilt": "Pochylenie od pionu",
+  "mold.openTurn": "Obrót wokół pionu",
+  "mold.openHint": "Przeciągnij fioletowe pokrętło w widoku albo ustaw tu pochylenie i obrót: 0° otwiera w górę i w dół, 90° na bok. Liczba przy Dowolny to jego podcięcie.",
+  "mold.note.directionFree": "Otwiera się pochylony o {tilt}° od pionu, obrócony o {turn}°.",
 };

@@ -6175,4 +6175,9 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Pions Ø {diameter} mm, un dans la tête et un à trois dans le filetage selon la longueur, dans des trous perpendiculaires à la face de coupe : ils alignent exactement les moitiés, dans la longueur aussi, pour que les filets se rejoignent. Les trous finissent en cône à 45°, tout s’imprime sans support.",
   "status.boltSplitPins": "{name} coupé dans la longueur : deux moitiés sur leur face de coupe et {count} pions de centrage Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} coupé dans la longueur : deux moitiés, sans pions de centrage (pas de place).",
+  "mold.direction.free": "Libre",
+  "mold.openTilt": "Inclinaison depuis la verticale",
+  "mold.openTurn": "Rotation autour de la verticale",
+  "mold.openHint": "Faites glisser le bouton violet dans la vue, ou réglez inclinaison et rotation ici : 0° s’ouvre vers le haut et le bas, 90° sur le côté. Le chiffre à côté de Libre est sa contre-dépouille.",
+  "mold.note.directionFree": "S’ouvre incliné de {tilt}° depuis la verticale, tourné de {turn}°.",
 };

@@ -6147,4 +6147,9 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Spine Ø {diameter} mm, una nella testa e da una a tre nella filettatura secondo la lunghezza, in fori perpendicolari alla faccia di taglio: allineano esattamente le metà, anche in lunghezza, così le spire combaciano. I fori finiscono con un cono a 45°, quindi tutto si stampa senza supporti.",
   "status.boltSplitPins": "{name} diviso per il lungo: due metà sulle facce di taglio e {count} spine di centraggio Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} diviso per il lungo: due metà senza spine di centraggio (non c’è spazio).",
+  "mold.direction.free": "Libera",
+  "mold.openTilt": "Inclinazione dalla verticale",
+  "mold.openTurn": "Rotazione attorno alla verticale",
+  "mold.openHint": "Trascina la manopola viola nella vista, o imposta qui inclinazione e rotazione: 0° apre in alto e in basso, 90° di lato. Il numero accanto a Libera è il suo sottosquadro.",
+  "mold.note.directionFree": "Si apre inclinato di {tilt}° dalla verticale, ruotato di {turn}°.",
 };

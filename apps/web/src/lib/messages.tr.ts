@@ -3811,4 +3811,9 @@ export const MESSAGES_TR: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "Ø {diameter} mm pimler, biri başta ve uzunluğa göre bir ila üçü dişte, kesim yüzeyine dik deliklerde: yarımları tam hizalar, boyuna da, böylece diş sarımları buluşur. Delikler 45° koniyle biter, her şey destek olmadan basılır.",
   "status.boltSplitPins": "{name} boyuna bölündü: kesim yüzeyleri üzerinde iki yarım ve {count} merkezleme pimi Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} boyuna bölündü: merkezleme pimi olmadan iki yarım (onlara yer yok).",
+  "mold.direction.free": "Serbest",
+  "mold.openTilt": "Dikeyden eğim",
+  "mold.openTurn": "Dikey etrafında dönüş",
+  "mold.openHint": "Görünümdeki mor düğmeyi sürükleyin ya da eğimi ve dönüşü buradan ayarlayın: 0° eğim yukarı ve aşağı açar, 90° yana. Serbest'in yanındaki sayı onun kalıp çıkmazıdır.",
+  "mold.note.directionFree": "Dikeyden {tilt}° eğik, {turn}° döndürülmüş açılır.",
 };

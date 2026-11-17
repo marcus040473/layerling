@@ -6178,4 +6178,9 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "inspector.boltSplitPinsHint": "مسامير بقطر {diameter} مم، واحد في الرأس ومن واحد إلى ثلاثة في اللولب حسب الطول، في ثقوب عمودية على وجه القطع: تحاذي النصفين بدقة، طوليًا أيضًا، لتتطابق لفات اللولب. تنتهي الثقوب بمخروط 45°، فيُطبع كل شيء بلا دعامات.",
   "status.boltSplitPins": "تم تقسيم {name} طوليًا: نصفان على وجهي القطع و{count} مسامير توسيط بقطر {diameter} × {length} مم.",
   "status.boltSplitNoPins": "تم تقسيم {name} طوليًا: نصفان بلا مسامير توسيط (لا مكان لها).",
+  "mold.direction.free": "حر",
+  "mold.openTilt": "الميل عن العمودي",
+  "mold.openTurn": "الدوران حول العمودي",
+  "mold.openHint": "اسحب المقبض البنفسجي في العرض أو اضبط الميل والدوران هنا: ميل 0° يفتح للأعلى والأسفل، و90° للجانب. الرقم بجانب «حر» هو تقويضه.",
+  "mold.note.directionFree": "يفتح مائلًا {tilt}° عن العمودي، مدارًا {turn}°.",
 };
