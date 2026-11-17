@@ -149,14 +149,14 @@ Per incassare il coperchio sotto il bordo, imposta {{ui:lid.slideFrame}} (all'in
 
 ## Stampi e matrici
 
-{{ui:editor.tool.mold}} trasforma un corpo in uno stampo per colarlo, oppure in un punzone e una matrice per imprimerlo in un foglio. Il corpo è il master, la forma che vuoi copiare. Selezionalo e fai clic su {{ui:editor.tool.mold}}. Nella finestra scegli cosa creare:
+{{ui:editor.tool.mold}} trasforma un corpo in uno stampo per colarlo, oppure in un timbro e una matrice per imprimerlo in un foglio. Il corpo è il master, la forma che vuoi copiare. Selezionalo e fai clic su {{ui:editor.tool.mold}}. Nella finestra scegli cosa creare:
 
 - {{ui:mold.kind.twoPart}}: uno stampo rigido in due metà, da stampare e in cui colare direttamente: resina, gesso, cera, sapone, cioccolato o calcestruzzo. I coni di centraggio allineano le metà (uno è più piccolo, così lo stampo chiude in un solo verso), un imbuto e un canale di colata portano il materiale nel punto più alto del master, e gli sfiati fanno uscire l'aria dove resterebbe intrappolata. Le fessure per fare leva sulla giunzione aiutano a separare le metà e, se vuoi, alette di serraggio con fori per viti le tengono unite.
 - {{ui:mold.kind.box}}: una cornice e una piastra di base per colare il silicone attorno al master stampato. Il master poggia in un incavo poco profondo e la cornice sta in una scanalatura, così non fuoriesce nulla. La finestra indica quanto silicone serve.
 - {{ui:mold.kind.tray}}: uno stampo in un solo pezzo aperto in alto, per un master con un lato piatto. Il lato piatto diventa la parte superiore aperta; riempilo fino all'orlo.
-- {{ui:mold.kind.die}}: un punzone e una matrice per pelle, cartoncino, lamina o lamiera sottile. Il punzone è il contorno del master visto dall'alto su una piastra, la matrice una piastra con quel contorno come incavo. Con {{ui:mold.dieMode.form}} il gioco tutt'intorno è pari allo {{ui:mold.material}} e il bordo del punzone è arrotondato, così il foglio non si strappa; con {{ui:mold.dieMode.cut}} il gioco è pochi punti percentuali di quello spessore e la matrice è aperta sotto, così il pezzo tranciato cade attraverso. I perni di guida tengono allineati i due pezzi.
+- {{ui:mold.kind.die}}: un timbro e una matrice per pelle, cartoncino, lamina o lamiera sottile. Il timbro è il contorno del master visto dall'alto su una piastra, la matrice una piastra con quel contorno come incavo. Con {{ui:mold.dieMode.form}} il gioco tutt'intorno è pari allo {{ui:mold.material}} e il bordo del timbro è arrotondato, così il foglio non si strappa; con {{ui:mold.dieMode.cut}} il gioco è pochi punti percentuali di quello spessore e la matrice è aperta sotto, così il pezzo tranciato cade attraverso. I perni di guida tengono allineati i due pezzi.
 
-Fai clic su {{ui:mold.apply}}: i pezzi si trovano accanto al master così come si stampano, senza supporti: le metà con la faccia di separazione verso l'alto, la matrice pronta per essere capovolta sul punzone. Il master resta com'è.
+Fai clic su {{ui:mold.apply}}: i pezzi si trovano accanto al master così come si stampano, senza supporti: le metà con la faccia di separazione verso l'alto, la matrice pronta per essere capovolta sul timbro. Il master resta com'è.
 
 Il problema più comune con gli stampi è un getto che resta bloccato. Dove il master è più largo sopra la separazione che sotto, la finestra avvisa di un sottosquadro: sposta l'{{ui:mold.parting}} dove il master è più largo, ruota il master oppure usa la cassaforma per silicone, che si stacca anche dai sottosquadri.
 

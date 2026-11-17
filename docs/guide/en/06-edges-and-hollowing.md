@@ -149,14 +149,14 @@ To sink the lid below the rim, set {{ui:lid.slideFrame}} (0 to begin with). The 
 
 ## Molds and dies
 
-{{ui:editor.tool.mold}} turns a body into a mold to cast it, or into a punch and die to press it into sheet. The body is the master, the shape you want to copy. Select it and click {{ui:editor.tool.mold}}. In the window you choose what to make:
+{{ui:editor.tool.mold}} turns a body into a mold to cast it, or into a stamp and die to press it into sheet. The body is the master, the shape you want to copy. Select it and click {{ui:editor.tool.mold}}. In the window you choose what to make:
 
 - {{ui:mold.kind.twoPart}}: a rigid mold in two halves, printed and cast in directly: resin, plaster, wax, soap, chocolate or concrete. Cone keys line the halves up (one is smaller, so the mold closes only one way), a funnel and a sprue lead the material in at the master's highest point, and vents let the air out where it would be trapped. Pry slots on the seam help to part the halves, and clamp ears with bolt holes hold them together if you like.
 - {{ui:mold.kind.box}}: a frame and a base plate to pour silicone round the printed master. The master sits in a shallow seat, the frame stands in a groove so nothing runs out. The window says how much silicone it takes.
 - {{ui:mold.kind.tray}}: a one-part mold open at the top, for a master with a flat side. The flat side becomes the open top; pour it to the brim.
-- {{ui:mold.kind.die}}: a punch and a die for leather, card, foil or thin metal. The punch is the master's outline seen from above on a plate, the die a plate with the outline as a cavity. For {{ui:mold.dieMode.form}} the gap all round is the {{ui:mold.material}}, and the punch's edge is rounded so the sheet does not tear; for {{ui:mold.dieMode.cut}} the gap is a few per cent of it and the die is open below, so the cut-out falls through. Guide pins keep both in line.
+- {{ui:mold.kind.die}}: a stamp and a die for leather, card, foil or thin metal. The stamp is the master's outline seen from above on a plate, the die a plate with the outline as a cavity. For {{ui:mold.dieMode.form}} the gap all round is the {{ui:mold.material}}, and the stamp's edge is rounded so the sheet does not tear; for {{ui:mold.dieMode.cut}} the gap is a few per cent of it and the die is open below, so the cut-out falls through. Guide pins keep both in line.
 
-Click {{ui:mold.apply}}: the parts lie beside the master the way they print, without support: the halves with their parting face up, the die ready to be turned over onto the punch. The master stays as it is.
+Click {{ui:mold.apply}}: the parts lie beside the master the way they print, without support: the halves with their parting face up, the die ready to be turned over onto the stamp. The master stays as it is.
 
 The most common trouble with molds is a cast that sticks. Where the master is wider above than below the parting, the window warns of an undercut: move the {{ui:mold.parting}} to where the master is widest, turn the master, or take the silicone pour box, which lets go of undercuts.
 
