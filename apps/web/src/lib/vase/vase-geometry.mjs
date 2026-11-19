@@ -76,6 +76,12 @@ export const LAMP_BASE_LIGHTS = { scheibe: 'LED-Scheibe', fassung: 'Schraubfassu
 /** Hole for the socket: approximate values for the shade ring - measure your own socket. */
 export const LAMP_SOCKETS = { e27: 'E27 (≈ 41 mm)', e14: 'E14 (≈ 29 mm)', eigen: 'Eigenes Maß' }
 const SOCKET_HOLES = { e27: 41, e14: 29 }
+/** The bulb a lampshade is checked against: common forms with their widest diameter, or one's own measures. */
+export const LAMP_BULBS = { keine: 'Nicht prüfen', a60: 'Birne A60 (Ø 60 mm)', g45: 'Tropfen G45 (Ø 45 mm)', kerze: 'Kerze C35 (Ø 35 mm)', g95: 'Globe G95 (Ø 95 mm)', g125: 'Globe G125 (Ø 125 mm)', eigen: 'Eigenes Maß' }
+/** Their widest diameter and their length with the cap, mm. */
+const BULB_SIZES = { a60: [60, 110], g45: [45, 78], kerze: [35, 100], g95: [95, 140], g125: [125, 175] }
+/** How near a bulb may come to the shade's wall before the check speaks up, mm. */
+const BULB_GAP = 15
 /** Settings of the accessories: shape presets leave them as they are. */
 export const PART_KEYS = ['legMode', 'legCount', 'legHeight', 'legDiameter', 'legShape', 'legSplay', 'legInset', 'fitClearance',
   'saucerMode', 'saucerRibs', 'saucerSpout', 'saucerGrip', 'saucerGap', 'saucerHeight', 'saucerWall',
@@ -257,6 +263,10 @@ export const DEFAULTS = Object.freeze({
    * bottom (%; a bellied base at its belly, the others at their foot), and its light - an LED disc (`lampDisc` across, `lampDiscHeight` high) or a screw socket (the hole of
    * `lampSocket`). The cable leaves through a slot at the back of the foot (`lampNotch`, `lampNotchHeight`).
    */
+  /** The bulb the shade is checked against (its widest diameter and its length with the cap); 'keine': no check. */
+  lampBulb: 'keine',
+  lampBulbDiameter: 60,
+  lampBulbLength: 110,
   lampBaseShape: 'bauch',
   lampBaseLight: 'scheibe',
   lampBaseHeight: 45,
@@ -415,6 +425,8 @@ export const LIMITS = {
   lampSpokes: [0, 6],
   lampRing: [3, 30],
   lampSpokeWidth: [3, 30],
+  lampBulbDiameter: [20, 200],
+  lampBulbLength: [40, 300],
   lampBaseRibs: [0, 120],
   lampBaseHeight: [15, 150],
   lampBaseWidth: [40, 160],
@@ -545,6 +557,8 @@ export function normalizeParams(input = {}) {
   if (!LAMP_BASES[p.lampBaseShape]) p.lampBaseShape = DEFAULTS.lampBaseShape
   if (!LAMP_BASE_LIGHTS[p.lampBaseLight]) p.lampBaseLight = DEFAULTS.lampBaseLight
   if (SOCKET_HOLES[p.lampSocket]) p.lampHole = SOCKET_HOLES[p.lampSocket]
+  if (!LAMP_BULBS[p.lampBulb]) p.lampBulb = DEFAULTS.lampBulb
+  if (BULB_SIZES[p.lampBulb]) [p.lampBulbDiameter, p.lampBulbLength] = BULB_SIZES[p.lampBulb]
   if (p.cutoutTo < p.cutoutFrom) [p.cutoutFrom, p.cutoutTo] = [p.cutoutTo, p.cutoutFrom]
   if (!SECTION_OUTSIDE[p.sectionOutside]) p.sectionOutside = DEFAULTS.sectionOutside
   p.bottom = Math.min(p.bottom, p.height * 0.5)
@@ -1459,6 +1473,49 @@ export function legPeg(p) {
 }
 
 /**
+ * Whether the bulb a lampshade is checked against has room in it. The bulb is taken as a round head of its widest
+ * diameter on a neck, screwed into a socket on the shade's plate: a hanging shade is held near the socket's mouth, so
+ * the bulb's glass starts just inside; a socket that stands in the shade (standing, or in a base) lifts it by its own
+ * height. Notes where the glass comes nearer to the wall than BULB_GAP, does not fit, or reaches out of the shade.
+ */
+function bulbNotes(p, shape, lamp, plate) {
+  if (p.lampBulb === 'keine') return []
+  const socketed = lamp === 'haengend' || lamp === 'stehend' || (lamp === 'sockel' && p.lampBaseLight === 'fassung')
+  if (!socketed) return []
+  const small = p.lampSocket === 'e14'
+  // The cap sits in the socket; the socket stands this far into the shade.
+  const cap = small ? 20 : 27
+  const start = (lamp === 'sockel' ? 0 : plate) + (lamp === 'haengend' ? 15 : small ? 45 : 55)
+  const length = Math.max(10, p.lampBulbLength - cap)
+  const R = p.lampBulbDiameter / 2
+  const neck = Math.min(R, small ? 9 : 14)
+  const centre = start + Math.max(R, length - R)
+  const end = start + length
+  const bulbAt = (z) => {
+    const dz = z - centre
+    if (Math.abs(dz) <= R && dz >= -0.6 * R) return Math.sqrt(R * R - dz * dz)
+    // The neck widens from the socket to the head.
+    const from = centre - 0.6 * R
+    return z >= from ? 0 : neck + ((0.8 * R - neck) * Math.max(0, z - start)) / Math.max(1e-6, from - start)
+  }
+  const insideAt = p.body === 'hohl' ? shape.innerAt : (a, z) => shape.outerAt(a, z) - p.lineWidth
+  let gap = Infinity
+  const top = Math.min(end, p.height)
+  for (let k = 0; k <= 60; k++) {
+    const z = start + ((top - start) * k) / 60
+    let inner = Infinity
+    for (let j = 0; j < 24; j++) inner = Math.min(inner, insideAt((2 * Math.PI * j) / 24, z))
+    gap = Math.min(gap, inner - bulbAt(z))
+  }
+  const notes = []
+  if (!(start < p.height)) return notes
+  if (gap < 0) notes.push(`Die Birne (Ø ${fmtMm(p.lampBulbDiameter)} mm) passt nicht in den Schirm – an der engsten Stelle fehlen ${fmtMm(Math.ceil(-gap))} mm.`)
+  else if (gap < BULB_GAP) notes.push(`Die Birne (Ø ${fmtMm(p.lampBulbDiameter)} mm) kommt der Wand bis auf ${fmtMm(Math.floor(gap))} mm nahe – etwa 15 bis 20 mm Abstand lassen: den Schirm breiter oder die Birne kleiner wählen.`)
+  if (end > p.height + 1) notes.push(`Die Birne ragt etwa ${fmtMm(Math.round(end - p.height))} mm aus dem Schirm heraus – den Schirm höher oder die Birne kürzer wählen.`)
+  return notes
+}
+
+/**
  * The openings between the spokes of a lampshade's carrier: the plate that holds the socket, as a ring round the hole
  * (`lampRing` wide) and `lampSpokes` spokes with parallel sides (`lampSpokeWidth` wide) out to a rim along the wall.
  * `floorAt(angle)` is how far the plate reaches. Each opening is { points } (counter-clockwise, for capWithHoles) with
@@ -1620,6 +1677,7 @@ export function floorLayout(input) {
     if (p.drainHoles > 0) notes.push('Ohne Boden (über einem LED-Puck) gibt es keine Ablauflöcher.')
   }
   if (lamp !== 'keine') notes.push('Nur LED-Leuchtmittel verwenden: PLA wird ab etwa 55 °C weich, PETG ab etwa 80 °C.')
+  notes.push(...bulbNotes(p, shape, lamp, foot + floor))
   if (open && lamp === 'keine' && p.drainHoles > 0) notes.push('Ohne Boden gibt es keine Ablauflöcher.')
   else if (lamp === 'keine' && hollow && p.drainHoles > 0) {
     const r = p.drainDiameter / 2

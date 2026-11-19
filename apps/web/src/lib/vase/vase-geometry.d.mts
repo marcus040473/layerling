@@ -14,7 +14,7 @@ export type VaseNumberKey =
   | "saucerGap" | "saucerHeight" | "saucerWall" | "insertWall" | "insertStandoff" | "reservoirHeight" | "tubeDiameter" | "frogHole"
   | "lidClearance" | "lidThickness" | "lidDepth" | "threadPitch" | "lidHeight"
   | "cutoutSize" | "cutoutWeb" | "cutoutFrom" | "cutoutTo" | "cutoutAspect" | "cutoutSeed"
-  | "lampHole" | "lampSpokes" | "lampRing" | "lampSpokeWidth" | "lampBaseHeight" | "lampBaseWidth" | "lampBaseRibs" | "lampDisc" | "lampDiscHeight" | "puckDiameter" | "lampNotch" | "lampNotchHeight"
+  | "lampHole" | "lampSpokes" | "lampRing" | "lampSpokeWidth" | "lampBulbDiameter" | "lampBulbLength" | "lampBaseHeight" | "lampBaseWidth" | "lampBaseRibs" | "lampDisc" | "lampDiscHeight" | "puckDiameter" | "lampNotch" | "lampNotchHeight"
   | "reinforceCount" | "reinforceDepth" | "slitWidth" | "lineWidth"
   | "polySides" | "polyRound" | "sectionWaves" | "sectionWaveAmp" | "sectionFinWidth" | "drawRepeat"
   | "stripeTurn" | "stripeCount" | "stripeWidth" | "stripeDepth"
@@ -27,7 +27,7 @@ export type VaseChoiceKey =
   | "profile" | "purpose" | "ribShape" | "twistMode" | "twistAlong" | "material" | "sectionOutside"
   | "section2" | "section2WaveStyle" | "body" | "innerShape"
   | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "insertMode"
-  | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "printView" | "lamp" | "lampSocket" | "lampBaseShape" | "lampBaseLight" | "reinforce"
+  | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "printView" | "lamp" | "lampSocket" | "lampBulb" | "lampBaseShape" | "lampBaseLight" | "reinforce"
   | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle"
   | "stopperRing" | "leafShape" | "leafLayout" | "leafVeins" | "printFriendly" | "patternInvert" | "leafFixed"
   | "patternText" | "patternFit";
@@ -72,6 +72,8 @@ export const LAMP_SOCKETS: Readonly<Record<string, string>>;
 /** The forms of the base a lampshade stands on, and what gives the light in it. */
 export const LAMP_BASES: Readonly<Record<string, string>>;
 export const LAMP_BASE_LIGHTS: Readonly<Record<string, string>>;
+/** The bulbs a lampshade can be checked against. */
+export const LAMP_BULBS: Readonly<Record<string, string>>;
 export const LID_MODES: Readonly<Record<string, string>>;
 export const PATTERNS: Readonly<Record<string, string>>;
 /** One's own picture: row upon row, or once in the middle of the height range. */

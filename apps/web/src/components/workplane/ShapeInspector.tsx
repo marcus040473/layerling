@@ -518,6 +518,7 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
   lamp: { keine: "vase.lampNone", haengend: "vase.lampHanging", stehend: "vase.lampStanding", puck: "vase.lampPuck", sockel: "vase.lampOnBase" },
   lampBaseShape: { bauch: "vase.baseBelly", zylinder: "vase.profileCylinder", kegel: "vase.profileShadeCone", kelch: "vase.baseGoblet", glocke: "vase.profileShadeBell", stufe: "vase.baseStep" },
   lampBaseLight: { scheibe: "vase.baseLightDisc", fassung: "vase.baseLightSocket" },
+  lampBulb: { keine: "vase.bulbNone", a60: "vase.bulbA60", g45: "vase.bulbG45", kerze: "vase.bulbCandle", g95: "vase.bulbG95", g125: "vase.bulbG125", eigen: "vase.socketCustom" },
   lampSocket: { e27: "vase.socketE27", e14: "vase.socketE14", eigen: "vase.socketCustom" },
   legMode: { keine: "vase.legsNone", stecken: "vase.legsPlugIn", angeformt: "vase.legsMoulded", staender: "vase.legsStand" },
   legShape: { kegel: "vase.legCone", zylinder: "vase.legCylinder", kantig: "vase.legSquare" },
@@ -1848,6 +1849,11 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         // The carrier: a closed plate, or a ring round the socket held by spokes.
         properties.push(lampRow(range("lampSpokes", "prop.vaseLampSpokes", 1, "vase.lampSpokesHint")));
         if (vase.lampSpokes >= 2) properties.push(lampRow(range("lampRing", "prop.vaseLampRing", 0.5)), lampRow(range("lampSpokeWidth", "prop.vaseLampSpokeWidth", 0.5)));
+      }
+      // The bulb the shade is checked against (the print check says how near it comes to the wall): for a shade with a socket.
+      if (vase.lamp === "haengend" || vase.lamp === "stehend" || (vase.lamp === "sockel" && vase.lampBaseLight === "fassung")) {
+        properties.push(lampRow(choice("lampBulb", "prop.vaseLampBulb", "vase.lampBulbHint")));
+        if (vase.lampBulb === "eigen") properties.push(lampRow(range("lampBulbDiameter", "prop.vaseLampBulbDiameter", 1)), lampRow(range("lampBulbLength", "prop.vaseLampBulbLength", 1)));
       }
       if (vase.lamp === "puck") properties.push(lampRow(range("puckDiameter", "prop.vasePuckDiameter", 1)));
       if (vase.lamp === "sockel" || (hollow && (vase.lamp === "stehend" || vase.lamp === "puck"))) {

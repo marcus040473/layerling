@@ -145,3 +145,42 @@ describe("a plant pot and a lampshade in the shape library", () => {
     expect([vase.width, vase.height]).toEqual([90, 180]);
   });
 });
+
+describe("the bulb a lampshade is checked against", () => {
+  const notesOf = (over: Record<string, unknown>) => buildVase({ height: 160, diameter: 180, profile: "schirmTrommel", body: "hohl", wall: 1.2, lamp: "haengend", quality: "entwurf", ...over }).notes as string[];
+  const bulb = (notes: string[]) => notes.filter((note) => note.startsWith("Die Birne"));
+
+  it("is not checked unless asked, and has room in a wide shade", () => {
+    expect(bulb(notesOf({}))).toEqual([]);
+    expect(bulb(notesOf({ lampBulb: "a60" }))).toEqual([]);
+    expect(normalizeParams({ lampBulb: "g95" })).toMatchObject({ lampBulbDiameter: 95, lampBulbLength: 140 });
+    expect(normalizeParams({ lampBulb: "eigen", lampBulbDiameter: 70, lampBulbLength: 120 })).toMatchObject({ lampBulbDiameter: 70, lampBulbLength: 120 });
+    expect(normalizeParams({ lampBulb: "riesig" }).lampBulb).toBe("keine");
+  });
+
+  it("says when the bulb comes too near the wall, does not fit, or reaches out of the shade", () => {
+    // A globe of 125 mm in a shade 150 mm wide: a good 10 mm of room each side.
+    const near = bulb(notesOf({ diameter: 150, height: 200, lampBulb: "g125" }));
+    expect(near).toHaveLength(1);
+    expect(near[0]).toMatch(/^Die Birne \(Ø 125 mm\) kommt der Wand bis auf \d+ mm nahe/);
+    // In a shade 110 mm wide it does not fit.
+    const tight = bulb(notesOf({ diameter: 110, height: 200, lampBulb: "g125" }));
+    expect(tight.some((note) => note.startsWith("Die Birne (Ø 125 mm) passt nicht in den Schirm"))).toBe(true);
+    // A short shade: the bulb (148 mm of glass below the socket) looks out of it.
+    const short = bulb(notesOf({ height: 80, lampBulb: "g125" }));
+    expect(short.some((note) => /^Die Birne ragt etwa \d+ mm aus dem Schirm heraus/.test(note))).toBe(true);
+    // The notes are said in the editor's language.
+    expect(vaseNote(near[0])).toMatch(/^The bulb \(Ø 125 mm\) comes as near as \d+ mm to the wall/);
+    expect(vaseNote(tight.find((note) => note.includes("passt nicht"))!)).toMatch(/^The bulb \(Ø 125 mm\) does not fit into the shade – \d+ mm are missing/);
+    expect(vaseNote(short.find((note) => note.includes("ragt"))!)).toMatch(/^The bulb reaches about \d+ mm out of the shade/);
+  });
+
+  it("is for a shade with a socket: not over an LED disc or a puck, but in a base with a screw socket", () => {
+    expect(bulb(notesOf({ lamp: "puck", diameter: 110, lampBulb: "g125" }))).toEqual([]);
+    expect(bulb(notesOf({ lamp: "sockel", diameter: 110, lampBulb: "g125" }))).toEqual([]);
+    expect(bulb(notesOf({ lamp: "sockel", lampBaseLight: "fassung", diameter: 110, lampBulb: "g125" })).length).toBeGreaterThan(0);
+    // A socket that stands in the shade lifts the bulb: sooner out of a shade than one that hangs.
+    expect(bulb(notesOf({ height: 150, lampBulb: "a60" }))).toEqual([]);
+    expect(bulb(notesOf({ height: 120, lamp: "stehend", lampBulb: "a60" })).some((note) => note.includes("ragt"))).toBe(true);
+  });
+});

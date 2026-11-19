@@ -162,6 +162,11 @@ describe("a vase in its settings", () => {
     expect(rangeNamed(block, "Spoke width")).toBeDefined();
     act(() => tile(shade.panel, "Drum")!.click());
     expect(shade.calls.updates.at(-1)?.vase?.profile).toBe("schirmTrommel");
+    // The bulb the print check holds against the shade: common ones, or one's own measures.
+    expect([...selectNamed(block, "Check the bulb")!.options].map((option) => option.textContent)).toEqual(["Do not check", "Bulb A60 (Ø 60 mm)", "Drop G45 (Ø 45 mm)", "Candle C35 (Ø 35 mm)", "Globe G95 (Ø 95 mm)", "Globe G125 (Ø 125 mm)", "Own size"]);
+    expect(rangeNamed(block, "Bulb diameter")).toBeUndefined();
+    choose(selectNamed(block, "Check the bulb")!, "g95");
+    expect(shade.calls.updates.at(-1)?.vase).toMatchObject({ lampBulb: "g95", lampBulbDiameter: 95, lampBulbLength: 140 });
     // A shade on a base: the base's form and size, its light, the cable's slot, and a button that lays the base out.
     choose(selectNamed(block, "Lampshade")!, "sockel");
     expect(shade.calls.updates.at(-1)?.vase?.lamp).toBe("sockel");
