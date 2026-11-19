@@ -23,8 +23,8 @@ Den bliver åben eller lukket, som du lod den være, for hvert design, indtil du
 
 ![Objektlisten: gruppen "Gruppe" med to dele og en kugle ved siden af. Et mappeikon åbner gruppen.](shot:object-list)
 
-- Et klik på en post vælger formen, inklusive dele inde i en gruppe. Med [[Shift]] holdt tilføjer du flere poster eller tager dem væk igen, ligesom i visningen. Pilene folder grupper åbne og i.
-- Etiketten viser om en del er {{ui:outliner.solid}} eller {{ui:outliner.hole}}.
+- Et klik på en post vælger formen, inklusive dele inde i en gruppe. Som i en filhåndtering tilføjer [[Ctrl]] ([[Cmd]] på en Mac) en post eller tager den væk igen, og [[Shift]] vælger alle poster fra den sidst klikkede til denne, i listens rækkefølge; [[Ctrl]]+[[Shift]] føjer dem til det valgte. I visningen er det i stedet [[Shift]], der tilføjer og tager væk. Pilene folder grupper åbne og i.
+- Bogstavet efter navnet viser, om en del er {{ui:outliner.solid}} eller {{ui:outliner.hole}}: det er ordets første bogstav, og hele ordet vises, når du holder musen over det.
 - Under navnet står, hvilken slags form det er. En form, der ikke længere er en simpel form (afrundet, udhulet eller importeret), viser {{ui:shape.exactBody}}, når STEP-eksporten skriver den eksakt, og {{ui:shape.mesh}}, når den kun består af trekanter og går ud som STL. En tilspidsning, hældning eller vridning, der først kommer til efter afrunding eller udhuling, bøjer kun dens mesh, så viser den {{ui:shape.mesh}}.
 - Hængelås og øje låser og skjuler enkelte dele.
 - {{ui:outliner.rename}} giver en del sit eget navn; blyanten ved siden af navnet øverst i indstillingerne gør det samme for den valgte form. Fornuftige navne hjælper enormt i større designs.
@@ -34,7 +34,7 @@ Den bliver åben eller lukket, som du lod den være, for hvert design, indtil du
 - Søgefeltet finder former på navn og type, så også "cylinder" eller "hul". Det kigger også inden i grupper, uanset hvor dybt: en gruppe der indeholder et match bliver i listen og folder sig åben for at vise de matchende dele og de grupper der fører til dem. En gruppe fundet på sit eget navn viser alle sine dele når du åbner den.
 - Pilen yderst til venstre på titellinjen folder listen ned til dens titellinje og tilbage igen.
 
-Listen sidder docket lige til højre for visningskuben. Træk den i dens titellinje for at placere den hvor som helst på arbejdsplanet; den passerer under visningskuben og visningsbjælken. Slip den tilbage ved siden af visningskuben, eller dobbeltklik titellinjen, og den docker igen. Hvor den var og om den var foldet huskes i denne browser.
+Listen sidder docket lige til højre for visningskuben. Træk den i dens titellinje for at placere den hvor som helst på arbejdsplanet; den passerer under visningskuben og visningsbjælken. Slip den tilbage ved siden af visningskuben, eller dobbeltklik titellinjen, og den docker igen. Hvor den var og om den var foldet huskes i denne browser. Gør listen bredere eller smallere ved at trække i dens nederste højre hjørne, fra 240 til 600 pixel; også bredden huskes i browseren.
 
 ## Tast en position
 
@@ -47,6 +47,8 @@ Du kan trække en form forbi kanten af pladen og lade den stå der, omkring én 
 ## Snap under flytning
 
 Når du trækker en form hen over arbejdsplanet, snapper den til andre former: dens venstre, højre, for- eller bagkant eller dens midte lander præcis på en kant eller midte af en anden form. En lyserød hjælpelinje viser hvad den holder fast i. Sådan sidder to dele lige ud for hinanden eller centreret den ene bag den anden uden at taste tal. Det virker også med gitteret slået fra. Arbejdsplanets midte tæller også: de lyserøde linjer viser, når formen står midt på pladen langs X, langs Y eller begge.
+
+Også når du ændrer størrelse, snapper det: Trækker du i et sidehåndtag, stopper den side ved kanter og centre af andre former og ved den væg, den løber ind i, også indervæggen i en kasse, en udhulet form eller et importeret kabinet, og den lyserøde linje viser hvor. Det mål bevares nøjagtigt, uden for gitteret. Sådan fylder en del et kabinet fra væg til væg: læg den mod den ene væg, og træk dens anden side hen til den modsatte. Med [[Alt]] vokser formen fra midten, og den trukne side snapper på samme måde; med [[Shift]] beholder den sine proportioner og snapper ikke. Det virker på det flade arbejdsplan for former, der står oprejst med siderne langs X og Y, og {{ui:workspace.objectSnap}} slår det fra sammen med snap under flytning.
 
 Hold [[Shift]] mens du trækker for at holde flytningen på én akse: formen følger den retning, X eller Y, du har trukket længst i, og lader den anden være. Bedst at trykke [[Shift]] når du allerede trækker; på en form der ikke er valgt endnu, tilføjer et klik med [[Shift]] den kun til markeringen.
 
@@ -78,7 +80,7 @@ Er der blandt de valgte figurer en plade (en grundform, som de andre står på, 
 
 Uden en plade holder du [[Shift]] nede og klikker først på et tomt sted på byggepladen: så er den den faste figur, lige store mellemrum fordeler figurerne over hele pladen med samme mellemrum til kanterne, og de andre punkter justerer dem efter dens kanter eller midte. Et nyt klik med [[Shift]] på den tomme plade slipper den igen. Et klik på et tomt sted uden [[Shift]] afslutter justeringen, ligesom [[L]] og [[Esc]].
 
-Hold [[Alt]] nede og klik på punktet for selv at indtaste mellemrummet, fx 5 mm: figurerne stilles så langt fra hinanden, fra den første figur eller fra den, du klikkede først; på en plade kommer rækken i midten. En låst figur bliver stående, så en mellem de yderste figurer forhindrer lige store mellemrum.
+Hold [[Alt]] nede og klik på punktet for selv at indtaste mellemrummet, fx 5 mm: figurerne stilles så langt fra hinanden, fra den første figur eller fra den, du klikkede først; på en plade kommer rækken i midten. En låst figur bliver stående, så en mellem de yderste figurer forhindrer lige store mellemrum. På en tablet, som ikke har nogen Alt-tast, gør kontakten {{ui:align.sizeSwitch}} ved siden af prikkerne det samme: Tænder du den, forbliver prikkerne firkanter, og afstandsprikken åbner sit felt, indtil du slukker den igen.
 
 ## Spejling
 
@@ -166,6 +168,19 @@ Den runde væg på en cylinder, et rør eller en boring tager også huller: en b
 
 En AI kan gøre det samme gennem MCP-broen med `layerling_perforate_face` (se kapitlet [AI med MCP](chapter:ai-with-mcp)).
 
+På en plade eller et låg med udskæringer i siderne fordeler {{ui:holePattern.arrangement.perimeter}} hullerne ujævnt. Derfor har {{ui:holePattern.title}} en anden fane ved siden af {{ui:holePattern.mode.pattern}}, {{ui:holePattern.mode.mounting}}: den sætter hullerne i hjørnerne af det mindste rektangel omkring den valgte flade, i samme afstand fra dets sider, også på en drejet eller udskåret plade. {{ui:holePattern.mounting.distance}} måles til hullets kant, et skruehoved medregnet, eller med {{ui:holePattern.mounting.toCenter}} til dets midte. Med {{ui:holePattern.mounting.count}} kommer fire i hjørnerne og resten parvis, jævnt fordelt langs siderne, for eksempel til et vandtæt låg. På en rund flade, som låget på en rund æske, sidder de jævnt fordelt rundt på en cirkel, tre eller flere. Hultype og størrelser er de samme som ved mønsteret: almindeligt, med cylindrisk forsænkning eller kegleforsænkning, gennemgående eller til en dybde. De laves som almindelige hulformer grupperet med formen, så gruppens {{ui:inspector.groupHoleDiameter}} virker på dem også.
+
+## Hul til en gevindindsats
+
+En varmeindsats presses ind i en plastdel med en loddekolbe og giver skruer et gevind, der ikke slides op. {{ui:threadInsert.title}} laver hullet til den, hvor du klikker, og fortæller dig først, om formen har nok materiale dér. Vælg præcis én form, åbn formbiblioteket og klik på {{ui:threadInsert.title}} under {{ui:library.section.holes}}. Du kan også finde den med [[Ctrl]]+[[K]]. I modsætning til de andre former kan den ikke trækkes ind i tegningen, fordi den virker på den valgte form.
+
+1. Vælg {{ui:threadInsert.size}} i vinduet: M2 til M8, de korte M3, M4 og M5, eller 1/4-20. Med {{ui:threadInsert.custom}} skriver du hullets diameter og indsatsens længde; den væg, der skal blive stående rundt om hullet, følger af diameteren. Vinduet viser hullets diameter og dybde og denne væg.
+2. Klik på stedet på formen. En flad flade duer, og det gør den ydre væg på en cylinder eller et rør også; enhver anden kurve afvises med et tip. En ring viser hullet: grøn, hvor formen har den væg ved siden af hullet og den dybde bagved, som indsatsen skal bruge, rød, hvor en af dem kommer til kort. Rød fortæller hvilken og med hvor meget, og hvor bred formen skal være rundt om hullet.
+3. Flyt ringen ved at trække hen over formen, eller skriv afstanden fra venstre og nederste kant på en flad flade under {{ui:threadInsert.position}}. {{ui:threadInsert.center}} sætter den på midten af fladen, hvor det lilla mærke viser den. Hver flytning måles igen.
+4. {{ui:threadInsert.repick}} vælger et andet sted, og [[Esc]] lukker værktøjet. Kun {{ui:threadInsert.apply}} laver hullet, og kun hvor ringen er grøn.
+
+Hullet er en almindelig hulform grupperet med formen, ligesom hullerne i hulmønsteret, og CAD-kernen skærer det som en ægte cylinder, så boringen er præcis. {{ui:editor.tool.ungroup}} frigør hullet igen. Det er lige så dybt, som indsatsen er lang, og står lidt ud af fladen, så det åbner rent. En AI kan gøre det samme gennem MCP-broen med `layerling_thread_insert` (se kapitlet [AI med MCP](chapter:ai-with-mcp)).
+
 ## Skub en flade ud eller ind
 
 Til en tykkere væg, et hævet stykke på en flade eller en lomme skåret ind i den arbejder {{ui:faceTool.title}} på én flad flade. Det virker også på en importeret STL, hvor der ingen skitse er at ændre. Vælg præcis én form og klik på {{ui:faceTool.title}} i {{ui:editor.section.mirrorPattern}}-gruppen i båndet, ved siden af hulmønsteret. Du kan også højreklikke på formen, eller finde den med [[Ctrl]]+[[K]].
@@ -194,6 +209,8 @@ For at gøre en eller flere dele større eller mindre med den samme andel, for e
 
 Under {{ui:scalePercent.percent}} taster du den nye størrelse som en procent af den aktuelle: 120 % er en femtedel større, 50 % halv størrelse. Bredde, dybde og højde ændres ens, så proportionerne bevares. Bunden bliver hvor den er, så intet synker ned i pladen.
 
+Til modelbygning vælger du {{ui:scalePercent.by.scale}} i stedet for {{ui:scalePercent.by.percent}} øverst. {{ui:scalePercent.scalePresets}} har de almindelige skalaer fra Z (1:220) til 16mm (1:19,05), og i {{ui:scalePercent.ratio}} taster du enhver anden skala, fx 35 for 1:35. Er modellen bygget i forbilledets virkelige størrelse, så lad {{ui:scalePercent.original.fullSize}} være valgt: 1:87 gør den 87 gange mindre. Har du bygget den i en vilkårlig størrelse, vælg {{ui:scalePercent.original.realSize}}, så {{ui:scalePercent.axis.height}} eller {{ui:scalePercent.axis.length}} (den længste side på pladen), og tast i {{ui:scalePercent.realSize}}, hvor stort forbilledet virkelig er, i meter (i fod med tommeenheder). Et træ, der i virkeligheden er 16 m højt, bliver så 16.000 mm / 87 = 184 mm højt i H0, uanset hvor stort det var før. Den nye størrelse står under felterne, før du trykker på {{ui:scalePercent.apply}}. Skalaen bliver stående, så længe editoren er åben.
+
 Med flere dele vælger du hvordan de vokser:
 
 - **{{ui:scalePercent.mode.together}}:** Delene vokser omkring deres fælles centrum, og mellemrummene vokser med dem. Hele bliver større som om det var én del.
@@ -215,3 +232,5 @@ To ting kan du tage med fra en tidligere tilstand. {{ui:historyView.createProjec
 Du kan også hente enkelte objekter tilbage i designet. Klik på et objekt i den viste tilstand - [[Shift]]+klik tilføjer flere eller fjerner et igen, et klik i det tomme vælger intet - og vælg {{ui:historyView.bringBack}}. Visningen lukker, og en kopi af hvert objekt kommer ind i det nuværende design, præcis som det var i den tilstand og på det sted, det stod der, valgt, ved siden af alt det, designet rummer nu; intet andet ændres. Det er ét trin, så fortryd tager det tilbage. Brug det til en version af en del, du siden har ændret eller slettet. En gruppe kommer tilbage hel; noter og referencepunkter på et objekt bliver tilbage. Navnet bærer tidspunktet for den tilstand, f.eks. „Kasse (12:32)“, så det er let at skelne fra den version, designet har nu. For at hente en del tilbage fra en gruppe vælger du gruppen og vælger {{ui:historyView.openGroup}} eller trykker [[E]], som i designet: delene lægges der, hvor redigering af gruppen ville lægge dem, klar til at vælge, og bjælken viser, hvilken gruppe du er i. {{ui:historyView.backOut}} lukker den igen. Det er kun for at se - gruppen, designet og historikken forbliver, som de er.
 
 {{ui:historyView.delete}} sidder alene nederst til venstre i bjælken. Efter et spørgsmål fjerner den hvert tidligere trin for evigt: designet beholder den tilstand det har nu (ikke den viste), Fortryd har intet at gå tilbage til, og en fil gemt bagefter har ingen historik. Brug den til at dele et design uden dets fortid, eller til at starte fortryd-trinnene forfra. Det kan ikke fortrydes; for at dele en fil uden at røre dit eget design, vælg {{ui:export.historyNone}} når du eksporterer i stedet.
+
+Gør et stort design lettere uden at miste hele historikken ved at slette enkelte trin. Med listen åben viser hvert trin til højre cirka, hvor meget plads det frigør at slette det, talt som designet gemmes: et mesh, som flere trin deler, tæller ikke for nogen af dem alene, og trin, der frigør under 10 KB, viser intet. Et drejet legeme gemmes som et nyt mesh efter hver drejning, så det er som regel de trin, der er store. Skraldespanden ved et trin sletter kun det trin efter et spørgsmål: designet forbliver, som det er, og Fortryd springer fra trinnet efter direkte til trinnet før. Det trin, designet står på, kan ikke slettes. Over listen står, hvor meget hele historikken fylder, og {{ui:historyView.deleteLargest}} vælger hvert trin, der alene frigør 1 MB eller mere, og spørger, før det sletter dem samlet. Når et design er for stort til, at browseren kan gemme det med hele historikken, har beskeden om det en knap {{ui:notice.projectHistoryTrimmedOpen}}, der åbner denne liste.
