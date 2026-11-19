@@ -198,12 +198,12 @@ import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
 import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternColor, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureEntry, surfaceTextureLayerPlaced } from "@/lib/surfaceTextureShape";
 import { DRAW_PROFILE, LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, PROFILES, isPicturePattern as isVasePicturePattern, isReliefPattern as isVaseReliefPattern, lidSafeZoneTo, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
 import { normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
-import { vaseShapePatchOffThread } from "@/lib/vaseShape";
 import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
 import { LeafEditor, PatternPicture, ProfilePicture, VaseZoneRange } from "@/components/workplane/VaseDesignerParts";
 import { isComputedPattern } from "@/lib/vase/vase-computed-patterns.mjs";
 import { OWN_TEXT_LENGTH, normalizeOwnPicture } from "@/lib/vase/vase-own-picture.mjs";
 import { vaseSettingsWithTextPicture } from "@/lib/vaseRelief";
+import { applyVaseChange, beginVaseDraft, endVaseDraft, usePendingVase } from "@/lib/vaseDraft";
 import { VasePrintBadge, VasePrintReport } from "@/components/workplane/VasePrintReport";
 import { shapeDefaultsAsset, shapeDefaultsFromShape } from "@/lib/shapeDefaults";
 import { fromPrinterPlay, printerPlayShapeRows, withPrinterPlay } from "@/lib/printerPlay";
@@ -1631,7 +1631,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     const vase = normalizeVaseSettings(shape.vase);
     // A new choice can change the outline (a hexagon is narrower across its flats): the frame follows it.
     // The body is built on a worker, and the change comes once it is there.
-    const setVase = (patch: Partial<VaseSettings>) => vaseShapePatchOffThread({ id: shape.id, width, depth, height: shape.height }, normalizeVaseSettings({ ...vase, ...patch }), (vasePatch) => onUpdate(vasePatch));
+    // While a value is held (a slider dragged) the body is the coarse one, and the full one follows the hold (vaseDraft.ts).
+    const setVase = (patch: Partial<VaseSettings>) => applyVaseChange({ id: shape.id, width, depth, height: shape.height }, normalizeVaseSettings({ ...vase, ...patch }), (vasePatch) => onUpdate(vasePatch));
     const limits = (key: VaseNumberKey): [number, number] => VASE_LIMITS[key] ?? [0, 100];
     const range = (key: VaseNumberKey, label: MessageKey, step: number, hint?: MessageKey): ShapePropertyConfig => {
       const [min, max] = limits(key);
@@ -4907,7 +4908,11 @@ export function ShapeInspector({
   const [loftSection, setLoftSection] = useState(0);
   useEffect(() => setLoftSection(0), [shape.id]);
   const printerPlay = usePrinterPlay();
-  const properties = withFitTestNotes(getShapeProperties(shape, onUpdate, workspace, { loftSection, setLoftSection, portPresetWithScrewHoles: onPortPresetWithScrewHoles }), shape.kind, printerPlay);
+  // A vase's panel shows what was asked for last while its body is still on the way (vaseDraft.ts), so a dragged
+  // slider follows the hand; the rows are built from that, and a change is laid over it.
+  const pendingVase = usePendingVase(shape.kind === "vase" ? shape.id : undefined);
+  const shownShape = pendingVase ? { ...shape, vase: pendingVase } : shape;
+  const properties = withFitTestNotes(getShapeProperties(shownShape, onUpdate, workspace, { loftSection, setLoftSection, portPresetWithScrewHoles: onPortPresetWithScrewHoles }), shape.kind, printerPlay);
   const tiltedMeasures = orientedMeasures(shape).kind === "tilted";
   // A shape with settings of its own that got a fillet or chamfer shows only its measures now; the note names it
   // and says how its settings come back (#1689). A plain box had nothing more, so it gets no note.
@@ -5733,6 +5738,7 @@ export function ShapeInspector({
             ) : shape.kind === "vase" ? (
               <VaseDesigner
                 shape={shape}
+                shownVase={pendingVase}
                 properties={properties}
                 workspace={workspace}
                 disabled={frozen}
@@ -9419,6 +9425,7 @@ const VASE_PROFILES = ["flasche", "bauchig", "schale", "fass", "zylinder", "tric
  */
 function VaseDesigner({
   shape,
+  shownVase,
   properties,
   workspace,
   disabled,
@@ -9431,6 +9438,8 @@ function VaseDesigner({
   onInteractionActiveChange,
 }: {
   shape: WorkplaneShape;
+  /** The settings asked for last while their body is on the way: the tiles and handles show these, not the vase's. */
+  shownVase?: VaseSettings | null;
   properties: ShapePropertyConfig[];
   workspace: WorkplaneWorkspaceSettings;
   disabled?: boolean;
@@ -9451,10 +9460,20 @@ function VaseDesigner({
   const [patternMore, setPatternMore] = useInspectorCard("vasePatternMore", false);
   const [floorOpen, setFloorOpen] = useInspectorCard("vaseFloor", false);
   const [partsOpen, setPartsOpen] = useInspectorCard("vaseParts", false);
-  const vase = normalizeVaseSettings(shape.vase);
+  const vase = normalizeVaseSettings(shownVase ?? shape.vase);
   const width = shape.width ?? shape.size;
   const depth = shape.depth ?? shape.size;
-  const setVase = (patch: Partial<VaseSettings>) => vaseShapePatchOffThread({ id: shape.id, width, depth, height: shape.height }, normalizeVaseSettings({ ...vase, ...patch }), (vasePatch) => onUpdate(vasePatch));
+  const setVase = (patch: Partial<VaseSettings>) => applyVaseChange({ id: shape.id, width, depth, height: shape.height }, normalizeVaseSettings({ ...vase, ...patch }), (vasePatch) => onUpdate(vasePatch));
+  // A value taken hold of (a slider dragged, a number being typed): the vase is built coarse meanwhile and in full when
+  // it is let go; the editor counts the hold as over once the full body is there, so it all is one step to undo.
+  const reportHold = useRef(onInteractionActiveChange);
+  reportHold.current = onInteractionActiveChange;
+  const holdVase = useCallback((active: boolean) => {
+    if (active) {
+      beginVaseDraft(shape.id);
+      reportHold.current?.(true);
+    } else endVaseDraft(() => reportHold.current?.(false));
+  }, [shape.id]);
   // One's own picture for a relief, from a file: drawn small and grey as a Surface Texture's own image is. It takes
   // the place of a text's picture, so the text goes.
   const pictureInput = useRef<HTMLInputElement>(null);
@@ -9473,7 +9492,7 @@ function VaseDesigner({
   };
   const byPrefix = (prefix: string) => properties.filter((property) => property.id.startsWith(`${prefix}.`) || (prefix === "vase" && (property.id === "diameter" || property.id === "height")));
   const rows = (list: ShapePropertyConfig[]) => (
-    <ShapePropertyRows formulas={formulas} onFormula={onFormula} properties={list} defaults={defaults} workspace={workspace} disabled={disabled} onInteractionActiveChange={onInteractionActiveChange} />
+    <ShapePropertyRows formulas={formulas} onFormula={onFormula} properties={list} defaults={defaults} workspace={workspace} disabled={disabled} onInteractionActiveChange={holdVase} />
   );
   const advanced = (open: boolean, toggle: () => void, content: ReactNode) => (
     <>
@@ -9614,7 +9633,7 @@ function VaseDesigner({
                 disabled={disabled}
                 labels={{ title: t("vase.leafOwnTitle"), hint: t("vase.leafOwnHint"), reset: t("vase.leafOwnReset") }}
                 onChange={(points) => setVase({ leafPoints: points })}
-                onInteractionActiveChange={onInteractionActiveChange}
+                onInteractionActiveChange={holdVase}
               />
             ) : null}
             {vase.effect === "bild" ? (
@@ -9656,7 +9675,7 @@ function VaseDesigner({
                   ],
                 }}
                 onChange={(from, to) => setVase({ zoneFrom: from, zoneTo: to })}
-                onInteractionActiveChange={onInteractionActiveChange}
+                onInteractionActiveChange={holdVase}
               />
             ) : null}
             {zoneIntoNeck ? (
