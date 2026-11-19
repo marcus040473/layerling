@@ -515,7 +515,9 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
   cutout: { keine: "vase.cutoutNone", voronoi: "vase.effectVoronoi", waben: "vase.cutoutHoneycomb", rauten: "vase.cutoutDiamonds", kreise: "vase.cutoutCircles" },
   cutoutEdge: { anschneiden: "vase.cutoutCut", ganz: "vase.cutoutWhole" },
   reinforce: { keine: "vase.reinforceNone", rippen: "vase.reinforceRibs", doppelwand: "vase.reinforceDouble" },
-  lamp: { keine: "vase.lampNone", haengend: "vase.lampHanging", stehend: "vase.lampStanding", puck: "vase.lampPuck" },
+  lamp: { keine: "vase.lampNone", haengend: "vase.lampHanging", stehend: "vase.lampStanding", puck: "vase.lampPuck", sockel: "vase.lampOnBase" },
+  lampBaseShape: { bauch: "vase.baseBelly", zylinder: "vase.profileCylinder", kegel: "vase.profileShadeCone", kelch: "vase.baseGoblet", glocke: "vase.profileShadeBell", stufe: "vase.baseStep" },
+  lampBaseLight: { scheibe: "vase.baseLightDisc", fassung: "vase.baseLightSocket" },
   lampSocket: { e27: "vase.socketE27", e14: "vase.socketE14", eigen: "vase.socketCustom" },
   legMode: { keine: "vase.legsNone", stecken: "vase.legsPlugIn", angeformt: "vase.legsMoulded", staender: "vase.legsStand" },
   legShape: { kegel: "vase.legCone", zylinder: "vase.legCylinder", kantig: "vase.legSquare" },
@@ -1786,7 +1788,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     if (hollow && !open) {
       properties.push(potRow(range("drainHoles", "prop.vaseDrainHoles", 1, "vase.floorHint")));
       if (vase.drainHoles > 0) properties.push(potRow(range("drainDiameter", "prop.vaseDrainDiameter", 0.5)), potRow(range("floorSlope", "prop.vaseFloorSlope", 0.1)));
-      if (vase.lamp !== "puck") properties.push(floor(range("footHeight", "prop.vaseFootHeight", 1)));
+      if (vase.lamp !== "puck" && vase.lamp !== "sockel") properties.push(floor(range("footHeight", "prop.vaseFootHeight", 1)));
     }
     properties.push(floor(range("rubberFeet", "prop.vaseRubberFeet", 1)));
     if (vase.rubberFeet > 0) properties.push(floor(range("rubberFootDiameter", "prop.vaseRubberFootDiameter", 0.5)), floor(range("rubberFootDepth", "prop.vaseRubberFootDepth", 0.1)));
@@ -1803,7 +1805,17 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         );
         if (vase.cutout === "voronoi") properties.push(floor(range("cutoutSeed", "prop.vaseSeed", 1)));
       }
-      properties.push(lampRow(choice("lamp", "prop.vaseLamp", "vase.lampHint")));
+      properties.push(lampRow(choice("lamp", "prop.vaseLamp", vase.lamp === "sockel" ? "vase.lampBaseHint" : "vase.lampHint")));
+      // A shade on a base: the base's form and size, its light (an LED disc or a screw socket) and the cable's slot.
+      if (vase.lamp === "sockel") {
+        properties.push(lampRow(choice("lampBaseShape", "prop.vaseLampBaseShape")), lampRow(range("lampBaseHeight", "prop.vaseLampBaseHeight", 1)), lampRow(range("lampBaseWidth", "prop.vaseLampBaseWidth", 1)), lampRow(range("lampBaseRibs", "prop.vaseLampBaseRibs", 1)));
+        properties.push(lampRow(choice("lampBaseLight", "prop.vaseLampBaseLight")));
+        if (vase.lampBaseLight === "scheibe") properties.push(lampRow(range("lampDisc", "prop.vaseLampDisc", 0.5)), lampRow(range("lampDiscHeight", "prop.vaseLampDiscHeight", 0.5)));
+        else {
+          properties.push(lampRow(choice("lampSocket", "prop.vaseLampSocket")));
+          if (vase.lampSocket === "eigen") properties.push(lampRow(range("lampHole", "prop.vaseLampHole", 0.5)));
+        }
+      }
       if (vase.lamp === "haengend" || vase.lamp === "stehend") {
         properties.push(lampRow(choice("lampSocket", "prop.vaseLampSocket")));
         if (vase.lampSocket === "eigen") properties.push(lampRow(range("lampHole", "prop.vaseLampHole", 0.5)));
@@ -1812,7 +1824,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         if (vase.lampSpokes >= 2) properties.push(lampRow(range("lampRing", "prop.vaseLampRing", 0.5)), lampRow(range("lampSpokeWidth", "prop.vaseLampSpokeWidth", 0.5)));
       }
       if (vase.lamp === "puck") properties.push(lampRow(range("puckDiameter", "prop.vasePuckDiameter", 1)));
-      if (vase.lamp === "stehend" || vase.lamp === "puck") {
+      if (vase.lamp === "stehend" || vase.lamp === "puck" || vase.lamp === "sockel") {
         properties.push(lampRow(range("lampNotch", "prop.vaseLampNotch", 0.5)));
         if (vase.lampNotch > 0) properties.push(lampRow(range("lampNotchHeight", "prop.vaseLampNotchHeight", 0.5)));
       }
@@ -9667,6 +9679,12 @@ function VaseDesigner({
                   <span>{useTitle}</span>
                 </h4>
                 {rows(useRows)}
+                {vase.lamp === "sockel" && vase.purpose === "lampe" && onVaseAccessories ? (
+                  <button className="inspector-action-button" type="button" disabled={disabled} onClick={onVaseAccessories}>
+                    <Plus size={17} strokeWidth={2.5} />
+                    <span>{t("vase.lampBaseMake")}</span>
+                  </button>
+                ) : null}
               </section>
             ) : null}
             {rows(form)}

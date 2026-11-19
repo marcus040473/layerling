@@ -162,6 +162,20 @@ describe("a vase in its settings", () => {
     expect(rangeNamed(block, "Spoke width")).toBeDefined();
     act(() => tile(shade.panel, "Drum")!.click());
     expect(shade.calls.updates.at(-1)?.vase?.profile).toBe("schirmTrommel");
+    // A shade on a base: the base's form and size, its light, the cable's slot, and a button that lays the base out.
+    choose(selectNamed(block, "Lampshade")!, "sockel");
+    expect(shade.calls.updates.at(-1)?.vase?.lamp).toBe("sockel");
+    const standing = mount({ ...lamp, vase: { ...lamp.vase!, lamp: "sockel" } });
+    openTab(standing.panel, "Form");
+    const baseBlock = standing.panel.querySelector<HTMLElement>(".vase-use")!;
+    expect([...selectNamed(baseBlock, "Base form")!.options].map((option) => option.textContent)).toEqual(["Belly", "Cylinder", "Cone", "Goblet", "Bell", "Step"]);
+    expect([...selectNamed(baseBlock, "Light")!.options].map((option) => option.textContent)).toEqual(["LED disc", "Screw socket"]);
+    for (const name of ["Base height", "Foot width (%)", "Grooves on the base", "LED disc Ø", "LED disc height"]) expect(rangeNamed(baseBlock, name), name).toBeDefined();
+    expect(rangeNamed(baseBlock, "Spokes")).toBeUndefined();
+    choose(selectNamed(baseBlock, "Light")!, "fassung");
+    expect(standing.calls.updates.at(-1)?.vase?.lampBaseLight).toBe("fassung");
+    act(() => buttonNamed(baseBlock, "Lay out the base")!.click());
+    expect(standing.calls.accessories).toBe(1);
     // A plant pot: drain holes and a saucer, a pot's form; its drain holes stand in the block.
     act(() => use(shade.panel, "Plant pot").click());
     const pot = shade.calls.updates.at(-1)!;

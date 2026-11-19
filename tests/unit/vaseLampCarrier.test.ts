@@ -75,8 +75,8 @@ describe("a lampshade's carrier", () => {
   }, 60000);
 
   it("stays a closed plate, and says so, where there is no room for spokes or the bottom carries recesses", () => {
-    // A dome's top is hardly wider than the socket's ring.
-    const narrow = buildVase({ ...shade, profile: "schirmKuppel", lampSpokes: 3 });
+    // A dome's top is not much wider than the socket; with a broad ring round it nothing is left to open.
+    const narrow = buildVase({ ...shade, profile: "schirmKuppel", lampSpokes: 3, lampRing: 18 });
     expect(openEdges(narrow)).toBe(0);
     expect(narrow.floor.drains).toHaveLength(1);
     expect(narrow.notes.some((note: string) => note.startsWith("Für 3 Streben ist zwischen Fassungsring und Wand zu wenig Platz"))).toBe(true);

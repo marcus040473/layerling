@@ -602,6 +602,109 @@ export function buildParts(input, { outward = 0 } = {}) {
     b.cap(innerRows[1], H, [], true)
     parts.push({ id: 'deckel', name: LID_MODES[p.lidMode], mesh: b.mesh(), z: 0, merge: false, flip: true, info })
   })
+  /* ---------- Lamp base ---------- */
+  // The base a lampshade stands on: a hollow foot, open below, with a sloped seat at the top that centres the shade
+  // (which has no bottom), the light in its middle - an LED disc laid in from above, or a plate with the hole for a
+  // screw socket - and a slot at the back of the foot for the cable. It is printed turned over, the seat on the bed:
+  // every face then leans by 45 degrees at most, and nothing needs supports.
+  if (p.body === 'hohl' && p.lamp === 'sockel') safely('Der Lampensockel', () => {
+    let inner = Infinity, outer = 0
+    for (let k = 0; k < 144; k++) {
+      const a = (2 * Math.PI * k) / 144
+      inner = Math.min(inner, shape.innerAt(a, 0))
+      outer = Math.max(outer, shape.outerAt(a, 0) + outward)
+    }
+    const wall = 2.6
+    // The seat: a cone the shade's bottom edge comes to rest on, 1.5 mm reaching into the shade and 2.5 mm below it.
+    const seatTop = 1.5, seatDrop = 2.5
+    const rs0 = inner - c - seatTop, rs1 = inner - c + seatDrop
+    // The light: the hole it sits in, and what hangs below the deck for it.
+    const disc = p.lampBaseLight === 'scheibe'
+    const hole = disc ? p.lampDisc / 2 + 0.3 : p.lampHole / 2
+    const collar = disc ? hole + 2.4 : hole
+    if (collar + 2 > rs0 - wall) throw new Error(disc ? `die LED-Scheibe (Ø ${fmt(p.lampDisc)} mm) passt nicht in den Schirm – unten innen sind es nur Ø ${fmt(2 * inner)} mm` : `das Loch für die Fassung (Ø ${fmt(p.lampHole)} mm) passt nicht in den Schirm – unten innen sind es nur Ø ${fmt(2 * inner)} mm`)
+    // The collar that holds an LED disc reaches down by its height and a lip; the foot is at least that high.
+    const below = disc ? p.lampDiscHeight + 4.4 : 3
+    let height = p.lampBaseHeight
+    if (height < below + 6) {
+      height = below + 6
+      notes.push(`Sockel auf ${fmt(height)} mm erhöht, damit die LED-Scheibe (${fmt(p.lampDiscHeight)} mm hoch) hineinpasst.`)
+    }
+    // The foot: as wide as asked against the shade's bottom, but flaring by no more than it can print (45 degrees,
+    // turned over) - how fast a form may flare depends on how it runs.
+    const belly = p.lampBaseShape === 'bauch'
+    const flare = { bauch: Math.PI, zylinder: 1, kegel: 1, kelch: Math.PI / 2, glocke: Math.PI / 2, stufe: 2 }[p.lampBaseShape]
+    // A bellied base stands on a foot a little narrower than its top and is widest half way down; the others end at
+    // their widest (or narrowest) on the table.
+    let foot = belly ? rs1 * 0.92 : Math.max(12, (outer * p.lampBaseWidth) / 100)
+    let bulge = belly ? Math.max(0, (outer * p.lampBaseWidth) / 100 + 6 - (rs1 + foot) / 2) : 0
+    const reach = belly ? bulge : foot - rs1
+    // (A little short of 45 degrees: the cable's slot draws the wall above it up and makes it steeper there.)
+    const room = height * 0.85
+    // (Drawn in counts the same: turned over, a wall that leans in hangs over on its inside.)
+    if (Math.abs(reach) * flare > room) {
+      if (belly) bulge = room / flare
+      else foot = rs1 + (Math.sign(reach) * room) / flare
+      notes.push(`Sockel auf Ø ${fmt(2 * (belly ? (rs1 + foot) / 2 + bulge : foot))} mm begrenzt – ${reach > 0 ? 'breiter' : 'schmaler'} würde er beim Drucken zu flach überhängen. Dafür die Höhe vergrößern.`)
+    }
+    // The wall stays clear of the light's holder inside it, however narrow a foot is asked for.
+    const wallFrom = collar + 2
+    foot = Math.max(foot, wallFrom + wall + 1.5)
+    // The wall's radius from the seat (s = 0) down to the table (s = 1).
+    const span = foot - rs1
+    const radiusAt = (s) => {
+      if (belly) return rs1 + span * s + bulge * Math.sin(Math.PI * s)
+      if (p.lampBaseShape === 'glocke') return rs1 + span * Math.sin((s * Math.PI) / 2)
+      if (p.lampBaseShape === 'kelch') return rs1 + span * (1 - Math.cos((s * Math.PI) / 2))
+      if (p.lampBaseShape === 'stufe') return rs1 + span * clamp((s - 0.25) / 0.5, 0, 1)
+      if (p.lampBaseShape === 'zylinder') return rs1 + span * clamp((s * height) / Math.max(1e-6, Math.abs(span)), 0, 1)
+      return rs1 + span * s
+    }
+    const zSeat = -seatDrop, zTable = zSeat - height
+    const ribs = p.lampBaseRibs
+    const steps = p.lampBaseShape === 'kegel' && !ribs ? 1 : 24
+    const outerWall = [], innerWall = []
+    for (let k = 0; k <= steps; k++) {
+      const s = k / steps
+      outerWall.push([radiusAt(s), zSeat - s * height])
+      innerWall.push([radiusAt(s) - wall, zSeat - s * height])
+    }
+    // A closed profile, counter-clockwise: up the outside, in over the deck, down through the light's hole, and back
+    // out and down the inside.
+    const profile = [...outerWall.reverse(), [rs0, seatTop], [hole, seatTop]]
+    const deck = seatTop - 3
+    if (disc) {
+      // The disc comes to rest on a lip that slopes in under it (a slope, so it prints turned over, and so the disc
+      // centres itself); the middle stays open for the cable.
+      const seatZ = seatTop - p.lampDiscHeight
+      profile.push([hole, seatZ], [hole - 3.2, seatZ - 3.2], [hole - 3.2, seatZ - 4.4], [collar, seatZ - 4.4], [collar, deck])
+    } else profile.push([hole, deck])
+    profile.push([rs0 + (seatTop - deck) - wall, deck], ...innerWall)
+    // The cable's slot: at the back of the foot the wall's lower edge is lifted in an arch, the wall above it drawn up.
+    const slotHeight = p.lampNotch > 0 ? Math.min(p.lampNotchHeight, height - 6) : 0
+    const slotWidth = p.lampNotch > 0 ? 2 * Math.asin(Math.min(0.9, p.lampNotch / 2 / Math.max(1, foot))) + 0.06 : 0
+    // Grooves up the wall: round ones, 0.9 mm deep, fading out towards the seat so the shade sits on a plain ring.
+    const ribDepth = 0.9
+    const b = new MeshBuilder()
+    b.lathe(profile, clamp(Math.max(168, ribs * 8), 168, 720), {
+      transform: slotHeight > 0 || ribs > 0 ? (x, y, z) => {
+        // Only the wall: the seat above it and the light's holder inside it stay as they are.
+        const r = Math.hypot(x, y)
+        if (z >= zSeat || r < wallFrom) return [x, y, z]
+        const a = Math.atan2(y, x)
+        const down = (zSeat - z) / height
+        let scale = 1
+        if (ribs > 0) scale = 1 - ((ribDepth * 0.5 * (1 - Math.cos(ribs * a)) * clamp(down / 0.12, 0, 1)) / Math.max(1, r))
+        const lifted = slotHeight > 0 ? slotHeight * bump(a, Math.PI / 2, slotWidth) : 0
+        return [x * scale, y * scale, zTable + lifted + ((z - zTable) / height) * (height - lifted)]
+      } : null,
+    })
+    // The shade's bottom edge rests where the seat is as wide as the shade is inside.
+    lift = height + seatDrop + c
+    const light = disc ? `LED-Scheibe Ø ${fmt(p.lampDisc)} mm, ${fmt(p.lampDiscHeight)} mm hoch` : `Fassung im Loch Ø ${fmt(p.lampHole)} mm`
+    parts.push({ id: 'sockel', name: 'Lampensockel', mesh: b.mesh(), z: -c, merge: false, flip: true, info: `Ø ${fmt(2 * (belly ? (rs1 + foot) / 2 + bulge : Math.max(foot, rs1)))} mm, ${fmt(height + seatDrop + seatTop)} mm hoch; ${light}${slotHeight > 0 ? '; Kabel hinten heraus' : ''}. Umgedreht drucken, ohne Stützen.` })
+  })
+
   return { parts, lift, notes }
 }
 

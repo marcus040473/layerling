@@ -32,11 +32,11 @@ export const PROFILES = {
   trichter: { label: 'Trichter', points: [[0, 0.62], [1, 1]] },
   // Lampshades, as they are printed: the carrier for the socket at the bottom (height 0), the open rim at the top; a
   // hanging one is turned over. None leans out by more than 45 degrees at its usual size (wider than tall), so they
-  // print without supports.
+  // print without supports; and each is wide enough at the bottom, at that size, for the common LED disc of 59 mm.
   schirmKegel: { label: 'Schirm: Kegel', points: [[0, 0.5], [1, 1]] },
-  schirmGlocke: { label: 'Schirm: Glocke', points: [[0, 0.36], [0.12, 0.5], [0.4, 0.64], [0.75, 0.84], [1, 1]] },
-  schirmKuppel: { label: 'Schirm: Kuppel', points: [[0, 0.38], [0.2, 0.7], [0.45, 0.9], [0.75, 0.985], [1, 1]] },
-  schirmLaterne: { label: 'Schirm: Laterne', points: [[0, 0.36], [0.28, 0.8], [0.55, 1], [0.8, 0.94], [1, 0.78]] },
+  schirmGlocke: { label: 'Schirm: Glocke', points: [[0, 0.46], [0.12, 0.56], [0.4, 0.68], [0.75, 0.86], [1, 1]] },
+  schirmKuppel: { label: 'Schirm: Kuppel', points: [[0, 0.46], [0.2, 0.74], [0.45, 0.91], [0.75, 0.985], [1, 1]] },
+  schirmLaterne: { label: 'Schirm: Laterne', points: [[0, 0.46], [0.28, 0.84], [0.55, 1], [0.8, 0.94], [1, 0.78]] },
   schirmTrommel: { label: 'Schirm: Trommel', points: [[0, 0.9], [1, 1]] },
   // Plant pots: a classic pot with a rim band, a rounded tub and a low bowl.
   topfKlassik: { label: 'Topf: Klassisch', points: [[0, 0.7], [0.88, 0.96], [0.92, 1], [1, 1]] },
@@ -65,7 +65,14 @@ export const SAUCER_MODES = { keine: 'Keiner', schale: 'Schale', versteckt: 'Ver
 export const INSERT_MODES = { keine: 'Keiner', pflanze: 'Pflanzeinsatz', bewaesserung: 'Selbstbewässerung', stecker: 'Steckeinsatz', roehrchen: 'Wasserröhrchen' }
 export const YES_NO = { ja: 'Ja', nein: 'Nein' }
 /** Lampshade: hanging (hole for the socket in the bottom, turn it over to hang it), standing with the socket in the bottom, over an LED puck (without a bottom). */
-export const LAMPS = { keine: 'Keiner', haengend: 'Hängend', stehend: 'Stehend mit Fassung', puck: 'Über LED-Puck' }
+export const LAMPS = { keine: 'Keiner', haengend: 'Hängend', stehend: 'Stehend mit Fassung', puck: 'Über LED-Puck', sockel: 'Auf einem Sockel' }
+/**
+ * The base a lampshade stands on (lamp 'sockel'), a part of its own (vase-parts.mjs): how its wall runs from the
+ * shade down to the table - bellied, straight, flared, drawn in, bell-shaped or in a step.
+ */
+export const LAMP_BASES = { bauch: 'Bauch', zylinder: 'Zylinder', kegel: 'Kegel', kelch: 'Kelch', glocke: 'Glocke', stufe: 'Stufe' }
+/** What gives the light in the base: a flat LED disc laid in from the top, or a screw socket for a bulb. */
+export const LAMP_BASE_LIGHTS = { scheibe: 'LED-Scheibe', fassung: 'Schraubfassung' }
 /** Hole for the socket: approximate values for the shade ring - measure your own socket. */
 export const LAMP_SOCKETS = { e27: 'E27 (≈ 41 mm)', e14: 'E14 (≈ 29 mm)', eigen: 'Eigenes Maß' }
 const SOCKET_HOLES = { e27: 41, e14: 29 }
@@ -240,6 +247,19 @@ export const DEFAULTS = Object.freeze({
   lampSpokes: 0,
   lampRing: 8,
   lampSpokeWidth: 6,
+  /**
+   * The base under a standing shade (lamp 'sockel'): its form, its height, how wide it is against the shade's
+   * bottom (%; a bellied base at its belly, the others at their foot), and its light - an LED disc (`lampDisc` across, `lampDiscHeight` high) or a screw socket (the hole of
+   * `lampSocket`). The cable leaves through a slot at the back of the foot (`lampNotch`, `lampNotchHeight`).
+   */
+  lampBaseShape: 'bauch',
+  lampBaseLight: 'scheibe',
+  lampBaseHeight: 45,
+  lampBaseWidth: 100,
+  /** Fine grooves up the base's wall, this many round it (0: smooth). */
+  lampBaseRibs: 0,
+  lampDisc: 59,
+  lampDiscHeight: 8,
   puckDiameter: 70,
   lampNotch: 10,
   lampNotchHeight: 8,
@@ -390,6 +410,11 @@ export const LIMITS = {
   lampSpokes: [0, 6],
   lampRing: [3, 30],
   lampSpokeWidth: [3, 30],
+  lampBaseRibs: [0, 120],
+  lampBaseHeight: [15, 150],
+  lampBaseWidth: [40, 160],
+  lampDisc: [20, 150],
+  lampDiscHeight: [3, 40],
   puckDiameter: [20, 200],
   lampNotch: [0, 40],
   lampNotchHeight: [2, 30],
@@ -460,7 +485,7 @@ export function normalizeParams(input = {}) {
   p.patternImage = normalizeOwnPicture(input.patternImage)
   for (const [key, [min, max]] of Object.entries(LIMITS)) p[key] = clamp(p[key], min, max)
   p.ribCount = Math.round(p.ribCount)
-  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternGroup', 'lampSpokes']) p[key] = Math.round(p[key])
+  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternGroup', 'lampSpokes', 'lampBaseRibs']) p[key] = Math.round(p[key])
   // One spoke alone carries nothing: none, or two and more.
   if (p.lampSpokes === 1) p.lampSpokes = 2
   if (p.rubberFeet > 0 && p.rubberFeet < 3) p.rubberFeet = 3
@@ -511,6 +536,8 @@ export function normalizeParams(input = {}) {
     p.bottom = Math.max(p.bottom, WATERTIGHT_MIN)
   }
   if (!LAMP_SOCKETS[p.lampSocket]) p.lampSocket = DEFAULTS.lampSocket
+  if (!LAMP_BASES[p.lampBaseShape]) p.lampBaseShape = DEFAULTS.lampBaseShape
+  if (!LAMP_BASE_LIGHTS[p.lampBaseLight]) p.lampBaseLight = DEFAULTS.lampBaseLight
   if (SOCKET_HOLES[p.lampSocket]) p.lampHole = SOCKET_HOLES[p.lampSocket]
   if (p.cutoutTo < p.cutoutFrom) [p.cutoutFrom, p.cutoutTo] = [p.cutoutTo, p.cutoutFrom]
   if (!SECTION_OUTSIDE[p.sectionOutside]) p.sectionOutside = DEFAULTS.sectionOutside
@@ -1486,7 +1513,8 @@ export function floorLayout(input) {
   // Lamp over an LED puck, or a bottom of 0 mm without a lamp: no bottom and no foot, open below.
   const lamp = hollow ? p.lamp : 'keine'
   if (!hollow && p.lamp !== 'keine') notes.push('Ein Lampenschirm braucht eine hohle Vase (Bauart „Hohl mit Wand“).')
-  const open = hollow && (lamp === 'puck' || (lamp === 'keine' && p.bottom === 0))
+  // (A shade on a base is open below as well: it stands on the base's seat.)
+  const open = hollow && (lamp === 'puck' || lamp === 'sockel' || (lamp === 'keine' && p.bottom === 0))
   const foot = hollow && !open ? Math.min(p.footHeight, p.height * 0.4) : 0
   const blind = []
   // Plug-in legs: sockets only in a hollow bottom without a foot (in the slicer's vase mode the bottom is thin).
@@ -1704,7 +1732,7 @@ export function vaseChecks(input) {
   if (p.body === 'hohl') {
     if (p.wall < 2 * NOZZLE) notes.push(`Wand nur ${fmtMm(p.wall)} mm – unter zwei Linien einer 0,4-mm-Düse druckt sie sich unsicher.`)
     if (p.bottom === 0 && p.lamp === 'keine') notes.push('Ohne Boden: unten offen wie ein Rohr. Auf dem Druckbett steht nur der Wandring – einen Rand (Brim) zum Haften nehmen.')
-    else if (p.bottom < 2 * NOZZLE && p.lamp !== 'puck') notes.push(`Boden nur ${fmtMm(p.bottom)} mm – unter 0,8 mm wird er leicht undicht oder reißt.`)
+    else if (p.bottom < 2 * NOZZLE && p.lamp !== 'puck' && p.lamp !== 'sockel') notes.push(`Boden nur ${fmtMm(p.bottom)} mm – unter 0,8 mm wird er leicht undicht oder reißt.`)
   }
   if (p.lidMode !== 'keiner') {
     if (p.lidMode === 'kanne' && p.body !== 'hohl') notes.push('Der Teekannendeckel braucht eine hohle Vase (Bauart „Hohl mit Wand“).')

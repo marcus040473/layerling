@@ -387,7 +387,7 @@ export function vasePrintReport(shape: { id?: string; width: number; depth: numb
 /** An accessory of a vase, laid out for printing beside it: triangles in the vase shape's frame. */
 export type VaseAccessory = { id: string; kind: VaseAccessoryKind; index: number; positions: number[] };
 
-export type VaseAccessoryKind = "leg" | "stand" | "saucer" | "hiddenSaucer" | "plantInsert" | "wateringInsert" | "frog" | "tube" | "lid" | "knob";
+export type VaseAccessoryKind = "leg" | "stand" | "saucer" | "hiddenSaucer" | "plantInsert" | "wateringInsert" | "frog" | "tube" | "lid" | "knob" | "lampBase";
 
 function accessoryKind(part: VasePart, settings: VaseSettings): VaseAccessoryKind {
   if (part.id.startsWith("bein-")) return "leg";
@@ -398,6 +398,7 @@ function accessoryKind(part: VasePart, settings: VaseSettings): VaseAccessoryKin
   if (part.id === "stecker") return "frog";
   if (part.id === "roehrchen") return "tube";
   if (part.id === "knauf") return "knob";
+  if (part.id === "sockel") return "lampBase";
   return "lid";
 }
 
@@ -508,6 +509,8 @@ function askedAccessories(settings: unknown): VaseAccessoryKind[] {
   if (inserts[vase.insertMode]) asked.push(inserts[vase.insertMode]);
   if (vase.lidMode !== "keiner") asked.push("lid");
   if (vase.lidMode === "kanne" && vase.lidKnob === "ja") asked.push("knob");
+  // A lampshade on a base: the base it stands on.
+  if (vase.body === "hohl" && vase.lamp === "sockel") asked.push("lampBase");
   return asked;
 }
 
@@ -522,6 +525,7 @@ const ACCESSORY_NAMES: Record<VaseAccessoryKind, MessageKey> = {
   tube: "vase.partTube",
   lid: "vase.partLid",
   knob: "vase.partKnob",
+  lampBase: "vase.partLampBase",
 };
 
 /** An accessory's name in the current language, legs numbered. */
