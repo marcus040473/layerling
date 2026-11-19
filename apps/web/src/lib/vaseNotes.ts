@@ -124,6 +124,8 @@ const CHECKS: Note[] = [
   { pattern: /^Boden auf 2,5 mm verstärkt – er trägt den Schirm/, key: "vaseCheck.floorLamp" },
   { pattern: new RegExp(`^Das Loch für die Fassung \\(Ø ${NUMBER} mm\\) passt nicht in den Boden`), key: "vaseCheck.lampHoleTooBig", params: (m) => ({ mm: number(m[1]) }) },
   { pattern: /^Beim Lampenschirm gibt es statt Ablauflöchern/, key: "vaseCheck.lampNoDrains" },
+  { pattern: /^Mit Buchsen oder Mulden im Boden bleibt die Platte um die Fassung geschlossen/, key: "vaseCheck.lampSpokesBlind" },
+  { pattern: /^Für (\d+) Streben ist zwischen Fassungsring und Wand zu wenig Platz/, key: "vaseCheck.lampSpokesNoRoom", params: (m) => ({ count: m[1] }) },
   { pattern: new RegExp(`^Hängend: Zum Aufhängen umdrehen – die Platte mit dem Loch \\(Ø ${NUMBER} mm\\)`), key: "vaseCheck.lampHanging", params: (m) => ({ mm: number(m[1]) }) },
   { pattern: new RegExp(`^Stehend: Fassung im Bodenloch \\(Ø ${NUMBER} mm\\).* durch den hohlen Fuß und den Schlitz\\.`), key: "vaseCheck.lampStandingNotch", params: (m) => ({ mm: number(m[1]) }) },
   { pattern: new RegExp(`^Stehend: Fassung im Bodenloch \\(Ø ${NUMBER} mm\\)`), key: "vaseCheck.lampStanding", params: (m) => ({ mm: number(m[1]) }) },

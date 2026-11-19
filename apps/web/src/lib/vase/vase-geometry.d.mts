@@ -14,7 +14,7 @@ export type VaseNumberKey =
   | "saucerGap" | "saucerHeight" | "saucerWall" | "insertWall" | "insertStandoff" | "reservoirHeight" | "tubeDiameter" | "frogHole"
   | "lidClearance" | "lidThickness" | "lidDepth" | "threadPitch" | "lidHeight"
   | "cutoutSize" | "cutoutWeb" | "cutoutFrom" | "cutoutTo" | "cutoutAspect" | "cutoutSeed"
-  | "lampHole" | "puckDiameter" | "lampNotch" | "lampNotchHeight"
+  | "lampHole" | "lampSpokes" | "lampRing" | "lampSpokeWidth" | "puckDiameter" | "lampNotch" | "lampNotchHeight"
   | "reinforceCount" | "reinforceDepth" | "slitWidth" | "lineWidth"
   | "polySides" | "polyRound" | "sectionWaves" | "sectionWaveAmp" | "sectionFinWidth" | "drawRepeat"
   | "stripeTurn" | "stripeCount" | "stripeWidth" | "stripeDepth"
@@ -24,7 +24,7 @@ export type VaseNumberKey =
   | "leafSize" | "leafOverlap" | "leafTilt" | "leafCurve" | "leafAspect";
 
 export type VaseChoiceKey =
-  | "profile" | "ribShape" | "twistMode" | "twistAlong" | "material" | "sectionOutside"
+  | "profile" | "purpose" | "ribShape" | "twistMode" | "twistAlong" | "material" | "sectionOutside"
   | "section2" | "section2WaveStyle" | "body" | "innerShape"
   | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "insertMode"
   | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "lamp" | "lampSocket" | "reinforce"
@@ -66,6 +66,8 @@ export const CUTOUTS: Readonly<Record<string, string>>;
 export const CUTOUT_EDGES: Readonly<Record<string, string>>;
 export const REINFORCE: Readonly<Record<string, string>>;
 export const LAMPS: Readonly<Record<string, string>>;
+/** What the vase is for: a vase, a plant pot or a lampshade. */
+export const PURPOSES: Readonly<Record<string, string>>;
 export const LAMP_SOCKETS: Readonly<Record<string, string>>;
 export const LID_MODES: Readonly<Record<string, string>>;
 export const PATTERNS: Readonly<Record<string, string>>;

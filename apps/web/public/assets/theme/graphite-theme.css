@@ -4871,6 +4871,11 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .mesh-compare-actions .
   border: 1px solid #c2c2c2;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-use {
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-line {
   color: #5e5e5e;
   border-top: 1px solid #dcdcdc;

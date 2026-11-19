@@ -11682,6 +11682,36 @@ html[data-theme="dark"] .mesh-compare-actions .secondary {
   margin: 0;
 }
 
+/* The vase's use (vase, plant pot, lampshade): three tiles with a sign each, and under the body shapes a block with
+   what belongs to the use. No colours of their own: the tiles are the designer's, and the block takes the text's
+   colour, thinned, so it follows every theme. */
+.vase-purpose-tiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vase-purpose-tiles button svg {
+  justify-self: center;
+  margin: 4px 0 2px;
+}
+
+.vase-use {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
+.vase-use-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* One's own picture or text as the pattern: the button to load a picture and the line that says what light and dark do.
    No colours of its own; the button and the hint bring the theme's. */
 .vase-own-picture {

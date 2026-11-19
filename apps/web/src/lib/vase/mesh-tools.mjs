@@ -202,7 +202,9 @@ const LOOP_POINTS = 20
 
 /**
  * Flat face with holes in a plane: border `ring` (indices, star-shaped round the axis),
- * holes { cx, cy, r, z } (z: height of the hole's rim, for a slope). Inside, the border shrunk
+ * holes { cx, cy, r, z } (z: height of the hole's rim, for a slope), or openings of any outline
+ * { points: [[x, y], ...] } (counter-clockwise, no point twice - the windows between the spokes
+ * of a lampshade's carrier). Inside, the border shrunk
  * towards the centre, with the holes, by ear clipping; a strip joins it to the border.
  * `down`: normal pointing down. Returns, per hole, the indices of its rim (counter-clockwise).
  */
@@ -237,6 +239,11 @@ export function capWithHoles(ring, z, holes, down, verts, tris, addVertex) {
   }
   let f = 0.5
   for (const h of holes) {
+    if (h.points) {
+      // An opening with an outline of its own (see the holes' description): its corners.
+      for (const [px, py] of h.points) f = Math.max(f, (Math.hypot(px, py) + 0.9) / Math.max(1e-6, radiusAt(Math.atan2(py, px))))
+      continue
+    }
     // The hole's rim, measured densely all round: between two samples the border can wind
     // closer to the hole (corners, ribs).
     for (let k = 0; k < 48; k++) {
@@ -254,7 +261,7 @@ export function capWithHoles(ring, z, holes, down, verts, tris, addVertex) {
   }
   // Hole rims turned slightly: then no hole point lies exactly level with another point, which
   // keeps the ear clipping clear of special cases.
-  const loops = holes.map((h, k) => circle(h.cx, h.cy, h.r, LOOP_POINTS, false, 0.1234 + 0.377 * k).map(([x, y]) => addVertex(x, y, h.z ?? z)))
+  const loops = holes.map((h, k) => (h.points ?? circle(h.cx, h.cy, h.r, LOOP_POINTS, false, 0.1234 + 0.377 * k)).map(([x, y]) => addVertex(x, y, h.z ?? z)))
   let t = triangulate(kRing.map(xy), loops.map((l) => l.map(xy)))
   let rim = kRing
   if (!t.complete) {

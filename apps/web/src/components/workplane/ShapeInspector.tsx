@@ -8,7 +8,7 @@ import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicke
 import { SnapGridMenuItems } from "@/components/workplane/SnapGridMenu";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
-import { Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
+import { Amphora, Droplets, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
 import { boltPinDiameter, boltSplitFits } from "@/lib/boltSplit";
@@ -197,7 +197,7 @@ import { drawingGrey, drawingOutlines, inTwoTones, SURFACE_IMAGE_OUTLINE_RASTER 
 import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
 import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternColor, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureEntry, surfaceTextureLayerPlaced } from "@/lib/surfaceTextureShape";
 import { DRAW_PROFILE, LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, PROFILES, isPicturePattern as isVasePicturePattern, isReliefPattern as isVaseReliefPattern, lidSafeZoneTo, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
-import { normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
+import { DEFAULT_VASE_SIZE, normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
 import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
 import { LeafEditor, PatternPicture, ProfilePicture, VaseZoneRange } from "@/components/workplane/VaseDesignerParts";
 import { isComputedPattern } from "@/lib/vase/vase-computed-patterns.mjs";
@@ -482,7 +482,10 @@ const PORT_PRESET_LABELS: Record<PortPreset, MessageKey> = {
 };
 
 const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> = {
-  profile: { flasche: "vase.profileBottle", bauchig: "vase.profileBellied", schale: "vase.profileBowl", fass: "vase.profileBarrel", zylinder: "vase.profileCylinder", trichter: "vase.profileFunnel", gezeichnet: "vase.profileDrawn" },
+  profile: { flasche: "vase.profileBottle", bauchig: "vase.profileBellied", schale: "vase.profileBowl", fass: "vase.profileBarrel", zylinder: "vase.profileCylinder", trichter: "vase.profileFunnel", gezeichnet: "vase.profileDrawn",
+    schirmKegel: "vase.profileShadeCone", schirmGlocke: "vase.profileShadeBell", schirmKuppel: "vase.profileShadeDome", schirmLaterne: "vase.profileShadeLantern", schirmTrommel: "vase.profileShadeDrum",
+    topfKlassik: "vase.profilePotClassic", topfKuebel: "vase.profilePotTub", topfSchale: "vase.profilePotBowl",
+  },
   section: { kreis: "vase.sectionCircle", vieleck: "vase.sectionPolygon", welle: "vase.sectionWave", gezeichnet: "vase.sectionDrawn" },
   sectionWaveStyle: { weich: "vase.waveSoft", spitz: "vase.wavePointed", bogen: "vase.waveArches", lamellen: "vase.waveFins" },
   body: { voll: "vase.bodySolid", hohl: "vase.bodyHollow" },
@@ -1775,9 +1778,14 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     }));
     // Without a bottom (0 mm and no lamp) there are no drain holes and no foot.
     const open = hollow && vase.lamp === "keine" && vase.bottom === 0;
+    // What belongs to the vase's use stands on the Form tab, in a block of its own (ids "vaseUse."): a plant pot's
+    // drain holes, a lampshade's socket and its carrier. For a plain vase they stay with bottom and wall.
+    const use = (config: ShapePropertyConfig): ShapePropertyConfig => ({ ...config, id: config.id.replace(/^vase\./, "vaseUse.") });
+    const potRow = vase.purpose === "topf" ? use : floor;
+    const lampRow = vase.purpose === "lampe" ? use : floor;
     if (hollow && !open) {
-      properties.push(floor(range("drainHoles", "prop.vaseDrainHoles", 1, "vase.floorHint")));
-      if (vase.drainHoles > 0) properties.push(floor(range("drainDiameter", "prop.vaseDrainDiameter", 0.5)), floor(range("floorSlope", "prop.vaseFloorSlope", 0.1)));
+      properties.push(potRow(range("drainHoles", "prop.vaseDrainHoles", 1, "vase.floorHint")));
+      if (vase.drainHoles > 0) properties.push(potRow(range("drainDiameter", "prop.vaseDrainDiameter", 0.5)), potRow(range("floorSlope", "prop.vaseFloorSlope", 0.1)));
       if (vase.lamp !== "puck") properties.push(floor(range("footHeight", "prop.vaseFootHeight", 1)));
     }
     properties.push(floor(range("rubberFeet", "prop.vaseRubberFeet", 1)));
@@ -1795,15 +1803,18 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         );
         if (vase.cutout === "voronoi") properties.push(floor(range("cutoutSeed", "prop.vaseSeed", 1)));
       }
-      properties.push(floor(choice("lamp", "prop.vaseLamp", "vase.lampHint")));
+      properties.push(lampRow(choice("lamp", "prop.vaseLamp", "vase.lampHint")));
       if (vase.lamp === "haengend" || vase.lamp === "stehend") {
-        properties.push(floor(choice("lampSocket", "prop.vaseLampSocket")));
-        if (vase.lampSocket === "eigen") properties.push(floor(range("lampHole", "prop.vaseLampHole", 0.5)));
+        properties.push(lampRow(choice("lampSocket", "prop.vaseLampSocket")));
+        if (vase.lampSocket === "eigen") properties.push(lampRow(range("lampHole", "prop.vaseLampHole", 0.5)));
+        // The carrier: a closed plate, or a ring round the socket held by spokes.
+        properties.push(lampRow(range("lampSpokes", "prop.vaseLampSpokes", 1, "vase.lampSpokesHint")));
+        if (vase.lampSpokes >= 2) properties.push(lampRow(range("lampRing", "prop.vaseLampRing", 0.5)), lampRow(range("lampSpokeWidth", "prop.vaseLampSpokeWidth", 0.5)));
       }
-      if (vase.lamp === "puck") properties.push(floor(range("puckDiameter", "prop.vasePuckDiameter", 1)));
+      if (vase.lamp === "puck") properties.push(lampRow(range("puckDiameter", "prop.vasePuckDiameter", 1)));
       if (vase.lamp === "stehend" || vase.lamp === "puck") {
-        properties.push(floor(range("lampNotch", "prop.vaseLampNotch", 0.5)));
-        if (vase.lampNotch > 0) properties.push(floor(range("lampNotchHeight", "prop.vaseLampNotchHeight", 0.5)));
+        properties.push(lampRow(range("lampNotch", "prop.vaseLampNotch", 0.5)));
+        if (vase.lampNotch > 0) properties.push(lampRow(range("lampNotchHeight", "prop.vaseLampNotchHeight", 0.5)));
       }
     } else {
       properties.push(floor(choice("reinforce", "prop.vaseReinforce", "vase.reinforceHint")));
@@ -9414,7 +9425,44 @@ let lastVaseTab: VaseTab = "form";
 /** Pattern families in the gallery's order: smooth first, then the vase's older surfaces, then the reliefs from pictures, the worked-out ones, and leaves and one's own picture or text last. */
 const VASE_GALLERY = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "blattfluss", "wisp", "wellen", "zellen", "kiesel", "waben", "geflecht", "schuppen", "adern", "wabennetz", "ziegel", "noppen", "gehaemmert", "strick", "korb", "ringe", "rauschen", "blaetter", "bild"] as const;
 const VASE_LEAVES = ["tulpe", "ginkgo", "lotus", "efeu", "ahorn", "monstera", "farn", "eiche", "linde", "weide", "eigen"] as const;
-const VASE_PROFILES = ["flasche", "bauchig", "schale", "fass", "zylinder", "trichter", "gezeichnet"] as const;
+/** The body shapes offered per use: a vase's, a plant pot's and a lampshade's; the drawn one is always there. */
+const VASE_PROFILES: Record<string, readonly string[]> = {
+  vase: ["flasche", "bauchig", "schale", "fass", "zylinder", "trichter", "gezeichnet"],
+  topf: ["topfKlassik", "topfKuebel", "topfSchale", "zylinder", "trichter", "gezeichnet"],
+  lampe: ["schirmKegel", "schirmGlocke", "schirmKuppel", "schirmLaterne", "schirmTrommel", "zylinder", "gezeichnet"],
+};
+/** The uses of a vase with their signs, in the order they are offered. */
+const VASE_PURPOSES = [
+  { value: "vase", label: "shape.vase", icon: Amphora },
+  { value: "topf", label: "vase.purposePot", icon: Sprout },
+  { value: "lampe", label: "prop.vaseLamp", icon: Lamp },
+] as const;
+
+/**
+ * What choosing a use sets: the settings that make the body that thing (a lampshade is hollow, hangs and has a carrier
+ * for the socket; a plant pot is hollow with drain holes and a saucer), a body shape of that kind where the vase still
+ * has one of another kind, and a size that suits it where the vase still has the size a new vase comes with. What one
+ * has set oneself beyond that stays.
+ */
+function vasePurposeChoice(vase: VaseSettings, purpose: string, frame: { width: number; depth: number; height: number }) {
+  const patch: Partial<VaseSettings> = { purpose };
+  const shapes = VASE_PROFILES[purpose] ?? VASE_PROFILES.vase;
+  if (vase.profile !== "gezeichnet" && !shapes.includes(vase.profile)) patch.profile = shapes[0];
+  const untouched = Math.abs(Math.max(frame.width, frame.depth) - DEFAULT_VASE_SIZE.width) < 0.5 && Math.abs(frame.height - DEFAULT_VASE_SIZE.height) < 0.5;
+  let size: { width: number; height: number } | null = null;
+  if (purpose === "lampe") {
+    Object.assign(patch, { body: "hohl", lamp: vase.lamp === "keine" ? "haengend" : vase.lamp, lampSpokes: vase.lampSpokes >= 2 ? vase.lampSpokes : 3, drainHoles: 0, watertight: "nein", lidMode: "keiner", insertMode: "keine", saucerMode: "keine" });
+    // A shade lets light through: a thin wall where the vase still has the one it came with.
+    if (vase.wall === 2) patch.wall = 1.2;
+    if (untouched) size = { width: 180, height: 160 };
+  } else if (purpose === "topf") {
+    Object.assign(patch, { body: "hohl", lamp: "keine", drainHoles: vase.drainHoles > 0 ? vase.drainHoles : 3, saucerMode: vase.saucerMode === "keine" ? "schale" : vase.saucerMode });
+    if (untouched) size = { width: 140, height: 120 };
+  } else {
+    patch.lamp = "keine";
+  }
+  return { patch, size };
+}
 
 /**
  * The vase on one card with three tabs (the vase designer, Discussion of the concept "Vase designer 2.0"): Form with
@@ -9516,6 +9564,18 @@ function VaseDesigner({
     </div>
   );
 
+  // The use (vase, plant pot, lampshade): its settings, and its size where the vase still has a new vase's.
+  const choosePurpose = (purpose: string) => {
+    if (purpose === vase.purpose) return;
+    const { patch, size } = vasePurposeChoice(vase, purpose, { width, depth, height: shape.height });
+    const next = normalizeVaseSettings({ ...vase, ...patch });
+    const frame = size ? { id: shape.id, width: size.width, depth: size.width, height: size.height } : { id: shape.id, width, depth, height: shape.height };
+    applyVaseChange(frame, next, (vasePatch) => onUpdate(size ? { ...vasePatch, height: size.height } : vasePatch));
+  };
+  // What belongs to the use, in a block of its own under the body shapes: a lampshade's socket and carrier, a plant pot's drain holes.
+  const useRows = byPrefix("vaseUse");
+  const useTitle = vase.purpose === "lampe" ? t("prop.vaseLampSocket") : t("prop.vaseDrainHoles");
+  const UseIcon = vase.purpose === "lampe" ? Lightbulb : Droplets;
   // Form: the body shape's tiles; the measures, cross-section and twist; the contour button.
   const form = byPrefix("vase").filter((property) => property.id !== "vase.profile");
   const profile = findSelectProperty(properties, "vase.profile");
@@ -9555,11 +9615,22 @@ function VaseDesigner({
       <div className="vase-panel" role="tabpanel" id={`vase-panel-${shape.id}`} aria-labelledby={`vase-tab-${tab}-${shape.id}`}>
         {tab === "form" ? (
           <>
+            <div className="vase-tiles-group" role="radiogroup" aria-label={t("vase.purpose")}>
+              <span className="vase-tiles-label">{t("vase.purpose")}</span>
+              <div className="vase-tiles vase-purpose-tiles">
+                {VASE_PURPOSES.map(({ value, label, icon: Icon }) => (
+                  <button key={value} type="button" role="radio" disabled={disabled} className={vase.purpose === value ? "selected" : ""} aria-checked={vase.purpose === value} title={t(label)} onClick={() => choosePurpose(value)}>
+                    <Icon size={22} strokeWidth={2} aria-hidden="true" />
+                    <span>{t(label)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
             {profile ? (
               <div className="vase-tiles-group" role="group" aria-label={profile.label}>
                 <span className="vase-tiles-label">{profile.label}</span>
                 <div className="vase-tiles vase-profile-tiles">
-                  {VASE_PROFILES.map((value) => {
+                  {(VASE_PROFILES[vase.purpose] ?? VASE_PROFILES.vase).map((value) => {
                     const option = profile.options.find((entry) => entry.value === value);
                     if (!option) return null;
                     const points = value === "gezeichnet" ? vase.profilePoints ?? DRAW_PROFILE : PROFILES[value].points;
@@ -9589,6 +9660,15 @@ function VaseDesigner({
               <Pencil size={16} strokeWidth={2.5} />
               <span>{t("vase.editContour")}</span>
             </button>
+            {useRows.length ? (
+              <section className="vase-use" aria-label={useTitle}>
+                <h4 className="vase-use-title">
+                  <UseIcon size={16} strokeWidth={2.4} aria-hidden="true" />
+                  <span>{useTitle}</span>
+                </h4>
+                {rows(useRows)}
+              </section>
+            ) : null}
             {rows(form)}
             {advanced(formMore, () => setFormMore((open) => !open), rows(byPrefix("vaseMore")))}
           </>

@@ -134,6 +134,50 @@ describe("a vase in its settings", () => {
     expect(rangeNamed(polygon.panel, "Corners")).toBeDefined();
   });
 
+  it("says what the body is for - vase, plant pot or lampshade - and shows what belongs to that use on the Form tab", () => {
+    const { panel, calls } = mount();
+    openTab(panel, "Form");
+    const use = (target: HTMLElement, name: string) => [...target.querySelectorAll<HTMLButtonElement>(".vase-purpose-tiles button")].find((entry) => entry.textContent === name)!;
+    expect([...panel.querySelectorAll(".vase-purpose-tiles button")].map((entry) => entry.textContent)).toEqual(["Vase", "Plant pot", "Lampshade"]);
+    expect(use(panel, "Vase").getAttribute("aria-checked")).toBe("true");
+    expect(panel.querySelector(".vase-use")).toBeNull();
+    // A lampshade: hollow, hanging, with a carrier of three spokes, a lampshade's form, and the size a shade has.
+    act(() => use(panel, "Lampshade").click());
+    const lamp = calls.updates.at(-1)!;
+    expect(lamp.vase).toMatchObject({ purpose: "lampe", body: "hohl", lamp: "haengend", lampSpokes: 3, profile: "schirmKegel", wall: 1.2 });
+    expect(lamp.height).toBe(160);
+    expect(Math.max(lamp.width!, lamp.depth!)).toBeCloseTo(180, 0);
+    const shade = mount({ ...lamp });
+    openTab(shade.panel, "Form");
+    expect(use(shade.panel, "Lampshade").getAttribute("aria-checked")).toBe("true");
+    for (const name of ["Cone", "Bell", "Dome", "Lantern", "Drum"]) expect(tile(shade.panel, name), name).toBeDefined();
+    expect(tile(shade.panel, "Bottle")).toBeUndefined();
+    // The socket and its carrier, in a block of their own under the body forms.
+    const block = shade.panel.querySelector<HTMLElement>(".vase-use")!;
+    expect(block.querySelector(".vase-use-title")?.textContent).toBe("Socket");
+    expect(selectNamed(block, "Lampshade")).toBeDefined();
+    expect(selectNamed(block, "Socket")).toBeDefined();
+    expect(rangeNamed(block, "Spokes")).toBeDefined();
+    expect(rangeNamed(block, "Ring width")).toBeDefined();
+    expect(rangeNamed(block, "Spoke width")).toBeDefined();
+    act(() => tile(shade.panel, "Drum")!.click());
+    expect(shade.calls.updates.at(-1)?.vase?.profile).toBe("schirmTrommel");
+    // A plant pot: drain holes and a saucer, a pot's form; its drain holes stand in the block.
+    act(() => use(shade.panel, "Plant pot").click());
+    const pot = shade.calls.updates.at(-1)!;
+    expect(pot.vase).toMatchObject({ purpose: "topf", body: "hohl", lamp: "keine", drainHoles: 3, saucerMode: "schale", profile: "topfKlassik" });
+    const planter = mount({ ...lamp, ...pot });
+    openTab(planter.panel, "Form");
+    expect(tile(planter.panel, "Classic")).toBeDefined();
+    expect(planter.panel.querySelector(".vase-use .vase-use-title")?.textContent).toBe("Drain holes");
+    expect(rangeNamed(planter.panel.querySelector<HTMLElement>(".vase-use")!, "Drain holes")).toBeDefined();
+    // Back to a vase: no lamp, a vase's form; a size one has set oneself is kept.
+    act(() => use(planter.panel, "Vase").click());
+    const back = planter.calls.updates.at(-1)!;
+    expect(back.vase).toMatchObject({ purpose: "vase", lamp: "keine", profile: "flasche" });
+    expect(back.height).toBeUndefined();
+  });
+
   it("chooses a pattern from the gallery and shows its three main sliders and the height range", () => {
     const { panel, calls } = mount();
     openTab(panel, "Pattern");

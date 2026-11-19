@@ -30,7 +30,25 @@ export const PROFILES = {
   fass: { label: 'Fass', points: [[0, 0.88], [0.45, 1], [0.72, 0.97], [0.86, 0.8], [0.95, 0.66], [1, 0.64]] },
   zylinder: { label: 'Zylinder', points: [[0, 1], [1, 1]] },
   trichter: { label: 'Trichter', points: [[0, 0.62], [1, 1]] },
+  // Lampshades, as they are printed: the carrier for the socket at the bottom (height 0), the open rim at the top; a
+  // hanging one is turned over. None leans out by more than 45 degrees at its usual size (wider than tall), so they
+  // print without supports.
+  schirmKegel: { label: 'Schirm: Kegel', points: [[0, 0.5], [1, 1]] },
+  schirmGlocke: { label: 'Schirm: Glocke', points: [[0, 0.36], [0.12, 0.5], [0.4, 0.64], [0.75, 0.84], [1, 1]] },
+  schirmKuppel: { label: 'Schirm: Kuppel', points: [[0, 0.38], [0.2, 0.7], [0.45, 0.9], [0.75, 0.985], [1, 1]] },
+  schirmLaterne: { label: 'Schirm: Laterne', points: [[0, 0.36], [0.28, 0.8], [0.55, 1], [0.8, 0.94], [1, 0.78]] },
+  schirmTrommel: { label: 'Schirm: Trommel', points: [[0, 0.9], [1, 1]] },
+  // Plant pots: a classic pot with a rim band, a rounded tub and a low bowl.
+  topfKlassik: { label: 'Topf: Klassisch', points: [[0, 0.7], [0.88, 0.96], [0.92, 1], [1, 1]] },
+  topfKuebel: { label: 'Topf: Kübel', points: [[0, 0.6], [0.35, 0.92], [0.65, 1], [1, 0.94]] },
+  topfSchale: { label: 'Topf: Schale', points: [[0, 0.5], [0.3, 0.8], [0.7, 0.96], [1, 1]] },
 }
+
+/**
+ * What the vase is for: a vase, a plant pot or a lampshade. The body is built the same; the editor shows what
+ * belongs to the use (the socket's carrier, the drain holes) and starts each with fitting settings.
+ */
+export const PURPOSES = { vase: 'Vase', topf: 'Pflanztopf', lampe: 'Lampenschirm' }
 
 export const RIB_SHAPES = { rund: 'Rund', v: 'Spitz (V)', flach: 'Flach' }
 export const SECTIONS = { kreis: 'Kreis', vieleck: 'Vieleck', welle: 'Welle', gezeichnet: 'Gezeichnet' }
@@ -100,6 +118,7 @@ export const QUALITY_LABELS = { entwurf: 'Entwurf', standard: 'Standard', fein: 
 /** Default: a minimal vase - bottle, 48 round grooves, body 'voll' (solid, for the slicer's vase mode). */
 export const DEFAULTS = Object.freeze({
   profile: 'flasche',
+  purpose: 'vase',
   height: 180,
   diameter: 90,
   ribCount: 48,
@@ -213,6 +232,14 @@ export const DEFAULTS = Object.freeze({
   lamp: 'keine',
   lampSocket: 'e27',
   lampHole: 41,
+  /**
+   * The shade carrier: with 2 to 6 spokes the plate round the socket's hole is a ring (`lampRing` mm wide) held by
+   * that many spokes (`lampSpokeWidth` mm wide), open between them, so light and warm air get through; 0 leaves the
+   * plate closed.
+   */
+  lampSpokes: 0,
+  lampRing: 8,
+  lampSpokeWidth: 6,
   puckDiameter: 70,
   lampNotch: 10,
   lampNotchHeight: 8,
@@ -360,6 +387,9 @@ export const LIMITS = {
   cutoutSeed: [1, 9999],
   reinforceCount: [3, 48],
   lampHole: [10, 80],
+  lampSpokes: [0, 6],
+  lampRing: [3, 30],
+  lampSpokeWidth: [3, 30],
   puckDiameter: [20, 200],
   lampNotch: [0, 40],
   lampNotchHeight: [2, 30],
@@ -430,7 +460,9 @@ export function normalizeParams(input = {}) {
   p.patternImage = normalizeOwnPicture(input.patternImage)
   for (const [key, [min, max]] of Object.entries(LIMITS)) p[key] = clamp(p[key], min, max)
   p.ribCount = Math.round(p.ribCount)
-  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternGroup']) p[key] = Math.round(p[key])
+  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternGroup', 'lampSpokes']) p[key] = Math.round(p[key])
+  // One spoke alone carries nothing: none, or two and more.
+  if (p.lampSpokes === 1) p.lampSpokes = 2
   if (p.rubberFeet > 0 && p.rubberFeet < 3) p.rubberFeet = 3
   if (!LEG_MODES[p.legMode]) p.legMode = DEFAULTS.legMode
   if (!LEG_SHAPES[p.legShape]) p.legShape = DEFAULTS.legShape
@@ -450,6 +482,7 @@ export function normalizeParams(input = {}) {
   if (!LEAF_LAYOUTS[p.leafLayout]) p.leafLayout = DEFAULTS.leafLayout
   for (const key of ['saucerRibs', 'saucerSpout', 'saucerGrip']) if (!YES_NO[p[key]]) p[key] = DEFAULTS[key]
   if (!PROFILES[p.profile] && p.profile !== 'gezeichnet') p.profile = DEFAULTS.profile
+  if (!PURPOSES[p.purpose]) p.purpose = DEFAULTS.purpose
   if (!SECTIONS[p.section]) p.section = DEFAULTS.section
   if (!SECTIONS2[p.section2]) p.section2 = DEFAULTS.section2
   if (!WAVE_STYLES[p.section2WaveStyle]) p.section2WaveStyle = DEFAULTS.section2WaveStyle
@@ -1393,6 +1426,53 @@ export function legPeg(p) {
 }
 
 /**
+ * The openings between the spokes of a lampshade's carrier: the plate that holds the socket, as a ring round the hole
+ * (`lampRing` wide) and `lampSpokes` spokes with parallel sides (`lampSpokeWidth` wide) out to a rim along the wall.
+ * `floorAt(angle)` is how far the plate reaches. Each opening is { points } (counter-clockwise, for capWithHoles) with
+ * a middle and a radius for whoever asks where it lies; none where ring, spokes and rim leave no room.
+ */
+function spokeWindows(p, floorAt) {
+  const n = p.lampSpokes
+  const inner = p.lampHole / 2 + p.lampRing
+  // The plate's rim along the wall, so every spoke ends in the plate and not in the wall's corner.
+  const rim = 2.4
+  const half = Math.min(p.lampSpokeWidth / 2, inner * 0.8)
+  const outerAt = (a) => floorAt(a) - rim
+  const windows = []
+  for (let k = 0; k < n; k++) {
+    // Spokes at a0 and a1, the opening between them; the first spoke points to the back (+y), so with two or four
+    // spokes they stand square to the front.
+    const a0 = Math.PI / 2 + (2 * Math.PI * k) / n, a1 = a0 + (2 * Math.PI) / n
+    const from = (r) => a0 + Math.asin(Math.min(0.95, half / r)), to = (r) => a1 - Math.asin(Math.min(0.95, half / r))
+    const innerFrom = from(inner), innerTo = to(inner)
+    const outerFrom = from(Math.max(inner, outerAt(a0))), outerTo = to(Math.max(inner, outerAt(a1)))
+    if (innerTo - innerFrom < 0.2 || outerTo - outerFrom < 0.2) return []
+    const points = []
+    let least = Infinity, sx = 0, sy = 0
+    const outerSteps = Math.min(48, Math.max(8, Math.ceil(((outerTo - outerFrom) * outerAt((a0 + a1) / 2)) / 3)))
+    for (let i = 0; i <= outerSteps; i++) {
+      const a = outerFrom + ((outerTo - outerFrom) * i) / outerSteps
+      const r = outerAt(a)
+      least = Math.min(least, r)
+      points.push([r * Math.cos(a), r * Math.sin(a)])
+    }
+    // Room for an opening worth the name: 4 mm between ring and rim at least.
+    if (least - inner < 4) return []
+    const innerSteps = Math.min(32, Math.max(6, Math.ceil(((innerTo - innerFrom) * inner) / 3)))
+    for (let i = innerSteps; i >= 0; i--) {
+      const a = innerFrom + ((innerTo - innerFrom) * i) / innerSteps
+      points.push([inner * Math.cos(a), inner * Math.sin(a)])
+    }
+    for (const [x, y] of points) {
+      sx += x / points.length
+      sy += y / points.length
+    }
+    windows.push({ points, cx: sx, cy: sy, r: (least - inner) / 2, window: true })
+  }
+  return windows
+}
+
+/**
  * Where things sit in the bottom (mm, middle of the vase = 0): drain holes (through the bottom),
  * sockets for plug-in legs and recesses for rubber feet (from below, blind), plus the bottom
  * thickness they need and notes for the page. Everything fits into the bottom; what does not fit becomes
@@ -1478,8 +1558,18 @@ export function floorLayout(input) {
   if (lamp === 'haengend' || lamp === 'stehend') {
     const hole = { cx: 0, cy: 0, r: p.lampHole / 2 }
     const floorAt = (a) => Math.min(shape.innerAt(a, foot + floor), foot > 0 ? shape.innerAt(a, foot) : shape.rimAt(a))
-    if (circleFits(hole, floorAt, 1.5)) drains.push(hole)
-    else notes.push(`Das Loch für die Fassung (Ø ${fmtMm(p.lampHole)} mm) passt nicht in den Boden – die Vase unten breiter machen.`)
+    if (circleFits(hole, floorAt, 1.5)) {
+      drains.push(hole)
+      // The shade carrier: the plate opened between its spokes.
+      if (p.lampSpokes >= 2) {
+        if (blind.length) notes.push('Mit Buchsen oder Mulden im Boden bleibt die Platte um die Fassung geschlossen (keine Streben).')
+        else {
+          const windows = spokeWindows(p, floorAt)
+          if (windows.length) drains.push(...windows)
+          else notes.push(`Für ${p.lampSpokes} Streben ist zwischen Fassungsring und Wand zu wenig Platz – die Platte bleibt geschlossen.`)
+        }
+      }
+    } else notes.push(`Das Loch für die Fassung (Ø ${fmtMm(p.lampHole)} mm) passt nicht in den Boden – die Vase unten breiter machen.`)
     if (p.drainHoles > 0) notes.push('Beim Lampenschirm gibt es statt Ablauflöchern das Loch für die Fassung.')
     if (lamp === 'haengend') notes.push(`Hängend: Zum Aufhängen umdrehen – die Platte mit dem Loch (Ø ${fmtMm(p.lampHole)} mm) kommt oben auf die Fassung und wird vom Schirmring gehalten. Lochmaß an der eigenen Fassung nachmessen.`)
     else notes.push(`Stehend: Fassung im Bodenloch (Ø ${fmtMm(p.lampHole)} mm) mit dem Schirmring befestigen, das Kabel läuft durch den hohlen Fuß${p.lampNotch > 0 ? ' und den Schlitz' : ''}. Fuß so hoch wählen, dass der Fassungskörper darunter Platz hat – nachmessen.`)
