@@ -201,6 +201,8 @@ import { normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@
 import { vaseShapePatchOffThread } from "@/lib/vaseShape";
 import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
 import { LeafEditor, PatternPicture, ProfilePicture, VaseZoneRange } from "@/components/workplane/VaseDesignerParts";
+import { OWN_TEXT_LENGTH, normalizeOwnPicture } from "@/lib/vase/vase-own-picture.mjs";
+import { vaseSettingsWithTextPicture } from "@/lib/vaseRelief";
 import { VasePrintBadge, VasePrintReport } from "@/components/workplane/VasePrintReport";
 import { shapeDefaultsAsset, shapeDefaultsFromShape } from "@/lib/shapeDefaults";
 import { fromPrinterPlay, printerPlayShapeRows, withPrinterPlay } from "@/lib/printerPlay";
@@ -488,8 +490,9 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
     keine: "vase.effectNone", rillen: "vase.effectGrooves", streifen: "vase.effectStripes", voronoi: "vase.effectVoronoi", lowpoly: "vase.effectFacets",
     blueten: "vase.effectPetals", rautenwelle: "vase.effectWaveDiamond", tulpenblaetter: "vase.effectTulipLeaves", wisp: "vase.effectWispRibs",
     zellen: "vase.effectCells", waben: "vase.effectHexagons", geflecht: "vase.effectWeave", wellen: "vase.effectWaves",
-    blattfluss: "vase.effectLeafFlow", schuppen: "vase.effectScales", kiesel: "vase.effectPebbles", adern: "vase.effectVeins", blaetter: "vase.effectLeaves",
+    blattfluss: "vase.effectLeafFlow", schuppen: "vase.effectScales", kiesel: "vase.effectPebbles", adern: "vase.effectVeins", blaetter: "vase.effectLeaves", bild: "vase.effectPicture",
   },
+  patternFit: { kacheln: "vase.fitAll", band: "vase.fitBand", einmal: "surfaceTexture.tilingOnce" },
   leafShape: {
     tulpe: "vase.leafTulip", ginkgo: "vase.leafGinkgo", lotus: "vase.leafLotus", efeu: "vase.leafIvy", ahorn: "vase.leafMaple", monstera: "vase.leafMonstera",
     farn: "vase.leafFern", eiche: "vase.leafOak", linde: "vase.leafLinden", weide: "vase.leafWillow", eigen: "vase.leafOwn",
@@ -1712,6 +1715,13 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     }
     // A pattern from a picture: how high, how often round, how it leans; stretched or turned inside out under Advanced.
     if (isVasePicturePattern(vase.effect)) {
+      // One's own picture or a text: the text (its picture is drawn here, where there is a canvas) and how it is put on.
+      if (vase.effect === "bild") {
+        properties.push(
+          pattern({ type: "text", id: "vase.patternText", label: t("prop.vasePatternText"), value: vase.patternText, maxLength: OWN_TEXT_LENGTH, onChange: (value) => setVase(vaseSettingsWithTextPicture({ patternText: value, patternImage: vase.patternImage }, vase)) }),
+          pattern(choice("patternFit", "prop.vasePatternFit")),
+        );
+      }
       properties.push(reliefDepth, count, lean(pattern), aspect, patternMore({ type: "toggle", id: "vase.patternInvert", label: t("prop.vasePatternInvert"), value: vase.patternInvert === "ja", onChange: (value) => setVase({ patternInvert: value ? "ja" : "nein" }) }));
     }
     if (vase.effect === "wisp") properties.push(reliefDepth, count, lean(pattern), patternMore(range("patternGroup", "prop.vasePatternGroup", 1)), patternMore(percent("patternWidth", "prop.vasePatternChannel")));
@@ -8119,10 +8129,30 @@ export function SurfaceTextureCard({
         onClick={() => setOpen(!open)}
       >
         <span>{t("inspector.surfaceTexture")}</span>
+        {maskMode && maskMode !== "none" && !open ? <span className="property-card-note">{t("inspector.surfaceMask")}: {t(SURFACE_TEXTURE_LABELS.mask[maskMode])}</span> : null}
         <ChevronUp className={open ? "" : "collapsed"} size={25} strokeWidth={2.8} />
       </button>
       {open ? (
         <div className="property-list cylinder-wrap-body" id={`surface-texture-${shape.id}`}>
+          {/* Outside an editor's tool column the card holds the mask choice itself, as the docked tool does (Discussion #1573). */}
+          {maskMode && onMaskChange ? (
+            <>
+              <SelectProperty
+                type="select"
+                label={t("inspector.surfaceMask")}
+                value={maskMode}
+                options={(["none", ...SURFACE_TEXTURE_MASK_MODES] as const).map((value) => ({ value, label: t(SURFACE_TEXTURE_LABELS.mask[value]) }))}
+                disabled={disabled}
+                onChange={(value) => onMaskChange(value as "none" | SurfaceTextureMaskMode)}
+              />
+              {maskMode !== "none" ? (
+                <p className="cylinder-wrap-hint">
+                  {t("inspector.surfaceMaskHint")}
+                  <GuideHelpLink section="surfaceTexture" className="inspector-help-link" />
+                </p>
+              ) : null}
+            </>
+          ) : null}
           {applied && !changeable ? (
             <p className="cylinder-wrap-hint">
               {t("inspector.surfaceApplied", { pattern: surfacePatternLabel(applied.pattern) })}
@@ -9362,8 +9392,8 @@ const NO_CHOICE = new Set(["keine", "keiner", "kein", "none"]);
 type VaseTab = "form" | "pattern" | "print";
 let lastVaseTab: VaseTab = "form";
 
-/** Pattern families in the gallery's order: smooth first, then the vase's older surfaces, then the reliefs, leaves last. */
-const VASE_GALLERY = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "blattfluss", "wisp", "wellen", "zellen", "kiesel", "waben", "geflecht", "schuppen", "adern", "blaetter"] as const;
+/** Pattern families in the gallery's order: smooth first, then the vase's older surfaces, then the reliefs, leaves and one's own picture or text last. */
+const VASE_GALLERY = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "blattfluss", "wisp", "wellen", "zellen", "kiesel", "waben", "geflecht", "schuppen", "adern", "blaetter", "bild"] as const;
 const VASE_LEAVES = ["tulpe", "ginkgo", "lotus", "efeu", "ahorn", "monstera", "farn", "eiche", "linde", "weide", "eigen"] as const;
 const VASE_PROFILES = ["flasche", "bauchig", "schale", "fass", "zylinder", "trichter", "gezeichnet"] as const;
 
@@ -9414,6 +9444,22 @@ function VaseDesigner({
   const width = shape.width ?? shape.size;
   const depth = shape.depth ?? shape.size;
   const setVase = (patch: Partial<VaseSettings>) => vaseShapePatchOffThread({ id: shape.id, width, depth, height: shape.height }, normalizeVaseSettings({ ...vase, ...patch }), (vasePatch) => onUpdate(vasePatch));
+  // One's own picture for a relief, from a file: drawn small and grey as a Surface Texture's own image is. It takes
+  // the place of a text's picture, so the text goes.
+  const pictureInput = useRef<HTMLInputElement>(null);
+  const [pictureError, setPictureError] = useState("");
+  const loadPicture = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const own = await surfaceImageFromFile(file);
+      const picture = normalizeOwnPicture({ width: own.width, height: own.height, data: own.data });
+      if (!picture) throw new Error("no picture");
+      setPictureError("");
+      setVase({ patternImage: picture, patternText: "" });
+    } catch (error) {
+      setPictureError(t("status.surfaceImageFailed", { error: error instanceof Error ? error.message : String(error) }));
+    }
+  };
   const byPrefix = (prefix: string) => properties.filter((property) => property.id.startsWith(`${prefix}.`) || (prefix === "vase" && (property.id === "diameter" || property.id === "height")));
   const rows = (list: ShapePropertyConfig[]) => (
     <ShapePropertyRows formulas={formulas} onFormula={onFormula} properties={list} defaults={defaults} workspace={workspace} disabled={disabled} onInteractionActiveChange={onInteractionActiveChange} />
@@ -9526,7 +9572,7 @@ function VaseDesigner({
                     if (!option) return null;
                     return (
                       <button key={value} type="button" disabled={disabled} className={vase.effect === value ? "selected" : ""} aria-pressed={vase.effect === value} title={option.label} onClick={() => setVase(vasePatternChoice(vase, value))}>
-                        <PatternPicture settings={tileSettings({ effect: value })} />
+                        <PatternPicture settings={tileSettings(value === "bild" ? { effect: value, patternImage: vase.patternImage } : { effect: value })} />
                         <span>{option.label}</span>
                       </button>
                     );
@@ -9559,6 +9605,25 @@ function VaseDesigner({
                 onChange={(points) => setVase({ leafPoints: points })}
                 onInteractionActiveChange={onInteractionActiveChange}
               />
+            ) : null}
+            {vase.effect === "bild" ? (
+              <div className="vase-own-picture">
+                <input
+                  ref={pictureInput}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(event) => {
+                    void loadPicture(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+                <button className="inspector-action-button" type="button" disabled={disabled} onClick={() => pictureInput.current?.click()}>
+                  <ImageUp size={17} strokeWidth={2.5} />
+                  <span>{t("inspector.surfaceImageLoad")}</span>
+                </button>
+                <p className="cylinder-wrap-hint">{pictureError || t("vase.pictureHint")}</p>
+              </div>
             ) : null}
             {vase.effect === "keine" ? <p className="cylinder-wrap-hint">{t("vase.patternNoneHint")}</p> : null}
             {rows(mainPattern)}
@@ -9636,12 +9701,14 @@ function VaseDesigner({
 /**
  * What choosing a pattern in the gallery sets: the pattern, and for leaves a relief strong enough to read and for tulip
  * leaves a lean that makes them rise in a spiral - but only where the vase still has the defaults, so nothing one has
- * set oneself is lost.
+ * set oneself is lost. One's own picture or text starts a quarter of the way round.
  */
 function vasePatternChoice(vase: VaseSettings, effect: string): Partial<VaseSettings> {
   const patch: Partial<VaseSettings> = { effect };
   if ((effect === "blaetter" || effect === "tulpenblaetter") && vase.reliefDepth === 1.6) patch.reliefDepth = 2.4;
   if (effect === "tulpenblaetter" && vase.patternTwist === 0) patch.patternTwist = 30;
+  // One's own picture or text: a quarter of the way round, large enough to read.
+  if (effect === "bild" && vase.patternCount === 12) patch.patternCount = 4;
   return patch;
 }
 

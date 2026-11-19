@@ -9,16 +9,16 @@
  *
  * For the pattern the picture becomes a tile like the built-in ones: `size` x `size` heights, its height `aspect`
  * times its width, so it is read, softened to the build grid and leaned exactly as they are. Round the vase it stands
- * side by side as often as the pattern's count says; up the vase either row upon row or once, in the middle of the
- * pattern's height range (vase-patterns.mjs places it).
+ * side by side as often as the pattern's count says; up the vase either row upon row, or one such row (a band) in the
+ * middle of the pattern's height range, or of that row one picture alone (vase-patterns.mjs places it).
  */
 
 /** A picture has at most this many points on its longer side (it is kept in the design and in every undo step). */
 export const OWN_PICTURE_SIZE = 512
 /** A text for a relief has at most this many characters. */
 export const OWN_TEXT_LENGTH = 60
-/** Row upon row all the way up the height range, or one row in its middle. */
-export const PICTURE_FITS = { kacheln: 'Kacheln', einmal: 'Einmal' }
+/** Row upon row all the way up the height range, one row round the vase in its middle, or one picture alone there. */
+export const PICTURE_FITS = { kacheln: 'Kacheln', band: 'Ein Band', einmal: 'Einmal' }
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 const B64_VALUE = new Int16Array(128).fill(-1)
@@ -47,6 +47,9 @@ function base64Bytes(text, count) {
 const pictureBytes = new WeakMap()
 const pictureKeys = new WeakMap()
 const pictureTiles = new WeakMap()
+// The last few pictures by their grey values: a picture that comes in anew with the same values (out of a saved design,
+// or copied into the worker that builds the vase) is the one already known, with all that was worked out for it.
+const recentPictures = new Map()
 
 /**
  * A picture as the settings may keep it: { width, height, data } with whole numbers from 2 to OWN_PICTURE_SIZE and
@@ -58,15 +61,24 @@ export function normalizeOwnPicture(input) {
   const { width, height, data } = input
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 2 || height < 2 || width > OWN_PICTURE_SIZE || height > OWN_PICTURE_SIZE) return null
   if (typeof data !== 'string') return null
+  const known = recentPictures.get(data)
+  if (known && known.width === width && known.height === height) return known
   const bytes = base64Bytes(data, width * height)
   if (!bytes) return null
   const picture = Object.freeze({ width, height, data })
   pictureBytes.set(picture, bytes)
+  recentPictures.set(data, picture)
+  if (recentPictures.size > 6) recentPictures.delete(recentPictures.keys().next().value)
   return picture
 }
 
-/** A short name for a picture that changes with any of its points (FNV-1a over its grey values): for the keys of caches. */
-export function ownPictureKey(picture) {
+/**
+ * A short name for a picture that changes with any of its points (FNV-1a over its grey values): for the keys of caches.
+ * Anything that is not a picture has the name ''.
+ */
+export function ownPictureKey(input) {
+  const picture = normalizeOwnPicture(input)
+  if (!picture) return ''
   const known = pictureKeys.get(picture)
   if (known) return known
   let h = 2166136261

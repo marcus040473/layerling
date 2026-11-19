@@ -155,6 +155,38 @@ describe("a vase in its settings", () => {
     expect(leaves.calls.updates.at(-1)?.vase?.leafShape).toBe("ahorn");
   });
 
+  it("takes one's own picture or a text as the pattern: a button to load, a text field and how it is put on", () => {
+    const { panel, calls } = mount();
+    openTab(panel, "Pattern");
+    // The last tile of the gallery; nothing to load or type before it is chosen.
+    const tiles = [...panel.querySelectorAll<HTMLButtonElement>(".vase-pattern-tiles button")];
+    expect(tiles.at(-1)?.textContent).toBe("Picture or text");
+    expect(panel.querySelector(".vase-own-picture")).toBeNull();
+    act(() => tile(panel, "Picture or text")!.click());
+    expect(calls.updates.at(-1)?.vase?.effect).toBe("bild");
+    // A quarter of the way round, large enough to read.
+    expect(calls.updates.at(-1)?.vase?.patternCount).toBe(4);
+    const own = mount({ vase: { ...calls.updates.at(-1)!.vase! } });
+    openTab(own.panel, "Pattern");
+    const block = own.panel.querySelector<HTMLElement>(".vase-own-picture")!;
+    expect(buttonNamed(block, "Load your own image…")).toBeDefined();
+    expect(block.querySelector("input[type=file]")?.getAttribute("accept")).toBe("image/*");
+    expect(block.querySelector(".cylinder-wrap-hint")?.textContent).toBe("Load a picture or type a text. Light places stand out, dark ones lie deeper.");
+    // The text, how it is put on, then the three sliders; stretching and turning inside out under Advanced.
+    const text = [...own.panel.querySelectorAll<HTMLLabelElement>("label.text-property")].find((row) => row.querySelector("span")?.textContent === "Text")!.querySelector("input")!;
+    expect(text.maxLength).toBe(60);
+    const placement = selectNamed(own.panel, "Placement")!;
+    expect([...placement.options].map((option) => option.textContent)).toEqual(["All over", "A band all round", "Once"]);
+    expect(rangeNamed(own.panel, "Relief height")).toBeDefined();
+    expect(rangeNamed(own.panel, "Repeats around")).toBeDefined();
+    expect(rangeNamed(own.panel, "Lean (°)")).toBeDefined();
+    choose(placement, "einmal");
+    expect(own.calls.updates.at(-1)?.vase?.patternFit).toBe("einmal");
+    type(text, "Anna");
+    expect(own.calls.updates.at(-1)?.vase?.patternText).toBe("Anna");
+    expect(own.panel.querySelector(".vase-zone")).not.toBeNull();
+  });
+
   it("sets the pattern's height range with two handles, typed numbers or a quick choice; start never passes end", () => {
     const plain = mount().shape;
     const { panel, calls } = mount({ vase: { ...plain.vase!, effect: "waben" } });

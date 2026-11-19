@@ -74,7 +74,7 @@ export function vaseSettingsWithTextPicture<T extends Partial<VaseSettings>>(set
 }
 
 /** The vase's settings for a report: a picture by its size alone, not by its grey values. */
-export function vaseSettingsWithoutPictureData<T extends Partial<VaseSettings>>(settings: T): T {
+export function vaseSettingsWithoutPictureData(settings: Partial<VaseSettings>): Record<string, unknown> {
   const picture = settings.patternImage;
   return picture ? { ...settings, patternImage: { width: picture.width, height: picture.height } } : settings;
 }
@@ -83,9 +83,10 @@ export function vaseSettingsWithoutPictureData<T extends Partial<VaseSettings>>(
  * Vase settings as an assistant sends them, laid over the ones the vase has: a picture that comes back by its size
  * alone (as the scene reports it) leaves the vase's picture as it is, and a text gets its picture drawn.
  */
-export function vaseSettingsFromRequest(requested: Record<string, unknown>, before?: Partial<VaseSettings> | null): Record<string, unknown> {
-  const merged: Record<string, unknown> = { ...before, ...requested };
-  const picture = requested.patternImage;
-  if (picture && typeof picture === "object" && typeof (picture as { data?: unknown }).data !== "string") merged.patternImage = before?.patternImage ?? null;
-  return vaseSettingsWithTextPicture(merged as Partial<VaseSettings>, before) as Record<string, unknown>;
+export function vaseSettingsFromRequest(requested: Record<string, unknown> | undefined, before?: unknown): Record<string, unknown> {
+  const had = before && typeof before === "object" ? (before as Partial<VaseSettings>) : null;
+  const merged: Record<string, unknown> = { ...had, ...requested };
+  const picture = requested?.patternImage;
+  if (picture && typeof picture === "object" && typeof (picture as { data?: unknown }).data !== "string") merged.patternImage = had?.patternImage ?? null;
+  return vaseSettingsWithTextPicture(merged as Partial<VaseSettings>, had) as Record<string, unknown>;
 }

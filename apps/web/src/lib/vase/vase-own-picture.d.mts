@@ -14,7 +14,7 @@ export const PICTURE_FITS: Readonly<Record<string, string>>;
 /** A picture as the settings may keep it, or null; one that passed comes back as it is. */
 export function normalizeOwnPicture(input: unknown): VaseOwnPicture | null;
 /** A short name for a picture that changes with any of its points: for the keys of caches. */
-export function ownPictureKey(picture: VaseOwnPicture): string;
+export function ownPictureKey(picture: unknown): string;
 /** The picture as a tile of the pattern families' kind, or null. */
 export function ownPictureTile(input: unknown): { size: number; aspect: number; values: Uint8Array; own: true } | null;
 export function ownPicturePlaceholder(u: number, v: number): number;

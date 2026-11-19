@@ -1,6 +1,9 @@
 // Types for vase-geometry.mjs: the vase core, kept the same as in the stand-alone vase tool
 // so both build the same body. Only what the editor uses is declared here.
 
+import type { VaseOwnPicture } from "./vase-own-picture.mjs";
+export type { VaseOwnPicture };
+
 export type VaseNumberKey =
   | "height" | "diameter" | "ribCount" | "ribDepth" | "grooveWidth" | "twist" | "swayAngle" | "swayCount"
   | "sectionZoneFrom" | "sectionZoneTo" | "sectionZoneFade"
@@ -26,7 +29,8 @@ export type VaseChoiceKey =
   | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "insertMode"
   | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "lamp" | "lampSocket" | "reinforce"
   | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle"
-  | "stopperRing" | "leafShape" | "leafLayout" | "leafVeins" | "printFriendly" | "patternInvert" | "leafFixed";
+  | "stopperRing" | "leafShape" | "leafLayout" | "leafVeins" | "printFriendly" | "patternInvert" | "leafFixed"
+  | "patternText" | "patternFit";
 
 /** A point of a drawn cross-section in the unit circle: a corner, or round with an optional handle (tx, ty; ix, iy before it). */
 export type VaseDrawPoint = { x: number; y: number; corner: boolean; tx?: number; ty?: number; ix?: number; iy?: number };
@@ -40,6 +44,8 @@ export type VaseSettings = Record<VaseNumberKey, number> & Record<VaseChoiceKey,
   twistPoints: number[][] | null;
   /** One's own leaf (leafShape "eigen"): [along 0..1, half width 0..1]. */
   leafPoints: number[][] | null;
+  /** One's own picture for the relief (effect "bild"), see vase-own-picture.mjs; null: none yet. */
+  patternImage: VaseOwnPicture | null;
 };
 
 export const DEFAULTS: Readonly<VaseSettings>;
@@ -63,6 +69,8 @@ export const LAMPS: Readonly<Record<string, string>>;
 export const LAMP_SOCKETS: Readonly<Record<string, string>>;
 export const LID_MODES: Readonly<Record<string, string>>;
 export const PATTERNS: Readonly<Record<string, string>>;
+/** One's own picture: row upon row, or once in the middle of the height range. */
+export const PICTURE_FITS: Readonly<Record<string, string>>;
 export const LEAF_SHAPES: Readonly<Record<string, string>>;
 export const LEAF_LAYOUTS: Readonly<Record<string, string>>;
 export const DRAW_PROFILE: ReadonlyArray<ReadonlyArray<number>>;

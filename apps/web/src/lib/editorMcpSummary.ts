@@ -11,6 +11,7 @@ import { MCP_SHAPE_SETTING_KEYS, mcpThreadSizeName } from "@/lib/mcpShapeSetting
 import { DEFAULT_SKETCH_STROKE, normalizeSketchStroke } from "@/lib/sketchStroke";
 import { surfaceTextureEntry } from "@/lib/surfaceTextureShape";
 import { type LayerlingMcpShapeSummary } from "@/lib/layerlingMcpProtocol";
+import { vaseSettingsWithoutPictureData } from "@/lib/vaseRelief";
 import { vaseSettingsChanges } from "@/lib/vaseSettings";
 import { GRIDFINITY_LABEL_FONTS, gridfinityOutlinePoints } from "@/lib/gridfinityGeometry";
 import type { ShapeKind, SketchProfile, WorkplaneShape } from "@/types/layerling";
@@ -101,8 +102,9 @@ function mcpShapeSettings(shape: WorkplaneShape): Record<string, string | number
       // hinaus und wird so auch wieder angenommen.
       settings[key] = JSON.stringify(value);
     } else if (key === "vase" && value && typeof value === "object") {
-      // The vase's many settings go out as text too, only those that differ from the defaults.
-      settings[key] = JSON.stringify(vaseSettingsChanges(value));
+      // The vase's many settings go out as text too, only those that differ from the defaults; one's own picture for a
+      // relief by its size alone (given back so, the vase keeps the picture it has).
+      settings[key] = JSON.stringify(vaseSettingsWithoutPictureData(vaseSettingsChanges(value)));
     }
   });
   // Steht keine Seitenzahl im Objekt, folgt sie der Groesse. Dann gehoert hier

@@ -7,6 +7,8 @@
  * read between its points (bilinear), so it is smooth at any size; a leaf is a signed distance field of its outline, so
  * its edge is sharp and round at any size and its dome grows with the distance from the edge. Wisp ribs, the tulip
  * petal and one's own drawn leaf are worked out here.
+ * One's own picture or a text (the family `bild`) is read as the built-in pictures are, from the tile
+ * vase-own-picture.mjs makes of the picture in the settings.
  *
  * Surface coordinates. Around the vase a pattern has a whole number of cells `N` (tiles of a picture), so it closes at
  * 360 degrees without a seam; `cu` counts cells around (0..N), turning along with the vase's twist. Up the vase, `cv`
@@ -27,6 +29,7 @@
  * lower edge of a relief then slopes instead of overhanging; the upper edges stay sharp.
  */
 import { inflateSync } from 'fflate'
+import { ownPicturePlaceholder, ownPictureTile } from './vase-own-picture.mjs'
 import { LEAF_MAPS, PATTERN_MAPS } from './vase-pattern-maps.mjs'
 
 /** The pattern families with their German names (the editor shows its own, translated). */
@@ -44,6 +47,8 @@ export const PATTERNS = {
   kiesel: 'Kiesel',
   adern: 'Blattadern',
   blaetter: 'Blätter',
+  /** One's own picture or a text (vase-own-picture.mjs): the picture is in the settings, `patternImage`. */
+  bild: 'Eigenes Bild oder Text',
 }
 
 /** Leaf shapes; `eigen` takes the outline drawn in `leafPoints`. */
@@ -99,9 +104,17 @@ export function isReliefPattern(effect) {
   return Object.prototype.hasOwnProperty.call(PATTERNS, effect)
 }
 
-/** Whether a family comes from a picture (and so ignores roundness, joints and band width). */
+/** Whether a family comes from a picture (and so ignores roundness, joints and band width): a built-in one, or one's own. */
 export function isPicturePattern(effect) {
-  return Object.prototype.hasOwnProperty.call(PATTERN_MAPS, effect)
+  return effect === 'bild' || Object.prototype.hasOwnProperty.call(PATTERN_MAPS, effect)
+}
+
+/**
+ * The tile a picture family reads its heights from: the family's built-in one, or for `bild` the vase's own picture
+ * (null while it has none, and the wall stays smooth).
+ */
+function pictureOf(p) {
+  return p.effect === 'bild' ? ownPictureTile(p.patternImage) : PATTERN_MAPS[p.effect] ?? null
 }
 
 /** Whether a leaf comes from a picture. */
@@ -112,6 +125,8 @@ export function isPictureLeaf(shape) {
 /** A map's numbers, unpacked once: deflated rows of differences from the left neighbour. */
 const unpacked = new Map()
 function mapValues(entry) {
+  // One's own picture comes as heights already.
+  if (entry.values) return entry.values
   let values = unpacked.get(entry)
   if (values) return values
   const text = atob(entry.data)
@@ -135,10 +150,13 @@ function mapValues(entry) {
  * repeating both ways like the tile.
  */
 const softened = new Map()
+/** The same for one's own pictures, which come and go: kept as long as the picture is. */
+const softenedOwn = new WeakMap()
 function softValues(entry, level) {
   if (level <= 0) return mapValues(entry)
-  let levels = softened.get(entry)
-  if (!levels) softened.set(entry, (levels = []))
+  const kept = entry.own ? softenedOwn : softened
+  let levels = kept.get(entry)
+  if (!levels) kept.set(entry, (levels = []))
   let out = levels[level]
   if (out) return out
   const n = entry.size
@@ -356,6 +374,8 @@ export function patternDetail(p) {
   if (p.effect === 'tulpenblaetter') return 1.5
   if (p.effect === 'blaetter') return { farn: 6, monstera: 3, ahorn: 3, eiche: 2.5, ginkgo: 2, efeu: 2 }[p.leafShape] ?? 1.5
   if (p.effect === 'adern') return 4
+  // One's own picture or a text: letters and fine lines, as a vein picture has.
+  if (p.effect === 'bild') return 4
   if (isPicturePattern(p.effect)) return 1.5 * (MOTIFS_PER_TILE[p.effect] ?? 1) ** 0.5
   return 1
 }
@@ -484,13 +504,23 @@ function leafRows(p) {
 }
 
 /** The height 0..1 of a family at (cu, cv), in cells; `around` is the count of cells round the vase. */
-export function patternHeight(p, cu, cv, around, fixed = null, blur = 0) {
+export function patternHeight(p, cu, cv, around, fixed = null, blur = 0, middle = null) {
   // `blur`: how far the pattern is softened to the build grid, a Gaussian's width in cells.
+  // `middle`: for one's own picture as a band or put on once, the height (in cells) its middle sits at; null tiles it.
   const lean = (clamp(p.patternTwist, -75, 75) * Math.PI) / 180
   const sheared = cu + Math.tan(lean) * cv
-  const picture = PATTERN_MAPS[p.effect]
+  const picture = pictureOf(p)
   if (picture) {
-    const h = tileHeight(picture, sheared, cv / picture.aspect, blur * picture.size)
+    let v = cv / picture.aspect
+    let h = 0
+    if (middle === null) h = tileHeight(picture, sheared, v, blur * picture.size)
+    else {
+      // One row of the picture: above and below it the wall is the pattern's background. Put on once, the row has
+      // one picture alone, the first of those that fit round the vase.
+      v = (cv - middle) / picture.aspect + 0.5
+      const u = cu + Math.tan(lean) * (cv - middle)
+      if (v > 0 && v < 1 && (p.patternFit !== 'einmal' || u - Math.floor(u / around) * around < 1)) h = tileHeight(picture, u, v, blur * picture.size)
+    }
     return p.patternInvert === 'ja' ? 1 - h : h
   }
   if (p.effect === 'wisp') return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth, blur)
@@ -611,7 +641,10 @@ export function reliefField(p, shape, zone) {
   const amount = Math.max(0, p.reliefDepth)
   // A pattern softened to the build grid's spacing (about the columns' spacing in mm per quality), in cells where the
   // cell has the size it has at that height.
-  const picture = PATTERN_MAPS[p.effect]
+  const picture = pictureOf(p)
+  // One's own picture as a band or put on once sits with its middle at the middle of the height range (by height, not by cells: a
+  // narrow neck has many small cells, and their middle would lie far up).
+  const once = p.effect === 'bild' && p.patternFit !== 'kacheln' ? vAt(((p.zoneFrom + p.zoneTo) / 200) * H) : null
   let gridMm = { entwurf: 1.17, standard: 0.7, fein: 0.45 }[p.quality] ?? 0.7
   // A picture's edges: fine (for printing) softens them fully to its grid; the quicker qualities only a little, so they
   // stay crisp. Wisp ribs fade by half the grid in every quality.
@@ -625,7 +658,7 @@ export function reliefField(p, shape, zone) {
   }
   // Leaves look at many leaves around each point: they are worked out once on a fine raster over the height range and
   // read from it between its points, which makes building and checking a leaf vase many times faster.
-  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : (cu, cv, z) => patternHeight(p, cu, cv, around, null, blurAt(z))
+  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : (cu, cv, z) => patternHeight(p, cu, cv, around, null, blurAt(z), once)
   const raw = (theta, z, base) => {
     const m = zone(z)
     if (m <= 0) return 0
@@ -747,7 +780,9 @@ export function patternPreview(p, columns = 48, rows = 48, cellsAcross = null) {
     for (let i = 0; i < columns; i++) {
       const cu = ((i + 0.5) / columns) * around
       const cv = ((j + 0.5) / rows) * around / stretch * (rows / columns)
-      out[j * columns + i] = isReliefPattern(p.effect) ? patternHeight(p, cu, cv, around) : classicPreview(p.effect, cu, cv, around)
+      // One's own picture: the vase's, or while it has none a small picture that stands for it.
+      if (p.effect === 'bild' && !ownPictureTile(p.patternImage)) out[j * columns + i] = ownPicturePlaceholder((i + 0.5) / columns, (j + 0.5) / rows)
+      else out[j * columns + i] = isReliefPattern(p.effect) ? patternHeight(p, cu, cv, around) : classicPreview(p.effect, cu, cv, around)
     }
   }
   return out

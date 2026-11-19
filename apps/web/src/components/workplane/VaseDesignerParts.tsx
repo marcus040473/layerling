@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { DRAW_PROFILE, PROFILES, profileFunction, type VaseSettings } from "@/lib/vase/vase-geometry.mjs";
 import { DEFAULT_LEAF_POINTS, patternPreview } from "@/lib/vase/vase-patterns.mjs";
+import { vaseSettingsKey } from "@/lib/vaseSettings";
 
 /*
  * The pieces of the vase designer that are drawn rather than listed: the tiles of the body shapes and of the
@@ -14,8 +15,7 @@ import { DEFAULT_LEAF_POINTS, patternPreview } from "@/lib/vase/vase-patterns.mj
 /** A tile's picture, shaded from heights 0..1 with the light from the upper left, kept per pattern and setting. */
 const tileCache = new Map<string, string>();
 
-function shadedTile(settings: Record<string, unknown>, size: number) {
-  const key = JSON.stringify([settings, size]);
+function shadedTile(settings: Record<string, unknown>, key: string, size: number) {
   const known = tileCache.get(key);
   if (known) return known;
   if (typeof document === "undefined") return "";
@@ -54,9 +54,12 @@ function shadedTile(settings: Record<string, unknown>, size: number) {
 /** A pattern's picture as an image; empty until it is drawn in the browser. */
 export function PatternPicture({ settings, size = 56 }: { settings: Record<string, unknown>; size?: number }) {
   const [url, setUrl] = useState("");
-  const key = JSON.stringify(settings);
+  // One's own picture stands in the key by a short name, not by all its grey values.
+  const key = `${vaseSettingsKey(settings)}@${size}`;
+  const latest = useRef(settings);
+  latest.current = settings;
   useEffect(() => {
-    setUrl(shadedTile(JSON.parse(key) as Record<string, unknown>, size));
+    setUrl(shadedTile(latest.current, key, size));
   }, [key, size]);
   return url ? <img className="vase-tile-picture" src={url} alt="" width={size} height={size} draggable={false} /> : <span className="vase-tile-picture" aria-hidden="true" />;
 }

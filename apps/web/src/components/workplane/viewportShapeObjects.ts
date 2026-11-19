@@ -30,6 +30,7 @@ import { gridfinityLabelLetters } from "@/lib/gridfinityLabelText";
 import { gridfinityLabelColor, gridfinityLetterGroups, gridfinityLettersInBox } from "@/lib/gridfinityLetterColor";
 import { createKnurlGeometry } from "@/lib/knurlGeometry";
 import { createVaseGeometry, fittedVaseMesh } from "@/lib/vaseShape";
+import { vaseSettingsKey } from "@/lib/vaseSettings";
 import { createTeardropGeometry } from "@/lib/teardropGeometry";
 import { createPortGeometry } from "@/lib/portGeometry";
 import { createScrewHoleGeometry } from "@/lib/screwHoleGeometry";
@@ -483,7 +484,7 @@ export function tapeShapeTopologyKey(shape: WorkplaneShape): string {
     knurlDepth: shape.knurlDepth,
     knurlAngle: shape.knurlAngle,
     knurlChamfer: shape.knurlChamfer,
-    vase: shape.kind === "vase" ? JSON.stringify(shape.vase ?? null) : undefined,
+    vase: shape.kind === "vase" ? vaseSettingsKey(shape.vase ?? null) : undefined,
     dovetailNeckWidth: shape.dovetailNeckWidth,
     dovetailClearance: shape.dovetailClearance,
     ...boxGeneratorFieldsOf(shape),
@@ -941,7 +942,7 @@ export function shapeGeometrySignature(shape: WorkplaneShape): string {
     knurlDepth: shape.knurlDepth,
     knurlAngle: shape.knurlAngle,
     knurlChamfer: shape.knurlChamfer,
-    vase: shape.kind === "vase" ? JSON.stringify(shape.vase ?? null) : undefined,
+    vase: shape.kind === "vase" ? vaseSettingsKey(shape.vase ?? null) : undefined,
     dovetailNeckWidth: shape.dovetailNeckWidth,
     dovetailClearance: shape.dovetailClearance,
     ...boxGeneratorFieldsOf(shape),

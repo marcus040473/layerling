@@ -17,9 +17,10 @@
 import { MeshBuilder, capWithHoles, holeCeiling, holeWall, zipRings } from './mesh-tools.mjs'
 import { CUTOUTS, CUTOUT_EDGES, cutoutPattern, wallZone } from './vase-cutout.mjs'
 import { REINFORCE, slitBody } from './vase-slits.mjs'
+import { OWN_TEXT_LENGTH, PICTURE_FITS, normalizeOwnPicture } from './vase-own-picture.mjs'
 import { LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isPicturePattern, isReliefPattern, normalizeLeafPoints, reliefField } from './vase-patterns.mjs'
 
-export { CUTOUTS, CUTOUT_EDGES, REINFORCE, LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isPicturePattern, isReliefPattern }
+export { CUTOUTS, CUTOUT_EDGES, REINFORCE, LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, PICTURE_FITS, isPicturePattern, isReliefPattern }
 
 /** Silhouettes as control points [height 0..1, radius 0..1 relative to the largest diameter]. */
 export const PROFILES = {
@@ -267,6 +268,15 @@ export const DEFAULTS = Object.freeze({
   patternGroup: 4,
   /** A picture pattern turned inside out: what was raised is sunk. */
   patternInvert: 'nein',
+  /**
+   * One's own picture or a text as the relief (effect 'bild'): the picture as { width, height, data } (grey values as
+   * Base64, light the raised relief; see vase-own-picture.mjs), `patternCount` times side by side round the vase, row
+   * upon row ('kacheln'), as one row in the middle of the height range ('band') or one picture alone there
+   * ('einmal'). `patternText` is the text the picture was drawn from, kept so it can be changed; the editor draws it.
+   */
+  patternImage: null,
+  patternText: '',
+  patternFit: 'kacheln',
   // Leaves: shape, size (% of 32 mm wide), overlap of the rows (%), layout, lean (degrees), dome 0..1, veins,
   // stretch of the leaf, and the outline of one's own leaf ([along, half width] pairs).
   leafShape: 'tulpe',
@@ -397,7 +407,7 @@ function clamp(value, min, max) {
 export function normalizeParams(input = {}) {
   const p = { ...DEFAULTS }
   for (const key of Object.keys(DEFAULTS)) {
-    if (key === 'drawPoints' || key === 'profilePoints' || key === 'twistPoints' || key === 'leafPoints') continue
+    if (key === 'drawPoints' || key === 'profilePoints' || key === 'twistPoints' || key === 'leafPoints' || key === 'patternImage') continue
     // Only plain values; an object (even one without a prototype) or an array counts as not given.
     const value = input?.[key]
     if (typeof value !== 'number' && typeof value !== 'string' && typeof value !== 'boolean') continue
@@ -412,6 +422,7 @@ export function normalizeParams(input = {}) {
   p.profilePoints = normalizeProfilePoints(input.profilePoints)
   p.twistPoints = normalizeTwistPoints(input.twistPoints)
   p.leafPoints = normalizeLeafPoints(input.leafPoints)
+  p.patternImage = normalizeOwnPicture(input.patternImage)
   for (const [key, [min, max]] of Object.entries(LIMITS)) p[key] = clamp(p[key], min, max)
   p.ribCount = Math.round(p.ribCount)
   for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternGroup']) p[key] = Math.round(p[key])
@@ -427,6 +438,8 @@ export function normalizeParams(input = {}) {
   if (!YES_NO[p.leafVeins]) p.leafVeins = DEFAULTS.leafVeins
   if (!YES_NO[p.printFriendly]) p.printFriendly = DEFAULTS.printFriendly
   if (!YES_NO[p.patternInvert]) p.patternInvert = DEFAULTS.patternInvert
+  if (!PICTURE_FITS[p.patternFit]) p.patternFit = DEFAULTS.patternFit
+  p.patternText = p.patternText.slice(0, OWN_TEXT_LENGTH)
   if (!YES_NO[p.leafFixed]) p.leafFixed = DEFAULTS.leafFixed
   if (!LEAF_SHAPES[p.leafShape]) p.leafShape = DEFAULTS.leafShape
   if (!LEAF_LAYOUTS[p.leafLayout]) p.leafLayout = DEFAULTS.leafLayout

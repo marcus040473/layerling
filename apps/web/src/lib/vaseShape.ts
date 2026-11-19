@@ -6,7 +6,7 @@ import { buildParts, layoutParts, meshBox, placePoint, type VasePart } from "@/l
 import { t, type MessageKey } from "@/lib/i18n";
 import { createLocalId } from "@/lib/localIds";
 import { buildVaseBody, type VaseBody, type VaseBodyWorkerRequest, type VaseBodyWorkerResponse } from "@/lib/vaseBody";
-import { normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
+import { normalizeVaseSettings, vaseSettingsInFrame, vaseSettingsKey, type VaseSettings } from "@/lib/vaseSettings";
 import { canonicalizeShape, cleanNearZero, shapeDepth, shapeWidth } from "@/lib/workplaneShapes";
 import type { WorkplaneShape } from "@/types/layerling";
 
@@ -30,7 +30,7 @@ const builtCache = new Map<string, VaseBody>();
 
 /** The core's body for these settings; the last few are kept (the frame and the fitted mesh both ask). */
 function buildVaseCached(settings: VaseSettings): VaseBody {
-  const key = JSON.stringify(settings);
+  const key = vaseSettingsKey(settings);
   const known = builtCache.get(key);
   if (known) {
     builtCache.delete(key);
@@ -110,7 +110,7 @@ export function vaseShapePatchOffThread(
 ) {
   const size = Math.max(shape.width, shape.depth);
   const settings = vaseSettingsInFrame(vase, size, size, shape.height);
-  const key = JSON.stringify(settings);
+  const key = vaseSettingsKey(settings);
   const requestId = ++requestCounter;
   const owner = shape.id ?? "";
   latestForShape.set(owner, requestId);
@@ -191,7 +191,7 @@ export function fittedVaseMesh(shape: { width: number; depth: number; height: nu
   const depth = Math.max(0.1, shape.depth);
   const height = Math.max(0.1, shape.height);
   const settings = vaseSettingsInFrame(shape.vase, width, depth, height);
-  const key = JSON.stringify([width, depth, height, settings]);
+  const key = vaseSettingsKey([width, depth, height, settings]);
   const known = cache.get(key);
   if (known) {
     cache.delete(key);
@@ -306,7 +306,7 @@ const reportCache = new Map<string, VasePrintReport>();
 export function vasePrintReport(shape: { width: number; depth: number; height: number; vase?: unknown }): VasePrintReport {
   const size = Math.max(0.1, shape.width, shape.depth);
   const settings = vaseSettingsInFrame(shape.vase, size, size, Math.max(0.1, shape.height));
-  const key = JSON.stringify([shape.width, shape.depth, shape.height, settings]);
+  const key = vaseSettingsKey([shape.width, shape.depth, shape.height, settings]);
   const known = reportCache.get(key);
   if (known) return known;
   // The fitted body, turned back to the core's z up: the vase mode's sums tell the bottom by its height.
