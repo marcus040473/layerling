@@ -181,6 +181,15 @@ describe("a vase in its settings", () => {
     expect(standing.calls.updates.at(-1)?.vase?.lampBaseLight).toBe("fassung");
     act(() => buttonNamed(baseBlock, "Lay out the base")!.click());
     expect(standing.calls.accessories).toBe(1);
+    // A shade for the wall: the screws of its back plate, and a button that lays the plate out.
+    const wall = mount({ ...lamp, vase: { ...lamp.vase!, lamp: "wand" } });
+    openTab(wall.panel, "Form");
+    const wallBlock = wall.panel.querySelector<HTMLElement>(".vase-use")!;
+    expect(selectNamed(wallBlock, "Lampshade")!.value).toBe("wand");
+    expect(rangeNamed(wallBlock, "Screw hole Ø")).toBeDefined();
+    expect(rangeNamed(wallBlock, "Spokes")).toBeUndefined();
+    act(() => buttonNamed(wallBlock, "Lay out the wall plate")!.click());
+    expect(wall.calls.accessories).toBe(1);
     // A plant pot: drain holes and a saucer, a pot's form; its drain holes stand in the block.
     act(() => use(shade.panel, "Plant pot").click());
     const pot = shade.calls.updates.at(-1)!;
@@ -337,7 +346,7 @@ describe("a vase in its settings", () => {
     const thin = mount({ vase: { ...shade.calls.updates.at(-1)!.vase! } });
     openTab(thin.panel, "Form");
     const block = thin.panel.querySelector<HTMLElement>(".vase-use")!;
-    expect([...selectNamed(block, "Lampshade")!.options].map((option) => option.textContent)).toEqual(["None", "Over an LED puck", "On a base"]);
+    expect([...selectNamed(block, "Lampshade")!.options].map((option) => option.textContent)).toEqual(["None", "Over an LED puck", "On a base", "On the wall"]);
     expect(selectNamed(block, "Base form")).toBeDefined();
   });
 

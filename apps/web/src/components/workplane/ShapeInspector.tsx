@@ -515,7 +515,7 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
   cutout: { keine: "vase.cutoutNone", voronoi: "vase.effectVoronoi", waben: "vase.cutoutHoneycomb", rauten: "vase.cutoutDiamonds", kreise: "vase.cutoutCircles" },
   cutoutEdge: { anschneiden: "vase.cutoutCut", ganz: "vase.cutoutWhole" },
   reinforce: { keine: "vase.reinforceNone", rippen: "vase.reinforceRibs", doppelwand: "vase.reinforceDouble" },
-  lamp: { keine: "vase.lampNone", haengend: "vase.lampHanging", stehend: "vase.lampStanding", puck: "vase.lampPuck", sockel: "vase.lampOnBase" },
+  lamp: { keine: "vase.lampNone", haengend: "vase.lampHanging", stehend: "vase.lampStanding", puck: "vase.lampPuck", sockel: "vase.lampOnBase", wand: "vase.lampWall" },
   lampBaseShape: { bauch: "vase.baseBelly", zylinder: "vase.profileCylinder", kegel: "vase.profileShadeCone", kelch: "vase.baseGoblet", glocke: "vase.profileShadeBell", stufe: "vase.baseStep" },
   lampBaseLight: { scheibe: "vase.baseLightDisc", fassung: "vase.baseLightSocket" },
   lampBulb: { keine: "vase.bulbNone", a60: "vase.bulbA60", g45: "vase.bulbG45", kerze: "vase.bulbCandle", g95: "vase.bulbG95", g125: "vase.bulbG125", eigen: "vase.socketCustom" },
@@ -1830,9 +1830,9 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     }
     // A lampshade's rows: with a real wall all kinds; in vase mode, for a lampshade, the two that need no plate.
     if (hollow || vase.purpose === "lampe") {
-      const lampChoice = lampRow(choice("lamp", "prop.vaseLamp", vase.lamp === "sockel" ? "vase.lampBaseHint" : "vase.lampHint"));
+      const lampChoice = lampRow(choice("lamp", "prop.vaseLamp", vase.lamp === "sockel" ? "vase.lampBaseHint" : vase.lamp === "wand" ? "vase.lampWallHint" : "vase.lampHint"));
       // In vase mode only the shades without a plate of their own: over an LED puck, or on a base.
-      properties.push(hollow || lampChoice.type !== "select" ? lampChoice : { ...lampChoice, options: lampChoice.options.filter((option) => ["keine", "puck", "sockel"].includes(option.value)) });
+      properties.push(hollow || lampChoice.type !== "select" ? lampChoice : { ...lampChoice, options: lampChoice.options.filter((option) => ["keine", "puck", "sockel", "wand"].includes(option.value)) });
       // A shade on a base: the base's form and size, its light (an LED disc or a screw socket) and the cable's slot.
       if (vase.lamp === "sockel") {
         properties.push(lampRow(choice("lampBaseShape", "prop.vaseLampBaseShape")), lampRow(range("lampBaseHeight", "prop.vaseLampBaseHeight", 1)), lampRow(range("lampBaseWidth", "prop.vaseLampBaseWidth", 1)), lampRow(range("lampBaseRibs", "prop.vaseLampBaseRibs", 1)));
@@ -1850,6 +1850,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         properties.push(lampRow(range("lampSpokes", "prop.vaseLampSpokes", 1, "vase.lampSpokesHint")));
         if (vase.lampSpokes >= 2) properties.push(lampRow(range("lampRing", "prop.vaseLampRing", 0.5)), lampRow(range("lampSpokeWidth", "prop.vaseLampSpokeWidth", 0.5)));
       }
+      // A shade for the wall: the screws its back plate is hung by (the plate is a part of its own, for a real wall).
+      if (vase.lamp === "wand" && hollow) properties.push(lampRow(range("lampWallScrew", "prop.vaseLampWallScrew", 0.1)));
       // The bulb the shade is checked against (the print check says how near it comes to the wall): for a shade with a socket.
       if (vase.lamp === "haengend" || vase.lamp === "stehend" || (vase.lamp === "sockel" && vase.lampBaseLight === "fassung")) {
         properties.push(lampRow(choice("lampBulb", "prop.vaseLampBulb", "vase.lampBulbHint")));
@@ -9672,10 +9674,10 @@ function VaseDesigner({
                   <span>{useTitle}</span>
                 </h4>
                 {rows(useRows)}
-                {vase.lamp === "sockel" && vase.purpose === "lampe" && onVaseAccessories ? (
+                {(vase.lamp === "sockel" || (vase.lamp === "wand" && vase.body === "hohl")) && vase.purpose === "lampe" && onVaseAccessories ? (
                   <button className="inspector-action-button" type="button" disabled={disabled} onClick={onVaseAccessories}>
                     <Plus size={17} strokeWidth={2.5} />
-                    <span>{t("vase.lampBaseMake")}</span>
+                    <span>{t(vase.lamp === "wand" ? "vase.lampWallMake" : "vase.lampBaseMake")}</span>
                   </button>
                 ) : null}
               </section>

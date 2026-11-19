@@ -293,7 +293,7 @@ function vaseDrawnIndices(shape: { height: number; vase?: unknown }, mesh: Fitte
   const vase = normalizeVaseSettings(shape.vase);
   if (vase.body !== "voll" || vase.printView !== "ja") return mesh.indices.slice();
   const height = Math.max(0.1, shape.height);
-  const openBelow = vase.lamp === "puck" || vase.lamp === "sockel";
+  const openBelow = vase.lamp === "puck" || vase.lamp === "sockel" || vase.lamp === "wand";
   const y = (index: number) => mesh.vertices[index * 3 + 1];
   const kept: number[] = [];
   for (let t = 0; t < mesh.indices.length; t += 3) {
@@ -410,7 +410,7 @@ export function vasePrintReport(shape: { id?: string; width: number; depth: numb
 /** An accessory of a vase, laid out for printing beside it: triangles in the vase shape's frame. */
 export type VaseAccessory = { id: string; kind: VaseAccessoryKind; index: number; positions: number[] };
 
-export type VaseAccessoryKind = "leg" | "stand" | "saucer" | "hiddenSaucer" | "plantInsert" | "wateringInsert" | "frog" | "tube" | "lid" | "knob" | "lampBase";
+export type VaseAccessoryKind = "leg" | "stand" | "saucer" | "hiddenSaucer" | "plantInsert" | "wateringInsert" | "frog" | "tube" | "lid" | "knob" | "lampBase" | "wallPlate";
 
 function accessoryKind(part: VasePart, settings: VaseSettings): VaseAccessoryKind {
   if (part.id.startsWith("bein-")) return "leg";
@@ -422,6 +422,7 @@ function accessoryKind(part: VasePart, settings: VaseSettings): VaseAccessoryKin
   if (part.id === "roehrchen") return "tube";
   if (part.id === "knauf") return "knob";
   if (part.id === "sockel") return "lampBase";
+  if (part.id === "wandplatte") return "wallPlate";
   return "lid";
 }
 
@@ -534,6 +535,8 @@ function askedAccessories(settings: unknown): VaseAccessoryKind[] {
   if (vase.lidMode === "kanne" && vase.lidKnob === "ja") asked.push("knob");
   // A lampshade on a base: the base it stands on.
   if (vase.lamp === "sockel") asked.push("lampBase");
+  // A shade for the wall, with a real wall: the plate at its back.
+  if (vase.body === "hohl" && vase.lamp === "wand") asked.push("wallPlate");
   return asked;
 }
 
@@ -549,6 +552,7 @@ const ACCESSORY_NAMES: Record<VaseAccessoryKind, MessageKey> = {
   lid: "vase.partLid",
   knob: "vase.partKnob",
   lampBase: "vase.partLampBase",
+  wallPlate: "vase.partWallPlate",
 };
 
 /** An accessory's name in the current language, legs numbered. */

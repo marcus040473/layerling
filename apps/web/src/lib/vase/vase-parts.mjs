@@ -16,7 +16,7 @@
  * `lift + z` (saucer at the bottom, legs or stand on it, inserts in the vase: z = 0).
  * `layoutParts` lays everything out side by side for printing - preview and file use the same.
  */
-import { MeshBuilder } from './mesh-tools.mjs'
+import { MeshBuilder, triangulate } from './mesh-tools.mjs'
 import { LID_MODES, buildVase, floorLayout, normalizeParams, teapotKnobMesh, threadDepthAt } from './vase-geometry.mjs'
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -705,6 +705,83 @@ export function buildParts(input, { outward = 0 } = {}) {
     lift = height + seatDrop + c
     const light = disc ? `LED-Scheibe Ø ${fmt(p.lampDisc)} mm, ${fmt(p.lampDiscHeight)} mm hoch` : `Fassung im Loch Ø ${fmt(p.lampHole)} mm`
     parts.push({ id: 'sockel', name: 'Lampensockel', mesh: b.mesh(), z: -c, merge: false, flip: true, info: `Ø ${fmt(2 * (belly ? (rs1 + foot) / 2 + bulge : Math.max(foot, rs1)))} mm, ${fmt(height + seatDrop + seatTop)} mm hoch; ${light}${slotHeight > 0 ? '; Kabel hinten heraus' : ''}. Umgedreht drucken, ohne Stützen.` })
+  })
+
+  /* ---------- Wall plate ---------- */
+  // The back plate of a shade for the wall: a flat plate in the shade's outline (as seen from the front), with two
+  // holes for screws and one for the cable, and along each side a low strip the half shade slips over, so it sits
+  // where it belongs while the glue sets. Built lying down as it is printed, the strips up.
+  if (p.body === 'hohl' && p.lamp === 'wand') safely('Die Wandplatte', () => {
+    const thick = 2.4, strip = 1.6, stripHeight = 3.2
+    const steps = Math.max(24, Math.min(240, Math.round(H / 1.5)))
+    const right = [], left = [], inRight = [], inLeft = []
+    for (let k = 0; k <= steps; k++) {
+      const z = (H * k) / steps
+      right.push([shape.outerAt(0, z) + outward, z - H / 2])
+      left.push([-(shape.outerAt(Math.PI, z) + outward), z - H / 2])
+      inRight.push(shape.innerAt(0, z) - c)
+      inLeft.push(shape.innerAt(Math.PI, z) - c)
+    }
+    // The outline, counter-clockwise: up the right side, down the left.
+    const outline = [...right, ...left.reverse()]
+    const b = new MeshBuilder()
+    const holes = []
+    const halfWidthAt = (v) => {
+      const k = clamp(Math.round(((v + H / 2) / H) * steps), 0, steps)
+      return Math.min(right[k][0], -left[steps - k][0])
+    }
+    for (const [v, r] of [[-H / 4, p.lampWallScrew / 2], [H / 4, p.lampWallScrew / 2], [0, 4]]) if (halfWidthAt(v) > r + 4) holes.push({ cx: 0, cy: v, r })
+    const holeLoops = holes.map((hole, k) => Array.from({ length: 20 }, (_, i) => {
+      // Clockwise, as a hole runs, and turned a little so no point of one lies level with a point of another.
+      const a = 0.21 + 0.4 * k - (2 * Math.PI * i) / 20
+      return [hole.cx + hole.r * Math.cos(a), hole.cy + hole.r * Math.sin(a)]
+    }))
+    const face = triangulate(outline, holeLoops)
+    if (!face.complete) throw new Error('der Umriss ließ sich nicht füllen')
+    const flatPoints = [...outline, ...holeLoops.flat()]
+    const lower = flatPoints.map(([x, y]) => b.addVertex(x, y, 0)), upper = flatPoints.map(([x, y]) => b.addVertex(x, y, thick))
+    for (const [i, j, k] of face.triangles) {
+      b.tris.push(lower[i], lower[k], lower[j])
+      b.tris.push(upper[i], upper[j], upper[k])
+    }
+    // The rim round the outline, and the walls of the holes.
+    const rim = (from, countOf, inward) => {
+      for (let k = 0; k < countOf; k++) {
+        const a = from + k, d = from + ((k + 1) % countOf)
+        if (inward) { b.tris.push(lower[a], upper[d], lower[d]); b.tris.push(lower[a], upper[a], upper[d]) }
+        else { b.tris.push(lower[a], lower[d], upper[d]); b.tris.push(lower[a], upper[d], upper[a]) }
+      }
+    }
+    rim(0, outline.length, false)
+    let from = outline.length
+    for (const loop of holeLoops) {
+      // (A hole's points run clockwise: its wall, seen the same way round, looks into the hole.)
+      rim(from, loop.length, false)
+      from += loop.length
+    }
+    // The two strips, a little into the plate so they are one with it: each follows the shade's inner wall.
+    const stripAlong = (inner, sign) => {
+      const lowZ = thick - 0.3, highZ = thick + stripHeight
+      const first = Math.max(1, Math.round((4 / H) * steps)), last = steps - first
+      const rows = []
+      for (let k = first; k <= last; k++) {
+        const v = (H * k) / steps - H / 2
+        const outerX = sign * inner[k], innerX = sign * (inner[k] - strip)
+        rows.push([b.addVertex(outerX, v, lowZ), b.addVertex(outerX, v, highZ), b.addVertex(innerX, v, highZ), b.addVertex(innerX, v, lowZ)])
+      }
+      // Four long faces between neighbouring sections, and the two ends; turned so the normals look outwards.
+      const quad = (p0, p1, p2, p3) => { if (sign > 0) b.tris.push(p0, p1, p2, p0, p2, p3); else b.tris.push(p0, p2, p1, p0, p3, p2) }
+      for (let k = 0; k < rows.length - 1; k++) {
+        const A = rows[k], B = rows[k + 1]
+        for (let e = 0; e < 4; e++) quad(A[e], B[e], B[(e + 1) % 4], A[(e + 1) % 4])
+      }
+      const A = rows[0], Z = rows[rows.length - 1]
+      quad(A[0], A[1], A[2], A[3])
+      quad(Z[3], Z[2], Z[1], Z[0])
+    }
+    stripAlong(inRight, 1)
+    stripAlong(inLeft, -1)
+    parts.push({ id: 'wandplatte', name: 'Wandplatte', mesh: b.mesh(), z: 0, merge: false, flip: false, info: `${holes.length} Löcher (Schrauben Ø ${fmt(p.lampWallScrew)} mm, Kabel Ø 8 mm). Flach drucken, die Leisten nach oben; den Schirm aufstecken und kleben.` })
   })
 
   return { parts, lift, notes }

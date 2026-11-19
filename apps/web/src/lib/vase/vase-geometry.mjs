@@ -14,7 +14,7 @@
  * Coordinates: millimetres, Z up (like STL and every slicer), the vase
  * stands with its bottom on z = 0, its axis is the Z axis.
  */
-import { MeshBuilder, capWithHoles, holeCeiling, holeWall, zipRings } from './mesh-tools.mjs'
+import { MeshBuilder, capWithHoles, halveMesh, holeCeiling, holeWall, zipRings } from './mesh-tools.mjs'
 import { CUTOUTS, CUTOUT_EDGES, cutoutPattern, wallZone } from './vase-cutout.mjs'
 import { REINFORCE, slitBody } from './vase-slits.mjs'
 import { OWN_TEXT_LENGTH, PICTURE_FITS, normalizeOwnPicture } from './vase-own-picture.mjs'
@@ -65,7 +65,7 @@ export const SAUCER_MODES = { keine: 'Keiner', schale: 'Schale', versteckt: 'Ver
 export const INSERT_MODES = { keine: 'Keiner', pflanze: 'Pflanzeinsatz', bewaesserung: 'Selbstbewässerung', stecker: 'Steckeinsatz', roehrchen: 'Wasserröhrchen' }
 export const YES_NO = { ja: 'Ja', nein: 'Nein' }
 /** Lampshade: hanging (hole for the socket in the bottom, turn it over to hang it), standing with the socket in the bottom, over an LED puck (without a bottom). */
-export const LAMPS = { keine: 'Keiner', haengend: 'Hängend', stehend: 'Stehend mit Fassung', puck: 'Über LED-Puck', sockel: 'Auf einem Sockel' }
+export const LAMPS = { keine: 'Keiner', haengend: 'Hängend', stehend: 'Stehend mit Fassung', puck: 'Über LED-Puck', sockel: 'Auf einem Sockel', wand: 'An der Wand' }
 /**
  * The base a lampshade stands on (lamp 'sockel'), a part of its own (vase-parts.mjs): how its wall runs from the
  * shade down to the table - bellied, straight, flared, drawn in, bell-shaped or in a step.
@@ -267,6 +267,8 @@ export const DEFAULTS = Object.freeze({
   lampBulb: 'keine',
   lampBulbDiameter: 60,
   lampBulbLength: 110,
+  /** A shade for the wall (lamp 'wand'): the screw holes in its back plate, mm across. */
+  lampWallScrew: 4.5,
   lampBaseShape: 'bauch',
   lampBaseLight: 'scheibe',
   lampBaseHeight: 45,
@@ -425,6 +427,7 @@ export const LIMITS = {
   lampSpokes: [0, 6],
   lampRing: [3, 30],
   lampSpokeWidth: [3, 30],
+  lampWallScrew: [2.5, 8],
   lampBulbDiameter: [20, 200],
   lampBulbLength: [40, 300],
   lampBaseRibs: [0, 120],
@@ -1577,12 +1580,12 @@ export function floorLayout(input) {
   // A solid body (for the slicer's vase mode) can be a shade, too, where the shade needs no plate of its own: over an
   // LED puck or on a base. It is printed with no bottom layers, so it is open below; the body stays the solid the
   // slicer asks for.
-  const vaseModeShade = !hollow && (p.lamp === 'puck' || p.lamp === 'sockel')
+  const vaseModeShade = !hollow && (p.lamp === 'puck' || p.lamp === 'sockel' || p.lamp === 'wand')
   const lamp = hollow || vaseModeShade ? p.lamp : 'keine'
   if (!hollow && p.lamp !== 'keine' && !vaseModeShade) notes.push('Ein Lampenschirm braucht eine hohle Vase (Bauart „Hohl mit Wand“).')
   if (vaseModeShade) notes.push('Lampenschirm im Vasenmodus: im Slicer 0 Bodenschichten einstellen, dann ist der Schirm unten offen.')
   // (A shade on a base is open below as well: it stands on the base's seat.)
-  const open = hollow && (lamp === 'puck' || lamp === 'sockel' || (lamp === 'keine' && p.bottom === 0))
+  const open = hollow && (lamp === 'puck' || lamp === 'sockel' || lamp === 'wand' || (lamp === 'keine' && p.bottom === 0))
   const foot = hollow && !open ? Math.min(p.footHeight, p.height * 0.4) : 0
   const blind = []
   // Plug-in legs: sockets only in a hollow bottom without a foot (in the slicer's vase mode the bottom is thin).
@@ -1677,6 +1680,9 @@ export function floorLayout(input) {
     if (p.drainHoles > 0) notes.push('Ohne Boden (über einem LED-Puck) gibt es keine Ablauflöcher.')
   }
   if (lamp !== 'keine') notes.push('Nur LED-Leuchtmittel verwenden: PLA wird ab etwa 55 °C weich, PETG ab etwa 80 °C.')
+  if (lamp === 'wand') notes.push(hollow
+    ? 'Wandleuchte: die vordere Hälfte des Schirms, oben und unten offen. Die Rückplatte mit den Schraublöchern ist ein eigenes Teil (Zubehör); der Schirm wird aufgesteckt und geklebt, das Licht – etwa eine LED-Scheibe – sitzt auf der Platte.'
+    : 'Wandleuchte im Vasenmodus: der Slicer druckt die flache Rückwand mit. Zum Aufhängen die Rückwand bohren oder kleben.')
   notes.push(...bulbNotes(p, shape, lamp, foot + floor))
   if (open && lamp === 'keine' && p.drainHoles > 0) notes.push('Ohne Boden gibt es keine Ablauflöcher.')
   else if (lamp === 'keine' && hollow && p.drainHoles > 0) {
@@ -1801,7 +1807,7 @@ export function vaseChecks(input) {
   if (p.body === 'hohl') {
     if (p.wall < 2 * NOZZLE) notes.push(`Wand nur ${fmtMm(p.wall)} mm – unter zwei Linien einer 0,4-mm-Düse druckt sie sich unsicher.`)
     if (p.bottom === 0 && p.lamp === 'keine') notes.push('Ohne Boden: unten offen wie ein Rohr. Auf dem Druckbett steht nur der Wandring – einen Rand (Brim) zum Haften nehmen.')
-    else if (p.bottom < 2 * NOZZLE && p.lamp !== 'puck' && p.lamp !== 'sockel') notes.push(`Boden nur ${fmtMm(p.bottom)} mm – unter 0,8 mm wird er leicht undicht oder reißt.`)
+    else if (p.bottom < 2 * NOZZLE && p.lamp !== 'puck' && p.lamp !== 'sockel' && p.lamp !== 'wand') notes.push(`Boden nur ${fmtMm(p.bottom)} mm – unter 0,8 mm wird er leicht undicht oder reißt.`)
   }
   if (p.lidMode !== 'keiner') {
     if (p.lidMode === 'kanne' && p.body !== 'hohl') notes.push('Der Teekannendeckel braucht eine hohle Vase (Bauart „Hohl mit Wand“).')
@@ -2314,19 +2320,28 @@ export function buildVase(input, { part = 'body' } = {}) {
     extent = { min, max }
   }
 
-  const positions = new Float32Array(tris.length * 3)
-  for (let t = 0; t < tris.length; t++) {
-    const v = tris[t] * 3
-    positions[t * 3] = verts[v]
-    positions[t * 3 + 1] = verts[v + 1]
-    positions[t * 3 + 2] = verts[v + 2]
+  // A shade for the wall: the front half of the body (towards -y, where a picture or a word faces), cut through the
+  // axis and closed by a flat back. Any form, cross-section and pattern comes through: the cut goes through the mesh.
+  let finalVerts = verts, finalTris = tris, finalLocked = locked
+  if (layout.lamp === 'wand') {
+    const half = halveMesh(verts, tris)
+    finalVerts = half.vertices
+    finalTris = half.indices
+    finalLocked = []
+  }
+  const positions = new Float32Array(finalTris.length * 3)
+  for (let t = 0; t < finalTris.length; t++) {
+    const v = finalTris[t] * 3
+    positions[t * 3] = finalVerts[v]
+    positions[t * 3 + 1] = finalVerts[v + 1]
+    positions[t * 3 + 2] = finalVerts[v + 2]
   }
   return {
     params: p,
     positions,
-    triangleCount: tris.length / 3,
-    indices: Uint32Array.from(tris),
-    vertices: Float64Array.from(verts),
+    triangleCount: finalTris.length / 3,
+    indices: Uint32Array.from(finalTris),
+    vertices: Float64Array.from(finalVerts),
     size: { width: p.diameter, depth: p.diameter, height: H },
     flat: lowpoly,
     section: { starShaped: section.starShaped, valid: section.valid },
@@ -2335,7 +2350,7 @@ export function buildVase(input, { part = 'body' } = {}) {
     floor: { foot: layout.foot, thickness: layout.floor, slope: layout.slope, drains: layout.drains, blind: layout.blind, legs: layout.legs },
     notes: layout.notes,
     // Triangles that are shape and should get no surface pattern (hole walls), 1 each.
-    locked: lockedMask(tris.length / 3, locked),
+    locked: lockedMask(finalTris.length / 3, finalLocked),
     extent,
   }
 }

@@ -114,6 +114,8 @@ const CHECKS: Note[] = [
   { pattern: /^Wasserdicht im Vasenmodus:/, key: "vaseCheck.watertightVaseMode" },
   { pattern: /^Ein Lampenschirm braucht eine hohle Vase/, key: "vaseCheck.lampNeedsHollow", params: () => ({ hollow: t("vase.bodyHollow") }) },
   { pattern: /^Lampenschirm im Vasenmodus: im Slicer 0 Bodenschichten/, key: "vaseCheck.lampVaseMode" },
+  { pattern: /^Wandleuchte: die vordere Hälfte des Schirms/, key: "vaseCheck.lampWall" },
+  { pattern: /^Wandleuchte im Vasenmodus: der Slicer druckt die flache Rückwand mit/, key: "vaseCheck.lampWallVaseMode" },
   { pattern: new RegExp(`^Die Birne \\(Ø ${NUMBER} mm\\) passt nicht in den Schirm – an der engsten Stelle fehlen ${NUMBER} mm`), key: "vaseCheck.bulbTooBig", params: (m) => ({ mm: number(m[1]), gap: number(m[2]) }) },
   { pattern: new RegExp(`^Die Birne \\(Ø ${NUMBER} mm\\) kommt der Wand bis auf ${NUMBER} mm nahe`), key: "vaseCheck.bulbNear", params: (m) => ({ mm: number(m[1]), gap: number(m[2]) }) },
   { pattern: new RegExp(`^Die Birne ragt etwa ${NUMBER} mm aus dem Schirm heraus`), key: "vaseCheck.bulbOut", params: (m) => ({ mm: number(m[1]) }) },

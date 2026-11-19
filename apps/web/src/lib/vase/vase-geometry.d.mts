@@ -14,7 +14,7 @@ export type VaseNumberKey =
   | "saucerGap" | "saucerHeight" | "saucerWall" | "insertWall" | "insertStandoff" | "reservoirHeight" | "tubeDiameter" | "frogHole"
   | "lidClearance" | "lidThickness" | "lidDepth" | "threadPitch" | "lidHeight"
   | "cutoutSize" | "cutoutWeb" | "cutoutFrom" | "cutoutTo" | "cutoutAspect" | "cutoutSeed"
-  | "lampHole" | "lampSpokes" | "lampRing" | "lampSpokeWidth" | "lampBulbDiameter" | "lampBulbLength" | "lampBaseHeight" | "lampBaseWidth" | "lampBaseRibs" | "lampDisc" | "lampDiscHeight" | "puckDiameter" | "lampNotch" | "lampNotchHeight"
+  | "lampHole" | "lampSpokes" | "lampRing" | "lampSpokeWidth" | "lampWallScrew" | "lampBulbDiameter" | "lampBulbLength" | "lampBaseHeight" | "lampBaseWidth" | "lampBaseRibs" | "lampDisc" | "lampDiscHeight" | "puckDiameter" | "lampNotch" | "lampNotchHeight"
   | "reinforceCount" | "reinforceDepth" | "slitWidth" | "lineWidth"
   | "polySides" | "polyRound" | "sectionWaves" | "sectionWaveAmp" | "sectionFinWidth" | "drawRepeat"
   | "stripeTurn" | "stripeCount" | "stripeWidth" | "stripeDepth"
