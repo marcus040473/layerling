@@ -18,7 +18,7 @@ import { MeshBuilder, capWithHoles, holeCeiling, holeWall, zipRings } from './me
 import { CUTOUTS, CUTOUT_EDGES, cutoutPattern, wallZone } from './vase-cutout.mjs'
 import { REINFORCE, slitBody } from './vase-slits.mjs'
 import { OWN_TEXT_LENGTH, PICTURE_FITS, normalizeOwnPicture } from './vase-own-picture.mjs'
-import { LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isPicturePattern, isReliefPattern, normalizeLeafPoints, reliefField } from './vase-patterns.mjs'
+import { LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, isPicturePattern, isReliefPattern, normalizeLeafPoints, perHeight, reliefField } from './vase-patterns.mjs'
 
 export { CUTOUTS, CUTOUT_EDGES, REINFORCE, LEAF_LAYOUTS, LEAF_SHAPES, PATTERNS, PICTURE_FITS, isPicturePattern, isReliefPattern }
 
@@ -401,6 +401,11 @@ const MAX_ROWS = 1200
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
+}
+
+/** One's own picture chosen as the pattern while the vase has none yet: the wall stays smooth, and nothing is worked out for it. */
+function reliefIsEmpty(p) {
+  return p.effect === 'bild' && !p.patternImage
 }
 
 /** Completes and clamps settings; unknown fields are dropped. */
@@ -1175,7 +1180,7 @@ function effectDepth(p, ribsActive) {
   if (p.effect === 'rillen') return ribsActive ? p.ribDepth : 0
   if (p.effect === 'streifen') return p.stripeDepth
   if (p.effect === 'voronoi') return p.voronoiDepth
-  if (isReliefPattern(p.effect)) return p.reliefDepth
+  if (isReliefPattern(p.effect)) return reliefIsEmpty(p) ? 0 : p.reliefDepth
   return 0
 }
 
@@ -1269,16 +1274,21 @@ export function vaseShape(input) {
   const section = second
     ? { table: first.table, at: first.at, starShaped: first.starShaped && second.starShaped, valid: first.valid && second.valid, min: Math.min(first.min, second.min), mean: Math.max(first.mean, second.mean) }
     : first
-  const R = (z) => (maxR * Math.max(0.02, radiusAt(clamp(z / H, 0, 1)))) / profileMax
+  // What depends on the height alone is remembered for the height asked last (perHeight): the wall is built and
+  // checked a row at a time.
+  const R = perHeight((z) => (maxR * Math.max(0.02, radiusAt(clamp(z / H, 0, 1)))) / profileMax)
   const twistT = twistParameter(p, R, H)
+  const turnedAt = perHeight((z) => rotation(twistT(z)))
+  const blendAt = perHeight((z) => sectionBlend(z, p))
+  const zoneWeightAt = perHeight((z) => sectionZoneWeight(z, p))
   // Outside the height range the cross-section turns into a circle (mean radius,
   // at the tips = 1 or at the troughs = smallest table value) - during a transition mixed like the cross-section.
   const roundOf = (s) => ({ mitte: s.mean, spitzen: 1, grund: s.min })[p.sectionOutside]
   const sectionAt = (theta, z) => {
-    const th = theta - rotation(twistT(z))
-    const b = second ? sectionBlend(z, p) : 0
+    const th = theta - turnedAt(z)
+    const b = second ? blendAt(z) : 0
     const v = b <= 0 ? first.at(th) : b >= 1 ? second.at(th) : first.at(th) + (second.at(th) - first.at(th)) * b
-    const w = sectionZoneWeight(z, p)
+    const w = zoneWeightAt(z)
     if (w >= 1) return v
     const roundTo = b <= 0 ? roundOf(first) : roundOf(first) + (roundOf(second) - roundOf(first)) * b
     return roundTo + (v - roundTo) * w
@@ -1648,7 +1658,7 @@ export function lidSafeZoneTo(input) {
  */
 function reliefChecks(p, shape, top) {
   const notes = []
-  if (!isReliefPattern(p.effect) || p.reliefDepth <= 0) return notes
+  if (!isReliefPattern(p.effect) || p.reliefDepth <= 0 || reliefIsEmpty(p)) return notes
   const field = reliefField(p, shape, (z) => zoneMask(z, p))
   const N = 144, dz = 0.4
   // 45 degrees, with a degree and a half of room for the sampling.
@@ -1720,7 +1730,7 @@ export function buildVase(input, { part = 'body' } = {}) {
   const ribsActive = p.effect === 'rillen' && p.ribCount > 0 && p.ribDepth > 0
   const lowpoly = p.effect === 'lowpoly'
   // A relief pattern (vase-patterns.mjs): its depth over the surface, and the size of its cells for the grid.
-  const relief = isReliefPattern(p.effect) && p.reliefDepth > 0 ? reliefField(p, shape, (z) => zoneMask(z, p)) : null
+  const relief = isReliefPattern(p.effect) && p.reliefDepth > 0 && !reliefIsEmpty(p) ? reliefField(p, shape, (z) => zoneMask(z, p)) : null
 
   // Columns round the vase: as many as the cross-section and effect need. Corners of
   // polygons and pointed waves fall exactly on columns.
@@ -1790,14 +1800,15 @@ export function buildVase(input, { part = 'body' } = {}) {
     relief.setGrid(Math.max(relief.maxCircumference / segments, Htop / rows), segments)
   }
 
-  const zone = (z) => zoneMask(z, p)
+  const zone = perHeight((z) => zoneMask(z, p))
+  const turnedAt = perHeight((z) => rotation(twistT(z)))
 
   // Effect: depth (mm, inwards) at angle/height; turns along with the twist.
   const cellsAround = Math.max(3, Math.round((2 * Math.PI * maxR) / p.voronoiCell))
   const cellW = (2 * Math.PI * maxR) / cellsAround
   const effectAt = (theta, z, base) => {
     const t = z / H
-    const turn = theta - rotation(twistT(z))
+    const turn = theta - turnedAt(z)
     if (ribsActive) {
       const depth = Math.min(p.ribDepth, base / 3) * zone(z)
       if (depth <= 0) return 0
@@ -1862,7 +1873,7 @@ export function buildVase(input, { part = 'body' } = {}) {
   const zsOuter = slitted ? [] : adaptive ? adaptiveRows((z) => R(z), 0, Htop, q.tol, q.maxStep, zones) : reliefRows ?? rowHeights(0, Htop, H / rows, zones)
   if (adaptive) rows = zsOuter.length - 1
   // A relief's grid turns with its pattern lines (from the bottom up), so slanted ribs run along it.
-  const gridTurn = reliefRows ? (z) => relief.turnAt(z) - relief.turnAt(0) : null
+  const gridTurn = reliefRows ? relief.turnUp : null
   const outer = []
   const outerAtZ = new Map()
   for (let i = 0; i < zsOuter.length; i++) {
@@ -1899,6 +1910,18 @@ export function buildVase(input, { part = 'body' } = {}) {
     wall.p.set(p, t * 6)
     wall.fixed[t] = fixed ? 1 : 0
   }
+  const rowRadii = []
+  const radiiOfRow = (i) => {
+    let radii = rowRadii[i]
+    if (!radii) {
+      radii = rowRadii[i] = new Float64Array(segments)
+      const row = outer[i]
+      for (let j = 0; j < segments; j++) radii[j] = Math.hypot(verts[row[j] * 3], verts[row[j] * 3 + 1])
+      // The row before the one below is done with.
+      if (i > 1) rowRadii[i - 2] = undefined
+    }
+    return radii
+  }
   for (let i = 0; i < zsOuter.length - 1; i++) {
     if (zones.some((zn) => zn.z0 === zsOuter[i] && zn.z1 === zsOuter[i + 1])) continue
     for (let j = 0; j < segments; j++) {
@@ -1916,11 +1939,12 @@ export function buildVase(input, { part = 'body' } = {}) {
       // the grid at a slant or in a curve. Facets keep their own split.
       if (relief && !lowpoly) {
         const a = outer[i][j], b = outer[i][k], c = outer[i + 1][k], d = outer[i + 1][j]
-        const r = (v) => Math.hypot(verts[v * 3], verts[v * 3 + 1])
+        // The corners' distances from the axis, worked out once per row: each corner belongs to four quads.
+        const low = radiiOfRow(i), high = radiiOfRow(i + 1)
         // The diagonal whose middle lies nearer the real surface in the middle of the quad.
         const turn = gridTurn ? (gridTurn(zsOuter[i]) + gridTurn(zsOuter[i + 1])) / 2 : 0
         const middle = outerRadius((2 * Math.PI * (j + 0.5)) / segments + turn, (zsOuter[i] + zsOuter[i + 1]) / 2)
-        if (Math.abs((r(a) + r(c)) / 2 - middle) > Math.abs((r(b) + r(d)) / 2 - middle) + 1e-6) {
+        if (Math.abs((low[j] + high[k]) / 2 - middle) > Math.abs((low[k] + high[j]) / 2 - middle) + 1e-6) {
           tris.push(a, b, d)
           tris.push(b, c, d)
           continue

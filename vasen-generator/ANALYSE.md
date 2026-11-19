@@ -14,6 +14,9 @@ Rechner. Die Verhältnisse zählen, die Millisekunden sind auf anderen Geräten 
   in 5 bis 63 ms, „Fein“ in höchstens 160 ms. Das Netz ist geschlossen, ohne dass etwas repariert wird.
 - **Was fehlt**, ist vor allem das, wonach die Community fragt: mehr Muster ohne Wartezeit, Muster in
   Höhenbereichen übereinander, Bild und Text im Vasentool, eine Druckprüfung beim Entwerfen und leichtere Dateien.
+- **Nachtrag:** Gemessen ist oben Stefans Stand. Der Zweig `marcus` hat schon den Vasen-Designer mit eigenen
+  Reliefmustern. Dort ist jetzt eingebaut: **eigenes Bild oder Text als Relief** und eine **Beschleunigung der
+  Reliefmuster um rund 40 %** (siehe Abschnitt 5).
 - Der neue Kern ersetzt den alten **nicht** vollständig. Deckel, Beine, Untersetzer, Einsätze, Durchbrüche und
   Lampenfassungen bleiben vorerst beim alten Kern (siehe „Was der neue Kern nicht kann“).
 
@@ -231,7 +234,63 @@ kann der neue Kern die Vase bauen.
 Die Muster von „Surface Texture“, die es im neuen Kern noch nicht gibt: Rändel als eigenes Muster (geht als
 gekreuzte Rillen), Seil, Rinde, Holz, Carbon, Fachwerk, Steine, Quadrate, Dreiecke, Risse.
 
-## 5. Weg nach Layerling
+## 5. Was in Layerling eingebaut ist
+
+Eingebaut ist in den **Vasen-Designer** (Zweig `marcus`, hier zusammen mit Stefans 1.166.0). Der Vasen-Designer
+hat eigene Reliefmuster (`lib/vase/vase-patterns.mjs`), die anders arbeiten als der Generator in diesem Ordner:
+Sie lesen Höhenbilder, die sich nahtlos wiederholen, und halten jede Unterkante auf 45°. Deshalb ist der neue
+Kern **nicht** hineinkopiert, sondern der vorhandene erweitert und beschleunigt.
+
+### Eigenes Bild oder Text als Relief
+
+Neue Kachel „Bild oder Text“ am Ende der Muster-Galerie:
+
+- **Bild laden** (PNG, JPG, SVG …) oder **Text tippen** (bis 60 Zeichen). Helle Stellen stehen vor, dunkle
+  liegen tiefer. „Umkehren“ unter „Erweitert“ dreht das um (Gravur statt Relief).
+- **Anordnung:** überall, als ein Band rundum oder einmal. Einmal und Band sitzen in der Mitte des
+  Höhenbereichs; das einzelne Motiv zeigt nach vorn.
+- **Größe** über „Anzahl rundum“: 4 heißt ein Viertel des Umfangs.
+- Das Bild liegt in den Einstellungen der Vase (höchstens 512 Punkte Kantenlänge), in derselben Form wie das
+  eigene Bild der Oberflächenstruktur. Es wird mit dem Entwurf gespeichert.
+- Zwischenspeicher und Vergleiche nennen das Bild mit einem kurzen Namen statt mit allen Grauwerten. Sonst
+  wäre bei jedem Reglerzug ein Drittel Megabyte Text verglichen worden.
+- Der Assistent (MCP) kann Text und Bild setzen; die Szene meldet ein Bild nur mit seiner Größe.
+
+Gemessen (Flasche 180 × 90 mm, Bild 512 × 384): „Standard“ 250 ms, einmal 160 ms, „Entwurf“ 70 ms, „Fein“
+900 ms. Der erste Bau mit einem neuen Bild braucht einmalig etwa 350 ms mehr (das Bild wird weichgezeichnet).
+
+### Reliefmuster schneller
+
+Dieselben Vasen, Punkt für Punkt gleich (27 Fälle über Prüfsummen der Netze verglichen), nur schneller:
+
+| Muster | vorher | jetzt |
+| --- | ---: | ---: |
+| Blütenblätter | 389 ms | 245 ms |
+| Rautenwellen | 565 ms | 270 ms |
+| Tulpenblätter | 221 ms | 139 ms |
+| Fließende Blätter | 404 ms | 208 ms |
+| Schwungrippen | 726 ms | 585 ms |
+| Zellnetz | 334 ms | 192 ms |
+| Sechseck-Kacheln | 393 ms | 240 ms |
+| Rautengeflecht | 405 ms | 215 ms |
+| Wellen | 381 ms | 219 ms |
+| Schuppen | 356 ms | 207 ms |
+| Kiesel | 361 ms | 192 ms |
+| Blattadern | 385 ms | 212 ms |
+| Blätter | 246 ms | 127 ms |
+
+Woher der Gewinn kommt:
+
+- Das Höhenbild wurde für jeden Punkt der Wand mit zwei neuen Listen und zwei neuen Hilfsfunktionen gelesen.
+  Jetzt ist die Rechnung ausgeschrieben, in derselben Reihenfolge.
+- Was nur von der Höhe abhängt (Radius, Drehung, Höhenbereich, Zellenhöhe), wurde für jeden Punkt einer Reihe
+  neu gerechnet. Jetzt einmal pro Reihe.
+- Der Abstand jeder Ecke zur Achse wurde viermal gerechnet, jetzt einmal.
+
+Schwungrippen gewinnen am wenigsten: Sie werden gerechnet, nicht aus einem Bild gelesen. Dort und beim zweiten
+Durchlauf für die Diagonalen der Vierecke liegt die nächste Möglichkeit.
+
+## 6. Weg nach Layerling für den neuen Kern
 
 In dieser Reihenfolge, jeder Schritt für sich nutzbar:
 
@@ -250,7 +309,7 @@ In dieser Reihenfolge, jeder Schritt für sich nutzbar:
 Vor einem PR an Stefan steht seine Zustimmung zur Richtung. Das ist ein großer Umbau an einem Teil, den er
 gerade erst übernommen hat.
 
-## 6. Was nicht geprüft ist
+## 7. Was nicht geprüft ist
 
 - **Kein Probedruck.** Die Druck-Hinweise sind gerechnet, nicht am Drucker bestätigt. Die Grenze von 45° und
   die Überlappung der Bahnen sind übliche Faustwerte.
@@ -260,3 +319,8 @@ gerade erst übernommen hat.
   Verhältnisse sollten bleiben.
 - **Die Seite ist nur in Chromium geprüft**, am Bildschirm und in Handybreite, hell und dunkel.
 - Druckzeit und Gewicht sind Schätzungen aus Wandfläche, Linienbreite und Tempo.
+- **Bild und Text im Vasen-Designer** sind im Editor in Chromium ausprobiert (Bild laden, Text, alle drei
+  Anordnungen) und mit Tests abgedeckt, aber nicht gedruckt. Ein Text wird mit der Schrift des Systems
+  gezeichnet; er sieht deshalb nicht auf jedem Rechner gleich aus.
+- **Die Übersetzungen** der neuen Texte (18 Sprachen, Anleitung in 16) sind maschinell und nicht von
+  Muttersprachlern gelesen.

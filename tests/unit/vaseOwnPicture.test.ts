@@ -115,6 +115,9 @@ describe("one's own picture as a vase's relief", () => {
     const single = once.filter((row): row is boolean[] => row !== null);
     expect(single.length).toBe(marked.length);
     for (const row of single) expect(runs(row)).toBe(1);
+    // It faces the front (-y, a quarter of the way round these steps): its middle lies there.
+    const raised = single[0].map((on, index) => (on ? index : -1)).filter((index) => index >= 0);
+    expect(Math.abs((raised[0] + raised.at(-1)!) / 2 - 24)).toBeLessThan(2);
     // Higher up the height range, the picture goes with it.
     const high = unrolled(buildVase({ ...settings, patternFit: "einmal", zoneFrom: 60, zoneTo: 100 }), 30, 96);
     const highMarked = high.map((row, index) => (row ? index : -1)).filter((index) => index >= 0);
@@ -132,7 +135,8 @@ describe("one's own picture as a vase's relief", () => {
 
   it("without a picture the wall is smooth and the gallery shows a picture that stands for it", () => {
     const mesh = buildVase({ profile: "zylinder", effect: "bild", quality: "entwurf" });
-    expect(unrolled(mesh, 30, 96).every((row) => row === null)).toBe(true);
+    // (A smooth wall has few points round the vase: few steps here, so each has some.)
+    expect(unrolled(mesh, 30, 16).every((row) => row === null)).toBe(true);
     const tile = patternPreview({ effect: "bild" }, 24, 24);
     expect(Math.max(...tile)).toBe(1);
     expect(Math.min(...tile)).toBe(0);
