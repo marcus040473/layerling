@@ -197,7 +197,7 @@ import { drawingGrey, drawingOutlines, inTwoTones, SURFACE_IMAGE_OUTLINE_RASTER 
 import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
 import { offersSurfaceTextureMask, SURFACE_TEXTURE_LABELS, surfacePatternColor, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureEntry, surfaceTextureLayerPlaced } from "@/lib/surfaceTextureShape";
 import { DRAW_PROFILE, LIMITS as VASE_LIMITS, MATERIALS as VASE_MATERIALS, PROFILES, isPicturePattern as isVasePicturePattern, isReliefPattern as isVaseReliefPattern, lidSafeZoneTo, type VaseChoiceKey, type VaseNumberKey } from "@/lib/vase/vase-geometry.mjs";
-import { DEFAULT_VASE_SIZE, normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
+import { VASE_PURPOSE_PROFILES, normalizeVaseSettings, vasePurposeChoice, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
 import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
 import { LeafEditor, PatternPicture, ProfilePicture, VaseZoneRange } from "@/components/workplane/VaseDesignerParts";
 import { isComputedPattern } from "@/lib/vase/vase-computed-patterns.mjs";
@@ -9453,12 +9453,6 @@ let lastVaseTab: VaseTab = "form";
 /** Pattern families in the gallery's order: smooth first, then the vase's older surfaces, then the reliefs from pictures, the worked-out ones, and leaves and one's own picture or text last. */
 const VASE_GALLERY = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "blattfluss", "wisp", "wellen", "zellen", "kiesel", "waben", "geflecht", "schuppen", "adern", "wabennetz", "ziegel", "noppen", "gehaemmert", "strick", "korb", "ringe", "rauschen", "blaetter", "bild"] as const;
 const VASE_LEAVES = ["tulpe", "ginkgo", "lotus", "efeu", "ahorn", "monstera", "farn", "eiche", "linde", "weide", "eigen"] as const;
-/** The body shapes offered per use: a vase's, a plant pot's and a lampshade's; the drawn one is always there. */
-const VASE_PROFILES: Record<string, readonly string[]> = {
-  vase: ["flasche", "bauchig", "schale", "fass", "zylinder", "trichter", "gezeichnet"],
-  topf: ["topfKlassik", "topfKuebel", "topfSchale", "zylinder", "trichter", "gezeichnet"],
-  lampe: ["schirmKegel", "schirmGlocke", "schirmKuppel", "schirmLaterne", "schirmTrommel", "zylinder", "gezeichnet"],
-};
 /** The uses of a vase with their signs, in the order they are offered. */
 const VASE_PURPOSES = [
   { value: "vase", label: "shape.vase", icon: Amphora },
@@ -9466,31 +9460,6 @@ const VASE_PURPOSES = [
   { value: "lampe", label: "prop.vaseLamp", icon: Lamp },
 ] as const;
 
-/**
- * What choosing a use sets: the settings that make the body that thing (a lampshade is hollow, hangs and has a carrier
- * for the socket; a plant pot is hollow with drain holes and a saucer), a body shape of that kind where the vase still
- * has one of another kind, and a size that suits it where the vase still has the size a new vase comes with. What one
- * has set oneself beyond that stays.
- */
-function vasePurposeChoice(vase: VaseSettings, purpose: string, frame: { width: number; depth: number; height: number }) {
-  const patch: Partial<VaseSettings> = { purpose };
-  const shapes = VASE_PROFILES[purpose] ?? VASE_PROFILES.vase;
-  if (vase.profile !== "gezeichnet" && !shapes.includes(vase.profile)) patch.profile = shapes[0];
-  const untouched = Math.abs(Math.max(frame.width, frame.depth) - DEFAULT_VASE_SIZE.width) < 0.5 && Math.abs(frame.height - DEFAULT_VASE_SIZE.height) < 0.5;
-  let size: { width: number; height: number } | null = null;
-  if (purpose === "lampe") {
-    Object.assign(patch, { body: "hohl", lamp: vase.lamp === "keine" ? "haengend" : vase.lamp, lampSpokes: vase.lampSpokes >= 2 ? vase.lampSpokes : 3, drainHoles: 0, watertight: "nein", lidMode: "keiner", insertMode: "keine", saucerMode: "keine" });
-    // A shade lets light through: a thin wall where the vase still has the one it came with.
-    if (vase.wall === 2) patch.wall = 1.2;
-    if (untouched) size = { width: 180, height: 160 };
-  } else if (purpose === "topf") {
-    Object.assign(patch, { body: "hohl", lamp: "keine", drainHoles: vase.drainHoles > 0 ? vase.drainHoles : 3, saucerMode: vase.saucerMode === "keine" ? "schale" : vase.saucerMode });
-    if (untouched) size = { width: 140, height: 120 };
-  } else {
-    patch.lamp = "keine";
-  }
-  return { patch, size };
-}
 
 /**
  * The vase on one card with three tabs (the vase designer, Discussion of the concept "Vase designer 2.0"): Form with
@@ -9660,7 +9629,7 @@ function VaseDesigner({
               <div className="vase-tiles-group" role="group" aria-label={profile.label}>
                 <span className="vase-tiles-label">{profile.label}</span>
                 <div className="vase-tiles vase-profile-tiles">
-                  {(VASE_PROFILES[vase.purpose] ?? VASE_PROFILES.vase).map((value) => {
+                  {(VASE_PURPOSE_PROFILES[vase.purpose] ?? VASE_PURPOSE_PROFILES.vase).map((value) => {
                     const option = profile.options.find((entry) => entry.value === value);
                     if (!option) return null;
                     const points = value === "gezeichnet" ? vase.profilePoints ?? DRAW_PROFILE : PROFILES[value].points;

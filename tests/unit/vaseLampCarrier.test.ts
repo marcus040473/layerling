@@ -122,3 +122,26 @@ describe("what a vase is for", () => {
     }
   });
 });
+
+describe("a plant pot and a lampshade in the shape library", () => {
+  it("are vases with that use, in the size and with the settings the use starts with", async () => {
+    const { libraryShapeAssets, makeShapeFromAsset, planterAsset, lampshadeAsset, shapeAssetLabel } = await import("@/lib/shapeCatalog");
+    const ids = libraryShapeAssets.map((asset) => asset.id);
+    // Right after the vase.
+    expect(ids.slice(ids.indexOf("vase"), ids.indexOf("vase") + 3)).toEqual(["vase", "planter", "lampshade"]);
+    expect(shapeAssetLabel(planterAsset)).toBe("Plant pot");
+    expect(shapeAssetLabel(lampshadeAsset)).toBe("Lampshade");
+    const pot = makeShapeFromAsset(planterAsset, { x: 0, z: 0 });
+    expect(pot.kind).toBe("vase");
+    expect(pot.vase).toMatchObject({ purpose: "topf", body: "hohl", profile: "topfKlassik", drainHoles: 3, saucerMode: "schale" });
+    expect([pot.width, pot.height]).toEqual([140, 120]);
+    const shade = makeShapeFromAsset(lampshadeAsset, { x: 0, z: 0 });
+    expect(shade.kind).toBe("vase");
+    expect(shade.vase).toMatchObject({ purpose: "lampe", body: "hohl", profile: "schirmKegel", lamp: "haengend", lampSpokes: 3, wall: 1.2 });
+    expect([shade.width, shade.height]).toEqual([180, 160]);
+    // The vase itself comes as it always did.
+    const vase = makeShapeFromAsset(libraryShapeAssets.find((asset) => asset.id === "vase")!, { x: 0, z: 0 });
+    expect(vase.vase).toMatchObject({ purpose: "vase", body: "voll", profile: "flasche", lamp: "keine" });
+    expect([vase.width, vase.height]).toEqual([90, 180]);
+  });
+});
