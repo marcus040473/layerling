@@ -201,6 +201,7 @@ import { normalizeVaseSettings, vaseSettingsInFrame, type VaseSettings } from "@
 import { vaseShapePatchOffThread } from "@/lib/vaseShape";
 import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
 import { LeafEditor, PatternPicture, ProfilePicture, VaseZoneRange } from "@/components/workplane/VaseDesignerParts";
+import { isComputedPattern } from "@/lib/vase/vase-computed-patterns.mjs";
 import { OWN_TEXT_LENGTH, normalizeOwnPicture } from "@/lib/vase/vase-own-picture.mjs";
 import { vaseSettingsWithTextPicture } from "@/lib/vaseRelief";
 import { VasePrintBadge, VasePrintReport } from "@/components/workplane/VasePrintReport";
@@ -491,6 +492,8 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
     blueten: "vase.effectPetals", rautenwelle: "vase.effectWaveDiamond", tulpenblaetter: "vase.effectTulipLeaves", wisp: "vase.effectWispRibs",
     zellen: "vase.effectCells", waben: "vase.effectHexagons", geflecht: "vase.effectWeave", wellen: "vase.effectWaves",
     blattfluss: "vase.effectLeafFlow", schuppen: "vase.effectScales", kiesel: "vase.effectPebbles", adern: "vase.effectVeins", blaetter: "vase.effectLeaves", bild: "vase.effectPicture",
+    wabennetz: "vase.effectHoneycomb", ziegel: "vase.effectBricks", noppen: "vase.effectStuds", gehaemmert: "vase.effectHammered",
+    strick: "vase.effectKnit", korb: "vase.effectBasket", ringe: "vase.effectRings", rauschen: "vase.effectHills",
   },
   patternFit: { kacheln: "vase.fitAll", band: "vase.fitBand", einmal: "surfaceTexture.tilingOnce" },
   leafShape: {
@@ -1723,6 +1726,14 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         );
       }
       properties.push(reliefDepth, count, lean(pattern), aspect, patternMore({ type: "toggle", id: "vase.patternInvert", label: t("prop.vasePatternInvert"), value: vase.patternInvert === "ja", onChange: (value) => setVase({ patternInvert: value ? "ja" : "nein" }) }));
+    }
+    // A worked-out pattern: how high, how often round, how it leans (rings do not); how broad its joints, studs or
+    // strands are (gentle hills have none), stretched or turned inside out under Advanced.
+    if (isComputedPattern(vase.effect)) {
+      properties.push(reliefDepth, count);
+      if (vase.effect !== "ringe") properties.push(lean(pattern));
+      if (vase.effect !== "rauschen") properties.push(patternMore(percent("patternWidth", "prop.vasePatternStrength")));
+      properties.push(aspect, patternMore({ type: "toggle", id: "vase.patternInvert", label: t("prop.vasePatternInvert"), value: vase.patternInvert === "ja", onChange: (value) => setVase({ patternInvert: value ? "ja" : "nein" }) }));
     }
     if (vase.effect === "wisp") properties.push(reliefDepth, count, lean(pattern), patternMore(range("patternGroup", "prop.vasePatternGroup", 1)), patternMore(percent("patternWidth", "prop.vasePatternChannel")));
     // Leaves may keep their size where the vase narrows: fewer round there instead of smaller ones.
@@ -9392,8 +9403,8 @@ const NO_CHOICE = new Set(["keine", "keiner", "kein", "none"]);
 type VaseTab = "form" | "pattern" | "print";
 let lastVaseTab: VaseTab = "form";
 
-/** Pattern families in the gallery's order: smooth first, then the vase's older surfaces, then the reliefs, leaves and one's own picture or text last. */
-const VASE_GALLERY = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "blattfluss", "wisp", "wellen", "zellen", "kiesel", "waben", "geflecht", "schuppen", "adern", "blaetter", "bild"] as const;
+/** Pattern families in the gallery's order: smooth first, then the vase's older surfaces, then the reliefs from pictures, the worked-out ones, and leaves and one's own picture or text last. */
+const VASE_GALLERY = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "blattfluss", "wisp", "wellen", "zellen", "kiesel", "waben", "geflecht", "schuppen", "adern", "wabennetz", "ziegel", "noppen", "gehaemmert", "strick", "korb", "ringe", "rauschen", "blaetter", "bild"] as const;
 const VASE_LEAVES = ["tulpe", "ginkgo", "lotus", "efeu", "ahorn", "monstera", "farn", "eiche", "linde", "weide", "eigen"] as const;
 const VASE_PROFILES = ["flasche", "bauchig", "schale", "fass", "zylinder", "trichter", "gezeichnet"] as const;
 

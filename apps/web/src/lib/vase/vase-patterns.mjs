@@ -31,6 +31,7 @@
 import { inflateSync } from 'fflate'
 import { ownPicturePlaceholder, ownPictureTile } from './vase-own-picture.mjs'
 import { LEAF_MAPS, PATTERN_MAPS } from './vase-pattern-maps.mjs'
+import { COMPUTED_PATTERNS, computedDetail, computedHeight, isComputedPattern } from './vase-computed-patterns.mjs'
 
 /** The pattern families with their German names (the editor shows its own, translated). */
 export const PATTERNS = {
@@ -49,6 +50,8 @@ export const PATTERNS = {
   blaetter: 'Blätter',
   /** One's own picture or a text (vase-own-picture.mjs): the picture is in the settings, `patternImage`. */
   bild: 'Eigenes Bild oder Text',
+  /** The worked-out families (vase-computed-patterns.mjs): formulas over the wall instead of pictures. */
+  ...COMPUTED_PATTERNS,
 }
 
 /** Leaf shapes; `eigen` takes the outline drawn in `leafPoints`. */
@@ -382,6 +385,7 @@ export function patternDetail(p) {
   if (p.effect === 'adern') return 4
   // One's own picture or a text: letters and fine lines, as a vein picture has.
   if (p.effect === 'bild') return 4
+  if (isComputedPattern(p.effect)) return computedDetail(p.effect, p.patternWidth)
   if (isPicturePattern(p.effect)) return 1.5 * (MOTIFS_PER_TILE[p.effect] ?? 1) ** 0.5
   return 1
 }
@@ -530,6 +534,10 @@ export function patternHeight(p, cu, cv, around, fixed = null, blur = 0, middle 
     return p.patternInvert === 'ja' ? 1 - h : h
   }
   if (p.effect === 'wisp') return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth, blur)
+  if (isComputedPattern(p.effect)) {
+    const h = computedHeight(p.effect, sheared, cv, around, p.patternWidth, blur)
+    return p.patternInvert === 'ja' ? 1 - h : h
+  }
   if (p.effect === 'tulpenblaetter') {
     // Long tulip leaves rising from the bottom in a spiral, overlapping at the sides, bent like flames by the lean.
     return leavesAt(cu, cv, around, { shape: 'tulpe', aspect: TULIP.aspect, width: TULIP.width, overlap: p.leafOverlap / 100 + TULIP.overlap, layout: 'spirale', tilt: lean, curve: 1, withVeins: false, points: null, step: OVERLAP_STEP, bend: Math.sign(p.patternTwist) * Math.min(0.8, Math.abs(p.patternTwist) / 45), fixed })
@@ -674,9 +682,10 @@ export function reliefField(p, shape, zoneOf) {
   // little, to keep them crisp: but an edge finer than the grid that crosses it at a slant comes out as a row of teeth
   // (seen on every leaf edge and hexagon side at Standard). Wisp ribs fade by half the grid.
   const soften = p.effect === 'wisp' ? 0.5 : 0.55
+  const computed = isComputedPattern(p.effect)
   // (Not remembered per height: it follows the grid's spacing, which the build sets later.)
   const blurAt = (z) => {
-    if (!picture && p.effect !== 'wisp') return 0
+    if (!picture && !computed && p.effect !== 'wisp') return 0
     const x = clamp(z / H, 0, 1) * steps
     const k = Math.min(steps - 1, Math.floor(x))
     const c = circumference[k] + (circumference[k + 1] - circumference[k]) * (x - k)

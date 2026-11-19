@@ -187,6 +187,27 @@ describe("a vase in its settings", () => {
     expect(own.panel.querySelector(".vase-zone")).not.toBeNull();
   });
 
+  it("offers the worked-out patterns as tiles, with the width of their joints under Advanced", () => {
+    const { panel, calls } = mount();
+    openTab(panel, "Pattern");
+    for (const name of ["Honeycomb", "Bricks", "Studs", "Hammered", "Knit", "Basket weave", "Rings", "Gentle hills"]) expect(tile(panel, name), name).toBeDefined();
+    act(() => tile(panel, "Bricks")!.click());
+    expect(calls.updates.at(-1)?.vase?.effect).toBe("ziegel");
+    const bricks = mount({ vase: { ...calls.updates.at(-1)!.vase! } });
+    openTab(bricks.panel, "Pattern");
+    expect(rangeNamed(bricks.panel, "Relief height")).toBeDefined();
+    expect(rangeNamed(bricks.panel, "Repeats around")).toBeDefined();
+    expect(rangeNamed(bricks.panel, "Lean (°)")).toBeDefined();
+    // (Advanced keeps the state it was left in: opened here only if it is closed.)
+    if (bricks.panel.querySelector(".vase-more")?.getAttribute("aria-expanded") !== "true") act(() => bricks.panel.querySelector<HTMLButtonElement>(".vase-more")!.click());
+    expect(rangeNamed(bricks.panel, "Width (%)")).toBeDefined();
+    // Rings run round the vase: nothing to lean.
+    const rings = mount({ vase: { ...bricks.shape.vase!, effect: "ringe" } });
+    openTab(rings.panel, "Pattern");
+    expect(rangeNamed(rings.panel, "Relief height")).toBeDefined();
+    expect(rangeNamed(rings.panel, "Lean (°)")).toBeUndefined();
+  });
+
   it("sets the pattern's height range with two handles, typed numbers or a quick choice; start never passes end", () => {
     const plain = mount().shape;
     const { panel, calls } = mount({ vase: { ...plain.vase!, effect: "waben" } });
