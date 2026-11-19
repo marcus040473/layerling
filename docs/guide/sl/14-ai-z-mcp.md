@@ -141,6 +141,7 @@ Umetna inteligenca dela z istimi funkcijami kot ti, teče po isti poti kot tvoje
 | `layerling_show_overhangs` | vklopi ali izklopi šrafuro previsov, nastavi kot in za vsako telo navede ploskev, ki bi potrebovala podpore |
 | `layerling_estimate_print` | oceni prostornino, težo in filament za izbor ali celoten načrt: za polno telo in kot grobo oceno s stenami in polnilom kot v oknu za izvoz |
 | `layerling_check_clearance` | pred tiskanjem preveri, kateri deli se prekrivajo, dotikajo ali so bližje od najmanjše zračnosti (Preveri zračnost), tudi ločene dele enega predmeta |
+=======
 | `layerling_printer_play` | prebere, nastavi ali izbriše zračnost tiskalnika ({{ui:workspace.printerPlay}} v nastavitvah) in položi preizkus ujemanja, ki jo izmeri |
 | `layerling_check_print` | pred tiskanjem preveri, kaj bi šlo narobe: pretanke stene za šobo, lebdeče dele, majhen stik s ploščo, previse in odprte mreže (Preveri tisk) |
 | `layerling_check_layers` | razreže tisk na plasti in po plasteh našteje, kaj bi šlo narobe: previsi, mesta brez podpore, mostovi, tanke stene, majhni otočki, del v podlagi (Analiza tiska) |

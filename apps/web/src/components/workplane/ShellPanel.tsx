@@ -1,8 +1,9 @@
 "use client";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, LoaderCircle, X } from "lucide-react";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
+import { X } from "lucide-react";
 import { EdgeFeatureHistory, EdgeModifierSlider, type EdgeHistoryOption } from "@/components/workplane/EdgeModifierPanel";
 import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { numberLocale, t } from "@/lib/i18n";
@@ -133,7 +134,7 @@ export function ShellPanel({
   const openSides = shellOpenSides(openings);
   const title = t("shell.title");
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -141,27 +142,28 @@ export function ShellPanel({
           <span>{t("shell.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="hollowing" />
           <button type="button" aria-label={t("shell.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span>{t("shell.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={targetName} />
+        <ToolHelp>{t("shell.help")}</ToolHelp>
+        <EdgeFeatureHistory
+          appliedFeatureCount={appliedFeatureCount}
+          reversibleFeatureCount={reversibleFeatureCount}
+          historyOptions={historyOptions}
+          onRemoveFeature={onRemoveFeature}
+          onEditFeature={onEditFeature}
+        />
+      </ToolSection>
 
-      <EdgeFeatureHistory
-        appliedFeatureCount={appliedFeatureCount}
-        reversibleFeatureCount={reversibleFeatureCount}
-        historyOptions={historyOptions}
-        onRemoveFeature={onRemoveFeature}
-        onEditFeature={onEditFeature}
-      />
-
-      <>
+      <ToolSection title={t("toolSidebar.settings")}>
         <EdgeModifierSlider
           label={t("shell.wall")}
+          primary
           value={thickness}
           min={MIN_WALL}
           max={Math.max(MIN_WALL, maxThickness)}
@@ -206,7 +208,7 @@ export function ShellPanel({
           </div>
           <span className="shell-openings-summary">{openSides.length === 0 ? t("shell.sidesNone") : t("shell.sidesHint")}</span>
         </div>
-      </>
+      </ToolSection>
 
       {stackOffered ? (<>
         <div className="edge-modifier-field shell-openings shell-grid" role="group" aria-label={t("shell.grid")}>
@@ -256,7 +258,7 @@ export function ShellPanel({
               disabled={busy}
               onChange={(value) => onGridSize(Math.max(1, gridColumns), Math.round(value))}
             />
-            <span className="shell-openings-summary">{t("shell.gridSizeHint")}</span>
+            <ToolHint text={t("shell.gridSizeHint")} />
             <label className="edge-modifier-field offset-copy">
               <input type="checkbox" checked={gridFit} disabled={busy} onChange={(event) => onGridChange(gridCells, event.target.checked)} />
               <span>{t("shell.gridFit")}</span>
@@ -265,9 +267,9 @@ export function ShellPanel({
               <input type="checkbox" checked={gridMagnets} disabled={busy} data-testid="shell-grid-magnets" onChange={(event) => onGridMagnetsChange(event.target.checked)} />
               <span>{t("shell.gridMagnets")}</span>
             </label>
-            {gridMagnets ? <span className="shell-openings-summary">{t("shell.gridMagnetsHint")}</span> : null}
+            {gridMagnets ? <ToolHint text={t("shell.gridMagnetsHint")} /> : null}
           </>) : null}
-          <span className="shell-openings-summary">{gridMax < 1 ? t("shell.gridNoCell") : t("shell.gridHint")}</span>
+          <ToolHint text={gridMax < 1 ? t("shell.gridNoCell") : t("shell.gridHint")} />
         </div>
 
         <div className="edge-modifier-field shell-openings shell-dividers" role="group" aria-label={t("shell.dividers")}>
@@ -357,13 +359,13 @@ export function ShellPanel({
                       {t("shell.dividerHeightFlush")}
                     </button>
                   </div>
-                  <span className="shell-openings-summary">{flush ? t(shelf > 0 ? "shell.dividersUnderShelf" : "shell.dividerHeightFlushHint") : t("shell.dividerHeightPercent", { mm: height.toLocaleString(numberLocale()), percent })}</span>
+                  <ToolHint text={flush ? t(shelf > 0 ? "shell.dividersUnderShelf" : "shell.dividerHeightFlushHint") : t("shell.dividerHeightPercent", { mm: height.toLocaleString(numberLocale()), percent })} />
                 </>);
               })()}
-              <span className="shell-openings-summary">{t("shell.dividerHeightHint")}</span>
+              <ToolHint text={t("shell.dividerHeightHint")} />
             </>) : null}
           </>) : null}
-          <span className="shell-openings-summary">{t(gridCells > 0 ? "shell.dividersNoGrid" : "shell.dividersHint")}</span>
+          <ToolHint text={t(gridCells > 0 ? "shell.dividersNoGrid" : "shell.dividersHint")} />
         </div>
       </>) : null}
 
@@ -405,7 +407,7 @@ export function ShellPanel({
               />
               <span>{t("shell.stackHollow")}</span>
             </label>
-            <span className="shell-openings-summary">{t(gridCells > 0 ? "shell.stackHollowGrid" : "shell.stackHollowHint")}</span>
+            <ToolHint text={t(gridCells > 0 ? "shell.stackHollowGrid" : "shell.stackHollowHint")} />
             {/* A grip at the front of the bottom, to lift the box off the one below. */}
             <label className="edge-modifier-field offset-copy">
               <input
@@ -463,7 +465,7 @@ export function ShellPanel({
                 disabled={busy}
                 onChange={(value) => onStackFootChange({ ...(stackFoot ?? {}), gripAt: value })}
               />
-              <span className="shell-openings-summary">{t("shell.stackGripAtHint")}</span>
+              <ToolHint text={t("shell.stackGripAtHint")} />
               {/* The sides it goes on, one or several; at least one stays. */}
               <div className="edge-modifier-field shell-openings" role="group" aria-label={t("shell.stackGripSides")}>
                 <span>{t("shell.stackGripSides")}</span>
@@ -486,7 +488,7 @@ export function ShellPanel({
                   })}
                 </div>
               </div>
-              <span className="shell-openings-summary">{t("shell.stackGripHint")}</span>
+              <ToolHint text={t("shell.stackGripHint")} />
             </>) : null}
           </>) : null}
           {stack > 0 && onStackLid ? (
@@ -494,8 +496,8 @@ export function ShellPanel({
               <button type="button" disabled={busy} onClick={onStackLid}>{t("shell.stackLid")}</button>
             </div>
           ) : null}
-          {stack > 0 && onStackLid ? <span className="shell-openings-summary">{t("shell.stackLidHint")}</span> : null}
-          <span className="shell-openings-summary">{thickness < SHELL_STACK_MIN_WALL && stack > 0 ? t("shell.stackWallThin", { min: SHELL_STACK_MIN_WALL }) : t("shell.stackHint")}</span>
+          {stack > 0 && onStackLid ? <ToolHint text={t("shell.stackLidHint")} /> : null}
+          <ToolHint text={thickness < SHELL_STACK_MIN_WALL && stack > 0 ? t("shell.stackWallThin", { min: SHELL_STACK_MIN_WALL }) : t("shell.stackHint")} />
         </div>
       ) : null}
 
@@ -543,8 +545,7 @@ export function ShellPanel({
         </div>
       ) : null}
 
-      <details className="edge-modifier-field">
-          <summary>{t("shell.edges")}</summary>
+      <ToolAdvanced tool="shell" summary={t("shell.edges")}>
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("shell.edges")}>
           <span>{t("shell.edges")}</span>
           <div className="shell-opening-options">
@@ -562,17 +563,14 @@ export function ShellPanel({
               </button>
             ))}
           </div>
-          <span className="shell-openings-summary">{t("shell.edgesHint")}</span>
+          <ToolHint text={t("shell.edgesHint")} />
         </div>
-      </details>
+      </ToolAdvanced>
 
-      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <span className="shell-openings-summary" role="status"><LoaderCircle className="edge-modifier-spinner" size={15} />{t("shell.working")}</span> : null}
+      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <ToolStatus state="working" text={t("shell.working")} /> : null}
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={busy} onClick={onApply}>
-          {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
-          {busy ? t("shell.working") : t("shell.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("shell.apply")} busy={busy} busyLabel={t("shell.working")} disabled={busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

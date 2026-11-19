@@ -120,6 +120,8 @@ describe("the Split panel's connectors", () => {
     const { panel, changes } = mount({ kind: "dovetail" }, done({ placed: 1, faces: 2, tooSmall: 1 }));
     expect(kindButtons(panel).map((button) => button.getAttribute("aria-pressed"))).toEqual(["false", "false", "false", "true"]);
     expect(fieldLabels(panel)).toEqual(["Per cut face (0 = automatic)", "Width at the cut face", "Depth into the other half", "Flank angle", "Direction (0 = lengthwise)", "Clearance per side"]);
+    // The docked panel folds a hint after its first sentence: unfold it to read it whole.
+    act(() => panel.querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
     expect(text(panel)).toContain("Slide the halves together from the side");
     expect(summary(panel)).toEqual(["Room for 1 on 2 cut faces.", "One cut face is too small for a dovetail."]);
     const direction = [...panel.querySelectorAll<HTMLInputElement>(".split-panel input[type=range]")].find((input) => input.min === "-90");

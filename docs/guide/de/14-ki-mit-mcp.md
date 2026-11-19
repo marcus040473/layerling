@@ -145,6 +145,7 @@ Die KI arbeitet mit denselben Funktionen wie du, sie läuft über denselben Weg 
 | `layerling_show_overhangs` | schaltet die Überhang-Schraffur ein oder aus, setzt den Winkel und nennt je Körper die Fläche, die Stützen bräuchte |
 | `layerling_estimate_print` | schätzt Volumen, Gewicht und Filament für die Auswahl oder den ganzen Entwurf: für einen massiven Körper und als grobe Schätzung mit Wänden und Füllung wie im Exportfenster |
 | `layerling_check_clearance` | prüft vor dem Druck, welche Teile sich überschneiden, berühren oder näher kommen als ein Mindestspiel (Spiel prüfen), auch die getrennten Teile eines Objekts |
+=======
 | `layerling_printer_play` | liest, setzt oder löscht das Spiel deines Druckers ({{ui:workspace.printerPlay}} in den Einstellungen) und legt die Passprobe an, die es misst |
 | `layerling_check_print` | prüft vor dem Druck, was schiefginge: zu dünne Wände für die Düse, schwebende Teile, wenig Halt auf der Platte, Überhänge und offene Netze (Druck prüfen) |
 | `layerling_check_layers` | zerlegt den Druck in Schichten und listet Schicht für Schicht, was schiefginge: Überhänge, Bereiche ohne Auflage, Brücken, dünne Wände, kleine Inseln, ein Teil im Druckbett (Druckanalyse) |

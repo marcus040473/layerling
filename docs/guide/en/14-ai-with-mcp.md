@@ -145,6 +145,7 @@ The AI works with the same functions as you, through the same path as your opera
 | `layerling_show_overhangs` | switches the overhang hatching on or off, sets the angle and reports for each body the area that would need supports |
 | `layerling_estimate_print` | estimates volume, weight and filament for the selection or the whole design: for a solid body, and as a rough guess with walls and infill like the export window |
 | `layerling_check_clearance` | checks before printing which parts overlap, touch or come closer than a minimum gap (Check clearance), the separate parts of one object too |
+=======
 | `layerling_printer_play` | reads, sets or clears the printer's play ({{ui:workspace.printerPlay}} in the settings) and places the fit test that measures it |
 | `layerling_check_print` | checks before printing what would go wrong: walls too thin for the nozzle, floating parts, small contact with the plate, overhangs and open meshes (Print check) |
 | `layerling_check_layers` | cuts the print into layers and lists what would go wrong layer by layer: overhangs, places without support, bridges, thin walls, small islands, a part in the plate (Print analysis) |

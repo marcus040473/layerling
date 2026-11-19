@@ -216,15 +216,18 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 ## 多色上色
 
-為了多色列印，{{ui:paint.title}} 直接在設計中為實體的部分表面上色：一個面、一圈圓柱壁、孔的內壁、一個圓斑，或者你圈出的一塊區域。它和切片軟體裡的上色工具類似，但顏色會隨設計一起儲存。選取一個實體，在 {{ui:editor.section.surface}} 群組中點擊 {{ui:paint.title}}（在 {{ui:inspector.surfaceTexture}} 旁邊）。面板會列出設計中用到的顏色，{{ui:paint.customColor}} 可以調出自己的顏色。然後在檢視中用三種工具之一上色：
+為了多色列印，{{ui:paint.title}} 直接在設計中為實體的部分表面上色：一個面、一圈圓柱壁、孔的內壁、一個圓斑，或者你圈出的一塊區域。它和切片軟體裡的上色工具類似，但顏色會隨設計一起儲存。選取一個實體，在 {{ui:editor.section.surface}} 群組中點擊 {{ui:paint.title}}（在 {{ui:inspector.surfaceTexture}} 旁邊）。面板會列出設計中用到的顏色，{{ui:paint.customColor}} 可以調出自己的顏色。然後在檢視中用六種工具之一上色：
 
 - {{ui:paint.mode.fill}}：點擊一下，把面一直填色到它的銳利邊緣，就像繪圖軟體裡的油漆桶：長方體的頂面、圓柱的側壁、凹槽的底面或孔的內壁，各點一下即可。{{ui:paint.angle}} 決定邊緣要多銳利才會讓填色停下；設為 90° 時會越過長方體的稜邊。
 - {{ui:paint.mode.circle}}：點擊一下，在表面上放一個設定 {{ui:paint.diameter}} 的圓斑，圓心就在點擊處，曲面上也可以。它會在實體的銳利邊緣停下，也不會透到壁的背面。
+- {{ui:paint.mode.brush}}：在物體上按住滑鼠鍵或筆，畫出一條寬 {{ui:paint.diameter}} 的線。線條沿表面越過曲面和邊緣，絕不會透到牆的背面。使用筆或繪圖板時，{{ui:paint.pressure}} 讓輕觸畫得更細，最細為直徑的五分之一：適合畫眼睛、牙齒和細線。開啟 {{ui:paint.ball}} 後，圓形和筆刷會像切片軟體的球體一樣，塗滿球內的一切，也包括邊緣周圍和凹處。
+- {{ui:paint.mode.height}}：點擊即在該高度繞整個物體畫一條高 {{ui:paint.band}} 的水平帶，像頭帶一樣；半透明的環顯示它經過的位置。
 - {{ui:paint.mode.lasso}}：按住滑鼠鍵圈出一塊區域。區域內看得見的部分會被上色，實體後面的背面不會。
+- {{ui:paint.mode.magnet}}：大致沿邊緣點擊，線會自動找到邊緣：表面轉折處、物體相對背後的輪廓，或已有顏色的邊界。點擊第一個點、雙擊或按 [[Enter]] 封閉；[[Backspace]] 撤回最後一個點，[[Esc]] 放棄這條線。內部可見的部分會被上色，與套索相同：要填滿用筆刷勾過邊的眼睛，沿它的邊緣點一圈即可。它也能感知雕刻表面的柔和起伏，例如眼窩的邊緣。{{ui:paint.smooth}} 會在套用前把線條抹平，套索也一樣；角保持不變。
 
 ![用三種工具上色的長方體：頂面填色為黃色，正面一個白色圓，側面一個用套索圈出的綠色星形；旁邊是上色面板。](shot:paint)
 
-{{ui:paint.eraser}} 用同樣的工具把顏色去掉，{{ui:paint.clear}} 一次去掉全部顏色。每一筆都是獨立的一步，所以 [[Ctrl]]+[[Z]] 會復原最後一筆。兩筆之間仍然可以像平常一樣用滑鼠右鍵旋轉檢視；{{ui:paint.done}} 或 [[Esc]] 關閉面板。
+{{ui:paint.eraser}} 用同樣的工具把顏色去掉，{{ui:paint.clear}} 一次去掉全部顏色。每一筆都是獨立的一步，所以 [[Ctrl]]+[[Z]] 會復原最後一筆。兩筆之間仍然可以像平常一樣用滑鼠右鍵旋轉檢視；{{ui:paint.done}} 或 [[Esc]] 關閉面板。{{ui:paint.gaps}} 用於收尾：小於 {{ui:paint.gapArea}} 的單色區域會變成周圍的顏色，零散斑點消失，印表機換色更少。
 
 圓和套索的邊緣會切進實體的網格：長方體面上的圓是圓的，而不是幾個三角形，實體也保持封閉。顏色屬於實體：它隨實體移動和旋轉，調整尺寸時隨之拉伸；修改後找不到位置的筆畫會被略過。匯出 3MF 時顏色會寫成已上色的面，OrcaSlicer、Bambu Studio 和 PrusaSlicer 會用各自的線材列印（見[檔案與儲存](chapter:files-and-saving)）；OBJ 也保留顏色，STL 仍是單色。
 
@@ -232,21 +235,33 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 ## 花瓶
 
-{{ui:shape.vase}} 是專為花瓶、花盆和燈罩準備的實體。它的尺寸在 {{ui:inspector.properties}} 中，形狀和圖案在 {{ui:inspector.vaseForm}} 卡片上；所有設定隨時都能更改，儲存後也可以：
+{{ui:shape.vase}} 是專為花瓶、花盆和燈罩準備的實體。它的所有設定都在一張卡片上，分為三個分頁：{{ui:vase.tabForm}}、{{ui:vase.tabPattern}} 和 {{ui:vase.tabPrint}}。每個分頁只顯示當下與它相關的內容；不常用的設定在 {{ui:vase.advanced}} 下。所有設定隨時都能更改，儲存後也可以，檢視中的花瓶會跟隨每一次更改。
 
-- {{ui:prop.vaseProfile}}：瓶形、鼓肚、帶頸的碗、桶形、圓柱或漏斗。高度和最大直徑是該形狀自己的尺寸：拖曳控制點，或輸入 {{ui:prop.vaseDiameter}} 和 {{ui:prop.height}}。
-- {{ui:prop.vaseSection}}：圓、圓角多邊形或波浪（柔和、尖形、拱形或鰭形）。{{ui:prop.vaseTwist}} 讓截面沿高度旋轉，{{ui:prop.vaseSway}} 讓它來回擺動。
-- {{ui:prop.vaseBody}}：{{ui:vase.bodySolid}} 用於切片軟體的花瓶模式（也叫螺旋化）：切片軟體以螺旋方式只列印一層壁，省去頂部和填充，因此實體畫成實心。{{ui:vase.bodyHollow}} 為一般列印產生真正的壁和底。{{ui:prop.vaseBottom}} 設為 0 mm 時，空心花瓶沒有底：兩端開口的管子，適合喇叭口、吹嘴和管道。
-- {{ui:prop.vaseEffect}}：新花瓶是光面的。可選外側的凹槽、條紋、Voronoi 單元或切面（低多邊形），也可只放在高度上的一條帶裡；它們屬於花瓶，隨花瓶一起保持可編輯。
+### 造型
 
-{{ui:prop.vaseSection2}} 讓截面沿高度過渡到第二種截面，例如從底部的圓過渡到頂部的六邊形。
+- {{ui:prop.vaseProfile}}：一組圖塊，顯示瓶形、鼓肚、帶頸的碗、桶形、圓柱和漏斗的輪廓，另有 {{ui:vase.profileDrawn}}。高度和最大直徑是該形狀自己的尺寸：拖曳控制點，或輸入 {{ui:prop.vaseDiameter}} 和 {{ui:prop.height}}。
+- {{ui:vase.editContour}} 會在工作區上方開啟一個獨立的大視窗，在裡面以真實毫米親手繪製花瓶（詳見下文）。
+- {{ui:prop.vaseSection}}：圓、圓角多邊形或波浪（柔和、尖形、拱形或鰭形）。{{ui:prop.vaseTwist}} 讓截面沿高度旋轉。
+- {{ui:vase.advanced}} 下：{{ui:prop.vaseSection2}} 讓截面沿高度過渡到第二種截面，例如從底部的圓過渡到頂部的六邊形；{{ui:prop.vaseSway}} 讓它來回擺動；{{ui:prop.vaseQuality}} 決定花瓶劃分三角形的精細程度。越細看起來越平滑，但大花瓶會讓編輯器變慢。
 
-花瓶設定上方的 {{ui:inspector.vaseDraw}} 會在工作區上方開啟一個獨立的大視窗：在裡面以真實毫米親手繪製花瓶。拖曳標題列可移動視窗，拖曳角落可放大；檢視中的花瓶會跟隨每一次更改。{{ui:vaseDraw.tabProfile}} 從側面顯示花瓶：拖曳各點，最上面的點決定高度，最寬的點決定直徑；{{ui:vaseDraw.handle}} 給點一個角度，{{ui:vaseDraw.corner}} 讓它成為折角。{{ui:vaseDraw.tabSection}} 從上方顯示截面，{{ui:prop.vaseDrawSymmetry}} 會鏡像或重複你畫的內容。{{ui:vaseDraw.tabTwist}} 把旋轉畫成一條沿高度的曲線。繪圖軟體的 SVG 檔案可以成為截面或瓶身形狀，樣品花瓶的網格（STL、3MF、OBJ）可以成為瓶身形狀。可以把花瓶照片放在繪圖後面描摹，或用 {{ui:vaseDraw.takeOutline}} 擷取它的輪廓。{{ui:vaseDraw.trace}} 用設定做同樣的事：{{ui:vaseDraw.traceThreshold}} 決定物體要多明顯地與背景區分，{{ui:vaseDraw.tracePoints}}（3 到 40）和 {{ui:vaseDraw.traceCorners}}；新的瓶身形狀先以紅色顯示在照片上，按 {{ui:vaseDraw.traceApply}} 後成為花瓶的形狀。花瓶放在雜亂背景前（書架、房間）時，搜尋找不到它；這時用 **{{ui:vaseDraw.traceLasso}}** 抓住它：圍繞花瓶大致點擊，兩次點擊之間線條會自動沿邊緣走，點擊第一個點、按兩下或按 [[Enter]] 閉合。瓶身形狀隨後來自套索；{{ui:vaseDraw.traceLassoOff}} 讓搜尋重新尋找。滑鼠拖曳一次就是一步復原；拖曳時，檢視會粗略顯示花瓶。
+拖曳標題列可移動繪圖視窗，拖曳角落可放大。{{ui:vaseDraw.tabProfile}} 從側面顯示花瓶：拖曳各點，最上面的點決定高度，最寬的點決定直徑；{{ui:vaseDraw.handle}} 給點一個角度，{{ui:vaseDraw.corner}} 讓它成為折角。{{ui:vaseDraw.tabSection}} 從上方顯示截面，{{ui:prop.vaseDrawSymmetry}} 會鏡像或重複你畫的內容。{{ui:vaseDraw.tabTwist}} 把旋轉畫成一條沿高度的曲線。繪圖軟體的 SVG 檔案可以成為截面或瓶身形狀，樣品花瓶的網格（STL、3MF、OBJ）可以成為瓶身形狀，花瓶的照片可以成為它的輪廓。
 
-{{ui:inspector.vaseFloor}} 卡片收納實體在形狀之外還需要的東西。空心花瓶上：帶有朝向排水孔坡度的排水孔、空心底腳、鏤空的壁（{{ui:prop.vaseCutout}}：Voronoi、蜂巢、菱形或圓形，適合燈籠和籃子），以及 {{ui:prop.vaseLamp}}：吊掛、裝在燈座上或罩在 LED 燈片上。實心花瓶上，{{ui:prop.vaseReinforce}} 會切出細縫，切片軟體在花瓶模式下藉此一次列印出內部加強肋或雙層壁。橡膠腳墊的凹槽兩種都可用。{{ui:prop.vaseWatertight}} 把空心花瓶的壁和底加厚到至少 1.6 mm。
+### 圖樣
 
-在 {{ui:inspector.vaseParts}} 卡片上為花瓶加入配件。{{ui:prop.vaseLegs}} 可以一體成型（成為花瓶的一部分），也可以做成插接式，在底部留插座；支架從下面托住花瓶。{{ui:prop.vaseSaucer}} 接住水，或藏在底腳裡。空心花瓶可以放 {{ui:prop.vaseInsert}}：植物內膽、帶儲水層的自動澆水內膽、花莖或試管架。{{ui:prop.vaseLid}} 可以蓋在瓶口上、卡進凹槽，或旋在壁內的螺紋上。選擇 {{ui:vase.lidTeapot}} 時，花瓶本身的頂部就成為蓋子，像茶壺那樣：{{ui:prop.vaseLidHeight}}（或從底部算起的 {{ui:prop.vaseLidJoint}}）決定多少，圖案與扭轉會延續過接縫，一圈唇邊把它固定在開口裡，{{ui:prop.vaseLidKnob}} 會加上一個黏進頂部孔裡的把手。{{ui:inspector.vasePartsMake}} 把這些零件作為獨立物件擺在花瓶旁邊，可直接列印，倒過來列印較好的會倒放。花瓶上已經有插座、凹槽或螺紋。更改設定後請重新擺放：之前的零件會被取代。如果某個零件不適合這個花瓶，編輯器會提示，例如內膽穿不過窄瓶頸時。
+新花瓶是光面的。{{ui:vase.tabPattern}} 分頁頂部是一個圖庫：每個圖塊依實際計算出的樣子顯示它的圖案。除了凹槽、條紋、Voronoi 接縫和切面，還有凸起的浮雕：{{ui:vase.effectPetals}}、{{ui:vase.effectWaveDiamond}}、{{ui:vase.effectTulipLeaves}}（細長舒展、呈螺旋狀向上翻捲的葉片）、{{ui:vase.effectLeafFlow}}、{{ui:vase.effectWispRibs}}（窄而斜的肋條，旁邊是光滑的區域）、{{ui:vase.effectWaves}}、{{ui:vase.effectCells}}、{{ui:vase.effectPebbles}}、{{ui:vase.effectHexagons}}、{{ui:vase.effectWeave}}、{{ui:vase.effectScales}} 和 {{ui:vase.effectVeins}}。其中大多數來自可無縫重複的高度圖，因此在任何尺寸下都保持平滑。圖塊 {{ui:vase.effectLeaves}} 會開啟第二排：鬱金香、銀杏、蓮花、常春藤、楓葉、龜背芋、蕨類、橡樹、椴樹和柳樹，另有 {{ui:vase.leafOwn}}：在這裡拖曳半片葉子的各點，另一半會鏡像產生。葉片一開始為 {{ui:vase.leafScattered}}：幾片大葉子，每片的旋轉、位置和大小都略有不同；在 {{ui:vase.advanced}} 下也可以把它們排成列或排成螺旋。
 
-{{ui:inspector.vasePrint}} 卡片告訴你列印這個花瓶需要什麼：以所選 {{ui:prop.vaseMaterial}} 計的重量和線材長度；實心花瓶依切片軟體的花瓶模式計算，即沿壁的一條線。下方是列印提示：超過 45° 的懸垂及其位置、太薄的壁、蓋子、燈具或支腳需要什麼，以及加強肋和雙層壁的切片設定。
+圖庫下方只有對所選圖案作用最大的三個滑桿，通常是 {{ui:prop.vaseReliefDepth}}、{{ui:prop.vasePatternCount}} 和傾斜；葉片則是 {{ui:prop.vaseLeafSize}}、{{ui:prop.vaseReliefDepth}} 和 {{ui:prop.vaseLeafOverlap}}。浮雕貼在花瓶自身的形狀上，其間的底面依浮雕高度下沉，因此沒有任何部分凸出輪廓，也沒有葉片像孤島一樣鬆散地貼在壁上。更改形狀時重複次數保持不變：在鼓肚處圖案和葉片變大，在瓶頸處變小，繞一圈後圖案無縫閉合。對於葉片和鬱金香葉片，開關 {{ui:prop.vaseLeafFixed}} 讓每片葉子保持同樣大小：花瓶變細的地方，周圍的葉片會變少，而不是變小。
 
-{{ui:prop.vaseQuality}} 決定花瓶劃分三角形的精細程度：越細看起來越平滑，但大花瓶會讓編輯器變慢。
+{{ui:vase.zoneTitle}} 有一個帶兩個握把的滑桿：圖案的起點和終點，以高度的百分比表示。旁邊的小花瓶剪影顯示這一段範圍；在滑桿下方可以輸入數值，或點一個快速選項：{{ui:vase.zoneAll}}（0–100 %）、{{ui:vase.zoneMiddle}}（15–85 %）、{{ui:vase.zoneLow}}（0–65 %）和 {{ui:vase.zoneHigh}}（60–100 %）。起點不能越過終點；兩者相同時，花瓶保持光面。如果花瓶有坐在瓶頸裡的蓋子或瓶塞，而圖案一直延伸到那裡，卡片會提供 {{ui:vase.zoneNeckSmooth}}，讓蓋子貼合得乾淨緊密。
+
+{{ui:vase.advanced}} 下有 {{ui:prop.vaseZoneFade}}（圖案在邊界處淡出得多柔和）、圖案的細節設定（拉伸、{{ui:prop.vasePatternInvert}}、葉片排列、弧度、傾斜、葉脈）以及 {{ui:prop.vasePrintFriendly}}。易於列印預設開啟：浮雕的每條下緣都以最多 45° 向外升起，而不是懸垂，上緣則保持銳利。因此葉片浮雕大多不需要支撐就能列印。
+
+### 列印
+
+{{ui:prop.vaseBody}}：{{ui:vase.bodySolid}} 用於切片軟體的花瓶模式（也叫螺旋化）：切片軟體以螺旋方式只列印一層壁，省去頂部和填充，因此實體畫成實心。{{ui:vase.bodyHollow}} 為一般列印產生真正的壁和底。{{ui:prop.vaseBottom}} 設為 0 mm 時，空心花瓶沒有底：兩端開口的管子，適合喇叭口、吹嘴和管道。{{ui:prop.vaseWatertight}} 把空心花瓶的壁和底加厚到至少 1.6 mm。
+
+{{ui:vase.printCheck}} 讓你一眼看出是 {{ui:vase.verdictFine}}、{{ui:vase.verdictSupports}} 還是 {{ui:vase.verdictNotes}}，並列出以所選 {{ui:prop.vaseMaterial}} 計的重量和線材長度（實心花瓶依切片軟體的花瓶模式計算，即沿壁的一條線），下方是它的提示：超過 45° 的懸垂及其位置、懸垂的浮雕下緣、在最窄處變得太細的圖案部分、伸進蓋子下方瓶頸裡的圖案、太薄的壁、蓋子、燈具或支腳需要什麼，以及加強肋和雙層壁的切片設定。它只是參考，不是保證：材料、層高和切片軟體同樣有影響。同樣的結論也顯示在 {{ui:vase.tabPattern}} 分頁底部，點一下就會跳到這裡。
+
+{{ui:inspector.vaseFloor}} 區段收納實體在形狀之外還需要的東西。空心花瓶上：帶有朝向排水孔坡度的排水孔、空心底腳、鏤空的壁（{{ui:prop.vaseCutout}}：Voronoi、蜂巢、菱形或圓形，適合燈籠和籃子），以及 {{ui:prop.vaseLamp}}：吊掛、裝在燈座上或罩在 LED 燈片上。實心花瓶上，{{ui:prop.vaseReinforce}} 會切出細縫，切片軟體在花瓶模式下藉此一次列印出內部加強肋或雙層壁。橡膠腳墊的凹槽兩種都可用。
+
+在 {{ui:inspector.vaseParts}} 區段為花瓶加入配件。{{ui:prop.vaseLegs}} 可以一體成型（成為花瓶的一部分），也可以做成插接式，在底部留插座；支架從下面托住花瓶。{{ui:prop.vaseSaucer}} 接住水，或藏在底腳裡。空心花瓶可以放 {{ui:prop.vaseInsert}}：植物內膽、帶儲水層的自動澆水內膽、花莖或試管架。{{ui:prop.vaseLid}} 可以蓋在瓶口上、卡進凹槽，或旋在壁內的螺紋上。{{ui:vase.lidStopper}} 是像醒酒瓶那樣的圓形塞子，帶 2° 錐度，壓入時就能密封；{{ui:prop.vaseStopperLength}} 決定它伸進瓶頸多深，{{ui:prop.vaseStopperRing}} 給它加一道凹槽，用於線徑 2 mm 的 O 型環。選擇 {{ui:vase.lidTeapot}} 時，花瓶本身的頂部就成為蓋子，像茶壺那樣：{{ui:prop.vaseLidHeight}}（或從底部算起的 {{ui:prop.vaseLidJoint}}）決定多少，圖案與扭轉會延續過接縫，一圈唇邊把它固定在開口裡，{{ui:prop.vaseLidKnob}} 會加上一個黏進頂部孔裡的把手。{{ui:inspector.vasePartsMake}} 把這些零件作為獨立物件擺在花瓶旁邊，可直接列印，倒過來列印較好的會倒放。花瓶上已經有插座、凹槽或螺紋。更改後請重新擺放：之前的零件會被取代。如果某個零件不適合這個花瓶，編輯器會提示，例如內膽穿不過窄瓶頸時。茶壺蓋依列印時的姿態檢查，即倒放在它的頂面上。

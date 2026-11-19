@@ -145,6 +145,7 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_show_overhangs` | włącza albo wyłącza kreskowanie nawisów, ustawia kąt i podaje dla każdej bryły powierzchnię, która wymagałaby podpór |
 | `layerling_estimate_print` | szacuje objętość, masę i filament dla zaznaczenia albo całego projektu: dla pełnej bryły oraz zgrubnie ze ściankami i wypełnieniem, jak okno eksportu |
 | `layerling_check_clearance` | sprawdza przed drukiem, które części nachodzą na siebie, stykają się lub są bliżej niż minimalny luz, także osobne części jednego obiektu |
+=======
 | `layerling_printer_play` | odczytuje, ustawia lub czyści luz drukarki ({{ui:workspace.printerPlay}} w ustawieniach) i kładzie test pasowania, który go mierzy |
 | `layerling_check_print` | sprawdza przed drukiem, co poszłoby źle: zbyt cienkie ścianki dla dyszy, części w powietrzu, mały styk z płytą, nawisy i otwarte siatki |
 | `layerling_check_layers` | tnie wydruk na warstwy i warstwa po warstwie wymienia, co pójdzie źle: nawisy, miejsca bez podparcia, mosty, cienkie ścianki, małe wyspy, część w stole (Analiza wydruku) |

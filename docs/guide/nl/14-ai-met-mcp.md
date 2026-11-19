@@ -141,6 +141,7 @@ De AI werkt met dezelfde functies als jij, via dezelfde weg als jouw bediening i
 | `layerling_show_overhangs` | zet de overhangarcering aan of uit, stelt de hoek in en meldt per lichaam het oppervlak dat support nodig zou hebben |
 | `layerling_estimate_print` | schat volume, gewicht en filament voor de selectie of het hele ontwerp: voor een massief lichaam en als grove schatting met wanden en infill zoals in het exportvenster |
 | `layerling_check_clearance` | controleert vóór het printen welke onderdelen overlappen, elkaar raken of dichter bij elkaar komen dan een minimale speling (Speling controleren), ook de losse delen van één object |
+=======
 | `layerling_printer_play` | leest, zet of wist de speling van de printer ({{ui:workspace.printerPlay}} in de instellingen) en legt de pastest neer die hem meet |
 | `layerling_check_print` | controleert vóór het printen wat er mis zou gaan: te dunne wanden voor de nozzle, zwevende delen, weinig houvast op de plaat, overhangen en open meshes (Print controleren) |
 | `layerling_check_layers` | snijdt de print in lagen en geeft per laag wat er mis zou gaan: overhangen, plekken zonder steun, bruggen, dunne wanden, kleine eilanden, een deel in het bed (Printanalyse) |

@@ -12,6 +12,7 @@ import { createCrescentGeometry } from "@/lib/crescentGeometry";
 import { createCurvedConeGeometry } from "@/lib/curvedCone";
 import { createParaboloidGeometry } from "@/lib/roundBodyGeometry";
 import { createSlotGeometry } from "@/lib/slotGeometry";
+import { createBoxGeneratorGeometry } from "@/lib/boxGeneratorGeometry";
 import { createDovetailGeometry } from "@/lib/dovetailGeometry";
 import { createScrewBossGeometry } from "@/lib/screwBoss";
 import { createSnapFitGeometry } from "@/lib/snapFit";
@@ -462,6 +463,15 @@ describe("palette icons", () => {
         height: 8,
         dovetailNeckWidth: 16,
       }),
+    });
+    render({
+      // An open box with two compartments, from above so the dividers show.
+      name: "apps/web/public/assets/editor/shape-icons-gray/boxGenerator.png",
+      height: 14,
+      lay: false,
+      azimuth: 35,
+      elevation: 40,
+      build: () => createBoxGeneratorGeometry({ width: 34, depth: 24, height: 14 }, { boxColumns: 2, boxWall: 2, boxFloor: 2 }),
     });
     render({
       // A post with its hole and four gussets, from above so the hole shows.

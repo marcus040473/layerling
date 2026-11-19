@@ -4,7 +4,8 @@ import { AlertTriangle, CircleCheck, CircleSlash, Download, Eye, LoaderCircle, R
 import { useEffect, useState } from "react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { formatClearanceLength } from "@/components/workplane/ClearancePanel";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import type { ClearanceBox } from "@/lib/clearanceCheck";
 import { COMMAND_SHORTCUTS } from "@/lib/commandKeywords";
 import { formatEstimateNumber } from "@/lib/editorBooleans";
@@ -284,7 +285,8 @@ export function PrintCheckPanel({
   const warnings = result ? printCheckWarnings(result) : 0;
   const summary = !result ? null : warnings === 0 ? t("printCheck.allClear") : t("printCheck.warnings", { count: warnings, total: PRINT_CHECK_LINES.length });
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel clearance-panel print-check-panel" ariaLabel={title}>
+    // Docked alone in the right column, as every tool of this build: it checks no one object, so the object's tab stays away.
+    <MovableToolPanel className="edge-modifier-panel shell-panel clearance-panel print-check-panel" ariaLabel={title} dock="alone" onClose={onClose}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -292,37 +294,40 @@ export function PrintCheckPanel({
           <span>{t("printCheck.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="printCheck" />
           <button type="button" aria-label={t("printCheck.close")} onClick={onClose}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{scope}</strong>
-        <span>{t("printCheck.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={scope} />
+        <ToolHelp>{t("printCheck.help")}</ToolHelp>
+      </ToolSection>
 
-      {/* Someone looking for the way to the printer lands here by the printer icon (Discussion #1715): say that
-          this only checks, and open the export from here. */}
-      <div className="print-check-export">
-        <span>{t("printCheck.exportHint", { shortcut: localShortcut(COMMAND_SHORTCUTS.export) })}</span>
-        <button type="button" className="print-check-show" onClick={onExport}>
-          <Download size={14} aria-hidden="true" />
-          {t("printCheck.openExport")}
-        </button>
-      </div>
+      <ToolSection title={t("toolSidebar.settings")}>
+        {/* Someone looking for the way to the printer lands here by the printer icon (Discussion #1715): say that
+            this only checks, and open the export from here. */}
+        <div className="print-check-export">
+          <ToolHint text={t("printCheck.exportHint", { shortcut: localShortcut(COMMAND_SHORTCUTS.export) })} />
+          <button type="button" className="print-check-show" onClick={onExport}>
+            <Download size={14} aria-hidden="true" />
+            {t("printCheck.openExport")}
+          </button>
+        </div>
+        <NozzleChoice nozzle={settings.nozzle} disabled={running} workspace={workspace} onChange={(nozzle) => onChange({ nozzle })} />
+      </ToolSection>
 
-      <NozzleChoice nozzle={settings.nozzle} disabled={running} workspace={workspace} onChange={(nozzle) => onChange({ nozzle })} />
-
+      <ToolSection title={t("printCheck.listLabel")}>
       {error ? <p className="edge-modifier-error" role="alert">{error}</p> : null}
 
       <div className="clearance-status" role="status" aria-live="polite">
         {running ? (
-          <span><LoaderCircle className="edge-modifier-spinner" size={16} aria-hidden="true" />{t("printCheck.running")}</span>
+          <ToolStatus state="working" text={t("printCheck.running")} />
         ) : stale ? (
           <button type="button" className="clearance-stale" onClick={onCheck}><RefreshCw size={15} aria-hidden="true" />{t("printCheck.stale")}</button>
         ) : summary ? (
-          <span>{summary}</span>
+          <ToolStatus state={warnings > 0 ? "needed" : "ready"} text={summary} />
         ) : null}
       </div>
 
@@ -370,13 +375,11 @@ export function PrintCheckPanel({
           {result.joined ? "" : ` ${t("printCheck.notJoined")}`}
         </p>
       ) : null}
+      </ToolSection>
 
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onClose}>{t("printCheck.close")}</button>
-        <button type="button" className="primary" disabled={running} onClick={onCheck}>
-          <RefreshCw size={17} aria-hidden="true" />
-          {result ? t("printCheck.checkAgain") : t("printCheck.check")}
-        </button>
+        <ToolCancel label={t("printCheck.close")} onClick={onClose} />
+        <ToolApply label={result ? t("printCheck.checkAgain") : t("printCheck.check")} busy={running} busyLabel={t("printCheck.running")} disabled={running} onClick={onCheck} />
       </div>
       </>)}
     </MovableToolPanel>

@@ -1,13 +1,14 @@
 "use client";
 
-import { AlertOctagon, AlertTriangle, Check, ChevronDown, ChevronUp, CircleCheck, Layers, LoaderCircle, Pause, Play, RefreshCw, Square, Wrench, X } from "lucide-react";
+import { AlertOctagon, AlertTriangle, ChevronDown, ChevronUp, CircleCheck, Layers, Pause, Play, RefreshCw, Square, Wrench, X } from "lucide-react";
 import { useEffect, useMemo, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { formatClearanceLength } from "@/components/workplane/ClearancePanel";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { findingKindName, findingLine, findingRemedy } from "@/components/workplane/findingText";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { formatPrintCheckArea } from "@/components/workplane/PrintCheckPanel";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { formatEstimateNumber } from "@/lib/editorBooleans";
 import { countFindings, filterFindings, type Finding, type FindingKind } from "@/lib/findings";
 import { t } from "@/lib/i18n";
@@ -264,7 +265,7 @@ export function LayerCheckPanel({
   );
 
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel clearance-panel layer-check-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel clearance-panel layer-check-panel" ariaLabel={title} dock="alone" onClose={onClose}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -272,17 +273,18 @@ export function LayerCheckPanel({
           <span>{t("layerCheck.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="layerCheck" />
           <button type="button" aria-label={t("layerCheck.close")} onClick={onClose}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{scope}</strong>
-        <span>{t("layerCheck.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={scope} />
+        <ToolHelp>{t("layerCheck.help")}</ToolHelp>
+      </ToolSection>
 
-      <>
+      <ToolSection title={t("toolSidebar.settings")}>
         {slider("layerHeight", 0.01)}
         <div className="edge-modifier-field shell-openings layer-check-presets" role="group" aria-label={t("layerCheck.layerHeight")}>
           <div className="shell-opening-options">
@@ -303,25 +305,23 @@ export function LayerCheckPanel({
             ))}
           </div>
         </div>
-      </>
-      <details className="edge-modifier-field">
-          <summary>{t("layerCheck.advanced")}</summary>
+      </ToolSection>
+      <ToolAdvanced tool="layerCheck" summary={t("layerCheck.advanced")}>
         {slider("overhangHint", 1, "°")}
         {slider("overhangProblem", 1, "°")}
         {slider("bridgeSpan", 0.5)}
         {slider("minWall", 0.05)}
-        <span className="shell-openings-summary">{t("layerCheck.minWallHint", { wall: length(2 * settings.nozzle) })}</span>
+        <ToolHint text={t("layerCheck.minWallHint", { wall: length(2 * settings.nozzle) })} />
         {slider("smallIsland", 0.1, "mm²")}
         {slider("minArea", 0.01, "mm²")}
-      </details>
+      </ToolAdvanced>
 
-      <div className="edge-modifier-field tool-plain-section">
-          <strong>{t("layerCheck.listLabel")}</strong>
+      <ToolSection title={t("layerCheck.listLabel")}>
         {state.error ? <p className="edge-modifier-error" role="alert">{state.error}</p> : null}
         <div className="clearance-status" role="status" aria-live="polite">
           {running ? (
             <div className="layer-check-progress">
-              <span className="shell-openings-summary" role="status"><LoaderCircle className="edge-modifier-spinner" size={15} />{t("layerCheck.running", { percent: Math.round(state.progress * 100) })}</span>
+              <ToolStatus state="working" text={t("layerCheck.running", { percent: Math.round(state.progress * 100) })} />
               <progress max={1} value={state.progress} aria-label={t("layerCheck.running", { percent: Math.round(state.progress * 100) })} />
               <button type="button" className="print-check-show" onClick={onStop}><Square size={12} aria-hidden="true" />{t("layerCheck.stop")}</button>
             </div>
@@ -330,7 +330,10 @@ export function LayerCheckPanel({
           ) : stale ? (
             <button type="button" className="clearance-stale" onClick={onCheck}><RefreshCw size={15} aria-hidden="true" />{t("layerCheck.stale")}</button>
           ) : result ? (
-            <span>{all.length ? t("layerCheck.summary", { problems: counts.problems, hints: counts.hints }) : t("layerCheck.noFindings")}</span>
+            <ToolStatus
+              state={counts.problems ? "needed" : counts.hints ? "needed" : "ready"}
+              text={all.length ? t("layerCheck.summary", { problems: counts.problems, hints: counts.hints }) : t("layerCheck.noFindings")}
+            />
           ) : null}
         </div>
 
@@ -382,12 +385,11 @@ export function LayerCheckPanel({
         ) : result && !running && !all.length ? (
           <p className="layer-check-clear"><CircleCheck size={16} aria-hidden="true" /> {t("layerCheck.noFindingsLong")}</p>
         ) : null}
-        {result?.coarsened ? <span className="shell-openings-summary">{t("layerCheck.coarsened", { mm: formatEstimateNumber(result.layerHeight, 2) })}</span> : null}
-      </div>
+        {result?.coarsened ? <ToolHint text={t("layerCheck.coarsened", { mm: formatEstimateNumber(result.layerHeight, 2) })} /> : null}
+      </ToolSection>
 
       {result && count ? (
-        <div className="edge-modifier-field tool-plain-section">
-          <strong>{t("layerCheck.view")}</strong>
+        <ToolSection title={t("layerCheck.view")}>
           <div className="layer-view-head">
             <button type="button" className={`print-check-show${view.open ? " active" : ""}`} aria-pressed={view.open} onClick={() => onView({ open: !view.open, playing: false })}>
               <Layers size={14} aria-hidden="true" />
@@ -450,21 +452,18 @@ export function LayerCheckPanel({
                   </select>
                 </label>
               </div>
-              <span className="shell-openings-summary">{t("layerCheck.view.keys")}</span>
+              <ToolHint text={t("layerCheck.view.keys")} />
               <p className="layer-check-note">{t("layerCheck.view.notSlicer")}</p>
             </div>
           ) : null}
-        </div>
+        </ToolSection>
       ) : null}
 
       {result?.unchecked.length ? <p className="clearance-hint">{t("layerCheck.unchecked", { names: result.unchecked.map((entry) => entry.name).join(", ") })}</p> : null}
 
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onClose}>{t("layerCheck.close")}</button>
-        <button type="button" className="primary" disabled={running} onClick={onCheck}>
-          {running ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
-          {running ? t("layerCheck.runningShort") : result ? t("layerCheck.checkAgain") : t("layerCheck.check")}
-        </button>
+        <ToolCancel label={t("layerCheck.close")} onClick={onClose} />
+        <ToolApply label={result ? t("layerCheck.checkAgain") : t("layerCheck.check")} busy={running} busyLabel={t("layerCheck.runningShort")} disabled={running} onClick={onCheck} />
       </div>
       </>)}
     </MovableToolPanel>

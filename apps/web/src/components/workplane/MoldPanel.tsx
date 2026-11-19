@@ -1,9 +1,10 @@
 "use client";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, LoaderCircle, X } from "lucide-react";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { numberLocale, t } from "@/lib/i18n";
 import { formatClearanceLength } from "@/components/workplane/ClearancePanel";
 import { findingKindName, findingRemedy, findingValueText } from "@/components/workplane/findingText";
@@ -102,7 +103,7 @@ export function MoldPanel({
   );
   const clearance = moldDieClearance(settings.dieMode, settings.material).toLocaleString(numberLocale());
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel mold-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel offset-panel mold-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -110,17 +111,18 @@ export function MoldPanel({
           <span>{t("mold.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="mold" />
           <button type="button" aria-label={t("mold.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span>{t("mold.help")}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready text={targetName} />
+        <ToolHelp>{t("mold.help")}</ToolHelp>
+      </ToolSection>
 
-      <>
+      <ToolSection title={t("toolSidebar.settings")}>
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("mold.kind")}>
           <span>{t("mold.kind")}</span>
           <div className="shell-opening-options">
@@ -138,34 +140,34 @@ export function MoldPanel({
               </button>
             ))}
           </div>
-          <span className="shell-openings-summary">{t(`mold.kindHint.${kind}`)}</span>
+          <ToolHint text={t(`mold.kindHint.${kind}`)} />
         </div>
 
         {kind === "twoPart" ? (<>
           {radio("castMaterial", MOLD_CAST_MATERIALS, (option) => t(`mold.castMaterial.${option}`))}
-          <span className="shell-openings-summary">{t("mold.castMaterialHint")}</span>
+          <ToolHint text={t("mold.castMaterialHint")} />
           {radio("direction", MOLD_DIRECTIONS, (option) => t(option === "auto" ? "mold.direction.auto" : `mold.direction.${option}`), (option) => {
             const rating = option === "auto" ? best : ratingOf(option);
             return rating ? t("mold.directionValue", { percent: percent(rating.undercutPercent) }) : null;
           })}
-          {best ? <span className="shell-openings-summary">{t("mold.directionHint", { direction: t(`mold.direction.${best.axis}`) })}</span> : null}
+          {best ? <ToolHint text={t("mold.directionHint", { direction: t(`mold.direction.${best.axis}`) })} /> : null}
           {settings.direction === "free" ? (<>
             {slider("openTilt", 1, t("mold.openTilt"), "°")}
             {slider("openTurn", 1, t("mold.openTurn"), "°")}
-            <span className="shell-openings-summary">{t("mold.openHint")}</span>
+            <ToolHint text={t("mold.openHint")} />
           </>) : null}
           <label className="edge-modifier-field offset-copy">
             <input type="checkbox" checked={settings.autoParting} disabled={busy} onChange={(event) => onChange({ autoParting: event.target.checked })} />
             <span>{t("mold.autoParting")}</span>
           </label>
-          {settings.autoParting ? <span className="shell-openings-summary">{t("mold.autoPartingHint")}</span> : (<>
+          {settings.autoParting ? <ToolHint text={t("mold.autoPartingHint")} /> : (<>
             {slider("parting", 1, t("mold.parting"), "%")}
-            <span className="shell-openings-summary">{t("mold.partingHint")}</span>
+            <ToolHint text={t("mold.partingHint")} />
           </>)}
           {radio("outer", MOLD_OUTERS, (option) => t(`mold.outer.${option}`))}
-          <span className="shell-openings-summary">{t(`mold.outerHint.${settings.outer}`)}</span>
+          <ToolHint text={t(`mold.outerHint.${settings.outer}`)} />
           {slider("wall", 0.5)}
-          {settings.wall < MOLD_MIN_STRONG_WALL ? <span className="shell-openings-summary">{t("mold.warning.thinWall")}</span> : null}
+          {settings.wall < MOLD_MIN_STRONG_WALL ? <ToolHint text={t("mold.warning.thinWall")} /> : null}
           {check("keys")}
           {check("sprue")}
           {check("vents", !settings.sprue)}
@@ -190,14 +192,14 @@ export function MoldPanel({
           {check("screws")}
           {settings.outer === "block" ? check("bands") : null}
           {slider("shrinkage", 0.05, t("mold.shrinkage"), "%")}
-          <span className="shell-openings-summary">{t("mold.shrinkageHint")}</span>
+          <ToolHint text={t("mold.shrinkageHint")} />
           {radio("output", MOLD_OUTPUTS, (option) => t(`mold.output.${option}`))}
-          <span className="shell-openings-summary">{t(`mold.outputHint.${settings.output}`)}</span>
+          <ToolHint text={t(`mold.outputHint.${settings.output}`)} />
         </>) : null}
 
         {kind === "box" ? (<>
           {slider("gap", 0.5)}
-          <span className="shell-openings-summary">{t("mold.gapHint")}</span>
+          <ToolHint text={t("mold.gapHint")} />
           {slider("above", 0.5)}
           {slider("wall", 0.5, t("mold.frameWall"))}
           {slider("floor", 0.5, t("mold.basePlate"))}
@@ -205,7 +207,7 @@ export function MoldPanel({
 
         {kind === "tray" ? (<>
           {slider("wall", 0.5)}
-          {settings.wall < MOLD_MIN_STRONG_WALL ? <span className="shell-openings-summary">{t("mold.warning.thinWall")}</span> : null}
+          {settings.wall < MOLD_MIN_STRONG_WALL ? <ToolHint text={t("mold.warning.thinWall")} /> : null}
           {slider("floor", 0.5)}
         </>) : null}
 
@@ -229,19 +231,18 @@ export function MoldPanel({
             </div>
           </div>
           {slider("material", 0.1)}
-          <span className="shell-openings-summary">{t(settings.dieMode === "cut" ? "mold.clearanceCut" : "mold.clearanceForm", { mm: clearance })}</span>
-          {settings.dieMode === "relief" ? <span className="shell-openings-summary">{t("mold.reliefHint")}</span> : slider("depth", 0.5)}
+          <ToolHint text={t(settings.dieMode === "cut" ? "mold.clearanceCut" : "mold.clearanceForm", { mm: clearance })} />
+          {settings.dieMode === "relief" ? <ToolHint text={t("mold.reliefHint")} /> : slider("depth", 0.5)}
           {slider("base", 0.5)}
           {check("pins")}
         </>) : null}
 
-        {kind === "twoPart" || kind === "tray" ? <span className="shell-openings-summary">{t("mold.heatHint")}</span> : null}
-        {kind === "box" ? <span className="shell-openings-summary">{t("mold.siliconeHint")}</span> : null}
-      </>
+        {kind === "twoPart" || kind === "tray" ? <ToolHint text={t("mold.heatHint")} /> : null}
+        {kind === "box" ? <ToolHint text={t("mold.siliconeHint")} /> : null}
+      </ToolSection>
 
       {kind === "twoPart" ? (
-        <details className="edge-modifier-field">
-          <summary>{t("mold.advancedTwoPart")}</summary>
+        <ToolAdvanced tool="mold" summary={t("mold.advancedTwoPart")}>
           {settings.keys ? (<>{slider("keySize", 0.5)}{slider("keyFit", 0.05)}</>) : null}
           {settings.sprue ? slider("sprueDiameter", 0.5) : null}
           {settings.sprue && settings.vents ? slider("ventDiameter", 0.5) : null}
@@ -250,20 +251,18 @@ export function MoldPanel({
           {settings.sprue ? (<>{slider("sprueShiftX", 0.5)}{slider("sprueShiftY", 0.5)}</>) : null}
           {MOLD_CAST_MATERIAL_DATA[settings.castMaterial].rigid ? slider("draftLimit", 0.5, t("mold.draftLimit"), "°") : null}
           {slider("density", 0.05, t("mold.density"), "g/cm³")}
-        </details>
+        </ToolAdvanced>
       ) : null}
       {kind === "die" ? (
-        <details className="edge-modifier-field">
-          <summary>{t("mold.advancedDie")}</summary>
-          {settings.dieMode === "form" ? (<>{slider("rounding", 0.1)}<span className="shell-openings-summary">{t("mold.roundingHint")}</span></>) : null}
+        <ToolAdvanced tool="mold" summary={t("mold.advancedDie")}>
+          {settings.dieMode === "form" ? (<>{slider("rounding", 0.1)}<ToolHint text={t("mold.roundingHint")} /></>) : null}
           {settings.pins ? (<>{slider("pinDiameter", 0.5)}{slider("pinFit", 0.05)}</>) : null}
-        </details>
+        </ToolAdvanced>
       ) : null}
 
       {kind === "twoPart" ? (
-        <div className="edge-modifier-field tool-plain-section">
-          <strong>{t("mold.analysis")}</strong>
-          {analysing && !analysis ? <span className="shell-openings-summary" role="status"><LoaderCircle className="edge-modifier-spinner" size={15} />{t("mold.analysis.running")}</span> : null}
+        <ToolSection title={t("mold.analysis")}>
+          {analysing && !analysis ? <ToolStatus state="working" text={t("mold.analysis.running")} /> : null}
           {analysis ? (
             <div className={`mold-analysis${analysing ? " stale" : ""}`} aria-live="polite">
               <p>{t("mold.analysis.outer", { x: formatEstimateNumber(analysis.outer[0], 1), y: formatEstimateNumber(analysis.outer[1], 1), z: length(analysis.outer[2]) })}</p>
@@ -273,7 +272,7 @@ export function MoldPanel({
                 : t("mold.analysis.noUndercut")}</p>
               {!analysis.findings.some((finding) => finding.kind === "airTrap") && settings.sprue ? <p>{t("mold.analysis.airOk")}</p> : null}
               {analysis.findings.length ? (
-                <ul className="layer-check-list" aria-label={t("mold.analysis")}>
+                <ul className="layer-check-list" aria-label={t("layerCheck.listLabel")}>
                   {analysis.findings.map((finding) => (
                     <li key={finding.id} className={`layer-check-row ${finding.level}`} data-kind={finding.kind}>
                       <span className="layer-check-row-text">
@@ -285,19 +284,16 @@ export function MoldPanel({
                   ))}
                 </ul>
               ) : null}
-              <span className="shell-openings-summary">{t("mold.analysis.preview")}</span>
+              <ToolHint text={t("mold.analysis.preview")} />
             </div>
           ) : null}
-        </div>
+        </ToolSection>
       ) : null}
-      {regenerateOf ? <span className="shell-openings-summary">{t("mold.regenerateHint", { name: regenerateOf })}</span> : null}
-      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <span className="shell-openings-summary" role="status"><LoaderCircle className="edge-modifier-spinner" size={15} />{t("mold.working")}</span> : null}
+      {regenerateOf ? <ToolHint text={t("mold.regenerateHint", { name: regenerateOf })} /> : null}
+      {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("mold.working")} /> : null}
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={busy} onClick={onApply}>
-          {busy ? <LoaderCircle className="edge-modifier-spinner" size={17} /> : <Check size={17} />}
-          {busy ? t("mold.working") : regenerateOf ? t("mold.regenerate") : t("mold.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={regenerateOf ? t("mold.regenerate") : t("mold.apply")} busy={busy} busyLabel={t("mold.working")} disabled={busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

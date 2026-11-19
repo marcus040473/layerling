@@ -75,7 +75,7 @@ describe("the shape library in sections (#1170)", () => {
     const panel = library();
     const headings = [...panel.querySelectorAll(".shape-library-toggle")].map((button) => button.textContent);
     expect(headings).toEqual([
-      "Basic shapes16", "Vessels, tubes & transitions4", "Holes & cut-outs5", "Connections4", "Enclosure parts3", "Mechanics & moving parts4",
+      "Basic shapes16", "Vessels, tubes & transitions4", "Holes & cut-outs5", "Connections4", "Enclosure parts4", "Mechanics & moving parts4",
       "Systems & templates2", "Lettering & signs4", "Decorative outlines4", "Helpers1",
     ]);
     expect([...panel.querySelectorAll(".shape-library-toggle")].every((button) => button.getAttribute("aria-expanded") === "true")).toBe(true);

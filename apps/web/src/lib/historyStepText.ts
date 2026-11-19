@@ -11,7 +11,7 @@ import { currentLengthUnitLabel, formatLengthMm } from "@/lib/measurementUnits";
 
 /** A decimal without the zeros a fixed accuracy pads it with: 5.00 is 5, 2.50 is 2.5; inch fractions stay. */
 function trimmed(value: string) {
-  return /^-?\d+\.\d+$/.test(value) ? value.replace(/\.?0+$/, "") : value;
+  return /^-?\d+[.,]\d+$/.test(value) ? value.replace(/[.,]?0+$/, "") : value;
 }
 
 /** The measure in the workspace's unit, or in millimetres with `millimetres` (for the AI tools). */

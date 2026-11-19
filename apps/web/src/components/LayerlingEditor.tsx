@@ -21,6 +21,7 @@ import { hingePartScope, hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
 import { GRIDFINITY_SWALLOWTAIL_KEY_THICKNESS, gridfinityHasLabelText, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlatePieceKeys, gridfinityPlatePieces, gridfinityPlateSplit, gridfinityPlateToWorld, gridfinitySceneWithKeys, gridfinitySceneWithPieces, gridfinitySwallowtailKeyCount, gridfinitySwallowtailKeyProfile, gridfinitySwallowtailKeys } from "@/lib/gridfinityGeometry";
+import { boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorMatchingLidPatch, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
 import { curvedTextPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING } from "@/lib/textGeometry";
@@ -72,7 +73,7 @@ import { SketchWorkspace, type SketchMeasurement, type SketchPrimitive, type Ske
 import { EdgeModifierPanel } from "./workplane/EdgeModifierPanel";
 import { ShellPanel } from "./workplane/ShellPanel";
 import { OffsetPanel } from "./workplane/OffsetPanel";
-import { CutOutPanel } from "./workplane/CutOutPanel";
+import { CUT_OUT_ROLE_COLORS, CutOutPanel } from "./workplane/CutOutPanel";
 import { PunchPanel } from "./workplane/PunchPanel";
 import { MAX_PUNCH_CLEARANCE, MAX_PUNCH_SEGMENTS, punchAxisBetween, punchHoleShape, punchPlan } from "@/lib/punchTool";
 import { COOKIE_CUTTER_SETTINGS_DEFAULTS, CookieCutterPanel, type CookieCutterSettings } from "./workplane/CookieCutterPanel";
@@ -88,8 +89,8 @@ import { HolePatternPanel } from "./workplane/HolePatternPanel";
 import { ThreadInsertPanel } from "./workplane/ThreadInsertPanel";
 import { CUSTOM_THREAD_INSERT, THREAD_INSERT_DEFAULT, THREAD_INSERT_SIZES, threadInsertSpec, type ThreadInsertSpec } from "@/lib/threadInsert";
 import { makeThreadInsertHole, measureThreadInsert, threadInsertSurfaceCenter, type ThreadInsertFace } from "@/lib/threadInsertGeometry";
-import { PAINT_VIEW_SIDES, paintedBodyMesh, paintedExportFaceColors, paintLassoStroke, paintSideLasso, paintStrokeAt, paintSurfaceNormalAt, rebasePaintStrokes, type PaintLassoView } from "@/lib/paintMesh";
-import { canPaintShape, DEFAULT_PAINT_TOOL, designPaintColors, normalizePaintTool, paintColors, paintStartColor, PAINT_MAX_STROKES, type PaintStroke, type PaintToolSettings } from "@/lib/paint";
+import { PAINT_VIEW_SIDES, paintBrushStroke, paintedBodyMesh, paintedExportFaceColors, paintLassoStroke, paintSideLasso, paintStrokeAt, paintSurfaceNormalAt, rebasePaintStrokes, type PaintBrushSample, type PaintLassoView } from "@/lib/paintMesh";
+import { canPaintShape, DEFAULT_PAINT_TOOL, designPaintColors, normalizePaintStroke, normalizePaintTool, paintColors, paintStartColor, PAINT_MAX_STROKES, type PaintStroke, type PaintToolSettings } from "@/lib/paint";
 import { normalizeHexColor } from "@/lib/coloredImport";
 import { PaintPanel } from "./workplane/PaintPanel";
 import { FaceToolPanel } from "./workplane/FaceToolPanel";
@@ -269,9 +270,9 @@ import { tightBendShown } from "@/lib/cadTightBends";
 import { angleAtVertex, angleBetweenFaces, formatFaceAngles, formatProtractorAngle } from "@/lib/protractor";
 import { wrapMeshAroundCylinder, type CylinderWrapError } from "@/lib/cylinderWrap";
 import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_TIMBER_BRACINGS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_PATTERNS, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_FACE_NAMES, normalizeSurfaceTextureFaces, normalizeSurfaceTextureRegion, SURFACE_TEXTURE_MAX_REGION_POINTS, surfaceTextureFacePick, surfaceTexturePickedFaceIds, surfaceTextureRegionFromLasso, toggleSurfaceTexturePickedFace, type SurfaceTextureFace, type SurfaceTextureFacePick, type SurfaceTextureRegion, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, type SurfaceTextureMask, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { useToolForBody } from "@/lib/toolSidebar";
 import { normalizeSurfaceTextureOwnImage, SURFACE_TEXTURE_OWN_IMAGE_SIZE } from "@/lib/surfaceTextureImages";
 import { SURFACE_TEXT_FONTS, surfaceTextOutline } from "@/lib/surfaceTextOutline";
-import { surfaceTextureCardStaysOpen } from "@/lib/inspectorCards";
 import { canChangeSurfaceTexture, canTextureSurface, isSurfacePatternBundle, offersSurfaceTexture, offersSurfaceTextureMask, rememberPatternColor, sceneWithSurfaceBody, shapeUnderSurfaceTexture, surfaceTextureEntry, surfaceTextureGoldShape, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureResultShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, surfaceTextureLayersToMake, surfaceTextureLayerPlaced, mergedSurfaceTextureOutcome, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
@@ -287,7 +288,7 @@ import type { AlignAxis, AlignHandleStatus, AlignSpread, AlignTarget, EdgeTreatm
 import { type MeshData, type Cuboid, type ShapeUpdatePatch, type ManifoldSolid, MIN_SHAPE_DIMENSION, resetManifoldRuntime, cleanModelDimension, getManifoldRuntime, meshForShape, meshReachAlong, formatTriangleCount, boundsForShapes, boundsForCuboids, meshAabb, boundsForPositions, quantizedPointKey, sameShapeApartFromPlacement } from "@/lib/editorMeshCore";
 import { meshPartCount } from "@/lib/meshPartCount";
 import { splitBoltOffThread } from "@/lib/geometryWorker";
-import { buildGroupedShapeOffThread, exportSolidVolumeOffThread, callOffFaceRead, faceReadInWorker, createFaceReadKeeper, faceReadPositionsOffThread, simplifyTrianglePositionsOffThread, splitShapesByPlaneOffThread, previewSplitConnectorsOffThread, articulateShapesOffThread, lidForShapesOffThread, lidTopOffThread, checkClearanceOffThread, checkPrintOffThread, moldForShapesOffThread, analyseMoldOffThread, checkLayersOffThread, subscribeGeometryBusy, warmGeometryWorker } from "@/lib/geometryWorker";
+import { buildGroupedShapeOffThread, exportSolidVolumeOffThread, callOffFaceRead, faceReadInWorker, createFaceReadKeeper, faceReadPositionsOffThread, simplifyTrianglePositionsOffThread, splitShapesByPlaneOffThread, previewSplitConnectorsOffThread, articulateShapesOffThread, lidForShapesOffThread, lidTopOffThread, moldForShapesOffThread, analyseMoldOffThread, checkClearanceOffThread, checkPrintOffThread, checkLayersOffThread, subscribeGeometryBusy, warmGeometryWorker } from "@/lib/geometryWorker";
 import { roundedAlignedValue } from "@/lib/alignRounding";
 import { buildSketchLoftFromSelection, canSketchLoft } from "@/lib/sketchLoft";
 import { alignBounds, sizeAlignmentState, sizedShapesForSelection } from "@/lib/alignSize";
@@ -2642,6 +2643,9 @@ const NO_EDGE_IDS: number[] = [];
 
 function separablePartCount(shape: WorkplaneShape) {
   if (bodyLocked(shape) || shape.hole) return 0;
+  // A vase is one body (moulded legs belong to it): counting the parts of its hundreds of thousands of triangles after
+  // every change of a setting held the editor up for a third of a second.
+  if (shape.kind === "vase" && !shape.importedMesh) return 1;
   if (shape.groupedShapes?.length && !shape.importedMesh) return shape.groupedShapes.length;
   if (!shape.importedMesh) {
     // Text stands in for itself until its font has loaded, so it is counted each time.
@@ -3032,6 +3036,17 @@ function withSelectionPivot(shape: WorkplaneShape, pivot: PivotPoint | null): Wo
 /** Where the cookie cutter panel keeps its settings for the next cutter (#982). */
 const COOKIE_CUTTER_SETTINGS_STORAGE_KEY = "layerling.cookieCutterSettings";
 
+/**
+ * A body's name in Cut out. Two of the same name ("Box" and "Box") are told apart by a number from their order in the
+ * scene, so each keeps its number when the two are swapped.
+ */
+function cutOutName(shapes: WorkplaneShape[], id: string, otherId: string) {
+  const index = shapes.findIndex((shape) => shape.id === id);
+  const otherIndex = shapes.findIndex((shape) => shape.id === otherId);
+  const shape = shapes[index];
+  if (!shape) return "";
+  return otherIndex >= 0 && shapes[otherIndex].name === shape.name ? `${shape.name} ${index < otherIndex ? 1 : 2}` : shape.name;
+}
 
 /**
  * The picture of the design as its card shows it, for the file it is saved in (#1226), or "" when the view cannot give
@@ -6240,6 +6255,21 @@ export function LayerlingEditor({
   const openSketchImagePicker = useCallback(() => {
     if (sketchTool !== "select") chooseSketchTool("select");
     sketchImageInputRef.current?.click();
+  }, [chooseSketchTool, sketchTool]);
+
+  // A drawn house to try Trace and the magnetic lasso on, put under the sketch like a picture of one's own.
+  const addSketchImageFileRef = useRef(addSketchImageFile);
+  addSketchImageFileRef.current = addSketchImageFile;
+  const addSketchExamplePicture = useCallback(async () => {
+    if (sketchTool !== "select") chooseSketchTool("select");
+    try {
+      const response = await fetch("assets/editor/trace-example/house.webp");
+      if (!response.ok) throw new Error(String(response.status));
+      const blob = await response.blob();
+      await addSketchImageFileRef.current(new File([blob], `${t("sketch.examplePictureName")}.webp`, { type: "image/webp" }));
+    } catch (error) {
+      setNotice(t("status.surfaceImageFailed", { error: error instanceof Error ? error.message : String(error) }));
+    }
   }, [chooseSketchTool, sketchTool]);
 
   const copySketchSelectionToClipboard = useCallback(() => {
@@ -11016,6 +11046,18 @@ export function LayerlingEditor({
     });
   }, []);
 
+  /** Ctrl and the wheel, or [ and ], over the view: the brush or the circle larger or smaller, to a tenth of a millimetre. */
+  const resizePaint = useCallback((factor: number) => {
+    setPaintTool((current) => {
+      if (!current) return current;
+      const grown = current.settings.diameter * factor;
+      const diameter = Math.round(grown * 10) / 10 === current.settings.diameter ? current.settings.diameter + (factor > 1 ? 0.1 : -0.1) : Math.round(grown * 10) / 10;
+      const settings = normalizePaintTool({ ...current.settings, diameter });
+      paintSettingsRef.current = settings;
+      return { ...current, settings };
+    });
+  }, []);
+
   /** A stroke onto the painted body, as a step of the history; one that finds nothing on the body is not kept. */
   const addPaintStroke = useCallback(async (stroke: PaintStroke | null) => {
     const tool = paintTool;
@@ -11053,12 +11095,40 @@ export function LayerlingEditor({
     void addPaintStroke(paintStrokeAt(source, pick.point, pick.normal, tool.settings));
   }, [addPaintStroke, paintTool]);
 
+  const paintBrush = useCallback((samples: PaintBrushSample[]) => {
+    const tool = paintTool;
+    const source = tool ? shapesRef.current.find((shape) => shape.id === tool.sourceId) : null;
+    if (!tool || !source) return;
+    void addPaintStroke(paintBrushStroke(source, samples, tool.settings));
+  }, [addPaintStroke, paintTool]);
+
   const paintLasso = useCallback((view: PaintLassoView, outline: Array<[number, number]>) => {
     const tool = paintTool;
     const source = tool ? shapesRef.current.find((shape) => shape.id === tool.sourceId) : null;
     if (!tool || !source) return;
     void addPaintStroke(paintLassoStroke(source, view, outline, tool.settings));
   }, [addPaintStroke, paintTool]);
+
+  /** Fill gaps: a stroke of its own, so Undo takes it back; none when no patch is that small. */
+  const fillPaintGaps = useCallback(() => {
+    const tool = paintTool;
+    const source = tool ? shapesRef.current.find((shape) => shape.id === tool.sourceId) : null;
+    if (!tool || !source?.paint?.length) return;
+    if (source.locked) {
+      refuseLockedSelection();
+      return;
+    }
+    const stroke = normalizePaintStroke({ mode: "gaps", size: [shapeWidth(source), source.height, shapeDepth(source)], area: tool.settings.gapArea });
+    if (!stroke) return;
+    const next = { ...source, paint: [...source.paint, stroke] };
+    const before = paintedBodyMesh(source)?.colors ?? [];
+    const after = paintedBodyMesh(next)?.colors ?? [];
+    if (before.length === after.length && before.every((color, index) => color === after[index])) {
+      setNotice(t("status.paintNoGaps"));
+      return;
+    }
+    commitShapes(shapesRef.current.map((shape) => (shape.id === source.id ? next : shape)), source.id, t("status.paintGaps"));
+  }, [commitShapes, paintTool, refuseLockedSelection]);
 
   const clearPaint = useCallback(() => {
     const source = paintTool ? shapesRef.current.find((shape) => shape.id === paintTool.sourceId) : null;
@@ -12095,8 +12165,8 @@ export function LayerlingEditor({
     return () => window.clearTimeout(timer);
   }, [exitIntersectPreview, intersectPreviewIds, shapes]);
 
-  // Another tool opens its panel where this one stands, and what it applies changes the design anyway: the check gives way,
-  // and does not open over it.
+  // Another tool opens its panel where this one stands, and what it applies changes the design anyway: the check gives way.
+  // (Opened itself, it closes the tool before it, as every tool docked in the column does.)
   const otherToolPanelOpen = Boolean(
     arrayTool || scalePercentTool || simplifyToolId || holePatternTool || faceTool || supportRibTool || stencilBridgeTool || mateTool || cookieCutterTool || flexiTool
     || lidTool || moldTool || cableTool || cutOutTool || punchTool || shellTool || deleteFaceTool || splitSession || edgeModifier,
@@ -12134,10 +12204,6 @@ export function LayerlingEditor({
       closeClearanceCheck();
       return;
     }
-    if (otherToolPanelOpen) {
-      setNotice(t("clearance.otherTool"));
-      return;
-    }
     const scope = selectedShapes.length ? selectedShapes : shapes;
     if (!clearanceSourceShapes(scope).length) {
       setNotice(t("clearance.nothing"));
@@ -12146,7 +12212,7 @@ export function LayerlingEditor({
     const settings = readClearanceSettings(getPrinterPlay());
     setClearanceTool({ settings, result: null, running: true, error: null, checked: null, scopeIds: null, activeRow: null, request: 0 });
     void runClearanceCheck(settings);
-  }, [clearanceTool, closeClearanceCheck, otherToolPanelOpen, runClearanceCheck, selectedShapes, shapes]);
+  }, [clearanceTool, closeClearanceCheck, runClearanceCheck, selectedShapes, shapes]);
 
   /** The threshold only moves the line between too tight and fine; the switch for separate parts checks again. */
   const changeClearanceSettings = useCallback((patch: Partial<ClearanceSettings>) => {
@@ -12581,8 +12647,14 @@ export function LayerlingEditor({
     setNotice(t("status.gridfinityOutlineReading"), true);
     try {
       const found = await footprintLoops([withHoleMode(source, false)]);
-      const read = found
-        ? gridfinityOutlineFromLoops(await getManifoldRuntime(), gridfinityOutlineToPlate(found.loops.map((loop) => loop.points.map((p) => ({ x: p.u, z: p.v }))), plate))
+      // A box from the box generator stands on its whole outline, floor and wall: the plate goes inside the wall.
+      const boxWall = source.kind === "boxGenerator" && found?.loops.length === 1 ? normalizeBoxGenerator({ width: source.width, depth: source.depth ?? source.width, height: source.height }, source) : null;
+      const loops = found && boxWall ? found.loops.map((loop) => {
+        const inside = boxWall.boxPart === "box" ? boxGeneratorInsideOutline(loop.points.map((p) => ({ x: p.u, z: p.v })), boxWall.boxWall) : null;
+        return inside ? { ...loop, points: inside.map((p) => ({ u: p.x, v: p.z })) } : loop;
+      }) : found?.loops;
+      const read = found && loops
+        ? gridfinityOutlineFromLoops(await getManifoldRuntime(), gridfinityOutlineToPlate(loops.map((loop) => loop.points.map((p) => ({ x: p.u, z: p.v }))), plate))
         : { error: "empty" as const };
       if ("error" in read) {
         setNotice(t(read.error === "several" ? "status.gridfinityOutlineSeveral" : "status.gridfinityOutlineNoOutline"));
@@ -13245,6 +13317,10 @@ export function LayerlingEditor({
     );
   }, [commitShapes, cylinderWrapErrorText, selectedShape, selectedShapes.length, shapes]);
 
+  // The surface texture tool, opened and closed by the button under "Modify" as by its own header. In this build it is a
+  // tool in the right column, so it is open only for the body it was started for (see useToolForBody).
+  const { open: surfaceTextureOpen, setOpen: setSurfaceTextureOpen, follow: followSurfaceTextureTool } = useToolForBody(selectedIds.length === 1 ? selectedIds[0] : null);
+
   /**
    * Lays a surface texture onto the selected body. The texture is computed on its worker; when the
    * body changed meanwhile, the result is for something else and is dropped.
@@ -13347,7 +13423,8 @@ export function LayerlingEditor({
     if (patternPart && used.patternColor) rememberPatternColor(patternPart.color);
     // The gold of cracks made before gives way; new gold comes in as a part of its own.
     commitShapes(sceneWithSurfaceBody(shapesRef.current, current.id, textured, gold), [textured.id], message);
-  }, [commitShapes, selectedShape, selectedShapes.length]);
+    followSurfaceTextureTool(current.id, textured.id);
+  }, [commitShapes, selectedShape, selectedShapes.length, followSurfaceTextureTool]);
 
   /** Takes the texture off the selected body: the body under it comes back, where the textured one stands. */
   const removeSelectedSurfaceTexture = useCallback(() => {
@@ -13363,13 +13440,37 @@ export function LayerlingEditor({
     }
     const pattern = surfacePatternLabel(selectedShape.surfaceTexture?.pattern ?? "knurl");
     commitShapes(sceneWithSurfaceBody(shapesRef.current, selectedShape.id, under, null), [under.id], t("status.surfaceRemoved", { pattern }));
-  }, [commitShapes, selectedShape, selectedShapes.length]);
+    followSurfaceTextureTool(selectedShape.id, under.id);
+  }, [commitShapes, selectedShape, selectedShapes.length, followSurfaceTextureTool]);
 
   /**
    * A Swallowtail plate's keys (#1061), laid flat in a row in front of it, 4 mm apart, as sketch bodies ready to print: one for
    * each pocket at its back and right, so that every pocket across a seam with the next plate gets one; the keys laid out
    * for it before give way. The same code the MCP's gridfinityKeys uses.
    */
+  /**
+   * A box generator box's matching lid, laid out beside it: a copy with the part set to lid, the size and height the lid
+   * needs (boxGeneratorMatchingLidPatch) and everything else the box's own, so the two fit.
+   */
+  const makeBoxLid = useCallback((boxId: string) => {
+    const box = shapesRef.current.find((shape) => shape.id === boxId);
+    if (!box || box.kind !== "boxGenerator") return;
+    if (box.locked) {
+      setNotice(t("status.objectLocked"), true);
+      return;
+    }
+    if (historyViewStateRef.current) {
+      setNotice(t("status.historyViewBlocksEdits"), true);
+      return;
+    }
+    const size = { width: shapeWidth(box), depth: shapeDepth(box), height: box.height };
+    const patch = boxGeneratorMatchingLidPatch(size, boxGeneratorFieldsOf(box));
+    const name = `${displayShapeName(box)} \u2013 ${t("boxGenerator.partLid")}`;
+    const beside = applyShapeMoveDelta(withCopyName(cloneWorkplaneShapeTreeWithFreshIds(box, "copy"), shapeNamesIn(shapesRef.current), copyNamePatterns()), { ...ZERO_MOVE_DELTA, dx: size.width / 2 + patch.width / 2 + 10 });
+    const lid = canonicalizeShape({ ...beside, ...patch, size: resizedShapeSize(patch.width, patch.depth), name });
+    commitShapes([...shapesRef.current, lid], [lid.id], t("status.boxLidMade", { name }));
+  }, [commitShapes]);
+
   const makeSwallowtailKeys = useCallback(async (plateId: string) => {
     const fail = (message: string) => {
       setNotice(message, true);
@@ -13812,16 +13913,6 @@ export function LayerlingEditor({
     };
   }, [commitShapes, historyViewState, imageCalibration, selectedReferenceImage]);
 
-  // The surface texture card, opened and closed by the button under "Modify" as by its own header. Unlike the other
-  // cards it is not kept: it starts closed and closes when another body or none is chosen (surfaceTextureCardStaysOpen).
-  const [surfaceTextureOpen, setSurfaceTextureOpen] = useState(false);
-  const surfaceTextureBody = selectedIds.length === 1 ? selectedIds[0] : null;
-  const surfaceTextureBodyRef = useRef(surfaceTextureBody);
-  useEffect(() => {
-    const before = surfaceTextureBodyRef.current;
-    surfaceTextureBodyRef.current = surfaceTextureBody;
-    if (!surfaceTextureCardStaysOpen(before, surfaceTextureBody, (id) => shapesRef.current.some((shape) => shape.id === id))) setSurfaceTextureOpen(false);
-  }, [surfaceTextureBody]);
   // Picking faces ends with the card closed, another selection, or the body changed (moved, resized, textured) - and so
   // does drawing a region.
   useEffect(() => {
@@ -13835,7 +13926,7 @@ export function LayerlingEditor({
     if (!surfaceTextureOpen || selectedIds.length !== 1 || selectedIds[0] !== surfaceRegionDraw.shapeId || body !== surfaceRegionDraw.shape) setSurfaceRegionDraw(null);
   }, [selectedIds, shapes, surfaceRegionDraw, surfaceTextureOpen]);
   const canSurfaceTexture = selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) && !bodyLocked(selectedShape);
-  const toggleSurfaceTextureTool = useCallback(() => setSurfaceTextureOpen((open) => !open), [setSurfaceTextureOpen]);
+  const toggleSurfaceTextureTool = useCallback(() => setSurfaceTextureOpen(!surfaceTextureOpen), [setSurfaceTextureOpen, surfaceTextureOpen]);
 
   const simplifyToolShape = simplifyToolId && selectedShapes.length === 1 && selectedShape?.id === simplifyToolId && offersMeshSimplify(selectedShape)
     ? selectedShape
@@ -15286,12 +15377,17 @@ export function LayerlingEditor({
         for (const [index, entry] of requested.entries()) {
           if (!entry || typeof entry !== "object") throw new Error(`strokes[${index}] must be an object`);
           const raw = entry as Record<string, unknown>;
-          const mode = raw.mode === "circle" || raw.mode === "lasso" || raw.mode === "fill" ? raw.mode : null;
-          if (!mode) throw new Error(`strokes[${index}].mode must be fill, circle or lasso`);
+          const mode = raw.mode === "circle" || raw.mode === "lasso" || raw.mode === "fill" || raw.mode === "brush" || raw.mode === "height" || raw.mode === "gaps" ? raw.mode : null;
+          if (!mode) throw new Error(`strokes[${index}].mode must be fill, circle, brush, height, lasso or gaps`);
+          if (mode === "gaps") {
+            const gaps = normalizePaintStroke({ mode: "gaps", size: [shapeWidth(target), target.height, shapeDepth(target)], area: mcpOptionalNumber(raw.area) });
+            if (gaps) strokes = [...strokes, gaps];
+            continue;
+          }
           const erase = raw.erase === true || raw.color === null;
           const color = erase ? DEFAULT_PAINT_TOOL.color : normalizeHexColor(typeof raw.color === "string" ? raw.color : undefined);
           if (!color) throw new Error(`strokes[${index}].color must be a colour as #rrggbb (or erase: true)`);
-          const settings = normalizePaintTool({ mode, color, erase, angle: mcpOptionalNumber(raw.angle), diameter: mcpOptionalNumber(raw.diameter) });
+          const settings = normalizePaintTool({ mode, color, erase, angle: mcpOptionalNumber(raw.angle), diameter: mcpOptionalNumber(raw.diameter), band: mcpOptionalNumber(raw.band), ball: raw.ball === true });
           let stroke: PaintStroke | null;
           if (mode === "lasso") {
             const side = PAINT_VIEW_SIDES.find((name) => name === raw.view);
@@ -15302,6 +15398,16 @@ export function LayerlingEditor({
             if (outline.length < 3) throw new Error(`strokes[${index}].outline needs at least three points`);
             const lasso = paintSideLasso(side, outline);
             stroke = paintLassoStroke(target, lasso.view, lasso.outline, settings);
+          } else if (mode === "brush") {
+            const path = Array.isArray(raw.path) ? raw.path.map(vec3) : [];
+            if (!path.length || path.some((point) => !point)) throw new Error(`strokes[${index}].path must be a list of points [x, y, z] on the body's surface (y is the height)`);
+            const normals = Array.isArray(raw.normals) ? raw.normals.map(vec3) : [];
+            const samples = (path as THREE.Vector3[]).map((point, at) => {
+              const normal = normals[at] ?? paintSurfaceNormalAt(target, point);
+              if (!normal || normal.lengthSq() < 1e-12) throw new Error(`strokes[${index}].path[${at}] is not on the body's surface`);
+              return { point, normal };
+            });
+            stroke = paintBrushStroke(target, samples, settings);
           } else {
             const point = vec3(raw.point);
             if (!point) throw new Error(`strokes[${index}].point must be [x, y, z] on the body's surface (y is the height)`);
@@ -20115,6 +20221,7 @@ export function LayerlingEditor({
         sketchShapeOptions={sketchShapeOptions}
         onSketchShapeOptions={setSketchShapeOptions}
         onSketchImage={openSketchImagePicker}
+        onSketchExample={addSketchExamplePicture}
         onSketchCopy={copySketchSelectionToClipboard}
         onSketchPaste={pasteSketchSelection}
         onSketchDuplicate={duplicateSketchSelection}
@@ -20469,6 +20576,7 @@ export function LayerlingEditor({
           onShapeContextMenu={historyViewState ? undefined : openShapeContextMenu}
           highlightIds={clearanceHighlightIds ?? menuHighlightIds}
           clearanceMark={clearanceMark}
+          roleHighlights={cutOutTool ? [{ id: cutOutTool.partId, color: CUT_OUT_ROLE_COLORS.part }, { id: cutOutTool.hostId, color: CUT_OUT_ROLE_COLORS.host }] : undefined}
           printCheckView={printCheckView ?? layerFocusView ?? moldUndercutView}
           layerView={layerView}
           moldPreview={moldPreview}
@@ -20503,6 +20611,7 @@ export function LayerlingEditor({
           onSurfaceRegionDraw={selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) ? drawSurfaceRegion : undefined}
           onSurfaceRegionLasso={surfaceRegionLasso}
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
+          onMakeBoxLid={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLid(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
           onBoltSplit={selectedShapes.length === 1 && selectedShape && boltSplitFits(selectedShape) && !historyViewState ? (pins) => void splitBoltForPrint(selectedShape.id, { pins }) : undefined}
           onGridfinitySplit={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && !historyViewState ? () => void splitGridfinityPlate(selectedShape.id) : undefined}
@@ -20560,8 +20669,18 @@ export function LayerlingEditor({
             : null}
           onMatePointPick={pickMatePoint}
           onMateFacePick={threadInsertTool ? (pick)=>void pickThreadInsertFace(pick) : mateTool ? pickMateFace : faceTool ? (pick) => void pickFaceToolFace(pick) : supportRibTool ? (pick) => void pickSupportRibFace(pick) : (pick) => void pickHolePatternFace(pick)}
-          paintPick={paintTool && !historyViewState ? { shapeId: paintTool.sourceId, mode: paintTool.settings.mode } : null}
+          paintPick={paintTool && !historyViewState ? {
+            shapeId: paintTool.sourceId,
+            mode: paintTool.settings.mode,
+            color: paintTool.settings.erase ? null : paintTool.settings.color,
+            diameter: paintTool.settings.diameter,
+            pressure: paintTool.settings.pressure,
+            smooth: paintTool.settings.smooth,
+            band: paintTool.settings.band,
+          } : null}
           onPaintPick={paintAtPick}
+          onPaintBrush={paintBrush}
+          onPaintResize={resizePaint}
           onPaintLasso={paintLasso}
           cadFacePick={historyViewState ? null : cadFacePick}
           onCadFacePick={deleteFaceTool ? toggleDeleteFace : toggleSurfaceFace}
@@ -20866,6 +20985,7 @@ export function LayerlingEditor({
           workspace={workspaceSettings}
           onChange={changePaintSettings}
           onClear={clearPaint}
+          onFillGaps={fillPaintGaps}
           onClose={() => {
             setPaintTool(null);
             setNotice(t("status.paintClosed"));
@@ -21052,8 +21172,8 @@ export function LayerlingEditor({
       ) : null}
       {cutOutTool ? (
         <CutOutPanel
-          partName={shapesRef.current.find((shape) => shape.id === cutOutTool.partId)?.name ?? ""}
-          hostName={shapesRef.current.find((shape) => shape.id === cutOutTool.hostId)?.name ?? ""}
+          partName={cutOutName(shapesRef.current, cutOutTool.partId, cutOutTool.hostId)}
+          hostName={cutOutName(shapesRef.current, cutOutTool.hostId, cutOutTool.partId)}
           clearance={cutOutTool.clearance}
           workspace={workspaceSettings}
           busy={cutOutTool.busy}

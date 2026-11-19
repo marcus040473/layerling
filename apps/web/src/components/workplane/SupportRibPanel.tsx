@@ -1,8 +1,9 @@
 "use client";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, X } from "lucide-react";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolAdvanced, ToolApply, ToolCancel, ToolSection, ToolSelection } from "@/components/workplane/ToolPanelParts";
+import { X } from "lucide-react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { numberLocale, t } from "@/lib/i18n";
 import type { MessageKey } from "@/lib/messages.en";
@@ -64,7 +65,7 @@ export function SupportRibPanel({
   );
 
   return (
-    <MovableToolPanel className="edge-modifier-panel support-rib-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel support-rib-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -72,24 +73,30 @@ export function SupportRibPanel({
           <span>{t("supportRib.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="supportRib" />
           <button type="button" aria-label={t("supportRib.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{status}</span>
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={ready} confirm text={targetName} detail={status} />
+      </ToolSection>
 
+      <ToolSection title={t("toolSidebar.settings")}>
       {slider("nozzle", t("supportRib.nozzle"), settings.nozzle, 0.1, 1.2, 0.05)}
       {slider("layerHeight", t("supportRib.layerHeight"), settings.layerHeight, 0.04, 0.6, 0.02)}
       {slider("firstLayer", t("supportRib.firstLayer"), settings.firstLayer, 0.04, 1, 0.02)}
       {slider("height", t("supportRib.height"), face ? supportRibHeight(face, settings) : settings.height ?? 10, 1, maxHeight, 0.5)}
       {slider("bridgeSpacing", t("supportRib.bridgeSpacing"), settings.bridgeSpacing, settings.layerHeight, 20, settings.layerHeight)}
 
-      <details className="edge-modifier-field">
-        <summary>{t("supportRib.more")}</summary>
+      <label className="edge-modifier-check" title={t("supportRib.bundleHint")}>
+        <input type="checkbox" checked={settings.bundle} onChange={(event) => onChange({ bundle: event.currentTarget.checked })} />
+        <span>{t("supportRib.bundle")}</span>
+      </label>
+      </ToolSection>
+
+      <ToolAdvanced tool="supportRib" summary={[t("supportRib.thickness"), t("supportRib.gap"), t("supportRib.bridgeWidth"), t("supportRib.footWidth")].join(", ")}>
         {slider("thickness", t("supportRib.thickness"), measures.thickness, 0.2, 5, 0.05, t("supportRib.derivedHint"))}
         {slider("gap", t("supportRib.gap"), measures.gap, 0.05, 2, 0.05, t("supportRib.derivedHint"))}
         {slider("bridgeWidth", t("supportRib.bridgeWidth"), measures.bridgeWidth, 0.1, 2, 0.05, t("supportRib.derivedHint"))}
@@ -98,21 +105,11 @@ export function SupportRibPanel({
         {slider("footWidth", t("supportRib.footWidth"), settings.footWidth, 1, 40, 0.5)}
         {slider("filletRadius", t("supportRib.filletRadius"), settings.filletRadius, 0, 5, 0.1)}
         {slider("topRadius", t("supportRib.topRadius"), settings.topRadius, 0, 5, 0.1)}
-      </details>
-
-      <label className="edge-modifier-check" title={t("supportRib.bundleHint")}>
-        <input type="checkbox" checked={settings.bundle} onChange={(event) => onChange({ bundle: event.currentTarget.checked })} />
-        <span>{t("supportRib.bundle")}</span>
-      </label>
+      </ToolAdvanced>
 
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>
-          {ready ? t("supportRib.repick") : t("common.cancel")}
-        </button>
-        <button type="button" className="primary" disabled={!ready || !plan || Boolean(problem) || busy} onClick={onApply}>
-          <Check size={17} />
-          {t("supportRib.apply")}
-        </button>
+        <ToolCancel label={ready ? t("supportRib.repick") : undefined} back={ready} onClick={ready ? onRepick : onCancel} />
+        <ToolApply label={t("supportRib.apply")} busy={busy} disabled={!ready || !plan || Boolean(problem) || busy} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

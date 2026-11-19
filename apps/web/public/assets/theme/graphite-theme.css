@@ -1197,6 +1197,33 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .model-scale-result {
   stroke: #d3710c;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .paint-brush-overlay line,
+:where(html[data-theme="dark"][data-palette="graphite"]) .paint-brush-overlay circle {
+  stroke: currentColor;
+  fill: currentColor;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .paint-magnet-overlay polyline {
+  fill: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .paint-magnet-overlay polyline.laid {
+  stroke: #d3710c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .paint-magnet-overlay polyline.ahead {
+  stroke: #d3710c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .paint-magnet-overlay circle {
+  fill: #ffffff;
+  stroke: #d3710c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .paint-magnet-overlay circle.first {
+  fill: #f0f0f0;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .shell-opening-options button.active {
   color: #9f5508;
   background: #f0f0f0;
@@ -4329,14 +4356,16 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .rotation-angle-badge {
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .edit-sketch-button,
-:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .inspector-action-button {
+:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .inspector-action-button,
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-panel .inspector-action-button {
   color: #4c4c4c;
   background: #ffffff;
   border: 1px solid #c4c4c4;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .edit-sketch-button:hover:not(:disabled),
-:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .inspector-action-button:hover:not(:disabled) {
+:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector .inspector-action-button:hover:not(:disabled),
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-panel .inspector-action-button:hover:not(:disabled) {
   color: #98540d;
   background: #f3f3f3;
   border-color: #d1995e;
@@ -4690,6 +4719,350 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .mesh-compare-actions .
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-notes {
   color: #585858;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs {
+  background: #e6e6e6;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs button {
+  color: #525252;
+  background: transparent;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs button:hover {
+  color: #945717;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs button.active {
+  color: #ffffff;
+  background: #e0821f;
+  box-shadow: 0 1px 3px rgba(120, 64, 8, 0.25);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tabs button:focus-visible,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button:focus-visible,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-presets button:focus-visible,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-section-header:focus-visible {
+  outline: 2px solid #c96f12;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles-label {
+  color: #5e5e5e;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button {
+  color: #5a5a5a;
+  background: #f9f9f9;
+  border: 1px solid #cbcbcb;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button:hover:not(:disabled) {
+  color: #945717;
+  border-color: #cd9860;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button.selected {
+  color: #9f560b;
+  background: #f0f0f0;
+  border-color: #a96b2a;
+  box-shadow: 0 0 0 2px rgba(150, 77, 0, 0.14);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tile-picture {
+  background: #dfdfdf;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-profile-picture path {
+  fill: #dcdcdc;
+  stroke: currentColor;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-tiles button.selected .vase-profile-picture path {
+  fill: #d3d3d3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-more-body {
+  border-left: 2px solid #dcdcdc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-head {
+  color: #5e5e5e;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-head small {
+  color: #757575;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-outline {
+  fill: #e7e7e7;
+  stroke: #7a7a7a;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-band {
+  fill: #e0821f;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track {
+  --vase-track: #dbdbdb;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track::before {
+  background: linear-gradient(to right, var(--vase-track) var(--from), #e0821f var(--from), #e0821f var(--to), var(--vase-track) var(--to));
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input {
+  background: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input::-webkit-slider-runnable-track {
+  background: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input::-moz-range-track {
+  background: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input::-webkit-slider-thumb {
+  background: #ffffff;
+  border: 3px solid #e0821f;
+  box-shadow: 0 1px 3px rgba(54, 54, 54, 0.3);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input::-moz-range-thumb {
+  background: #ffffff;
+  border: 3px solid #e0821f;
+  box-shadow: 0 1px 3px rgba(54, 54, 54, 0.3);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-track input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #c96f12;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-numbers label {
+  color: #676767;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-number input {
+  color: var(--foreground);
+  background: #ffffff;
+  border: 1px solid #cccccc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-number small {
+  color: #757575;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-presets button {
+  color: #575757;
+  background: #ffffff;
+  border: 1px solid #cccccc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-zone-presets button.active {
+  color: #ffffff;
+  background: #e0821f;
+  border-color: #c96f12;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-neck-hint {
+  background: #efefef;
+  border: 1px solid #c2c2c2;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-line {
+  color: #5e5e5e;
+  border-top: 1px solid #dcdcdc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-badge {
+  border: 1px solid transparent;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-dot {
+  background: currentColor;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-badge.fine,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-verdict.fine {
+  color: #1f7a45;
+  background: #e3f4e9;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-badge.supports,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-verdict.supports {
+  color: #a35a00;
+  background: #e8e8e8;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-badge.notes,
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-verdict.notes {
+  color: #525252;
+  background: #e6e6e6;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-print-block {
+  border-top: 1px solid #dcdcdc;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-section {
+  border: 1px solid #d5d5d5;
+  background: #fbfbfb;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-section-header {
+  color: #525252;
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-section-header small {
+  color: #757575;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-leaf-editor svg {
+  background: #efefef;
+  border: 1px solid #d5d5d5;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-leaf-axis {
+  stroke: #bababa;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-leaf-outline {
+  fill: #d7d7d7;
+  stroke: #6c6c6c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-leaf-point {
+  fill: #ffffff;
+  stroke: #e0821f;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-link-button {
+  color: #b0640f;
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .vase-link-button:disabled {
+  color: #a6a6a6;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tabs {
+  background: #262626;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tabs button {
+  color: #c8c8c8;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tabs button.active {
+  color: #ffffff;
+  background: #c96f12;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles-label,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-head,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-line,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-numbers label {
+  color: #c8c8c8;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles button {
+  color: #a8a8a8;
+  background: #1f1f1f;
+  border-color: #4c4c4c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles button:hover:not(:disabled) {
+  color: #ededed;
+  border-color: #5c5c5c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles button.selected {
+  color: #ee9538;
+  background: #282828;
+  border-color: #cc8031;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-profile-picture path {
+  fill: #313131;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-tiles button.selected .vase-profile-picture path {
+  fill: #5a3d1d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-more-body,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-line,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-block {
+  border-color: #3d3d3d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-outline {
+  fill: #272727;
+  stroke: #757575;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-track {
+  --vase-track: #3d3d3d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-number input,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-presets button {
+  color: #e0e0e0;
+  background: #202020;
+  border-color: #4c4c4c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-zone-presets button.active {
+  color: #ffffff;
+  background: #c96f12;
+  border-color: #e0821f;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-neck-hint {
+  background: #272727;
+  border-color: #7a5320;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-badge.fine,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-verdict.fine {
+  color: #7fdca3;
+  background: #173323;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-badge.supports,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-verdict.supports {
+  color: #f3b766;
+  background: #2a2a2a;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-badge.notes,
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-print-verdict.notes {
+  color: #c8c8c8;
+  background: #262626;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-section {
+  background: #1c1c1c;
+  border-color: #3d3d3d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-section-header {
+  color: #d3d3d3;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-leaf-editor svg {
+  background: #202020;
+  border-color: #3d3d3d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .vase-leaf-outline {
+  fill: #3b3b3b;
+  stroke: #8f8f8f;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .text-layers-body .text-layers-names {
@@ -6597,14 +6970,16 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector.floati
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .edit-sketch-button,
-html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .inspector-action-button {
+html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .inspector-action-button,
+html[data-theme="dark"]:where([data-palette="graphite"]) .surface-panel .inspector-action-button {
   color: #e0e0e0;
   background: #202020;
   border-color: #4c4c4c;
 }
 
 html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .edit-sketch-button:hover:not(:disabled),
-html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .inspector-action-button:hover:not(:disabled) {
+html[data-theme="dark"]:where([data-palette="graphite"]) .shape-inspector .inspector-action-button:hover:not(:disabled),
+html[data-theme="dark"]:where([data-palette="graphite"]) .surface-panel .inspector-action-button:hover:not(:disabled) {
   color: #ededed;
   background: #313131;
   border-color: #5c5c5c;
@@ -8291,6 +8666,579 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .interactive-help-more 
   color: #ffc784;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel.docked {
+  background: rgba(246, 246, 246, 0.99);
+  border-color: #e0e0e0;
+  box-shadow: -2px 0 10px rgba(64, 64, 64, 0.08);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-sidebar-tabs {
+  background: inherit;
+  border-bottom: 1px solid #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-sidebar-tabs button {
+  color: #636363;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-sidebar-tabs button[aria-selected="true"] {
+  color: #6d3f0b;
+  border-bottom-color: #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-sidebar-tabs button:focus-visible {
+  outline: 2px solid #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-section {
+  border-top: 1px solid #e4e4e4;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-section-title {
+  color: #393939;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection {
+  color: #404040;
+  background: #f8f8f8;
+  border: 1px solid #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.neutral {
+  background: #f8f8f8;
+  border-color: #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.neutral .tool-selection-mark {
+  color: #565656;
+  background: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.confirmed {
+  background: #f1f7ef;
+  border-color: #cfe2c8;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.needed {
+  background: #f4f4f4;
+  border-color: #c7c7c7;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-mark {
+  color: white;
+  background: #767676;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection.confirmed .tool-selection-mark {
+  background: #3f8a4b;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-text small {
+  color: #565656;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-advanced {
+  border-top: 1px solid #e4e4e4;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-advanced > summary {
+  color: #404040;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-advanced-summary {
+  color: #636363;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-advanced > summary:focus-visible {
+  outline: 2px solid #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status {
+  color: #515151;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status-icon {
+  color: #3f8a4b;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status.working .tool-status-icon {
+  color: #636363;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status.needed {
+  color: #85560a;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-status.needed .tool-status-icon {
+  color: #c98a12;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-footer .primary.danger {
+  background: #c23a2f;
+  border-color: #a72e24;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-footer .primary.danger:hover:not(:disabled) {
+  background: #a72e24;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-optional-toggle {
+  color: #636363;
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-optional-toggle:hover {
+  color: #404040;
+  background: #e5e5e5;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-optional-toggle:focus-visible {
+  outline: 2px solid #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel.docked .edge-modifier-footer {
+  background: rgba(246, 246, 246, 0.99);
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel.docked,
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel.docked .edge-modifier-footer {
+  background: #242424;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel.docked {
+  border-color: #454545;
+  box-shadow: -3px 0 14px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-sidebar-tabs {
+  border-bottom-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-sidebar-tabs button {
+  color: #888888;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-sidebar-tabs button[aria-selected="true"] {
+  color: #f3a452;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-section,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-advanced {
+  border-top-color: #3e3e3e;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-section-title,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-advanced > summary {
+  color: #dedede;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection {
+  color: #e1e1e1;
+  background: #292929;
+  border-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.neutral {
+  background: #292929;
+  border-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.neutral .tool-selection-mark {
+  color: #adadad;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.confirmed {
+  background: #22301f;
+  border-color: #3f6340;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection.needed {
+  background: #2d2d2d;
+  border-color: #8a6326;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection-text small,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-advanced-summary {
+  color: #adadad;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status {
+  color: #c1c1c1;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status-icon {
+  color: #7cc184;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status.working .tool-status-icon {
+  color: #adadad;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status.needed {
+  color: #f0c46a;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-status.needed .tool-status-icon {
+  color: #f0b13c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-footer .primary.danger {
+  color: white;
+  background: #b83a30;
+  border-color: #d3564b;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-footer .primary.danger:hover:not(:disabled) {
+  background: #cf4a3f;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-optional-toggle {
+  color: #adadad;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-optional-toggle:hover {
+  color: #dedede;
+  background: #353535;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .property-card-summary {
+  color: #636363;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .property-card-summary {
+  color: #adadad;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role {
+  background: #f8f8f8;
+  border: 1px solid #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role:hover {
+  border-color: #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role-label {
+  color: #636363;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-swap {
+  color: #515151;
+  background: #fff;
+  border: 1px solid #cccccc;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .cut-out-role {
+  background: #292929;
+  border-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .cut-out-swap {
+  color: #cbcbcb;
+  background: #2d2d2d;
+  border-color: #4d4d4d;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-help > summary {
+  color: #5b5b5b;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-help-body {
+  color: #565656;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-help > summary {
+  color: #bfbfbf;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-help-body {
+  color: #adadad;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-sidebar-tabs button[aria-disabled="true"] {
+  color: #b3b3b3;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-sidebar-tabs button[aria-disabled="true"] {
+  color: #545454;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel .shell-opening-options button.active,
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel .edge-modifier-quick-actions button.active,
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel .split-axis-control button.active {
+  color: #8a4504;
+  background: #e6e6e6;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel .shell-opening-options button.active,
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel .edge-modifier-quick-actions button.active,
+html[data-theme="dark"]:where([data-palette="graphite"]) .edge-modifier-panel .split-axis-control button.active {
+  color: #ffc27a;
+  background: #333333;
+  border-color: #e08a2c;
+  box-shadow: inset 0 0 0 1px #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel input[type="checkbox"],
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel input[type="radio"],
+:where(html[data-theme="dark"][data-palette="graphite"]) .shape-inspector input[type="checkbox"] {
+  accent-color: #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .edge-modifier-panel :is(button, input, select, summary):focus-visible {
+  outline: 2px solid #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-scope {
+  color: #565656;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-action button {
+  color: #515151;
+  background: #fff;
+  border: 1px solid #c8c8c8;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-action button.active {
+  color: #8a4504;
+  background: #e6e6e6;
+  border-color: #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-selection-links {
+  color: #565656;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-secondary-action {
+  color: #9a4a1c;
+  background: none;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-hint-more {
+  color: #b45f0b;
+  background: none;
+  border: 0;
+  text-decoration: underline;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-outcome {
+  color: #515151;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-outcome svg,
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-note svg {
+  color: #696969;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-note {
+  color: #515151;
+  background: #f4f4f4;
+  border: 1px solid #d3d3d3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-stepper-control {
+  background: #fff;
+  border: 1px solid #c9c9c9;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-stepper-control button {
+  color: #515151;
+  background: #f8f8f8;
+  border: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-stepper-control button:disabled {
+  color: #b9b9b9;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tool-stepper-control input {
+  color: #454545;
+  background: transparent;
+  border: 0;
+  border-inline: 1px solid #dadada;
+  outline: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role:hover {
+  border-color: #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-swatch {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .cut-out-role-text small {
+  color: #565656;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-label {
+  color: #585858;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-trigger {
+  color: #454545;
+  background: #fff;
+  border: 1px solid #c9c9c9;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-thumbnail {
+  background: #e3e3e3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-popover {
+  background: #fff;
+  border: 1px solid #c9c9c9;
+  box-shadow: 0 12px 28px rgba(56, 56, 56, 0.22);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-search {
+  color: #636363;
+  border: 1px solid #d3d3d3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-search input {
+  color: #454545;
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-grid button {
+  color: #454545;
+  background: #f8f8f8;
+  border: 1px solid #dadada;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-grid button.selected {
+  background: #f0f0f0;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-grid button:focus-visible {
+  outline: 2px solid #e08a2c;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-check {
+  color: #fff;
+  background: #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .pattern-picker-empty {
+  color: #636363;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-section-title {
+  color: #dedede;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection-action button,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-stepper-control,
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-trigger,
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-popover {
+  color: #e1e1e1;
+  background: #292929;
+  border-color: #4d4d4d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-stepper-control button,
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-grid button {
+  color: #e1e1e1;
+  background: #2d2d2d;
+  border-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-stepper-control input,
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-search input {
+  color: #e1e1e1;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-grid button.selected {
+  background: #333333;
+  border-color: #e08a2c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-note {
+  color: #d3d3d3;
+  background: #2d2d2d;
+  border-color: #4f4f4f;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-outcome,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection-links,
+html[data-theme="dark"]:where([data-palette="graphite"]) .cut-out-role-text small,
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-selection-scope {
+  color: #c1c1c1;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-label {
+  color: #d3d3d3;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .pattern-picker-search {
+  border-color: #4d4d4d;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .tool-hint-more {
+  color: #f3a452;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-layers button {
+  color: #515151;
+  background: #f8f8f8;
+  border: 1px solid #d3d3d3;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-layers button.active {
+  color: #8a4504;
+  background: #e6e6e6;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-layers button.needed {
+  border-color: #d9a24f;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-layer-number {
+  color: #fff;
+  background: #797979;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-layers button.active .surface-layer-number {
+  background: #d97813;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .surface-layers .surface-layer-add {
+  color: #5b5b5b;
+  background: transparent;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .surface-layers button {
+  color: #e1e1e1;
+  background: #292929;
+  border-color: #434343;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .surface-layers button.active {
+  color: #ffc27a;
+  background: #333333;
+  border-color: #e08a2c;
+  box-shadow: inset 0 0 0 1px #e08a2c;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .surface-layers .surface-layer-add {
+  color: #bfbfbf;
+  background: transparent;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .plate-bar {
   color: #5a3917;
   background: #f6f6f6;
@@ -8843,6 +9791,10 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .property-card > button
   background: rgba(173, 89, 0, 0.92);
   border-color: rgba(173, 89, 0, 0.92);
   color: #fff;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .paint-panel .paint-gaps {
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08));
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .layer-check-progress progress {

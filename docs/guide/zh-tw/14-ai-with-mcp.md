@@ -145,6 +145,7 @@ AI 使用的是與你相同的功能，走的也是你在編輯器中操作時�
 | `layerling_show_overhangs` | 開啟或關閉懸垂剖面線、設定角度，並回報每個實體需要支撐的面積 |
 | `layerling_estimate_print` | 估算選取範圍或整個設計的體積、重量與線材用量：以實心實體計算，也像匯出視窗那樣以壁厚與填充做粗略估計 |
 | `layerling_check_clearance` | 列印前檢查哪些零件重疊、接觸或間距小於最小間隙，也檢查同一物件中彼此分離的零件 |
+=======
 | `layerling_printer_play` | 讀取、設定或清除印表機間隙（設定中的{{ui:workspace.printerPlay}}），並放置用來測量它的配合測試件 |
 | `layerling_check_print` | 列印前檢查會出什麼問題：對噴嘴來說過薄的壁、懸空的零件、與平台接觸過少、懸垂和開放網格 |
 | `layerling_check_layers` | 把列印件切成層，逐層列出會出問題的地方：懸垂、無支撐區域、橋接、薄壁、小島、陷入熱床的零件（列印分析） |

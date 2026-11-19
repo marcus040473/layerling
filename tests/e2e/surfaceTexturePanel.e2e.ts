@@ -43,9 +43,11 @@ type Calls = { applied: SurfaceTextureSettings[]; layers: SurfaceTextureSettings
  * The settings panel for this shape, with the surface texture card open as the editor holds it. `render` draws it again
  * with the editor's face picking as given.
  */
-function mount(shape: WorkplaneShape) {
+function mount(shape: WorkplaneShape, inEditor = false) {
   const calls: Calls = { applied: [], layers: [], removed: 0, updates: [], picks: [] };
   container = document.createElement("div");
+  // Inside an editor the texture docks as a tool in the right column (this build's tool column).
+  if (inEditor) container.className = "layerling-editor";
   document.body.appendChild(container);
   root = createRoot(container);
   const render = (picking: { surfaceFacePicking?: boolean; surfacePickedFaces?: SurfaceTextureFace[] | null } = {}) => act(() => {
@@ -136,7 +138,7 @@ describe("the surface texture card in a shape's settings", () => {
     expect(rangeNamed(panel, "Band width")?.value).toBe("2.50");
     expect(rangeNamed(panel, "Crossing band width")).toBeTruthy();
     choose(selectWith(panel, "twill22")!, "twill21");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "carbon", carbonWeave: "twill21", carbonCross: 0, spacing: 2.5, depth: 0.4, width: 0.95, direction: "outward" });
   });
 
@@ -144,7 +146,7 @@ describe("the surface texture card in a shape's settings", () => {
     const { panel, calls } = mount(cylinder);
     choosePattern(panel, "Knitting");
     expect(rangeNamed(panel, "Stitch width")?.value).toBe("5.00");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied).toHaveLength(1);
     expect(calls.applied[0]).toMatchObject({ pattern: "knit", spacing: 5, depth: 1.2, direction: "outward", profile: "round" });
     // Leaving it gives the next pattern the plain values back: knurling's spacing, not a stitch's.
@@ -179,7 +181,7 @@ describe("the surface texture card in a shape's settings", () => {
     // It goes where it is put: no projection. Faces picked take it as they take a pattern all over (#1206, #1462).
     expect(selectWith(panel, "allRound")).toBeUndefined();
     expect(button(panel, "Pick faces")).toBeDefined();
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "image", imageTiling: "once", textAround: 0, textHeight: 50 });
   });
 
@@ -193,7 +195,7 @@ describe("the surface texture card in a shape's settings", () => {
     expect(rangeNamed(panel, "Course height")?.value).toBe("4.00");
     expect(rangeNamed(panel, "Joint width")?.value).toBe("0.80");
     choose(bond, "english");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "bricks", brickBond: "english", spacing: 12, brickHeight: 4, brickJoint: 0.8, depth: 0.6, profile: "flat" });
     // Leaving bricks gives the next pattern its own spacing and profile back.
     choosePattern(panel, "Knurling");
@@ -206,7 +208,7 @@ describe("the surface texture card in a shape's settings", () => {
     const bracing = selectWith(panel, "knee")!;
     expect(bracing.value).toBe("mixed");
     expect([...bracing.options].map((option) => option.textContent)).toEqual(["None", "Braces", "St Andrew's crosses", "Corner braces", "Mixed"]);
-    expect(card(panel).textContent).toContain("Braces at the ends, then crosses and corner braces in turn towards the middle.");
+    expect(cardText(panel)).toContain("Braces at the ends, then crosses and corner braces in turn towards the middle.");
     expect(rangeNamed(panel, "Panel width")?.value).toBe("12.00");
     expect(rangeNamed(panel, "Storey height")?.value).toBe("30.00");
     expect(rangeNamed(panel, "Beam width")?.value).toBe("2.40");
@@ -221,11 +223,11 @@ describe("the surface texture card in a shape's settings", () => {
     expect(card(panel).textContent).toContain("0 %: none. Below 50 % finer: more grooves, thinner and shallower. Above 50 % stronger: two wide, deep ones.");
     type(grain, "20");
     choose(bracing, "cross");
-    expect(card(panel).textContent).toContain("An X in the panel under the lowest rail.");
-    act(() => button(panel, "More")!.click());
+    expect(cardText(panel)).toContain("An X in the panel under the lowest rail.");
+    act(() => card(panel).querySelector<HTMLButtonElement>(".name-tag-more")!.click());
     expect(rangeNamed(panel, "Groove width (%)")).toBeUndefined();
     expect(selectWith(panel, "pointed")).toBeUndefined();
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "timber", timberBracing: "cross", spacing: 12, timberHeight: 30, timberBeam: 2.4, timberRails: 1, timberGrain: 0.2, depth: 0.8, direction: "outward", keepEdges: false });
     // Leaving it gives knurling its own spacing, depth and direction back.
     choosePattern(panel, "Knurling");
@@ -240,11 +242,11 @@ describe("the surface texture card in a shape's settings", () => {
     expect(rangeNamed(panel, "Stone size")?.value).toBe("8.00");
     expect(rangeNamed(panel, "Size variation (%)")?.value).toBe("50");
     expect(rangeNamed(panel, "Roundness (%)")?.value).toBe("50");
-    expect(card(panel).textContent).toContain("0 %: broken stone with sharp edges, 100 %: rounded field stones.");
+    expect(cardText(panel)).toContain("0 %: broken stone with sharp edges, 100 %: rounded field stones.");
     expect(rangeNamed(panel, "Joint width")?.value).toBe("0.80");
     expect(rangeNamed(panel, "Arrangement")?.value).toBe("1");
     expect(selectWith(panel, "outward")?.value).toBe("outward");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "stones", spacing: 8, stoneVary: 0.5, stoneRound: 0.5, stoneJoint: 0.8, seed: 1, depth: 0.8, direction: "outward" });
   });
 
@@ -258,12 +260,13 @@ describe("the surface texture card in a shape's settings", () => {
     expect(fromBottom.checked).toBe(false);
     act(() => fromBottom.click());
     // A tile has no width of its own share: no groove width under More, and the profile tells what it makes of a tile.
-    act(() => button(panel, "More")!.click());
+    // In this build hints have a More of their own: the card's own is the one at its foot.
+    act(() => card(panel).querySelector<HTMLButtonElement>("button.name-tag-more")!.click());
     expect(rangeNamed(panel, "Groove width (%)")).toBeUndefined();
     expect(card(panel).textContent).toContain("pointed makes pyramids");
     choosePattern(panel, "Triangles");
     expect(rangeNamed(panel, "Triangle size")?.value).toBe("6.00");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "triangles", spacing: 6, tileGap: 2, tileFromBottom: true, profile: "flat", direction: "outward" });
     // Leaving them gives knurling its own spacing and direction back.
     choosePattern(panel, "Knurling");
@@ -299,7 +302,7 @@ describe("the surface texture card in a shape's settings", () => {
     choose(wood, "pine");
     expect(rangeNamed(panel, "Ring width")?.value).toBe("4.00");
     choose(selectWith(panel, "flatSawn")!, "flatSawn");
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "wood", woodType: "pine", woodCut: "flatSawn", ringWidth: 4, topFree: 0, bottomFree: 0 });
   });
 
@@ -309,7 +312,7 @@ describe("the surface texture card in a shape's settings", () => {
     const { panel, calls } = mount(textured);
     expect(patternShown(panel)).toBe("Grooves");
     expect(rangeNamed(panel, "Spacing")?.value).toBe("4.00");
-    await act(async () => button(panel, "Change texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "grooves", spacing: 4, depth: 0.5 });
     act(() => button(panel, "Remove texture")!.click());
     expect(calls.removed).toBe(1);
@@ -326,10 +329,10 @@ describe("the surface texture card in a shape's settings", () => {
     expect(card(panel).textContent).toContain("Picked faces: 1. Only they get the pattern.");
     expect(button(panel, "Done picking")).toBeDefined();
     // Picked faces say where it goes: the smooth top and bottom and the height band leave the card.
-    act(() => button(panel, "More")!.click());
+    act(() => card(panel).querySelector<HTMLButtonElement>(".name-tag-more")!.click());
     expect(rangeNamed(panel, "Top smooth to (°)")).toBeUndefined();
     expect(rangeNamed(panel, "Fade in over")).toBeDefined();
-    await act(async () => button(panel, "Apply texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.picks.at(-1)).toBeNull();
     expect(calls.applied[0].faces).toEqual([top]);
     // Every face again: none picked, and picking starts over from none.
@@ -349,29 +352,40 @@ describe("the surface texture card in a shape's settings", () => {
     expect(calls.updates.at(-1)).toEqual({ surfaceTextureMask: "exclude", transparent: true });
   });
 
+  // In this build the texture is a tool docked in the editor's right column: inside an editor, the tabs and the faces
+  // are in the tool, its selection line says where the shown layer goes.
+  const docked = (shape: WorkplaneShape) => {
+    const mounted = mount(shape, true);
+    return { ...mounted, line: () => card(mounted.panel).querySelector(".tool-selection")!.textContent ?? "" };
+  };
+
   it("puts a second pattern on faces of its own: a tab per layer, its faces asked for, every layer handed to the editor", async () => {
-    const { panel, calls, render } = mount(cylinder);
+    const { panel, calls, render, line } = docked(cylinder);
     const tabs = () => [...card(panel).querySelectorAll<HTMLButtonElement>(".surface-layers [role=tab]")];
-    const apply = () => button(panel, "Apply texture")!;
+    // The foot of the tool lies below its body, in the panel.
+    const apply = () => panel.querySelector<HTMLButtonElement>(".surface-panel .edge-modifier-footer button.primary")!;
+    // The docked tool picks its pattern by picture.
+    const trigger = () => card(panel).querySelector<HTMLButtonElement>(".pattern-picker-trigger")!;
     expect(tabs()).toHaveLength(1);
-    choosePattern(panel, "Grooves");
+    act(() => trigger().click());
+    act(() => [...card(panel).querySelectorAll<HTMLButtonElement>(".pattern-picker-grid [role=option]")].find((tile) => tile.textContent === "Grooves")!.click());
     // A new layer asks for its faces at once: picking starts with none.
-    act(() => button(panel, "Layer")!.click());
+    act(() => card(panel).querySelector<HTMLButtonElement>(".surface-layer-add")!.click());
     expect(tabs().map((tab) => tab.textContent)).toEqual(["1Grooves", "2Knurling"]);
     expect(tabs()[1].getAttribute("aria-selected")).toBe("true");
     expect(calls.picks.at(-1)).toEqual([]);
     render({ surfaceFacePicking: true, surfacePickedFaces: [] });
-    expect(card(panel).textContent).toContain("Pick the faces for this layer");
+    expect(line()).toContain("Pick the faces for this layer");
     expect(card(panel).textContent).toContain("Layer 2 has no faces yet");
     expect(apply().disabled).toBe(true);
     // The top clicked in the view belongs to the second layer; the first now takes the faces left over.
     const top: SurfaceTextureFace = { at: [0.5, 1, 0.5], normal: [0, 1, 0] };
     render({ surfaceFacePicking: true, surfacePickedFaces: [top] });
-    expect(card(panel).textContent).toContain("Picked faces: 1. Only they get the pattern.");
+    expect(line()).toContain("1 face");
     expect(apply().disabled).toBe(false);
     act(() => tabs()[0].click());
-    expect(card(panel).textContent).toContain("The pattern goes on the faces the other layers leave free.");
-    expect(patternShown(panel)).toBe("Grooves");
+    expect(line()).toContain("the other faces");
+    expect(trigger().textContent).toContain("Grooves");
     await act(async () => apply().click());
     expect(calls.applied[0]).toMatchObject({ pattern: "grooves", faces: [] });
     expect(calls.layers[0]).toHaveLength(1);
@@ -382,12 +396,12 @@ describe("the surface texture card in a shape's settings", () => {
     const grooves = normalizeSurfaceTexture({ pattern: "grooves" });
     const knurl = normalizeSurfaceTexture({ pattern: "knurl", faces: [{ at: [0.5, 1, 0.5], normal: [0, 1, 0] }] });
     const textured = surfaceTexturedShape(cylinder, textureSurfacePositions(surfaceTextureInput(cylinder), grooves, 150_000).positions, grooves, Date.now(), [knurl])!;
-    const { panel } = mount(textured);
+    const { panel, line } = docked(textured);
     const tabs = () => [...card(panel).querySelectorAll<HTMLButtonElement>(".surface-layers [role=tab]")];
     expect(tabs().map((tab) => tab.textContent)).toEqual(["1Grooves", "2Knurling"]);
     expect(card(panel).textContent).toContain("Grooves + Knurling");
     act(() => tabs()[1].click());
-    expect(card(panel).textContent).toContain("Picked faces: 1. Only they get the pattern.");
+    expect(line()).toContain("1 face");
     act(() => button(panel, "Remove this layer")!.click());
     expect(tabs().map((tab) => tab.textContent)).toEqual(["1Grooves"]);
   });
@@ -395,6 +409,12 @@ describe("the surface texture card in a shape's settings", () => {
   /** A check box of the card by its words. */
   const check = (panel: HTMLElement, name: string) => [...card(panel).querySelectorAll<HTMLLabelElement>("label.check-property")].find((row) => row.textContent === name)?.querySelector("input");
   const swatch = (panel: HTMLElement) => card(panel).querySelector<HTMLInputElement>(".surface-pattern-color input[type=color]");
+  /** This build folds a long hint after its first sentence: "More" shows the rest. */
+  const unfoldHints = (panel: HTMLElement) => act(() => card(panel).querySelectorAll<HTMLButtonElement>("button.tool-hint-more[aria-expanded=false]").forEach((more) => more.click()));
+  const cardText = (panel: HTMLElement) => {
+    unfoldHints(panel);
+    return card(panel).textContent;
+  };
 
   it("makes the pattern a part of its own in a colour of its own (Discussion #1347), raised or cut in", async () => {
     const { panel, calls } = mount(cylinder);
@@ -402,7 +422,7 @@ describe("the surface texture card in a shape's settings", () => {
     expect(swatch(panel)).toBeNull();
     act(() => check(panel, "Pattern as its own part")!.click());
     // Knurling goes into the body: the part fills the cut. It starts white against the orange body.
-    expect(card(panel).textContent).toContain("fills the cut up to the surface");
+    expect(cardText(panel)).toContain("fills the cut up to the surface");
     expect(swatch(panel)?.value).toBe("#ffffff");
     act(() => {
       swatch(panel)!.value = "#33983d";
@@ -411,10 +431,10 @@ describe("the surface texture card in a shape's settings", () => {
     expect(swatch(panel)?.value).toBe("#33983d");
     // Both ways there is no body under it: it stays one with the body.
     choose(selectWith(panel, "both")!, "both");
-    expect(card(panel).textContent).toContain("the pattern stays one with the body");
+    expect(cardText(panel)).toContain("the pattern stays one with the body");
     choose(selectWith(panel, "both")!, "outward");
-    expect(card(panel).textContent).toContain("the body stays as it was");
-    await act(async () => button(panel, "Apply texture")!.click());
+    expect(cardText(panel)).toContain("the body stays as it was");
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "knurl", direction: "outward", patternPart: true, patternColor: "#33983d" });
   });
 
@@ -438,7 +458,7 @@ describe("the surface texture card in a shape's settings", () => {
     expect(patternShown(panel)).toBe("Grooves");
     expect(check(panel, "Pattern as its own part")?.checked).toBe(true);
     expect(swatch(panel)?.value).toBe("#111111");
-    await act(async () => button(panel, "Change texture")!.click());
+    await act(async () => button(panel, "Apply")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "grooves", patternPart: true, patternColor: "#111111" });
     act(() => button(panel, "Remove texture")!.click());
     expect(calls.removed).toBe(1);

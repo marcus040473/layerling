@@ -45,7 +45,8 @@ function mount(settings: Partial<LidOptions>, neck: Neck | null) {
 
 const line = (panel: HTMLElement) => panel.querySelector(".lid-neck-fit")?.textContent ?? null;
 const fitButton = (panel: HTMLElement) => [...panel.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("Fit the body to the neck")) ?? null;
-const makeLid = (panel: HTMLElement) => [...panel.querySelectorAll<HTMLButtonElement>(".edge-modifier-footer button")].find((button) => button.textContent?.includes("Make lid"))!;
+// In the docked panel the footer's primary button is the one that makes the lid ("Apply").
+const makeLid = (panel: HTMLElement) => panel.querySelector<HTMLButtonElement>(".edge-modifier-footer button.primary")!;
 
 describe("the lid panel says whether the body fits a standard's neck before the lid is made (issue #1482)", () => {
   it("says a body too narrow for a Mason 70 neck gets only the cap, and offers to fit it", () => {

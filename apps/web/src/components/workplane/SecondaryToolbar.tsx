@@ -6,7 +6,7 @@ import { ProjectNameField } from "@/components/workplane/ProjectNameField";
 import { FOCUS_MODE_CHANGE_EVENT, FOCUS_MODE_SHORTCUT } from "@/lib/focusMode";
 import { ShapeMenuPanel } from "@/components/workplane/ShapeMenuPanel";
 import { ShapeLibraryList } from "@/components/workplane/ShapeLibraryList";
-import { AlertTriangle, ArchiveRestore, ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Check, CircleHelp, Percent, Circle as CircleIcon, Eye, EyeOff, Hexagon as HexagonIcon, ListTree, Maximize2, Minimize2, Pentagon as PentagonIcon, Pin, PinOff, Rotate3d, Route as RouteIcon, ScanEye, Search, Sparkles, Square as SquareIcon, Star as StarIcon, Triangle as TriangleIcon, X } from "lucide-react";
+import { AlertTriangle, ArchiveRestore, ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Check, CircleHelp, Percent, Circle as CircleIcon, Eye, EyeOff, Hexagon as HexagonIcon, ListTree, Maximize2, Minimize2, Pentagon as PentagonIcon, Pin, PinOff, Rotate3d, Route as RouteIcon, ScanEye, Search, Sparkles, Square as SquareIcon, Star as StarIcon, Triangle as TriangleIcon, X, House } from "lucide-react";
 import { OPEN_FILE_BACKUPS_EVENT } from "@/lib/fileBackups";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
@@ -299,6 +299,7 @@ export function SecondaryToolbar({
   sketchShapeOptions,
   onSketchShapeOptions,
   onSketchImage,
+  onSketchExample,
   onSketchCopy,
   onSketchPaste,
   onSketchDuplicate,
@@ -492,6 +493,8 @@ export function SecondaryToolbar({
   sketchShapeOptions: SketchShapeOptions;
   onSketchShapeOptions: (options: SketchShapeOptions) => void;
   onSketchImage: () => void;
+  /** Puts a drawn house under the sketch to try Trace on. */
+  onSketchExample?: () => void;
   onSketchCopy: () => void;
   onSketchPaste: () => void;
   onSketchDuplicate: () => void;
@@ -1286,6 +1289,7 @@ export function SecondaryToolbar({
         plain("shapes-panel", t("palette.openShapes"), t("sketch.group.shapes"), true, toggleShapesPanel, { icon: ToolbarShapeAddIcon, active: shapesOpen }),
         plain("sketch-select", t("sketch.select"), selectGroup, true, () => onSketchTool("select"), { icon: SKETCH_PALETTE_ICONS.select, active: sketchTool === "select" }),
         plain("sketch-image", t("sketch.addImage"), selectGroup, true, onSketchImage, { icon: SKETCH_PALETTE_ICONS.image }),
+        ...(onSketchExample ? [plain("sketch-example", t("sketch.examplePicture"), selectGroup, true, onSketchExample, { icon: SKETCH_PALETTE_ICONS.image, keywords: ["trace", "lasso", "house"] })] : []),
         plain("sketch-refine", t("sketch.refine"), selectGroup, true, () => onSketchTool("refine"), { icon: SKETCH_PALETTE_ICONS.refine, active: sketchTool === "refine" }),
         plain("sketch-chamfer", t("sketch.chamferCorner"), selectGroup, Boolean(canFilletSketchPoint), () => onSketchCornerDialog?.(sketchCornerDialog === "chamfer" ? null : "chamfer"), { icon: ToolbarChamferIcon, active: sketchCornerDialog === "chamfer" }),
         plain("sketch-fillet", t("sketch.filletCorner"), selectGroup, Boolean(canFilletSketchPoint), () => onSketchCornerDialog?.(sketchCornerDialog === "fillet" ? null : "fillet"), { icon: ToolbarFilletIcon, active: sketchCornerDialog === "fillet" }),
@@ -1765,6 +1769,17 @@ export function SecondaryToolbar({
                     >
                       <SketchReferenceIcon name="image" />
                     </button>
+                    {onSketchExample ? (
+                      <button
+                        className="toolbar-icon sketch-tool-icon sketch-example-button"
+                        type="button"
+                        aria-label={t("sketch.examplePicture")}
+                        title={t("sketch.examplePictureHint")}
+                        onClick={onSketchExample}
+                      >
+                        <House size={22} strokeWidth={2.1} aria-hidden="true" />
+                      </button>
+                    ) : null}
                     <button className={`toolbar-icon sketch-tool-icon ${sketchTool === "refine" ? "active" : ""}`} type="button" aria-label={t("sketch.refine")} title={t("sketch.refine")} onClick={() => onSketchTool("refine")}>
                       <SketchReferenceIcon name="refine" />
                     </button>

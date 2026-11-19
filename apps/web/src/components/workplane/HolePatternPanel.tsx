@@ -1,10 +1,11 @@
 "use client";
 
 import { GuideHelpLink } from "@/components/GuideHelpLink";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
-import { Check, X } from "lucide-react";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { X } from "lucide-react";
 import { useRef } from "react";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
+import { ToolApply, ToolCancel, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import {
@@ -141,8 +142,12 @@ export function HolePatternPanel({
       : t("holePattern.roundWallPart", { diameter: millimetres(wall.diameter) })
     : null;
 
+  // Holes fit and Create can make them. Their count stands with the face picked; a face still to pick, too many holes
+  // or none is said in the status line.
+  const fits = ready && !tooMany && holeCount > 0 && !customMissing;
+
   return (
-    <MovableToolPanel className="edge-modifier-panel hole-pattern-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel hole-pattern-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -150,384 +155,384 @@ export function HolePatternPanel({
           <span>{t("holePattern.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="holePattern" />
           <button type="button" aria-label={t("holePattern.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        <span role="status">{status}</span>
-        {ready && wallNote ? <span>{wallNote}</span> : null}
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={ready} confirm text={targetName} detail={!ready || fits ? status : undefined} />
+        {ready && wallNote ? <span className="shell-openings-summary">{wallNote}</span> : null}
+      </ToolSection>
 
-      {/* Two jobs, kept apart: a pattern of holes (vents, grilles) or four mounting holes in the corners, for screws. */}
-      {wall ? null : (
-        <div className="edge-modifier-field shell-openings hole-pattern-modes" role="tablist" aria-label={t("holePattern.title")}>
-          <div className="shell-opening-options">
-            {([false, true] as const).map((forMounting) => (
-              <button
-                key={String(forMounting)}
-                type="button"
-                role="tab"
-                aria-selected={mounting === forMounting}
-                className={mounting === forMounting ? "active" : ""}
-                onClick={() => {
-                  if (mounting === forMounting) return;
-                  onChange(forMounting ? { arrangement: "corners", form: "round" } : { arrangement: lastPatternRef.current });
-                }}
-              >
-                {t(forMounting ? "holePattern.mode.mounting" : "holePattern.mode.pattern")}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {mounting ? (
-        <div className="hole-pattern-mounting-title">
-          <strong>{t("holePattern.mode.mounting")}</strong>
-          <span>{t("holePattern.mounting.hint")}</span>
-        </div>
-      ) : null}
-
-      {pattern ? <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.form")}>
-        <span>{t("holePattern.form")}</span>
-        <div className="shell-opening-options hole-pattern-forms">
-          {HOLE_FORMS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.form === option}
-              className={settings.form === option ? "active" : ""}
-              onClick={() => onChange({ form: option })}
-            >
-              {t(`holePattern.form.${option}`)}
-            </button>
-          ))}
-        </div>
-      </div> : null}
-
-      {/* Own shape (#1235): a shape of the scene repeated in place of a hole; its width and depth are its room. */}
-      {custom && !customMissing ? (
-        <label className="edge-modifier-field">
-          <span>{t("holePattern.customShape")}</span>
-          <select value={settings.customId ?? ""} onChange={(event) => onChange({ customId: event.target.value })}>
-            {customChoices.map((choice) => <option key={choice.id} value={choice.id}>{choice.name}</option>)}
-          </select>
-        </label>
-      ) : null}
-
-      {/* A round hole can take a screw's head (#1232). */}
-      {settings.form === "round" ? (
-        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.holeType")}>
-          <span>{t("holePattern.holeType")}</span>
-          <div className="shell-opening-options">
-            {HOLE_TYPES.map((option) => (
-              <button
-                key={option}
-                type="button"
-                role="radio"
-                aria-checked={(settings.holeType ?? "plain") === option}
-                className={(settings.holeType ?? "plain") === option ? "active" : ""}
-                onClick={() => onChange({ holeType: option })}
-              >
-                {t(option === "plain" ? "holePattern.holeType.plain" : `shape.${option}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-      {head ? (
-        <label className="edge-modifier-field">
-          <span>{t("prop.screwHoleSize")}</span>
-          <select
-            value={screwSize ?? ""}
-            title={t(head === "counterbore" ? "prop.screwHoleSizeCounterboreHint" : "prop.screwHoleSizeCountersinkHint")}
-            onChange={(event) => {
-              if (event.target.value) onChange(holePatternScrewPatch(head, event.target.value as ScrewHoleSize));
-            }}
-          >
-            <option value="">{t("holePattern.screwSize.own")}</option>
-            {holePatternScrewSizes(head).map((size) => <option key={size} value={size}>{size}</option>)}
-          </select>
-        </label>
-      ) : null}
-
-      {custom ? null : <EdgeModifierSlider
-        label={sizeLabel}
-        value={settings.size}
-        min={HOLE_PATTERN_MIN_SIZE}
-        max={HOLE_PATTERN_MAX_SIZE / 2}
-        step={0.5}
-        workspace={workspace}
-        length
-        onChange={(value) => onChange({ size: value })}
-      />}
-      {head ? (
-        <EdgeModifierSlider
-          label={t("prop.screwHoleHead")}
-          value={holeHeadSize(settings)}
-          min={HOLE_PATTERN_MIN_SIZE}
-          max={HOLE_PATTERN_MAX_SIZE / 2}
-          step={0.1}
-          workspace={workspace}
-          length
-          onChange={(value) => onChange({ headSize: value })}
-        />
-      ) : null}
-      {head === "counterbore" ? (
-        <EdgeModifierSlider
-          label={t("prop.screwHoleHeadDepth")}
-          value={holeHeadDepth(settings)}
-          min={0.2}
-          max={Math.max(1, thickness)}
-          step={0.1}
-          workspace={workspace}
-          length
-          onChange={(value) => onChange({ headDepth: value })}
-        />
-      ) : null}
-      {twoSizes ? (
-        <EdgeModifierSlider
-          label={t("holePattern.size.height")}
-          value={settings.height}
-          min={HOLE_PATTERN_MIN_SIZE}
-          max={HOLE_PATTERN_MAX_SIZE / 2}
-          step={0.5}
-          workspace={workspace}
-          length
-          onChange={(value) => onChange({ height: value })}
-        />
-      ) : null}
-      {/* A rectangle or slot can lie at any angle in the face, counter-clockwise as seen looking at it; 0 lays its width along x. */}
-      {twoSizes ? (
-        <EdgeModifierSlider
-          label={t("holePattern.holeAngle")}
-          value={settings.holeAngle ?? 0}
-          min={-HOLE_PATTERN_MAX_HOLE_ANGLE}
-          max={HOLE_PATTERN_MAX_HOLE_ANGLE}
-          step={1}
-          decimals={1}
-          unit="°"
-          workspace={workspace}
-          onChange={(value) => onChange({ holeAngle: value })}
-        />
-      ) : null}
-      {/* Every hole sloping through the wall about the face's x, for vents that shed rain: positive puts the inner end
-          higher on a standing face. Flat faces only for now; screws with a head go in straight, an own shape stands as it is. */}
-      {!wall && holeTiltApplies(settings) ? (
-        <EdgeModifierSlider
-          label={t("holePattern.holeTilt")}
-          value={settings.holeTilt ?? 0}
-          min={-HOLE_PATTERN_MAX_HOLE_TILT}
-          max={HOLE_PATTERN_MAX_HOLE_TILT}
-          step={1}
-          decimals={1}
-          unit="°"
-          workspace={workspace}
-          onChange={(value) => onChange({ holeTilt: value })}
-        />
-      ) : null}
-      {byCount || mounting ? null : (
-        <EdgeModifierSlider
-          label={t("holePattern.spacing")}
-          value={settings.spacing}
-          min={HOLE_PATTERN_MIN_SIZE}
-          max={HOLE_PATTERN_MAX_SPACING / 2}
-          step={0.5}
-          workspace={workspace}
-          length
-          onChange={(value) => onChange({ spacing: value })}
-        />
-      )}
-      {/* A rectangle or slot spaces its rows on its own (#975): narrow holes close in the row, the rows clear of each other. */}
-      {holePatternHasRowSpacing(settings.form) && !perimeter && pattern ? (
-        <EdgeModifierSlider
-          label={t("holePattern.rowSpacing")}
-          value={holePatternRowSpacing(settings)}
-          min={HOLE_PATTERN_MIN_SIZE}
-          max={HOLE_PATTERN_MAX_SPACING / 2}
-          step={0.5}
-          workspace={workspace}
-          length
-          onChange={(value) => onChange({ rowSpacing: value })}
-        />
-      ) : null}
-      {/* The same as the spacing, said as the wall left between two holes (#239): set one and the other follows. */}
-      {byCount || mounting ? null : <EdgeModifierSlider
-        label={t("holePattern.wall")}
-        value={Math.max(HOLE_PATTERN_MIN_WALL, holePatternWall(spaced))}
-        min={HOLE_PATTERN_MIN_WALL}
-        max={HOLE_PATTERN_MAX_SPACING / 2}
-        step={0.1}
-        workspace={workspace}
-        length
-        onChange={(value) => {
-          const spacing = holePatternMinSpacing(spaced, value);
-          onChange(holePatternHasRowSpacing(settings.form)
-            ? { spacing, rowSpacing: holePatternMinRowSpacing({ ...spaced, spacing }, value) }
-            : { spacing });
-        }}
-      />}
-
-      {pattern ? <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.arrangement")}>
-        <span>{t("holePattern.arrangement")}</span>
-        <div className="shell-opening-options">
-          {arrangements.map((option) => (
-            <button
-              key={option}
-              type="button"
-              role="radio"
-              aria-checked={settings.arrangement === option}
-              className={settings.arrangement === option ? "active" : ""}
-              onClick={() => onChange({ arrangement: option })}
-            >
-              {t(`holePattern.arrangement.${option}`)}
-            </button>
-          ))}
-        </div>
-      </div> : null}
-
-      {/* Round the edge (#1232): by spacing or by number, a hole on every corner, or from a start point along the edge. */}
-      {perimeter && !wall ? (
-        <>
-          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.perimeterBy")}>
-            <span>{t("holePattern.perimeterBy")}</span>
+      <ToolSection title={t("toolSidebar.settings")}>
+        {/* Two jobs, kept apart: a pattern of holes (vents, grilles) or four mounting holes in the corners, for screws. */}
+        {wall ? null : (
+          <div className="edge-modifier-field shell-openings hole-pattern-modes" role="tablist" aria-label={t("holePattern.title")}>
             <div className="shell-opening-options">
-              {(["spacing", "count"] as const).map((option) => (
+              {([false, true] as const).map((forMounting) => (
                 <button
-                  key={option}
+                  key={String(forMounting)}
                   type="button"
-                  role="radio"
-                  aria-checked={(settings.perimeterBy ?? "spacing") === option}
-                  className={(settings.perimeterBy ?? "spacing") === option ? "active" : ""}
-                  onClick={() => onChange({ perimeterBy: option })}
+                  role="tab"
+                  aria-selected={mounting === forMounting}
+                  className={mounting === forMounting ? "active" : ""}
+                  onClick={() => {
+                    if (mounting === forMounting) return;
+                    onChange(forMounting ? { arrangement: "corners", form: "round" } : { arrangement: lastPatternRef.current });
+                  }}
                 >
-                  {t(`holePattern.perimeterBy.${option}`)}
+                  {t(forMounting ? "holePattern.mode.mounting" : "holePattern.mode.pattern")}
                 </button>
               ))}
             </div>
           </div>
-          {byCount ? (
-            <EdgeModifierSlider
-              label={t("holePattern.perimeterCount")}
-              value={settings.perimeterCount ?? 8}
-              min={HOLE_PATTERN_MIN_PERIMETER_COUNT}
-              max={Math.min(HOLE_PATTERN_MAX_PERIMETER_COUNT, 60)}
-              step={1}
-              workspace={workspace}
-              onChange={(value) => onChange({ perimeterCount: Math.round(value) })}
-            />
-          ) : null}
-          <label className="edge-modifier-check">
-            <input
-              type="checkbox"
-              checked={settings.perimeterCorners !== false}
-              onChange={(event) => onChange({ perimeterCorners: event.target.checked })}
-            />
-            <span>{t("holePattern.perimeterCorners")}</span>
+        )}
+        {mounting ? (
+          <div className="hole-pattern-mounting-title">
+            <strong>{t("holePattern.mode.mounting")}</strong>
+            <span>{t("holePattern.mounting.hint")}</span>
+          </div>
+        ) : null}
+
+        {pattern ? <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.form")}>
+          <span>{t("holePattern.form")}</span>
+          <div className="shell-opening-options hole-pattern-forms">
+            {HOLE_FORMS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={settings.form === option}
+                className={settings.form === option ? "active" : ""}
+                onClick={() => onChange({ form: option })}
+              >
+                {t(`holePattern.form.${option}`)}
+              </button>
+            ))}
+          </div>
+        </div> : null}
+
+        {/* Own shape (#1235): a shape of the scene repeated in place of a hole; its width and depth are its room. */}
+        {custom && !customMissing ? (
+          <label className="edge-modifier-field">
+            <span>{t("holePattern.customShape")}</span>
+            <select value={settings.customId ?? ""} onChange={(event) => onChange({ customId: event.target.value })}>
+              {customChoices.map((choice) => <option key={choice.id} value={choice.id}>{choice.name}</option>)}
+            </select>
           </label>
-          {/* Holes on the corners stay there; a ring without them can be turned along the edge. */}
-          {ring && !ring.onCorners ? (
-            <EdgeModifierSlider
-              label={t("holePattern.perimeterStart")}
-              value={Math.min(settings.perimeterStart ?? 0, Math.max(1, ring.length))}
-              min={0}
-              max={Math.max(1, Math.round(ring.length * 10) / 10)}
-              step={0.5}
-              workspace={workspace}
-              length
-              onChange={(value) => onChange({ perimeterStart: value })}
-            />
-          ) : null}
-        </>
-      ) : null}
+        ) : null}
 
-      <EdgeModifierSlider
-        label={t(mounting ? "holePattern.mounting.distance" : "holePattern.margin")}
-        value={settings.margin}
-        min={0}
-        max={HOLE_PATTERN_MAX_MARGIN / 2}
-        step={mounting ? 0.1 : 0.5}
-        workspace={workspace}
-        length
-        onChange={(value) => onChange({ margin: value })}
-      />
-      {/* Under the distance it belongs to: whether it counts to the holes' edge or to their middles. */}
-      {mounting ? (
-        <label className="edge-modifier-check">
-          <input type="checkbox" checked={Boolean(settings.cornerToCenter)} onChange={(event) => onChange({ cornerToCenter: event.target.checked })} />
-          <span>{t("holePattern.mounting.toCenter")}</span>
-        </label>
-      ) : null}
-      {/* More screws for a watertight lid: on a rectangle in pairs along the sides, round a circle any number. */}
-      {mounting ? (
-        <EdgeModifierSlider
-          label={t("holePattern.mounting.count")}
-          value={normalizeCornerCount(settings.cornerCount, Boolean(roundFace))}
-          min={roundFace ? MIN_ROUND_COUNT : MIN_CORNER_COUNT}
-          max={MAX_CORNER_COUNT}
-          step={roundFace ? 1 : 2}
-          workspace={workspace}
-          onChange={(value) => onChange({ cornerCount: normalizeCornerCount(value, Boolean(roundFace)) })}
-        />
-      ) : null}
-      {mounting ? <p className="hole-pattern-mounting-note">{t(roundFace ? "holePattern.mounting.roundNote" : "holePattern.mounting.countNote")}</p> : null}
-
-      {custom ? null : <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.depth")}>
-        <span>{t("holePattern.depth")}</span>
-        <div className="shell-opening-options">
-          {[true, false].map((through) => (
-            <button
-              key={String(through)}
-              type="button"
-              role="radio"
-              aria-checked={(settings.depth === null) === through}
-              className={(settings.depth === null) === through ? "active" : ""}
-              onClick={() => onChange({ depth: through ? null : Math.min(maxDepth, Math.max(1, Math.round(thickness / 2 * 2) / 2)) })}
+        {/* A round hole can take a screw's head (#1232). */}
+        {settings.form === "round" ? (
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.holeType")}>
+            <span>{t("holePattern.holeType")}</span>
+            <div className="shell-opening-options">
+              {HOLE_TYPES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={(settings.holeType ?? "plain") === option}
+                  className={(settings.holeType ?? "plain") === option ? "active" : ""}
+                  onClick={() => onChange({ holeType: option })}
+                >
+                  {t(option === "plain" ? "holePattern.holeType.plain" : `shape.${option}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {head ? (
+          <label className="edge-modifier-field">
+            <span>{t("prop.screwHoleSize")}</span>
+            <select
+              value={screwSize ?? ""}
+              title={t(head === "counterbore" ? "prop.screwHoleSizeCounterboreHint" : "prop.screwHoleSizeCountersinkHint")}
+              onChange={(event) => {
+                if (event.target.value) onChange(holePatternScrewPatch(head, event.target.value as ScrewHoleSize));
+              }}
             >
-              {t(through ? (wall ? "holePattern.depth.throughWall" : "holePattern.depth.through") : "holePattern.depth.custom")}
-            </button>
-          ))}
-        </div>
-      </div>}
-      {settings.depth !== null && !custom ? (
-        <EdgeModifierSlider
-          label={t("holePattern.depthValue")}
-          value={settings.depth}
-          min={0.5}
-          max={Math.max(maxDepth, settings.depth)}
+              <option value="">{t("holePattern.screwSize.own")}</option>
+              {holePatternScrewSizes(head).map((size) => <option key={size} value={size}>{size}</option>)}
+            </select>
+          </label>
+        ) : null}
+
+        {custom ? null : <EdgeModifierSlider
+          label={sizeLabel}
+          primary
+          value={settings.size}
+          min={HOLE_PATTERN_MIN_SIZE}
+          max={HOLE_PATTERN_MAX_SIZE / 2}
           step={0.5}
           workspace={workspace}
           length
-          onChange={(value) => onChange({ depth: value })}
+          onChange={(value) => onChange({ size: value })}
+        />}
+        {head ? (
+          <EdgeModifierSlider
+            label={t("prop.screwHoleHead")}
+            value={holeHeadSize(settings)}
+            min={HOLE_PATTERN_MIN_SIZE}
+            max={HOLE_PATTERN_MAX_SIZE / 2}
+            step={0.1}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ headSize: value })}
+          />
+        ) : null}
+        {head === "counterbore" ? (
+          <EdgeModifierSlider
+            label={t("prop.screwHoleHeadDepth")}
+            value={holeHeadDepth(settings)}
+            min={0.2}
+            max={Math.max(1, thickness)}
+            step={0.1}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ headDepth: value })}
+          />
+        ) : null}
+        {twoSizes ? (
+          <EdgeModifierSlider
+            label={t("holePattern.size.height")}
+            value={settings.height}
+            min={HOLE_PATTERN_MIN_SIZE}
+            max={HOLE_PATTERN_MAX_SIZE / 2}
+            step={0.5}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ height: value })}
+          />
+        ) : null}
+        {/* A rectangle or slot can lie at any angle in the face, counter-clockwise as seen looking at it; 0 lays its width along x. */}
+        {twoSizes ? (
+          <EdgeModifierSlider
+            label={t("holePattern.holeAngle")}
+            value={settings.holeAngle ?? 0}
+            min={-HOLE_PATTERN_MAX_HOLE_ANGLE}
+            max={HOLE_PATTERN_MAX_HOLE_ANGLE}
+            step={1}
+            decimals={1}
+            unit="°"
+            workspace={workspace}
+            onChange={(value) => onChange({ holeAngle: value })}
+          />
+        ) : null}
+        {/* Every hole sloping through the wall about the face's x, for vents that shed rain: positive puts the inner end
+            higher on a standing face. Flat faces only for now; screws with a head go in straight, an own shape stands as it is. */}
+        {!wall && holeTiltApplies(settings) ? (
+          <EdgeModifierSlider
+            label={t("holePattern.holeTilt")}
+            value={settings.holeTilt ?? 0}
+            min={-HOLE_PATTERN_MAX_HOLE_TILT}
+            max={HOLE_PATTERN_MAX_HOLE_TILT}
+            step={1}
+            decimals={1}
+            unit="°"
+            workspace={workspace}
+            onChange={(value) => onChange({ holeTilt: value })}
+          />
+        ) : null}
+        {byCount || mounting ? null : (
+          <EdgeModifierSlider
+            label={t("holePattern.spacing")}
+            value={settings.spacing}
+            min={HOLE_PATTERN_MIN_SIZE}
+            max={HOLE_PATTERN_MAX_SPACING / 2}
+            step={0.5}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ spacing: value })}
+          />
+        )}
+        {/* A rectangle or slot spaces its rows on its own (#975): narrow holes close in the row, the rows clear of each other. */}
+        {holePatternHasRowSpacing(settings.form) && !perimeter && pattern ? (
+          <EdgeModifierSlider
+            label={t("holePattern.rowSpacing")}
+            value={holePatternRowSpacing(settings)}
+            min={HOLE_PATTERN_MIN_SIZE}
+            max={HOLE_PATTERN_MAX_SPACING / 2}
+            step={0.5}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ rowSpacing: value })}
+          />
+        ) : null}
+        {/* The same as the spacing, said as the wall left between two holes (#239): set one and the other follows. */}
+        {byCount || mounting ? null : <EdgeModifierSlider
+          label={t("holePattern.wall")}
+          value={Math.max(HOLE_PATTERN_MIN_WALL, holePatternWall(spaced))}
+          min={HOLE_PATTERN_MIN_WALL}
+          max={HOLE_PATTERN_MAX_SPACING / 2}
+          step={0.1}
+          workspace={workspace}
+          length
+          onChange={(value) => {
+            const spacing = holePatternMinSpacing(spaced, value);
+            onChange(holePatternHasRowSpacing(settings.form)
+              ? { spacing, rowSpacing: holePatternMinRowSpacing({ ...spaced, spacing }, value) }
+              : { spacing });
+          }}
+        />}
+        <ToolHint text={t("holePattern.wallHint")} />
+
+        {pattern ? <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.arrangement")}>
+          <span>{t("holePattern.arrangement")}</span>
+          <div className="shell-opening-options">
+            {arrangements.map((option) => (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={settings.arrangement === option}
+                className={settings.arrangement === option ? "active" : ""}
+                onClick={() => onChange({ arrangement: option })}
+              >
+                {t(`holePattern.arrangement.${option}`)}
+              </button>
+            ))}
+          </div>
+        </div> : null}
+
+        {/* Round the edge (#1232): by spacing or by number, a hole on every corner, or from a start point along the edge. */}
+        {perimeter && !wall ? (
+          <>
+            <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.perimeterBy")}>
+              <span>{t("holePattern.perimeterBy")}</span>
+              <div className="shell-opening-options">
+                {(["spacing", "count"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={(settings.perimeterBy ?? "spacing") === option}
+                    className={(settings.perimeterBy ?? "spacing") === option ? "active" : ""}
+                    onClick={() => onChange({ perimeterBy: option })}
+                  >
+                    {t(`holePattern.perimeterBy.${option}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {byCount ? (
+              <EdgeModifierSlider
+                label={t("holePattern.perimeterCount")}
+                value={settings.perimeterCount ?? 8}
+                min={HOLE_PATTERN_MIN_PERIMETER_COUNT}
+                max={Math.min(HOLE_PATTERN_MAX_PERIMETER_COUNT, 60)}
+                step={1}
+                workspace={workspace}
+                onChange={(value) => onChange({ perimeterCount: Math.round(value) })}
+              />
+            ) : null}
+            <label className="edge-modifier-check">
+              <input
+                type="checkbox"
+                checked={settings.perimeterCorners !== false}
+                onChange={(event) => onChange({ perimeterCorners: event.target.checked })}
+              />
+              <span>{t("holePattern.perimeterCorners")}</span>
+            </label>
+            {/* Holes on the corners stay there; a ring without them can be turned along the edge. */}
+            {ring && !ring.onCorners ? (
+              <EdgeModifierSlider
+                label={t("holePattern.perimeterStart")}
+                value={Math.min(settings.perimeterStart ?? 0, Math.max(1, ring.length))}
+                min={0}
+                max={Math.max(1, Math.round(ring.length * 10) / 10)}
+                step={0.5}
+                workspace={workspace}
+                length
+                onChange={(value) => onChange({ perimeterStart: value })}
+              />
+            ) : null}
+          </>
+        ) : null}
+
+        <EdgeModifierSlider
+          label={t(mounting ? "holePattern.mounting.distance" : "holePattern.margin")}
+          value={settings.margin}
+          min={0}
+          max={HOLE_PATTERN_MAX_MARGIN / 2}
+          step={mounting ? 0.1 : 0.5}
+          workspace={workspace}
+          length
+          onChange={(value) => onChange({ margin: value })}
         />
-      ) : null}
+        {/* Under the distance it belongs to: whether it counts to the holes' edge or to their middles. */}
+        {mounting ? (
+          <label className="edge-modifier-check">
+            <input type="checkbox" checked={Boolean(settings.cornerToCenter)} onChange={(event) => onChange({ cornerToCenter: event.target.checked })} />
+            <span>{t("holePattern.mounting.toCenter")}</span>
+          </label>
+        ) : null}
+        {/* More screws for a watertight lid: on a rectangle in pairs along the sides, round a circle any number. */}
+        {mounting ? (
+          <EdgeModifierSlider
+            label={t("holePattern.mounting.count")}
+            value={normalizeCornerCount(settings.cornerCount, Boolean(roundFace))}
+            min={roundFace ? MIN_ROUND_COUNT : MIN_CORNER_COUNT}
+            max={MAX_CORNER_COUNT}
+            step={roundFace ? 1 : 2}
+            workspace={workspace}
+            onChange={(value) => onChange({ cornerCount: normalizeCornerCount(value, Boolean(roundFace)) })}
+          />
+        ) : null}
+        {mounting ? <p className="hole-pattern-mounting-note">{t(roundFace ? "holePattern.mounting.roundNote" : "holePattern.mounting.countNote")}</p> : null}
 
-      {ready && tooMany && !settings.allowMany ? (
-        <div className="edge-modifier-field">
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => {
-              // A clear warning first: far more holes make the cuts slow and the page can freeze (#941).
-              if (window.confirm(t("holePattern.allowManyAsk", { limit: HOLE_PATTERN_MAX_HOLES, many: HOLE_PATTERN_MANY_HOLES }))) onChange({ allowMany: true });
-            }}
-          >
-            {t("holePattern.allowMany")}
-          </button>
-        </div>
-      ) : null}
+        {custom ? null : <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("holePattern.depth")}>
+          <span>{t("holePattern.depth")}</span>
+          <div className="shell-opening-options">
+            {[true, false].map((through) => (
+              <button
+                key={String(through)}
+                type="button"
+                role="radio"
+                aria-checked={(settings.depth === null) === through}
+                className={(settings.depth === null) === through ? "active" : ""}
+                onClick={() => onChange({ depth: through ? null : Math.min(maxDepth, Math.max(1, Math.round(thickness / 2 * 2) / 2)) })}
+              >
+                {t(through ? (wall ? "holePattern.depth.throughWall" : "holePattern.depth.through") : "holePattern.depth.custom")}
+              </button>
+            ))}
+          </div>
+        </div>}
+        {settings.depth !== null && !custom ? (
+          <EdgeModifierSlider
+            label={t("holePattern.depthValue")}
+            value={settings.depth}
+            min={0.5}
+            max={Math.max(maxDepth, settings.depth)}
+            step={0.5}
+            workspace={workspace}
+            length
+            onChange={(value) => onChange({ depth: value })}
+          />
+        ) : null}
 
+        {ready && tooMany && !settings.allowMany ? (
+          <div className="edge-modifier-field">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                // A clear warning first: far more holes make the cuts slow and the page can freeze (#941).
+                if (window.confirm(t("holePattern.allowManyAsk", { limit: HOLE_PATTERN_MAX_HOLES, many: HOLE_PATTERN_MANY_HOLES }))) onChange({ allowMany: true });
+              }}
+            >
+              {t("holePattern.allowMany")}
+            </button>
+          </div>
+        ) : null}
+      </ToolSection>
+
+      <ToolStatus state={busy ? "working" : fits ? "ready" : "needed"} text={busy ? t("cutOut.working") : fits ? t("toolSidebar.ready") : step === "ready" ? status : t("toolSidebar.waiting")} />
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={ready ? onRepick : onCancel}>
-          {ready ? t("holePattern.repick") : t("common.cancel")}
-        </button>
-        <button type="button" className="primary" disabled={!ready || holeCount === 0 || tooMany || busy || customMissing} onClick={onApply}>
-          <Check size={17} />
-          {t("holePattern.apply")}
-        </button>
+        <ToolCancel back={ready} label={ready ? t("holePattern.repick") : undefined} onClick={ready ? onRepick : onCancel} />
+        <ToolApply label={t("holePattern.apply")} disabled={!ready || holeCount === 0 || tooMany || busy || customMissing} onClick={onApply} />
       </div>
       </>)}
     </MovableToolPanel>

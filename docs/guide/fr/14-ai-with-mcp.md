@@ -141,6 +141,7 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_show_overhangs` | active ou désactive les hachures en surplomb, définit l'angle et indique pour chaque corps la zone qui aurait besoin de supports |
 | `layerling_estimate_print` | estime le volume, le poids et le filament pour la sélection ou l'ensemble du dessin, élaboré aussi solidement que la fenêtre d'export |
 | `layerling_check_clearance` | vérifie avant l'impression quelles pièces se chevauchent, se touchent ou sont plus proches qu'un jeu minimal (Vérifier le jeu), y compris les pièces séparées d'un objet |
+=======
 | `layerling_printer_play` | lit, règle ou efface le jeu de l'imprimante ({{ui:workspace.printerPlay}} dans les réglages) et pose le test d'ajustement qui le mesure |
 | `layerling_check_print` | vérifie avant l'impression ce qui raterait : parois trop fines pour la buse, pièces en l'air, faible contact avec le plateau, surplombs et maillages ouverts (Vérifier l'impression) |
 | `layerling_check_layers` | découpe l’impression en couches et liste couche par couche ce qui irait mal : porte-à-faux, zones sans appui, ponts, parois fines, petits îlots, pièce dans le plateau (Analyse d’impression) |

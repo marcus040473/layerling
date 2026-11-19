@@ -1,9 +1,10 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { X } from "lucide-react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
-import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
+import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
+import { ToolApply, ToolCancel, ToolHelp, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
 import { formatLengthMm, formatMeasurementNumber, lengthDisplayUnit } from "@/lib/measurementUnits";
 import { MODEL_SCALE_PRESETS, MODEL_SCALE_RATIO_MAX, MODEL_SCALE_RATIO_MIN, modelScalePercent, modelScalePercentInRange, type ModelScaleAxis } from "@/lib/modelScale";
@@ -90,7 +91,7 @@ export function ScalePercentPanel({
   const percentToApply = scalePercentToApply(settings, selectionSize);
   const canApply = modelScalePercentInRange(percentToApply) && !isUnchangedPercent(percentToApply);
   return (
-    <MovableToolPanel className="edge-modifier-panel shell-panel scale-percent-panel" ariaLabel={title}>
+    <MovableToolPanel className="edge-modifier-panel shell-panel scale-percent-panel" ariaLabel={title} dock="withObject" onClose={onCancel}>
       {(handleProps) => (<>
       <div className="edge-modifier-header movable" title={t("panel.moveHint")} {...handleProps}>
         <div>
@@ -98,17 +99,19 @@ export function ScalePercentPanel({
           <span>{t("scalePercent.subtitle")}</span>
         </div>
         <div className="panel-header-actions">
+          <ToolDockToggle />
           <GuideHelpLink section="scaleByPercent" />
           <button type="button" aria-label={t("common.cancel")} onClick={onCancel}><X size={20} /></button>
         </div>
       </div>
 
-      <div className="edge-modifier-target">
-        <strong>{targetName}</strong>
-        {settings.by === "percent" ? <span>{t("scalePercent.help")}</span> : null}
-      </div>
+      <ToolSection title={t("toolSidebar.selection")}>
+        <ToolSelection ready={count > 0} text={targetName} />
+        {settings.by === "percent" ? <ToolHelp>{t("scalePercent.help")}</ToolHelp> : null}
+      </ToolSection>
 
-      <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("scalePercent.by")}>
+      <ToolSection title={t("toolSidebar.settings")}>
+        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("scalePercent.by")}>
         <div className="shell-opening-options">
           {BY.map((option) => (
             <button
@@ -128,52 +131,52 @@ export function ScalePercentPanel({
 
       {settings.by === "percent" ? (
         <EdgeModifierSlider
-          label={t("scalePercent.percent")}
-          value={settings.percent}
-          min={SCALE_PERCENT_MIN}
-          max={SCALE_PERCENT_MAX}
-          step={1}
-          coarse={{ step: 1, max: 500 }}
+            label={t("scalePercent.percent")}
+            value={settings.percent}
+            min={SCALE_PERCENT_MIN}
+            max={SCALE_PERCENT_MAX}
+            step={1}
+            coarse={{ step: 1, max: 500 }}
           decimals={2}
-          unit="%"
-          workspace={workspace}
-          autoFocus
-          onEnter={(value) => { if (!isUnchangedPercent(value)) onApply(value); }}
-          onChange={(value) => onChange({ percent: value })}
-        />
+            unit="%"
+            workspace={workspace}
+            autoFocus
+            onEnter={(value) => { if (!isUnchangedPercent(value)) onApply(value); }}
+            onChange={(value) => onChange({ percent: value })}
+          />
       ) : (
         <ModelScaleFields settings={settings} selectionSize={selectionSize} workspace={workspace} onChange={onChange} onApply={onApply} />
       )}
 
-      {count > 1 ? (
-        <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("scalePercent.mode")}>
-          <span>{t("scalePercent.mode")}</span>
-          <div className="shell-opening-options">
-            {MODES.map((option) => (
-              <button
-                key={option}
-                type="button"
-                role="radio"
-                aria-checked={settings.mode === option}
-                className={settings.mode === option ? "active" : ""}
-                title={t(`scalePercent.mode.${option}Hint`)}
-                onClick={() => onChange({ mode: option })}
-              >
-                {t(`scalePercent.mode.${option}`)}
-              </button>
-            ))}
+        {count > 1 ? (
+          <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("scalePercent.mode")}>
+            <span>{t("scalePercent.mode")}</span>
+            <div className="shell-opening-options">
+              {MODES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={settings.mode === option}
+                  className={settings.mode === option ? "active" : ""}
+                  title={t(`scalePercent.mode.${option}Hint`)}
+                  onClick={() => onChange({ mode: option })}
+                >
+                  {t(`scalePercent.mode.${option}`)}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
+      </ToolSection>
+
+      {error ? <p className="edge-modifier-error" role="alert">{error}</p> : isUnchangedPercent(settings.percent) ? (
+        <ToolStatus state="needed" text={t("toolSidebar.nothingToApply")} />
       ) : null}
 
-      {error ? <p className="edge-modifier-error" role="alert">{error}</p> : null}
-
       <div className="edge-modifier-footer">
-        <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>
-        <button type="button" className="primary" disabled={!canApply} onClick={() => onApply(percentToApply)}>
-          <Check size={17} />
-          {t("scalePercent.apply")}
-        </button>
+        <ToolCancel onClick={onCancel} />
+        <ToolApply label={t("scalePercent.apply")} disabled={!canApply} onClick={() => onApply(percentToApply)} />
       </div>
       </>)}
     </MovableToolPanel>

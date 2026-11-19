@@ -3305,6 +3305,43 @@ html[data-theme="dark"] .model-scale-result {
   stroke-linejoin: round;
 }
 
+/* A brush line being drawn: in the paint's colour, as wide as it paints, until it is laid on the body. */
+.paint-brush-overlay line,
+.paint-brush-overlay circle {
+  stroke: currentColor;
+  fill: currentColor;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+
+/* The magnetic lasso: the line laid along the edges, the way on to the pointer, and the clicks (the first one larger, to close on). */
+.paint-magnet-overlay polyline {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.paint-magnet-overlay polyline.laid {
+  stroke: #d3710c;
+}
+
+.paint-magnet-overlay polyline.ahead {
+  stroke: #d3710c;
+  stroke-dasharray: 5 4;
+  opacity: 0.8;
+}
+
+.paint-magnet-overlay circle {
+  fill: #ffffff;
+  stroke: #d3710c;
+  stroke-width: 2;
+}
+
+.paint-magnet-overlay circle.first {
+  fill: #fff1e0;
+}
+
 .shell-opening-options button.active {
   color: #9f5508;
   background: #fff1e0;
@@ -10316,7 +10353,8 @@ html[data-theme="dark"] .rotation-angle-badge {
 }
 
 .shape-inspector .edit-sketch-button,
-.shape-inspector .inspector-action-button {
+.shape-inspector .inspector-action-button,
+.surface-panel .inspector-action-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10336,14 +10374,16 @@ html[data-theme="dark"] .rotation-angle-badge {
 }
 
 .shape-inspector .edit-sketch-button:hover:not(:disabled),
-.shape-inspector .inspector-action-button:hover:not(:disabled) {
+.shape-inspector .inspector-action-button:hover:not(:disabled),
+.surface-panel .inspector-action-button:hover:not(:disabled) {
   color: #98540d;
   background: #f8f4ed;
   border-color: #d1995e;
 }
 
 .shape-inspector .edit-sketch-button:disabled,
-.shape-inspector .inspector-action-button:disabled {
+.shape-inspector .inspector-action-button:disabled,
+.surface-panel .inspector-action-button:disabled {
   opacity: 0.45;
   cursor: default;
 }
@@ -11284,6 +11324,643 @@ html[data-theme="dark"] .mesh-compare-actions .secondary {
   color: #8d6a3b;
   font-size: 12px;
   line-height: 1.4;
+}
+
+/* The vase designer: one card, three tabs (Form, Pattern, Print), tiles for body shapes, patterns and leaves, the
+   height range with two handles beside the vase's silhouette, sections that fold and the print verdict. */
+.vase-designer {
+  display: grid;
+  gap: 10px;
+}
+
+.vase-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  background: #efe7dc;
+  border-radius: 999px;
+}
+
+.vase-tabs button {
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px;
+  overflow: hidden;
+  color: #6f5d4b;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  font: 650 13px/1 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.vase-tabs button:hover {
+  color: #945717;
+}
+
+.vase-tabs button.active {
+  color: #ffffff;
+  background: #e0821f;
+  box-shadow: 0 1px 3px rgba(120, 64, 8, 0.25);
+}
+
+.vase-tabs button:focus-visible,
+.vase-tiles button:focus-visible,
+.vase-zone-presets button:focus-visible,
+.vase-section-header:focus-visible {
+  outline: 2px solid #c96f12;
+  outline-offset: 2px;
+}
+
+.vase-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.vase-tiles-group {
+  display: grid;
+  gap: 6px;
+}
+
+.vase-tiles-label {
+  color: #7d6b58;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.vase-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.vase-tiles button {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  gap: 3px;
+  padding: 5px 2px 6px;
+  color: #7a6753;
+  background: #fbf9f6;
+  border: 1px solid #d8ccbe;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 650;
+  line-height: 1.15;
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, color 120ms ease;
+}
+
+.vase-tiles button > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.vase-tiles button:hover:not(:disabled) {
+  color: #945717;
+  border-color: #cd9860;
+}
+
+.vase-tiles button.selected {
+  color: #9f560b;
+  background: #f8f1e7;
+  border-color: #a96b2a;
+  box-shadow: 0 0 0 2px rgba(150, 77, 0, 0.14);
+}
+
+.vase-tiles button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.vase-tile-picture {
+  display: block;
+  width: 100%;
+  max-width: 56px;
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: #e9e1d4;
+  image-rendering: auto;
+}
+
+.vase-leaf-tiles .vase-tile-picture {
+  max-width: 44px;
+}
+
+.vase-profile-picture {
+  display: block;
+  width: 34px;
+  height: 44px;
+}
+
+.vase-profile-picture path {
+  fill: #eadfce;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.vase-tiles button.selected .vase-profile-picture path {
+  fill: #f3d6b3;
+}
+
+.vase-contour-button {
+  margin: 0;
+}
+
+.name-tag-more.vase-more {
+  justify-self: start;
+}
+
+.vase-more-body {
+  display: grid;
+  gap: 10px;
+  padding: 2px 0 0 10px;
+  border-left: 2px solid #eadfce;
+}
+
+.vase-zone {
+  display: grid;
+  gap: 6px;
+}
+
+.vase-zone-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: #7d6b58;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.vase-zone-head small {
+  color: #9b866f;
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.vase-zone-body {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.vase-zone-silhouette {
+  width: 44px;
+  height: 72px;
+}
+
+.vase-zone-outline {
+  fill: #f1e9dd;
+  stroke: #a08c75;
+  stroke-width: 1.2;
+}
+
+.vase-zone-band {
+  fill: #e0821f;
+  opacity: 0.55;
+}
+
+.vase-zone-controls {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+/* Two range inputs on one track: only their thumbs take the pointer, the band between them is coloured. */
+.vase-zone-track {
+  position: relative;
+  height: 22px;
+  --vase-track: #e6dccf;
+}
+
+.vase-zone-track::before {
+  position: absolute;
+  top: 9px;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(to right, var(--vase-track) var(--from), #e0821f var(--from), #e0821f var(--to), var(--vase-track) var(--to));
+  border-radius: 2px;
+  content: "";
+}
+
+.vase-zone-track input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.vase-zone-track input::-webkit-slider-runnable-track {
+  height: 22px;
+  background: none;
+}
+
+.vase-zone-track input::-moz-range-track {
+  height: 22px;
+  background: none;
+}
+
+.vase-zone-track input::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  background: #ffffff;
+  border: 3px solid #e0821f;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(80, 50, 20, 0.3);
+  cursor: grab;
+  pointer-events: auto;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.vase-zone-track input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border: 3px solid #e0821f;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(80, 50, 20, 0.3);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.vase-zone-track input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #c96f12;
+  outline-offset: 2px;
+}
+
+.vase-zone-numbers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.vase-zone-numbers label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  color: #867563;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.vase-zone-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.vase-zone-number input {
+  width: 42px;
+  height: 26px;
+  padding: 0 5px;
+  color: var(--foreground);
+  background: #ffffff;
+  border: 1px solid #daccbe;
+  border-radius: 6px;
+  font: 650 12.5px/1 var(--font-ui);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.vase-zone-number small {
+  color: #9b866f;
+  font-size: 11px;
+}
+
+.vase-zone-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.vase-zone-presets button {
+  min-height: 24px;
+  padding: 3px 9px;
+  color: #746352;
+  background: #ffffff;
+  border: 1px solid #daccbe;
+  border-radius: 999px;
+  font: 650 11.5px/1.2 var(--font-ui);
+  cursor: pointer;
+}
+
+.vase-zone-presets button.active {
+  color: #ffffff;
+  background: #e0821f;
+  border-color: #c96f12;
+}
+
+.vase-neck-hint {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #fbf1e3;
+  border: 1px solid #ecc897;
+  border-radius: 8px;
+}
+
+.vase-neck-hint .cylinder-wrap-hint {
+  margin: 0;
+}
+
+.vase-print-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 6px;
+  color: #7d6b58;
+  font-size: 13px;
+  font-weight: 650;
+  border-top: 1px solid #eadfce;
+}
+
+.vase-print-badge,
+.vase-print-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: 700 12px/1.2 var(--font-ui);
+}
+
+.vase-print-badge {
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.vase-print-verdict {
+  justify-self: start;
+  font-size: 13px;
+}
+
+.vase-print-dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.vase-print-badge.fine,
+.vase-print-verdict.fine {
+  color: #1f7a45;
+  background: #e3f4e9;
+}
+
+.vase-print-badge.supports,
+.vase-print-verdict.supports {
+  color: #a35a00;
+  background: #fdebd2;
+}
+
+.vase-print-badge.notes,
+.vase-print-verdict.notes {
+  color: #6f5d4b;
+  background: #efe7dc;
+}
+
+.vase-print-disclaimer {
+  margin: 0;
+}
+
+.vase-print-block {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #eadfce;
+}
+
+.vase-section {
+  border: 1px solid #e3d7c8;
+  border-radius: 8px;
+  background: #fdfbf8;
+}
+
+.vase-section-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  color: #6f5d4b;
+  background: none;
+  border: 0;
+  font: 700 13.5px/1.2 var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.vase-section-header small {
+  overflow: hidden;
+  color: #9b866f;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vase-section-header svg {
+  grid-column: 3;
+  transition: transform 120ms ease;
+}
+
+.vase-section-header svg.open {
+  transform: rotate(180deg);
+}
+
+.vase-section-body {
+  display: grid;
+  gap: 10px;
+  padding: 2px 10px 10px;
+}
+
+.vase-leaf-editor {
+  display: grid;
+  gap: 6px;
+}
+
+.vase-leaf-editor svg {
+  justify-self: center;
+  width: 120px;
+  height: 150px;
+  background: #f6f0e7;
+  border: 1px solid #e3d7c8;
+  border-radius: 8px;
+  touch-action: none;
+}
+
+.vase-leaf-axis {
+  stroke: #cdbca6;
+  stroke-dasharray: 3 3;
+}
+
+.vase-leaf-outline {
+  fill: #e8dcc6;
+  stroke: #9a7d5c;
+  stroke-width: 1.4;
+}
+
+.vase-leaf-point {
+  fill: #ffffff;
+  stroke: #e0821f;
+  stroke-width: 2.5;
+  cursor: grab;
+}
+
+.vase-leaf-editor .cylinder-wrap-hint {
+  margin: 0;
+}
+
+.vase-link-button {
+  padding: 0;
+  color: #b0640f;
+  background: none;
+  border: 0;
+  font: 650 12px/1.2 var(--font-ui);
+  cursor: pointer;
+}
+
+.vase-link-button:disabled {
+  color: #b8a894;
+  cursor: default;
+}
+
+html[data-theme="dark"] .vase-tabs {
+  background: #2a2016;
+}
+
+html[data-theme="dark"] .vase-tabs button {
+  color: #d8ccb8;
+}
+
+html[data-theme="dark"] .vase-tabs button.active {
+  color: #ffffff;
+  background: #c96f12;
+}
+
+html[data-theme="dark"] .vase-tiles-label,
+html[data-theme="dark"] .vase-zone-head,
+html[data-theme="dark"] .vase-print-line,
+html[data-theme="dark"] .vase-zone-numbers label {
+  color: #d8ccb8;
+}
+
+html[data-theme="dark"] .vase-tiles button {
+  color: #bea892;
+  background: #21180f;
+  border-color: #5c4b3a;
+}
+
+html[data-theme="dark"] .vase-tiles button:hover:not(:disabled) {
+  color: #f5efe5;
+  border-color: #81684f;
+}
+
+html[data-theme="dark"] .vase-tiles button.selected {
+  color: #ee9538;
+  background: #322313;
+  border-color: #cc8031;
+}
+
+html[data-theme="dark"] .vase-profile-picture path {
+  fill: #3b2c1d;
+}
+
+html[data-theme="dark"] .vase-tiles button.selected .vase-profile-picture path {
+  fill: #5a3d1d;
+}
+
+html[data-theme="dark"] .vase-more-body,
+html[data-theme="dark"] .vase-print-line,
+html[data-theme="dark"] .vase-print-block {
+  border-color: #4a3a2a;
+}
+
+html[data-theme="dark"] .vase-zone-outline {
+  fill: #2c2117;
+  stroke: #9a8670;
+}
+
+html[data-theme="dark"] .vase-zone-track {
+  --vase-track: #4a3a2a;
+}
+
+html[data-theme="dark"] .vase-zone-number input,
+html[data-theme="dark"] .vase-zone-presets button {
+  color: #ede3d2;
+  background: #231a11;
+  border-color: #5c4b3a;
+}
+
+html[data-theme="dark"] .vase-zone-presets button.active {
+  color: #ffffff;
+  background: #c96f12;
+  border-color: #e0821f;
+}
+
+html[data-theme="dark"] .vase-neck-hint {
+  background: #33230f;
+  border-color: #7a5320;
+}
+
+html[data-theme="dark"] .vase-print-badge.fine,
+html[data-theme="dark"] .vase-print-verdict.fine {
+  color: #7fdca3;
+  background: #173323;
+}
+
+html[data-theme="dark"] .vase-print-badge.supports,
+html[data-theme="dark"] .vase-print-verdict.supports {
+  color: #f3b766;
+  background: #3a2710;
+}
+
+html[data-theme="dark"] .vase-print-badge.notes,
+html[data-theme="dark"] .vase-print-verdict.notes {
+  color: #d8ccb8;
+  background: #2a2016;
+}
+
+html[data-theme="dark"] .vase-section {
+  background: #1d150e;
+  border-color: #4a3a2a;
+}
+
+html[data-theme="dark"] .vase-section-header {
+  color: #e2d6c3;
+}
+
+html[data-theme="dark"] .vase-leaf-editor svg {
+  background: #231a11;
+  border-color: #4a3a2a;
+}
+
+html[data-theme="dark"] .vase-leaf-outline {
+  fill: #4a3826;
+  stroke: #c9a57d;
 }
 
 /* Layered text (#215): the names list and the layer colour in the layers card. */
@@ -14649,14 +15326,16 @@ html[data-theme="dark"] .shape-inspector.floating {
 }
 
 html[data-theme="dark"] .shape-inspector .edit-sketch-button,
-html[data-theme="dark"] .shape-inspector .inspector-action-button {
+html[data-theme="dark"] .shape-inspector .inspector-action-button,
+html[data-theme="dark"] .surface-panel .inspector-action-button {
   color: #ede3d2;
   background: #231a11;
   border-color: #5c4b3a;
 }
 
 html[data-theme="dark"] .shape-inspector .edit-sketch-button:hover:not(:disabled),
-html[data-theme="dark"] .shape-inspector .inspector-action-button:hover:not(:disabled) {
+html[data-theme="dark"] .shape-inspector .inspector-action-button:hover:not(:disabled),
+html[data-theme="dark"] .surface-panel .inspector-action-button:hover:not(:disabled) {
   color: #f5efe5;
   background: #3b2c1d;
   border-color: #81684f;
@@ -17683,6 +18362,1147 @@ html[data-theme="dark"] .interactive-help-more a:hover {
   color: #ffc784;
 }
 
+/*
+ * The right column for tools (the GUI concept, section 5): a tool lies docked where the object's properties are, with
+ * the tabs Object and Tool above it, and its parts in the same order every time - selection, settings, advanced folded
+ * away, a status line, the actions at the foot, which stay in view while the rest scrolls. Dragged away, a tool floats
+ * as before.
+ */
+.edge-modifier-panel.docked {
+  top: var(--editor-toolbar-height);
+  right: 0;
+  bottom: var(--editor-footer-height);
+  width: 320px;
+  max-height: none;
+  padding-top: 0;
+  background: rgba(248, 246, 244, 0.99);
+  border-width: 0 0 0 1px;
+  border-color: #e9e2d6;
+  border-radius: 0;
+  box-shadow: -2px 0 10px rgba(86, 62, 36, 0.08);
+  backdrop-filter: none;
+  zoom: var(--toolbar-scale);
+}
+
+.edge-modifier-panel.docked.show-object {
+  bottom: auto;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.edge-modifier-panel.docked.show-object .tool-sidebar-tabs {
+  margin-bottom: 0;
+}
+
+.edge-modifier-panel.show-object > :not(.tool-sidebar-tabs) {
+  display: none !important;
+}
+
+/* The object's properties under the tabs while a tool is docked. */
+.layerling-editor:has(.edge-modifier-panel.docked .tool-sidebar-tabs) .shape-inspector {
+  top: 37px;
+}
+
+/* Under the tool they are out of sight, and out of the way of the keyboard. */
+.layerling-editor:has(.edge-modifier-panel.docked:not(.show-object) .tool-sidebar-tabs) .shape-inspector {
+  visibility: hidden;
+}
+
+.tool-sidebar-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0 -14px 6px;
+  background: inherit;
+  border-bottom: 1px solid #e6dccd;
+}
+
+.tool-sidebar-tabs button {
+  min-height: 36px;
+  color: #8a7258;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.tool-sidebar-tabs button[aria-selected="true"] {
+  color: #6d3f0b;
+  border-bottom-color: #e08a2c;
+}
+
+.tool-sidebar-tabs button:focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: -3px;
+}
+
+.tool-section {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid #eee7da;
+}
+
+.tool-section-title {
+  margin: 0;
+  color: #4a3520;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tool-selection {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 9px;
+  color: #563e24;
+  background: #fbf8f4;
+  border: 1px solid #e6dccd;
+  border-radius: 8px;
+}
+
+/* The body chosen before the tool opened: a quiet box in one line, the body's icon, its name and how much of it. */
+.tool-selection.neutral {
+  background: #fbf8f4;
+  border-color: #e6dccd;
+}
+
+.tool-selection.neutral .tool-selection-mark {
+  color: #7a6249;
+  background: none;
+}
+
+/* A pick the tool has checked (edges, a face): green, as a confirmation. */
+.tool-selection.confirmed {
+  background: #f1f7ef;
+  border-color: #cfe2c8;
+}
+
+.tool-selection.needed {
+  background: #fff6ea;
+  border-color: #f0cf9d;
+}
+
+.tool-selection-mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: white;
+  background: #c08a4d;
+  border-radius: 50%;
+}
+
+.tool-selection.confirmed .tool-selection-mark {
+  background: #3f8a4b;
+}
+
+.tool-selection-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tool-selection-text strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.tool-selection-text small {
+  color: #7a6249;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tool-advanced {
+  margin-top: 12px;
+  border-top: 1px solid #eee7da;
+}
+
+.tool-advanced > summary {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 6px;
+  align-items: center;
+  padding: 11px 0 4px;
+  color: #563e24;
+  list-style: none;
+  cursor: pointer;
+}
+
+.tool-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tool-advanced-chevron {
+  transition: transform 120ms ease;
+}
+
+.tool-advanced[open] .tool-advanced-chevron {
+  transform: rotate(90deg);
+}
+
+/* Open, the values stand below: the line that sums them up gives way. */
+.tool-advanced[open] .tool-advanced-summary {
+  visibility: hidden;
+}
+
+.tool-advanced-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.tool-advanced-summary {
+  overflow: hidden;
+  color: #8a7258;
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tool-advanced > summary:focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: 2px;
+}
+
+.tool-advanced-body {
+  display: grid;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.tool-status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0 0;
+  color: #6d5133;
+  font-size: 12px;
+}
+
+/* Each state of the status line has its own colour and its own shape (a tick, a turning circle, a warning sign), so it
+   reads without the words and without telling the colours apart. */
+.tool-status-icon {
+  flex: none;
+  color: #3f8a4b;
+}
+
+.tool-status.working .tool-status-icon {
+  color: #8a7258;
+}
+
+.tool-status.needed {
+  color: #85560a;
+}
+
+.tool-status.needed .tool-status-icon {
+  color: #c98a12;
+}
+
+/* Every action at a tool's foot has its symbol: a cross to leave, an arrow to go back a step, a tick to apply, a bin
+   to delete. Deleting is red, the one action that is not orange. */
+.edge-modifier-footer .secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.edge-modifier-footer .primary.danger {
+  background: #c23a2f;
+  border-color: #a72e24;
+}
+
+.edge-modifier-footer .primary.danger:hover:not(:disabled) {
+  background: #a72e24;
+}
+
+/* An optional part of a tool, switched on by its tick and folded to one line that says what is set in it. */
+.tool-optional-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tool-optional {
+  margin-top: 11px;
+}
+
+.tool-optional-head .tool-optional-check {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.tool-optional-head .tool-optional-check input {
+  margin-top: 0;
+}
+
+.tool-optional-toggle {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+  align-items: center;
+  max-width: 55%;
+  padding: 2px 4px;
+  color: #8a7258;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tool-optional-toggle:hover {
+  color: #563e24;
+  background: #f3e7d8;
+}
+
+.tool-optional-toggle:focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: 2px;
+}
+
+.tool-optional-toggle[aria-expanded="true"] .tool-advanced-chevron {
+  transform: rotate(90deg);
+}
+
+.tool-optional-summary {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tool-optional-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding-left: 22px;
+}
+
+/* Docked, the actions stand at the foot of the column, in the same place for every tool, and stay in view while
+   the rest scrolls. */
+.edge-modifier-panel.docked:not(.show-object) {
+  display: flex;
+  flex-direction: column;
+}
+
+.edge-modifier-panel.docked:not(.show-object) > * {
+  flex: none;
+}
+
+.edge-modifier-panel.docked .edge-modifier-footer {
+  position: sticky;
+  bottom: -14px;
+  z-index: 3;
+  margin: auto -14px -14px;
+  padding: 12px 14px 14px;
+  background: rgba(248, 246, 244, 0.99);
+}
+
+html[data-theme="dark"] .edge-modifier-panel.docked,
+html[data-theme="dark"] .edge-modifier-panel.docked .edge-modifier-footer {
+  background: #281e14;
+}
+
+html[data-theme="dark"] .edge-modifier-panel.docked {
+  border-color: #534333;
+  box-shadow: -3px 0 14px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme="dark"] .tool-sidebar-tabs {
+  border-bottom-color: #53412f;
+}
+
+html[data-theme="dark"] .tool-sidebar-tabs button {
+  color: #b49c82;
+}
+
+html[data-theme="dark"] .tool-sidebar-tabs button[aria-selected="true"] {
+  color: #f3a452;
+}
+
+html[data-theme="dark"] .tool-section,
+html[data-theme="dark"] .tool-advanced {
+  border-top-color: #4a3b2b;
+}
+
+html[data-theme="dark"] .tool-section-title,
+html[data-theme="dark"] .tool-advanced > summary {
+  color: #f0e2cc;
+}
+
+html[data-theme="dark"] .tool-selection {
+  color: #ede4d4;
+  background: #2f2418;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .tool-selection.neutral {
+  background: #2f2418;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .tool-selection.neutral .tool-selection-mark {
+  color: #c4ae95;
+}
+
+html[data-theme="dark"] .tool-selection.confirmed {
+  background: #22301f;
+  border-color: #3f6340;
+}
+
+html[data-theme="dark"] .tool-selection.needed {
+  background: #3a2c16;
+  border-color: #8a6326;
+}
+
+html[data-theme="dark"] .tool-selection-text small,
+html[data-theme="dark"] .tool-advanced-summary {
+  color: #c4ae95;
+}
+
+html[data-theme="dark"] .tool-status {
+  color: #d6c3ab;
+}
+
+html[data-theme="dark"] .tool-status-icon {
+  color: #7cc184;
+}
+
+html[data-theme="dark"] .tool-status.working .tool-status-icon {
+  color: #c4ae95;
+}
+
+html[data-theme="dark"] .tool-status.needed {
+  color: #f0c46a;
+}
+
+html[data-theme="dark"] .tool-status.needed .tool-status-icon {
+  color: #f0b13c;
+}
+
+html[data-theme="dark"] .edge-modifier-footer .primary.danger {
+  color: white;
+  background: #b83a30;
+  border-color: #d3564b;
+}
+
+html[data-theme="dark"] .edge-modifier-footer .primary.danger:hover:not(:disabled) {
+  background: #cf4a3f;
+}
+
+html[data-theme="dark"] .tool-optional-toggle {
+  color: #c4ae95;
+}
+
+html[data-theme="dark"] .tool-optional-toggle:hover {
+  color: #f0e2cc;
+  background: #43331f;
+}
+
+/* Surface texture as a tool in the right column: under a tool opened later, and its fields with the label above, so
+   long choices and their hints have the column's width. In the object's properties, its card only opens the tool and
+   says which pattern the body carries. */
+.edge-modifier-panel.docked.surface-panel {
+  z-index: 45;
+}
+
+/* Labels as small as in the other tools. */
+.surface-panel .select-property,
+.surface-panel .range-property,
+.surface-panel .check-property {
+  font-size: 13px;
+}
+
+.surface-panel .select-property select {
+  font-size: 14px;
+}
+
+.surface-panel .select-property-hint {
+  grid-column: 1 / -1;
+  margin-top: -3px;
+}
+
+.surface-panel .tool-panel-body > .cylinder-wrap-hint {
+  margin: 12px 0 0;
+}
+
+.property-card-summary {
+  flex: 1;
+  margin: 0 8px 0 12px;
+  overflow: hidden;
+  color: #8a7258;
+  font-size: 13px;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+html[data-theme="dark"] .property-card-summary {
+  color: #c4ae95;
+}
+
+/* A choice's hint under the whole row, not squeezed into the field's column. */
+.shape-inspector .select-property-hint {
+  grid-column: 1 / -1;
+  margin-top: -4px;
+}
+
+/* A long choice ("Solid (vase mode)") takes the row's width, with its label above it; short ones stay beside it. */
+.select-property.long {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+}
+
+.select-property.long .select-property-hint {
+  grid-column: 1;
+}
+
+/* Cut out: the body that gives the shape and the one that gets the cavity, each in a row of its own that outlines it
+   in the view under the pointer, then the button that swaps them. */
+.cut-out-roles {
+  display: grid;
+  gap: 6px;
+}
+
+.cut-out-role {
+  display: grid;
+  gap: 1px;
+  padding: 6px 9px;
+  background: #fbf8f4;
+  border: 1px solid #e6dccd;
+  border-radius: 8px;
+}
+
+.cut-out-role:hover {
+  border-color: #e08a2c;
+}
+
+.cut-out-role-label {
+  color: #8a7258;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cut-out-role strong {
+  font-size: 13px;
+}
+
+.cut-out-swap {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-self: start;
+  padding: 6px 11px;
+  color: #6d5133;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  background: #fff;
+  border: 1px solid #daccbe;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+html[data-theme="dark"] .cut-out-role {
+  background: #2f2418;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .cut-out-swap {
+  color: #ddccb9;
+  background: #35281b;
+  border-color: #5e4c3a;
+}
+
+/* How a tool works, folded under its selection. */
+.tool-help > summary {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: #8a6a45;
+  font-size: 12px;
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+
+.tool-help > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tool-help[open] .tool-advanced-chevron {
+  transform: rotate(90deg);
+}
+
+.tool-help-body {
+  margin-top: 5px;
+  color: #7a6249;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+html[data-theme="dark"] .tool-help > summary {
+  color: #e7c896;
+}
+
+html[data-theme="dark"] .tool-help-body {
+  color: #c4ae95;
+}
+
+/* The docked head, lower: the settings start nearer the top. */
+.edge-modifier-panel.docked .edge-modifier-header,
+.edge-modifier-panel.docked .split-panel-header {
+  padding-top: 4px;
+  padding-bottom: 8px;
+}
+
+.edge-modifier-panel.docked .edge-modifier-header strong,
+.edge-modifier-panel.docked .split-panel-header strong {
+  font-size: 15px;
+}
+
+/* A field the keyboard moves to is scrolled clear of the tabs above and the actions below. */
+.edge-modifier-panel.docked {
+  scroll-padding-top: 44px;
+  scroll-padding-bottom: 76px;
+}
+
+/* An Object tab that cannot open while the tool works. */
+.tool-sidebar-tabs button[aria-disabled="true"] {
+  color: #c3b4a3;
+  cursor: not-allowed;
+}
+
+html[data-theme="dark"] .tool-sidebar-tabs button[aria-disabled="true"] {
+  color: #6f5f4f;
+}
+
+/* One look for a chosen option in every tool: the same fill and a firm orange border, whether it is a side to open,
+   a quick selection or the split plane's axis. */
+.edge-modifier-panel .shell-opening-options button.active,
+.edge-modifier-panel .edge-modifier-quick-actions button.active,
+.edge-modifier-panel .split-axis-control button.active {
+  color: #8a4504;
+  background: #ffe7cc;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+html[data-theme="dark"] .edge-modifier-panel .shell-opening-options button.active,
+html[data-theme="dark"] .edge-modifier-panel .edge-modifier-quick-actions button.active,
+html[data-theme="dark"] .edge-modifier-panel .split-axis-control button.active {
+  color: #ffc27a;
+  background: #4a3214;
+  border-color: #e08a2c;
+  box-shadow: inset 0 0 0 1px #e08a2c;
+}
+
+/* Ticks in the theme's orange, not the browser's blue. */
+.edge-modifier-panel input[type="checkbox"],
+.edge-modifier-panel input[type="radio"],
+.shape-inspector input[type="checkbox"] {
+  accent-color: #d97813;
+}
+
+/* Where the keyboard is, the same ring everywhere in a tool. */
+.edge-modifier-panel :is(button, input, select, summary):focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: 2px;
+}
+
+.edge-modifier-panel button:disabled {
+  cursor: not-allowed;
+}
+
+/* ---- The GUI examples A–G: a compact column ---- */
+
+/* A tool's main value keeps its slider; the other numbers are a field beside their label. */
+.tool-column .range-property:not(.primary) > .range-control {
+  display: none;
+}
+
+.tool-column .range-property:not(.primary) {
+  margin-top: 8px;
+}
+
+.tool-column .range-property .range-property-name {
+  white-space: normal;
+}
+
+.tool-column .range-value-control {
+  min-width: 112px;
+}
+
+.tool-column .range-value-control input {
+  flex: 1;
+  width: 64px;
+}
+
+/* Options side by side in one row, as many as there are. */
+.tool-column .shell-opening-options {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tool-column .shell-opening-options button {
+  flex: 1 1 0;
+  min-width: max-content;
+}
+
+.tool-selection-scope {
+  color: #7a6249;
+  font-weight: 600;
+}
+
+.tool-selection-action button {
+  min-height: 28px;
+  padding: 0 10px;
+  color: #6d5133;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #fff;
+  border: 1px solid #d8c8b7;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.tool-selection-action button.active {
+  color: #8a4504;
+  background: #ffe7cc;
+  border-color: #d97813;
+}
+
+.tool-selection-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: #7a6249;
+  font-size: 12px;
+}
+
+.tool-secondary-action {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-self: start;
+  padding: 4px 0;
+  color: #9a4a1c;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* "More" after a hint's first sentence. */
+.tool-hint-more {
+  padding: 0;
+  color: #b45f0b;
+  font: inherit;
+  font-weight: 700;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* What applying will do: a line over the actions at the foot. */
+.edge-modifier-panel .edge-modifier-footer {
+  flex-wrap: wrap;
+}
+
+.tool-outcome {
+  display: flex;
+  flex: 1 0 100%;
+  gap: 7px;
+  align-items: flex-start;
+  margin: 0 0 2px;
+  color: #6d5133;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.tool-outcome svg,
+.tool-note svg {
+  flex: none;
+  margin-top: 1px;
+  color: #a07a4f;
+}
+
+.tool-note {
+  display: flex;
+  gap: 7px;
+  margin: 2px 0 0;
+  padding: 8px 9px;
+  color: #6d5133;
+  font-size: 12px;
+  line-height: 1.4;
+  background: #fff6ea;
+  border: 1px solid #f0d9b5;
+  border-radius: 8px;
+}
+
+/* A count with − and +. */
+.tool-stepper {
+  display: flex !important;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tool-stepper-control {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #d8c9ba;
+  border-radius: 6px;
+}
+
+.tool-stepper-control button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  color: #6d5133;
+  background: #fbf8f4;
+  border: 0;
+  cursor: pointer;
+}
+
+.tool-stepper-control button:disabled {
+  color: #c9bba9;
+  cursor: not-allowed;
+}
+
+.tool-stepper-control input {
+  width: 46px;
+  height: 31px;
+  padding: 0;
+  color: #57432f;
+  font: 750 14px/1 var(--font-ui);
+  text-align: center;
+  background: transparent;
+  border: 0;
+  border-inline: 1px solid #e6dccd;
+  outline: 0;
+}
+
+/* Advanced: its title, and under it what it holds. */
+.tool-advanced > summary {
+  grid-template-columns: auto 1fr;
+  row-gap: 1px;
+}
+
+.tool-advanced-summary {
+  grid-column: 2;
+  text-align: left;
+}
+
+/* Cut out's roles, each with its colour. */
+.cut-out-role {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+
+.cut-out-role:hover {
+  border-color: #e6dccd;
+}
+
+.cut-out-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.cut-out-role-text {
+  display: grid;
+  min-width: 0;
+}
+
+.cut-out-role-text small {
+  color: #7a6249;
+  font-size: 11px;
+}
+
+.cut-out-swap {
+  justify-self: stretch;
+  justify-content: center;
+}
+
+/* The pattern, chosen by its picture. */
+.pattern-picker {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.pattern-picker-label {
+  color: #6e5841;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pattern-picker-trigger {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  padding: 4px 9px 4px 4px;
+  color: #57432f;
+  font: 700 14px/1.2 var(--font-ui);
+  text-align: left;
+  background: #fff;
+  border: 1px solid #d8c9ba;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.pattern-thumbnail {
+  display: block;
+  width: 44px;
+  height: 33px;
+  object-fit: cover;
+  background: #ebe4da;
+  border-radius: 4px;
+}
+
+.pattern-picker-popover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #d8c9ba;
+  border-radius: 9px;
+  box-shadow: 0 12px 28px rgba(74, 53, 30, 0.22);
+}
+
+.pattern-picker-search {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 8px;
+  color: #8a7258;
+  border: 1px solid #e0d4c6;
+  border-radius: 7px;
+}
+
+.pattern-picker-search input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  color: #57432f;
+  font: 600 13px/1 var(--font-ui);
+  background: transparent;
+  border: 0;
+  outline: 0;
+}
+
+.pattern-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 330px;
+  overflow-y: auto;
+}
+
+.pattern-picker-grid button {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  padding: 4px;
+  color: #57432f;
+  font: 650 12px/1.2 var(--font-ui);
+  text-align: left;
+  background: #fbf8f4;
+  border: 1px solid #e6dccd;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.pattern-picker-grid button.selected {
+  background: #fff1e0;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+.pattern-picker-grid button:focus-visible {
+  outline: 2px solid #e08a2c;
+  outline-offset: 1px;
+}
+
+.pattern-picker-check {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  padding: 1px;
+  color: #fff;
+  background: #d97813;
+  border-radius: 50%;
+}
+
+.pattern-picker-empty {
+  grid-column: 1 / -1;
+  margin: 6px 2px;
+  color: #8a7258;
+  font-size: 12px;
+}
+
+html[data-theme="dark"] .tool-section-title {
+  color: #f0e2cc;
+}
+
+html[data-theme="dark"] .tool-selection-action button,
+html[data-theme="dark"] .tool-stepper-control,
+html[data-theme="dark"] .pattern-picker-trigger,
+html[data-theme="dark"] .pattern-picker-popover {
+  color: #ede4d4;
+  background: #2f2418;
+  border-color: #5e4c3a;
+}
+
+html[data-theme="dark"] .tool-stepper-control button,
+html[data-theme="dark"] .pattern-picker-grid button {
+  color: #ede4d4;
+  background: #35281b;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .tool-stepper-control input,
+html[data-theme="dark"] .pattern-picker-search input {
+  color: #ede4d4;
+}
+
+html[data-theme="dark"] .pattern-picker-grid button.selected {
+  background: #4a3214;
+  border-color: #e08a2c;
+}
+
+html[data-theme="dark"] .tool-note {
+  color: #e7d6bf;
+  background: #3a2c16;
+  border-color: #6b5230;
+}
+
+html[data-theme="dark"] .tool-outcome,
+html[data-theme="dark"] .tool-selection-links,
+html[data-theme="dark"] .cut-out-role-text small,
+html[data-theme="dark"] .tool-selection-scope {
+  color: #d6c3ab;
+}
+
+html[data-theme="dark"] .pattern-picker-label {
+  color: #e7d6bf;
+}
+
+html[data-theme="dark"] .pattern-picker-search {
+  border-color: #5e4c3a;
+}
+
+html[data-theme="dark"] .tool-hint-more {
+  color: #f3a452;
+}
+
+/* Layers of a surface texture: a tab per pattern, and one to add another. */
+.surface-layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.surface-layers button {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px 0 5px;
+  color: #6d5133;
+  font: 700 12px/1 var(--font-ui);
+  background: #fbf8f4;
+  border: 1px solid #e0d4c6;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.surface-layers button.active {
+  color: #8a4504;
+  background: #ffe7cc;
+  border-color: #d97813;
+  box-shadow: inset 0 0 0 1px #d97813;
+}
+
+.surface-layers button.needed {
+  border-style: dashed;
+  border-color: #d9a24f;
+}
+
+.surface-layer-number {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: #fff;
+  font-size: 11px;
+  background: #b08a62;
+  border-radius: 50%;
+}
+
+.surface-layers button.active .surface-layer-number {
+  background: #d97813;
+}
+
+.surface-layers .surface-layer-add {
+  padding-left: 7px;
+  color: #8a6a45;
+  background: transparent;
+  border-style: dashed;
+}
+
+html[data-theme="dark"] .surface-layers button {
+  color: #ede4d4;
+  background: #2f2418;
+  border-color: #53412f;
+}
+
+html[data-theme="dark"] .surface-layers button.active {
+  color: #ffc27a;
+  background: #4a3214;
+  border-color: #e08a2c;
+  box-shadow: inset 0 0 0 1px #e08a2c;
+}
+
+html[data-theme="dark"] .surface-layers .surface-layer-add {
+  color: #e7c896;
+  background: transparent;
+}
+
 /* The bar of build plates (Discussion #456): at the foot of the view, in the middle, like the camera column in look. */
 .plate-bar {
   position: absolute;
@@ -18320,6 +20140,24 @@ html[data-theme="dark"] .property-card > button.property-card-header:hover {
   }
 }
 
+/* Fill gaps: its size and its button, under the paint tool's settings. */
+.paint-panel .paint-gaps {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+}
+
+.paint-panel .paint-gaps > .paint-gaps-button {
+  justify-content: center;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.paint-panel .paint-gaps > .paint-gaps-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 /* Print analysis (Druckanalyse) and its layer view. */
 .layer-check-progress {
   display: grid;
@@ -18367,7 +20205,6 @@ html[data-theme="dark"] .property-card > button.property-card-header:hover {
   border-radius: 6px;
 }
 
-/* Findings in the mold window: each with its level, what it is and what helps. */
 .layer-check-list {
   display: flex;
   flex-direction: column;
@@ -18654,30 +20491,6 @@ html[data-theme="dark"] .layer-check-remedy {
   color: #f0b46c;
 }
 
-.tool-plain-section > strong {
-  display: block;
-  margin-bottom: 6px;
-}
-
-.mold-analysis p {
-  margin: 4px 0;
-  font-size: 13px;
-}
-
-.mold-analysis.stale {
-  opacity: 0.6;
-}
-
-.mold-option-figure {
-  font-weight: 500;
-  opacity: 0.8;
-}
-
-.mold-vents {
-  display: grid;
-  gap: 4px;
-}
-
 html[data-theme="dark"] .layer-view-readout strong {
   color: #ecdcc9;
 }
@@ -18702,4 +20515,46 @@ html[data-theme="dark"] .layer-view-chart {
 html[data-theme="dark"] .layer-view-chart path {
   fill: rgba(143, 179, 224, 0.3);
   stroke: #8fb3e0;
+}
+
+/* Print analysis (Druckanalyse) and its layer view. */
+.layer-check-progress {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 8px;
+  align-items: center;
+}
+
+/* Findings in the mold window: each with its level, what it is and what helps. */
+.layer-check-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tool-plain-section > strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.mold-analysis p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.mold-analysis.stale {
+  opacity: 0.6;
+}
+
+.mold-option-figure {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.mold-vents {
+  display: grid;
+  gap: 4px;
 }
