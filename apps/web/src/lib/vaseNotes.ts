@@ -113,6 +113,7 @@ const CHECKS: Note[] = [
   { pattern: new RegExp(`^Wasserdicht: Wand und Boden mindestens ${NUMBER} mm;`), key: "vaseCheck.watertightHollow", params: (m) => ({ mm: number(m[1]) }) },
   { pattern: /^Wasserdicht im Vasenmodus:/, key: "vaseCheck.watertightVaseMode" },
   { pattern: /^Ein Lampenschirm braucht eine hohle Vase/, key: "vaseCheck.lampNeedsHollow", params: () => ({ hollow: t("vase.bodyHollow") }) },
+  { pattern: /^Lampenschirm im Vasenmodus: im Slicer 0 Bodenschichten/, key: "vaseCheck.lampVaseMode" },
   { pattern: /^Steckbeine brauchen eine hohle Vase/, key: "vaseCheck.legsNeedHollow" },
   { pattern: /^Mit hohlem Fuß gibt es keine Buchsen für Steckbeine/, key: "vaseCheck.legsHollowFoot" },
   { pattern: /^Eine Buchse passt nicht in den Boden/, key: "vaseCheck.socketDropped" },

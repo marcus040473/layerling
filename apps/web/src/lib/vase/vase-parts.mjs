@@ -607,11 +607,13 @@ export function buildParts(input, { outward = 0 } = {}) {
   // (which has no bottom), the light in its middle - an LED disc laid in from above, or a plate with the hole for a
   // screw socket - and a slot at the back of the foot for the cable. It is printed turned over, the seat on the bed:
   // every face then leans by 45 degrees at most, and nothing needs supports.
-  if (p.body === 'hohl' && p.lamp === 'sockel') safely('Der Lampensockel', () => {
+  if (p.lamp === 'sockel') safely('Der Lampensockel', () => {
+    // How wide the shade is inside at its bottom: by its wall, or printed in the slicer's vase mode by one line.
+    const insideAt = p.body === 'hohl' ? (a) => shape.innerAt(a, 0) : (a) => shape.outerAt(a, 0) - p.lineWidth
     let inner = Infinity, outer = 0
     for (let k = 0; k < 144; k++) {
       const a = (2 * Math.PI * k) / 144
-      inner = Math.min(inner, shape.innerAt(a, 0))
+      inner = Math.min(inner, insideAt(a))
       outer = Math.max(outer, shape.outerAt(a, 0) + outward)
     }
     const wall = 2.6

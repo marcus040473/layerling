@@ -78,9 +78,25 @@ describe("the base a lampshade stands on", () => {
     expect(openEdges(body)).toBe(0);
     expect(body.floor.thickness).toBe(0);
     expect(body.floor.drains).toHaveLength(0);
-    // No base for another kind of lamp, nor for a solid vase.
+    // No base for another kind of lamp.
     expect(baseOf({ lamp: "puck" }).base).toBeUndefined();
-    expect(baseOf({ body: "voll" }).base).toBeUndefined();
+    expect(baseOf({ lamp: "keine" }).base).toBeUndefined();
+  }, 60000);
+
+  it("carries a shade printed in the slicer's vase mode as well: one line of wall, open below once printed", () => {
+    // The solid body the vase mode asks for: no hole, no plate - and a note on the bottom layers.
+    const body = buildVase({ ...shade, body: "voll", quality: "entwurf" });
+    expect(openEdges(body)).toBe(0);
+    expect(body.notes.some((note: string) => note.startsWith("Lampenschirm im Vasenmodus: im Slicer 0 Bodenschichten"))).toBe(true);
+    expect(body.notes.some((note: string) => note.startsWith("Ein Lampenschirm braucht eine hohle Vase"))).toBe(false);
+    // The seat fits the shade's one line of wall (0.45 mm), not the 1.2 mm of a real wall.
+    const thin = baseOf({ body: "voll", lineWidth: 0.45 }).base!;
+    expect(openEdges(thin.mesh)).toBe(0);
+    const real = baseOf().base!;
+    expect(radii(thin.mesh, 1.4, 1.6).most).toBeCloseTo(radii(real.mesh, 1.4, 1.6).most + 0.75, 2);
+    // A shade with a plate of its own needs a real wall, and says so.
+    const hanging = buildVase({ ...shade, body: "voll", lamp: "haengend", quality: "entwurf" });
+    expect(hanging.notes.some((note: string) => note.startsWith("Ein Lampenschirm braucht eine hohle Vase"))).toBe(true);
   }, 60000);
 
   it("centres the shade on a sloped seat: narrower than the shade inside at the top, wider below", () => {

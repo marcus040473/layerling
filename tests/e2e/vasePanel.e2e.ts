@@ -305,6 +305,37 @@ describe("a vase in its settings", () => {
     expect(calls.updates.at(-1)?.vase?.zoneTo).toBe(91);
   });
 
+  it("has the slicer's vase mode as a switch on the Print tab, with how the vase is drawn; a shade then stands on a base", () => {
+    const switchNamed = (panel: HTMLElement, name: string) => [...panel.querySelectorAll<HTMLLabelElement>("label.check-property")].find((row) => row.textContent === name)?.querySelector("input");
+    const { panel, calls } = mount();
+    openTab(panel, "Print");
+    // A new vase is for the vase mode, and drawn as it is printed.
+    expect(switchNamed(panel, "Vase mode")?.checked).toBe(true);
+    expect(switchNamed(panel, "Show as printed")?.checked).toBe(true);
+    expect([...panel.querySelectorAll(".vase-panel .cylinder-wrap-hint")].some((line) => line.textContent?.startsWith("The vase is a solid body, and the slicer prints a single wall of it in a spiral"))).toBe(true);
+    expect(rangeNamed(panel, "Wall")).toBeUndefined();
+    act(() => switchNamed(panel, "Show as printed")!.click());
+    expect(calls.updates.at(-1)?.vase?.printView).toBe("nein");
+    act(() => switchNamed(panel, "Vase mode")!.click());
+    expect(calls.updates.at(-1)?.vase?.body).toBe("hohl");
+    // With a real wall: the wall's measures, and nothing about how it is drawn.
+    const hollow = mount({ vase: { ...calls.updates.at(-1)!.vase! } });
+    openTab(hollow.panel, "Print");
+    expect(switchNamed(hollow.panel, "Vase mode")?.checked).toBe(false);
+    expect(switchNamed(hollow.panel, "Show as printed")).toBeUndefined();
+    expect(rangeNamed(hollow.panel, "Wall")).toBeDefined();
+    // A hanging shade has a plate of its own, which needs a real wall: in vase mode it stands on a base instead.
+    const shade = mount({ vase: { ...hollow.shape.vase!, purpose: "lampe", lamp: "haengend", lampSpokes: 3 } });
+    openTab(shade.panel, "Print");
+    act(() => switchNamed(shade.panel, "Vase mode")!.click());
+    expect(shade.calls.updates.at(-1)?.vase).toMatchObject({ body: "voll", lamp: "sockel" });
+    const thin = mount({ vase: { ...shade.calls.updates.at(-1)!.vase! } });
+    openTab(thin.panel, "Form");
+    const block = thin.panel.querySelector<HTMLElement>(".vase-use")!;
+    expect([...selectNamed(block, "Lampshade")!.options].map((option) => option.textContent)).toEqual(["None", "Over an LED puck", "On a base"]);
+    expect(selectNamed(block, "Base form")).toBeDefined();
+  });
+
   it("shows how it prints on the Print tab, and the pattern tab leads there", () => {
     const plain = mount().shape;
     const { panel } = mount({ vase: { ...plain.vase!, effect: "blaetter", printFriendly: "nein", body: "hohl", reliefDepth: 2.4 } });

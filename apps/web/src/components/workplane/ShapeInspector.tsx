@@ -1766,7 +1766,18 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     }
     // Printing (ids "vasePrint."): how the body is built, the material and, in the slicer's vase mode, the line.
     const print = (config: ShapePropertyConfig) => as("vasePrint", config);
-    properties.push(print(choice("body", "prop.vaseBody", vase.body === "voll" ? "vase.bodySolidHint" : "vase.bodyHollowHint")));
+    // The slicer's vase mode as a switch: on, the vase is the solid body that mode asks for and the slicer prints one
+    // wall of it in a spiral; off, it has a real wall and bottom. With it, how the editor draws such a vase: as it is
+    // printed (a thin vessel, open at the top) or as the solid it is. A shade with a plate of its own needs a real
+    // wall, so in vase mode it stands on a base instead.
+    properties.push(print({
+      type: "toggle",
+      id: "vase.body",
+      label: t("prop.vaseVaseMode"),
+      value: vase.body === "voll",
+      onChange: (value) => setVase(value ? { body: "voll", ...(vase.lamp === "haengend" || vase.lamp === "stehend" ? { lamp: "sockel" } : {}) } : { body: "hohl" }),
+    }));
+    if (vase.body === "voll") properties.push(print({ type: "toggle", id: "vase.printView", sub: true, label: t("prop.vasePrintView"), value: vase.printView === "ja", onChange: (value) => setVase({ printView: value ? "ja" : "nein" }) }));
     if (vase.body === "hohl") properties.push(print(range("wall", "prop.vaseWall", 0.1)), print(range("bottom", "prop.vaseBottom", 0.1, "vase.bottomHint")), print(choice("innerShape", "prop.vaseInner")));
     // Bottom and wall, on a card of their own (ids "vaseFloor."): what the core builds into the body besides its form.
     const floor = (config: ShapePropertyConfig): ShapePropertyConfig => ({ ...config, id: config.id.replace(/^vase\./, "vaseFloor.") });
@@ -1805,7 +1816,22 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         );
         if (vase.cutout === "voronoi") properties.push(floor(range("cutoutSeed", "prop.vaseSeed", 1)));
       }
-      properties.push(lampRow(choice("lamp", "prop.vaseLamp", vase.lamp === "sockel" ? "vase.lampBaseHint" : "vase.lampHint")));
+    } else {
+      properties.push(floor(choice("reinforce", "prop.vaseReinforce", "vase.reinforceHint")));
+      if (vase.reinforce !== "keine") {
+        properties.push(
+          floor(range("reinforceCount", "prop.vaseReinforceCount", 1)),
+          floor(range("reinforceDepth", vase.reinforce === "rippen" ? "prop.vaseRibReach" : "prop.vaseWallGap", 0.5)),
+          floor(range("slitWidth", "prop.vaseSlitWidth", 0.01)),
+          floor(range("lineWidth", "prop.vaseLineWidth", 0.01)),
+        );
+      }
+    }
+    // A lampshade's rows: with a real wall all kinds; in vase mode, for a lampshade, the two that need no plate.
+    if (hollow || vase.purpose === "lampe") {
+      const lampChoice = lampRow(choice("lamp", "prop.vaseLamp", vase.lamp === "sockel" ? "vase.lampBaseHint" : "vase.lampHint"));
+      // In vase mode only the shades without a plate of their own: over an LED puck, or on a base.
+      properties.push(hollow || lampChoice.type !== "select" ? lampChoice : { ...lampChoice, options: lampChoice.options.filter((option) => ["keine", "puck", "sockel"].includes(option.value)) });
       // A shade on a base: the base's form and size, its light (an LED disc or a screw socket) and the cable's slot.
       if (vase.lamp === "sockel") {
         properties.push(lampRow(choice("lampBaseShape", "prop.vaseLampBaseShape")), lampRow(range("lampBaseHeight", "prop.vaseLampBaseHeight", 1)), lampRow(range("lampBaseWidth", "prop.vaseLampBaseWidth", 1)), lampRow(range("lampBaseRibs", "prop.vaseLampBaseRibs", 1)));
@@ -1824,19 +1850,9 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         if (vase.lampSpokes >= 2) properties.push(lampRow(range("lampRing", "prop.vaseLampRing", 0.5)), lampRow(range("lampSpokeWidth", "prop.vaseLampSpokeWidth", 0.5)));
       }
       if (vase.lamp === "puck") properties.push(lampRow(range("puckDiameter", "prop.vasePuckDiameter", 1)));
-      if (vase.lamp === "stehend" || vase.lamp === "puck" || vase.lamp === "sockel") {
+      if (vase.lamp === "sockel" || (hollow && (vase.lamp === "stehend" || vase.lamp === "puck"))) {
         properties.push(lampRow(range("lampNotch", "prop.vaseLampNotch", 0.5)));
         if (vase.lampNotch > 0) properties.push(lampRow(range("lampNotchHeight", "prop.vaseLampNotchHeight", 0.5)));
-      }
-    } else {
-      properties.push(floor(choice("reinforce", "prop.vaseReinforce", "vase.reinforceHint")));
-      if (vase.reinforce !== "keine") {
-        properties.push(
-          floor(range("reinforceCount", "prop.vaseReinforceCount", 1)),
-          floor(range("reinforceDepth", vase.reinforce === "rippen" ? "prop.vaseRibReach" : "prop.vaseWallGap", 0.5)),
-          floor(range("slitWidth", "prop.vaseSlitWidth", 0.01)),
-          floor(range("lineWidth", "prop.vaseLineWidth", 0.01)),
-        );
       }
     }
     // Accessories, on a card of their own (ids "vaseParts."): the legs' sockets, a lid's groove or thread go into the body.
@@ -9576,6 +9592,8 @@ function VaseDesigner({
     </div>
   );
 
+  // Print: the vase mode's switch and how such a vase is drawn come first, with a line that says what the mode means.
+  const printModeRows = byPrefix("vasePrint").filter((property) => property.id === "vasePrint.body" || property.id === "vasePrint.printView");
   // The use (vase, plant pot, lampshade): its settings, and its size where the vase still has a new vase's.
   const choosePurpose = (purpose: string) => {
     if (purpose === vase.purpose) return;
@@ -9797,7 +9815,9 @@ function VaseDesigner({
         ) : null}
         {tab === "print" ? (
           <>
-            {rows(byPrefix("vasePrint"))}
+            {rows(printModeRows)}
+            <p className="cylinder-wrap-hint">{t(vase.body === "voll" ? "vase.vaseModeHint" : "vase.bodyHollowHint")}</p>
+            {rows(byPrefix("vasePrint").filter((property) => !printModeRows.includes(property)))}
             <div className="vase-print-block">
               <span className="vase-tiles-label">{t("vase.printCheck")}</span>
               <VasePrintReport shape={shape} />

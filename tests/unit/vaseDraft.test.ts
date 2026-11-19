@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applyVaseChange, beginVaseDraft, endVaseDraft } from "@/lib/vaseDraft";
 import { normalizeVaseSettings, vaseDraftBuild, vaseSettingsInFrame } from "@/lib/vaseSettings";
-import { fittedVaseMesh, vaseShapePatch } from "@/lib/vaseShape";
+import { createVaseGeometry, fittedVaseMesh, vaseShapePatch } from "@/lib/vaseShape";
 
 /*
  * A vase while a value of it is held in its panel (lib/vaseDraft.ts): its body is built coarse, as the Draft detail
@@ -71,6 +71,41 @@ describe("a vase while a value is held", () => {
     expect(vaseDraftBuild("e")).toBe(false);
     expect(vaseDraftBuild("d")).toBe(false);
     endVaseDraft(() => {});
+  }, 60000);
+
+  it("is drawn as it is printed in vase mode - one thin wall, open at the top - while its body stays the solid", () => {
+    const frame = { width: 90, depth: 90, height: 180 };
+    const topFaces = (geometry: { getAttribute: (name: string) => { count: number; getY: (index: number) => number } }) => {
+      const position = geometry.getAttribute("position");
+      let count = 0;
+      for (let i = 0; i < position.count; i += 3) if (position.getY(i) > 179.99 && position.getY(i + 1) > 179.99 && position.getY(i + 2) > 179.99) count += 1;
+      return count;
+    };
+    const bottomFaces = (geometry: { getAttribute: (name: string) => { count: number; getY: (index: number) => number } }) => {
+      const position = geometry.getAttribute("position");
+      let count = 0;
+      for (let i = 0; i < position.count; i += 3) if (position.getY(i) < 0.01 && position.getY(i + 1) < 0.01 && position.getY(i + 2) < 0.01) count += 1;
+      return count;
+    };
+    const solid = normalizeVaseSettings({ quality: "entwurf", printView: "nein" });
+    const printed = normalizeVaseSettings({ quality: "entwurf" });
+    expect(printed.printView).toBe("ja");
+    const asSolid = createVaseGeometry({ ...frame, vase: solid });
+    const asPrinted = createVaseGeometry({ ...frame, vase: printed });
+    // The solid has its lid; drawn as printed the lid is gone and every other face is there as it was.
+    const lid = topFaces(asSolid);
+    expect(lid).toBeGreaterThan(8);
+    expect(topFaces(asPrinted)).toBe(0);
+    expect(asPrinted.getAttribute("position").count).toBe(asSolid.getAttribute("position").count - lid * 3);
+    expect(bottomFaces(asPrinted)).toBeGreaterThan(0);
+    // The body itself is the same solid either way: what is exported and checked.
+    expect(fittedVaseMesh({ ...frame, vase: printed }).triangleCount).toBe(fittedVaseMesh({ ...frame, vase: solid }).triangleCount);
+    // A shade on a base is printed without bottom layers: open below, too.
+    expect(bottomFaces(createVaseGeometry({ ...frame, vase: normalizeVaseSettings({ quality: "entwurf", lamp: "sockel" }) }))).toBe(0);
+    // A vase with a real wall is drawn as it is.
+    const hollow = normalizeVaseSettings({ quality: "entwurf", body: "hohl" });
+    expect(createVaseGeometry({ ...frame, vase: hollow }).getAttribute("position").count).toBe(fittedVaseMesh({ ...frame, vase: hollow }).triangleCount * 3);
+    expect(normalizeVaseSettings({ printView: "vielleicht" }).printView).toBe("ja");
   }, 60000);
 
   it("coarse is the Draft detail whatever the vase's own is", () => {

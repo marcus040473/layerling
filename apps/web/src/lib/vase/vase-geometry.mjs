@@ -235,6 +235,11 @@ export const DEFAULTS = Object.freeze({
   cutoutEdge: 'anschneiden',
   /** Must hold water: minimum wall and bottom, conflicts (holes) and slicer notes (vaseChecks). */
   watertight: 'nein',
+  /**
+   * How the editor draws a solid vase (the one for the slicer's vase mode): 'ja' as it is printed, one thin wall
+   * open at the top; 'nein' as the solid body it is. The body itself is the same either way.
+   */
+  printView: 'ja',
   // Lampshade (hollow vase): kind, socket or hole size, LED puck, cable slot at the bottom (width 0 = none).
   lamp: 'keine',
   lampSocket: 'e27',
@@ -499,6 +504,7 @@ export function normalizeParams(input = {}) {
   if (!YES_NO[p.stopperRing]) p.stopperRing = DEFAULTS.stopperRing
   if (!YES_NO[p.leafVeins]) p.leafVeins = DEFAULTS.leafVeins
   if (!YES_NO[p.printFriendly]) p.printFriendly = DEFAULTS.printFriendly
+  if (!YES_NO[p.printView]) p.printView = DEFAULTS.printView
   if (!YES_NO[p.patternInvert]) p.patternInvert = DEFAULTS.patternInvert
   if (!PICTURE_FITS[p.patternFit]) p.patternFit = DEFAULTS.patternFit
   p.patternText = p.patternText.slice(0, OWN_TEXT_LENGTH)
@@ -1511,8 +1517,13 @@ export function floorLayout(input) {
   const notes = []
   const hollow = p.body === 'hohl'
   // Lamp over an LED puck, or a bottom of 0 mm without a lamp: no bottom and no foot, open below.
-  const lamp = hollow ? p.lamp : 'keine'
-  if (!hollow && p.lamp !== 'keine') notes.push('Ein Lampenschirm braucht eine hohle Vase (Bauart „Hohl mit Wand“).')
+  // A solid body (for the slicer's vase mode) can be a shade, too, where the shade needs no plate of its own: over an
+  // LED puck or on a base. It is printed with no bottom layers, so it is open below; the body stays the solid the
+  // slicer asks for.
+  const vaseModeShade = !hollow && (p.lamp === 'puck' || p.lamp === 'sockel')
+  const lamp = hollow || vaseModeShade ? p.lamp : 'keine'
+  if (!hollow && p.lamp !== 'keine' && !vaseModeShade) notes.push('Ein Lampenschirm braucht eine hohle Vase (Bauart „Hohl mit Wand“).')
+  if (vaseModeShade) notes.push('Lampenschirm im Vasenmodus: im Slicer 0 Bodenschichten einstellen, dann ist der Schirm unten offen.')
   // (A shade on a base is open below as well: it stands on the base's seat.)
   const open = hollow && (lamp === 'puck' || lamp === 'sockel' || (lamp === 'keine' && p.bottom === 0))
   const foot = hollow && !open ? Math.min(p.footHeight, p.height * 0.4) : 0
@@ -1632,7 +1643,7 @@ export function floorLayout(input) {
   } else if (!hollow && p.drainHoles > 0) notes.push('Ablauflöcher gibt es nur bei einer hohlen Vase.')
   // Cable slot at the bottom (standing: in the foot; over the puck: in the wall): a zone with an open edge.
   let notchZone = null
-  if ((lamp === 'stehend' || lamp === 'puck') && p.lampNotch > 0) {
+  if (hollow && (lamp === 'stehend' || lamp === 'puck') && p.lampNotch > 0) {
     const top = p.lampNotchHeight + 2
     if (lamp === 'stehend' && foot < top + 1) notes.push(`Für den Kabelschlitz (${fmtMm(p.lampNotchHeight)} mm hoch) braucht es einen hohlen Fuß von mindestens ${fmtMm(top + 1)} mm.`)
     else notchZone = { z0: 0, z1: top, open: true, kind: 'notch' }

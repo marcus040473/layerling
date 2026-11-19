@@ -283,12 +283,35 @@ export function fittedVaseMesh(shape: { id?: string; width: number; depth: numbe
   return fitted;
 }
 
+/**
+ * The triangles the editor draws of a vase. A solid vase is the body the slicer's vase mode asks for, but what gets
+ * printed is one thin wall, open at the top (and at the bottom, for a shade printed without bottom layers). Drawn "as
+ * printed" (the setting printView), the solid's lid is left out, so one looks into a thin vessel and not at a block
+ * (the editor draws a body's faces from both sides). Only the drawing: the body for export, checks and cuts stays the solid.
+ */
+function vaseDrawnIndices(shape: { height: number; vase?: unknown }, mesh: FittedVase): Uint32Array {
+  const vase = normalizeVaseSettings(shape.vase);
+  if (vase.body !== "voll" || vase.printView !== "ja") return mesh.indices.slice();
+  const height = Math.max(0.1, shape.height);
+  const openBelow = vase.lamp === "puck" || vase.lamp === "sockel";
+  const y = (index: number) => mesh.vertices[index * 3 + 1];
+  const kept: number[] = [];
+  for (let t = 0; t < mesh.indices.length; t += 3) {
+    const a = mesh.indices[t], b = mesh.indices[t + 1], c = mesh.indices[t + 2];
+    // The flat face at the very top: the solid's lid, which is not printed.
+    if (y(a) > height - 1e-3 && y(b) > height - 1e-3 && y(c) > height - 1e-3) continue;
+    if (openBelow && y(a) < 1e-3 && y(b) < 1e-3 && y(c) < 1e-3) continue;
+    kept.push(a, b, c);
+  }
+  return Uint32Array.from(kept);
+}
+
 /** A new geometry of the vase (the editor disposes and moves its geometries, so each gets its own arrays). */
 export function createVaseGeometry(shape: { id?: string; width: number; depth: number; height: number; vase?: unknown }): THREE.BufferGeometry {
   const mesh = fittedVaseMesh(shape);
   const indexed = new THREE.BufferGeometry();
   indexed.setAttribute("position", new THREE.BufferAttribute(mesh.vertices.slice(), 3));
-  indexed.setIndex(new THREE.BufferAttribute(mesh.indices.slice(), 1));
+  indexed.setIndex(new THREE.BufferAttribute(vaseDrawnIndices(shape, mesh), 1));
   // Smooth over the body, sharp at ribs, corners and rims - as the loft shades.
   const geometry = toCreasedNormals(indexed, THREE.MathUtils.degToRad(30));
   indexed.dispose();
@@ -510,7 +533,7 @@ function askedAccessories(settings: unknown): VaseAccessoryKind[] {
   if (vase.lidMode !== "keiner") asked.push("lid");
   if (vase.lidMode === "kanne" && vase.lidKnob === "ja") asked.push("knob");
   // A lampshade on a base: the base it stands on.
-  if (vase.body === "hohl" && vase.lamp === "sockel") asked.push("lampBase");
+  if (vase.lamp === "sockel") asked.push("lampBase");
   return asked;
 }
 

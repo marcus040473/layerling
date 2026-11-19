@@ -27,7 +27,7 @@ export type VaseChoiceKey =
   | "profile" | "purpose" | "ribShape" | "twistMode" | "twistAlong" | "material" | "sectionOutside"
   | "section2" | "section2WaveStyle" | "body" | "innerShape"
   | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "insertMode"
-  | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "lamp" | "lampSocket" | "lampBaseShape" | "lampBaseLight" | "reinforce"
+  | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "printView" | "lamp" | "lampSocket" | "lampBaseShape" | "lampBaseLight" | "reinforce"
   | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle"
   | "stopperRing" | "leafShape" | "leafLayout" | "leafVeins" | "printFriendly" | "patternInvert" | "leafFixed"
   | "patternText" | "patternFit";

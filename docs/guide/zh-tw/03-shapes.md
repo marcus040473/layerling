@@ -258,7 +258,7 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 ### 列印
 
-{{ui:prop.vaseBody}}：{{ui:vase.bodySolid}} 用於切片軟體的花瓶模式（也叫螺旋化）：切片軟體以螺旋方式只列印一層壁，省去頂部和填充，因此實體畫成實心。{{ui:vase.bodyHollow}} 為一般列印產生真正的壁和底。{{ui:prop.vaseBottom}} 設為 0 mm 時，空心花瓶沒有底：兩端開口的管子，適合喇叭口、吹嘴和管道。{{ui:prop.vaseWatertight}} 把空心花瓶的壁和底加厚到至少 1.6 mm。
+{{ui:prop.vaseBody}}：{{ui:vase.bodySolid}} 用於切片軟體的花瓶模式（也叫螺旋化）：切片軟體以螺旋方式只列印一層壁，省去頂部和填充，因此實體畫成實心。{{ui:vase.bodyHollow}} 為一般列印產生真正的壁和底。{{ui:prop.vaseBottom}} 設為 0 mm 時，空心花瓶沒有底：兩端開口的管子，適合喇叭口、吹嘴和管道。{{ui:prop.vaseWatertight}} 把空心花瓶的壁和底加厚到至少 1.6 mm。在「列印」分頁裡，這就是開關{{ui:prop.vaseVaseMode}}：開啟是給切片軟體花瓶模式用的實心體，關閉是帶真正壁的空心體。開啟{{ui:prop.vasePrintView}}時，編輯器把花瓶模式的花瓶畫成列印出來的樣子——一層薄壁、上面敞開——而不是一個實心塊；匯出的仍然是切片軟體需要的實心體。花瓶模式的燈罩立在底座上或 LED 圓片上方，用 0 層底層列印。
 
 {{ui:vase.printCheck}} 讓你一眼看出是 {{ui:vase.verdictFine}}、{{ui:vase.verdictSupports}} 還是 {{ui:vase.verdictNotes}}，並列出以所選 {{ui:prop.vaseMaterial}} 計的重量和線材長度（實心花瓶依切片軟體的花瓶模式計算，即沿壁的一條線），下方是它的提示：超過 45° 的懸垂及其位置、懸垂的浮雕下緣、在最窄處變得太細的圖案部分、伸進蓋子下方瓶頸裡的圖案、太薄的壁、蓋子、燈具或支腳需要什麼，以及加強肋和雙層壁的切片設定。它只是參考，不是保證：材料、層高和切片軟體同樣有影響。同樣的結論也顯示在 {{ui:vase.tabPattern}} 分頁底部，點一下就會跳到這裡。
 
