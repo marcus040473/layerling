@@ -11,7 +11,7 @@ Warum es ihn gibt und was die Messungen sagen, steht in [ANALYSE.md](ANALYSE.md)
 - Körperform zeichnen: Punkte ziehen, Klick setzt einen Punkt, Doppelklick löscht ihn.
 - Unter „Muster“ bis zu sechs Muster übereinanderlegen, jedes mit eigenem Höhenbereich.
 - „Bild oder Text“ macht aus einem Bild oder einem getippten Text ein Relief.
-- Unter „Druck“ zeigt „Überhänge zeigen“ rot, was zu steil ist.
+- Unter „Druck“ zeigt „Überhänge zeigen“ rot, was zu steil ist, und „Aufschneiden“ den Blick in die Wand.
 - Unter „Datei“ als STL oder 3MF speichern. 3MF ist bei gleicher Vase etwa sechsmal kleiner.
 
 ## Aufbau
@@ -40,7 +40,11 @@ Tests:
 node --test vasen-generator/test/*.test.mjs
 ```
 
-Seite neu bauen (nach `npm ci` im Repository, das `esbuild-wasm` mitbringt):
+Seite neu bauen. Das braucht `esbuild` oder `esbuild-wasm`; ist keines da, einmal ohne Eintrag in `package.json` holen:
+
+```bash
+npm install --no-save esbuild-wasm
+```
 
 ```bash
 node vasen-generator/build.mjs

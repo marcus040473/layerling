@@ -1,7 +1,7 @@
 // Builds the generator into one file each: app/index.html opens straight from the disk, app/artifact.html is
 // the same page without the document's frame (for publishing as a Claude artifact).
-// Needs esbuild or esbuild-wasm (the Layerling repository has the latter after `npm ci`):
-// `node vasen-generator/build.mjs`, or ESBUILD=/path/to/esbuild-wasm/lib/main.js when it lives elsewhere.
+// Needs esbuild or esbuild-wasm (`npm install --no-save esbuild-wasm`): `node vasen-generator/build.mjs`,
+// or ESBUILD=/path/to/esbuild-wasm/lib/main.js when it lives elsewhere.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'

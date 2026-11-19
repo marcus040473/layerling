@@ -84,8 +84,10 @@ Was dabei auffällt:
 
 ## 2. Was es im Netz gibt und wonach gefragt wird
 
-Die Recherche steht unter einem Vorbehalt: Reddit, MakerWorld und Printables waren von hier nicht erreichbar.
-Die Belege kommen aus dem Bambu-Lab-Forum, dem Prusa-Forum, GitHub und Layerlings eigenen Discussions.
+**Reddit fehlt.** Von hier ist Reddit doppelt gesperrt: Das Abruf-Werkzeug liest `reddit.com` nicht, und die
+Websuche darf Reddit nicht durchsuchen. MakerWorld und Printables lehnen den Abruf selbst ab. Die Belege kommen
+aus dem Bambu-Lab-Forum, dem Prusa- und UltiMaker-Forum, Hacker News, GitHub (auch die Wunschlisten der Slicer)
+und Layerlings eigenen Discussions. Deutsche Foren-Beiträge zum Thema hat die Suche nicht gefunden.
 
 Andere Generatoren: Make My Vase (Bambu), VaseMaker, PrintPal, VesselMaker, 3Dsynth, BumpMesh (CNC Kitchen).
 Layerlings Vase hat mehr Zubehör als alle davon. Die Lücken liegen woanders:
@@ -103,6 +105,43 @@ Layerlings Vase hat mehr Zubehör als alle davon. Die Lücken liegen woanders:
 | Vorlagen, Zufall, Teilen | bei den neueren Werkzeugen vorhanden; ausdrückliche Nachfrage nicht gefunden | 13 Vorlagen, Zufall, Einstellungen kopieren |
 
 Stefans Bedingung aus Issue 1462 gilt weiter: Es muss „stay quick on big faces“.
+
+### Zweite Runde: weitere Plattformen
+
+**Weitere Generatoren, die es schon gibt**
+
+- [Vaseverse](https://vaseverse.org/): kostenlos, ohne Konto. Grundformen auch Herz, Blume und Tropfen, Muster
+  aus einem Foto, Öffnungen in der Wand, passender Untersetzer, Schnittansicht, Ansicht „Überhänge über 45°“,
+  Teilen per Link oder QR-Code.
+- [Vase Lampshade Studio](https://digitalchiselco.com/lamp-studio): 105 Lampenschirme, Foto als Lithophanie,
+  Text, Fassung E27/E14 in einem Stück im Vasenmodus. Kostenpflichtig, nur Windows.
+- [the3dai](https://the3dai.com/lamp-shade-generator): Lampenschirm im Browser, nennt die nötigen Bodenschichten
+  für den Fassungsring.
+- [3d-lithophane.com](https://www.3d-lithophane.com/): Pflanztopf-Generator mit Hängen, Selbstbewässerung,
+  Deckel und Griffen.
+- [MyLaserTools](https://www.mylasertools.com/3d-vase-generator): Text um die Vase, STL und 3MF.
+
+**Was Nutzer dort fordern**
+
+| Forderung | Wo | Was das für den Generator heißt |
+|---|---|---|
+| Vasenmodus erst ab einer Höhe, unten normal drucken | [BambuStudio 9657](https://github.com/bambulab/BambuStudio/issues/9657), [Hacker News](https://news.ycombinator.com/item?id=46010173) | Sache des Slicers. Der Generator kann nur sagen, wie viele Bodenschichten nötig sind (macht er). |
+| Zwei oder mehr Bahnen im Vasenmodus für dickere Wände | [BambuStudio 5720](https://github.com/bambulab/BambuStudio/issues/5720), [Bambu-Forum](https://forum.bambulab.com/t/how-to-improve-wall-thickness-in-spiral-vase-mode/5039) | Sache des Slicers. Als Ausweg gibt es „Hohl mit Wand“ und die Empfehlung einer breiteren Linie. |
+| Farbwechsel im Vasenmodus | [OrcaSlicer 891](https://github.com/OrcaSlicer/OrcaSlicer/issues/891) | Sache des Slicers. |
+| Der Boden lässt sich nicht dicker machen, der Boden leckt | [Bambu-Forum, deutsch](https://forum.bambulab.com/t/boden-wandstarke-der-vase/142165), [Prusa-Forum](https://forum.prusa3d.com/forum/prusaslicer/prusaslicer-vase-mode-leaves-gap-between-base-layers-and-spiral-area/), [Bambu-Forum](https://forum.bambulab.com/t/waterproofing-pla-vases/99683) | Bodendicke ist einstellbar und steht im Slicer-Hinweis. Offen: eine Rundung zwischen Boden und Wand, die im Prusa-Forum das Leck schloss. |
+| Eine Wand ist zu schwach; Muster machen sie steifer | Hacker News: „to have some kind of texture on the surfaces is absolutely needed for strength“ | Muster sind da. Offen: ein Hinweis, welches Muster wie viel aussteift. |
+| Muster als eigenes Teil oder eigene Farbe | [BumpMesh 105](https://github.com/CNCKitchen/stlTexturizer/issues/105) | Fehlt im neuen Kern. Layerling kann es seit 1.146.1. |
+| Ein einzelnes Motiv statt Kacheln (Logo, Schild) | BumpMesh hat dafür in 1.5.0 den „Stamp mode“ ergänzt | Geht: „Bild oder Text“ mit „Einmal über den Bereich“. |
+| Kein Umweg über Export und Import, direkt im Slicer | [OrcaSlicer 14722](https://github.com/OrcaSlicer/OrcaSlicer/issues/14722) | Spricht dafür, den Kern in Layerling einzubauen statt als eigene Seite. |
+| Was kostet es? | [Bambu-Forum zu VesselMaker](https://forum.bambulab.com/t/building-vesselmaker-an-advanced-vase-planter-generator-feedback-welcome/257019): Muster nur gegen Bezahlung | Layerling ist frei. Das ist hier ein Vorteil. |
+
+**Was daraus folgt**
+
+- Eingebaut nach dieser Runde: **Aufschneiden** (unter „Druck“), um in die Wand und auf den Boden zu sehen.
+- Naheliegend als Nächstes: Lithophanie-Leuchte (Foto als Wandstärke; die Bausteine sind da, geprüft ist es
+  nicht), Rundung zwischen Boden und Wand, Muster als eigenes Teil für eine zweite Farbe.
+- Die meisten Forderungen an den Vasenmodus richten sich an die Slicer. Ein Generator kann sie nicht erfüllen,
+  nur die passenden Einstellungen nennen.
 
 ## 3. Der neue Kern
 

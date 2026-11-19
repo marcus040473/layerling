@@ -24,8 +24,10 @@ uniform vec3 warnColor;
 uniform float flatShading;
 uniform float overhangLimit; // sine of the angle; above 1 = not shown
 uniform float layerHeight;   // 0 = no layer lines
+uniform float cut;           // 1 = the front half is taken away, to look into the wall
 out vec4 outColor;
 void main() {
+  if (cut > 0.5 && vPosition.y < 0.0) discard;
   // Seen from behind (the inside of a vase shown open), the wall faces the other way.
   vec3 n = flatShading > 0.5 ? normalize(cross(dFdx(vPosition), dFdy(vPosition))) : normalize(vNormal) * (gl_FrontFacing ? 1.0 : -1.0);
   vec3 v = normalize(eye - vPosition);
@@ -149,7 +151,7 @@ export function createRenderer(canvas) {
 
   const state = {
     count: 0, flat: false, color: [0.5, 0.66, 0.6], warn: [0.85, 0.2, 0.15], line: [0.5, 0.5, 0.5],
-    overhang: 2, layerHeight: 0, yaw: -0.6, pitch: 0.22, distance: 420, target: [0, 0, 90], bedRadius: 150, dirty: true, raf: 0,
+    overhang: 2, layerHeight: 0, cut: false, yaw: -0.6, pitch: 0.22, distance: 420, target: [0, 0, 90], bedRadius: 150, dirty: true, raf: 0,
   }
 
   const draw = () => {
@@ -176,6 +178,7 @@ export function createRenderer(canvas) {
       gl.uniform1f(body.uniforms.flatShading, state.flat ? 1 : 0)
       gl.uniform1f(body.uniforms.overhangLimit, state.overhang)
       gl.uniform1f(body.uniforms.layerHeight, state.layerHeight)
+      gl.uniform1f(body.uniforms.cut, state.cut ? 1 : 0)
       gl.bindVertexArray(vao)
       gl.drawElements(gl.TRIANGLES, state.count, gl.UNSIGNED_INT, 0)
     }

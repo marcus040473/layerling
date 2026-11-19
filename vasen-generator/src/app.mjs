@@ -37,6 +37,7 @@ const app = {
   language: 'de',
   showOverhang: false,
   showLayers: false,
+  showCut: false,
   open: { shape: true, patterns: true },
   selectedPoint: -1,
   seed: 1,
@@ -204,6 +205,7 @@ function applyView() {
     line: cssColor('--grid'),
     overhang: app.showOverhang ? Math.sin((app.params.maxOverhang * Math.PI) / 180) : 2,
     layerHeight: app.showLayers ? app.params.layerHeight : 0,
+    cut: app.showCut,
   })
 }
 
@@ -731,6 +733,7 @@ function renderPanel() {
       select(t('material'), p, 'material', Object.keys(MATERIALS).map((name) => [name, name.toUpperCase()]), { structural: false }),
       toggle(t('showOverhang'), app, 'showOverhang', { onchange: applyView }),
       toggle(t('showLayers'), app, 'showLayers', { onchange: applyView }),
+      toggle(t('showCut'), app, 'showCut', { onchange: applyView }),
       element('div', { class: 'row row-select' }, [
         element('span', { class: 'label', text: t('color') }),
         element('div', { class: 'swatches' }, COLORS.map((color) => element('button', { type: 'button', class: `swatch${color === app.color ? ' is-on' : ''}`, style: `background:${color}`, 'aria-label': color, 'aria-pressed': String(color === app.color), onclick: () => { app.color = color; applyView(); renderPanel(); remember() } }))),
