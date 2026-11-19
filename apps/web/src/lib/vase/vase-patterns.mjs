@@ -670,9 +670,10 @@ export function reliefField(p, shape, zoneOf) {
   // narrow neck has many small cells, and their middle would lie far up).
   const once = p.effect === 'bild' && p.patternFit !== 'kacheln' ? vAt(((p.zoneFrom + p.zoneTo) / 200) * H) : null
   let gridMm = { entwurf: 1.17, standard: 0.7, fein: 0.45 }[p.quality] ?? 0.7
-  // A picture's edges: fine (for printing) softens them fully to its grid; the quicker qualities only a little, so they
-  // stay crisp. Wisp ribs fade by half the grid in every quality.
-  const soften = p.effect === 'wisp' ? 0.5 : p.quality === 'fein' ? 0.55 : 0.3
+  // A picture's edges are softened fully to the grid in every quality. The quicker qualities used to soften them only a
+  // little, to keep them crisp: but an edge finer than the grid that crosses it at a slant comes out as a row of teeth
+  // (seen on every leaf edge and hexagon side at Standard). Wisp ribs fade by half the grid.
+  const soften = p.effect === 'wisp' ? 0.5 : 0.55
   // (Not remembered per height: it follows the grid's spacing, which the build sets later.)
   const blurAt = (z) => {
     if (!picture && p.effect !== 'wisp') return 0
