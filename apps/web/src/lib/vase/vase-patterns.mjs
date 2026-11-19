@@ -69,6 +69,14 @@ export const DEFAULT_LEAF_POINTS = Object.freeze([[0, 0.12], [0.18, 0.7], [0.45,
  */
 const MOTIFS_PER_TILE = { blueten: 2, geflecht: 2, waben: 2, wellen: 3, zellen: 5, rautenwelle: 1, blattfluss: 2, schuppen: 2, kiesel: 6, adern: 2 }
 
+/**
+ * The rows a worked-out family stands in, for keeping its size (see reliefField): how high a row is, in cells, and by
+ * how much of a row the rows are shifted so that their borders lie where the pattern has the least to lose - between
+ * two courses of bricks, between two rows of studs. A picture's rows are its tiles.
+ */
+const ROW_PERIOD = { ziegel: 0.5, noppen: Math.sqrt(3) / 2, wabennetz: Math.sqrt(3) / 2, ringe: 0.5, korb: 0.5, strick: 1, gehaemmert: 1, rauschen: 1 }
+const ROW_OFFSET = { noppen: 0.5, wabennetz: 0.5 }
+
 /** Leaf width at 100 % (mm at the widest circumference: four or five large leaves round a vase 90 mm wide). */
 const LEAF_WIDTH_MM = 66
 /** The drawn leaves: length per width, and width per cell (more than 1: neighbours overlap at the sides). */
@@ -643,13 +651,16 @@ export function reliefField(p, shape, zoneOf) {
   // many round as fit there; otherwise conformal cells that shrink with the circumference.
   const leafy = p.effect === 'blaetter' || p.effect === 'tulpenblaetter'
   const keepSize = leafy && p.leafFixed === 'ja'
+  // The other families can keep their size, too (not wisp ribs, which run up the vase in one piece): cells of one size
+  // all the way up, and each row of the pattern as many round as fit at its height (see `keptHeight` below).
+  const sizeKept = !leafy && p.leafFixed === 'ja' && p.effect !== 'wisp'
   const cellMm = maxC / around
   const V = new Float64Array(steps + 1)
   for (let k = 1; k <= steps; k++) {
     const z0 = ((k - 1) / steps) * H, z1 = (k / steps) * H
     const ds = Math.hypot(z1 - z0, R(z1) - R(z0))
     const c = Math.max(1e-3, (circumference[k] + circumference[k - 1]) / 2)
-    V[k] = V[k - 1] + (keepSize ? ds / cellMm : (ds * around) / (c * stretch))
+    V[k] = V[k - 1] + (keepSize ? ds / cellMm : sizeKept ? ds / (cellMm * stretch) : (ds * around) / (c * stretch))
   }
   const vOf = (z) => {
     const x = clamp(z / H, 0, 1) * steps
@@ -689,14 +700,43 @@ export function reliefField(p, shape, zoneOf) {
     const x = clamp(z / H, 0, 1) * steps
     const k = Math.min(steps - 1, Math.floor(x))
     const c = circumference[k] + (circumference[k + 1] - circumference[k]) * (x - k)
-    return (soften * gridMm * around) / Math.max(1e-3, c)
+    return sizeKept ? (soften * gridMm) / cellMm : (soften * gridMm * around) / Math.max(1e-3, c)
   }
   // Leaves look at many leaves around each point: they are worked out once on a fine raster over the height range and
   // read from it between its points, which makes building and checking a leaf vase many times faster.
   // One's own picture faces the front: the middle of one picture lies there (three quarters of the way round from
   // where the cells start), so a picture put on once, or a word, is seen when the vase is looked at from the front.
   const front = p.effect === 'bild' ? 0.75 * around - 0.5 : 0
-  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : (cu, cv, z) => patternHeight(p, cu - front, cv, around, null, blurAt(z), once)
+  // A family that keeps its size: the pattern stands in rows (a row of bricks, of studs, of a picture's tiles), and each
+  // row has as many cells round the vase as fit at its height, a whole number, so it closes without a seam. Where two
+  // rows with different counts meet, one is faded into the other over a narrow band: there the pattern cannot fit
+  // itself, and a soft join reads better than a step.
+  const rowPeriod = picture ? picture.aspect : (ROW_PERIOD[p.effect] ?? 1)
+  const rowOrigin = once !== null ? once - rowPeriod / 2 : -(ROW_OFFSET[p.effect] ?? 0) * rowPeriod
+  const rowCounts = new Map()
+  const countOfRow = (r) => {
+    let n = rowCounts.get(r)
+    if (n === undefined) rowCounts.set(r, (n = Math.max(3, Math.round(ringAt(rowOrigin + (r + 0.5) * rowPeriod)))))
+    return n
+  }
+  const inRow = (f, cv, r, blur) => {
+    const n = countOfRow(r)
+    return patternHeight(p, f * n - (p.effect === 'bild' ? 0.75 * n - 0.5 : 0), cv, n, null, blur, once)
+  }
+  const ROW_JOIN = 0.16
+  const keptHeight = (cu, cv, z) => {
+    const f = cu / around
+    const x = (cv - rowOrigin) / rowPeriod
+    const r = Math.floor(x), t = x - r
+    const blur = blurAt(z)
+    const h = inRow(f, cv, r, blur)
+    // (A picture put on once or as a band is one row: nothing to join it to.)
+    if (once !== null) return h
+    if (t < ROW_JOIN && countOfRow(r - 1) !== countOfRow(r)) return h + (inRow(f, cv, r - 1, blur) - h) * 0.5 * (1 - smooth(0, ROW_JOIN, t))
+    if (t > 1 - ROW_JOIN && countOfRow(r + 1) !== countOfRow(r)) return h + (inRow(f, cv, r + 1, blur) - h) * 0.5 * (1 - smooth(0, ROW_JOIN, 1 - t))
+    return h
+  }
+  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : sizeKept ? keptHeight : (cu, cv, z) => patternHeight(p, cu - front, cv, around, null, blurAt(z), once)
   const raw = (theta, z, base) => {
     const m = zone(z)
     if (m <= 0) return 0
@@ -772,6 +812,7 @@ export function reliefField(p, shape, zoneOf) {
     return Math.max(raw(theta, z, base), (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy)
   }
   const cellAt = (z) => {
+    if (sizeKept) return cellMm
     const x = clamp(z / H, 0, 1) * steps
     const k = Math.min(steps, Math.round(x))
     return circumference[k] / around
@@ -786,7 +827,8 @@ export function reliefField(p, shape, zoneOf) {
   }
   // The angle a line of the pattern has turned to at height z (the vase's twist and the pattern's lean): the build turns
   // its grid along, so slanted ribs and edges run along the grid instead of across it, where they came out beaded.
-  const shear = leafy ? 0 : Math.tan((clamp(p.patternTwist, -75, 75) * Math.PI) / 180)
+  // (A family that keeps its size has another count of cells in every row: its lines do not turn as one, and the grid is left upright.)
+  const shear = leafy || sizeKept ? 0 : Math.tan((clamp(p.patternTwist, -75, 75) * Math.PI) / 180)
   const turnAt = (z) => rotation(twistT(z)) - (TAU * shear * (vOf(z) - start)) / around
   // The same from the bottom up, as the build's grid and the print-friendly raster turn.
   let bottomTurn = null

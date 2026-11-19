@@ -106,6 +106,51 @@ describe("the vase's worked-out relief patterns", () => {
     }
   }, 120000);
 
+  it("keep their size where the vase narrows, if asked: fewer round there instead of smaller ones", () => {
+    // A funnel, narrow at the bottom: the bricks of a course counted by the joints between them.
+    const bricksAt = (mesh: { vertices: Float64Array }, z: number) => {
+      const columns = 300;
+      const most = new Float64Array(columns);
+      for (let i = 0; i < mesh.vertices.length; i += 3) {
+        if (Math.abs(mesh.vertices[i + 2] - z) > 0.7) continue;
+        const column = Math.floor(((Math.atan2(mesh.vertices[i + 1], mesh.vertices[i]) + Math.PI) / (2 * Math.PI)) * columns) % columns;
+        most[column] = Math.max(most[column], Math.hypot(mesh.vertices[i], mesh.vertices[i + 1]));
+      }
+      const filled = [...most].filter((r) => r > 0);
+      const high = Math.max(...filled);
+      const raised = filled.map((r) => high - r < 1);
+      let count = 0;
+      for (let k = 0; k < raised.length; k += 1) if (raised[k] && !raised[(k + raised.length - 1) % raised.length]) count += 1;
+      return count;
+    };
+    // The middle of a course of bricks near a height (courses are half a cell high; the joints between lie lower).
+    const courseNear = (mesh: { vertices: Float64Array }, from: number) => {
+      let best = 0, at = from;
+      for (let z = from; z < from + 14; z += 0.7) {
+        const n = bricksAt(mesh, z);
+        if (n > best) {
+          best = n;
+          at = z;
+        }
+      }
+      return { count: best, at };
+    };
+    const settings = { profile: "trichter", effect: "ziegel", patternCount: 12, reliefDepth: 2, quality: "standard" };
+    const shrinking = buildVase(settings);
+    const kept = buildVase({ ...settings, leafFixed: "ja" });
+    expect(openEdges(kept)).toBe(0);
+    // As the count says everywhere - or as many as fit: at the narrow foot clearly fewer than at the wide rim.
+    expect(courseNear(shrinking, 20).count).toBe(12);
+    expect(courseNear(shrinking, 160).count).toBe(12);
+    const low = courseNear(kept, 20).count, high = courseNear(kept, 160).count;
+    expect(high).toBe(12);
+    expect(low).toBeLessThan(10);
+    expect(low).toBeGreaterThanOrEqual(6);
+    // Wisp ribs run up the vase in one piece: they do not take the switch.
+    const ribs = { profile: "trichter", effect: "wisp", quality: "entwurf" };
+    expect(Array.from(buildVase({ ...ribs, leafFixed: "ja" }).vertices.slice(0, 600))).toEqual(Array.from(buildVase(ribs).vertices.slice(0, 600)));
+  }, 120000);
+
   it("follow the width of their joints and strands, and turn inside out", () => {
     const p = normalizeParams({ effect: "wabennetz" });
     // In the middle of a joint (where three hexagons meet lies at cu 0, cv 1/sqrt 3): narrow joints leave more raised.

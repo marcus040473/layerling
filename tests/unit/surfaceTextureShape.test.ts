@@ -45,6 +45,13 @@ describe("which shapes take a surface texture", () => {
     expect(offersSurfaceTexture(shape({ surfaceTexture: normalizeSurfaceTexture({}) }))).toBe(true);
   });
 
+  it("is not offered for a vase, which has patterns of its own - unless the vase carries a texture from before", () => {
+    expect(offersSurfaceTexture(shape({}))).toBe(true);
+    expect(offersSurfaceTexture(shape({ kind: "vase" }))).toBe(false);
+    // To change or remove the one it has.
+    expect(offersSurfaceTexture(shape({ kind: "vase", surfaceTexture: normalizeSurfaceTexture({}) }))).toBe(true);
+  });
+
   it("names the patterns in the current language", () => {
     expect(surfacePatternLabel("knurl")).toBe("Knurling");
     expect(surfacePatternLabel("honeycomb")).toBe("Honeycomb");

@@ -201,6 +201,17 @@ describe("a vase in its settings", () => {
     // (Advanced keeps the state it was left in: opened here only if it is closed.)
     if (bricks.panel.querySelector(".vase-more")?.getAttribute("aria-expanded") !== "true") act(() => bricks.panel.querySelector<HTMLButtonElement>(".vase-more")!.click());
     expect(rangeNamed(bricks.panel, "Width (%)")).toBeDefined();
+    // A pattern may keep its size where the vase narrows, as leaves may; wisp ribs run up the vase in one piece.
+    const keep = (panel: HTMLElement) => [...panel.querySelectorAll<HTMLLabelElement>("label.check-property")].find((row) => row.textContent === "Keep the same size")?.querySelector("input");
+    expect(keep(bricks.panel)).toBeDefined();
+    act(() => keep(bricks.panel)!.click());
+    expect(bricks.calls.updates.at(-1)?.vase?.leafFixed).toBe("ja");
+    const hexagons = mount({ vase: { ...bricks.shape.vase!, effect: "waben" } });
+    openTab(hexagons.panel, "Pattern");
+    expect(keep(hexagons.panel)).toBeDefined();
+    const wisp = mount({ vase: { ...bricks.shape.vase!, effect: "wisp" } });
+    openTab(wisp.panel, "Pattern");
+    expect(keep(wisp.panel)).toBeUndefined();
     // Rings run round the vase: nothing to lean.
     const rings = mount({ vase: { ...bricks.shape.vase!, effect: "ringe" } });
     openTab(rings.panel, "Pattern");

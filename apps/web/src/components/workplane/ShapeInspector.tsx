@@ -1717,6 +1717,9 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       properties.push(pattern(range("lowpolyAround", "prop.vaseFacetsAround", 1)), pattern(range("lowpolyRows", "prop.vaseFacetRows", 1)), pattern(percent("lowpolyJitter", "prop.vaseFacetJitter")));
       properties.push(patternMore(range("lowpolySeed", "prop.vaseSeed", 1)));
     }
+    // A pattern may keep its size where the vase narrows: fewer of it round there instead of a smaller one (not wisp
+    // ribs, which run up the vase in one piece).
+    const leafFixed = pattern({ type: "toggle", id: "vase.leafFixed", label: t("prop.vaseLeafFixed"), value: vase.leafFixed === "ja", onChange: (value) => setVase({ leafFixed: value ? "ja" : "nein" }) });
     // A pattern from a picture: how high, how often round, how it leans; stretched or turned inside out under Advanced.
     if (isVasePicturePattern(vase.effect)) {
       // One's own picture or a text: the text (its picture is drawn here, where there is a canvas) and how it is put on.
@@ -1726,19 +1729,18 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
           pattern(choice("patternFit", "prop.vasePatternFit")),
         );
       }
-      properties.push(reliefDepth, count, lean(pattern), aspect, patternMore({ type: "toggle", id: "vase.patternInvert", label: t("prop.vasePatternInvert"), value: vase.patternInvert === "ja", onChange: (value) => setVase({ patternInvert: value ? "ja" : "nein" }) }));
+      properties.push(reliefDepth, count, lean(pattern), leafFixed, aspect, patternMore({ type: "toggle", id: "vase.patternInvert", label: t("prop.vasePatternInvert"), value: vase.patternInvert === "ja", onChange: (value) => setVase({ patternInvert: value ? "ja" : "nein" }) }));
     }
     // A worked-out pattern: how high, how often round, how it leans (rings do not); how broad its joints, studs or
     // strands are (gentle hills have none), stretched or turned inside out under Advanced.
     if (isComputedPattern(vase.effect)) {
       properties.push(reliefDepth, count);
       if (vase.effect !== "ringe") properties.push(lean(pattern));
+      properties.push(leafFixed);
       if (vase.effect !== "rauschen") properties.push(patternMore(percent("patternWidth", "prop.vasePatternStrength")));
       properties.push(aspect, patternMore({ type: "toggle", id: "vase.patternInvert", label: t("prop.vasePatternInvert"), value: vase.patternInvert === "ja", onChange: (value) => setVase({ patternInvert: value ? "ja" : "nein" }) }));
     }
     if (vase.effect === "wisp") properties.push(reliefDepth, count, lean(pattern), patternMore(range("patternGroup", "prop.vasePatternGroup", 1)), patternMore(percent("patternWidth", "prop.vasePatternChannel")));
-    // Leaves may keep their size where the vase narrows: fewer round there instead of smaller ones.
-    const leafFixed = pattern({ type: "toggle", id: "vase.leafFixed", label: t("prop.vaseLeafFixed"), value: vase.leafFixed === "ja", onChange: (value) => setVase({ leafFixed: value ? "ja" : "nein" }) });
     if (vase.effect === "tulpenblaetter") properties.push(reliefDepth, count, lean(pattern), leafFixed, patternMore(range("leafOverlap", "prop.vaseLeafOverlap", 1)));
     if (vase.effect === "blaetter") {
       properties.push(pattern(choice("leafShape", "prop.vaseLeafShape")));
