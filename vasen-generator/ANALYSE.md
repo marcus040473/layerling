@@ -231,53 +231,26 @@ kann der neue Kern die Vase bauen.
 Die Muster von „Surface Texture“, die es im neuen Kern noch nicht gibt: Rändel als eigenes Muster (geht als
 gekreuzte Rillen), Seil, Rinde, Holz, Carbon, Fachwerk, Steine, Quadrate, Dreiecke, Risse.
 
-## 5. Was in Layerling eingebaut ist
+## 5. Weg nach Layerling
 
-Die Muster stecken jetzt in Layerlings Vase selbst (Zweig `claude/hopeful-dirac-sj8lu3`, auf Stefans 1.166.0).
+In dieser Reihenfolge, jeder Schritt für sich nutzbar:
 
-- Unter „Muster“ gibt es neun weitere Einträge: Ringe, Waben, Noppen, Gehämmert, Schuppen, Strick, Geflecht,
-  Ziegel, Körnung. Darunter „Zweites Muster“ mit eigenem Höhenbereich.
-- Jedes Muster geht in den Körper hinein oder steht heraus. Beim Wählen bekommt es die Maße, die zu ihm passen.
-- Die Muster werden im alten Kern auf dessen eigenem Raster gerechnet (`lib/vase/vase-patterns.mjs`). Deshalb
-  gehen sie mit allem zusammen, was die Vase hat: Deckel mit Gewinde, Beine, Böden, Durchbrüche, Lampe.
-- Der alte Kern rechnet dabei pro Reihe nur noch einmal, was nur von der Höhe abhängt. Das Ergebnis ist
-  dasselbe wie vorher, alle bisherigen Tests laufen unverändert.
-- Eine Vase mit Muster bekommt ein Budget an Dreiecken je Feinheit (180.000, 700.000, 2 Mio.).
-
-Gemessen in Layerlings Kern, Flasche 90 × 180 mm, Feinheit „Standard“:
-
-| Muster | Zeit | Dreiecke |
-|---|---:|---:|
-| Ringe | 15 ms | 74.000 |
-| Waben | 68 ms | 406.000 |
-| Noppen | 31 ms | 178.000 |
-| Gehämmert | 19 ms | 97.000 |
-| Schuppen | 32 ms | 192.000 |
-| Strick | 98 ms | 345.000 |
-| Geflecht | 35 ms | 187.000 |
-| Ziegel | 141 ms | 732.000 |
-| Körnung | 129 ms | 605.000 |
-| Waben, hohl, Schraubdeckel | 115 ms | 534.000 |
-
-Zum Vergleich: Waben über „Surface Texture“ brauchten auf derselben Vase 9,7 s.
-
-**Nicht eingebaut** sind bisher: Bild und Text als Relief, die mitdrehenden Spalten, das Vereinfachen glatter
-Flächen, die neuen Querschnitte (Stern, Superformel, Oval) und das Aufschneiden der Ansicht. Die gibt es nur im
-eigenständigen Generator in diesem Ordner.
-
-## 6. Weg nach Layerling: was noch offen ist
-
-1. **Die drei Kopien sparen.** `fittedVaseMesh` und `createVaseGeometry` kopieren Punkte und Dreiecke mehrfach.
-2. **Vorschau beim Ziehen.** Während ein Regler bewegt wird, in der Feinheit „Entwurf“ bauen, danach in der
-   gewählten.
-3. **Glatte Flächen vereinfachen** und **Spalten mitdrehen**, wie im eigenständigen Generator. Beides greift tief
-   in das Raster des alten Kerns ein.
-4. **Bild und Text** als Muster. Offen ist, wo das Bild im Entwurf liegt, ohne ihn schwer zu machen.
+1. **Neue Muster als Wahl der Vase.** `patterns.mjs` und `engine.mjs` nach `lib/vase/` legen. `vaseBody.ts`
+   fragt `fromLayerling`; ist `unsupported` leer, baut der neue Kern, sonst der alte. Die Vase bekommt die Lagen
+   als neue Einstellung `layers`. Am Rest des Editors ändert sich nichts, das Netz hat dieselbe Gestalt
+   (`vertices`, `indices`).
+2. **Die drei Kopien sparen.** `fittedVaseMesh` und `createVaseGeometry` nehmen die Felder des Kerns direkt und
+   seine Normalen dazu. Die Schattierung mit Knick-Erkennung entfällt für die Vase.
+3. **Vorschau beim Ziehen.** Während ein Regler bewegt wird, mit `quality: 'draft'` bauen, danach in der
+   gewählten Feinheit.
+4. **Zubehör umziehen.** Deckel, Beine und Einsätze bauen auf der Wand ohne Muster auf. Dafür gibt es
+   `vaseSampler`, das dem alten `outerAt` entspricht.
+5. **Fugenschneiden für Voronoi** auf das neue Raster setzen.
 
 Vor einem PR an Stefan steht seine Zustimmung zur Richtung. Das ist ein großer Umbau an einem Teil, den er
 gerade erst übernommen hat.
 
-## 7. Was nicht geprüft ist
+## 6. Was nicht geprüft ist
 
 - **Kein Probedruck.** Die Druck-Hinweise sind gerechnet, nicht am Drucker bestätigt. Die Grenze von 45° und
   die Überlappung der Bahnen sind übliche Faustwerte.

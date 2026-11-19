@@ -232,7 +232,6 @@ A {{ui:shape.vase}} önálló test vázákhoz, cserepekhez és lámpaernyőkhöz
 - {{ui:prop.vaseSection}}: kör, lekerekített sarkú sokszög vagy hullám (lágy, hegyes, ívek vagy uszonyok). A {{ui:prop.vaseTwist}} a magasság mentén elforgatja, a {{ui:prop.vaseSway}} ide-oda lengeti.
 - {{ui:prop.vaseBody}}: a {{ui:vase.bodySolid}} a szeletelő vázamódjához való (spiralizálásnak is hívják): a szeletelő egyetlen falat nyomtat spirálban, és kihagyja a tetejét és a kitöltést, ezért a test tömörként van rajzolva. A {{ui:vase.bodyHollow}} valódi falat és aljat ad egy normál nyomtatáshoz. Ha a {{ui:prop.vaseBottom}} 0 mm, az üreges vázának nincs alja: mindkét végén nyitott cső, tölcsérekhez, fúvókákhoz és csövekhez.
 - {{ui:prop.vaseEffect}}: egy új váza sima. Választható hornyok, csíkok, Voronoi-cellák vagy fazetták (low poly) a külsején, ha szeretnéd, a magasság egy sávjában; a vázához tartoznak, és vele együtt szerkeszthetők maradnak.
-- A gyűrűk, a lépsejt, a dudorok, a kalapált felület, a pikkelyek, a kötött minta, a fonat, a téglák és a szemcse közvetlenül a váza falán számolódnak: azonnal megjelennek, a testbe mélyednek vagy kiállnak belőle ({{ui:prop.vasePatternWay}}), és minden aljjal, fedéllel és lábbal együtt járnak. A {{ui:prop.vaseEffect2}} egy másodikat tesz az első fölé, saját magasságtartományban.
 
 A {{ui:prop.vaseSection2}} a magasság mentén átvezeti a keresztmetszetet egy másodikba, például alul körből felül hatszögbe.
 

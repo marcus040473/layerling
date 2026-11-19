@@ -242,7 +242,6 @@ Grupę wyciętą w jedną bryłę, na przykład prostopadłościan z otworami, m
 - {{ui:prop.vaseSection}}: okrąg, wielokąt z zaokrąglonymi narożnikami albo fala (łagodna, szpiczasta, łuki albo płetwy). {{ui:prop.vaseTwist}} obraca go wraz z wysokością, a {{ui:prop.vaseSway}} pozwala mu kołysać się tam i z powrotem.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} jest do trybu wazy w slicerze (zwanego też spiralizacją): slicer drukuje jedną ściankę spiralnie i pomija górę oraz wypełnienie, więc bryła jest rysowana jako pełna. {{ui:vase.bodyHollow}} daje prawdziwą ściankę i dno do zwykłego druku. Przy {{ui:prop.vaseBottom}} 0 mm pusty wazon nie ma dna: rura otwarta z obu stron, do czar, ustników i rur.
 - {{ui:prop.vaseEffect}}: nowy wazon jest gładki. Do wyboru są rowki, paski, komórki Woronoja albo fasety (low poly) na zewnątrz, jeśli chcesz, w pasie wysokości. Należą do wazonu i dają się z nim edytować.
-- Pierścienie, plaster miodu, wypustki, powierzchnia młotkowana, łuski, dzianina, plecionka, cegły i ziarno są liczone bezpośrednio na ściance wazonu: pojawiają się od razu, wchodzą w bryłę albo z niej wystają ({{ui:prop.vasePatternWay}}) i pasują do każdego dna, pokrywki i nóżki. {{ui:prop.vaseEffect2}} kładzie drugi wzór na pierwszym, we własnym zakresie wysokości.
 
 {{ui:prop.vaseSection2}} przeprowadza przekrój w drugi wraz z wysokością, na przykład z okręgu na dole w sześciokąt na górze.
 

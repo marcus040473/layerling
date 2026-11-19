@@ -233,7 +233,6 @@ Skupina, izrezana v eno telo, na primer kvader z luknjami, se barva kot eno telo
 - {{ui:prop.vaseSection}}: krog, mnogokotnik z zaobljenimi vogali ali val (mehak, koničast, loki ali lamele). {{ui:prop.vaseTwist}} ga po višini zasuka, {{ui:prop.vaseSway}} ga zaniha sem in tja.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} je za način vaze v rezalniku (tudi »spiralizacija«): rezalnik natisne eno steno v spirali, brez pokrova in polnila, zato je telo narisano polno. {{ui:vase.bodyHollow}} da pravo steno in dno za običajen tisk. Z {{ui:prop.vaseBottom}} na 0 mm votla vaza nima dna: cev, odprta na obeh koncih, za lijake, ustnike in cevi.
 - {{ui:prop.vaseEffect}}: nova vaza je gladka. Na izbiro so utori, proge, Voronojeve celice ali ploskve (low poly) na zunanji strani, po želji le v delu višine; spadajo k vazi in ostanejo z njo nastavljivi.
-- Obroči, satje, izbokline, kovana površina, luske, pletenina, pletivo, opeke in zrno se izračunajo neposredno na steni vaze: pojavijo se takoj, gredo v telo ali iz njega ({{ui:prop.vasePatternWay}}) in gredo skupaj z vsakim dnom, pokrovom in nogo. {{ui:prop.vaseEffect2}} položi drugega čez prvega, v svojem višinskem območju.
 
 {{ui:prop.vaseSection2}} pusti, da prerez po višini mehko preide v drugega, na primer iz kroga spodaj v šestkotnik zgoraj.
 

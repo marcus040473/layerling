@@ -238,7 +238,6 @@ De {{ui:shape.vase}} is een eigen lichaam voor vazen, potten en lampenkappen. De
 - {{ui:prop.vaseSection}}: een cirkel, een veelhoek met afgeronde hoeken of een golf (zacht, spits, bogen of lamellen). {{ui:prop.vaseTwist}} draait hem over de hoogte, {{ui:prop.vaseSway}} laat hem heen en weer slingeren.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} is voor de vaasmodus van de slicer (ook „spiraliseren”): de slicer print één wand als spiraal en laat deksel en vulling weg, daarom is het lichaam massief getekend. {{ui:vase.bodyHollow}} geeft een echte wand en bodem voor een gewone print. Met {{ui:prop.vaseBottom}} op 0 mm heeft de holle vaas geen bodem: een buis die aan beide kanten open is, voor klankbekers, mondstukken en pijpen.
 - {{ui:prop.vaseEffect}}: een nieuwe vaas is glad. Te kiezen zijn groeven, strepen, Voronoi-cellen of facetten (low poly) aan de buitenkant, desgewenst alleen in een deel van de hoogte; ze horen bij de vaas en blijven ermee aanpasbaar.
-- Ringen, honingraat, noppen, een gehamerd vlak, schubben, breiwerk, vlechtwerk, bakstenen en een korrel worden direct op de wand van de vaas berekend: ze zijn er meteen, gaan het lichaam in of steken eruit ({{ui:prop.vasePatternWay}}) en gaan samen met elke bodem, deksel en poot. {{ui:prop.vaseEffect2}} legt er een tweede overheen, in een eigen hoogtebereik.
 
 {{ui:prop.vaseSection2}} laat de doorsnede over de hoogte zacht overgaan in een tweede, bijvoorbeeld van een cirkel onder naar een zeshoek boven.
 

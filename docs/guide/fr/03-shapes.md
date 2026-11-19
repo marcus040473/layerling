@@ -232,7 +232,6 @@ Le {{ui:shape.vase}} est un corps à part pour les vases, pots et abat-jour. Ses
 - {{ui:prop.vaseSection}} : un cercle, un polygone aux coins arrondis ou une vague (douce, pointue, arcs ou lamelles). {{ui:prop.vaseTwist}} la fait tourner sur la hauteur, {{ui:prop.vaseSway}} la fait osciller d'un côté à l'autre.
 - {{ui:prop.vaseBody}} : {{ui:vase.bodySolid}} sert au mode vase du trancheur (aussi « spiraliser ») : le trancheur imprime une seule paroi en spirale, sans dessus ni remplissage, c'est pourquoi le corps est dessiné plein. {{ui:vase.bodyHollow}} donne une vraie paroi et un vrai fond pour une impression normale. Avec {{ui:prop.vaseBottom}} à 0 mm, le vase creux n'a pas de fond : un tube ouvert aux deux bouts, pour des pavillons, des embouchures et des tuyaux.
 - {{ui:prop.vaseEffect}} : un nouveau vase est lisse. Au choix : rainures, bandes, cellules de Voronoi ou facettes (low poly) à l'extérieur, au besoin sur une partie de la hauteur seulement ; ils font partie du vase et restent modifiables avec lui.
-- Anneaux, nid d'abeilles, picots, surface martelée, écailles, tricot, vannerie, briques et grain sont calculés directement sur la paroi du vase : ils apparaissent aussitôt, entrent dans le corps ou en ressortent ({{ui:prop.vasePatternWay}}) et vont avec chaque fond, couvercle et pied. {{ui:prop.vaseEffect2}} en pose un second par-dessus le premier, dans sa propre plage de hauteur.
 
 {{ui:prop.vaseSection2}} fait passer la section peu à peu à une seconde sur la hauteur, par exemple d'un cercle en bas à un hexagone en haut.
 

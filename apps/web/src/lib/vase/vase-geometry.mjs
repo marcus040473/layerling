@@ -1,9 +1,7 @@
 /**
  * Vase generator: a vase from a cross-section (circle, polygon, wave or drawn
  * by hand) and a body shape (preset or drawn by hand), twisted if wanted,
- * with a surface: grooves, stripes, Voronoi or low poly, or one of the patterns
- * worked out on the wall itself (vase-patterns.mjs: rings, honeycomb, scales, knitting
- * and more), with a second one over it - also only in a
+ * with a surface: grooves, stripes, Voronoi or low poly - also only in a
  * height range. A plain ES module without dependencies: the preview in the
  * browser, the STL export and the insert into Layerling all compute with
  * exactly this code.
@@ -18,10 +16,9 @@
  */
 import { MeshBuilder, capWithHoles, holeCeiling, holeWall, zipRings } from './mesh-tools.mjs'
 import { CUTOUTS, CUTOUT_EDGES, cutoutPattern, wallZone } from './vase-cutout.mjs'
-import { PATTERNS, PATTERN_FLANKS, PATTERN_WAYS, patternField, patternSlots, preparePattern, steppedRows } from './vase-patterns.mjs'
 import { REINFORCE, slitBody } from './vase-slits.mjs'
 
-export { CUTOUTS, CUTOUT_EDGES, PATTERNS, PATTERN_FLANKS, PATTERN_WAYS, REINFORCE }
+export { CUTOUTS, CUTOUT_EDGES, REINFORCE }
 
 /** Silhouettes as control points [height 0..1, radius 0..1 relative to the largest diameter]. */
 export const PROFILES = {
@@ -63,9 +60,7 @@ export const PART_KEYS = ['legMode', 'legCount', 'legHeight', 'legDiameter', 'le
  */
 export const LID_MODES = { keiner: 'Keiner', stuelp: 'Stülpdeckel', schnapp: 'Schnappdeckel', schraube: 'Schraubdeckel', kanne: 'Teekannendeckel' }
 export const SYMMETRIES = { halb: 'Hälfte', viertel: 'Viertel', windmuehle: 'Windmühle', frei: 'Frei' }
-export const EFFECTS = { keine: 'Keine', rillen: 'Rillen', streifen: 'Streifen', voronoi: 'Voronoi', lowpoly: 'Low Poly', ...PATTERNS }
-/** A second pattern over the vase's own: one of those worked out on the wall, in a height band of its own. */
-export const EFFECTS2 = { keine: 'Keine', ...PATTERNS }
+export const EFFECTS = { keine: 'Keine', rillen: 'Rillen', streifen: 'Streifen', voronoi: 'Voronoi', lowpoly: 'Low Poly' }
 /** Rotation of the cross-section over the height: even (twist + sway) or as a drawn curve. */
 export const TWIST_MODES = { gleichmaessig: 'Gleichmäßig', kurve: 'Als Kurve' }
 /** Material for weight and filament: density in g/cm^3 (manufacturer figures, rounded). */
@@ -259,39 +254,6 @@ export const DEFAULTS = Object.freeze({
   lowpolyRows: 10,
   lowpolyJitter: 0.35,
   lowpolySeed: 1,
-  /**
-   * The patterns worked out on the wall (effect one of PATTERNS): how many cells round the vase (rings: how many
-   * over the height), how far the wall moves and which way, the share of a cell a joint, bump or strand takes,
-   * how much higher than wide a cell is, how its flanks fall, by how many degrees the pattern turns over the
-   * height on top of the vase's twist, scales with their tips up, the variant of the random patterns, and how far
-   * rings swing up and down (in rings) and how often round the vase.
-   */
-  patternCount: 22,
-  patternDepth: 0.9,
-  patternWay: 'innen',
-  patternWidth: 0.28,
-  patternAspect: 1,
-  patternFlank: 'rund',
-  patternTurn: 0,
-  patternFlip: 'nein',
-  patternSeed: 1,
-  patternWave: 0,
-  patternWaves: 3,
-  /** A second pattern over the first, with the same settings of its own and its own height band. */
-  effect2: 'keine',
-  pattern2Count: 24,
-  pattern2Depth: 1,
-  pattern2Way: 'innen',
-  pattern2Width: 0.5,
-  pattern2Aspect: 1,
-  pattern2Flank: 'rund',
-  pattern2Turn: 0,
-  pattern2Flip: 'nein',
-  pattern2Seed: 1,
-  pattern2Wave: 0,
-  pattern2Waves: 3,
-  zone2From: 0,
-  zone2To: 100,
 })
 
 /** Limits for every number; the page uses the same ones for its sliders. */
@@ -379,24 +341,6 @@ export const LIMITS = {
   lowpolyRows: [1, 80],
   lowpolyJitter: [0, 0.9],
   lowpolySeed: [1, 9999],
-  patternCount: [1, 200],
-  patternDepth: [0, 4],
-  patternWidth: [0.05, 1],
-  patternAspect: [0.3, 4],
-  patternTurn: [-1440, 1440],
-  patternSeed: [1, 9999],
-  patternWave: [0, 2],
-  patternWaves: [1, 24],
-  pattern2Count: [1, 200],
-  pattern2Depth: [0, 4],
-  pattern2Width: [0.05, 1],
-  pattern2Aspect: [0.3, 4],
-  pattern2Turn: [-1440, 1440],
-  pattern2Seed: [1, 9999],
-  pattern2Wave: [0, 2],
-  pattern2Waves: [1, 24],
-  zone2From: [0, 100],
-  zone2To: [0, 100],
 }
 
 const MAX_SEGMENTS = 2400
@@ -405,12 +349,6 @@ export const WATERTIGHT_MIN = 1.6
 /** Nozzle the checks assume (mm): two lines = the thinnest sensible wall. */
 const NOZZLE = 0.4
 const MAX_ROWS = 1200
-/**
- * With a pattern worked out on the wall, the triangles the outer wall may take, per quality. Such a pattern asks
- * for a point every few tenths of a millimetre; where that would be more, columns and rows grow coarser by the
- * same share, so a large vase stays a mesh the editor and the slicer still work with.
- */
-const PATTERN_TRIANGLES = { entwurf: 180000, standard: 700000, fein: 2000000 }
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
@@ -436,7 +374,7 @@ export function normalizeParams(input = {}) {
   p.twistPoints = normalizeTwistPoints(input.twistPoints)
   for (const [key, [min, max]] of Object.entries(LIMITS)) p[key] = clamp(p[key], min, max)
   p.ribCount = Math.round(p.ribCount)
-  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount', 'patternCount', 'patternSeed', 'patternWaves', 'pattern2Count', 'pattern2Seed', 'pattern2Waves']) p[key] = Math.round(p[key])
+  for (const key of ['polySides', 'section2Sides', 'section2Waves', 'sectionWaves', 'drawRepeat', 'stripeCount', 'lowpolyAround', 'lowpolyRows', 'voronoiSeed', 'lowpolySeed', 'drainHoles', 'rubberFeet', 'legCount', 'cutoutSeed', 'reinforceCount']) p[key] = Math.round(p[key])
   if (p.rubberFeet > 0 && p.rubberFeet < 3) p.rubberFeet = 3
   if (!LEG_MODES[p.legMode]) p.legMode = DEFAULTS.legMode
   if (!LEG_SHAPES[p.legShape]) p.legShape = DEFAULTS.legShape
@@ -453,11 +391,6 @@ export function normalizeParams(input = {}) {
   if (p.section2To < p.section2From) [p.section2From, p.section2To] = [p.section2To, p.section2From]
   if (!SYMMETRIES[p.drawSymmetry]) p.drawSymmetry = DEFAULTS.drawSymmetry
   if (!EFFECTS[p.effect]) p.effect = DEFAULTS.effect
-  if (!EFFECTS2[p.effect2]) p.effect2 = DEFAULTS.effect2
-  for (const key of ['patternFlank', 'pattern2Flank']) if (!PATTERN_FLANKS[p[key]]) p[key] = DEFAULTS[key]
-  for (const key of ['patternWay', 'pattern2Way']) if (!PATTERN_WAYS[p[key]]) p[key] = DEFAULTS[key]
-  for (const key of ['patternFlip', 'pattern2Flip']) if (!YES_NO[p[key]]) p[key] = DEFAULTS[key]
-  if (p.zone2To < p.zone2From) [p.zone2From, p.zone2To] = [p.zone2To, p.zone2From]
   if (!WAVE_STYLES[p.sectionWaveStyle]) p.sectionWaveStyle = DEFAULTS.sectionWaveStyle
   if (!INNER_SHAPES[p.innerShape]) p.innerShape = DEFAULTS.innerShape
   if (p.stripeStyle !== 'einfach' && p.stripeStyle !== 'doppelt') p.stripeStyle = DEFAULTS.stripeStyle
@@ -1275,35 +1208,18 @@ export function vaseShape(input) {
   const section = second
     ? { table: first.table, at: first.at, starShaped: first.starShaped && second.starShaped, valid: first.valid && second.valid, min: Math.min(first.min, second.min), mean: Math.max(first.mean, second.mean) }
     : first
-  // The wall asks row by row: what depends on the height alone is kept for the height asked last (here, in
-  // sectionAt and in buildVase's effect), which gives the same numbers for a fraction of the work.
-  let radiusZ = NaN, radiusValue = 0
-  const R = (z) => {
-    if (z !== radiusZ) {
-      radiusZ = z
-      radiusValue = (maxR * Math.max(0.02, radiusAt(clamp(z / H, 0, 1)))) / profileMax
-    }
-    return radiusValue
-  }
+  const R = (z) => (maxR * Math.max(0.02, radiusAt(clamp(z / H, 0, 1)))) / profileMax
   const twistT = twistParameter(p, R, H)
   // Outside the height range the cross-section turns into a circle (mean radius,
   // at the tips = 1 or at the troughs = smallest table value) - during a transition mixed like the cross-section.
   const roundOf = (s) => ({ mitte: s.mean, spitzen: 1, grund: s.min })[p.sectionOutside]
-  const roundFirst = roundOf(first), roundSecond = second ? roundOf(second) : 0
-  let rowZ = NaN, rowTurn = 0, rowBlend = 0, rowWeight = 1
   const sectionAt = (theta, z) => {
-    if (z !== rowZ) {
-      rowZ = z
-      rowTurn = rotation(twistT(z))
-      rowBlend = second ? sectionBlend(z, p) : 0
-      rowWeight = sectionZoneWeight(z, p)
-    }
-    const th = theta - rowTurn
-    const b = rowBlend
+    const th = theta - rotation(twistT(z))
+    const b = second ? sectionBlend(z, p) : 0
     const v = b <= 0 ? first.at(th) : b >= 1 ? second.at(th) : first.at(th) + (second.at(th) - first.at(th)) * b
-    const w = rowWeight
+    const w = sectionZoneWeight(z, p)
     if (w >= 1) return v
-    const roundTo = b <= 0 ? roundFirst : roundFirst + (roundSecond - roundFirst) * b
+    const roundTo = b <= 0 ? roundOf(first) : roundOf(first) + (roundOf(second) - roundOf(first)) * b
     return roundTo + (v - roundTo) * w
   }
   const outerAt = (theta, z) => R(z) * sectionAt(theta, z)
@@ -1326,9 +1242,6 @@ export function vaseShape(input) {
   const ribsActive = p.effect === 'rillen' && p.ribCount > 0 && p.ribDepth > 0
   const lowpoly = p.effect === 'lowpoly'
   const maxDepth = effectDepth(p, ribsActive)
-  // The patterns worked out on the wall (vase-patterns.mjs): none on facets, which are shape.
-  const patternLayers = lowpoly ? [] : patternSlots(p).map(preparePattern)
-  const patterns = patternLayers.length ? patternField(patternLayers, { H, rotationAt: (z) => rotation(twistT(z)), meanRadius: (z) => R(z) * section.mean }) : null
   // Facets: every point of a facet lies inward of the smallest nearby corner by at most half the angle of a
   // (shifted) column - the inner wall stays below that.
   const lowpolyFloorAt = (theta, z) => {
@@ -1348,7 +1261,7 @@ export function vaseShape(input) {
   const innerSection = Math.max(0.02, section.min * 0.999)
   const baseInnerAt = (theta, z) => {
     const tiltZ = Math.sqrt(1 + slopeZ(z) ** 2)
-    const zoneDepth = maxDepth * (lowpoly ? 0 : zoneMask(z, p)) + (patterns ? patterns.inwardAt(z) : 0)
+    const zoneDepth = maxDepth * (lowpoly ? 0 : zoneMask(z, p))
     const sec = roundInner ? innerSection : sectionAt(theta, z)
     // Tilt of the cross-section: measure the wall perpendicular to the contour, not only radially.
     const ds = roundInner ? 0 : (sectionAt(theta + dAngle, z) - sectionAt(theta - dAngle, z)) / (2 * dAngle)
@@ -1376,7 +1289,7 @@ export function vaseShape(input) {
     }
   /** Outer rim of the bottom (with facets, the polygon of the lowest corners). */
   const rimAt = (theta) => (lowpoly ? castRay(lowpolyRim, lowpolyRimEdges, theta)[0] || outerAt(theta, 0) * 0.5 : outerAt(theta, 0))
-  return { p, H, maxR, R, rotation, twistT, section, sectionAt, outerAt, minOuterAt, innerAt, baseInnerAt, rimAt, lowpolyVertex, lid, neck, patterns }
+  return { p, H, maxR, R, rotation, twistT, section, sectionAt, outerAt, minOuterAt, innerAt, baseInnerAt, rimAt, lowpolyVertex, lid, neck }
 }
 
 /** Does a circle (cx, cy, r) with a margin of `margin` lie entirely inside the rim `radiusAt(angle)`? */
@@ -1673,7 +1586,7 @@ export function vaseChecks(input) {
 export function buildVase(input, { part = 'body' } = {}) {
   const layout = floorLayout(input)
   const { shape, teapot } = layout
-  const { p, H, maxR, rotation, twistT, section, R, sectionAt, patterns } = shape
+  const { p, H, maxR, rotation, twistT, section, R, sectionAt } = shape
   const q = QUALITY[p.quality]
   // Where the body ends: at the rim, or with a teapot lid at the cut.
   const Htop = teapot ? teapot.cut : H
@@ -1684,7 +1597,7 @@ export function buildVase(input, { part = 'body' } = {}) {
   // Columns round the vase: as many as the cross-section and effect need. Corners of
   // polygons and pointed waves fall exactly on columns.
   const scale = { entwurf: 0.6, standard: 1, fein: 1.6 }[p.quality]
-  let segments, plainSegments = 0, columnStep = 1
+  let segments
   if (lowpoly) segments = p.lowpolyAround
   else {
     const needs = [q.smoothSegments]
@@ -1699,9 +1612,6 @@ export function buildVase(input, { part = 'body' } = {}) {
     // model them itself, one and a half points per joint width are enough.
     if (p.effect === 'voronoi') needs.push(Math.ceil((2 * Math.PI * maxR) / (p.voronoiGap / (1.5 * scale))))
     if (layout.cutoutZone) needs.push(Math.ceil((2 * Math.PI * maxR) / cutoutStep(p)))
-    plainSegments = Math.min(MAX_SEGMENTS, Math.max(...needs))
-    // A pattern worked out on the wall: as many columns as its cells need.
-    if (patterns) needs.push(patterns.columns(scale))
     segments = Math.min(MAX_SEGMENTS, Math.max(...needs))
     // This makes sharp places (corners, notches, fin edges) fall on columns - during a transition those of both
     // cross-sections (least common multiple, as long as it fits within the maximum count).
@@ -1717,8 +1627,6 @@ export function buildVase(input, { part = 'body' } = {}) {
       align = both <= MAX_SEGMENTS ? both : Math.max(align, b)
     }
     if (align > 1) segments = Math.ceil(segments / align) * align
-    if (align > 1) plainSegments = Math.ceil(plainSegments / align) * align
-    columnStep = align
   }
   // Rows: height in mm steps; stripes with a spiral and Voronoi need more.
   let rows
@@ -1733,32 +1641,24 @@ export function buildVase(input, { part = 'body' } = {}) {
     if (p.effect === 'streifen' && p.stripeTurn !== 0) rows = Math.max(rows, Math.ceil((p.stripeCount * Math.abs(p.stripeTurn) * q.perRib) / 360))
     rows = Math.min(MAX_ROWS, Math.max(24, rows))
   }
-  // What the body needs without a pattern on its wall: the inner wall has no pattern and stays with these rows.
-  const plainRows = rows
 
   const zone = (z) => zoneMask(z, p)
 
   // Effect: depth (mm, inwards) at angle/height; turns along with the twist.
   const cellsAround = Math.max(3, Math.round((2 * Math.PI * maxR) / p.voronoiCell))
   const cellW = (2 * Math.PI * maxR) / cellsAround
-  let effectZ = NaN, effectTurn = 0, effectZone = 0
   const effectAt = (theta, z, base) => {
-    if (z !== effectZ) {
-      effectZ = z
-      effectTurn = rotation(twistT(z))
-      effectZone = zone(z)
-    }
     const t = z / H
-    const turn = theta - effectTurn
+    const turn = theta - rotation(twistT(z))
     if (ribsActive) {
-      const depth = Math.min(p.ribDepth, base / 3) * effectZone
+      const depth = Math.min(p.ribDepth, base / 3) * zone(z)
       if (depth <= 0) return 0
       const shift = p.waveCount > 0 ? (p.waveAmplitude / base) * Math.sin(2 * Math.PI * p.waveCount * t) : 0
       const phase = (p.ribCount * (turn + shift)) / (2 * Math.PI)
       return depth * grooveShape(phase - Math.floor(phase), p.grooveWidth, p.ribShape)
     }
     if (p.effect === 'streifen') {
-      const depth = Math.min(p.stripeDepth, base / 3) * effectZone
+      const depth = Math.min(p.stripeDepth, base / 3) * zone(z)
       if (depth <= 0) return 0
       const spin = ((p.stripeTurn * Math.PI) / 180) * t
       const a = (p.stripeCount * (turn + spin)) / (2 * Math.PI)
@@ -1770,7 +1670,7 @@ export function buildVase(input, { part = 'body' } = {}) {
       return depth * g
     }
     if (p.effect === 'voronoi') {
-      const depth = Math.min(p.voronoiDepth, base / 3) * effectZone
+      const depth = Math.min(p.voronoiDepth, base / 3) * zone(z)
       if (depth <= 0) return 0
       const u = ((((turn / (2 * Math.PI)) % 1) + 1) % 1) * 2 * Math.PI * maxR
       const edge = voronoiCell(u, z, cellsAround, cellW, p.voronoiCell, p.voronoiSeed)
@@ -1797,10 +1697,7 @@ export function buildVase(input, { part = 'body' } = {}) {
   if (layout.notchZone) zones.push(layout.notchZone)
   const outerRadius = (theta, z) => {
     const base = R(z) * sectionAt(theta, z)
-    const plain = base - effectAt(theta, z, base)
-    // Patterns move the wall in or out, but never by more than a third of the body there inwards: the wall
-    // stays clear of the inner wall and of the middle.
-    return patterns ? Math.max(plain + patterns.at(theta, z), base * (2 / 3)) : plain
+    return base - effectAt(theta, z, base)
   }
   const slitted = Boolean(layout.reinforce) && !lowpoly
   if (part === 'lid') return teapot ? teapotLidMesh({ p, shape, H, segments, rows, outerRadius, teapot }) : null
@@ -1808,48 +1705,21 @@ export function buildVase(input, { part = 'body' } = {}) {
   // the body shape instead of every mm - a bulbous vase then needs 30 instead of 170 rows, and the
   // pattern on it a quarter of the triangles. Cross-sections with corners, twist or a height range
   // and the vase's own effects still need the fixed rows.
-  const adaptive = !lowpoly && !slitted && !patterns && p.effect === 'keine' && p.section === 'kreis' && p.section2 === 'keiner' && !shape.lid
+  const adaptive = !lowpoly && !slitted && p.effect === 'keine' && p.section === 'kreis' && p.section2 === 'keiner' && !shape.lid
   // With slits, vase-slits.mjs builds the whole solid body; here only the lowest ring, for the bottom.
-  let zsOuter
-  if (patterns && !lowpoly) {
-    // A pattern on the wall: rows as close as its cells need at each height (cells shrink with the vase's girth),
-    // never closer than a tenth of a millimetre. Where columns and rows together would go beyond the triangles a
-    // wall may take, both grow coarser by the same share; the columns never fall below what the body itself needs.
-    const budget = PATTERN_TRIANGLES[p.quality]
-    const step = (coarser) => (z) => Math.min(H / plainRows, patterns.stepAt(z, scale) * coarser)
-    let coarser = 1
-    zsOuter = steppedRows(0, Htop, step(coarser), zones, 0.1)
-    for (let round = 0; round < 6 && 2 * segments * (zsOuter.length - 1) > budget * 1.05; round++) {
-      const over = (2 * segments * (zsOuter.length - 1)) / budget
-      // Fewer columns only as far as the body allows (and still with its corners on columns); the rows take the rest.
-      const fewer = Math.max(plainSegments, Math.ceil(segments / Math.sqrt(over) / columnStep) * columnStep)
-      coarser *= Math.max(1, (over * fewer) / segments)
-      segments = fewer
-      zsOuter = steppedRows(0, Htop, step(coarser), zones, 0.1)
-    }
-    rows = Math.min(MAX_ROWS * 4, zsOuter.length - 1)
-    if (slitted) zsOuter = []
-  } else zsOuter = slitted ? [] : adaptive ? adaptiveRows((z) => R(z), 0, Htop, q.tol, q.maxStep, zones) : rowHeights(0, Htop, H / rows, zones)
+  const zsOuter = slitted ? [] : adaptive ? adaptiveRows((z) => R(z), 0, Htop, q.tol, q.maxStep, zones) : rowHeights(0, Htop, H / rows, zones)
   if (adaptive) rows = zsOuter.length - 1
   const outer = []
   const outerAtZ = new Map()
-  // The columns stand at the same angles in every row: their cosine and sine once, not once per point.
-  const columnCos = new Float64Array(segments), columnSin = new Float64Array(segments)
-  for (let j = 0; j < segments; j++) {
-    columnCos[j] = Math.cos((2 * Math.PI * j) / segments)
-    columnSin[j] = Math.sin((2 * Math.PI * j) / segments)
-  }
   for (let i = 0; i < zsOuter.length; i++) {
     const row = new Array(segments)
     for (let j = 0; j < segments; j++) {
-      if (lowpoly) {
-        const { theta, z, r } = shape.lowpolyVertex(i, j)
-        row[j] = addVertex(r * Math.cos(theta), r * Math.sin(theta), z)
-        continue
-      }
-      const z = zsOuter[i]
-      const r = outerRadius((2 * Math.PI * j) / segments, z)
-      row[j] = addVertex(r * columnCos[j], r * columnSin[j], z)
+      let theta = (2 * Math.PI * j) / segments
+      let z = zsOuter[i]
+      let r
+      if (lowpoly) ({ theta, z, r } = shape.lowpolyVertex(i, j))
+      else r = outerRadius(theta, z)
+      row[j] = addVertex(r * Math.cos(theta), r * Math.sin(theta), z)
     }
     outer.push(row)
     outerAtZ.set(zsOuter[i], row)
@@ -1983,7 +1853,7 @@ export function buildVase(input, { part = 'body' } = {}) {
     // Inner floor at foot + bottom thickness; below it, with a hollow foot, a cavity for the drip tray.
     // Without a bottom (lamp over an LED puck, or a bottom of 0 mm): inner wall all the way down.
     const floorTop = foot + floor
-    const innerRows = lowpoly ? rows : Math.max(8, Math.ceil((patterns ? plainRows : rows) / 4))
+    const innerRows = lowpoly ? rows : Math.max(8, Math.ceil(rows / 4))
     const inner = innerWall(floorTop, Htop, (Htop - floorTop) / innerRows)
     const skirt = foot > 0 ? innerWall(0, foot, 4) : null
     // Zones: outer and inner wall with holes in between; open at the bottom for the cable slot.
@@ -2333,7 +2203,7 @@ function cutoutFieldFor(p, shape, zn) {
  * (hole walls: no pattern there).
  */
 export function vaseBody(input) {
-  const p = normalizeParams({ ...input, effect: input?.effect === 'lowpoly' ? 'lowpoly' : 'keine', effect2: 'keine', quality: 'standard' })
+  const p = normalizeParams({ ...input, effect: input?.effect === 'lowpoly' ? 'lowpoly' : 'keine', quality: 'standard' })
   const mesh = buildVase(p)
   return { soup: mesh.positions, params: mesh.params, section: mesh.section, locked: mesh.locked }
 }
@@ -2360,7 +2230,7 @@ export function describeVase(input) {
     streifen: [`${p.stripeCount} Streifen`, `${p.stripeCount}-streifen`],
     voronoi: ['Voronoi', 'voronoi'],
     lowpoly: ['Facetten', 'facetten'],
-  }[p.effect] ?? [PATTERNS[p.effect], p.effect]
+  }[p.effect]
   const curve = p.twistMode === 'kurve'
   const twist = curve ? ['mit Drehkurve', 'drehkurve'] : p.twist ? [`${p.twist}° verdreht`, `${p.twist < 0 ? 'links' : ''}${Math.abs(p.twist)}grad`] : ['', '']
   const sway = !curve && p.swayAngle > 0 && p.swayCount > 0 ? ['pendelnd', 'pendel'] : ['', '']

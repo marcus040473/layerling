@@ -242,7 +242,6 @@ En grupp som skurits till en kropp, till exempel en box med sina hål, målas so
 - {{ui:prop.vaseSection}}: en cirkel, en polygon med rundade hörn eller en våg (mjuk, spetsig, bågar eller fenor). {{ui:prop.vaseTwist}} vrider den upp längs höjden, {{ui:prop.vaseSway}} låter den svänga fram och tillbaka.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} är för slicerns vasläge (även kallat spiralisera): slicern skriver ut en vägg i en spiral och hoppar över toppen och fyllningen, så kroppen ritas massiv. {{ui:vase.bodyHollow}} ger en riktig vägg och botten för en vanlig utskrift. Med {{ui:prop.vaseBottom}} på 0 mm har den ihåliga vasen ingen botten: ett rör öppet i båda ändar, för klockor, munstycken och rör.
 - {{ui:prop.vaseEffect}}: en ny vas är slät. Att välja mellan finns räfflor, ränder, Voronoi-celler eller fasetter (low poly) på utsidan, i ett band av höjden om du vill; de tillhör vasen och förblir redigerbara med den.
-- Ringar, bikaka, knoppar, en hamrad yta, fjäll, stickning, flätverk, tegel och korn räknas direkt på vasens vägg: de finns där genast, går in i kroppen eller står ut ur den ({{ui:prop.vasePatternWay}}) och går ihop med varje botten, lock och ben. {{ui:prop.vaseEffect2}} lägger ett andra över det första, i ett eget höjdområde.
 
 {{ui:prop.vaseSection2}} tonar över tvärsnittet i ett andra tvärsnitt upp längs höjden, till exempel från en cirkel nedtill till en sexhörning upptill.
 
