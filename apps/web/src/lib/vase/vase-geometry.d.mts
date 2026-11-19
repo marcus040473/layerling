@@ -16,14 +16,18 @@ export type VaseNumberKey =
   | "polySides" | "polyRound" | "sectionWaves" | "sectionWaveAmp" | "sectionFinWidth" | "drawRepeat"
   | "stripeTurn" | "stripeCount" | "stripeWidth" | "stripeDepth"
   | "voronoiCell" | "voronoiGap" | "voronoiDepth" | "voronoiSeed"
-  | "lowpolyAround" | "lowpolyRows" | "lowpolyJitter" | "lowpolySeed";
+  | "lowpolyAround" | "lowpolyRows" | "lowpolyJitter" | "lowpolySeed"
+  | "patternCount" | "patternDepth" | "patternWidth" | "patternAspect" | "patternTurn" | "patternSeed" | "patternWave" | "patternWaves"
+  | "pattern2Count" | "pattern2Depth" | "pattern2Width" | "pattern2Aspect" | "pattern2Turn" | "pattern2Seed" | "pattern2Wave" | "pattern2Waves"
+  | "zone2From" | "zone2To";
 
 export type VaseChoiceKey =
   | "profile" | "ribShape" | "twistMode" | "twistAlong" | "material" | "sectionOutside"
   | "section2" | "section2WaveStyle" | "body" | "innerShape"
   | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "insertMode"
   | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "lamp" | "lampSocket" | "reinforce"
-  | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle";
+  | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle"
+  | "effect2" | "patternWay" | "patternFlank" | "patternFlip" | "pattern2Way" | "pattern2Flank" | "pattern2Flip";
 
 /** A point of a drawn cross-section in the unit circle: a corner, or round with an optional handle (tx, ty; ix, iy before it). */
 export type VaseDrawPoint = { x: number; y: number; corner: boolean; tx?: number; ty?: number; ix?: number; iy?: number };
@@ -45,6 +49,12 @@ export const SECTIONS2: Readonly<Record<string, string>>;
 export const WAVE_STYLES: Readonly<Record<string, string>>;
 export const RIB_SHAPES: Readonly<Record<string, string>>;
 export const EFFECTS: Readonly<Record<string, string>>;
+/** A second pattern over the vase's own: none, or one of those worked out on the wall (PATTERNS). */
+export const EFFECTS2: Readonly<Record<string, string>>;
+/** The patterns worked out on the wall itself (vase-patterns.mjs), also among EFFECTS. */
+export const PATTERNS: Readonly<Record<string, string>>;
+export const PATTERN_FLANKS: Readonly<Record<string, string>>;
+export const PATTERN_WAYS: Readonly<Record<string, string>>;
 export const INNER_SHAPES: Readonly<Record<string, string>>;
 export const SECTION_OUTSIDE: Readonly<Record<string, string>>;
 export const TWIST_MODES: Readonly<Record<string, string>>;

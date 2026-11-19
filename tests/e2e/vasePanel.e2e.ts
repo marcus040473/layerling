@@ -104,6 +104,30 @@ describe("a vase in its settings", () => {
     expect(rangeNamed(polygon.panel, "Corners")).toBeDefined();
   });
 
+  it("offers the patterns worked out on the wall, starts one with the measures that suit it, and a second one over it", () => {
+    const { panel, calls } = mount();
+    const pattern = selectNamed(panel, "Pattern")!;
+    expect([...pattern.options].map((option) => option.textContent)).toEqual(expect.arrayContaining(["Grooves", "Rings", "Honeycomb", "Bumps", "Hammered", "Scales", "Knitting", "Basket weave", "Bricks", "Grain"]));
+    expect(rangeNamed(panel, "Cells around")).toBeUndefined();
+    choose(pattern, "noppen");
+    expect(calls.updates.at(-1)?.vase).toMatchObject({ effect: "noppen", patternCount: 26, patternWay: "aussen", patternFlank: "gewoelbt" });
+    const bumps = mount({ vase: { ...calls.updates.at(-1)!.vase! } });
+    expect(rangeNamed(bumps.panel, "Cells around")).toBeDefined();
+    expect(rangeNamed(bumps.panel, "Pattern depth")).toBeDefined();
+    expect(selectNamed(bumps.panel, "Pattern goes")?.value).toBe("aussen");
+    // Rings count over the height and have no cell to stretch; scales can point up.
+    expect(rangeNamed(bumps.panel, "Rings")).toBeUndefined();
+    choose(selectNamed(bumps.panel, "Second pattern")!, "ringe");
+    expect(bumps.calls.updates.at(-1)?.vase).toMatchObject({ effect: "noppen", effect2: "ringe", pattern2Count: 24, pattern2Way: "innen" });
+    const both = mount({ vase: { ...bumps.calls.updates.at(-1)!.vase! } });
+    expect(rangeNamed(both.panel, "Rings (2)")).toBeDefined();
+    expect(rangeNamed(both.panel, "Cell height (2, %)")).toBeUndefined();
+    expect(rangeNamed(both.panel, "Second pattern from (%)")).toBeDefined();
+    // Facets are shape: no second pattern on them.
+    const facets = mount({ vase: { ...both.shape.vase!, effect: "lowpoly" } });
+    expect(selectNamed(facets.panel, "Second pattern")).toBeUndefined();
+  });
+
   it("lays its accessories out from their card", () => {
     const { panel, calls } = mount();
     act(() => header(panel, "Accessories").click());

@@ -238,6 +238,7 @@ Il {{ui:shape.vase}} è un corpo a sé per vasi, vasi da fiori e paralumi. Le su
 - {{ui:prop.vaseSection}}: un cerchio, un poligono con angoli arrotondati o un'onda (morbida, a punta, archi o alette). {{ui:prop.vaseTwist}} la ruota lungo l'altezza, {{ui:prop.vaseSway}} la fa oscillare avanti e indietro.
 - {{ui:prop.vaseBody}}: {{ui:vase.bodySolid}} è per la modalità vaso dello slicer (detta anche spiralizzazione): lo slicer stampa una sola parete a spirale e tralascia la parte superiore e il riempimento, perciò il corpo è disegnato pieno. {{ui:vase.bodyHollow}} dà una vera parete e un vero fondo per una stampa normale. Con {{ui:prop.vaseBottom}} a 0 mm il vaso cavo non ha fondo: un tubo aperto alle due estremità, per campane, bocchini e tubi.
 - {{ui:prop.vaseEffect}}: un vaso nuovo è liscio. Si possono scegliere scanalature, strisce, celle di Voronoi o sfaccettature (low poly) all'esterno, se vuoi in una fascia dell'altezza; appartengono al vaso e restano modificabili con esso.
+- Anelli, nido d'ape, borchie, superficie martellata, squame, maglia, intreccio, mattoni e grana sono calcolati direttamente sulla parete del vaso: compaiono subito, entrano nel corpo o ne sporgono ({{ui:prop.vasePatternWay}}) e vanno con ogni fondo, coperchio e piede. {{ui:prop.vaseEffect2}} ne posa un secondo sopra il primo, in una fascia di altezza propria.
 
 {{ui:prop.vaseSection2}} fonde la sezione con una seconda lungo l'altezza, per esempio da un cerchio in basso a un esagono in alto.
 
