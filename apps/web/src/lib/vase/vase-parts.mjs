@@ -229,7 +229,8 @@ export function buildParts(input, { outward = 0 } = {}) {
         const column = new Float64Array(count)
         let widest = 0
         for (let i = 0; i < count; i++) {
-          const zp = floor + i * step - lift
+          // (The pot counted as standing on the table: the dish then also clears a pot that stands lower than on its ribs.)
+          const zp = floor + i * step
           let m = 0
           for (let s = -1; s <= 1; s++) {
             const a = j * da + (s * da) / 2
@@ -386,26 +387,53 @@ export function buildParts(input, { outward = 0 } = {}) {
     if (z1 - z0 < 15) notes.push('Für einen Einsatz ist die Vase zu niedrig.')
     else {
       // Envelope for putting it in from above: at every height at most as wide as the narrowest point above it.
-      const rows = 16
+      // The pot's inner wall is measured once on a fine grid (under a millimetre up, a fraction of a ring point's step
+      // round); a ring point of the insert then takes the narrowest place
+      // - half-way to its neighbours round the pot (the inner wall of narrow fins and pointed arches comes further in
+      //   between two points than at either of them),
+      // - from the row below it to the row above it (so the straight wall between two rows stays inside as well, also
+      //   past a step in the pot's form),
+      // - and a bottom's thickness further down: the insert then also fits where it stands that much lower than on
+      //   the pot's inner floor - laid into the pot on the plate in the editor, or pressed in a little.
+      const rows = clamp(Math.ceil((z1 - z0) / 5), 16, 36)
       const zs = Array.from({ length: rows + 1 }, (_, i) => z0 + ((z1 - z0) * i) / rows)
       const env = new Array(rows + 1)
       const AN = N
+      const drop = hollow ? layout.floor : 1.2
+      const fine = AN >= 400 ? 4 : 8
+      const zBase = Math.max(floorTop + 0.2, z0 - drop)
+      const levels = Math.max(8, Math.min(240, Math.ceil((H - zBase) / 0.75)))
+      const levelStep = (H - zBase) / levels
+      const narrowest = new Array(levels + 1)
+      const cells = AN * fine
+      const sampled = new Float64Array(cells)
+      // Between fins (the wave style with narrow ribs) the inner wall jumps from the rib to the core: the insert is
+      // round there, as wide as the core - it could not follow the ribs anyway, least of all on a twisted pot.
+      const finned = (p.section === 'welle' && p.sectionWaveStyle === 'lamellen') || (p.section2 === 'welle' && p.section2WaveStyle === 'lamellen')
+      for (let k = 0; k <= levels; k++) {
+        const z = zBase + k * levelStep
+        for (let cell = 0; cell < cells; cell++) sampled[cell] = cavity((2 * Math.PI * cell) / cells, z)
+        const ring = new Float64Array(AN)
+        if (finned) {
+          let least = Infinity
+          for (let cell = 0; cell < cells; cell++) least = Math.min(least, sampled[cell])
+          ring.fill(least)
+        } else {
+          for (let j = 0; j < AN; j++) {
+            let least = Infinity
+            for (let s = -fine / 2; s <= fine / 2; s++) least = Math.min(least, sampled[(j * fine + s + cells) % cells])
+            ring[j] = least
+          }
+        }
+        narrowest[k] = ring
+      }
+      const levelOf = (z) => clamp((z - zBase) / levelStep, 0, levels)
       for (let i = rows; i >= 0; i--) {
         env[i] = new Float64Array(AN)
+        const from = Math.floor(levelOf((i > 0 ? zs[i - 1] : zs[0]) - drop)), to = Math.ceil(levelOf(i < rows ? zs[i + 1] : H))
         for (let j = 0; j < AN; j++) {
-          const a = (2 * Math.PI * j) / AN
-          // The narrowest place half-way to the neighbouring ring points as well: between two points the inner wall
-          // of narrow fins and pointed arches comes further in than at either of them.
-          const narrow = (z) => {
-            let least = Infinity
-            for (let s = -4; s <= 4; s++) least = Math.min(least, cavity(a + (s * Math.PI) / (4 * AN), z))
-            return least
-          }
-          let m = narrow(zs[i])
-          // Check densely between this height and the next (neck, ribs); at the top, up to the rim
-          // the insert has to pass through.
-          if (i < rows) for (let s = 1; s < 4; s++) m = Math.min(m, narrow(zs[i] + ((zs[i + 1] - zs[i]) * s) / 4))
-          else for (let s = 1; s <= 4; s++) m = Math.min(m, narrow(z1 + ((H - z1) * s) / 4))
+          let m = Infinity
+          for (let k = from; k <= to; k++) m = Math.min(m, narrowest[k][j])
           env[i][j] = i < rows ? Math.min(m, env[i + 1][j]) : m
         }
       }

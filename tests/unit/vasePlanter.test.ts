@@ -131,26 +131,124 @@ describe("a plant pot's saucer", () => {
   });
 });
 
+/**
+ * The least air between an insert and the pot's inner wall (mm), over the insert's whole outer wall - its ring points
+ * and the faces between them: put together (`air`), and standing a bottom's thickness lower, as it does when it is
+ * laid into the pot on the plate in the editor (`lower`). Null where the pot takes no insert.
+ */
+function insertAir(settings: Record<string, unknown>) {
+  const inner = part(settings, "einsatz");
+  if (!inner) return null;
+  const shape = vaseShape(settings), drop = floorLayout(settings).floor;
+  const v = inner.mesh.vertices;
+  // The outer wall's rings come first: as many points as lie at the first one's height, row upon row upwards.
+  let n = 1;
+  while (v[n * 3 + 2] === v[2]) n += 1;
+  let rows = 1;
+  while (v[rows * n * 3 + 2] > v[(rows - 1) * n * 3 + 2]) rows += 1;
+  const point = (i: number, j: number) => {
+    const k = (i * n + (j % n)) * 3;
+    return [v[k], v[k + 1], v[k + 2]];
+  };
+  let air = Infinity, lower = Infinity;
+  for (let i = 0; i + 1 < rows; i += 1) {
+    for (let j = 0; j < n; j += 1) {
+      const [a, b, c, d] = [point(i, j), point(i, j + 1), point(i + 1, j), point(i + 1, j + 1)];
+      for (const u of [0, 0.5]) {
+        for (const w of [0, 0.34, 0.67]) {
+          const x = (a[0] * (1 - u) + b[0] * u) * (1 - w) + (c[0] * (1 - u) + d[0] * u) * w;
+          const y = (a[1] * (1 - u) + b[1] * u) * (1 - w) + (c[1] * (1 - u) + d[1] * u) * w;
+          const z = a[2] * (1 - w) + c[2] * w;
+          const r = Math.hypot(x, y), theta = Math.atan2(y, x);
+          air = Math.min(air, shape.innerAt(theta, z) - r);
+          lower = Math.min(lower, shape.innerAt(theta, z - drop) - r);
+        }
+      }
+    }
+  }
+  return { air, lower };
+}
+
+/** The least air between a dish's inner wall and the pot standing in it (mm): on the dish's ribs, and on the table. */
+function dishAir(settings: Record<string, unknown>) {
+  const built = buildParts(settings);
+  const dish = built.parts.find((entry) => entry.id === "untersetzer")!;
+  const shape = vaseShape(settings);
+  const v = dish.mesh.vertices;
+  // The outer wall's rings come first (the first at the table), the inner wall's after them.
+  let n = 1;
+  while (v[n * 3 + 2] === 0 && Math.hypot(v[n * 3], v[n * 3 + 1]) > 1) n += 1;
+  let rows = 1;
+  while (v[rows * n * 3 + 2] > 0 && v[rows * n * 3 + 2] >= v[(rows - 1) * n * 3 + 2]) rows += 1;
+  let onRibs = Infinity, onTable = Infinity;
+  for (let k = rows * n * 3; k < 2 * rows * n * 3; k += 3) {
+    const r = Math.hypot(v[k], v[k + 1]), theta = Math.atan2(v[k + 1], v[k]), z = v[k + 2];
+    if (z >= built.lift) onRibs = Math.min(onRibs, r - shape.outerAt(theta, z - built.lift));
+    if (z >= 2.5) onTable = Math.min(onTable, r - shape.outerAt(theta, z));
+  }
+  return { onRibs, onTable };
+}
+
+const BODY_FORMS = ["flasche", "bauchig", "schale", "fass", "zylinder", "trichter", "topfKlassik", "topfKuebel", "topfSchale"];
+
 describe("a plant pot's inner pot", () => {
   it("stays clear of the pot's inner wall, also between the points of narrow fins and pointed arches", () => {
     for (const more of [{}, { section: "welle", sectionWaves: 30, sectionWaveStyle: "lamellen" }, { section: "welle", sectionWaves: 24, sectionWaveStyle: "bogen", sectionZoneFrom: 25, sectionZoneTo: 85 }, { profile: "bauchig", section: "welle", sectionWaves: 30, sectionWaveStyle: "lamellen" }]) {
       const settings = { ...pot, insertMode: "pflanze", ...more };
-      const inner = part(settings, "einsatz")!;
-      expect(openEdges(inner.mesh), JSON.stringify(more)).toBe(0);
-      const shape = vaseShape(settings);
-      const v = inner.mesh.vertices;
-      let least = Infinity;
-      for (let i = 0; i < v.length; i += 3) {
-        const r = Math.hypot(v[i], v[i + 1]);
-        // (The wall of the inner pot, not its feet or its floor.)
-        if (r < 12 || v[i + 2] < 8) continue;
-        const theta = Math.atan2(v[i + 1], v[i]);
-        // At the point, and to both sides as far as half-way to its neighbours (240 points round at most here).
-        for (let s = -4; s <= 4; s += 1) least = Math.min(least, shape.innerAt(theta + (s * Math.PI) / 960, v[i + 2]) - r);
-      }
-      expect(least, JSON.stringify(more)).toBeGreaterThan(0.15);
+      expect(openEdges(part(settings, "einsatz")!.mesh), JSON.stringify(more)).toBe(0);
+      expect(insertAir(settings)!.air, JSON.stringify(more)).toBeGreaterThan(0.3);
     }
   });
+
+  it("is round inside a pot with fins, as wide as the core between them", () => {
+    const finned = { ...pot, insertMode: "pflanze", section: "welle", sectionWaves: 24, sectionWaveStyle: "lamellen", twist: 60 };
+    const inner = part(finned, "einsatz")!;
+    let low = Infinity, high = 0;
+    for (let i = 0; i < inner.mesh.vertices.length; i += 3) {
+      if (Math.abs(inner.mesh.vertices[i + 2] - 60) > 3) continue;
+      const r = Math.hypot(inner.mesh.vertices[i], inner.mesh.vertices[i + 1]);
+      if (r < 15) continue;
+      low = Math.min(low, r);
+      high = Math.max(high, r);
+    }
+    // (Outer and inner wall of the insert: its wall's thickness apart, no more.)
+    expect(high - low).toBeLessThan(1.7);
+    expect(insertAir(finned)!.air).toBeGreaterThan(0.3);
+  });
+
+  // Every body form with every kind of cross-section, both inserts in turn, in changing sizes and walls.
+  it.each(BODY_FORMS)("fits into every pot: %s", (profile) => {
+    const sections = [{}, { section: "vieleck", polySides: 5 }, { section: "welle", sectionWaves: 12, twist: 60 }, { section: "welle", sectionWaves: 16, sectionWaveStyle: "spitz" }, { section: "welle", sectionWaves: 24, sectionWaveStyle: "lamellen", twist: 60 }, { effect: "rillen", ribDepth: 3 }, { wallMount: "schiene" }];
+    const sizes = [[120, 140], [200, 90], [70, 160], [300, 200]];
+    let fitted = 0;
+    sections.forEach((section, k) => {
+      const turn = BODY_FORMS.indexOf(profile) + k;
+      const [height, diameter] = sizes[turn % sizes.length];
+      const settings = { height, diameter, body: "hohl", purpose: "topf", profile, wall: [1.2, 2, 3][turn % 3], insertMode: turn % 2 ? "bewaesserung" : "pflanze", ...section };
+      const fit = insertAir(settings);
+      // (A pot too low or too narrow for an insert gets none, with a note.)
+      if (!fit) return;
+      fitted += 1;
+      expect(fit.air, JSON.stringify(settings)).toBeGreaterThan(0.3);
+      expect(fit.lower, JSON.stringify(settings)).toBeGreaterThan(0.15);
+    });
+    expect(fitted).toBeGreaterThan(2);
+  }, 60_000);
+});
+
+describe("a saucer under every pot", () => {
+  it.each(BODY_FORMS)("leaves room round the pot: %s", (profile) => {
+    const dishes = [{ saucerForm: "teller" }, { saucerForm: "huelle" }, { saucerForm: "huelle", saucerRise: 40, saucerHeight: 20 }, { saucerForm: "huelle", saucerHeight: 40, saucerGap: 2, section: "welle", sectionWaves: 12 }, { saucerForm: "teller", saucerRise: 30, section: "vieleck", polySides: 5 }];
+    const sizes = [[120, 140], [200, 90], [70, 160]];
+    dishes.forEach((dish, k) => {
+      const [height, diameter] = sizes[(BODY_FORMS.indexOf(profile) + k) % sizes.length];
+      const settings = { height, diameter, body: "hohl", purpose: "topf", profile, saucerMode: "schale", quality: "entwurf", ...dish };
+      const fit = dishAir(settings);
+      expect(fit.onRibs, JSON.stringify(settings)).toBeGreaterThan(1.5);
+      // A dish that hugs the pot clears it as well where the pot stands on the table in it, not on the ribs.
+      if (dish.saucerForm === "huelle") expect(fit.onTable, JSON.stringify(settings)).toBeGreaterThan(1.2);
+    });
+  }, 30_000);
 });
 
 describe("a bowl docked under the pot", () => {
