@@ -16,3 +16,4 @@ Zu jedem PR gibt es den englischen Text (`.md`) und eine deutsche Erklärung (`-
 | 1886 | `fix-1886-intersect-touching-face` | Schnittmenge: Berühren sich zwei Teile zusätzlich an einer ebenen Fläche, bleibt keine hauchdünne Schicht mehr (Issue #1886) | `issue-1886-intersect-touching-face-link.txt` |
 | 1812 | `fix-1812-inner-corner-budget` | Kantenwerkzeuge: Die Suche nach Innenecken hält ihre vier Sekunden ein (Issue #1812) | `issue-1812-inner-corner-budget-link.txt` |
 | 1875 | `fix-1875-move-keeps-built-groups` | Verschieben mit den Pfeiltasten und Rückgängig bauen nicht mehr alle mehrfarbigen Gruppen neu (Issue #1875) | `issue-1875-move-keeps-built-groups-link.txt` |
+| 1800 | `fix-1800-sketch-move-selected-points` | Skizze: Pfeiltasten und eingetippte Werte verschieben nur die gewählten Punkte, wie die Maus (Issue #1800) | `issue-1800-sketch-move-selected-points-link.txt` |
