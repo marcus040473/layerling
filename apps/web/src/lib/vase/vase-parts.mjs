@@ -394,20 +394,30 @@ export function buildParts(input, { outward = 0 } = {}) {
         env[i] = new Float64Array(AN)
         for (let j = 0; j < AN; j++) {
           const a = (2 * Math.PI * j) / AN
-          let m = cavity(a, zs[i])
+          // The narrowest place half-way to the neighbouring ring points as well: between two points the inner wall
+          // of narrow fins and pointed arches comes further in than at either of them.
+          const narrow = (z) => {
+            let least = Infinity
+            for (let s = -4; s <= 4; s++) least = Math.min(least, cavity(a + (s * Math.PI) / (4 * AN), z))
+            return least
+          }
+          let m = narrow(zs[i])
           // Check densely between this height and the next (neck, ribs); at the top, up to the rim
           // the insert has to pass through.
-          if (i < rows) for (let s = 1; s < 4; s++) m = Math.min(m, cavity(a, zs[i] + ((zs[i + 1] - zs[i]) * s) / 4))
-          else for (let s = 1; s <= 4; s++) m = Math.min(m, cavity(a, z1 + ((H - z1) * s) / 4))
+          if (i < rows) for (let s = 1; s < 4; s++) m = Math.min(m, narrow(zs[i] + ((zs[i + 1] - zs[i]) * s) / 4))
+          else for (let s = 1; s <= 4; s++) m = Math.min(m, narrow(z1 + ((H - z1) * s) / 4))
           env[i][j] = i < rows ? Math.min(m, env[i + 1][j]) : m
         }
       }
+      // Fins, arches and points have flanks the samples can just miss: a little more room there.
+      const sharp = (p.section === 'welle' && p.sectionWaveStyle !== 'weich') || (p.section2 === 'welle' && p.section2WaveStyle !== 'weich') ? 0.3 : 0
+      const room = c + 0.4 + sharp
       const rAt = (i) => (a) => {
         const x = (((a / (2 * Math.PI)) % 1) + 1) % 1 * AN
         const j = Math.floor(x) % AN, f = x - Math.floor(x)
-        return env[i][j] * (1 - f) + env[i][(j + 1) % AN] * f - c - 0.4
+        return env[i][j] * (1 - f) + env[i][(j + 1) % AN] * f - room
       }
-      const minR = Math.min(...env[0]) - c - 0.4
+      const minR = Math.min(...env[0]) - room
       const wall = p.insertWall, floorT = 2
       if (minR < (water ? 18 : 12)) notes.push(water ? 'Die Öffnung ist zu eng für einen Einsatz mit Selbstbewässerung.' : 'Die Öffnung ist zu eng für einen Einsatz.')
       else {

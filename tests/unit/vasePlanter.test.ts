@@ -131,6 +131,28 @@ describe("a plant pot's saucer", () => {
   });
 });
 
+describe("a plant pot's inner pot", () => {
+  it("stays clear of the pot's inner wall, also between the points of narrow fins and pointed arches", () => {
+    for (const more of [{}, { section: "welle", sectionWaves: 30, sectionWaveStyle: "lamellen" }, { section: "welle", sectionWaves: 24, sectionWaveStyle: "bogen", sectionZoneFrom: 25, sectionZoneTo: 85 }, { profile: "bauchig", section: "welle", sectionWaves: 30, sectionWaveStyle: "lamellen" }]) {
+      const settings = { ...pot, insertMode: "pflanze", ...more };
+      const inner = part(settings, "einsatz")!;
+      expect(openEdges(inner.mesh), JSON.stringify(more)).toBe(0);
+      const shape = vaseShape(settings);
+      const v = inner.mesh.vertices;
+      let least = Infinity;
+      for (let i = 0; i < v.length; i += 3) {
+        const r = Math.hypot(v[i], v[i + 1]);
+        // (The wall of the inner pot, not its feet or its floor.)
+        if (r < 12 || v[i + 2] < 8) continue;
+        const theta = Math.atan2(v[i + 1], v[i]);
+        // At the point, and to both sides as far as half-way to its neighbours (240 points round at most here).
+        for (let s = -4; s <= 4; s += 1) least = Math.min(least, shape.innerAt(theta + (s * Math.PI) / 960, v[i + 2]) - r);
+      }
+      expect(least, JSON.stringify(more)).toBeGreaterThan(0.15);
+    }
+  });
+});
+
 describe("a bowl docked under the pot", () => {
   const docked = { ...pot, saucerMode: "andock", saucerHeight: 20 };
 
