@@ -173,6 +173,13 @@ version on `shell-shelf`. Merge `shell-shelf` into `marcus`, never the other way
 Possible PRs to Stefan, only when Marcus says so: the Gridfinity floor (`shell-gridfinity-floor`), the two newer commits
 of `shell-stackable`, the stacking foot and lid, the lid stacking top.
 
+## Fixes also go into `marcus` (Marcus, 20 November 2026)
+
+Marcus said on 20 November 2026: every fix that is built for Stefan must also be put into `marcus`, always, so his demo
+has it. The way it was done that day: one branch per fix from Stefan's `main` for the PR (`fix-…`), and the same commit
+taken onto `marcus` with `git cherry-pick -x`, so `marcus` did not have to take Stefan's whole newest version in the
+same step. Typecheck and the full `npm test` on `marcus` before the push, as always.
+
 ## Status page
 
 Marcus's overview is a page on claude.ai that Copilot cannot reach. Do not try. Tell Marcus in German what you did, and
