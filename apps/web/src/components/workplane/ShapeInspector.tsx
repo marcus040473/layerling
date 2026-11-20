@@ -8,7 +8,7 @@ import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicke
 import { SnapGridMenuItems } from "@/components/workplane/SnapGridMenu";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
-import { Amphora, Droplets, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
+import { Amphora, BrickWall, Droplets, Layers2, Soup, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
 import { boltPinDiameter, boltSplitFits } from "@/lib/boltSplit";
@@ -522,7 +522,10 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
   lampSocket: { e27: "vase.socketE27", e14: "vase.socketE14", eigen: "vase.socketCustom" },
   legMode: { keine: "vase.legsNone", stecken: "vase.legsPlugIn", angeformt: "vase.legsMoulded", staender: "vase.legsStand" },
   legShape: { kegel: "vase.legCone", zylinder: "vase.legCylinder", kantig: "vase.legSquare" },
-  saucerMode: { keine: "vase.saucerNone", schale: "vase.saucerBowl", versteckt: "vase.saucerHidden" },
+  saucerMode: { keine: "vase.saucerNone", schale: "vase.saucerBowl", andock: "vase.saucerDocked", versteckt: "vase.saucerHidden" },
+  saucerForm: { teller: "vase.saucerFormPlate", huelle: "vase.saucerFormHug" },
+  saucerHold: { zapfen: "vase.saucerHoldPins", magnet: "vase.saucerHoldMagnets" },
+  wallMount: { keine: "vase.wallMountNone", schiene: "vase.wallMountRail" },
   insertMode: { keine: "vase.insertNone", pflanze: "vase.insertPlant", bewaesserung: "vase.insertWatering", stecker: "vase.insertFrog", roehrchen: "vase.insertTube" },
   lidMode: { keiner: "vase.lidNone", stuelp: "vase.lidSlip", schnapp: "vase.lidSnap", schraube: "vase.lidScrew", kanne: "vase.lidTeapot", stopfen: "vase.lidStopper" },
 };
@@ -696,8 +699,10 @@ function scrollingAncestor(element: HTMLElement): HTMLElement | null {
   return null;
 }
 
-export function propertyUsesLengthUnit(key: string) {
-  return ["boxWall", "boxFloor", "boxCornerRadius", "boxDivider", "boxLidPlate", "boxFit", "textLineWidth", "textBlockGap", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "curvedConeTop", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "torusTube", "sketchLineWidth", "sketchCuttingEdge", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "headDiameter", "collarHeight", "collarDiameter", "driveSize", "driveDepth", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "sectorEndRadius", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeInner", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "screwBossHole", "screwBossHoleDepth", "screwBossDiameter", "screwBossGussetHeight", "screwBossGussetThickness", "screwBossReach", "snapFitThickness", "snapFitUndercut", "snapFitClearance", "snapFitFoot", "ribLength", "ribThickness", "ribFootThickness", "portClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "hingeCornerRadius", "hingeScrewDiameter", "hingeScrewSpacing", "hingeScrewAcross", "hingeNutWidth", "hingeSnapGrip", "screwHoleShaft", "screwHoleHeadDepth", "screwHoleSlotLength", "screwHoleRecess", "screwHoleChamfer", "screwHoleLengthBelowHead", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTopWall", "loftSectionHeight", "loftSectionWidth", "loftSectionDepth", "loftSectionCorner", "loftSectionOffsetX", "loftSectionOffsetZ", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelTextSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityWallThickness", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityOverhangBack", "gridfinityOverhangFront", "gridfinityOverhangLeft", "gridfinityOverhangRight", "gridfinityOverhangChamfer", "gridfinityCornerRadius", "gridfinityBinCornerRadius", "gridfinitySwallowtailClearance", "gridfinityDividerThickness", "gridfinityDividerHeight", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "gridfinityOpeningCornerSize", "gridfinityOpeningDepthBack", "gridfinityOpeningDepthFront", "gridfinityOpeningDepthLeft", "gridfinityOpeningDepthRight", "gridfinityOpeningWidthBack", "gridfinityOpeningWidthFront", "gridfinityOpeningWidthLeft", "gridfinityOpeningWidthRight", "gridfinityOpeningDistanceBack", "gridfinityOpeningDistanceFront", "gridfinityOpeningDistanceLeft", "gridfinityOpeningDistanceRight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "surfaceCarbonCross", "surfaceBrickHeight", "surfaceBrickJoint", "surfaceTimberHeight", "surfaceTimberBeam", "surfaceStoneJoint", "surfaceTileGap", "surfaceRingWidth", "surfaceTileHeight", "vasePrint.wall", "vasePrint.bottom", "vasePattern.ribDepth", "vasePattern.stripeDepth", "vasePattern.voronoiCell", "vasePattern.voronoiGap", "vasePattern.voronoiDepth", "vasePattern.waveAmplitude", "vasePattern.reliefDepth", "vasePatternMore.zoneFade", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.lidHeight", "vaseParts.lidJoint", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
+export function propertyUsesLengthUnit(rowKey: string) {
+  // A plant pot's and a lampshade's own blocks hold the same rows as the bottom's and the accessories' cards.
+  const key = rowKey.replace(/^(vaseSaucer|vaseInner|vaseWall)\./, "vaseParts.").replace(/^vaseUse\./, "vaseFloor.");
+  return ["boxWall", "boxFloor", "boxCornerRadius", "boxDivider", "boxLidPlate", "boxFit", "textLineWidth", "textBlockGap", "textEdgeSize", "letterSize", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "curvedConeTop", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "torusTube", "sketchLineWidth", "sketchCuttingEdge", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "headDiameter", "collarHeight", "collarDiameter", "driveSize", "driveDepth", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "sectorEndRadius", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeInner", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "screwBossHole", "screwBossHoleDepth", "screwBossDiameter", "screwBossGussetHeight", "screwBossGussetThickness", "screwBossReach", "snapFitThickness", "snapFitUndercut", "snapFitClearance", "snapFitFoot", "ribLength", "ribThickness", "ribFootThickness", "portClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "hingeCornerRadius", "hingeScrewDiameter", "hingeScrewSpacing", "hingeScrewAcross", "hingeNutWidth", "hingeSnapGrip", "screwHoleShaft", "screwHoleHeadDepth", "screwHoleSlotLength", "screwHoleRecess", "screwHoleChamfer", "screwHoleLengthBelowHead", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTopWall", "loftSectionHeight", "loftSectionWidth", "loftSectionDepth", "loftSectionCorner", "loftSectionOffsetX", "loftSectionOffsetZ", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelTextSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityWallThickness", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityOverhangBack", "gridfinityOverhangFront", "gridfinityOverhangLeft", "gridfinityOverhangRight", "gridfinityOverhangChamfer", "gridfinityCornerRadius", "gridfinityBinCornerRadius", "gridfinitySwallowtailClearance", "gridfinityDividerThickness", "gridfinityDividerHeight", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "gridfinityOpeningCornerSize", "gridfinityOpeningDepthBack", "gridfinityOpeningDepthFront", "gridfinityOpeningDepthLeft", "gridfinityOpeningDepthRight", "gridfinityOpeningWidthBack", "gridfinityOpeningWidthFront", "gridfinityOpeningWidthLeft", "gridfinityOpeningWidthRight", "gridfinityOpeningDistanceBack", "gridfinityOpeningDistanceFront", "gridfinityOpeningDistanceLeft", "gridfinityOpeningDistanceRight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "surfaceCarbonCross", "surfaceBrickHeight", "surfaceBrickJoint", "surfaceTimberHeight", "surfaceTimberBeam", "surfaceStoneJoint", "surfaceTileGap", "surfaceRingWidth", "surfaceTileHeight", "vasePrint.wall", "vasePrint.bottom", "vasePattern.ribDepth", "vasePattern.stripeDepth", "vasePattern.voronoiCell", "vasePattern.voronoiGap", "vasePattern.voronoiDepth", "vasePattern.waveAmplitude", "vasePattern.reliefDepth", "vasePatternMore.zoneFade", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.saucerRise", "vaseParts.magnetDiameter", "vaseParts.magnetHeight", "vaseParts.lampWallScrew", "vaseFloor.lampWallScrew", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.lidHeight", "vaseParts.lidJoint", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
 }
 
 /**
@@ -1795,10 +1800,15 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     // What belongs to the vase's use stands on the Form tab, in a block of its own (ids "vaseUse."): a plant pot's
     // drain holes, a lampshade's socket and its carrier. For a plain vase they stay with bottom and wall.
     const use = (config: ShapePropertyConfig): ShapePropertyConfig => ({ ...config, id: config.id.replace(/^vase\./, "vaseUse.") });
-    const potRow = vase.purpose === "topf" ? use : floor;
+    const pot = vase.purpose === "topf";
+    const potRow = pot ? use : floor;
     const lampRow = vase.purpose === "lampe" ? use : floor;
     if (hollow && !open) {
-      properties.push(potRow(range("drainHoles", "prop.vaseDrainHoles", 1, "vase.floorHint")));
+      if (pot) {
+        // A plant pot: the holes are switched on and off, and how many there are is a row of its own.
+        properties.push({ type: "toggle", id: "vaseUse.drainOn", label: t("prop.vaseDrainHoles"), value: vase.drainHoles > 0, onChange: (value) => setVase({ drainHoles: value ? 3 : 0 }) });
+        if (vase.drainHoles > 0) properties.push(use({ id: "vase.drainHoles", label: t("prop.vaseDrainCount"), value: vase.drainHoles, min: 1, max: limits("drainHoles")[1], step: 1, onChange: (value) => setVase({ drainHoles: value }) }));
+      } else properties.push(floor(range("drainHoles", "prop.vaseDrainHoles", 1, "vase.floorHint")));
       if (vase.drainHoles > 0) properties.push(potRow(range("drainDiameter", "prop.vaseDrainDiameter", 0.5)), potRow(range("floorSlope", "prop.vaseFloorSlope", 0.1)));
       if (vase.lamp !== "puck" && vase.lamp !== "sockel") properties.push(floor(range("footHeight", "prop.vaseFootHeight", 1)));
     }
@@ -1865,7 +1875,12 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     }
     // Accessories, on a card of their own (ids "vaseParts."): the legs' sockets, a lid's groove or thread go into the body.
     const part = (config: ShapePropertyConfig): ShapePropertyConfig => ({ ...config, id: config.id.replace(/^vase\./, "vaseParts.") });
-    const yesNo = (key: VaseChoiceKey, label: MessageKey): ShapePropertyConfig => part({
+    // A plant pot has its saucer, its inner pot and its wall holder in blocks of their own on the Form tab (ids
+    // "vaseSaucer.", "vaseInner.", "vaseWall."); for a vase they stay with the accessories.
+    const saucerRow = pot ? (config: ShapePropertyConfig) => as("vaseSaucer", config) : part;
+    const innerRow = pot ? (config: ShapePropertyConfig) => as("vaseInner", config) : part;
+    const wallRow = pot ? (config: ShapePropertyConfig) => as("vaseWall", config) : part;
+    const yesNo = (key: VaseChoiceKey, label: MessageKey, row: (config: ShapePropertyConfig) => ShapePropertyConfig = part): ShapePropertyConfig => row({
       type: "toggle",
       id: `vase.${key}`,
       label: t(label),
@@ -1877,16 +1892,35 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       properties.push(part(range("legCount", "prop.vaseLegCount", 1)), part(range("legHeight", "prop.vaseLegHeight", 1)), part(range("legDiameter", "prop.vaseLegDiameter", 0.5)), part(choice("legShape", "prop.vaseLegShape")), part(range("legSplay", "prop.vaseLegSplay", 1)));
       if (vase.legMode !== "staender") properties.push(part(percent("legInset", "prop.vaseLegInset")));
     }
-    properties.push(part(choice("saucerMode", "prop.vaseSaucer")));
+    properties.push(saucerRow(choice("saucerMode", "prop.vaseSaucer", vase.saucerMode === "andock" ? "vase.saucerDockHint" : undefined)));
     if (vase.saucerMode === "schale") {
-      properties.push(part(range("saucerHeight", "prop.vaseSaucerHeight", 1)), part(range("saucerGap", "prop.vaseSaucerGap", 0.5)), part(range("saucerWall", "prop.vaseSaucerWall", 0.1)), yesNo("saucerRibs", "prop.vaseSaucerRibs"), yesNo("saucerSpout", "prop.vaseSaucerSpout"), yesNo("saucerGrip", "prop.vaseSaucerGrip"));
+      // A dish: its form and height first, then the slanted rim; the finer points follow.
+      properties.push(
+        saucerRow(choice("saucerForm", "prop.vaseSaucerForm")),
+        saucerRow(range("saucerHeight", "prop.vaseSaucerHeight", 1)),
+        saucerRow(range("saucerRise", "prop.vaseSaucerRise", 1, "vase.saucerRiseHint")),
+        saucerRow(range("saucerGap", "prop.vaseSaucerGap", 0.5)),
+        saucerRow(range("saucerWall", "prop.vaseSaucerWall", 0.1)),
+        yesNo("saucerRibs", "prop.vaseSaucerRibs", saucerRow),
+        yesNo("saucerSpout", "prop.vaseSaucerSpout", saucerRow),
+        yesNo("saucerGrip", "prop.vaseSaucerGrip", saucerRow),
+      );
+    } else if (vase.saucerMode === "andock") {
+      // A docked bowl: how deep it is, its wall, and what holds it (with magnets, their size).
+      properties.push(saucerRow(range("saucerHeight", "prop.vaseSaucerHeight", 1)), saucerRow(range("saucerWall", "prop.vaseSaucerWall", 0.1)), saucerRow(choice("saucerHold", "prop.vaseSaucerHold")));
+      if (vase.saucerHold === "magnet") properties.push(saucerRow(range("magnetDiameter", "prop.vaseMagnetDiameter", 0.5)), saucerRow(range("magnetHeight", "prop.vaseMagnetHeight", 0.5)));
     }
     if (hollow) {
-      properties.push(part(choice("insertMode", "prop.vaseInsert")));
-      if (vase.insertMode === "pflanze" || vase.insertMode === "bewaesserung") properties.push(part(range("insertWall", "prop.vaseInsertWall", 0.1)), part(range("insertStandoff", "prop.vaseInsertStandoff", 0.5)));
-      if (vase.insertMode === "bewaesserung") properties.push(part(range("reservoirHeight", "prop.vaseReservoirHeight", 1)));
-      if (vase.insertMode === "stecker") properties.push(part(range("frogHole", "prop.vaseFrogHole", 0.5)));
-      if (vase.insertMode === "roehrchen") properties.push(part(range("tubeDiameter", "prop.vaseTubeDiameter", 0.5)));
+      properties.push(innerRow(choice("insertMode", pot ? "prop.vaseInnerPot" : "prop.vaseInsert", pot ? "vase.innerPotHint" : undefined)));
+      if (vase.insertMode === "pflanze" || vase.insertMode === "bewaesserung") properties.push(innerRow(range("insertWall", "prop.vaseInsertWall", 0.1)), innerRow(range("insertStandoff", "prop.vaseInsertStandoff", 0.5)));
+      if (vase.insertMode === "bewaesserung") properties.push(innerRow(range("reservoirHeight", "prop.vaseReservoirHeight", 1)));
+      if (vase.insertMode === "stecker") properties.push(innerRow(range("frogHole", "prop.vaseFrogHole", 0.5)));
+      if (vase.insertMode === "roehrchen") properties.push(innerRow(range("tubeDiameter", "prop.vaseTubeDiameter", 0.5)));
+      // On the wall: a rail on the pot's flat back, and the holder's screw holes. Not for a lampshade (it has its own).
+      if (vase.lamp === "keine") {
+        properties.push(wallRow(choice("wallMount", "prop.vaseWallMount", vase.wallMount === "schiene" ? "vase.wallMountHint" : undefined)));
+        if (vase.wallMount === "schiene") properties.push(wallRow(range("lampWallScrew", "prop.vaseLampWallScrew", 0.1)));
+      }
     }
     properties.push(part(choice("lidMode", "prop.vaseLid", "vase.lidHint")));
     if (vase.lidMode === "kanne") {
@@ -9581,8 +9615,17 @@ function VaseDesigner({
   };
   // What belongs to the use, in a block of its own under the body shapes: a lampshade's socket and carrier, a plant pot's drain holes.
   const useRows = byPrefix("vaseUse");
-  const useTitle = vase.purpose === "lampe" ? t("prop.vaseLampSocket") : t("prop.vaseDrainHoles");
+  const useTitle = vase.purpose === "lampe" ? t("prop.vaseLampSocket") : t("vase.potDrain");
   const UseIcon = vase.purpose === "lampe" ? Lightbulb : Droplets;
+  // A plant pot has three more blocks: its saucer, its inner pot, and how it hangs on the wall.
+  const potBlocks = vase.purpose === "topf"
+    ? [
+        { id: "saucer", title: t("prop.vaseSaucer"), Icon: Soup, list: byPrefix("vaseSaucer") },
+        { id: "inner", title: t("prop.vaseInnerPot"), Icon: Layers2, list: byPrefix("vaseInner") },
+        { id: "wall", title: t("prop.vaseWallMount"), Icon: BrickWall, list: byPrefix("vaseWall") },
+      ].filter((block) => block.list.length)
+    : [];
+  const potHasParts = vase.purpose === "topf" && (vase.saucerMode !== "keine" || vase.insertMode !== "keine" || vase.wallMount !== "keine");
   // Form: the body shape's tiles; the measures, cross-section and twist; the contour button.
   const form = byPrefix("vase").filter((property) => property.id !== "vase.profile");
   const profile = findSelectProperty(properties, "vase.profile");
@@ -9681,6 +9724,21 @@ function VaseDesigner({
                   </button>
                 ) : null}
               </section>
+            ) : null}
+            {potBlocks.map(({ id, title, Icon, list }) => (
+              <section key={id} className="vase-use" aria-label={title}>
+                <h4 className="vase-use-title">
+                  <Icon size={16} strokeWidth={2.4} aria-hidden="true" />
+                  <span>{title}</span>
+                </h4>
+                {rows(list)}
+              </section>
+            ))}
+            {potHasParts && onVaseAccessories ? (
+              <button className="inspector-action-button vase-pot-parts" type="button" disabled={disabled} onClick={onVaseAccessories}>
+                <Plus size={17} strokeWidth={2.5} />
+                <span>{t("inspector.vasePartsMake")}</span>
+              </button>
             ) : null}
             {rows(form)}
             {advanced(formMore, () => setFormMore((open) => !open), rows(byPrefix("vaseMore")))}

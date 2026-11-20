@@ -290,6 +290,28 @@ Woher der Gewinn kommt:
 Schwungrippen gewinnen am wenigsten: Sie werden gerechnet, nicht aus einem Bild gelesen. Dort und beim zweiten
 Durchlauf für die Diagonalen der Vierecke liegt die nächste Möglichkeit.
 
+### Pflanztopf: Untersetzer, Innentopf, Wandhalter
+
+Der Pflanztopf hat auf dem Reiter Form vier eigene Blöcke: Wasserablauf, Untersetzer, Innentopf, Wandhalter.
+
+- **Wasserablauf:** Die Ablauflöcher sind ein Schalter, dazu Anzahl und Durchmesser.
+- **Untersetzer als Schale:** als Teller (gerade Wand) oder anschmiegend. Die anschmiegende Wand folgt dem Umriss des
+  Topfs im eingestellten Abstand. Sie ist auf jeder Höhe so weit wie die breiteste Stelle des Topfs darunter, damit
+  sich der Topf herausheben lässt, und neigt sich höchstens 45° nach außen. „Schräger Rand“ hebt den Rand auf einer
+  Seite an: eine schräge Schale, die den Topf halb umfasst.
+- **Angedockte Schale:** sitzt bündig unter dem Topf und führt seinen Bodenumriss nach unten weiter. Ihre Wand ist ein
+  Bogen, oben senkrecht, unten 45°. Drei Säulen tragen den Topf 1,2 mm über dem Schalenrand (Schattenfuge, das Wasser
+  kann abtrocknen). Auf den Säulen sitzen Zapfen oder Taschen für Magnete; der Topfboden bekommt die passenden Mulden
+  und wird dafür dicker.
+- **Innentopf:** der vorhandene Pflanzeinsatz und die Selbstbewässerung, jetzt im Pflanztopf-Bereich.
+- **Wandhalter:** Der Topf bekommt hinten eine 7 mm tiefe Fläche und darauf eine angeformte Schwalbenschwanz-Schiene.
+  Ihr unteres Ende ist ein Keil von 45°. Der Halter ist ein eigenes Teil: Platte, zwei Leisten, eine Rampe und
+  Senklöcher im Taschenboden. Der Topf wird von oben eingeschoben und verdeckt die Schrauben. Unter der Schiene bleibt
+  die Wand glatt, auch mit Muster. Die Schiene sitzt dort, wo der Rücken des Topfs der Wand am nächsten liegt.
+
+Die Prüfung meldet, was nicht zusammenpasst: loser Untersetzer an der Wand, angedockte Schale ohne Magnete an der
+Wand, Ablauflöcher ohne Schale an der Wand, Schale mit hohlem Fuß oder Beinen.
+
 ## 6. Weg nach Layerling für den neuen Kern
 
 In dieser Reihenfolge, jeder Schritt für sich nutzbar:

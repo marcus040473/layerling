@@ -11,7 +11,7 @@ export type VaseNumberKey =
   | "waveAmplitude" | "waveCount" | "zoneFrom" | "zoneTo" | "zoneFade" | "wall" | "bottom"
   | "drainHoles" | "drainDiameter" | "floorSlope" | "footHeight" | "rubberFeet" | "rubberFootDiameter" | "rubberFootDepth"
   | "legCount" | "legHeight" | "legDiameter" | "legSplay" | "legInset" | "fitClearance"
-  | "saucerGap" | "saucerHeight" | "saucerWall" | "insertWall" | "insertStandoff" | "reservoirHeight" | "tubeDiameter" | "frogHole"
+  | "saucerGap" | "saucerHeight" | "saucerWall" | "saucerRise" | "magnetDiameter" | "magnetHeight" | "insertWall" | "insertStandoff" | "reservoirHeight" | "tubeDiameter" | "frogHole"
   | "lidClearance" | "lidThickness" | "lidDepth" | "threadPitch" | "lidHeight"
   | "cutoutSize" | "cutoutWeb" | "cutoutFrom" | "cutoutTo" | "cutoutAspect" | "cutoutSeed"
   | "lampHole" | "lampSpokes" | "lampRing" | "lampSpokeWidth" | "lampWallScrew" | "lampBulbDiameter" | "lampBulbLength" | "lampBaseHeight" | "lampBaseWidth" | "lampBaseRibs" | "lampDisc" | "lampDiscHeight" | "puckDiameter" | "lampNotch" | "lampNotchHeight"
@@ -26,7 +26,7 @@ export type VaseNumberKey =
 export type VaseChoiceKey =
   | "profile" | "purpose" | "ribShape" | "twistMode" | "twistAlong" | "material" | "sectionOutside"
   | "section2" | "section2WaveStyle" | "body" | "innerShape"
-  | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "insertMode"
+  | "legMode" | "legShape" | "saucerMode" | "saucerRibs" | "saucerSpout" | "saucerGrip" | "saucerForm" | "saucerHold" | "wallMount" | "insertMode"
   | "lidMode" | "lidGrip" | "lidKnob" | "quality" | "cutout" | "cutoutEdge" | "watertight" | "printView" | "lamp" | "lampSocket" | "lampBulb" | "lampBaseShape" | "lampBaseLight" | "reinforce"
   | "section" | "sectionWaveStyle" | "drawSymmetry" | "effect" | "stripeStyle"
   | "stopperRing" | "leafShape" | "leafLayout" | "leafVeins" | "printFriendly" | "patternInvert" | "leafFixed"
@@ -75,6 +75,10 @@ export const LAMP_BASE_LIGHTS: Readonly<Record<string, string>>;
 /** The bulbs a lampshade can be checked against. */
 export const LAMP_BULBS: Readonly<Record<string, string>>;
 export const LID_MODES: Readonly<Record<string, string>>;
+/** A dish's forms, what holds a docked bowl, and how a pot hangs on the wall. */
+export const SAUCER_FORMS: Readonly<Record<string, string>>;
+export const SAUCER_HOLDS: Readonly<Record<string, string>>;
+export const WALL_MOUNTS: Readonly<Record<string, string>>;
 export const PATTERNS: Readonly<Record<string, string>>;
 /** One's own picture: row upon row, or once in the middle of the height range. */
 export const PICTURE_FITS: Readonly<Record<string, string>>;

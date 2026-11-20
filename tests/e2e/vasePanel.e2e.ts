@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { ShapeInspector } from "@/components/workplane/ShapeInspector";
 import { makeShapeFromAsset, toolbarShapeAssets } from "@/lib/shapeCatalog";
+import { normalizeVaseSettings } from "@/lib/vaseSettings";
 import { DEFAULT_SNAP_GRID, DEFAULT_WORKPLANE_WORKSPACE } from "@/lib/workplaneSettings";
 import type { WorkplaneShape } from "@/types/layerling";
 
@@ -197,13 +198,71 @@ describe("a vase in its settings", () => {
     const planter = mount({ ...lamp, ...pot });
     openTab(planter.panel, "Form");
     expect(tile(planter.panel, "Classic")).toBeDefined();
-    expect(planter.panel.querySelector(".vase-use .vase-use-title")?.textContent).toBe("Drain holes");
-    expect(rangeNamed(planter.panel.querySelector<HTMLElement>(".vase-use")!, "Drain holes")).toBeDefined();
+    expect(planter.panel.querySelector(".vase-use .vase-use-title")?.textContent).toBe("Drainage");
+    expect(rangeNamed(planter.panel.querySelector<HTMLElement>(".vase-use")!, "Number of holes")).toBeDefined();
     // Back to a vase: no lamp, a vase's form; a size one has set oneself is kept.
     act(() => use(planter.panel, "Vase").click());
     const back = planter.calls.updates.at(-1)!;
     expect(back.vase).toMatchObject({ purpose: "vase", lamp: "keine", profile: "flasche" });
     expect(back.height).toBeUndefined();
+  });
+
+  it("gives a plant pot blocks of its own: drainage, saucer, inner pot and wall mount", () => {
+    const pot = { purpose: "topf", body: "hohl", profile: "topfKlassik", drainHoles: 3, saucerMode: "schale" };
+    const { panel, calls } = mount({ vase: { ...normalizeVaseSettings({}), ...pot } });
+    openTab(panel, "Form");
+    const blocks = () => [...panel.querySelectorAll<HTMLElement>(".vase-use")];
+    const block = (name: string) => blocks().find((entry) => entry.querySelector(".vase-use-title")?.textContent === name)!;
+    expect(blocks().map((entry) => entry.querySelector(".vase-use-title")?.textContent)).toEqual(["Drainage", "Saucer", "Inner pot", "Wall mount"]);
+    // The drain holes are switched on and off; how many and how wide is set beside the switch.
+    const holes = [...block("Drainage").querySelectorAll<HTMLLabelElement>("label.check-property")].find((entry) => entry.textContent?.includes("Drain holes"))!.querySelector("input")!;
+    expect(holes.checked).toBe(true);
+    expect(rangeNamed(block("Drainage"), "Number of holes")).toBeDefined();
+    expect(rangeNamed(block("Drainage"), "Hole diameter")).toBeDefined();
+    act(() => holes.click());
+    expect(calls.updates.at(-1)?.vase?.drainHoles).toBe(0);
+    const tight = mount({ vase: { ...normalizeVaseSettings({}), ...pot, drainHoles: 0 } });
+    openTab(tight.panel, "Form");
+    const tightBlock = [...tight.panel.querySelectorAll<HTMLElement>(".vase-use")][0];
+    expect(rangeNamed(tightBlock, "Number of holes")).toBeUndefined();
+    act(() => tightBlock.querySelector<HTMLInputElement>("label.check-property input")!.click());
+    expect(tight.calls.updates.at(-1)?.vase?.drainHoles).toBe(3);
+    // The saucer: a dish (a plate, or hugging the pot; with a slanted rim), a bowl docked under the pot, or hidden.
+    expect([...selectNamed(block("Saucer"), "Saucer")!.options].map((option) => option.textContent)).toEqual(["None", "Bowl", "Docked under the pot", "Hidden in the foot"]);
+    expect([...selectNamed(block("Saucer"), "Dish form")!.options].map((option) => option.textContent)).toEqual(["Plate", "Hugging the pot"]);
+    for (const name of ["Saucer height", "Slanted rim", "Gap to the pot", "Saucer wall"]) expect(rangeNamed(block("Saucer"), name), name).toBeDefined();
+    choose(selectNamed(block("Saucer"), "Dish form")!, "huelle");
+    expect(calls.updates.at(-1)?.vase?.saucerForm).toBe("huelle");
+    choose(selectNamed(block("Saucer"), "Saucer")!, "andock");
+    expect(calls.updates.at(-1)?.vase?.saucerMode).toBe("andock");
+    const docked = mount({ vase: { ...normalizeVaseSettings({}), ...pot, saucerMode: "andock", saucerHold: "magnet" } });
+    openTab(docked.panel, "Form");
+    const dock = [...docked.panel.querySelectorAll<HTMLElement>(".vase-use")][1];
+    expect([...selectNamed(dock, "Held by")!.options].map((option) => option.textContent)).toEqual(["Pins", "Magnets"]);
+    for (const name of ["Saucer height", "Magnet Ø", "Magnet height"]) expect(rangeNamed(dock, name), name).toBeDefined();
+    expect(rangeNamed(dock, "Slanted rim")).toBeUndefined();
+    // The inner pot and the wall mount; one button lays all the parts out.
+    expect([...selectNamed(block("Inner pot"), "Inner pot")!.options].map((option) => option.textContent)).toEqual(["None", "Plant insert", "Self-watering", "Flower frog", "Water tube"]);
+    choose(selectNamed(block("Inner pot"), "Inner pot")!, "pflanze");
+    expect(calls.updates.at(-1)?.vase?.insertMode).toBe("pflanze");
+    expect([...selectNamed(block("Wall mount"), "Wall mount")!.options].map((option) => option.textContent)).toEqual(["None", "Wall rail"]);
+    expect(rangeNamed(block("Wall mount"), "Screw hole Ø")).toBeUndefined();
+    choose(selectNamed(block("Wall mount"), "Wall mount")!, "schiene");
+    expect(calls.updates.at(-1)?.vase?.wallMount).toBe("schiene");
+    const hung = mount({ vase: { ...normalizeVaseSettings({}), ...pot, wallMount: "schiene" } });
+    openTab(hung.panel, "Form");
+    expect(rangeNamed([...hung.panel.querySelectorAll<HTMLElement>(".vase-use")][3], "Screw hole Ø")).toBeDefined();
+    act(() => buttonNamed(hung.panel, "Lay out accessories")!.click());
+    expect(hung.calls.accessories).toBe(1);
+    // A vase keeps saucer, insert and wall mount with its accessories on the Print tab.
+    const vase = mount({ vase: { ...normalizeVaseSettings({}), body: "hohl" } });
+    openTab(vase.panel, "Form");
+    expect(vase.panel.querySelector(".vase-use")).toBeNull();
+    openTab(vase.panel, "Print");
+    openSection(vase.panel, "Accessories");
+    expect(selectNamed(vase.panel, "Saucer")).toBeDefined();
+    expect(selectNamed(vase.panel, "Insert")).toBeDefined();
+    expect(selectNamed(vase.panel, "Wall mount")).toBeDefined();
   });
 
   it("chooses a pattern from the gallery and shows its three main sliders and the height range", () => {
