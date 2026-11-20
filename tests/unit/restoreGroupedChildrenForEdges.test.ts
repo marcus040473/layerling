@@ -135,4 +135,35 @@ describe("the bodies of a group for the edge tool", () => {
     if (!outer) throw new Error("did not group");
     expect(scopedParts(outer)).toHaveLength(2);
   });
+  // Issue #1790: a tube whose bore cuts as a hole is two bodies wherever shapes are combined, and the edge tool combines
+  // them again in the kernel. It handed the tube over as the one hollow body, and the box it passes through closed its bore.
+  it("hands a tube whose bore cuts as a hole over as its outer cylinder and its bore", () => {
+    const tube = shape({ id: "tube", kind: "tube", height: 60, bevel: 3, tubeBoreHole: true });
+    const group = groupedShape([shape({ id: "box", width: 40, depth: 40, size: 40 }), tube]);
+    if (!group) throw new Error("did not group");
+    const parts = scopedParts(group);
+    expect(parts.map((part) => [part.shape.kind, part.shape.hole === true, part.shape.width, part.scope])).toEqual([
+      ["box", false, 40, []],
+      ["cylinder", false, 20, []],
+      ["cylinder", true, 14, []],
+    ]);
+    // Without the switch the tube stays the one body it is.
+    const plain = groupedShape([shape({ id: "box", width: 40, depth: 40, size: 40 }), { ...tube, tubeBoreHole: undefined }]);
+    if (!plain) throw new Error("did not group");
+    expect(restoreGroupedChildrenForEdges(plain).map((part) => part.kind)).toEqual(["box", "tube"]);
+  });
+
+  it("keeps the bore of a tube inside a group of solids to that group, as the group's own mesh has it", () => {
+    // Grouped on its own the inner group cut the bore into its own block only; the plate beside it stays whole.
+    const inner = groupedShape([shape({ id: "block" }), shape({ id: "tube", kind: "tube", height: 60, bevel: 3, tubeBoreHole: true })]);
+    if (!inner) throw new Error("did not group");
+    const outer = groupedShape([shape({ id: "plate", width: 40, depth: 40, size: 40, height: 6 }), inner]);
+    if (!outer) throw new Error("did not group");
+    expect(scopedParts(outer).map((part) => [baseId(part.shape.id).split("-bore-")[0], part.shape.hole === true, part.scope])).toEqual([
+      ["plate", false, []],
+      ["block", false, [0]],
+      ["tube", false, [0]],
+      ["tube", true, [0]],
+    ]);
+  });
 });
