@@ -7,8 +7,8 @@
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (6004 passed)
-- [x] `npm run test:e2e` (1650 passed)
+- [x] `npm test` (6013 passed)
+- [x] This fix's e2e files on this branch (6 passed); the whole `npm run test:e2e` (1650 passed) ran on a branch with all eleven issue fixes together, on 1.166.0
 - [ ] Manually tested the affected workflow (not in the browser, see Notes)
 - New `tests/e2e/intersectTouchingFaces.e2e.ts` (6 tests): touching at three heights in both orders, the ball in the upper group, touch-only gives empty, a real 0.05 mm shared slab is kept. 4 fail without the change.
 
@@ -17,4 +17,4 @@
 - I could not open the bug report's file. If the reporter's layer really is 0.001 mm thick with volume, this does not remove it; I found no arrangement that makes such a layer.
 - The three-bvh-csg fallback, used only when Manifold fails, is unchanged.
 - Not tried in the browser; the checks are the tests above.
-- This fix was checked together with the other issue fixes of 20 November on one branch based on your main at 1.166.0 plus the 13 commits after it; the test counts are from that branch.
+- The branch is your main at 04697a698 plus this one commit.

@@ -6,8 +6,8 @@
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (6004 passed)
-- [x] `npm run test:e2e` (1650 passed)
+- [x] `npm test` (6017 passed)
+- [x] This fix's e2e files on this branch (5 passed); the whole `npm run test:e2e` (1650 passed) ran on a branch with all eleven issue fixes together, on 1.166.0
 - [ ] Manually tested the affected workflow (not in the browser, see Notes)
 - 4 new cases in `tests/unit/meshSplinters.test.ts` and new `tests/e2e/colorExportSmallParts.e2e.ts` (5 tests, 4 fail without the change).
 
@@ -17,4 +17,4 @@
 - Bodies a loose hole was cut from, and meshes Layerling computed itself (a group cut with its holes), do not count as drawn; their leftover splinters are removed as before.
 - A second loss is not fixed: a piece of a multi-piece body that lies entirely inside a later body of another colour is still cut away when other pieces of the same body stick out (#906 only protects a body swallowed whole).
 - Not tried in the browser; the checks are the tests above.
-- This fix was checked together with the other issue fixes of 20 November on one branch based on your main at 1.166.0 plus the 13 commits after it; the test counts are from that branch.
+- The branch is your main at 04697a698 plus this one commit.

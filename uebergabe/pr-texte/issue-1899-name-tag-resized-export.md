@@ -8,8 +8,8 @@
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (6004 passed)
-- [x] `npm run test:e2e` (1650 passed)
+- [x] `npm test` (6013 passed)
+- [x] This fix's e2e files on this branch (8 passed); the whole `npm run test:e2e` (1650 passed) ran on a branch with all eleven issue fixes together, on 1.166.0
 - [ ] Manually tested the affected workflow (not in the browser, see Notes)
 - New `tests/e2e/nameTagResizedExport.e2e.ts` (8 tests): the library name tag resized four ways, written as 3MF, read back and compared layer by layer with the view's boxes and volumes. 6 of the 8 fail without the change.
 
@@ -20,4 +20,4 @@
 - "Separate parts" on a resized name tag uses the same `restoreGroupedChildren` and is unchanged.
 - Not opened in Bambu Studio; the check reads the 3MF's model back.
 - Not tried in the browser; the checks are the tests above.
-- This fix was checked together with the other issue fixes of 20 November on one branch based on your main at 1.166.0 plus the 13 commits after it; the test counts are from that branch.
+- The branch is your main at 04697a698 plus this one commit.

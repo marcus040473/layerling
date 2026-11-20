@@ -7,8 +7,8 @@
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (6004 passed)
-- [x] `npm run test:e2e` (1650 passed)
+- [x] `npm test` (6017 passed)
+- [x] `npm run test:e2e` (1650 passed) on a branch with all eleven issue fixes together, on 1.166.0; this fix has no e2e file of its own
 - [x] Manually tested the affected workflow: production build in headless Chromium with real key presses, timings above; on 1.156.4, before your newer commits were merged in
 - New `tests/unit/moveKeepsBuiltGroups.test.ts` (4 tests): replays the editor's steps for an arrow key, Undo and Redo and asks `rebuildShapes` which objects were replaced. All 4 fail without the change.
 
@@ -17,4 +17,4 @@
 - I could not load the reporter's project. If it has no Multicolor groups, their delay has another cause.
 - The memo relies on nobody changing a `groupedShapes` array in place; I found no such place, and the #1042 memo relies on the same.
 - Not looked at: `stringSignatureCache` in `editorHistory.ts` holds only 64 `cadBrep` strings, so a design with more exact bodies may hash them again on every step. And the second user's remark that a held key does not move bigger parts.
-- This fix was checked together with the other issue fixes of 20 November on one branch based on your main at 1.166.0 plus the 13 commits after it; the test counts are from that branch.
+- The branch is your main at 04697a698 plus this one commit.

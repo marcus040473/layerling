@@ -7,8 +7,8 @@
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (6004 passed)
-- [x] `npm run test:e2e` (1650 passed)
+- [x] `npm test` (6017 passed)
+- [x] This fix's e2e files on this branch (1 passed); the whole `npm run test:e2e` (1650 passed) ran on a branch with all eleven issue fixes together, on 1.166.0
 - [ ] Manually tested the affected workflow (not in the browser, see Notes)
 - New `tests/unit/cadInnerCornerBudget.test.ts` (clock mocked, 2 of 4 fail without the change) and `tests/e2e/cadInnerCornerBudget.e2e.ts` (the labelled 2 x 1 bin through the worker; it asserts the message and that the scan stays within 4 s plus 2 s slack).
 
@@ -17,4 +17,4 @@
 - The e2e assertion is wall-clock based; a very loaded machine could trip the 2 s slack.
 - The chamfer on the bin with two labels is still slow (44.7 s on this machine). That time is outside the inner-corner scan and is not touched here.
 - Not tried in the browser; the checks are the tests above.
-- This fix was checked together with the other issue fixes of 20 November on one branch based on your main at 1.166.0 plus the 13 commits after it; the test counts are from that branch.
+- The branch is your main at 04697a698 plus this one commit.

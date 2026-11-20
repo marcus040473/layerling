@@ -10,8 +10,8 @@ Hi Stefan, this is the tapered capsule from issue #1868 that you asked me to loo
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (6004 passed)
-- [x] `npm run test:e2e` (1650 passed)
+- [x] `npm test` (6013 passed)
+- [x] This fix's e2e files on this branch (3 passed); the whole `npm run test:e2e` (1650 passed) ran on a branch with all eleven issue fixes together, on 1.166.0
 - [ ] Manually tested the affected workflow (not in the browser, see Notes)
 - New `tests/e2e/lidLeaningWalls.e2e.ts`: lip and rim clear of the wall with the gap kept on pots leaning either way, click bumps that hold in dimples that do not go through the wall, upright lids unchanged. It fails without the change.
 
@@ -22,4 +22,4 @@ Hi Stefan, this is the tapered capsule from issue #1868 that you asked me to loo
 - With "both", the upright one of the two is still as the cut 0.3 mm below the top gives it, so on a steep wall it is up to 0.05 mm nearer at the very top, as before.
 - Screw, bayonet and slide-in lids refuse a leaning body as before; a stacking top's foot is unchanged.
 - Not tried in the browser; the checks are the tests above.
-- This fix was checked together with the other issue fixes of 20 November on one branch based on your main at 1.166.0 plus the 13 commits after it; the test counts are from that branch.
+- The branch is your main at 04697a698 plus this one commit.
