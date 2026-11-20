@@ -11703,6 +11703,33 @@ html[data-theme="dark"] .mesh-compare-actions .secondary {
   background: color-mix(in srgb, currentColor 4%, transparent);
 }
 
+/* "Show assembled": the one button of the vase's panel that is filled, in the accent the chosen tab has, so it is
+   seen at once; pressed in while the parts are put together. */
+.shape-inspector .inspector-action-button.vase-assemble-button {
+  height: 42px;
+  min-height: 42px;
+  color: #ffffff;
+  background: #e0821f;
+  border-color: #c96f12;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.shape-inspector .inspector-action-button.vase-assemble-button:hover:not(:disabled) {
+  color: #ffffff;
+  background: #c96f12;
+  border-color: #a85a0c;
+}
+
+.shape-inspector .inspector-action-button.vase-assemble-button[aria-pressed="true"] {
+  box-shadow: inset 0 2px 5px color-mix(in srgb, #000000 28%, transparent);
+}
+
+.shape-inspector .vase-assembled-note {
+  margin: -6px 10px 10px;
+  font-weight: 600;
+}
+
 .vase-use-title {
   display: flex;
   align-items: center;

@@ -8,7 +8,7 @@ import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicke
 import { SnapGridMenuItems } from "@/components/workplane/SnapGridMenu";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
-import { Amphora, BrickWall, Droplets, Layers2, Soup, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
+import { Amphora, Boxes, BrickWall, Droplets, Layers2, Soup, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
 import { boltPinDiameter, boltSplitFits } from "@/lib/boltSplit";
@@ -4860,6 +4860,7 @@ export function ShapeInspector({
   surfaceDrawnRegion,
   onSurfaceRegionDraw,
   onVaseAccessories,
+  onVaseAssembled,
   onGridfinityKeys,
   onMakeBoxLid,
   onGridfinitySplit,
@@ -4922,6 +4923,7 @@ export function ShapeInspector({
   onSurfaceRegionDraw?: (drawing: boolean) => void;
   /** Lays this vase's accessories out beside it, ready to print. */
   onVaseAccessories?: () => void;
+  onVaseAssembled?: () => void;
   /** Lays this Swallowtail baseplate's keys out in front of it, ready to print (#1061). */
   onGridfinityKeys?: () => void;
   /** A box generator box: lays out a matching lid beside it, with the box's own outline, wall, play and stacking. */
@@ -5831,6 +5833,7 @@ export function ShapeInspector({
                 onUpdate={onUpdate}
                 onDrawContour={() => setVaseDrawOpen(true)}
                 onVaseAccessories={onVaseAccessories}
+                onVaseAssembled={onVaseAssembled}
                 onInteractionActiveChange={onInteractionActiveChange}
               />
             ) : (
@@ -9524,6 +9527,7 @@ function VaseDesigner({
   onUpdate,
   onDrawContour,
   onVaseAccessories,
+  onVaseAssembled,
   onInteractionActiveChange,
 }: {
   shape: WorkplaneShape;
@@ -9538,6 +9542,7 @@ function VaseDesigner({
   onUpdate: ShapeInspectorUpdate;
   onDrawContour: () => void;
   onVaseAccessories?: () => void;
+  onVaseAssembled?: () => void;
   onInteractionActiveChange?: (active: boolean) => void;
 }) {
   const [tab, setTabState] = useState<VaseTab>(lastVaseTab);
@@ -9617,6 +9622,17 @@ function VaseDesigner({
   const useRows = byPrefix("vaseUse");
   const useTitle = vase.purpose === "lampe" ? t("prop.vaseLampSocket") : t("vase.potDrain");
   const UseIcon = vase.purpose === "lampe" ? Lightbulb : Droplets;
+  // The accessories put together round the vase, to look at how they fit: a button one cannot miss, and while they
+  // are put together a line that says so (they sit in one another then - to print, they are laid out again).
+  const assembleButton = onVaseAssembled ? (
+    <>
+      <button className="inspector-action-button vase-assemble-button" type="button" disabled={disabled} aria-pressed={shape.vaseAssembled !== undefined} onClick={onVaseAssembled}>
+        <Boxes size={18} strokeWidth={2.4} />
+        <span>{t("vase.partsAssemble")}</span>
+      </button>
+      {shape.vaseAssembled !== undefined ? <p className="cylinder-wrap-hint vase-assembled-note">{t("vase.partsAssembledHint")}</p> : null}
+    </>
+  ) : null;
   // A plant pot has three more blocks: its saucer, its inner pot, and how it hangs on the wall.
   const potBlocks = vase.purpose === "topf"
     ? [
@@ -9718,10 +9734,13 @@ function VaseDesigner({
                 </h4>
                 {rows(useRows)}
                 {(vase.lamp === "sockel" || (vase.lamp === "wand" && vase.body === "hohl")) && vase.purpose === "lampe" && onVaseAccessories ? (
-                  <button className="inspector-action-button" type="button" disabled={disabled} onClick={onVaseAccessories}>
-                    <Plus size={17} strokeWidth={2.5} />
-                    <span>{t(vase.lamp === "wand" ? "vase.lampWallMake" : "vase.lampBaseMake")}</span>
-                  </button>
+                  <>
+                    {assembleButton}
+                    <button className="inspector-action-button" type="button" disabled={disabled} onClick={onVaseAccessories}>
+                      <Plus size={17} strokeWidth={2.5} />
+                      <span>{t(vase.lamp === "wand" ? "vase.lampWallMake" : "vase.lampBaseMake")}</span>
+                    </button>
+                  </>
                 ) : null}
               </section>
             ) : null}
@@ -9735,10 +9754,13 @@ function VaseDesigner({
               </section>
             ))}
             {potHasParts && onVaseAccessories ? (
-              <button className="inspector-action-button vase-pot-parts" type="button" disabled={disabled} onClick={onVaseAccessories}>
-                <Plus size={17} strokeWidth={2.5} />
-                <span>{t("inspector.vasePartsMake")}</span>
-              </button>
+              <>
+                {assembleButton}
+                <button className="inspector-action-button vase-pot-parts" type="button" disabled={disabled} onClick={onVaseAccessories}>
+                  <Plus size={17} strokeWidth={2.5} />
+                  <span>{t("inspector.vasePartsMake")}</span>
+                </button>
+              </>
             ) : null}
             {rows(form)}
             {advanced(formMore, () => setFormMore((open) => !open), rows(byPrefix("vaseMore")))}
@@ -9868,6 +9890,7 @@ function VaseDesigner({
                 {onVaseAccessories ? (
                   <>
                     <p className="cylinder-wrap-hint">{t("inspector.vasePartsHint")}</p>
+                    {assembleButton}
                     <button className="inspector-action-button" type="button" disabled={disabled} onClick={onVaseAccessories}>
                       <Plus size={17} strokeWidth={2.5} />
                       <span>{t("inspector.vasePartsMake")}</span>

@@ -12,6 +12,8 @@ export type VasePart = {
   /** Printed upside down. */
   flip: boolean;
   info?: string;
+  /** Built lying down as it is printed: put together, its point (x, v, w) is at (x, stand.y - w, v + stand.z). */
+  stand?: { y: number; z: number };
 };
 
 export type VasePose = { flip: boolean; dx: number; dy: number; dz: number };

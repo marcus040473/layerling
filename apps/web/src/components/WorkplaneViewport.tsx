@@ -273,6 +273,8 @@ type WorkplaneViewportProps = {
   onSurfaceRegionDraw?: (drawing: boolean) => void;
   /** Lays the selected vase's accessories out beside it. */
   onVaseAccessories?: () => void;
+  /** Puts the selected vase's accessories together round it, to look at how they fit. */
+  onVaseAssembled?: () => void;
   /** Lays the selected Swallowtail baseplate's keys out in front of it (#1061). */
   onGridfinityKeys?: () => void;
   onMakeBoxLid?: () => void;
@@ -1701,6 +1703,7 @@ export function WorkplaneViewport({
   surfaceDrawnRegion,
   onSurfaceRegionDraw,
   onVaseAccessories,
+  onVaseAssembled,
   onGridfinityKeys,
   onMakeBoxLid,
   onGridfinitySplit,
@@ -10067,6 +10070,7 @@ export function WorkplaneViewport({
           surfaceDrawnRegion={surfaceDrawnRegion}
           onSurfaceRegionDraw={onSurfaceRegionDraw}
           onVaseAccessories={onVaseAccessories}
+          onVaseAssembled={onVaseAssembled}
           onGridfinityKeys={onGridfinityKeys}
           onMakeBoxLid={onMakeBoxLid}
           onGridfinitySplit={onGridfinitySplit}

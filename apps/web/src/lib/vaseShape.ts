@@ -433,8 +433,12 @@ function accessoryKind(part: VasePart, settings: VaseSettings): VaseAccessoryKin
  * mesh, laid out for printing to the right of the vase as the vase tool lays them out (upside
  * down where that prints better), in the vase shape's frame: x and z from its middle, y from its
  * bottom. Legs moulded on are part of the vase itself and not among them.
+ *
+ * `assembled`: every part where it belongs instead - the saucer under the vase, the insert in it, the lid on it, a
+ * wall holder behind it - still in the vase shape's frame, so a saucer lies below the vase's bottom (y < 0); the vase
+ * is raised by vaseAssemblyRaise to stand on it.
  */
-export function vaseAccessories(shape: { width: number; depth: number; height: number; vase?: unknown }): VaseAccessory[] {
+export function vaseAccessories(shape: { width: number; depth: number; height: number; vase?: unknown }, assembled = false): VaseAccessory[] {
   const width = Math.max(0.1, shape.width);
   const depth = Math.max(0.1, shape.depth);
   const height = Math.max(0.1, shape.height);
@@ -455,6 +459,16 @@ export function vaseAccessories(shape: { width: number; depth: number; height: n
     const positions: number[] = [];
     for (let t = 0; t < indices.length; t += 1) {
       const v = indices[t] * 3;
+      if (assembled) {
+        // In the vase's own coordinates: a part built lying down is stood up where it belongs (a quarter turn, so
+        // its triangles still face out), any other sits `z` above the vase's bottom. Heights count from the lowest
+        // point of the vase's object, as the vase's own do.
+        const [x, y, z] = part.stand
+          ? [vertices[v], part.stand.y - vertices[v + 2], vertices[v + 1] + part.stand.z]
+          : [vertices[v], vertices[v + 1], vertices[v + 2] + (part.z ?? 0)];
+        positions.push((x - map.cx) * map.sx, (z - map.minZ) * map.sy, -(y - map.cy) * map.sz);
+        continue;
+      }
       const [x, y, z] = placePoint(pose, vertices[v], vertices[v + 1], vertices[v + 2]);
       // Mapped as the vase is (fittedVaseMesh); turned over is a half turn about x, so the triangles still face out.
       positions.push((x - map.cx) * map.sx, z * map.sy, -(y - map.cy) * map.sz);
@@ -465,6 +479,22 @@ export function vaseAccessories(shape: { width: number; depth: number; height: n
     result.push({ id: part.id, kind, index: count, positions });
   });
   return result;
+}
+
+/**
+ * How far a vase is raised to stand on its accessories when they are put together round it (mm): the height of its
+ * saucer's floor and ribs, of its legs or stand, of a docked bowl or a lamp's base. 0 for a vase that stands on the
+ * table itself.
+ */
+export function vaseAssemblyRaise(shape: { width: number; depth: number; height: number; vase?: unknown }) {
+  const width = Math.max(0.1, shape.width);
+  const depth = Math.max(0.1, shape.depth);
+  const height = Math.max(0.1, shape.height);
+  const settings = vaseSettingsInFrame(shape.vase, width, depth, height);
+  const { lift } = buildParts(settings);
+  const { map } = fittedVaseMesh(shape);
+  // (Legs moulded on are part of the vase's object: it reaches below its body's bottom by them already.)
+  return Math.max(0, (lift + map.minZ) * map.sy);
 }
 
 /** An accessory as an object of its own beside its vase: a mesh in the vase's colour, remembering whose part it is. */
@@ -508,19 +538,31 @@ export function vaseAccessoryShape(vase: WorkplaneShape, accessory: VaseAccessor
 /**
  * The scene with a vase's accessories laid out anew beside it: the parts laid out for it before give
  * way, so changed settings come out new. Unchanged when the vase is not there or has no accessories.
+ *
+ * `assembled`: the parts are put together round the vase instead, to look at how they fit - the vase raised onto its
+ * saucer, legs or base (it remembers by how much, `vaseAssembled`). Laying them out for printing again sets it down.
  */
 export function sceneWithVaseAccessories(
   shapes: WorkplaneShape[],
   vaseId: string,
   name: (vase: WorkplaneShape, accessory: VaseAccessory) => string,
+  assembled = false,
 ): { shapes: WorkplaneShape[]; parts: WorkplaneShape[]; missing: VaseAccessoryKind[] } {
-  const vase = shapes.find((shape) => shape.id === vaseId);
-  if (!vase || vase.kind !== "vase") return { shapes, parts: [], missing: [] };
-  const accessories = vaseAccessories({ width: shapeWidth(vase), depth: shapeDepth(vase), height: vase.height, vase: vase.vase });
-  const missing = askedAccessories(vase.vase).filter((kind) => !accessories.some((accessory) => accessory.kind === kind));
-  if (!accessories.length) return { shapes, parts: [], missing };
+  const found = shapes.find((shape) => shape.id === vaseId);
+  if (!found || found.kind !== "vase") return { shapes, parts: [], missing: [] };
+  const frame = { width: shapeWidth(found), depth: shapeDepth(found), height: found.height, vase: found.vase };
+  const accessories = vaseAccessories(frame, assembled);
+  const missing = askedAccessories(found.vase).filter((kind) => !accessories.some((accessory) => accessory.kind === kind));
+  // The vase where it stands without its parts under it, and from there raised onto them if they are put together.
+  const rest = (found.elevation ?? 0) - (found.vaseAssembled ?? 0);
+  const raise = assembled && accessories.length ? vaseAssemblyRaise(frame) : undefined;
+  const moved = raise !== found.vaseAssembled;
+  const { vaseAssembled: _before, ...plain } = found;
+  const vase: WorkplaneShape = moved ? { ...plain, elevation: cleanNearZero(rest + (raise ?? 0), 0.0005), ...(raise === undefined ? {} : { vaseAssembled: raise }) } : found;
+  const scene = moved ? shapes.map((shape) => (shape.id === vaseId ? vase : shape)) : shapes;
+  if (!accessories.length) return { shapes: moved ? scene.filter((shape) => shape.vasePartOf !== vase.id) : shapes, parts: [], missing };
   const parts = accessories.map((accessory) => vaseAccessoryShape(vase, accessory, name(vase, accessory)));
-  return { shapes: [...shapes.filter((shape) => shape.vasePartOf !== vase.id), ...parts], parts, missing };
+  return { shapes: [...scene.filter((shape) => shape.vasePartOf !== vase.id), ...parts], parts, missing };
 }
 
 /** The kinds of part the settings ask for: what the vase tool builds when the vase allows it (an insert needs a wide enough opening). */

@@ -11,7 +11,8 @@
  *   buildParts(vaseParams, { outward }) -> { parts: [...], lift, notes }
  *
  * A part: { id, name, mesh: { vertices, indices }, z, merge (belongs to the vase's object),
- * flip (turn over for printing), info (e.g. capacity in ml) }. The meshes lie in the vase's
+ * flip (turn over for printing), info (e.g. capacity in ml), stand (for a part built lying down as it is printed:
+ * where it stands when put together - a point (x, v, w) of it is then at (x, stand.y - w, v + stand.z)) }. The meshes lie in the vase's
  * coordinates (centre on the axis); when assembled, the vase is lifted by `lift`, a part by
  * `lift + z` (saucer at the bottom, legs or stand on it, inserts in the vase: z = 0).
  * `layoutParts` lays everything out side by side for printing - preview and file use the same.
@@ -902,7 +903,8 @@ export function buildParts(input, { outward = 0 } = {}) {
     }
     stripAlong(inRight, 1)
     stripAlong(inLeft, -1)
-    parts.push({ id: 'wandplatte', name: 'Wandplatte', mesh: b.mesh(), z: 0, merge: false, flip: false, info: `${holes.length} Löcher (Schrauben Ø ${fmt(p.lampWallScrew)} mm, Kabel Ø 8 mm). Flach drucken, die Leisten nach oben; den Schirm aufstecken und kleben.` })
+    // (`stand`: built lying down, it stands at the shade's back when put together.)
+    parts.push({ id: 'wandplatte', name: 'Wandplatte', mesh: b.mesh(), z: 0, merge: false, flip: false, stand: { y: thick, z: H / 2 }, info: `${holes.length} Löcher (Schrauben Ø ${fmt(p.lampWallScrew)} mm, Kabel Ø 8 mm). Flach drucken, die Leisten nach oben; den Schirm aufstecken und kleben.` })
   })
 
   /* ---------- Wall rail and holder ---------- */
@@ -1047,6 +1049,8 @@ export function buildParts(input, { outward = 0 } = {}) {
     prism([[margin * 0.4, z0], [rampTop + 0.3, z0], [rampTop - lip, plate + lip], [margin * 0.4, plate + lip]], -pocket - 0.3, pocket + 0.3, (v, w, u) => [u, v, w], false)
     parts.push({
       id: 'wandhalter', name: 'Wandhalter', mesh: h.mesh(), z: 0, merge: false, flip: false,
+      // Put together it stands behind the pot: its plate 0.3 mm behind the rail, the ramp under the rail's wedge.
+      stand: { y: back + 0.3 + plate, z: bottom - margin + 0.3 },
       info: `${screws.length === 1 ? 'Ein Loch' : `${screws.length} Löcher`} für Senkkopfschrauben Ø ${fmt(p.lampWallScrew)} mm, ${fmt(2 * plateU)} × ${fmt(railLength)} mm. Flach drucken, die Leisten nach oben; mit der Rampe nach unten an die Wand schrauben und den Topf von oben einschieben. Für Töpfe bis etwa 2 kg, am besten aus PETG.`,
     })
   })

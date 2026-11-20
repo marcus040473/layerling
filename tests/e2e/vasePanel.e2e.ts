@@ -30,11 +30,11 @@ afterEach(() => {
   root = null;
 });
 
-type Calls = { updates: Array<Partial<WorkplaneShape>>; accessories: number };
+type Calls = { updates: Array<Partial<WorkplaneShape>>; accessories: number; assembled: number };
 
 /** The settings panel for a vase from the shape library, with these fields. */
 function mount(fields: Partial<WorkplaneShape> = {}) {
-  const calls: Calls = { updates: [], accessories: 0 };
+  const calls: Calls = { updates: [], accessories: 0, assembled: 0 };
   const asset = toolbarShapeAssets.find((entry) => entry.kind === "vase")!;
   const shape = { ...makeShapeFromAsset(asset, { x: 0, z: 0 }), ...fields } as WorkplaneShape;
   container = document.createElement("div");
@@ -51,6 +51,9 @@ function mount(fields: Partial<WorkplaneShape> = {}) {
       onSnapOpenChange: () => {},
       onVaseAccessories: () => {
         calls.accessories += 1;
+      },
+      onVaseAssembled: () => {
+        calls.assembled += 1;
       },
     }));
   });
@@ -254,6 +257,24 @@ describe("a vase in its settings", () => {
     expect(rangeNamed([...hung.panel.querySelectorAll<HTMLElement>(".vase-use")][3], "Screw hole Ø")).toBeDefined();
     act(() => buttonNamed(hung.panel, "Lay out accessories")!.click());
     expect(hung.calls.accessories).toBe(1);
+    // Above it, the button that puts the parts together round the pot: filled, so it is seen at once.
+    const assemble = buttonNamed(hung.panel, "Show assembled")!;
+    expect(assemble.classList.contains("vase-assemble-button")).toBe(true);
+    expect(assemble.getAttribute("aria-pressed")).toBe("false");
+    expect(assemble.compareDocumentPosition(buttonNamed(hung.panel, "Lay out accessories")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(hung.panel.querySelector(".vase-assembled-note")).toBeNull();
+    act(() => assemble.click());
+    expect(hung.calls.assembled).toBe(1);
+    expect(hung.calls.accessories).toBe(1);
+    // While the parts are put together the button is pressed in and a line says they are for looking only.
+    const together = mount({ vaseAssembled: 4.5, vase: { ...normalizeVaseSettings({}), ...pot, wallMount: "schiene" } });
+    openTab(together.panel, "Form");
+    expect(buttonNamed(together.panel, "Show assembled")!.getAttribute("aria-pressed")).toBe("true");
+    expect(together.panel.querySelector(".vase-assembled-note")?.textContent).toBe("Assembled, for looking only: the parts sit inside one another. To print, lay them out again with the button below.");
+    // A pot without a saucer, an inner pot or a holder has nothing to put together.
+    const bare = mount({ vase: { ...normalizeVaseSettings({}), ...pot, saucerMode: "keine" } });
+    openTab(bare.panel, "Form");
+    expect(buttonNamed(bare.panel, "Show assembled")).toBeUndefined();
     // A vase keeps saucer, insert and wall mount with its accessories on the Print tab.
     const vase = mount({ vase: { ...normalizeVaseSettings({}), body: "hohl" } });
     openTab(vase.panel, "Form");
@@ -263,6 +284,9 @@ describe("a vase in its settings", () => {
     expect(selectNamed(vase.panel, "Saucer")).toBeDefined();
     expect(selectNamed(vase.panel, "Insert")).toBeDefined();
     expect(selectNamed(vase.panel, "Wall mount")).toBeDefined();
+    // There, too, the parts can be put together.
+    act(() => buttonNamed(vase.panel, "Show assembled")!.click());
+    expect(vase.calls.assembled).toBe(1);
   });
 
   it("chooses a pattern from the gallery and shows its three main sliders and the height range", () => {

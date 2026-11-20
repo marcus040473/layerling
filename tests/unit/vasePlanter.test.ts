@@ -4,7 +4,10 @@ import { buildParts } from "@/lib/vase/vase-parts.mjs";
 import { buildVaseBody } from "@/lib/vaseBody";
 import { vaseNote } from "@/lib/vaseNotes";
 import { normalizeVaseSettings } from "@/lib/vaseSettings";
-import { vaseAccessories, vaseNaturalFrame } from "@/lib/vaseShape";
+import { makeShapeFromAsset, toolbarShapeAssets } from "@/lib/shapeCatalog";
+import { sceneWithVaseAccessories, vaseAccessories, vaseAssemblyRaise, vaseNaturalFrame } from "@/lib/vaseShape";
+import { canonicalizeShape, workplaneShapesEqual } from "@/lib/workplaneShapes";
+import type { WorkplaneShape } from "@/types/layerling";
 
 /*
  * What a plant pot has beyond a vase: a saucer that hugs the pot or has a slanted rim, a bowl docked flush under the
@@ -468,5 +471,117 @@ describe("a pot for the wall", () => {
     // The body: the pot with its recesses and the rail, one object.
     const body = buildVaseBody(normalizeVaseSettings(both));
     expect(body.triangleCount).toBe(buildVase(both).triangleCount + part(both, "wandschiene")!.mesh.indices.length / 3);
+  });
+});
+
+describe("a vase's accessories put together round it", () => {
+  /** A pot in the scene, 140 mm across and 120 mm high, standing on the plate. */
+  function potShape(settings: Record<string, unknown>): WorkplaneShape {
+    const asset = toolbarShapeAssets.find((entry) => entry.kind === "vase")!;
+    const shape = makeShapeFromAsset(asset, { x: 30, z: -40 });
+    return canonicalizeShape({ ...shape, width: 140, depth: 140, size: 140, height: 120, vase: normalizeVaseSettings({ ...shape.vase, ...pot, ...settings }) });
+  }
+  const name = () => "part";
+  const partNamed = (parts: WorkplaneShape[], scene: WorkplaneShape[], kind: string) => {
+    const vase = scene.find((entry) => entry.kind === "vase")!;
+    const kinds = vaseAccessories({ width: 140, depth: 140, height: 120, vase: vase.vase }).map((entry) => entry.kind);
+    return parts[kinds.indexOf(kind as never)];
+  };
+
+  it("raises the pot onto its saucer and sets the saucer under it and the inner pot in it", () => {
+    const shape = potShape({ saucerMode: "schale", saucerSpout: "nein", saucerGrip: "nein", insertMode: "pflanze" });
+    const together = sceneWithVaseAccessories([shape], shape.id, name, true);
+    const lifted = together.shapes.find((entry) => entry.id === shape.id)!;
+    // The saucer's floor is 2 mm, its ribs 2.5 mm: the pot stands 4.5 mm up, and remembers it.
+    expect(lifted.elevation).toBeCloseTo(4.5, 6);
+    expect(lifted.vaseAssembled).toBeCloseTo(4.5, 6);
+    expect(vaseAssemblyRaise({ width: 140, depth: 140, height: 120, vase: shape.vase })).toBeCloseTo(4.5, 6);
+    const saucer = partNamed(together.parts, together.shapes, "saucer"), inner = partNamed(together.parts, together.shapes, "plantInsert");
+    // The saucer on the plate, round the pot's middle; the inner pot on the pot's inner floor (2 mm), in the middle.
+    expect(saucer.elevation ?? 0).toBeCloseTo(0, 6);
+    expect(inner.elevation).toBeCloseTo(4.5 + 2, 6);
+    for (const laid of [saucer, inner]) {
+      expect(laid.x).toBeCloseTo(shape.x, 3);
+      expect(laid.z).toBeCloseTo(shape.z, 3);
+      expect(laid.vasePartOf).toBe(shape.id);
+    }
+    // The inner pot ends 1.5 mm under the pot's rim.
+    expect((inner.elevation ?? 0) + inner.height).toBeCloseTo(4.5 + 118.5, 6);
+    // Asked again, nothing moves on.
+    const again = sceneWithVaseAccessories(together.shapes, shape.id, name, true);
+    expect(again.shapes.find((entry) => entry.id === shape.id)!.elevation).toBeCloseTo(4.5, 6);
+    expect(again.shapes).toHaveLength(3);
+  });
+
+  it("sets the pot down again when the parts are laid out for printing", () => {
+    const shape = potShape({ saucerMode: "schale", insertMode: "pflanze" });
+    const together = sceneWithVaseAccessories([shape], shape.id, name, true);
+    const printing = sceneWithVaseAccessories(together.shapes, shape.id, name);
+    const down = printing.shapes.find((entry) => entry.id === shape.id)!;
+    expect(down.elevation ?? 0).toBeCloseTo(0, 6);
+    expect(down.vaseAssembled).toBeUndefined();
+    expect(workplaneShapesEqual([down], [shape])).toBe(true);
+    // Beside the pot, on the plate, as before.
+    for (const laid of printing.parts) {
+      expect(laid.elevation ?? 0).toBeCloseTo(0, 6);
+      expect(laid.x).toBeGreaterThan(shape.x + 70);
+    }
+    // A pot one has moved up oneself keeps that: it is raised from where it stands, and set down there again.
+    const shelf = { ...shape, elevation: 30 };
+    const up = sceneWithVaseAccessories([shelf], shelf.id, name, true);
+    expect(up.shapes[0].elevation).toBeCloseTo(34.5, 6);
+    expect(sceneWithVaseAccessories(up.shapes, shelf.id, name).shapes[0].elevation).toBeCloseTo(30, 6);
+    // With its parts switched off while put together, it comes down as well, and the old parts go.
+    const bare = together.shapes.map((entry) => (entry.id === shape.id ? { ...entry, vase: normalizeVaseSettings({ ...entry.vase, saucerMode: "keine", insertMode: "keine" }) } : entry));
+    const cleared = sceneWithVaseAccessories(bare, shape.id, name, true);
+    expect(cleared.parts).toEqual([]);
+    expect(cleared.shapes).toHaveLength(1);
+    expect(cleared.shapes[0].elevation ?? 0).toBeCloseTo(0, 6);
+    expect(cleared.shapes[0].vaseAssembled).toBeUndefined();
+    // A vase without parts is left as it is.
+    const plain = [potShape({ saucerMode: "keine" })];
+    expect(sceneWithVaseAccessories(plain, plain[0].id, name, true).shapes).toBe(plain);
+  });
+
+  it("stands a docked bowl under the pot and the wall holder upright behind it", () => {
+    const shape = potShape({ saucerMode: "andock", saucerHold: "magnet", saucerHeight: 20, wallMount: "schiene" });
+    const together = sceneWithVaseAccessories([shape], shape.id, name, true);
+    const lifted = together.shapes.find((entry) => entry.id === shape.id)!;
+    expect(lifted.elevation).toBeCloseTo(20, 6);
+    const bowl = partNamed(together.parts, together.shapes, "dockedSaucer"), holder = partNamed(together.parts, together.shapes, "wallHolder");
+    // The bowl from the plate up to the pot's bottom, flush with it.
+    expect(bowl.elevation ?? 0).toBeCloseTo(0, 6);
+    expect(bowl.height).toBeCloseTo(20, 6);
+    expect(bowl.width).toBeLessThanOrEqual(140);
+    // The holder stands: as tall as it is long when printed, 9.2 mm thick, behind the pot's back (the editor's -z)
+    // with its plate against the wall, 4.3 mm behind the rail.
+    const { wall } = vaseShape(normalizeVaseSettings({ ...shape.vase, height: 120, diameter: 140 }));
+    const railLength = 6 + (wall.top - wall.bottom) - 4;
+    expect(holder.height).toBeCloseTo(railLength, 6);
+    expect(holder.depth).toBeCloseTo(9.2, 6);
+    expect(holder.x).toBeCloseTo(shape.x, 6);
+    expect(holder.elevation).toBeCloseTo(20 + wall.bottom - 6 + 0.3, 6);
+    // (The rail reaches as far back as the pot did before its back was cut flat: the pot's box is still round its axis.)
+    const axis = shape.z;
+    expect(holder.z - holder.depth / 2).toBeCloseTo(axis - (wall.back + 4.3), 3);
+    expect(holder.z + holder.depth / 2).toBeLessThan(axis - wall.flat + 2);
+  });
+
+  it("puts legs, a lid and a lampshade's base where they belong", () => {
+    const legged = potShape({ legMode: "stecken", legHeight: 35, saucerMode: "keine", lidMode: "stuelp", drainHoles: 0, profile: "fass" });
+    const together = sceneWithVaseAccessories([legged], legged.id, name, true);
+    expect(together.shapes.find((entry) => entry.id === legged.id)!.elevation).toBeCloseTo(35, 6);
+    const tops = together.parts.map((entry) => (entry.elevation ?? 0) + entry.height);
+    // Three legs from the plate into the bottom's sockets, and the lid on the rim.
+    expect(together.parts.filter((entry) => (entry.elevation ?? 0) < 0.001)).toHaveLength(3);
+    expect(Math.max(...tops)).toBeGreaterThan(35 + 120);
+    const lamp = potShape({ purpose: "lampe", profile: "schirmTrommel", lamp: "sockel", drainHoles: 0, wall: 1.6 });
+    const standing = sceneWithVaseAccessories([lamp], lamp.id, name, true);
+    const shade = standing.shapes.find((entry) => entry.id === lamp.id)!;
+    expect(shade.elevation).toBeGreaterThan(40);
+    expect(standing.parts[0].elevation ?? 0).toBeCloseTo(0, 6);
+    // The base reaches a little into the shade: its seat.
+    expect((standing.parts[0].elevation ?? 0) + standing.parts[0].height).toBeGreaterThan(shade.elevation!);
+    expect((standing.parts[0].elevation ?? 0) + standing.parts[0].height).toBeLessThan(shade.elevation! + 3);
   });
 });
