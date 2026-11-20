@@ -6083,6 +6083,9 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "boltSplit.pinsName": "{name} – مسامير توسيط",
   "inspector.boltSplitPins": "مع مسامير توسيط",
   "inspector.boltSplitPinsHint": "مسامير بقطر {diameter} مم، واحد في الرأس ومن واحد إلى ثلاثة في اللولب حسب الطول، في ثقوب عمودية على وجه القطع: تحاذي النصفين بدقة، طوليًا أيضًا، لتتطابق لفات اللولب. تنتهي الثقوب بمخروط 45°، فيُطبع كل شيء بلا دعامات.",
+  "inspector.boltSplitFilament": "فتيل الطباعة كمسامير (1.75 مم)",
+  "inspector.boltSplitFilamentHint": "بدلًا من المسامير المطبوعة: اقطع قطعًا من فتيل 1.75 مم. واحدة تمر عرضيًا في الرأس، وأخرى في قناة على طول السن مغلقة من الطرفين، فتتطابق النصفان بدقة عرضيًا وعلى طول المحور. يعمل من M4؛ أما المسامير المطبوعة فلا تدخل السن إلا من M6.",
+  "status.boltSplitFilament": "قُسِّم {name} طوليًا: نصفان على وجهي القطع. اقطع فتيل 1.75 مم: {pieces}.",
   "status.boltSplitPins": "تم تقسيم {name} طوليًا: نصفان على وجهي القطع و{count} مسامير توسيط بقطر {diameter} × {length} مم.",
   "status.boltSplitNoPins": "تم تقسيم {name} طوليًا: نصفان بلا مسامير توسيط (لا مكان لها).",
 };

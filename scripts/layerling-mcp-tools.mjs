@@ -2027,6 +2027,7 @@ export const tools = [
         id: { type: "string", description: "The screw or rod to split. Left out: the one selected object." },
         pins: { type: "boolean", description: "Holes in both halves and loose centring pins for them. Default true." },
         pinPlay: { type: "number", minimum: 0, maximum: 0.5, description: "The pins' play per side in their holes, mm. Default the printer's play, else 0.15." },
+        filament: { type: "boolean", description: "Pieces of 1.75 mm filament as the pins instead of printed ones: one across the head and one in a channel along the axis, closed at both ends (half the play). Works from M4 up, where printed pins fit the thread only from M6. Returns filament: the lengths to cut, mm." },
       },
     },
   },

@@ -157,6 +157,51 @@ describe("splitting a screw lengthwise to print it lying flat", () => {
     expect(result.pins).toBe(0);
   });
 
+  it("takes filament for pins on a small screw: one across the head, one in a channel along the thread (Discussion #1851)", async () => {
+    const m5 = screw({ threadDiameter: 5, threadPitch: 0.8, height: 20 } as Partial<WorkplaneShape>);
+    const printed = await splitBoltForShape(m5, { pins: true });
+    const result = await splitBoltForShape(m5, { pins: true, filament: true });
+    if (!result.parts || !printed.parts) throw new Error("not split");
+    // Printed pins: the head only. Filament: the head and the thread, and nothing printed beside the halves.
+    expect(printed.placed).toEqual({ head: 1, thread: 0 });
+    expect(result.placed).toEqual({ head: 1, thread: 1 });
+    expect(result.parts).toHaveLength(2);
+    expect(result.pins).toBe(0);
+    expect(result.filament).toHaveLength(2);
+    // The channel's piece runs most of the thread's length, the head's is short.
+    expect(Math.max(...result.filament)).toBeGreaterThan(8);
+    expect(Math.min(...result.filament)).toBeLessThan(6);
+    // The halves are equal, lie on their cut faces, and have no roof that needs support.
+    expect(volumeOf(result.parts[0])).toBeCloseTo(volumeOf(result.parts[1]), 0);
+    for (const part of result.parts) {
+      expect(areaOnBed(part)).toBeGreaterThan(20);
+      expect(areaFacingDown(part)).toBeLessThan(0.5);
+    }
+    // The holes take away about what a 1.75 mm filament fills, a little more for the play and the roof.
+    const removed = volumeOf(printed.parts[0]) + volumeOf(printed.parts[1]) - volumeOf(result.parts[0]) - volumeOf(result.parts[1]);
+    const channelLength = Math.max(...result.filament) + 0.6;
+    expect(removed).toBeGreaterThan(Math.PI * 0.875 ** 2 * channelLength * 0.9);
+  });
+
+  it("gives an M4 rod a filament channel where no printed pin fits, closed at both ends", async () => {
+    const rod = thread({ threadRole: "rod", threadDiameter: 4, threadPitch: 0.7, height: 30 } as Partial<WorkplaneShape>);
+    const result = await splitBoltForShape(rod, { pins: true, filament: true });
+    if (!result.parts) throw new Error(result.error);
+    expect(result.placed).toEqual({ head: 0, thread: 1 });
+    expect(result.filament).toHaveLength(1);
+    expect(result.filament[0]).toBeGreaterThan(20);
+    expect(result.filament[0]).toBeLessThan(30);
+    for (const part of result.parts) expect(areaFacingDown(part)).toBeLessThan(2);
+  });
+
+  it("leaves an M3 rod without a channel: its core is too thin even for filament", async () => {
+    const rod = thread({ threadRole: "rod", threadDiameter: 3, threadPitch: 0.5, height: 20 } as Partial<WorkplaneShape>);
+    const result = await splitBoltForShape(rod, { pins: true, filament: true });
+    if (!result.parts) throw new Error(result.error);
+    expect(result.parts).toHaveLength(2);
+    expect(result.filament).toHaveLength(0);
+  });
+
   it("refuses a nut", async () => {
     const result = await splitBoltForShape(thread({ threadRole: "nut" } as Partial<WorkplaneShape>), {});
     expect(result.parts).toBeNull();

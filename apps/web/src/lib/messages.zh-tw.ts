@@ -6056,6 +6056,9 @@ export const MESSAGES_ZH_TW: Partial<Record<MessageKey, string>> = {
   "boltSplit.pinsName": "{name} – 定位銷",
   "inspector.boltSplitPins": "附定位銷",
   "inspector.boltSplitPinsHint": "Ø {diameter} mm 的銷，頭部一根，螺紋部分依長度一到三根，裝在垂直於剖切面的孔中：把兩半精確對齊，包括軸向，使螺紋圈對上。孔以 45° 錐面收尾，所有零件都不需支撐即可列印。",
+  "inspector.boltSplitFilament": "用線材做銷釘（1.75 mm）",
+  "inspector.boltSplitFilamentHint": "不列印銷釘，而是剪幾段 1.75 mm 線材：一段橫穿螺絲頭，一段放進沿螺紋、兩端封閉的槽中，讓兩半在橫向和軸向都對得很準。M4 起可用；列印銷釘要到 M6 才放得進螺紋。",
+  "status.boltSplitFilament": "{name} 已縱向剖開：兩半以剖面朝下放置。請剪 1.75 mm 線材：{pieces}。",
   "status.boltSplitPins": "{name} 已縱向剖分：兩半以剖切面朝下，另有 {count} 根定位銷 Ø {diameter} × {length} mm。",
   "status.boltSplitNoPins": "{name} 已縱向剖分：兩半，無定位銷（沒有空間）。",
 };

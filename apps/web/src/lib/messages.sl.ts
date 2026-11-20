@@ -6054,6 +6054,9 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "boltSplit.pinsName": "{name} – centrirni zatiči",
   "inspector.boltSplitPins": "S centrirnimi zatiči",
   "inspector.boltSplitPinsHint": "Zatiči Ø {diameter} mm, eden v glavi in glede na dolžino eden do trije v navoju, v luknjah pravokotno na rezno ploskev: polovici natančno poravnajo, tudi po dolžini, da se navoji ujemajo. Luknje se končajo s 45° stožcem, zato se vse tiska brez podpor.",
+  "inspector.boltSplitFilament": "Filament kot zatiči (1,75 mm)",
+  "inspector.boltSplitFilamentHint": "Namesto natisnjenih zatičev: odrežite koščke filamenta 1,75 mm. En gre prečno skozi glavo, drugi v kanal vzdolž navoja, zaprt na obeh koncih, da se polovici natančno ujemata prečno in vzdolž osi. Deluje od M4; natisnjeni zatiči gredo v navoj šele od M6.",
+  "status.boltSplitFilament": "{name} razdeljen po dolžini: dve polovici na rezalnih ploskvah. Odrežite filament 1,75 mm: {pieces}.",
   "status.boltSplitPins": "{name} razdeljeno po dolžini: dve polovici na reznih ploskvah in centrirni zatiči ({count}) Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} razdeljeno po dolžini: dve polovici brez centrirnih zatičev (zanje ni prostora).",
 };

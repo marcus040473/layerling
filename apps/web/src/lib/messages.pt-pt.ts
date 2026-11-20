@@ -6009,6 +6009,9 @@ export const MESSAGES_PT_PT: Partial<Record<MessageKey, string>> = {
   "boltSplit.pinsName": "{name} – pinos de centragem",
   "inspector.boltSplitPins": "Com pinos de centragem",
   "inspector.boltSplitPinsHint": "Pinos Ø {diameter} mm, um na cabeça e de um a três na rosca conforme o comprimento, em furos perpendiculares à face de corte: alinham as metades com exatidão, também no comprimento, para que as voltas coincidam. Os furos terminam num cone de 45°, por isso tudo imprime sem suportes.",
+  "inspector.boltSplitFilament": "Filamento como pinos (1,75 mm)",
+  "inspector.boltSplitFilamentHint": "Em vez de pinos impressos: corte pedaços de filamento de 1,75 mm. Um atravessa a cabeça, outro entra num canal ao longo da rosca, fechado nas duas pontas, para que as metades fiquem alinhadas na transversal e ao longo do eixo. Funciona a partir de M4; os pinos impressos só cabem na rosca a partir de M6.",
+  "status.boltSplitFilament": "{name} dividido ao comprido: duas metades assentes nas faces de corte. Corte filamento de 1,75 mm: {pieces}.",
   "status.boltSplitPins": "{name} dividido no comprimento: duas metades sobre as faces de corte e {count} pinos de centragem Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} dividido no comprimento: duas metades sem pinos de centragem (não há espaço para eles).",
 };

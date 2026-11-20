@@ -6076,6 +6076,9 @@ export const MESSAGES_EN = {
   "boltSplit.pinsName": "{name} – centring pins",
   "inspector.boltSplitPins": "With centring pins",
   "inspector.boltSplitPinsHint": "Pins Ø {diameter} mm, one in the head and one to three along the thread by its length, in holes square to the cut face: they line the halves up exactly, along the axis too, so the turns meet. The holes end in a 45° cone, so everything prints without support.",
+  "inspector.boltSplitFilament": "Filament as pins (1.75 mm)",
+  "inspector.boltSplitFilamentHint": "Instead of printed pins: cut pieces of 1.75 mm filament. One goes across the head, one into a channel along the thread, closed at both ends, so the halves line up across and along the axis. Works from M4, where printed pins fit the thread only from M6.",
+  "status.boltSplitFilament": "{name} split lengthwise: two halves lying on their cut faces. Cut 1.75 mm filament: {pieces}.",
   "status.boltSplitPins": "{name} split lengthwise: two halves lying on their cut faces and {count} centring pins Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} split lengthwise: two halves, without centring pins (there is no room for them).",
 } as const;

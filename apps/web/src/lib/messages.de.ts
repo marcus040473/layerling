@@ -6075,6 +6075,9 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "boltSplit.pinsName": "{name} – Zentrierstifte",
   "inspector.boltSplitPins": "Mit Zentrierstiften",
   "inspector.boltSplitPinsHint": "Stifte Ø {diameter} mm, einer im Kopf und je nach Länge ein bis drei im Gewinde, in Bohrungen senkrecht zur Schnittfläche: Sie richten die Hälften genau aus, auch längs, damit die Gewindegänge aufeinanderpassen. Die Bohrungen enden in einem 45°-Kegel, so druckt alles ohne Stützen.",
+  "inspector.boltSplitFilament": "Filament als Stifte (1,75 mm)",
+  "inspector.boltSplitFilamentHint": "Statt gedruckter Stifte: Stücke 1,75-mm-Filament abschneiden. Eines kommt quer in den Kopf, eines in eine Rinne längs durchs Gewinde, die an beiden Enden geschlossen ist; so sitzen die Hälften quer und längs genau. Geht ab M4, gedruckte Stifte passen erst ab M6 ins Gewinde.",
+  "status.boltSplitFilament": "{name} längs geteilt: zwei Hälften auf ihren Schnittflächen. 1,75-mm-Filament abschneiden: {pieces}.",
   "status.boltSplitPins": "{name} längs geteilt: zwei Hälften auf ihren Schnittflächen und {count} Zentrierstifte Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} längs geteilt: zwei Hälften, ohne Zentrierstifte (dafür ist kein Platz).",
 };

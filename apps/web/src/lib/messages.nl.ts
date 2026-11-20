@@ -6076,6 +6076,9 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "boltSplit.pinsName": "{name} – centreerpennen",
   "inspector.boltSplitPins": "Met centreerpennen",
   "inspector.boltSplitPinsHint": "Pennen Ø {diameter} mm, één in de kop en één tot drie in de draad naargelang de lengte, in gaten haaks op het snijvlak: ze lijnen de helften precies uit, ook in de lengte, zodat de gangen op elkaar aansluiten. De gaten eindigen in een kegel van 45°, dus alles print zonder support.",
+  "inspector.boltSplitFilament": "Filament als pennen (1,75 mm)",
+  "inspector.boltSplitFilamentHint": "In plaats van geprinte pennen: knip stukjes filament van 1,75 mm. Eén gaat dwars door de kop, één in een kanaal langs de schroefdraad, aan beide uiteinden dicht, zodat de helften dwars en langs de as precies op elkaar passen. Werkt vanaf M4; geprinte pennen passen pas vanaf M6 in de schroefdraad.",
+  "status.boltSplitFilament": "{name} in de lengte gedeeld: twee helften op hun snijvlak. Knip filament van 1,75 mm: {pieces}.",
   "status.boltSplitPins": "{name} in de lengte gedeeld: twee helften op hun snijvlak en {count} centreerpennen Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} in de lengte gedeeld: twee helften, zonder centreerpennen (er is geen plaats voor).",
 };

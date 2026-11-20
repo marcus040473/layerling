@@ -6070,6 +6070,9 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "boltSplit.pinsName": "{name} – styrpinnar",
   "inspector.boltSplitPins": "Med styrpinnar",
   "inspector.boltSplitPinsHint": "Pinnar Ø {diameter} mm, en i huvudet och en till tre i gängan efter längden, i hål vinkelrätt mot snittytan: de riktar in halvorna exakt, även på längden, så att gängvarven möts. Hålen slutar i en 45°-kon, så allt skrivs ut utan stöd.",
+  "inspector.boltSplitFilament": "Filament som stift (1,75 mm)",
+  "inspector.boltSplitFilamentHint": "I stället för utskrivna stift: klipp bitar av 1,75 mm filament. En går tvärs genom huvudet, en i en kanal längs gängan, stängd i båda ändar, så att halvorna sitter exakt tvärs och längs axeln. Fungerar från M4; utskrivna stift får plats i gängan först från M6.",
+  "status.boltSplitFilament": "{name} delad på längden: två halvor på sina snittytor. Klipp 1,75 mm filament: {pieces}.",
   "status.boltSplitPins": "{name} delad på längden: två halvor på sina snittytor och {count} styrpinnar Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} delad på längden: två halvor utan styrpinnar (det finns ingen plats för dem).",
 };

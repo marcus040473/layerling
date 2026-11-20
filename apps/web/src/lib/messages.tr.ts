@@ -3838,6 +3838,9 @@ export const MESSAGES_TR: Partial<Record<MessageKey, string>> = {
   "boltSplit.pinsName": "{name} – merkezleme pimleri",
   "inspector.boltSplitPins": "Merkezleme pimleriyle",
   "inspector.boltSplitPinsHint": "Ø {diameter} mm pimler, biri başta ve uzunluğa göre bir ila üçü dişte, kesim yüzeyine dik deliklerde: yarımları tam hizalar, boyuna da, böylece diş sarımları buluşur. Delikler 45° koniyle biter, her şey destek olmadan basılır.",
+  "inspector.boltSplitFilament": "Pim olarak filament (1,75 mm)",
+  "inspector.boltSplitFilamentHint": "Basılı pimler yerine: 1,75 mm filamentten parçalar kesin. Biri başın içinden enine, biri dişin boyunca uzanan, iki ucu kapalı bir kanala girer; böylece yarılar enine ve eksen boyunca tam oturur. M4'ten itibaren çalışır; basılı pimler dişe ancak M6'dan itibaren sığar.",
+  "status.boltSplitFilament": "{name} boyuna ikiye bölündü: iki yarı kesim yüzeylerinin üzerinde yatıyor. 1,75 mm filament kesin: {pieces}.",
   "status.boltSplitPins": "{name} boyuna bölündü: kesim yüzeyleri üzerinde iki yarım ve {count} merkezleme pimi Ø {diameter} × {length} mm.",
   "status.boltSplitNoPins": "{name} boyuna bölündü: merkezleme pimi olmadan iki yarım (onlara yer yok).",
 };
