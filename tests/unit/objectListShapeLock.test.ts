@@ -41,6 +41,69 @@ describe("the shape lock in the object list (#1277)", () => {
   });
 });
 
+// Issue #1836: the list opened its name field on a part of locked shape and took the typing, and Enter then changed
+// nothing, because the editor keeps the name of such a part. A part under the padlock alone can be renamed.
+describe("renaming in the object list with a lock on (Issue #1836)", () => {
+  let host: HTMLDivElement | undefined;
+  afterEach(() => {
+    host?.remove();
+    host = undefined;
+  });
+
+  const mount = (shapes: WorkplaneShape[], onRenameShape: (id: string, name: string) => void) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    act(() => root.render(createElement(ObjectListPanel, props(shapes, { onRenameShape }))));
+    return root;
+  };
+
+  const doubleClickName = (row: Element) => {
+    act(() => {
+      row.querySelector(".outliner-label-group")?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    });
+  };
+
+  it("offers no pencil and opens no name field on a part whose shape is locked", () => {
+    const onRenameShape = vi.fn();
+    const root = mount([box("free"), box("held", true)], onRenameShape);
+    try {
+      const rows = host!.querySelectorAll(".outliner-item");
+      expect(rows).toHaveLength(2);
+      expect(rows[0].querySelector(".rename-btn")).not.toBeNull();
+      expect(rows[1].querySelector(".rename-btn")).toBeNull();
+      doubleClickName(rows[1]);
+      expect(host!.querySelector(".outliner-rename-input")).toBeNull();
+      expect(onRenameShape).not.toHaveBeenCalled();
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
+  it("still renames a part that is only locked in place", () => {
+    const onRenameShape = vi.fn();
+    const root = mount([{ ...box("put"), locked: true }], onRenameShape);
+    try {
+      const row = host!.querySelector(".outliner-item")!;
+      expect(row.querySelector(".rename-btn")).not.toBeNull();
+      doubleClickName(row);
+      const input = host!.querySelector<HTMLInputElement>(".outliner-rename-input");
+      expect(input).not.toBeNull();
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "Base");
+        input!.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      act(() => {
+        input!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      });
+      expect(onRenameShape).toHaveBeenCalledWith("put", "Base");
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+});
+
 describe("the arrow keys on the grip of the object list (#1277)", () => {
   let host: HTMLDivElement | undefined;
   afterEach(() => {
