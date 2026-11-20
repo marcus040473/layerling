@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { editorHistoryEntry } from "@/lib/editorHistory";
 import { exportLylProject, importLylProject } from "@/lib/lylProject";
-import { highestTapeIdNumber, normalizeSavedTape, savedTape, type SavedTape } from "@/lib/tapeStore";
+import { highestTapeIdNumber, normalizeSavedTape, readTapeWholeEdges, savedTape, writeTapeWholeEdges, type SavedTape } from "@/lib/tapeStore";
 import { DEFAULT_SNAP_GRID, DEFAULT_WORKPLANE_WORKSPACE } from "@/lib/workplaneSettings";
 import type { WorkplaneShape } from "@/types/layerling";
 
@@ -95,5 +97,46 @@ describe("highestTapeIdNumber", () => {
     expect(highestTapeIdNumber({ points: [{ id: "tape-point-1" }], segments: [{ id: "tape-segment-12" }] })).toBe(12);
     // Ids from elsewhere (an AI, an older file) without a number are passed over.
     expect(highestTapeIdNumber({ points: [{ id: "a" }, { id: "tape-point-4" }], segments: [] })).toBe(4);
+  });
+});
+
+// Issue #1805: "Measure whole edges" lived only in the 3D view, which is built anew after a sketch, so a switch that
+// was off came back on by itself.
+describe("the tape measure's switch for whole edges (Issue #1805)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubStorage() {
+    const entries = new Map<string, string>();
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => entries.get(key) ?? null,
+        setItem: (key: string, value: string) => void entries.set(key, String(value)),
+      },
+    });
+    return entries;
+  }
+
+  it("is on until it is switched off, and then stays as it was left", () => {
+    stubStorage();
+    expect(readTapeWholeEdges()).toBe(true);
+    writeTapeWholeEdges(false);
+    expect(readTapeWholeEdges()).toBe(false);
+    writeTapeWholeEdges(true);
+    expect(readTapeWholeEdges()).toBe(true);
+  });
+
+  it("without storage is on, and switching it does not fail", () => {
+    vi.stubGlobal("window", { localStorage: { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } } });
+    expect(readTapeWholeEdges()).toBe(true);
+    expect(() => writeTapeWholeEdges(false)).not.toThrow();
+  });
+
+  // The view cannot be mounted here, so its source is read, as for the props it keeps in refs: it has to start from
+  // what was kept, in the state the button shows and in the ref the clicks read, and keep every change.
+  it("is read by the 3D view when it is built, and kept when it is switched", () => {
+    const source = readFileSync(fileURLToPath(new URL("../../apps/web/src/components/WorkplaneViewport.tsx", import.meta.url)), "utf8");
+    expect(source).toContain("const [tapeWholeEdges, setTapeWholeEdges] = useState(readTapeWholeEdges);");
+    expect(source).toContain("const tapeWholeEdgesRef = useRef(tapeWholeEdges);");
+    expect(source).toMatch(/setTapeWholeEdges\(next\);\s+writeTapeWholeEdges\(next\);/);
   });
 });

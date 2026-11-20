@@ -54,7 +54,7 @@ import { addMagnetAnchor, closeMagnet, dropMagnetAnchor, magnetLine, paintMagnet
 import { onCustomFontsChanged } from "@/lib/textFonts";
 import { readSavedViews, readStartView, SAVED_VIEW_KEYS, savedViewForKey, writeStartView } from "@/lib/designView";
 import { readCornerRulers, writeCornerRulers } from "@/lib/cornerRulerStore";
-import { highestTapeIdNumber, readTape, savedTape, writeTape } from "@/lib/tapeStore";
+import { highestTapeIdNumber, readTape, readTapeWholeEdges, savedTape, writeTape, writeTapeWholeEdges } from "@/lib/tapeStore";
 import { rememberCameraView, useDesignViews } from "@/components/workplane/cameraViews";
 import { timedCameraDamping } from "@/lib/cameraInertia";
 import { fitCameraDepthRange, frameBounds, resetCamera, selectionBounds, startViewOf, setCameraOntoPlane, setCameraToViewDirection, setCameraToViewFace, stepCameraTurn, syncViewCube, toggleCameraProjection, zoomCameraBy } from "@/components/workplane/cameraRig";
@@ -1832,7 +1832,8 @@ export function WorkplaneViewport({
   const [editingRotation, setEditingRotation] = useState<EditingRotation>(null);
   const [tapeMode, setTapeMode] = useState(false);
   // A click on an edge measures the whole edge (the length of a circle, say); off, it sets a point on the edge (#308).
-  const [tapeWholeEdges, setTapeWholeEdges] = useState(true);
+  // Read from what the editor keeps, so the switch is as it was left when the view comes back from a sketch (Issue #1805).
+  const [tapeWholeEdges, setTapeWholeEdges] = useState(readTapeWholeEdges);
   const [tapeDeleteMode, setTapeDeleteMode] = useState(false);
   const [tapeQuickDelete, setTapeQuickDelete] = useState(false);
   const lastTapePointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
@@ -2114,7 +2115,7 @@ export function WorkplaneViewport({
   const alignOverlayRef = useRef<AlignOverlayState | null>(null);
   const mirrorOverlayRef = useRef<MirrorOverlayState | null>(null);
   const tapeModeRef = useRef(false);
-  const tapeWholeEdgesRef = useRef(true);
+  const tapeWholeEdgesRef = useRef(tapeWholeEdges);
   const tapeDeleteModeRef = useRef(false);
   const tapeMoveModeRef = useRef(false);
   // Only refs and state setters, so it is the same on every render.
@@ -8573,6 +8574,7 @@ export function WorkplaneViewport({
     const next = !tapeWholeEdgesRef.current;
     tapeWholeEdgesRef.current = next;
     setTapeWholeEdges(next);
+    writeTapeWholeEdges(next);
   }, []);
 
   const activateTapeDelete = useCallback(() => {
