@@ -17,3 +17,8 @@ Zu jedem PR gibt es den englischen Text (`.md`) und eine deutsche Erklärung (`-
 | 1812 | `fix-1812-inner-corner-budget` | Kantenwerkzeuge: Die Suche nach Innenecken hält ihre vier Sekunden ein (Issue #1812) | `issue-1812-inner-corner-budget-link.txt` |
 | 1875 | `fix-1875-move-keeps-built-groups` | Verschieben mit den Pfeiltasten und Rückgängig bauen nicht mehr alle mehrfarbigen Gruppen neu (Issue #1875) | `issue-1875-move-keeps-built-groups-link.txt` |
 | 1800 | `fix-1800-sketch-move-selected-points` | Skizze: Pfeiltasten und eingetippte Werte verschieben nur die gewählten Punkte, wie die Maus (Issue #1800) | `issue-1800-sketch-move-selected-points-link.txt` |
+| 1790 | `fix-1790-tube-bore-edge-treatment` | Kanten bearbeiten: Die Bohrung eines Rohrs schneidet nach Fase oder Rundung weiter durch die Gruppe (Issue #1790) | `issue-1790-tube-bore-edge-treatment-link.txt` |
+| 1805 | `fix-1805-tape-whole-edges` | Maßband: „Ganze Kanten messen“ bleibt nach einer Skizze, wie es eingestellt war (Issue #1805) | `issue-1805-tape-whole-edges-link.txt` |
+| 1836 | `fix-1836-shape-lock-rename` | Objektliste: Bei gesperrter Form wird kein Namensfeld mehr angeboten, das dann nichts tut (Issue #1836) | `issue-1836-shape-lock-rename-link.txt` |
+| 1874 | `fix-1874-shared-thumbnail-sync` | Geteilter Ordner: Das Vorschaubild wird auch auf dem anderen Rechner gefunden (Issue #1874) | `issue-1874-shared-thumbnail-sync-link.txt` |
+| – | `fix-stack-dividers-foot-room` | Stapelbare Box mit Trennern: Trenner enden unter dem Fuß (von dir am 20.11. gemeldet) | `stack-dividers-foot-room-link.txt` |
