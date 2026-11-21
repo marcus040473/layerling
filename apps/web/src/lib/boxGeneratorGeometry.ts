@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { WorkplaneShape } from "@/types/layerling";
-import { GRIDFINITY_BASEPLATE_HEIGHT, GRIDFINITY_BASEPLATE_RADIUS, GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_FLOOR, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityCutSockets, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
+import { GRIDFINITY_BASEPLATE_HEIGHT, GRIDFINITY_BASEPLATE_RADIUS, GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_FLOOR, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityCutSockets, gridfinityOutlineCells, manifoldOfTriangles, trianglesOfManifold } from "@/lib/gridfinityGeometry";
 import { loadedManifoldRuntime, requestManifoldRuntime } from "@/lib/manifoldHandle";
 import type { ManifoldToplevel } from "manifold-3d";
 
@@ -58,6 +58,18 @@ export const DEFAULT_BOX_GENERATOR_FIT = 0.3;
 export const MIN_BOX_GENERATOR_WALL = 0.4;
 export const MIN_BOX_GENERATOR_SIDES = 3;
 export const MAX_BOX_GENERATOR_SIDES = 12;
+export type BoxGeneratorScoopSide = "front" | "back" | "left" | "right";
+/**
+ * A finger scoop: the floor of one compartment runs up into one of its sides in a quarter round, so small parts can be
+ * pushed up and out with a finger. `x` and `z` are a point in the compartment, in mm from the left and the back of the
+ * inside; the scoop belongs to whichever compartment holds that point, however the walls are moved.
+ */
+export type BoxGeneratorScoop = { x: number; z: number; side: BoxGeneratorScoopSide };
+export const DEFAULT_BOX_GENERATOR_SCOOP_RADIUS = 12;
+export const MIN_BOX_GENERATOR_SCOOP_RADIUS = 2;
+export const MAX_BOX_GENERATOR_SCOOP_RADIUS = 60;
+export const MAX_BOX_GENERATOR_SCOOPS = 60;
+const SCOOP_SEGMENTS = 16;
 export const MAX_BOX_GENERATOR_COMPARTMENTS = 12;
 /** The most dividers set by hand that one box takes. */
 export const MAX_BOX_GENERATOR_WALLS = 40;
@@ -92,10 +104,14 @@ export type BoxGeneratorFields = {
   boxDivider?: number;
   boxDividerMode?: BoxGeneratorDividerMode;
   boxWalls?: BoxGeneratorWall[];
+  boxScoops?: BoxGeneratorScoop[];
+  boxScoopRadius?: number;
   boxPart?: BoxGeneratorPart;
   boxLidStyle?: BoxGeneratorLidStyle;
   boxLidPlate?: number;
   boxFit?: number;
+  /** A plug lid of a box with dividers reaches into every compartment (unset or true), or has one ring as for a box without (false). */
+  boxLidCompartments?: boolean;
   boxGridfinity?: boolean;
   boxGridfinityColumns?: number;
   boxGridfinityRows?: number;
@@ -169,6 +185,57 @@ export function normalizeBoxGeneratorWalls(value: unknown): BoxGeneratorWall[] {
   return walls;
 }
 
+export function normalizeBoxGeneratorScoopSide(value: unknown): BoxGeneratorScoopSide {
+  return value === "back" || value === "left" || value === "right" ? value : "front";
+}
+
+/** The finger scoops as a clean list: only points with finite measures, none below zero, at most MAX_BOX_GENERATOR_SCOOPS. */
+export function normalizeBoxGeneratorScoops(value: unknown): BoxGeneratorScoop[] {
+  if (!Array.isArray(value)) return [];
+  const scoops: BoxGeneratorScoop[] = [];
+  for (const entry of value) {
+    if (scoops.length >= MAX_BOX_GENERATOR_SCOOPS) break;
+    if (!entry || typeof entry !== "object") continue;
+    const scoop = entry as Partial<BoxGeneratorScoop>;
+    if (![scoop.x, scoop.z].every((n) => typeof n === "number" && Number.isFinite(n))) continue;
+    const measure = (n: number) => Math.round(clamp(n, 0, 1e4) * 1000) / 1000;
+    scoops.push({ x: measure(scoop.x as number), z: measure(scoop.z as number), side: normalizeBoxGeneratorScoopSide(scoop.side) });
+  }
+  return scoops;
+}
+
+export function boxGeneratorScoopsEqual(a: readonly BoxGeneratorScoop[] | undefined, b: readonly BoxGeneratorScoop[] | undefined) {
+  if (a === b) return true;
+  if (!a || !b) return (a?.length ?? 0) === 0 && (b?.length ?? 0) === 0;
+  return a.length === b.length && a.every((scoop, index) => scoop.x === b[index].x && scoop.z === b[index].z && scoop.side === b[index].side);
+}
+
+function pointInOutline(point: Point, outline: readonly Point[]) {
+  let hit = false;
+  for (let i = 0, j = outline.length - 1; i < outline.length; j = i, i += 1) {
+    const a = outline[i];
+    const b = outline[j];
+    if ((a.z > point.z) !== (b.z > point.z) && point.x < ((b.x - a.x) * (point.z - a.z)) / (b.z - a.z) + a.x) hit = !hit;
+  }
+  return hit;
+}
+
+/** The scoop of a compartment: the last one in the list whose point lies in it, or none. */
+export function boxGeneratorScoopOf(compartment: { outline: readonly Point[] }, scoops: readonly BoxGeneratorScoop[]): BoxGeneratorScoop | null {
+  for (let index = scoops.length - 1; index >= 0; index -= 1) if (pointInOutline(scoops[index], compartment.outline)) return scoops[index];
+  return null;
+}
+
+/**
+ * The scoops with one compartment's set to a side, or taken away (null): every scoop whose point lies in the compartment
+ * goes, and the new one is put at the compartment's label point, well inside it.
+ */
+export function boxGeneratorScoopsWith(scoops: readonly BoxGeneratorScoop[], compartment: { outline: readonly Point[]; label: Point }, side: BoxGeneratorScoopSide | null): BoxGeneratorScoop[] {
+  const rest = scoops.filter((scoop) => !pointInOutline(scoop, compartment.outline));
+  const round = (value: number) => Math.round(value * 100) / 100;
+  return side ? [...rest, { x: round(compartment.label.x), z: round(compartment.label.z), side }] : rest;
+}
+
 /** A list of walls as it was sent: the list itself, or the text of one; anything else is no list. */
 export function boxGeneratorWallList(value: unknown): unknown[] | undefined {
   if (Array.isArray(value)) return value;
@@ -211,10 +278,13 @@ export function normalizeBoxGenerator(size: BoxGeneratorSize, fields: BoxGenerat
     boxDivider: clamp(finite(fields.boxDivider, DEFAULT_BOX_GENERATOR_DIVIDER), MIN_BOX_GENERATOR_WALL, 20),
     boxDividerMode: normalizeBoxGeneratorDividerMode(fields.boxDividerMode),
     boxWalls: normalizeBoxGeneratorWalls(fields.boxWalls),
+    boxScoops: normalizeBoxGeneratorScoops(fields.boxScoops),
+    boxScoopRadius: clamp(finite(fields.boxScoopRadius, DEFAULT_BOX_GENERATOR_SCOOP_RADIUS), MIN_BOX_GENERATOR_SCOOP_RADIUS, MAX_BOX_GENERATOR_SCOOP_RADIUS),
     boxPart: normalizeBoxGeneratorPart(fields.boxPart),
     boxLidStyle: normalizeBoxGeneratorLidStyle(fields.boxLidStyle),
     boxLidPlate: clamp(finite(fields.boxLidPlate, DEFAULT_BOX_GENERATOR_LID_PLATE), MIN_BOX_GENERATOR_WALL, Math.max(MIN_BOX_GENERATOR_WALL, height - 0.5)),
     boxFit: clamp(finite(fields.boxFit, DEFAULT_BOX_GENERATOR_FIT), 0, MAX_BOX_GENERATOR_FIT),
+    boxLidCompartments: fields.boxLidCompartments !== false,
     boxGridfinity: fields.boxGridfinity === true,
     boxGridfinityColumns: Math.round(clamp(finite(fields.boxGridfinityColumns, 2), 1, MAX_BOX_GENERATOR_GRIDFINITY_CELLS)),
     boxGridfinityRows: Math.round(clamp(finite(fields.boxGridfinityRows, 2), 1, MAX_BOX_GENERATOR_GRIDFINITY_CELLS)),
@@ -556,11 +626,14 @@ export function boxGeneratorWallFromEnds(a: Point, b: Point): BoxGeneratorWall {
  * the inside. With `room` given, a straight wall is held inside it, and an end that lies on a side of the room or beyond
  * is drawn out past it, so that a slanted wall closes against the box's wall instead of touching it with one corner.
  */
-export function boxGeneratorWallQuad(wall: BoxGeneratorWall, thickness: number, room?: { width: number; depth: number }): Point[] {
+export function boxGeneratorWallQuad(wall: BoxGeneratorWall, thickness: number, room?: { width: number; depth: number }, longer = 0): Point[] {
   let [a, b] = boxGeneratorWallEnds(wall);
   const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
   const ux = (b.x - a.x) / length;
   const uz = (b.z - a.z) / length;
+  // `longer` draws both ends out by that much, for the room a lid's plug leaves round a wall.
+  a = { x: a.x - ux * longer, z: a.z - uz * longer };
+  b = { x: b.x + ux * longer, z: b.z + uz * longer };
   if (room) {
     const outside = (point: Point) => point.x <= 1e-6 || point.z <= 1e-6 || point.x >= room.width - 1e-6 || point.z >= room.depth - 1e-6;
     const reach = 2 * thickness + 1;
@@ -572,9 +645,36 @@ export function boxGeneratorWallQuad(wall: BoxGeneratorWall, thickness: number, 
   return [{ x: a.x - nx, z: a.z - nz }, { x: b.x - nx, z: b.z - nz }, { x: b.x + nx, z: b.z + nz }, { x: a.x + nx, z: a.z + nz }];
 }
 
+/**
+ * The walls with a mirror image of each added: mirrored left to right ("x") or back to front ("z") about the middle of
+ * the room. A wall that already has its mirror image (or is its own) gets none, and no more are added than a box takes.
+ */
+export function boxGeneratorMirroredWalls(walls: readonly BoxGeneratorWall[], room: { width: number; depth: number }, axis: "x" | "z"): BoxGeneratorWall[] {
+  const flip = (point: Point): Point => (axis === "x" ? { x: room.width - point.x, z: point.z } : { x: point.x, z: room.depth - point.z });
+  const same = (a: BoxGeneratorWall, b: BoxGeneratorWall) => a.dir === b.dir && [a.at - b.at, a.from - b.from, a.to - b.to, (a.slant ?? 0) - (b.slant ?? 0)].every((off) => Math.abs(off) < 0.01);
+  // Held to the room first, so that a wall running to "the end" mirrors onto the other end and not past it.
+  const held = (wall: BoxGeneratorWall): BoxGeneratorWall => {
+    const run = wall.dir === "x" ? room.width : room.depth;
+    return wall.slant ? wall : { ...wall, from: clamp(wall.from, 0, run), to: clamp(wall.to, 0, run) };
+  };
+  const result = [...walls];
+  for (const wall of walls) {
+    if (result.length >= MAX_BOX_GENERATOR_WALLS) break;
+    const [a, b] = boxGeneratorWallEnds(held(wall));
+    const mirrored = boxGeneratorWallFromEnds(flip(a), flip(b));
+    if (!result.some((other) => same(held(other), mirrored))) result.push(mirrored);
+  }
+  return result;
+}
+
 /** Whether the box's dividers need the 2D kernel: set by hand, with a wall at a slant. */
 export function boxGeneratorNeedsKernel(fields: BoxGeneratorFields) {
-  return fields.boxDividerMode === "manual" && fields.boxPart !== "lid" && Array.isArray(fields.boxWalls) && fields.boxWalls.some((wall) => Boolean(wall?.slant));
+  // Finger scoops are joined to the box by the kernel.
+  if (fields.boxPart !== "lid" && Array.isArray(fields.boxScoops) && fields.boxScoops.length > 0) return true;
+  if (fields.boxDividerMode !== "manual" || !Array.isArray(fields.boxWalls) || fields.boxWalls.length === 0) return false;
+  // A plug lid that reaches into the compartments needs it for any compartment that is no plain convex room.
+  if (fields.boxPart === "lid") return fields.boxLidStyle === "plug" && fields.boxLidCompartments !== false;
+  return fields.boxWalls.some((wall) => Boolean(wall?.slant));
 }
 
 /**
@@ -700,8 +800,12 @@ export type BoxGeneratorPlan = {
    * for each cell as the baseplate's own are (gridfinityCutSockets).
    */
   plate: { cells: Point[]; bottom: number } | null;
+  /**
+   * `loops` are the border loops of everything that stands up from the plate: the one ring's outside and inside, or for a
+   * lid that reaches into the compartments (boxLidCompartments) the borders of every compartment's ring.
+   */
   /** A plug lid: the ring that fits into the box (`outline`, with `hole` as the ring's inside, null for a solid plug) and the plate's thickness. */
-  plug: { outline: Point[]; hole: Point[] | null; plate: number } | null;
+  plug: { outline: Point[]; hole: Point[] | null; plate: number; loops: Point[][] } | null;
   issues: BoxGeneratorIssue[];
 };
 
@@ -726,7 +830,9 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
       }
       const platePart = Math.min(settings.boxLidPlate, settings.height - 0.5);
       const hole = insetConvex(plug, settings.boxWall);
-      return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: { outline: plug, hole, plate: platePart }, issues };
+      // A box with dividers: one ring would stand on them, so the lid reaches into every compartment with a ring of its own.
+      const loops = settings.boxLidCompartments && hasDividers(settings) ? compartmentPlugLoops(settings, outer) : null;
+      return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: { outline: plug, hole, plate: platePart, loops: loops ?? [plug, ...(hole ? [hole] : [])] }, issues };
     }
     if (settings.boxLidStyle === "restOn") return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: null, issues };
     if (!inner) {
@@ -770,43 +876,114 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
       }
     }
   }
-  const box = bounds(inner);
-  if (use.boxDividerMode === "manual" && !stackedLid) {
-    // Dividers set by hand: what is left of the inside when every wall's strip is taken out of it.
-    const half = use.boxDivider / 2;
-    const width = box.maxX - box.minX;
-    const depth = box.maxZ - box.minZ;
+  const room = compartmentRegions(use, inner, bounds(inner), 0);
+  if (room.solid > 0) issues.push({ code: "compartmentSolid", count: room.solid });
+  const islands = room.regions.map((region) => region.holes);
+  return { settings, outer, cells: room.regions.map((region) => region.outline), islands: islands.some((list) => list.length > 0) ? islands : undefined, floorTop, stack, plate, plug: null, issues };
+}
+
+/**
+ * The rooms the dividers leave open in an outline: of the grid of columns and rows, or of the walls set by hand. `box` is
+ * the bounds of the box's inside, which the dividers are measured from. For the box itself `cut` is its inside and `grow`
+ * nothing; for a lid that reaches into the compartments `cut` is the inside less the play and `grow` the play, by which
+ * every divider is taken wider and longer, so each room is the play smaller all round than its compartment.
+ */
+function compartmentRegions(use: NormalizedBoxGenerator, cut: Point[], box: ReturnType<typeof bounds>, grow: number): { regions: { outline: Point[]; holes: Point[][] }[]; solid: number } {
+  const width = box.maxX - box.minX;
+  const depth = box.maxZ - box.minZ;
+  if (use.boxDividerMode === "manual") {
+    // Dividers set by hand: what is left of the outline when every wall's strip is taken out of it.
+    const half = use.boxDivider / 2 + grow;
     const straight = boxGeneratorWallsInside(use.boxWalls.filter((wall) => !wall.slant), width, depth);
     const slanted = use.boxWalls.filter((wall) => wall.slant && boxGeneratorWallLength(wall) >= MIN_BOX_GENERATOR_WALL_LENGTH);
-    // Slanted walls are cut out by the 2D kernel; until it has loaded the box is drawn with its straight walls and asks for it.
+    // Slanted walls are cut out by the 2D kernel; until it has loaded the part is drawn with its straight walls and asks for it.
     const runtime = slanted.length > 0 ? loadedManifoldRuntime() : null;
     if (slanted.length > 0 && !runtime) requestManifoldRuntime();
-    const room = runtime
-      ? kernelRegions(runtime, inner, [...straight, ...slanted].map((wall) => boxGeneratorWallQuad(wall, use.boxDivider, { width, depth }).map((point) => ({ x: point.x + box.minX, z: point.z + box.minZ }))))
-      : openRegions(inner, straight.map((wall) => wall.dir === "x"
-        ? { minX: box.minX + wall.from, maxX: box.minX + wall.to, minZ: box.minZ + wall.at - half, maxZ: box.minZ + wall.at + half }
-        : { minX: box.minX + wall.at - half, maxX: box.minX + wall.at + half, minZ: box.minZ + wall.from, maxZ: box.minZ + wall.to }));
-    if (room.solid > 0) issues.push({ code: "compartmentSolid", count: room.solid });
-    const islands = room.regions.map((region) => region.holes);
-    return { settings, outer, cells: room.regions.map((region) => region.outline), islands: islands.some((list) => list.length > 0) ? islands : undefined, floorTop, stack, plate, plug: null, issues };
+    return runtime
+      ? kernelRegions(runtime, cut, [...straight, ...slanted].map((wall) => boxGeneratorWallQuad(wall, use.boxDivider + 2 * grow, { width, depth }, grow).map((point) => ({ x: point.x + box.minX, z: point.z + box.minZ }))))
+      : openRegions(cut, straight.map((wall) => wall.dir === "x"
+        ? { minX: box.minX + wall.from - grow, maxX: box.minX + wall.to + grow, minZ: box.minZ + wall.at - half, maxZ: box.minZ + wall.at + half }
+        : { minX: box.minX + wall.at - half, maxX: box.minX + wall.at + half, minZ: box.minZ + wall.from - grow, maxZ: box.minZ + wall.to + grow }));
   }
   const { boxColumns: columns, boxRows: rows, boxDivider: divider } = use;
-  const cellWidth = (box.maxX - box.minX - (columns - 1) * divider) / columns;
-  const cellDepth = (box.maxZ - box.minZ - (rows - 1) * divider) / rows;
-  const cells: Point[][] = [];
+  const cellWidth = (width - (columns - 1) * divider) / columns;
+  const cellDepth = (depth - (rows - 1) * divider) / rows;
+  const regions: { outline: Point[]; holes: Point[][] }[] = [];
   let solid = 0;
   for (let column = 0; column < columns; column += 1) {
     for (let row = 0; row < rows; row += 1) {
       const x0 = box.minX + column * (cellWidth + divider);
       const z0 = box.minZ + row * (cellDepth + divider);
-      const cell = cellWidth > 0 && cellDepth > 0 ? clipRectangle(inner, x0, x0 + cellWidth, z0, z0 + cellDepth) : [];
+      const cell = cellWidth > 2 * grow && cellDepth > 2 * grow ? clipRectangle(cut, x0 + grow, x0 + cellWidth - grow, z0 + grow, z0 + cellDepth - grow) : [];
       const span = cell.length >= 3 ? boundsOf(cell) : { width: 0, depth: 0 };
-      if (cell.length >= 3 && Math.min(span.width, span.depth) >= MIN_COMPARTMENT_SPAN) cells.push(dropDuplicates(cell));
+      if (cell.length >= 3 && Math.min(span.width, span.depth) >= MIN_COMPARTMENT_SPAN) regions.push({ outline: dropDuplicates(cell), holes: [] });
       else solid += 1;
     }
   }
-  if (solid > 0) issues.push({ code: "compartmentSolid", count: solid });
-  return { settings, outer, cells, floorTop, stack, plate, plug: null, issues };
+  return { regions, solid };
+}
+
+/** Whether an outline has no corner that points inwards. */
+function isConvex(points: Point[]) {
+  const outline = counterClockwise(points);
+  return outline.every((point, index) => {
+    const before = outline[(index + outline.length - 1) % outline.length];
+    const after = outline[(index + 1) % outline.length];
+    return (point.x - before.x) * (after.z - point.z) - (point.z - before.z) * (after.x - point.x) >= -1e-9;
+  });
+}
+
+/**
+ * The plugs of a lid that reaches into every compartment, as the border loops of what stands up from the plate: for each
+ * compartment a ring, the play smaller than the compartment all round and as thick as the wall, with a slot for every
+ * wall that stands free in it. A compartment with a corner pointing inwards or a free wall needs the 2D kernel for its
+ * ring; until that has loaded its plug is drawn solid. The loops are mirrored left to right, because the lid is drawn
+ * upside down as it prints and is turned over sideways to go on the box.
+ */
+function compartmentPlugLoops(settings: NormalizedBoxGenerator, outer: Point[]): Point[][] | null {
+  const inner = insetConvex(outer, settings.boxWall);
+  const cut = insetConvex(outer, settings.boxWall + settings.boxFit);
+  if (!inner || !cut) return null;
+  const { regions } = compartmentRegions(settings, cut, bounds(inner), settings.boxFit);
+  const loops: Point[][] = [];
+  for (const region of regions) {
+    if (region.holes.length === 0 && isConvex(region.outline)) {
+      const hole = insetConvex(region.outline, settings.boxWall);
+      loops.push(region.outline, ...(hole ? [hole] : []));
+      continue;
+    }
+    const runtime = loadedManifoldRuntime();
+    if (!runtime) {
+      requestManifoldRuntime();
+      loops.push(region.outline, ...region.holes);
+      continue;
+    }
+    const made: { delete(): void }[] = [];
+    const keep = <T extends { delete(): void }>(value: T) => {
+      made.push(value);
+      return value;
+    };
+    try {
+      const ring = (points: Point[], clockwise = false) => {
+        const turned = counterClockwise(points).map((point): [number, number] => [point.x, point.z]);
+        return clockwise ? turned.reverse() : turned;
+      };
+      const plug = keep(new runtime.CrossSection([ring(region.outline), ...region.holes.map((hole) => ring(hole, true))], "Positive"));
+      const hollow = keep(plug.offset(-settings.boxWall, "Miter", 2));
+      const band = keep(plug.subtract(hollow));
+      loops.push(...band.toPolygons().map((polygon) => dropDuplicates(polygon.map(([x, z]) => ({ x, z })))).filter((loop) => loop.length >= 3 && Math.abs(signedArea(loop)) > 0.01));
+    } catch {
+      loops.push(region.outline, ...region.holes);
+    } finally {
+      made.forEach((value) => value.delete());
+    }
+  }
+  return loops.map((loop) => loop.map((point) => ({ x: -point.x, z: point.z })));
+}
+
+/** Whether the part has dividers: more than one compartment in the grid, or a wall set by hand. */
+function hasDividers(settings: NormalizedBoxGenerator) {
+  return settings.boxDividerMode === "manual" ? settings.boxWalls.length > 0 : settings.boxColumns * settings.boxRows > 1;
 }
 
 /** Problems a person should know about; the solid is still made, the affected part left solid. */
@@ -1016,6 +1193,156 @@ function addWall(mesh: MeshBuilder, outline: Point[], y0: number, y1: number, fa
 }
 
 /**
+ * What stands up from a flat top: the top of `base` at height y0 with material raised to y1 on it. `loops` are the
+ * material's border loops in any order and direction, none crossing another: a loop inside an even number of others is
+ * the outside of a piece, one inside an odd number the border of a hollow in it. The same points are used for the tops,
+ * the sides and the floor between, so every edge meets its neighbour.
+ */
+function addRaised(mesh: MeshBuilder, base: Point[], loops: Point[][], y0: number, y1: number) {
+  const rings = loops.map((loop) => counterClockwise(loop));
+  const within = (point: Point, outline: Point[]) => {
+    let hit = false;
+    for (let i = 0, j = outline.length - 1; i < outline.length; j = i, i += 1) {
+      const a = outline[i];
+      const b = outline[j];
+      if ((a.z > point.z) !== (b.z > point.z) && point.x < ((b.x - a.x) * (point.z - a.z)) / (b.z - a.z) + a.x) hit = !hit;
+    }
+    return hit;
+  };
+  // A loop's parent is the smallest loop around it; loops do not cross, so one of its points tells.
+  const area = rings.map((ring) => Math.abs(signedArea(ring)));
+  const parent = rings.map((ring, index) => {
+    let best = -1;
+    rings.forEach((other, position) => {
+      if (position === index || area[position] <= area[index] || !within(ring[0], other)) return;
+      if (best < 0 || area[position] < area[best]) best = position;
+    });
+    return best;
+  });
+  const depth = rings.map((_ring, index) => {
+    let count = 0;
+    for (let at = parent[index]; at >= 0; at = parent[at]) count += 1;
+    return count;
+  });
+  const children = (index: number) => rings.filter((_ring, position) => parent[position] === index);
+  addCap(mesh, base, rings.filter((_ring, index) => parent[index] < 0), y0, "up");
+  rings.forEach((ring, index) => {
+    if (depth[index] % 2 === 0) {
+      addWall(mesh, ring, y0, y1, "out");
+      addCap(mesh, ring, children(index), y1, "up");
+    } else {
+      addWall(mesh, ring, y0, y1, "in");
+      addCap(mesh, ring, children(index), y0, "up");
+    }
+  });
+}
+
+type Triangle = [number, number, number][];
+
+function trianglesOf(mesh: MeshBuilder): Triangle[] {
+  const triangles: Triangle[] = [];
+  for (let i = 0; i < mesh.indices.length; i += 3) {
+    triangles.push([0, 1, 2].map((k) => [mesh.positions[mesh.indices[i + k] * 3], mesh.positions[mesh.indices[i + k] * 3 + 1], mesh.positions[mesh.indices[i + k] * 3 + 2]] as [number, number, number]));
+  }
+  return triangles;
+}
+
+/** How far a scoop reaches into the floor and the walls round it, in mm, so that it is joined to them and does not merely touch. */
+const SCOOP_BITE = 0.05;
+
+type ScoopPiece = { outline: Point[]; holes: Point[][]; top: number; bar: Triangle[] };
+
+/**
+ * The finger scoops, for each compartment that has one: the compartment's outline (with the walls standing free in it),
+ * the height the scoop reaches to, and a bar along the chosen side of the compartment whose section is the corner
+ * between floor and wall less a quarter circle. What the bar shares with the room over the compartment is the scoop. The
+ * radius is held to the height above the floor and to the compartment's reach away from that side.
+ */
+function scoopPieces(settings: NormalizedBoxGenerator, outer: Point[], cells: Point[][], islands: Point[][][] | undefined, floorTop: number): ScoopPiece[] {
+  if (settings.boxScoops.length === 0) return [];
+  const inner = insetConvex(outer, settings.boxWall);
+  if (!inner) return [];
+  const origin = bounds(inner);
+  const pieces: ScoopPiece[] = [];
+  cells.forEach((cell, index) => {
+    const scoop = boxGeneratorScoopOf({ outline: cell.map((point) => ({ x: point.x - origin.minX, z: point.z - origin.minZ })) }, settings.boxScoops);
+    if (!scoop) return;
+    const box = bounds(cell);
+    const across = scoop.side === "front" || scoop.side === "back";
+    const radius = Math.min(settings.boxScoopRadius, settings.height - floorTop, across ? box.maxZ - box.minZ : box.maxX - box.minX);
+    if (radius < 0.5) return;
+    // The bar's section: u away from the side, v up from the floor. It starts a little inside the wall and the floor, then
+    // follows the quarter circle from the floor up to the wall.
+    const section: [number, number][] = [[-SCOOP_BITE, -SCOOP_BITE], [radius, -SCOOP_BITE]];
+    for (let step = 0; step <= SCOOP_SEGMENTS; step += 1) {
+      const angle = (step / SCOOP_SEGMENTS) * (Math.PI / 2);
+      section.push([radius - radius * Math.sin(angle), radius - radius * Math.cos(angle)]);
+    }
+    section.push([-SCOOP_BITE, radius]);
+    const from = (across ? box.minX : box.minZ) - 1;
+    const to = (across ? box.maxX : box.maxZ) + 1;
+    const place = (u: number, v: number, w: number): [number, number, number] => {
+      if (scoop.side === "front") return [w, floorTop + v, box.maxZ - u];
+      if (scoop.side === "back") return [w, floorTop + v, box.minZ + u];
+      if (scoop.side === "left") return [box.minX + u, floorTop + v, w];
+      return [box.maxX - u, floorTop + v, w];
+    };
+    const bar: Triangle[] = [];
+    for (let i = 1; i + 1 < section.length; i += 1) {
+      bar.push([place(...section[0], from), place(...section[i], from), place(...section[i + 1], from)]);
+      bar.push([place(...section[0], to), place(...section[i + 1], to), place(...section[i], to)]);
+    }
+    section.forEach((point, i) => {
+      const next = section[(i + 1) % section.length];
+      bar.push([place(...point, from), place(...point, to), place(...next, to)], [place(...point, from), place(...next, to), place(...next, from)]);
+    });
+    // The faces must point outwards, whichever way the side turned the bar.
+    const volume = bar.reduce((sum, [a, b, c]) => sum + (a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0])) / 6, 0);
+    pieces.push({ outline: cell, holes: islands?.[index] ?? [], top: floorTop + radius, bar: volume < 0 ? bar.map(([a, b, c]) => [a, c, b] as Triangle) : bar });
+  });
+  return pieces;
+}
+
+/**
+ * The box with its scoops joined on by Manifold; the box as it is when that fails. Each scoop is the bar cut to the room
+ * over its compartment, that room taken a hair wider than the compartment and begun a hair inside the floor: a scoop that
+ * only touched floor and walls would stay a body of its own lying against them.
+ */
+function joinScoops(runtime: ManifoldToplevel, body: Triangle[], pieces: ScoopPiece[], floorTop: number): Triangle[] {
+  const made: { delete(): void }[] = [];
+  const keep = <T extends { delete(): void }>(value: T) => {
+    made.push(value);
+    return value;
+  };
+  try {
+    const scoops = pieces.flatMap((piece) => {
+      const ring = (points: Point[], clockwise: boolean) => {
+        const turned = counterClockwise(points).map((point): [number, number] => [point.x, point.z]);
+        return clockwise ? turned.reverse() : turned;
+      };
+      const grown = keep(keep(new runtime.CrossSection([ring(piece.outline, false), ...piece.holes.map((hole) => ring(hole, true))], "Positive")).offset(SCOOP_BITE, "Miter", 2));
+      const loops = grown.toPolygons().map((polygon) => dropDuplicates(polygon.map(([x, z]) => ({ x, z })))).filter((loop) => loop.length >= 3);
+      const bar = keep(manifoldOfTriangles(runtime, piece.bar));
+      return regionsOfLoops(loops).regions.map((region) => {
+        const room: MeshBuilder = { positions: [], indices: [] };
+        addCap(room, region.outline, region.holes, floorTop - SCOOP_BITE, "down");
+        addCap(room, region.outline, region.holes, piece.top, "up");
+        addWall(room, region.outline, floorTop - SCOOP_BITE, piece.top, "out");
+        for (const hole of region.holes) addWall(room, hole, floorTop - SCOOP_BITE, piece.top, "in");
+        return keep(keep(manifoldOfTriangles(runtime, trianglesOf(room))).intersect(bar));
+      });
+    });
+    if (scoops.length === 0) return body;
+    const result = keep(keep(manifoldOfTriangles(runtime, body)).add(keep(runtime.Manifold.union(scoops))));
+    return result.status() === "NoError" && !result.isEmpty() ? trianglesOfManifold(result) : body;
+  } catch {
+    return body;
+  } finally {
+    new Set(made).forEach((value) => value.delete());
+  }
+}
+
+/**
  * The closed solid of a part from y = 0 to the height: the bottom, the outer wall, the top face between outline and
  * cells, the cells' walls facing inward and the floor of each cell.
  */
@@ -1026,13 +1353,7 @@ export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGe
     // The plate on the bed, the ring standing up from it: its outside, its top, and its inside down to the plate.
     addCap(mesh, outer, [], 0, "down");
     addWall(mesh, outer, 0, plug.plate, "out");
-    addCap(mesh, outer, [plug.outline], plug.plate, "up");
-    addWall(mesh, plug.outline, plug.plate, settings.height, "out");
-    addCap(mesh, plug.outline, plug.hole ? [plug.hole] : [], settings.height, "up");
-    if (plug.hole) {
-      addWall(mesh, plug.hole, plug.plate, settings.height, "in");
-      addCap(mesh, plug.hole, [], plug.plate, "up");
-    }
+    addRaised(mesh, outer, plug.loops, plug.plate, settings.height);
   } else if (stack) {
     const { skirt, collar, groove, height: lift, grooveHeight } = stack;
     // Underneath: the foot under the wall's outer part, the groove for the collar of the box below, the flat floor.
@@ -1062,18 +1383,20 @@ export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGe
     }
   });
   let { positions, indices } = mesh;
-  if (plate) {
-    // The sockets need Manifold: until it has loaded the floor is drawn plain and asks for it (manifoldRevision in the cache key).
+  const scooped = settings.boxPart === "box" && !plug ? scoopPieces(settings, outer, cells, islands, floorTop) : [];
+  if (plate || scooped.length > 0) {
+    // The sockets and the scoops need Manifold: until it has loaded the floor is drawn plain and asks for it (manifoldRevision in the cache key).
     const runtime = loadedManifoldRuntime();
     if (!runtime) requestManifoldRuntime();
     else {
-      const body: Array<[number, number, number][]> = [];
+      let body: Array<[number, number, number][]> = [];
       for (let i = 0; i < indices.length; i += 3) {
         body.push([0, 1, 2].map((k) => [positions[indices[i + k] * 3], positions[indices[i + k] * 3 + 1], positions[indices[i + k] * 3 + 2]] as [number, number, number]));
       }
+      if (scooped.length > 0) body = joinScoops(runtime, body, scooped, floorTop);
       // The mesh holds its heights as 32-bit numbers: the sockets' top is put on exactly the floor's, or a sliver is left between them.
-      const cut = gridfinityCutSockets(runtime, body, plate.cells, Math.fround(floorTop) - GRIDFINITY_BASEPLATE_HEIGHT);
-      positions = cut.flat(2);
+      if (plate) body = gridfinityCutSockets(runtime, body, plate.cells, Math.fround(floorTop) - GRIDFINITY_BASEPLATE_HEIGHT);
+      positions = body.flat(2);
       indices = Array.from({ length: positions.length / 3 }, (_, k) => k);
     }
   }
@@ -1099,10 +1422,13 @@ export function boxGeneratorFieldsOf(shape: Partial<WorkplaneShape>): BoxGenerat
     boxDivider: shape.boxDivider,
     boxDividerMode: shape.boxDividerMode,
     boxWalls: shape.boxWalls,
+    boxScoops: shape.boxScoops,
+    boxScoopRadius: shape.boxScoopRadius,
     boxPart: shape.boxPart,
     boxLidStyle: shape.boxLidStyle,
     boxLidPlate: shape.boxLidPlate,
     boxFit: shape.boxFit,
+    boxLidCompartments: shape.boxLidCompartments,
     boxGridfinity: shape.boxGridfinity,
     boxGridfinityColumns: shape.boxGridfinityColumns,
     boxGridfinityRows: shape.boxGridfinityRows,

@@ -78,15 +78,37 @@ function choose(select: HTMLSelectElement, value: string) {
 const names = (panel: HTMLElement) => [...panel.querySelectorAll(".range-property-name")].map((row) => row.textContent);
 
 describe("box generator, dividers by hand", () => {
-  it("offers the card only for a box whose dividers are set by hand", () => {
-    expect(one(mount({}).panel, "box-walls-card")).toBeUndefined();
+  it("shows the compartments of every box, and the walls to set only when the dividers are set by hand; nothing for a lid", () => {
+    const grid = mount({ boxColumns: 2 });
+    expect(one(grid.panel, "box-walls-card")).toBeDefined();
+    expect(all(grid.panel, "box-walls-compartment")).toHaveLength(2);
+    expect(one(grid.panel, "box-walls-add-across")).toBeUndefined();
+    expect(grid.panel.querySelector('[data-testid="box-walls-card"] .property-card-header')!.textContent).toBe("Compartments");
     act(() => root?.unmount());
     expect(one(mount({ boxDividerMode: "manual", boxPart: "lid" }).panel, "box-walls-card")).toBeUndefined();
     act(() => root?.unmount());
     const { panel } = mount({ boxDividerMode: "manual" });
-    expect(one(panel, "box-walls-card")).toBeDefined();
+    expect(one(panel, "box-walls-add-across")).toBeDefined();
+    expect(panel.querySelector('[data-testid="box-walls-card"] .property-card-header')!.textContent).toBe("Dividers by hand");
     expect(names(panel)).not.toContain("Compartments across");
     expect(names(panel)).toContain("Divider thickness");
+  });
+
+  it("gives the picked compartment a finger scoop at a side, with the radius of the scoops, also with the grid's dividers", () => {
+    const { panel, shape } = mount({ boxColumns: 2 });
+    const scoopMenu = () => [...panel.querySelectorAll("select")].find((select) => select.querySelector('option[value="front"]'));
+    expect(scoopMenu()).toBeUndefined();
+    const left = all<SVGElement>(panel, "box-walls-compartment").find((entry) => entry.getAttribute("points")!.startsWith("0,"))!;
+    pointer(left, "pointerdown");
+    choose(scoopMenu()!, "left");
+    expect(shape().boxScoops).toEqual([{ x: expect.any(Number), z: expect.any(Number), side: "left" }]);
+    expect(all(panel, "box-walls-plan-scoop")).toHaveLength(1);
+    expect(names(panel)).toContain("Scoop radius");
+    choose(scoopMenu()!, "back");
+    expect(shape().boxScoops?.map((scoop) => scoop.side)).toEqual(["back"]);
+    choose(scoopMenu()!, "none");
+    expect(shape().boxScoops).toBeUndefined();
+    expect(all(panel, "box-walls-plan-scoop")).toHaveLength(0);
   });
 
   it("takes the grid's dividers over as walls when it is switched to by hand, and keeps the walls when it goes back", () => {

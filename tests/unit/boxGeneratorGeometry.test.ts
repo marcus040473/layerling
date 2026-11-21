@@ -12,6 +12,9 @@ import {
   boxGeneratorInsideOutline,
   boxGeneratorGridfinityRoom,
   boxGeneratorGridWalls,
+  boxGeneratorScoopOf,
+  boxGeneratorScoopsWith,
+  boxGeneratorMirroredWalls,
   boxGeneratorNeedsKernel,
   boxGeneratorWallEnds,
   boxGeneratorWallFromEnds,
@@ -539,6 +542,107 @@ describe("the matching lid of a box", () => {
       // Given end before beginning it is the same wall told the other way round; a slant of nothing is left out.
       expect(normalizeBoxGeneratorWalls([{ dir: "x", at: 10, from: 50, to: 5, slant: 8 }, { dir: "x", at: 10, from: 5, to: 50, slant: 0 }, { dir: "z", at: 5, from: 0, to: 9, slant: -20 }]))
         .toEqual([{ dir: "x", at: 18, from: 5, to: 50, slant: -8 }, { dir: "x", at: 10, from: 5, to: 50 }, { dir: "z", at: 5, from: 0, to: 9, slant: -5 }]);
+    });
+
+    it("gives a plug lid a ring for every compartment, so it closes over the dividers", async () => {
+      const runtime = await manifoldModule();
+      runtime.setup();
+      rememberManifoldRuntime(runtime);
+      const lidSize = { width: 126, depth: 90, height: 10 };
+      const lid = { boxCornerRadius: 0, boxPart: "lid" as const, boxLidStyle: "plug" as const, boxFit: 0.3 };
+      const one = createBoxGeneratorGeometry(lidSize, lid);
+      // Without dividers, and with the switch off, it is the one ring it always was.
+      expect(volumeOf(createBoxGeneratorGeometry(lidSize, { ...lid, boxColumns: 2, boxLidCompartments: false }))).toBeCloseTo(volumeOf(one), 3);
+      const grid = createBoxGeneratorGeometry(lidSize, { ...lid, boxColumns: 2 });
+      expect(openEdges(grid)).toBe(0);
+      // Two rings in place of one: each compartment's is the play smaller than it all round and 2.4 mm thick.
+      const ring = (w: number, d: number) => (w * d - (w - 4.8) * (d - 4.8)) * (10 - 2.4);
+      const cellWidth = (121.2 - 1.6) / 2 - 0.6;
+      expect(volumeOf(grid) - volumeOf(one)).toBeCloseTo(2 * ring(cellWidth, 85.2 - 0.6) - ring(121.2 - 0.6, 85.2 - 0.6), 0);
+      // By hand: the wall stands at 40 mm from the left in the box, so in the lid, turned over sideways, the gap is 40 mm from the right.
+      const byHand = { ...lid, boxDividerMode: "manual" as const, boxDivider: 1.6, boxWalls: [{ dir: "z" as const, at: 40, from: 0, to: 85.2 }] };
+      const geometry = createBoxGeneratorGeometry(lidSize, byHand);
+      expect(openEdges(geometry)).toBe(0);
+      const loops = boxGeneratorPlan(lidSize, byHand).plug!.loops;
+      expect(loops).toHaveLength(4);
+      const gap = 60.6 - 40;
+      expect(loops.some((loop) => loop.some((point) => Math.abs(point.x - (gap - 0.8 - 0.3)) < 1e-6))).toBe(true);
+      expect(loops.some((loop) => loop.some((point) => Math.abs(point.x - (gap + 0.8 + 0.3)) < 1e-6))).toBe(true);
+      // A wall that ends inside the box, one that stands free and one at a slant: rings with a slot, closed bodies.
+      for (const boxWalls of [[{ dir: "z" as const, at: 40, from: 0, to: 50 }], [{ dir: "x" as const, at: 40, from: 30, to: 90 }], [{ dir: "x" as const, at: 10, from: 0, to: 121.2, slant: 60 }, { dir: "z" as const, at: 80, from: 0, to: 30 }]]) {
+        for (const more of [{}, { boxShape: "round" as const }]) {
+          const made = createBoxGeneratorGeometry(lidSize, { ...byHand, boxWalls, ...more });
+          expect(openEdges(made)).toBe(0);
+          expect(volumeOf(made)).toBeGreaterThan(126 * 90 * 2.4 * (more.boxShape ? 0.7 : 1));
+        }
+      }
+    });
+
+    it("adds a mirror image of every wall that has none yet", () => {
+      const room = { width: 120, depth: 80 };
+      const walls = [{ dir: "z" as const, at: 30, from: 0, to: 500 }, { dir: "x" as const, at: 20, from: 0, to: 30, slant: 10 }, { dir: "z" as const, at: 60, from: 10, to: 40 }];
+      const leftRight = boxGeneratorMirroredWalls(walls, room, "x");
+      // The wall on the middle line is its own mirror image.
+      expect(leftRight.slice(3)).toEqual([{ dir: "z", at: 90, from: 0, to: 80 }, { dir: "x", at: 30, from: 90, to: 120, slant: -10 }]);
+      expect(boxGeneratorMirroredWalls(leftRight, room, "x")).toHaveLength(5);
+      expect(boxGeneratorMirroredWalls([{ dir: "z", at: 60, from: 10, to: 40 }], room, "z")).toEqual([{ dir: "z", at: 60, from: 10, to: 40 }, { dir: "z", at: 60, from: 40, to: 70 }]);
+      expect(boxGeneratorMirroredWalls(Array.from({ length: 39 }, (_, index) => ({ dir: "z" as const, at: index + 1, from: 0, to: 80 })), room, "x")).toHaveLength(40);
+    });
+
+    it("runs the floor of a compartment up into a side as a finger scoop, only in the compartment that was picked", async () => {
+      const walls = [{ dir: "z" as const, at: 60, from: 0, to: 85.2 }];
+      const plain = manual(walls);
+      const fields = { ...plain, boxScoops: [{ x: 20, z: 40, side: "front" as const }], boxScoopRadius: 12 };
+      expect(boxGeneratorNeedsKernel(fields)).toBe(true);
+      rememberManifoldRuntime(null as never);
+      expect(volumeOf(createBoxGeneratorGeometry(SIZE, fields))).toBeCloseTo(volumeOf(createBoxGeneratorGeometry(SIZE, plain)), 3);
+      const runtime = await manifoldModule();
+      runtime.setup();
+      rememberManifoldRuntime(runtime);
+      const base = volumeOf(createBoxGeneratorGeometry(SIZE, plain));
+      const geometry = createBoxGeneratorGeometry(SIZE, fields);
+      expect(openEdges(geometry)).toBe(0);
+      // The corner between floor and wall less a quarter circle, along the compartment's 59.2 mm.
+      const section = 12 * 12 * (1 - Math.PI / 4);
+      expect(volumeOf(geometry) - base).toBeGreaterThan(section * 59.2 * 0.98);
+      expect(volumeOf(geometry) - base).toBeLessThan(section * 59.2 * 1.03);
+      // The scoop is at the front: above the floor there is material at the front wall of the left compartment, none at its back.
+      const position = geometry.getAttribute("position");
+      let front = 0;
+      let back = 0;
+      for (let i = 0; i < position.count; i += 1) {
+        const [x, y, z] = [position.getX(i), position.getY(i), position.getZ(i)];
+        if (y < 2.5 || y > 14 || x > -1) continue;
+        if (z > 31 && z < 42.5) front += 1;
+        if (z < -31 && z > -42.5) back += 1;
+      }
+      expect(front).toBeGreaterThan(10);
+      expect(back).toBe(0);
+      // Every side, a low box that holds the radius down, a round box and a compartment with a free wall: closed bodies.
+      for (const side of ["front", "back", "left", "right"] as const) {
+        // (Stackable with a floor above the groove under the wall: with a thinner floor groove and compartment share a face, which is as it was.)
+        for (const more of [{}, { boxShape: "round" as const }, { boxStackable: true, boxFloor: 5 }]) {
+          const made = createBoxGeneratorGeometry(SIZE, { ...manual([...walls, { dir: "x", at: 40, from: 80, to: 100 }]), boxScoops: [{ x: 20, z: 40, side }, { x: 100, z: 20, side }], ...more });
+          expect(openEdges(made)).toBe(0);
+          expect(volumeOf(made)).toBeGreaterThan(volumeOf(createBoxGeneratorGeometry(SIZE, { ...manual([...walls, { dir: "x", at: 40, from: 80, to: 100 }]), ...more })));
+        }
+      }
+      expect(openEdges(createBoxGeneratorGeometry({ width: 126, depth: 90, height: 8 }, { ...fields, boxScoopRadius: 40 }))).toBe(0);
+      expect(openEdges(createBoxGeneratorGeometry(SIZE, { boxCornerRadius: 0, boxColumns: 3, boxScoops: [{ x: 60, z: 40, side: "back" }] }))).toBe(0);
+    });
+
+    it("keeps one scoop for a compartment, found by a point in it", () => {
+      const room = boxGeneratorWallRoom(SIZE, manual([{ dir: "z", at: 60, from: 0, to: 85.2 }]))!;
+      const left = room.compartments.find((entry) => entry.minX < 1)!;
+      const right = room.compartments.find((entry) => entry.minX > 1)!;
+      const one = boxGeneratorScoopsWith([], left, "left");
+      expect(one).toHaveLength(1);
+      expect(boxGeneratorScoopOf(left, one)?.side).toBe("left");
+      expect(boxGeneratorScoopOf(right, one)).toBeNull();
+      const both = boxGeneratorScoopsWith(boxGeneratorScoopsWith(one, right, "front"), left, "back");
+      expect(both.map((scoop) => scoop.side).sort()).toEqual(["back", "front"]);
+      expect(boxGeneratorScoopsWith(both, left, null)).toHaveLength(1);
+      expect(normalizeBoxGenerator(SIZE, { boxScoops: [{ x: 1, z: 2, side: "up" }, { x: Number.NaN, z: 2 }, null] as never, boxScoopRadius: 500 })).toMatchObject({ boxScoops: [{ x: 1, z: 2, side: "front" }], boxScoopRadius: 60 });
     });
 
     it("keeps only walls that make sense, and cuts them to the inside without changing the list", () => {

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { BoxWallsOverlay, boxWallsEditable, syncBoxWallsOverlay, type BoxWallsOverlayState } from "@/components/workplane/BoxWallsOverlay";
 import type { BoxWallsPick } from "@/components/workplane/BoxWallsPlan";
 import type { ThreeState } from "@/components/workplane/ViewportOverlays";
-import { createBoxGeneratorGeometryForShape, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
+import { createBoxGeneratorGeometryForShape, type BoxGeneratorScoop, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
 import type { WorkplaneShape } from "@/types/layerling";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -80,10 +80,15 @@ function mount(walls: BoxGeneratorWall[]) {
       threeRef.current = viewOf(shape);
       render();
     },
+    onScoopsChange: (boxScoops: BoxGeneratorScoop[]) => {
+      shape = boxShape({ boxWalls: shape.boxWalls, boxScoops });
+      threeRef.current = viewOf(shape);
+      render();
+    },
     onDragActiveChange: noteActive,
   }));
   act(render);
-  return { panel: container, walls: () => shape.boxWalls, pick: () => pick, active };
+  return { panel: container, walls: () => shape.boxWalls, scoops: () => shape.boxScoops, pick: () => pick, active };
 }
 
 const all = <T extends HTMLElement>(panel: HTMLElement, id: string) => [...panel.querySelectorAll<T>(`[data-testid="${id}"]`)];
@@ -98,13 +103,16 @@ const click = (element: Element) => act(() => element.dispatchEvent(new MouseEve
 const placeOf = (element: HTMLElement) => ({ x: Number.parseFloat(element.style.left), y: Number.parseFloat(element.style.top) });
 
 describe("box generator, dividers by hand on the box", () => {
-  it("is offered for a box whose dividers are set by hand, not for a lid, the grid or a locked box", () => {
+  it("is offered for a box, with walls to move only when its dividers are set by hand; not for a lid or a locked box", () => {
     expect(boxWallsEditable(boxShape({}))).toBe(true);
     expect(boxWallsEditable(boxShape({ boxPart: "lid" }))).toBe(false);
-    expect(boxWallsEditable(boxShape({ boxDividerMode: undefined }))).toBe(false);
     expect(boxWallsEditable(boxShape({ locked: true }))).toBe(false);
-    const grid = boxShape({ boxDividerMode: undefined });
-    expect(overlayOf(viewOf(grid), grid)).toBeNull();
+    // With the grid's dividers the compartments are there, for their sizes and finger scoops, and no wall has a grip.
+    const grid = boxShape({ boxDividerMode: undefined, boxColumns: 2, boxWalls: [{ dir: "x", at: 30, from: 0, to: 60 }] });
+    const overlay = overlayOf(viewOf(grid), grid)!;
+    expect(overlay.manual).toBe(false);
+    expect(overlay.walls).toHaveLength(0);
+    expect(overlay.compartments).toHaveLength(2);
     expect(overlayOf(viewOf(boxShape({})), null)).toBeNull();
   });
 
@@ -150,5 +158,19 @@ describe("box generator, dividers by hand on the box", () => {
     click(all(panel, "box-walls-overlay-remove")[0]);
     expect(walls()).toEqual([{ dir: "z", at: 60, from: 0, to: 85.2 }]);
     expect(pick()).toBeNull();
+  });
+
+  it("switches the finger scoop of the compartment whose hand button is clicked on and off", () => {
+    const { panel, scoops } = mount([{ dir: "z", at: 60, from: 0, to: 85.2 }]);
+    const buttons = () => all(panel, "box-walls-overlay-scoop");
+    expect(buttons()).toHaveLength(2);
+    const left = () => buttons().find((button) => placeOf(button.closest<HTMLElement>(".box-walls-overlay-compartment")!).x < 198)!;
+    click(left());
+    expect(scoops()).toEqual([{ x: expect.any(Number), z: expect.any(Number), side: "front" }]);
+    expect(scoops()![0].x).toBeLessThan(59);
+    expect(left().getAttribute("aria-pressed")).toBe("true");
+    expect(buttons().filter((button) => button.getAttribute("aria-pressed") === "true")).toHaveLength(1);
+    click(left());
+    expect(scoops()).toEqual([]);
   });
 });
