@@ -145,7 +145,7 @@ import {
 } from "@/lib/teardropGeometry";
 import { DEFAULT_PORT_DEPTH, DEFAULT_PORT_PRESET, normalizePortClearance, normalizePortCorner, normalizePortProfile, PORT_PRESETS } from "@/lib/portGeometry";
 import { DEFAULT_LOFT, loftFieldsFromMeasures, loftFrameSize, normalizeLoftMeasures } from "@/lib/loftGeometry";
-import { DEFAULT_VASE_SIZE, normalizeVaseSettings } from "@/lib/vaseSettings";
+import { DEFAULT_VASE_SIZE, normalizeVaseSettings, vasePurposeChoice } from "@/lib/vaseSettings";
 import {
   DEFAULT_DOVETAIL_CLEARANCE,
   DEFAULT_DOVETAIL_DEPTH,
@@ -233,6 +233,8 @@ import { DEFAULT_PULLEY_BELT_WIDTH, DEFAULT_PULLEY_BORE, DEFAULT_PULLEY_FLANGE, 
 import { DEFAULT_HIRTH_BORE, DEFAULT_HIRTH_DIAMETER, DEFAULT_HIRTH_HEIGHT, DEFAULT_HIRTH_TEETH, hirthRightAngleToothHeight, normalizeHirthBore, normalizeHirthSteepFlank, normalizeHirthTeeth, normalizeHirthToothHeight } from "@/lib/hirthGeometry";
 
 const SHAPE_LABEL_KEYS: Record<string, MessageKey> = {
+  planter: "vase.purposePot",
+  lampshade: "prop.vaseLamp",
   box: "shape.box",
   roundedBox: "shape.roundedBox",
   cylinder: "shape.cylinder",
@@ -386,8 +388,32 @@ export const sbcBoardAsset: ToolbarShapeAsset = {
 };
 
 /**
+ * A plant pot and a lampshade: the vase with another use (its settings' `purpose`), each an entry of its own in the
+ * library right after the vase, so they are found by what one wants to make. They are vases, not kinds of their own:
+ * the body shapes, the drain holes and the socket's carrier come from the vase designer.
+ */
+export const planterAsset: ToolbarShapeAsset = {
+  id: "planter",
+  name: "Plant pot",
+  src: "assets/editor/shape-icons-gray/planter.png",
+  menuIcon: "assets/editor/shape-icons-gray/planter.png",
+  kind: "vase",
+  color: "#b5673c",
+};
+export const lampshadeAsset: ToolbarShapeAsset = {
+  id: "lampshade",
+  name: "Lampshade",
+  src: "assets/editor/shape-icons-gray/lampshade.png",
+  menuIcon: "assets/editor/shape-icons-gray/lampshade.png",
+  kind: "vase",
+  color: "#e9dfc8",
+};
+/** The use a vase's library entry starts it with. */
+const VASE_ASSET_PURPOSES: Record<string, string> = { planter: "topf", lampshade: "lampe" };
+
+/**
  * What the shape library lists: the catalogue, with the name tag, the icon tag and the QR code after the text,
- * and the SBC board after the port opening.
+ * the plant pot and the lampshade after the vase, and the SBC board after the port opening.
  * The double countersink is not listed on its own: it is the countersink with "Both sides" switched on (#621). The
  * kind stays in the catalogue, so bodies that already are one, and the MCP, keep working.
  */
@@ -400,7 +426,7 @@ export const threadInsertLibraryAsset: ToolbarShapeAsset = {
   color: "#b69b46",
 };
 
-export const libraryShapeAssets: ToolbarShapeAsset[] = [threadInsertLibraryAsset, ...toolbarShapeAssets.flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "port" ? [asset, sbcBoardAsset] : asset.id === "doubleCountersink" ? [] : [asset]))];
+export const libraryShapeAssets: ToolbarShapeAsset[] = [threadInsertLibraryAsset, ...toolbarShapeAssets.flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "vase" ? [asset, planterAsset, lampshadeAsset] : asset.id === "port" ? [asset, sbcBoardAsset] : asset.id === "doubleCountersink" ? [] : [asset]))];
 
 /**
  * The colour a new shape of this asset starts with: the asset's own, unless the shape
@@ -1045,6 +1071,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     paint: shape.paint,
     vase: shape.vase,
     vasePartOf: shape.vasePartOf,
+    vaseAssembled: shape.vaseAssembled,
     gridfinityKeyOf: shape.gridfinityKeyOf,
     importedMesh: shape.importedMesh,
     imagePlate: shape.imagePlate,
@@ -1082,7 +1109,12 @@ export function makeShapeFromAsset(
   customization: ShapeCustomization = {},
 ): WorkplaneShape {
   // A flat spring (#1076) starts as a strip on the plate, not in the coil's upright box.
-  const defaults = asset.kind === "spring" && customization.springForm === "flat" ? FLAT_SPRING_DIMENSIONS : shapeAssetDefaultDimensions(asset.kind);
+  // A plant pot or a lampshade: the vase with that use, in the size and with the settings the use starts with.
+  const vasePurpose = asset.kind === "vase" ? VASE_ASSET_PURPOSES[asset.id] : undefined;
+  const vaseStart = vasePurpose ? vasePurposeChoice(normalizeVaseSettings(undefined), vasePurpose, DEFAULT_VASE_SIZE) : null;
+  const defaults = asset.kind === "spring" && customization.springForm === "flat" ? FLAT_SPRING_DIMENSIONS
+    : vaseStart?.size ? { width: vaseStart.size.width, depth: vaseStart.size.width, height: vaseStart.size.height }
+    : shapeAssetDefaultDimensions(asset.kind);
   // Ein Gewinde bekommt seinen Platzbedarf aus Durchmesser und Art. Eine
   // eingetragene Breite waere hier nicht nur ueberfluessig, sondern falsch:
   // sie wuerde spaeter als Zug am Anfasser gelesen und den Durchmesser
@@ -1453,7 +1485,7 @@ export function makeShapeFromAsset(
     knurlDepth: asset.kind === "knurl" ? normalizeKnurlDepth(customization.knurlDepth ?? DEFAULT_KNURL_DEPTH, width) : undefined,
     knurlAngle: asset.kind === "knurl" ? normalizeKnurlAngle(customization.knurlAngle ?? DEFAULT_KNURL_ANGLE) : undefined,
     knurlChamfer: asset.kind === "knurl" ? normalizeKnurlChamfer(customization.knurlChamfer ?? DEFAULT_KNURL_CHAMFER, width, height) : undefined,
-    vase: asset.kind === "vase" ? normalizeVaseSettings(undefined) : undefined,
+    vase: asset.kind === "vase" ? normalizeVaseSettings(vaseStart?.patch) : undefined,
     dovetailNeckWidth: asset.kind === "dovetail" ? normalizeDovetailNeckWidth(customization.dovetailNeckWidth, width) : undefined,
     dovetailClearance: asset.kind === "dovetail" ? normalizeDovetailClearance(customization.dovetailClearance ?? DEFAULT_DOVETAIL_CLEARANCE) : undefined,
     ...(asset.kind === "boxGenerator" ? normalizeBoxGeneratorFields({ width, depth, height }, customization) : {}),

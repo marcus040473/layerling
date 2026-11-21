@@ -11708,6 +11708,87 @@ html[data-theme="dark"] .mesh-compare-actions .secondary {
   margin: 0;
 }
 
+/* The vase's use (vase, plant pot, lampshade): three tiles with a sign each, and under the body shapes a block with
+   what belongs to the use. No colours of their own: the tiles are the designer's, and the block takes the text's
+   colour, thinned, so it follows every theme. */
+.vase-purpose-tiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vase-purpose-tiles button svg {
+  justify-self: center;
+  margin: 4px 0 2px;
+}
+
+.vase-use {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+
+/* "Show assembled": the one button of the vase's panel that is filled, in the accent the chosen tab has, so it is
+   seen at once; pressed in while the parts are put together. */
+.shape-inspector .inspector-action-button.vase-assemble-button {
+  height: 42px;
+  min-height: 42px;
+  color: #ffffff;
+  background: #e0821f;
+  border-color: #c96f12;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.shape-inspector .inspector-action-button.vase-assemble-button:hover:not(:disabled) {
+  color: #ffffff;
+  background: #c96f12;
+  border-color: #a85a0c;
+}
+
+.shape-inspector .inspector-action-button.vase-assemble-button[aria-pressed="true"] {
+  box-shadow: inset 0 2px 5px color-mix(in srgb, #000000 28%, transparent);
+}
+
+/* What the check found when the parts were put together: a green line, or one per collision (they can be long). */
+.shape-inspector .vase-assembly-report {
+  display: grid;
+  gap: 6px;
+  margin: -2px 10px 12px;
+}
+
+.shape-inspector .vase-assembly-report .vase-print-verdict.supports {
+  display: block;
+  border-radius: 8px;
+  line-height: 1.35;
+}
+
+.shape-inspector .vase-assembled-note {
+  margin: -6px 10px 10px;
+  font-weight: 600;
+}
+
+.vase-use-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* One's own picture or text as the pattern: the button to load a picture and the line that says what light and dark do.
+   No colours of its own; the button and the hint bring the theme's. */
+.vase-own-picture {
+  display: grid;
+  gap: 6px;
+}
+
+.vase-own-picture .cylinder-wrap-hint {
+  margin: 0;
+}
+
 .vase-print-line {
   display: flex;
   align-items: center;

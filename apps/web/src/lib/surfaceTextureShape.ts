@@ -280,6 +280,10 @@ export function shapeUnderSurfaceTexture(shape: WorkplaneShape): WorkplaneShape 
  * for the bundle a body and its pattern as a part of its own make, which carries their texture.
  */
 export function offersSurfaceTexture(shape: WorkplaneShape | null | undefined) {
+  // A vase has patterns of its own (the vase designer's Pattern tab), worked out on its wall as it is built; the
+  // texture for any body is slow on a vase's fine mesh, and two ways to a pattern on one body were one too many. A vase
+  // that carries a texture from before keeps the card, to change or remove it.
+  if (shape?.kind === "vase" && !shape.surfaceTexture) return false;
   return Boolean(shape && (shape.groupOperation !== "bundle" || isSurfacePatternBundle(shape)) && !isNonSolidShapeKind(shape.kind));
 }
 

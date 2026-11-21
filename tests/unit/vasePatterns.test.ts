@@ -186,6 +186,26 @@ describe("vase relief patterns", () => {
     }
   });
 
+  it("softens a picture's edges to the grid at Standard too, so a slanted edge is not a row of teeth", () => {
+    // The largest step between two neighbouring points round the vase: an edge finer than the grid is one big step
+    // where it crosses a column and none beside it, which shows as teeth along every slanted edge.
+    const step = (effect: string) => {
+      const mesh = buildVase({ profile: "zylinder", effect, quality: "standard", printFriendly: "nein" });
+      const { segments, rows } = mesh.grid;
+      let most = 0;
+      for (let i = 0; i <= rows; i += 1) {
+        for (let j = 0; j < segments; j += 1) {
+          const a = (i * segments + j) * 3, b = (i * segments + ((j + 1) % segments)) * 3;
+          most = Math.max(most, Math.abs(Math.hypot(mesh.vertices[a], mesh.vertices[a + 1]) - Math.hypot(mesh.vertices[b], mesh.vertices[b + 1])));
+        }
+      }
+      return most;
+    };
+    // Of a relief 1.6 mm deep; softened only a little these were 0.84 and 0.75 mm.
+    expect(step("schuppen")).toBeLessThan(0.68);
+    expect(step("blattfluss")).toBeLessThan(0.6);
+  }, 60000);
+
   it("keeps the settings inside their limits and drops unknown leaves and layouts", () => {
     const p = normalizeParams({ reliefDepth: 40, patternCount: 1, leafSize: 9999, leafShape: "kaktus", leafLayout: "wild", printFriendly: "vielleicht", leafPoints: "x" });
     expect(p.reliefDepth).toBe(6);

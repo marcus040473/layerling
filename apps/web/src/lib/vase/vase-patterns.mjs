@@ -7,6 +7,8 @@
  * read between its points (bilinear), so it is smooth at any size; a leaf is a signed distance field of its outline, so
  * its edge is sharp and round at any size and its dome grows with the distance from the edge. Wisp ribs, the tulip
  * petal and one's own drawn leaf are worked out here.
+ * One's own picture or a text (the family `bild`) is read as the built-in pictures are, from the tile
+ * vase-own-picture.mjs makes of the picture in the settings.
  *
  * Surface coordinates. Around the vase a pattern has a whole number of cells `N` (tiles of a picture), so it closes at
  * 360 degrees without a seam; `cu` counts cells around (0..N), turning along with the vase's twist. Up the vase, `cv`
@@ -27,7 +29,9 @@
  * lower edge of a relief then slopes instead of overhanging; the upper edges stay sharp.
  */
 import { inflateSync } from 'fflate'
+import { ownPicturePlaceholder, ownPictureTile } from './vase-own-picture.mjs'
 import { LEAF_MAPS, PATTERN_MAPS } from './vase-pattern-maps.mjs'
+import { COMPUTED_PATTERNS, computedDetail, computedHeight, isComputedPattern } from './vase-computed-patterns.mjs'
 
 /** The pattern families with their German names (the editor shows its own, translated). */
 export const PATTERNS = {
@@ -44,6 +48,10 @@ export const PATTERNS = {
   kiesel: 'Kiesel',
   adern: 'Blattadern',
   blaetter: 'Blätter',
+  /** One's own picture or a text (vase-own-picture.mjs): the picture is in the settings, `patternImage`. */
+  bild: 'Eigenes Bild oder Text',
+  /** The worked-out families (vase-computed-patterns.mjs): formulas over the wall instead of pictures. */
+  ...COMPUTED_PATTERNS,
 }
 
 /** Leaf shapes; `eigen` takes the outline drawn in `leafPoints`. */
@@ -60,6 +68,14 @@ export const DEFAULT_LEAF_POINTS = Object.freeze([[0, 0.12], [0.18, 0.7], [0.45,
  * of twenty pebbles and one of a single diamond both read the same.
  */
 const MOTIFS_PER_TILE = { blueten: 2, geflecht: 2, waben: 2, wellen: 3, zellen: 5, rautenwelle: 1, blattfluss: 2, schuppen: 2, kiesel: 6, adern: 2 }
+
+/**
+ * The rows a worked-out family stands in, for keeping its size (see reliefField): how high a row is, in cells, and by
+ * how much of a row the rows are shifted so that their borders lie where the pattern has the least to lose - between
+ * two courses of bricks, between two rows of studs. A picture's rows are its tiles.
+ */
+const ROW_PERIOD = { ziegel: 0.5, noppen: Math.sqrt(3) / 2, wabennetz: Math.sqrt(3) / 2, ringe: 0.5, korb: 0.5, strick: 1, gehaemmert: 1, rauschen: 1 }
+const ROW_OFFSET = { noppen: 0.5, wabennetz: 0.5 }
 
 /** Leaf width at 100 % (mm at the widest circumference: four or five large leaves round a vase 90 mm wide). */
 const LEAF_WIDTH_MM = 66
@@ -99,9 +115,17 @@ export function isReliefPattern(effect) {
   return Object.prototype.hasOwnProperty.call(PATTERNS, effect)
 }
 
-/** Whether a family comes from a picture (and so ignores roundness, joints and band width). */
+/** Whether a family comes from a picture (and so ignores roundness, joints and band width): a built-in one, or one's own. */
 export function isPicturePattern(effect) {
-  return Object.prototype.hasOwnProperty.call(PATTERN_MAPS, effect)
+  return effect === 'bild' || Object.prototype.hasOwnProperty.call(PATTERN_MAPS, effect)
+}
+
+/**
+ * The tile a picture family reads its heights from: the family's built-in one, or for `bild` the vase's own picture
+ * (null while it has none, and the wall stays smooth).
+ */
+function pictureOf(p) {
+  return p.effect === 'bild' ? ownPictureTile(p.patternImage) : PATTERN_MAPS[p.effect] ?? null
 }
 
 /** Whether a leaf comes from a picture. */
@@ -112,6 +136,8 @@ export function isPictureLeaf(shape) {
 /** A map's numbers, unpacked once: deflated rows of differences from the left neighbour. */
 const unpacked = new Map()
 function mapValues(entry) {
+  // One's own picture comes as heights already.
+  if (entry.values) return entry.values
   let values = unpacked.get(entry)
   if (values) return values
   const text = atob(entry.data)
@@ -135,10 +161,20 @@ function mapValues(entry) {
  * repeating both ways like the tile.
  */
 const softened = new Map()
+/** The same for one's own pictures, which come and go: kept as long as the picture is. */
+const softenedOwn = new WeakMap()
+// The tile and steps asked for last: every point of a wall reads the same tile at one step or two neighbouring ones.
+let softEntry = null, softLevels = null
 function softValues(entry, level) {
   if (level <= 0) return mapValues(entry)
-  let levels = softened.get(entry)
-  if (!levels) softened.set(entry, (levels = []))
+  if (entry !== softEntry) {
+    const kept = entry.own ? softenedOwn : softened
+    let known = kept.get(entry)
+    if (!known) kept.set(entry, (known = []))
+    softEntry = entry
+    softLevels = known
+  }
+  const levels = softLevels
   let out = levels[level]
   if (out) return out
   const n = entry.size
@@ -188,25 +224,24 @@ function tileHeight(entry, u, v, blur = 0) {
 }
 
 function tileAt(entry, values, u, v) {
+  // Read for every point of the wall, so written out: no lists and no helpers that are made anew per point. The sums
+  // run in the same order as four weights times four rows of four points would.
   const n = entry.size
   const x = frac(u) * n - 0.5
   const y = (1 - frac(v)) * n - 0.5
   const x0 = Math.floor(x), y0 = Math.floor(y)
   const fx = x - x0, fy = y - y0
-  const wrap = (i) => ((i % n) + n) % n
-  const weights = (t) => {
-    const t2 = t * t, t3 = t2 * t
-    return [(-t3 + 2 * t2 - t) / 2, (3 * t3 - 5 * t2 + 2) / 2, (-3 * t3 + 4 * t2 + t) / 2, (t3 - t2) / 2]
-  }
-  const wx = weights(fx), wy = weights(fy)
-  let sum = 0
-  for (let b = 0; b < 4; b++) {
-    const row = wrap(y0 - 1 + b) * n
-    let line = 0
-    for (let a = 0; a < 4; a++) line += wx[a] * values[row + wrap(x0 - 1 + a)]
-    sum += wy[b] * line
-  }
-  return clamp(sum / 255, 0, 1)
+  const fx2 = fx * fx, fx3 = fx2 * fx, fy2 = fy * fy, fy3 = fy2 * fy
+  const wx0 = (-fx3 + 2 * fx2 - fx) / 2, wx1 = (3 * fx3 - 5 * fx2 + 2) / 2, wx2 = (-3 * fx3 + 4 * fx2 + fx) / 2, wx3 = (fx3 - fx2) / 2
+  const wy0 = (-fy3 + 2 * fy2 - fy) / 2, wy1 = (3 * fy3 - 5 * fy2 + 2) / 2, wy2 = (-3 * fy3 + 4 * fy2 + fy) / 2, wy3 = (fy3 - fy2) / 2
+  // x0 and y0 lie from -1 to n - 1: the four points round them wrap at most once.
+  const xa = x0 - 1 < 0 ? x0 - 1 + n : x0 - 1, xb = x0 < 0 ? x0 + n : x0, xc = x0 + 1 >= n ? x0 + 1 - n : x0 + 1, xd = x0 + 2 >= n ? x0 + 2 - n : x0 + 2
+  const ra = (y0 - 1 < 0 ? y0 - 1 + n : y0 - 1) * n, rb = (y0 < 0 ? y0 + n : y0) * n, rc = (y0 + 1 >= n ? y0 + 1 - n : y0 + 1) * n, rd = (y0 + 2 >= n ? y0 + 2 - n : y0 + 2) * n
+  const la = 0 + wx0 * values[ra + xa] + wx1 * values[ra + xb] + wx2 * values[ra + xc] + wx3 * values[ra + xd]
+  const lb = 0 + wx0 * values[rb + xa] + wx1 * values[rb + xb] + wx2 * values[rb + xc] + wx3 * values[rb + xd]
+  const lc = 0 + wx0 * values[rc + xa] + wx1 * values[rc + xb] + wx2 * values[rc + xc] + wx3 * values[rc + xd]
+  const ld = 0 + wx0 * values[rd + xa] + wx1 * values[rd + xb] + wx2 * values[rd + xc] + wx3 * values[rd + xd]
+  return clamp((0 + wy0 * la + wy1 * lb + wy2 * lc + wy3 * ld) / 255, 0, 1)
 }
 
 /** A leaf picture's signed distance (in its board's texels, positive inside) at board point (x, y), 0..1, y down. */
@@ -356,6 +391,9 @@ export function patternDetail(p) {
   if (p.effect === 'tulpenblaetter') return 1.5
   if (p.effect === 'blaetter') return { farn: 6, monstera: 3, ahorn: 3, eiche: 2.5, ginkgo: 2, efeu: 2 }[p.leafShape] ?? 1.5
   if (p.effect === 'adern') return 4
+  // One's own picture or a text: letters and fine lines, as a vein picture has.
+  if (p.effect === 'bild') return 4
+  if (isComputedPattern(p.effect)) return computedDetail(p.effect, p.patternWidth)
   if (isPicturePattern(p.effect)) return 1.5 * (MOTIFS_PER_TILE[p.effect] ?? 1) ** 0.5
   return 1
 }
@@ -484,16 +522,30 @@ function leafRows(p) {
 }
 
 /** The height 0..1 of a family at (cu, cv), in cells; `around` is the count of cells round the vase. */
-export function patternHeight(p, cu, cv, around, fixed = null, blur = 0) {
+export function patternHeight(p, cu, cv, around, fixed = null, blur = 0, middle = null) {
   // `blur`: how far the pattern is softened to the build grid, a Gaussian's width in cells.
+  // `middle`: for one's own picture as a band or put on once, the height (in cells) its middle sits at; null tiles it.
   const lean = (clamp(p.patternTwist, -75, 75) * Math.PI) / 180
   const sheared = cu + Math.tan(lean) * cv
-  const picture = PATTERN_MAPS[p.effect]
+  const picture = pictureOf(p)
   if (picture) {
-    const h = tileHeight(picture, sheared, cv / picture.aspect, blur * picture.size)
+    let v = cv / picture.aspect
+    let h = 0
+    if (middle === null) h = tileHeight(picture, sheared, v, blur * picture.size)
+    else {
+      // One row of the picture: above and below it the wall is the pattern's background. Put on once, the row has
+      // one picture alone, the first of those that fit round the vase.
+      v = (cv - middle) / picture.aspect + 0.5
+      const u = cu + Math.tan(lean) * (cv - middle)
+      if (v > 0 && v < 1 && (p.patternFit !== 'einmal' || u - Math.floor(u / around) * around < 1)) h = tileHeight(picture, u, v, blur * picture.size)
+    }
     return p.patternInvert === 'ja' ? 1 - h : h
   }
   if (p.effect === 'wisp') return wisp(sheared, cv, Math.round(p.patternGroup), p.patternWidth, blur)
+  if (isComputedPattern(p.effect)) {
+    const h = computedHeight(p.effect, sheared, cv, around, p.patternWidth, blur)
+    return p.patternInvert === 'ja' ? 1 - h : h
+  }
   if (p.effect === 'tulpenblaetter') {
     // Long tulip leaves rising from the bottom in a spiral, overlapping at the sides, bent like flames by the lean.
     return leavesAt(cu, cv, around, { shape: 'tulpe', aspect: TULIP.aspect, width: TULIP.width, overlap: p.leafOverlap / 100 + TULIP.overlap, layout: 'spirale', tilt: lean, curve: 1, withVeins: false, points: null, step: OVERLAP_STEP, bend: Math.sign(p.patternTwist) * Math.min(0.8, Math.abs(p.patternTwist) / 45), fixed })
@@ -562,11 +614,28 @@ function leafRaster(p, around, v0, v1, cellMm, fixedFor = null, shapeKey = '') {
 }
 
 /**
+ * A function of the height alone that remembers its last answer: a vase is built and checked a row at a time, so all
+ * the points of a row ask for the same height one after another.
+ */
+export function perHeight(f) {
+  let last = NaN, value = 0
+  return (z) => {
+    if (z !== last) {
+      value = f(z)
+      last = z
+    }
+    return value
+  }
+}
+
+/**
  * The depth (mm, inwards) of a relief pattern on a vase: `shape` from vaseShape, `zone(z)` the height range's mask.
  * Returns { depthAt(theta, z, base), around, cellAt(z) } - cellAt gives a cell's size in mm at height z.
  */
-export function reliefField(p, shape, zone) {
+export function reliefField(p, shape, zoneOf) {
   const { H, R, rotation, twistT } = shape
+  const zone = perHeight(zoneOf)
+  const turned = perHeight((z) => rotation(twistT(z)))
   const mean = shape.section?.mean ?? 1
   // Conformal height: cells up the contour per mm, from a table of 1024 steps.
   const steps = 1024
@@ -582,19 +651,23 @@ export function reliefField(p, shape, zone) {
   // many round as fit there; otherwise conformal cells that shrink with the circumference.
   const leafy = p.effect === 'blaetter' || p.effect === 'tulpenblaetter'
   const keepSize = leafy && p.leafFixed === 'ja'
+  // The other families can keep their size, too (not wisp ribs, which run up the vase in one piece): cells of one size
+  // all the way up, and each row of the pattern as many round as fit at its height (see `keptHeight` below).
+  const sizeKept = !leafy && p.leafFixed === 'ja' && p.effect !== 'wisp'
   const cellMm = maxC / around
   const V = new Float64Array(steps + 1)
   for (let k = 1; k <= steps; k++) {
     const z0 = ((k - 1) / steps) * H, z1 = (k / steps) * H
     const ds = Math.hypot(z1 - z0, R(z1) - R(z0))
     const c = Math.max(1e-3, (circumference[k] + circumference[k - 1]) / 2)
-    V[k] = V[k - 1] + (keepSize ? ds / cellMm : (ds * around) / (c * stretch))
+    V[k] = V[k - 1] + (keepSize ? ds / cellMm : sizeKept ? ds / (cellMm * stretch) : (ds * around) / (c * stretch))
   }
-  const vAt = (z) => {
+  const vOf = (z) => {
     const x = clamp(z / H, 0, 1) * steps
     const k = Math.min(steps - 1, Math.floor(x))
     return V[k] + (V[k + 1] - V[k]) * (x - k)
   }
+  const vAt = perHeight(vOf)
   // Leaves start their first row at the bottom of the range, so the lowest leaves sit on its border.
   const start = leafy ? vAt((p.zoneFrom / 100) * H) : 0
   // The circumference (in cells) at a height given in cells up from the start: V looked up backwards.
@@ -611,27 +684,65 @@ export function reliefField(p, shape, zone) {
   const amount = Math.max(0, p.reliefDepth)
   // A pattern softened to the build grid's spacing (about the columns' spacing in mm per quality), in cells where the
   // cell has the size it has at that height.
-  const picture = PATTERN_MAPS[p.effect]
+  const picture = pictureOf(p)
+  // One's own picture as a band or put on once sits with its middle at the middle of the height range (by height, not by cells: a
+  // narrow neck has many small cells, and their middle would lie far up).
+  const once = p.effect === 'bild' && p.patternFit !== 'kacheln' ? vAt(((p.zoneFrom + p.zoneTo) / 200) * H) : null
   let gridMm = { entwurf: 1.17, standard: 0.7, fein: 0.45 }[p.quality] ?? 0.7
-  // A picture's edges: fine (for printing) softens them fully to its grid; the quicker qualities only a little, so they
-  // stay crisp. Wisp ribs fade by half the grid in every quality.
-  const soften = p.effect === 'wisp' ? 0.5 : p.quality === 'fein' ? 0.55 : 0.3
+  // A picture's edges are softened fully to the grid in every quality. The quicker qualities used to soften them only a
+  // little, to keep them crisp: but an edge finer than the grid that crosses it at a slant comes out as a row of teeth
+  // (seen on every leaf edge and hexagon side at Standard). Wisp ribs fade by half the grid.
+  const soften = p.effect === 'wisp' ? 0.5 : 0.55
+  const computed = isComputedPattern(p.effect)
+  // (Not remembered per height: it follows the grid's spacing, which the build sets later.)
   const blurAt = (z) => {
-    if (!picture && p.effect !== 'wisp') return 0
+    if (!picture && !computed && p.effect !== 'wisp') return 0
     const x = clamp(z / H, 0, 1) * steps
     const k = Math.min(steps - 1, Math.floor(x))
     const c = circumference[k] + (circumference[k + 1] - circumference[k]) * (x - k)
-    return (soften * gridMm * around) / Math.max(1e-3, c)
+    return sizeKept ? (soften * gridMm) / cellMm : (soften * gridMm * around) / Math.max(1e-3, c)
   }
   // Leaves look at many leaves around each point: they are worked out once on a fine raster over the height range and
   // read from it between its points, which makes building and checking a leaf vase many times faster.
-  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : (cu, cv, z) => patternHeight(p, cu, cv, around, null, blurAt(z))
+  // One's own picture faces the front: the middle of one picture lies there (three quarters of the way round from
+  // where the cells start), so a picture put on once, or a word, is seen when the vase is looked at from the front.
+  const front = p.effect === 'bild' ? 0.75 * around - 0.5 : 0
+  // A family that keeps its size: the pattern stands in rows (a row of bricks, of studs, of a picture's tiles), and each
+  // row has as many cells round the vase as fit at its height, a whole number, so it closes without a seam. Where two
+  // rows with different counts meet, one is faded into the other over a narrow band: there the pattern cannot fit
+  // itself, and a soft join reads better than a step.
+  const rowPeriod = picture ? picture.aspect : (ROW_PERIOD[p.effect] ?? 1)
+  const rowOrigin = once !== null ? once - rowPeriod / 2 : -(ROW_OFFSET[p.effect] ?? 0) * rowPeriod
+  const rowCounts = new Map()
+  const countOfRow = (r) => {
+    let n = rowCounts.get(r)
+    if (n === undefined) rowCounts.set(r, (n = Math.max(3, Math.round(ringAt(rowOrigin + (r + 0.5) * rowPeriod)))))
+    return n
+  }
+  const inRow = (f, cv, r, blur) => {
+    const n = countOfRow(r)
+    return patternHeight(p, f * n - (p.effect === 'bild' ? 0.75 * n - 0.5 : 0), cv, n, null, blur, once)
+  }
+  const ROW_JOIN = 0.16
+  const keptHeight = (cu, cv, z) => {
+    const f = cu / around
+    const x = (cv - rowOrigin) / rowPeriod
+    const r = Math.floor(x), t = x - r
+    const blur = blurAt(z)
+    const h = inRow(f, cv, r, blur)
+    // (A picture put on once or as a band is one row: nothing to join it to.)
+    if (once !== null) return h
+    if (t < ROW_JOIN && countOfRow(r - 1) !== countOfRow(r)) return h + (inRow(f, cv, r - 1, blur) - h) * 0.5 * (1 - smooth(0, ROW_JOIN, t))
+    if (t > 1 - ROW_JOIN && countOfRow(r + 1) !== countOfRow(r)) return h + (inRow(f, cv, r + 1, blur) - h) * 0.5 * (1 - smooth(0, ROW_JOIN, 1 - t))
+    return h
+  }
+  const heightAt = leafy ? leafRaster(p, around, vAt((p.zoneFrom / 100) * H) - start, vAt((p.zoneTo / 100) * H) - start, cellMm, fixedFor, shapeKey) : sizeKept ? keptHeight : (cu, cv, z) => patternHeight(p, cu - front, cv, around, null, blurAt(z), once)
   const raw = (theta, z, base) => {
     const m = zone(z)
     if (m <= 0) return 0
     const depth = Math.min(amount, base / 3) * m
     if (depth <= 0) return 0
-    const turn = theta - rotation(twistT(z))
+    const turn = theta - turned(z)
     const cu = frac(turn / TAU) * around
     const h = heightAt(cu, vAt(z) - start, z)
     return depth * (1 - h)
@@ -657,7 +768,7 @@ export function reliefField(p, shape, zone) {
     let before = 0
     for (let r = 0; r < rows; r++) {
       const z = Math.min(H, r * stepZ)
-      const turn = turnAt(z) - turnAt(0)
+      const turn = turnUp(z)
       // How far the point straight below lies in the row below, in columns.
       const back = r > 0 ? ((turn - before) / TAU) * columns : 0
       const zBelow = Math.max(0, z - stepZ)
@@ -689,7 +800,7 @@ export function reliefField(p, shape, zone) {
     if (!friendlyRaster) buildFriendly()
     const { values, rows, columns, stepZ, top } = friendlyRaster
     if (z > top) return raw(theta, z, base)
-    const x = frac((theta - (turnAt(z) - turnAt(0))) / TAU) * columns
+    const x = frac((theta - turnUp(z)) / TAU) * columns
     const y = Math.min(rows - 1, Math.max(0, z / stepZ))
     const x0 = Math.floor(x), y0 = Math.floor(y)
     const fx = x - x0, fy = y - y0
@@ -701,6 +812,7 @@ export function reliefField(p, shape, zone) {
     return Math.max(raw(theta, z, base), (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy)
   }
   const cellAt = (z) => {
+    if (sizeKept) return cellMm
     const x = clamp(z / H, 0, 1) * steps
     const k = Math.min(steps, Math.round(x))
     return circumference[k] / around
@@ -715,9 +827,13 @@ export function reliefField(p, shape, zone) {
   }
   // The angle a line of the pattern has turned to at height z (the vase's twist and the pattern's lean): the build turns
   // its grid along, so slanted ribs and edges run along the grid instead of across it, where they came out beaded.
-  const shear = leafy ? 0 : Math.tan((clamp(p.patternTwist, -75, 75) * Math.PI) / 180)
-  const turnAt = (z) => rotation(twistT(z)) - (TAU * shear * (vAt(z) - start)) / around
-  return { depthAt, around, cellAt, setGrid, turnAt, maxCircumference: maxC, detail: patternDetail(p) }
+  // (A family that keeps its size has another count of cells in every row: its lines do not turn as one, and the grid is left upright.)
+  const shear = leafy || sizeKept ? 0 : Math.tan((clamp(p.patternTwist, -75, 75) * Math.PI) / 180)
+  const turnAt = (z) => rotation(twistT(z)) - (TAU * shear * (vOf(z) - start)) / around
+  // The same from the bottom up, as the build's grid and the print-friendly raster turn.
+  let bottomTurn = null
+  const turnUp = perHeight((z) => turnAt(z) - (bottomTurn ??= turnAt(0)))
+  return { depthAt, around, cellAt, setGrid, turnAt, turnUp, maxCircumference: maxC, detail: patternDetail(p) }
 }
 
 /** The look of the vase's older surfaces (grooves, stripes, Voronoi joints, facets) for the gallery's tiles. */
@@ -747,7 +863,9 @@ export function patternPreview(p, columns = 48, rows = 48, cellsAcross = null) {
     for (let i = 0; i < columns; i++) {
       const cu = ((i + 0.5) / columns) * around
       const cv = ((j + 0.5) / rows) * around / stretch * (rows / columns)
-      out[j * columns + i] = isReliefPattern(p.effect) ? patternHeight(p, cu, cv, around) : classicPreview(p.effect, cu, cv, around)
+      // One's own picture: the vase's, or while it has none a small picture that stands for it.
+      if (p.effect === 'bild' && !ownPictureTile(p.patternImage)) out[j * columns + i] = ownPicturePlaceholder((i + 0.5) / columns, (j + 0.5) / rows)
+      else out[j * columns + i] = isReliefPattern(p.effect) ? patternHeight(p, cu, cv, around) : classicPreview(p.effect, cu, cv, around)
     }
   }
   return out

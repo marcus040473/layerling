@@ -277,6 +277,7 @@ import { useToolForBody } from "@/lib/toolSidebar";
 import { normalizeSurfaceTextureOwnImage, SURFACE_TEXTURE_OWN_IMAGE_SIZE } from "@/lib/surfaceTextureImages";
 import { SURFACE_TEXT_FONTS, surfaceTextOutline } from "@/lib/surfaceTextOutline";
 import { canChangeSurfaceTexture, canTextureSurface, isSurfacePatternBundle, offersSurfaceTexture, offersSurfaceTextureMask, rememberPatternColor, sceneWithSurfaceBody, shapeUnderSurfaceTexture, surfaceTextureEntry, surfaceTextureGoldShape, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureResultShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, surfaceTextureLayersToMake, surfaceTextureLayerPlaced, mergedSurfaceTextureOutcome, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
+import { vaseSettingsFromRequest } from "@/lib/vaseRelief";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
@@ -13767,16 +13768,27 @@ export function LayerlingEditor({
    * print; the ones laid out for it before give way, so changed settings come out new. Returns the new parts
    * and the kinds asked for that this vase does not allow.
    */
-  const layOutVaseAccessories = useCallback((vaseId: string) => {
-    const { shapes, parts, missing } = sceneWithVaseAccessories(shapesRef.current, vaseId, (vase, accessory) => `${displayShapeName(vase)} – ${vaseAccessoryName(accessory)}`);
+  const [vaseAssemblyReport, setVaseAssemblyReport] = useState<{ vaseId: string; lines: string[] } | null>(null);
+  const layOutVaseAccessories = useCallback((vaseId: string, assembled = false) => {
+    const before = shapesRef.current;
+    const { shapes, parts, missing, collisions } = sceneWithVaseAccessories(before, vaseId, (vase, accessory) => `${displayShapeName(vase)} – ${vaseAccessoryName(accessory)}`, assembled);
+    // Put together, the parts are checked against the vase and one another: what collides is said, in the notice
+    // and in the vase's panel for as long as they stay put together.
+    const vaseName = displayShapeName(before.find((shape) => shape.id === vaseId) ?? { name: "" } as WorkplaneShape);
+    const collisionLines = (collisions ?? []).map(({ a, b }) => t("vase.assemblyCollision", { a: a ? vaseAccessoryName(a) : vaseName, b: b ? vaseAccessoryName(b) : vaseName }));
+    setVaseAssemblyReport(assembled && parts.length ? { vaseId, lines: collisionLines } : null);
     // Asked for but not possible with this vase (an insert through a narrow neck): said, not left out silently.
     const missingText = missing.length ? t("status.vaseAccessoriesMissing", { parts: missing.map(vaseAccessoryKindName).join(", ") }) : "";
     if (!parts.length) {
-      setNotice(missingText || t("status.vaseNoAccessories"));
+      // (A vase that stood on parts it no longer has is set down again.)
+      if (shapes !== before) commitShapes(shapes, vaseId, missingText || t("status.vaseNoAccessories"));
+      else setNotice(missingText || t("status.vaseNoAccessories"));
       return { parts, missing };
     }
-    commitShapes(shapes, parts.map((part) => part.id), [t("status.vaseAccessoriesMade", { count: parts.length }), missingText].filter(Boolean).join(" "));
-    return { parts, missing };
+    // Put together, the vase stays selected: its panel says so and offers to lay the parts out for printing again.
+    if (assembled) commitShapes(shapes, vaseId, [t("status.vaseAssembled", { count: parts.length }), collisionLines.length ? collisionLines.join(" ") : t("vase.assemblyFits"), missingText].filter(Boolean).join(" "));
+    else commitShapes(shapes, parts.map((part) => part.id), [t("status.vaseAccessoriesMade", { count: parts.length }), missingText].filter(Boolean).join(" "));
+    return { parts, missing, ...(assembled ? { collisions: (collisions ?? []).map(({ a, b, mm }) => ({ a: a ? vaseAccessoryName(a) : vaseName, b: b ? vaseAccessoryName(b) : vaseName, overlapMm: mm })) } : {}) };
   }, [commitShapes]);
 
   /** The selected name tag as its panel shows it: words, font and layers read from its layers as they stand (#215). */
@@ -14731,7 +14743,7 @@ export function LayerlingEditor({
           if (shape.kind === "vase") {
             const requested = parseVaseSettingsInput(params.vase);
             if (params.vase !== undefined && !requested) throw new Error("vase must be an object of vase settings, or its JSON text");
-            shape = { ...shape, ...vaseShapePatch(shape, normalizeVaseSettings({ ...shape.vase, ...requested })) };
+            shape = { ...shape, ...vaseShapePatch(shape, normalizeVaseSettings(vaseSettingsFromRequest(requested, shape.vase))) };
           }
           if (shape.kind === "gridfinity") {
             shape = { ...shape, ...mcpGridfinityPatch(params) };
@@ -14766,9 +14778,9 @@ export function LayerlingEditor({
           return { object: mcpShapeSummary(withScrewHoles) };
         }
         commitShapes([...currentShapes(), committedShape], committedShape.id, t("status.shapeAddedMcp", { name: displayShapeName(committedShape) }));
-        if (committedShape.kind === "vase" && params.vaseParts === true) {
-          const { parts, missing } = layOutVaseAccessories(committedShape.id);
-          return { object: mcpShapeSummary(committedShape), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}) };
+        if (committedShape.kind === "vase" && (params.vaseParts === true || params.vaseAssembled === true)) {
+          const { parts, missing, collisions } = layOutVaseAccessories(committedShape.id, params.vaseAssembled === true);
+          return { object: mcpShapeSummary(committedShape), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}), ...(collisions ? { collisions } : {}) };
         }
         if (params.gridfinityKeys === true) {
           const made = await makeSwallowtailKeys(committedShape.id);
@@ -14918,7 +14930,7 @@ export function LayerlingEditor({
           const requested = parseVaseSettingsInput(params.vase);
           if (!requested) throw new Error("vase must be an object of vase settings, or its JSON text");
           const withSettings = { ...target, ...patch };
-          Object.assign(patch, vaseShapePatch({ width: shapeWidth(withSettings), depth: shapeDepth(withSettings), height: withSettings.height }, normalizeVaseSettings({ ...target.vase, ...requested })));
+          Object.assign(patch, vaseShapePatch({ width: shapeWidth(withSettings), depth: shapeDepth(withSettings), height: withSettings.height }, normalizeVaseSettings(vaseSettingsFromRequest(requested, target.vase))));
         }
         if (target.kind === "gridfinity") Object.assign(patch, mcpGridfinityPatch(params));
         if (target.kind === "gridfinity" && params.gridfinityLabelFont !== undefined) patch.gridfinityLabelFont = mcpGridfinityLabelFont(params.gridfinityLabelFont);
@@ -15089,9 +15101,9 @@ export function LayerlingEditor({
             commitShapes(currentShapes().map((shape) => shape.id === target.id ? rebuilt : shape), target.id, t("status.revolveUpdated"));
           }
         }
-        if (updated.kind === "vase" && params.vaseParts === true) {
-          const { parts, missing } = layOutVaseAccessories(updated.id);
-          return { object: mcpShapeSummary(updated), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}) };
+        if (updated.kind === "vase" && (params.vaseParts === true || params.vaseAssembled === true)) {
+          const { parts, missing, collisions } = layOutVaseAccessories(updated.id, params.vaseAssembled === true);
+          return { object: mcpShapeSummary(updated), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}), ...(collisions ? { collisions } : {}) };
         }
         // The plate is gone after a split (#1388): its pieces come back as objects, their keys as parts.
         if (params.gridfinitySplit === true) {
@@ -20883,6 +20895,8 @@ export function LayerlingEditor({
           onSurfaceRegionDraw={selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) ? drawSurfaceRegion : undefined}
           onSurfaceRegionLasso={surfaceRegionLasso}
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
+          onVaseAssembled={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id, true) : undefined}
+          vaseAssemblyReport={selectedShape && vaseAssemblyReport?.vaseId === selectedShape.id ? vaseAssemblyReport.lines : undefined}
           onMakeBoxLid={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLid(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
           onBoltSplit={selectedShapes.length === 1 && selectedShape && boltSplitFits(selectedShape) && !historyViewState ? (pins, filament) => void splitBoltForPrint(selectedShape.id, { pins, filament }) : undefined}

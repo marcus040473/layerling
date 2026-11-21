@@ -1030,6 +1030,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     (a.paint === b.paint || JSON.stringify(a.paint ?? null) === JSON.stringify(b.paint ?? null)) &&
     vaseSettingsEqual(a.vase, b.vase) &&
     a.vasePartOf === b.vasePartOf &&
+    a.vaseAssembled === b.vaseAssembled &&
     a.gridfinityKeyOf === b.gridfinityKeyOf &&
     a.textRadius === b.textRadius &&
     a.textSize === b.textSize &&
