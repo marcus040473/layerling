@@ -159,6 +159,34 @@ describe("box generator, dividers by hand", () => {
     expect(boxWallDragged(wall, "to", 11.1, 0, room, [{ dir: "z", at: 72, from: 0, to: 80 }])).toEqual({ dir: "x", at: 40, from: 10, to: 72 });
     // A wall that does not reach as far as this one stands is not landed on.
     expect(boxWallDragged(wall, "to", 11.1, 0, room, [{ dir: "z", at: 72, from: 50, to: 80 }])).toEqual({ dir: "x", at: 40, from: 10, to: 71 });
-    expect(boxWallDragged(wall, "from", 500, 0, room, [])).toEqual({ dir: "x", at: 40, from: 58, to: 60 });
+    // An end pulled past the other one: the wall then runs on from there.
+    expect(boxWallDragged(wall, "from", 500, 0, room, [])).toEqual({ dir: "x", at: 40, from: 60, to: 100 });
+  });
+
+  it("sets a wall at a slant when an end is pulled off its line, and keeps it straight while the end stays near the line", () => {
+    const room = { width: 100, depth: 80 };
+    const wall = { dir: "x" as const, at: 40, from: 10, to: 60 };
+    expect(boxWallDragged(wall, "to", 20, 30.2, room, [])).toEqual({ dir: "x", at: 40, from: 10, to: 80, slant: 30 });
+    // 4 mm off on a wall of 70 mm is a shaky hand, not a slant; with nothing catching (Alt) it is taken as it comes.
+    expect(boxWallDragged(wall, "to", 20, 4, room, [])).toEqual({ dir: "x", at: 40, from: 10, to: 80 });
+    expect(boxWallDragged(wall, "to", 20, 4, room, [], 0.1, true)).toEqual({ dir: "x", at: 40, from: 10, to: 80, slant: 4 });
+    // Pulled further along the depth than the width, it is a wall along the depth; back on the line it is straight again.
+    expect(boxWallDragged(wall, "to", -40, 30, room, [])).toEqual({ dir: "z", at: 10, from: 40, to: 70, slant: 10 });
+    const slanted = { dir: "x" as const, at: 40, from: 10, to: 80, slant: 30 };
+    expect(boxWallDragged(slanted, "to", 0, -28, room, [])).toEqual({ dir: "x", at: 40, from: 10, to: 80 });
+    // Moved as a whole it keeps its slant and stays inside the room.
+    expect(boxWallDragged(slanted, "move", 500, 500, room, [])).toEqual({ dir: "x", at: 50, from: 30, to: 100, slant: 30 });
+  });
+
+  it("offers the slant of the picked wall as a number", () => {
+    const { panel, shape } = mount({ boxDividerMode: "manual", boxWalls: [{ dir: "x", at: 20, from: 0, to: 60, slant: 30 }] });
+    pointer(one(panel, "box-walls-wall"), "pointerdown", 30, 35);
+    pointer(one(panel, "box-walls-plan"), "pointerup", 30, 35);
+    expect(names(panel)).toContain("Slant");
+    // The slanted wall is drawn from its beginning to its end, 1.6 mm wide square to its run.
+    expect(panel.querySelector(".box-walls-plan-wall")!.getAttribute("points")!.split(" ")).toHaveLength(4);
+    expect(shape().boxWalls).toEqual([{ dir: "x", at: 20, from: 0, to: 60, slant: 30 }]);
+    click(one(panel, "box-walls-turn"));
+    expect(shape().boxWalls).toEqual([{ dir: "z", at: 45, from: 5, to: 65, slant: -30 }]);
   });
 });

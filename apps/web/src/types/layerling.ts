@@ -460,7 +460,7 @@ export type ShapeCustomization = {
    * the back of the inside (see BoxGeneratorWall in boxGeneratorGeometry.ts).
    */
   boxDividerMode?: "grid" | "manual";
-  boxWalls?: { dir: "x" | "z"; at: number; from: number; to: number }[];
+  boxWalls?: { dir: "x" | "z"; at: number; from: number; to: number; slant?: number }[];
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid";
   boxLidStyle?: "restOn" | "overlap" | "plug";
@@ -1483,7 +1483,7 @@ export type WorkplaneShape = {
    * the back of the inside (see BoxGeneratorWall in boxGeneratorGeometry.ts).
    */
   boxDividerMode?: "grid" | "manual";
-  boxWalls?: { dir: "x" | "z"; at: number; from: number; to: number }[];
+  boxWalls?: { dir: "x" | "z"; at: number; from: number; to: number; slant?: number }[];
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid";
   boxLidStyle?: "restOn" | "overlap" | "plug";

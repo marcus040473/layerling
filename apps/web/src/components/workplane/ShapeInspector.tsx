@@ -225,6 +225,8 @@ import {
   boxGeneratorIssues,
   boxGeneratorGridWalls,
   boxGeneratorSplitWall,
+  boxGeneratorWallEnds,
+  boxGeneratorWallFromEnds,
   boxGeneratorWallRoom,
   MAX_BOX_GENERATOR_WALLS,
   type BoxGeneratorWall,
@@ -8758,15 +8760,15 @@ function BoxWallsCard({
     write([...walls, boxGeneratorSplitWall(target, dir, room, box.boxDivider)]);
     setPick({ type: "wall", index: walls.length });
   };
-  // Turned about its middle, as long as before where the room allows it.
+  // Turned a quarter about its middle, and pushed back inside where the room is too small for it.
   const turn = (index: number) => {
-    const current = walls[index];
-    const middle = (current.from + current.to) / 2;
-    const run = current.dir === "x" ? room.depth : room.width;
-    const half = Math.min((current.to - current.from) / 2, run / 2);
-    const start = clamp(current.at - half, 0, Math.max(0, run - 2 * half));
+    const [a, b] = boxGeneratorWallEnds(walls[index]);
+    const middle = { x: clamp((a.x + b.x) / 2, 0, room.width), z: clamp((a.z + b.z) / 2, 0, room.depth) };
+    const half = { x: -(b.z - a.z) / 2, z: (b.x - a.x) / 2 };
+    const fit = Math.min(1, half.x ? Math.min(middle.x, room.width - middle.x) / Math.abs(half.x) : 1, half.z ? Math.min(middle.z, room.depth - middle.z) / Math.abs(half.z) : 1);
     const round = (value: number) => Math.round(value * 100) / 100;
-    change(index, { dir: current.dir === "x" ? "z" : "x", at: round(clamp(middle, 0, current.dir === "x" ? room.width : room.depth)), from: round(start), to: round(start + 2 * half) });
+    const end = (sign: number) => ({ x: round(middle.x + sign * half.x * fit), z: round(middle.z + sign * half.z * fit) });
+    change(index, boxGeneratorWallFromEnds(end(-1), end(1)));
   };
   const full = walls.length >= MAX_BOX_GENERATOR_WALLS;
   const properties: ShapePropertyConfig[] = [];
@@ -8781,6 +8783,21 @@ function BoxWallsCard({
       { id: "boxWallAt", label: t(wall.dir === "x" ? "prop.boxWallFromBack" : "prop.boxWallFromLeft"), value: clamp(wall.at, 0, across), min: 0, max: round(across), step: 0.1, onChange: (value) => change(index, { ...wall, at: round(clamp(value, 0, across)) }) },
       { id: "boxWallStart", label: t("prop.boxWallStart"), value: from, min: 0, max: round(Math.max(0, to - BOX_WALLS_PLAN_MIN_LENGTH)), step: 0.1, hint: t(wall.dir === "x" ? "boxGenerator.wallMeasuredLeft" : "boxGenerator.wallMeasuredBack"), onChange: (value) => change(index, { ...wall, from: round(clamp(value, 0, to - BOX_WALLS_PLAN_MIN_LENGTH)), to }) },
       { id: "boxWallEnd", label: t("prop.boxWallEnd"), value: to, min: round(Math.min(run, from + BOX_WALLS_PLAN_MIN_LENGTH)), max: round(run), step: 0.1, onChange: (value) => change(index, { ...wall, from, to: round(clamp(value, from + BOX_WALLS_PLAN_MIN_LENGTH, run)) }) },
+      // At a slant: how far the end lies across from the beginning, as far as the room goes; 0 is straight.
+      {
+        id: "boxWallSlant",
+        label: t("prop.boxWallSlant"),
+        value: clamp(wall.slant ?? 0, -clamp(wall.at, 0, across), across - clamp(wall.at, 0, across)),
+        min: -round(clamp(wall.at, 0, across)),
+        max: round(across - clamp(wall.at, 0, across)),
+        step: 0.5,
+        hint: t(wall.dir === "x" ? "boxGenerator.wallSlantFront" : "boxGenerator.wallSlantRight"),
+        onChange: (value) => {
+          const slant = round(clamp(value, -wall.at, across - wall.at));
+          const { slant: _slant, ...straight } = wall;
+          change(index, slant === 0 ? straight : { ...straight, slant });
+        },
+      },
     );
   }
   const plain = (value: number) => String(Math.round(value * 10) / 10);

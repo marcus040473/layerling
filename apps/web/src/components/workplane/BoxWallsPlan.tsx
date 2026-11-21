@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import type { BoxGeneratorCompartment, BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallQuad, type BoxGeneratorCompartment, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
 
 /*
  * The box generator's dividers set by hand, drawn from above: the inside of the box with its compartments and walls, the
@@ -24,30 +24,40 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 const stepped = (value: number, step: number) => Math.round(value / step) * step;
 
 /**
- * A wall after it was dragged by `dx`, `dz` mm: moved as a whole ("move") or with one end pulled ("from", "to"). It
- * stays inside the room, moves in steps, and an end lands on a side of the room or on the middle of a wall that crosses
- * its run when it comes near.
+ * A wall after it was dragged by `dx`, `dz` mm: moved as a whole ("move") or with one end pulled to where the pointer is
+ * ("from", "to"). It stays inside the room and moves in steps. A pulled end lands on a side of the room or on the middle
+ * of a straight wall when it comes near, and may leave the wall's line, which sets the wall at a slant; while it stays
+ * near that line (within 3 mm or an eighth of the wall's length) the wall stays straight. With `free` nothing catches.
  */
-export function boxWallDragged(wall: BoxGeneratorWall, part: "move" | "from" | "to", dx: number, dz: number, room: { width: number; depth: number }, others: readonly BoxGeneratorWall[], step = STEP): BoxGeneratorWall {
-  const run = wall.dir === "x" ? room.width : room.depth;
-  const across = wall.dir === "x" ? room.depth : room.width;
-  const alongMove = wall.dir === "x" ? dx : dz;
-  const acrossMove = wall.dir === "x" ? dz : dx;
-  const round = (value: number) => Math.round(value * 1000) / 1000;
-  const from = clamp(wall.from, 0, run);
-  const to = clamp(wall.to, 0, run);
+export function boxWallDragged(wall: BoxGeneratorWall, part: "move" | "from" | "to", dx: number, dz: number, room: { width: number; depth: number }, others: readonly BoxGeneratorWall[], step = STEP, free = false): BoxGeneratorWall {
+  const [a, b] = boxGeneratorWallEnds(wall);
   if (part === "move") {
-    const shift = clamp(stepped(alongMove, step), -from, run - to);
-    return { dir: wall.dir, at: round(clamp(stepped(wall.at + acrossMove, step), 0, across)), from: round(from + shift), to: round(to + shift) };
+    const lowX = Math.min(a.x, b.x);
+    const lowZ = Math.min(a.z, b.z);
+    // The beginning lands on the step grid, so a wall typed in at an odd place comes back onto it.
+    const moveX = clamp(stepped(a.x + dx, step) - a.x, -lowX, Math.max(-lowX, room.width - Math.max(a.x, b.x)));
+    const moveZ = clamp(stepped(a.z + dz, step) - a.z, -lowZ, Math.max(-lowZ, room.depth - Math.max(a.z, b.z)));
+    return boxGeneratorWallFromEnds({ x: a.x + moveX, z: a.z + moveZ }, { x: b.x + moveX, z: b.z + moveZ });
   }
-  const stops = [0, run, ...others.filter((other) => other.dir !== wall.dir && wall.at >= other.from - CATCH && wall.at <= other.to + CATCH).map((other) => other.at)];
-  const land = (value: number) => {
+  const fixed = part === "from" ? b : a;
+  const pulled = part === "from" ? a : b;
+  const target = { x: clamp(pulled.x + dx, 0, room.width), z: clamp(pulled.z + dz, 0, room.depth) };
+  const land = (value: number, limit: number, crossing: BoxGeneratorWall["dir"], across: number) => {
+    if (free) return stepped(value, step);
+    const stops = [0, limit, ...others.filter((other) => other.dir === crossing && !other.slant && across >= other.from - CATCH && across <= other.to + CATCH).map((other) => other.at)];
     const near = stops.reduce((best, stop) => (Math.abs(stop - value) < Math.abs(best - value) ? stop : best), stops[0]);
-    return Math.abs(near - value) <= CATCH ? near : stepped(value, step);
+    return Math.abs(near - value) <= CATCH ? near : clamp(stepped(value, step), 0, limit);
   };
-  return part === "from"
-    ? { dir: wall.dir, at: wall.at, from: round(clamp(land(from + alongMove), 0, to - BOX_WALLS_PLAN_MIN_LENGTH)), to: round(to) }
-    : { dir: wall.dir, at: wall.at, from: round(from), to: round(clamp(land(to + alongMove), from + BOX_WALLS_PLAN_MIN_LENGTH, run)) };
+  const next = { x: land(target.x, room.width, "z", target.z), z: land(target.z, room.depth, "x", target.x) };
+  if (!free) {
+    const straight = Math.max(3, Math.hypot(next.x - fixed.x, next.z - fixed.z) / 8);
+    const offX = Math.abs(next.x - fixed.x);
+    const offZ = Math.abs(next.z - fixed.z);
+    if (offZ <= straight && offZ < offX) next.z = fixed.z;
+    else if (offX <= straight && offX < offZ) next.x = fixed.x;
+  }
+  if (Math.hypot(next.x - fixed.x, next.z - fixed.z) < BOX_WALLS_PLAN_MIN_LENGTH) return wall;
+  return boxGeneratorWallFromEnds(fixed, next);
 }
 
 export function BoxWallsPlan({
@@ -132,9 +142,9 @@ export function BoxWallsPlan({
     const current = drag.current;
     if (!current || current.pointer !== event.pointerId) return;
     const at = place(event);
-    const next = boxWallDragged(current.wall, current.part, at.x - current.x, at.z - current.z, room, walls.filter((_wall, index) => index !== current.index), event.altKey ? 0.1 : STEP);
+    const next = boxWallDragged(current.wall, current.part, at.x - current.x, at.z - current.z, room, walls.filter((_wall, index) => index !== current.index), event.altKey ? 0.1 : STEP, event.altKey);
     const now = walls[current.index];
-    if (now && (now.at !== next.at || now.from !== next.from || now.to !== next.to)) onWallChange(current.index, next);
+    if (now && (now.dir !== next.dir || now.at !== next.at || now.from !== next.from || now.to !== next.to || (now.slant ?? 0) !== (next.slant ?? 0))) onWallChange(current.index, next);
   };
   const end = (event: ReactPointerEvent<SVGSVGElement>) => {
     const current = drag.current;
@@ -167,14 +177,13 @@ export function BoxWallsPlan({
   const reach = Math.max(thickness, 14 / scale);
   const font = 11 / scale;
   const clipId = `box-walls-clip-${Math.round(room.width * 100)}-${Math.round(room.depth * 100)}-${room.outline.length}`;
-  const box = (wall: BoxGeneratorWall, wide: number) => {
+  /** A wall's outline, `wide` across: a straight wall held inside the room, a slanted one as it is (the clip cuts it at the box's wall). */
+  const shown = (wall: BoxGeneratorWall) => {
+    if (wall.slant) return wall;
     const run = wall.dir === "x" ? room.width : room.depth;
-    const from = clamp(wall.from, 0, run);
-    const to = clamp(wall.to, 0, run);
-    return wall.dir === "x"
-      ? { x: from, y: wall.at - wide / 2, width: Math.max(0, to - from), height: wide }
-      : { x: wall.at - wide / 2, y: from, width: wide, height: Math.max(0, to - from) };
+    return { ...wall, from: clamp(wall.from, 0, run), to: clamp(wall.to, 0, run) };
   };
+  const box = (wall: BoxGeneratorWall, wide: number) => ({ points: points(boxGeneratorWallQuad(shown(wall), wide)) });
   const picked = pick?.type === "wall" ? walls[pick.index] : undefined;
 
   return (
@@ -228,11 +237,11 @@ export function BoxWallsPlan({
       })}
       <g clipPath={`url(#${clipId})`}>
         {walls.map((wall, index) => (
-          <rect key={`wall-${index}`} className={`box-walls-plan-wall${pick?.type === "wall" && pick.index === index ? " picked" : ""}`} {...box(wall, thickness)} />
+          <polygon key={`wall-${index}`} className={`box-walls-plan-wall${pick?.type === "wall" && pick.index === index ? " picked" : ""}`} {...box(wall, thickness)} />
         ))}
       </g>
       {walls.map((wall, index) => (
-        <rect
+        <polygon
           key={`reach-${index}`}
           className={`box-walls-plan-reach ${wall.dir === "x" ? "across" : "along"}`}
           {...box(wall, reach)}
@@ -249,14 +258,13 @@ export function BoxWallsPlan({
         />
       ))}
       {picked && pick?.type === "wall" && !disabled ? (["from", "to"] as const).map((part) => {
-        const run = picked.dir === "x" ? room.width : room.depth;
-        const along = clamp(picked[part], 0, run);
+        const end = boxGeneratorWallEnds(shown(picked))[part === "from" ? 0 : 1];
         return (
           <circle
             key={part}
             className={`box-walls-plan-grip ${picked.dir === "x" ? "across" : "along"}`}
-            cx={picked.dir === "x" ? along : picked.at}
-            cy={picked.dir === "x" ? picked.at : along}
+            cx={end.x}
+            cy={end.z}
             r={grip}
             strokeWidth={1.5 / scale}
             data-testid={`box-walls-grip-${part}`}

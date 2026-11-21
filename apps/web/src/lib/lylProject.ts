@@ -2002,6 +2002,7 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
           const value = finiteNumber(wall[key], `${at}.${key}`);
           if (value < 0 || value > 1e6) throw new Error(`${at}.${key} is outside the supported range`);
         }
+        if (wall.slant !== undefined && Math.abs(finiteNumber(wall.slant, `${at}.slant`)) > 1e6) throw new Error(`${at}.slant is outside the supported range`);
       });
     }
   }
