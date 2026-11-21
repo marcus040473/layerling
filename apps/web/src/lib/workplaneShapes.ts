@@ -6,6 +6,7 @@ import { pulleyFootprint } from "@/lib/pulleyGeometry";
 import { GRIDFINITY_OVERHANG_KEYS, GRIDFINITY_PADDING_KEYS, normalizeGridfinityOverhang, gridfinityCompartmentLabelsEqual, gridfinityDividerPositionsEqual, gridfinityFootprintPatch, gridfinityOpeningsEqual, gridfinityOutlinesEqual, normalizeGridfinityPadding } from "@/lib/gridfinityGeometry";
 import { MCP_SHAPE_SETTING_KEYS } from "@/lib/mcpShapeSettings";
 import { bentTubeSegmentsEqual } from "@/lib/bentTubeGeometry";
+import { boxGeneratorWallsEqual } from "@/lib/boxGeneratorGeometry";
 import { vaseSettingsEqual } from "@/lib/vaseSettings";
 import { qrSettingsEqual } from "@/lib/qrCode";
 import { torusTubeRatio } from "@/lib/torusShape";
@@ -959,6 +960,8 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.boxColumns === b.boxColumns &&
     a.boxRows === b.boxRows &&
     a.boxDivider === b.boxDivider &&
+    (a.boxDividerMode ?? "grid") === (b.boxDividerMode ?? "grid") &&
+    boxGeneratorWallsEqual(a.boxWalls, b.boxWalls) &&
     a.boxPart === b.boxPart &&
     a.boxLidStyle === b.boxLidStyle &&
     a.boxLidPlate === b.boxLidPlate &&

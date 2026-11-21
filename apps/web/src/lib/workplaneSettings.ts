@@ -12,6 +12,7 @@ import { MAX_HIRTH_STEEP_FLANK, MAX_HIRTH_TEETH, MIN_HIRTH_STEEP_FLANK, MIN_HIRT
 import { PORT_PROFILES } from "@/lib/portGeometry";
 import { MAX_DRILL_POINT_ANGLE, MIN_DRILL_POINT_ANGLE } from "@/lib/drillPoint";
 import { MAX_GEAR_TEETH, MIN_GEAR_TEETH } from "@/lib/gearGeometry";
+import { boxGeneratorWallList, normalizeBoxGeneratorWalls } from "@/lib/boxGeneratorGeometry";
 import { GRIDFINITY_LABEL_FONTS, MIN_GRIDFINITY_LABEL_TEXT_SIZE } from "@/lib/gridfinityGeometry";
 import type { PortProfile } from "@/types/layerling";
 
@@ -642,6 +643,10 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.boxColumns = optionalShapeNumber(source.boxColumns, fallbackEntry?.boxColumns, 1, 12);
       entry.boxRows = optionalShapeNumber(source.boxRows, fallbackEntry?.boxRows, 1, 12);
       entry.boxDivider = optionalShapeNumber(source.boxDivider, fallbackEntry?.boxDivider, 0.4, 20);
+      entry.boxDividerMode = source.boxDividerMode === "grid" || source.boxDividerMode === "manual" ? source.boxDividerMode : fallbackEntry?.boxDividerMode;
+      // The walls set by hand come as a list, or as the text of one, which is how layerling_read_scene gives them.
+      const boxWalls = boxGeneratorWallList(source.boxWalls);
+      entry.boxWalls = boxWalls ? normalizeBoxGeneratorWalls(boxWalls) : fallbackEntry?.boxWalls;
       entry.boxPart = source.boxPart === "box" || source.boxPart === "lid" ? source.boxPart : fallbackEntry?.boxPart;
       entry.boxLidStyle = source.boxLidStyle === "restOn" || source.boxLidStyle === "overlap" || source.boxLidStyle === "plug" ? source.boxLidStyle : fallbackEntry?.boxLidStyle;
       entry.boxLidPlate = optionalShapeNumber(source.boxLidPlate, fallbackEntry?.boxLidPlate, 0.4, MAX_CUSTOM_SHAPE_DIMENSION);
