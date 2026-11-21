@@ -4440,6 +4440,11 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .rotation-angle-badge {
   outline: none;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-plan .box-walls-plan-pocket {
+  fill: rgba(47, 143, 91, 0.18);
+  stroke: #2f8f5b;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-plan .box-walls-plan-scoop {
   stroke: #2f8f5b;
 }
