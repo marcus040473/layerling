@@ -10013,6 +10013,18 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .layer-view-chart path 
   background: none;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .thread-insert-panel .edge-modifier-field input[type="text"] {
+  color: #3f3f3f;
+  background: white;
+  border: 1px solid #adadad;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .thread-insert-panel .edge-modifier-field input[type="text"] {
+  color: #cbcbcb;
+  background: #2d2d2d;
+  border-color: #4d4d4d;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .dashboard-welcome-hide {
   color: #717171;
   background: transparent;
