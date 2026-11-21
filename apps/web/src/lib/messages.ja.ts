@@ -4528,6 +4528,8 @@ export const MESSAGES_JA: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "シェードの前半分で、上下が開き、背面は平らです。ねじ穴のある背板は別の部品で、光源は背板に付けます。",
   "prop.vaseLampWallScrew": "ねじ穴の直径",
   "vase.partWallPlate": "壁用の背板",
+  "vase.assemblyFits": "確認済み：干渉はありません。",
+  "vase.assemblyCollision": "干渉：{a} と {b} が重なっています。",
   "vase.partsAssemble": "組み立てた状態を表示",
   "vase.partsAssembledHint": "組み立てた状態（確認用）：パーツは互いにはまっています。印刷するには、下のボタンでもう一度並べてください。",
   "status.vaseAssembled": "組み立て完了：{count} 個のパーツを配置しました。印刷するにはもう一度並べてください。",

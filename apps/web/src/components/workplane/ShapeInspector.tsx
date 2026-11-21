@@ -4861,6 +4861,7 @@ export function ShapeInspector({
   onSurfaceRegionDraw,
   onVaseAccessories,
   onVaseAssembled,
+  vaseAssemblyReport,
   onGridfinityKeys,
   onMakeBoxLid,
   onGridfinitySplit,
@@ -4924,6 +4925,7 @@ export function ShapeInspector({
   /** Lays this vase's accessories out beside it, ready to print. */
   onVaseAccessories?: () => void;
   onVaseAssembled?: () => void;
+  vaseAssemblyReport?: string[];
   /** Lays this Swallowtail baseplate's keys out in front of it, ready to print (#1061). */
   onGridfinityKeys?: () => void;
   /** A box generator box: lays out a matching lid beside it, with the box's own outline, wall, play and stacking. */
@@ -5834,6 +5836,7 @@ export function ShapeInspector({
                 onDrawContour={() => setVaseDrawOpen(true)}
                 onVaseAccessories={onVaseAccessories}
                 onVaseAssembled={onVaseAssembled}
+                vaseAssemblyReport={vaseAssemblyReport}
                 onInteractionActiveChange={onInteractionActiveChange}
               />
             ) : (
@@ -9528,6 +9531,7 @@ function VaseDesigner({
   onDrawContour,
   onVaseAccessories,
   onVaseAssembled,
+  vaseAssemblyReport,
   onInteractionActiveChange,
 }: {
   shape: WorkplaneShape;
@@ -9543,6 +9547,7 @@ function VaseDesigner({
   onDrawContour: () => void;
   onVaseAccessories?: () => void;
   onVaseAssembled?: () => void;
+  vaseAssemblyReport?: string[];
   onInteractionActiveChange?: (active: boolean) => void;
 }) {
   const [tab, setTabState] = useState<VaseTab>(lastVaseTab);
@@ -9631,6 +9636,13 @@ function VaseDesigner({
         <span>{t("vase.partsAssemble")}</span>
       </button>
       {shape.vaseAssembled !== undefined ? <p className="cylinder-wrap-hint vase-assembled-note">{t("vase.partsAssembledHint")}</p> : null}
+      {shape.vaseAssembled !== undefined && vaseAssemblyReport ? (
+        <div className="vase-assembly-report" role="status">
+          {vaseAssemblyReport.length
+            ? vaseAssemblyReport.map((line) => <p key={line} className="vase-print-verdict supports">{line}</p>)
+            : <p className="vase-print-verdict fine"><span className="vase-print-dot" aria-hidden="true" />{t("vase.assemblyFits")}</p>}
+        </div>
+      ) : null}
     </>
   ) : null;
   // A plant pot has three more blocks: its saucer, its inner pot, and how it hangs on the wall.

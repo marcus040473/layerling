@@ -13565,9 +13565,15 @@ export function LayerlingEditor({
    * print; the ones laid out for it before give way, so changed settings come out new. Returns the new parts
    * and the kinds asked for that this vase does not allow.
    */
+  const [vaseAssemblyReport, setVaseAssemblyReport] = useState<{ vaseId: string; lines: string[] } | null>(null);
   const layOutVaseAccessories = useCallback((vaseId: string, assembled = false) => {
     const before = shapesRef.current;
-    const { shapes, parts, missing } = sceneWithVaseAccessories(before, vaseId, (vase, accessory) => `${displayShapeName(vase)} – ${vaseAccessoryName(accessory)}`, assembled);
+    const { shapes, parts, missing, collisions } = sceneWithVaseAccessories(before, vaseId, (vase, accessory) => `${displayShapeName(vase)} – ${vaseAccessoryName(accessory)}`, assembled);
+    // Put together, the parts are checked against the vase and one another: what collides is said, in the notice
+    // and in the vase's panel for as long as they stay put together.
+    const vaseName = displayShapeName(before.find((shape) => shape.id === vaseId) ?? { name: "" } as WorkplaneShape);
+    const collisionLines = (collisions ?? []).map(({ a, b }) => t("vase.assemblyCollision", { a: a ? vaseAccessoryName(a) : vaseName, b: b ? vaseAccessoryName(b) : vaseName }));
+    setVaseAssemblyReport(assembled && parts.length ? { vaseId, lines: collisionLines } : null);
     // Asked for but not possible with this vase (an insert through a narrow neck): said, not left out silently.
     const missingText = missing.length ? t("status.vaseAccessoriesMissing", { parts: missing.map(vaseAccessoryKindName).join(", ") }) : "";
     if (!parts.length) {
@@ -13577,9 +13583,9 @@ export function LayerlingEditor({
       return { parts, missing };
     }
     // Put together, the vase stays selected: its panel says so and offers to lay the parts out for printing again.
-    if (assembled) commitShapes(shapes, vaseId, [t("status.vaseAssembled", { count: parts.length }), missingText].filter(Boolean).join(" "));
+    if (assembled) commitShapes(shapes, vaseId, [t("status.vaseAssembled", { count: parts.length }), collisionLines.length ? collisionLines.join(" ") : t("vase.assemblyFits"), missingText].filter(Boolean).join(" "));
     else commitShapes(shapes, parts.map((part) => part.id), [t("status.vaseAccessoriesMade", { count: parts.length }), missingText].filter(Boolean).join(" "));
-    return { parts, missing };
+    return { parts, missing, ...(assembled ? { collisions: (collisions ?? []).map(({ a, b, mm }) => ({ a: a ? vaseAccessoryName(a) : vaseName, b: b ? vaseAccessoryName(b) : vaseName, overlapMm: mm })) } : {}) };
   }, [commitShapes]);
 
   /** The selected name tag as its panel shows it: words, font and layers read from its layers as they stand (#215). */
@@ -14560,8 +14566,8 @@ export function LayerlingEditor({
         }
         commitShapes([...currentShapes(), committedShape], committedShape.id, t("status.shapeAddedMcp", { name: displayShapeName(committedShape) }));
         if (committedShape.kind === "vase" && (params.vaseParts === true || params.vaseAssembled === true)) {
-          const { parts, missing } = layOutVaseAccessories(committedShape.id, params.vaseAssembled === true);
-          return { object: mcpShapeSummary(committedShape), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}) };
+          const { parts, missing, collisions } = layOutVaseAccessories(committedShape.id, params.vaseAssembled === true);
+          return { object: mcpShapeSummary(committedShape), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}), ...(collisions ? { collisions } : {}) };
         }
         if (params.gridfinityKeys === true) {
           const made = await makeSwallowtailKeys(committedShape.id);
@@ -14883,8 +14889,8 @@ export function LayerlingEditor({
           }
         }
         if (updated.kind === "vase" && (params.vaseParts === true || params.vaseAssembled === true)) {
-          const { parts, missing } = layOutVaseAccessories(updated.id, params.vaseAssembled === true);
-          return { object: mcpShapeSummary(updated), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}) };
+          const { parts, missing, collisions } = layOutVaseAccessories(updated.id, params.vaseAssembled === true);
+          return { object: mcpShapeSummary(updated), parts: parts.map(mcpShapeSummary), ...(missing.length ? { notPossible: missing } : {}), ...(collisions ? { collisions } : {}) };
         }
         // The plate is gone after a split (#1388): its pieces come back as objects, their keys as parts.
         if (params.gridfinitySplit === true) {
@@ -20618,6 +20624,7 @@ export function LayerlingEditor({
           onSurfaceRegionLasso={surfaceRegionLasso}
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
           onVaseAssembled={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id, true) : undefined}
+          vaseAssemblyReport={selectedShape && vaseAssemblyReport?.vaseId === selectedShape.id ? vaseAssemblyReport.lines : undefined}
           onMakeBoxLid={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLid(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
           onBoltSplit={selectedShapes.length === 1 && selectedShape && boltSplitFits(selectedShape) && !historyViewState ? (pins) => void splitBoltForPrint(selectedShape.id, { pins }) : undefined}

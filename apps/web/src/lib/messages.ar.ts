@@ -4951,6 +4951,8 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "النصف الأمامي من الغطاء، مفتوح من الأعلى والأسفل، بظهر مسطح. اللوحة الخلفية بثقوب البراغي قطعة مستقلة؛ والضوء يثبَّت على اللوحة.",
   "prop.vaseLampWallScrew": "قطر ثقب البرغي",
   "vase.partWallPlate": "لوحة الجدار",
+  "vase.assemblyFits": "تم الفحص: لا توجد تصادمات.",
+  "vase.assemblyCollision": "تصادم: {a} و{b} يتداخلان.",
   "vase.partsAssemble": "عرض مُجمَّعًا",
   "vase.partsAssembledHint": "مُجمَّع، للعرض فقط: الأجزاء متداخلة. للطباعة، أعد وضعها بالزر أدناه.",
   "status.vaseAssembled": "تم التجميع: {count} أجزاء في مكانها. أعد وضعها للطباعة.",

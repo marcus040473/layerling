@@ -4673,6 +4673,8 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "vase.lampWallHint": "De voorste helft van de kap, boven en onder open, met een vlakke achterkant. De achterplaat met schroefgaten is een eigen onderdeel; het licht zit op de plaat.",
   "prop.vaseLampWallScrew": "Schroefgat Ø",
   "vase.partWallPlate": "Wandplaat",
+  "vase.assemblyFits": "Gecontroleerd: geen botsingen.",
+  "vase.assemblyCollision": "Botsing: {a} en {b} steken in elkaar.",
   "vase.partsAssemble": "Gemonteerd tonen",
   "vase.partsAssembledHint": "Gemonteerd, alleen om te bekijken: de onderdelen zitten in elkaar. Leg ze om te printen opnieuw klaar met de knop hieronder.",
   "status.vaseAssembled": "Gemonteerd: {count} onderdelen op hun plaats. Leg ze opnieuw klaar om te printen.",

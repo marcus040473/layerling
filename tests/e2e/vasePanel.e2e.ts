@@ -33,7 +33,7 @@ afterEach(() => {
 type Calls = { updates: Array<Partial<WorkplaneShape>>; accessories: number; assembled: number };
 
 /** The settings panel for a vase from the shape library, with these fields. */
-function mount(fields: Partial<WorkplaneShape> = {}) {
+function mount(fields: Partial<WorkplaneShape> = {}, assemblyReport?: string[]) {
   const calls: Calls = { updates: [], accessories: 0, assembled: 0 };
   const asset = toolbarShapeAssets.find((entry) => entry.kind === "vase")!;
   const shape = { ...makeShapeFromAsset(asset, { x: 0, z: 0 }), ...fields } as WorkplaneShape;
@@ -55,6 +55,7 @@ function mount(fields: Partial<WorkplaneShape> = {}) {
       onVaseAssembled: () => {
         calls.assembled += 1;
       },
+      vaseAssemblyReport: assemblyReport,
     }));
   });
   return { panel: container, calls, shape };
@@ -271,6 +272,18 @@ describe("a vase in its settings", () => {
     openTab(together.panel, "Form");
     expect(buttonNamed(together.panel, "Show assembled")!.getAttribute("aria-pressed")).toBe("true");
     expect(together.panel.querySelector(".vase-assembled-note")?.textContent).toBe("Assembled, for looking only: the parts sit inside one another. To print, lay them out again with the button below.");
+    // What the check found stands under it: a green line when nothing collides, else a line for every collision.
+    expect(together.panel.querySelector(".vase-assembly-report")).toBeNull();
+    const fits = mount({ vaseAssembled: 4.5, vase: { ...normalizeVaseSettings({}), ...pot } }, []);
+    openTab(fits.panel, "Form");
+    expect([...fits.panel.querySelectorAll(".vase-assembly-report p")].map((line) => [line.textContent, line.classList.contains("fine")])).toEqual([["Checked: no collisions.", true]]);
+    const clash = mount({ vaseAssembled: 4.5, vase: { ...normalizeVaseSettings({}), ...pot } }, ["Collision: Plant insert and Lid run into each other."]);
+    openTab(clash.panel, "Form");
+    expect([...clash.panel.querySelectorAll(".vase-assembly-report p")].map((line) => [line.textContent, line.classList.contains("supports")])).toEqual([["Collision: Plant insert and Lid run into each other.", true]]);
+    // Laid out for printing again, the report is gone with the note.
+    const printing = mount({ vase: { ...normalizeVaseSettings({}), ...pot } }, ["Collision: Plant insert and Lid run into each other."]);
+    openTab(printing.panel, "Form");
+    expect(printing.panel.querySelector(".vase-assembly-report")).toBeNull();
     // A pot without a saucer, an inner pot or a holder has nothing to put together.
     const bare = mount({ vase: { ...normalizeVaseSettings({}), ...pot, saucerMode: "keine" } });
     openTab(bare.panel, "Form");

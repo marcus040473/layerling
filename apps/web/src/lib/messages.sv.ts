@@ -4667,6 +4667,8 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "Skärmens främre halva, öppen upptill och nedtill, med plan baksida. Bakplattan med skruvhål är en egen del; ljuset sitter på plattan.",
   "prop.vaseLampWallScrew": "Skruvhål Ø",
   "vase.partWallPlate": "Väggplatta",
+  "vase.assemblyFits": "Kontrollerat: inga kollisioner.",
+  "vase.assemblyCollision": "Kollision: {a} och {b} går in i varandra.",
   "vase.partsAssemble": "Visa monterat",
   "vase.partsAssembledHint": "Monterat, bara för att titta: delarna sitter i varandra. Lägg ut dem igen med knappen nedan för att skriva ut.",
   "status.vaseAssembled": "Monterat: {count} delar på plats. Lägg ut dem igen för att skriva ut.",

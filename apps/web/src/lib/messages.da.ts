@@ -1283,6 +1283,8 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "Skærmens forreste halvdel, åben foroven og forneden, med flad bagside. Bagpladen med skruehuller er en del for sig; lyset sidder på pladen.",
   "prop.vaseLampWallScrew": "Skruehul Ø",
   "vase.partWallPlate": "Vægplade",
+  "vase.assemblyFits": "Kontrolleret: ingen kollisioner.",
+  "vase.assemblyCollision": "Kollision: {a} og {b} går ind i hinanden.",
   "vase.partsAssemble": "Vis samlet",
   "vase.partsAssembledHint": "Samlet, kun til at se på: delene sidder i hinanden. Læg dem ud igen med knappen nedenfor for at printe.",
   "status.vaseAssembled": "Samlet: {count} dele på plads. Læg dem ud igen for at printe.",

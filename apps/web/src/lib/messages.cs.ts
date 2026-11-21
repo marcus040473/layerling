@@ -4730,6 +4730,8 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "vase.lampWallHint": "Přední polovina stínidla, nahoře i dole otevřená, s plochými zády. Zadní deska s otvory pro šrouby je samostatný díl; světlo sedí na desce.",
   "prop.vaseLampWallScrew": "Otvor pro šroub Ø",
   "vase.partWallPlate": "Nástěnná deska",
+  "vase.assemblyFits": "Zkontrolováno: žádné kolize.",
+  "vase.assemblyCollision": "Kolize: {a} a {b} do sebe zasahují.",
   "vase.partsAssemble": "Zobrazit sestavené",
   "vase.partsAssembledHint": "Sestaveno, jen k prohlížení: díly jsou zasunuté do sebe. Pro tisk je znovu rozložte tlačítkem níže.",
   "status.vaseAssembled": "Sestaveno: {count} dílů na svém místě. Pro tisk je znovu rozložte.",

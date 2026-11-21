@@ -3559,6 +3559,8 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "Sprednja polovica senčnika, zgoraj in spodaj odprta, z ravnim hrbtom. Zadnja plošča z luknjami za vijake je samostojen del; luč sedi na plošči.",
   "prop.vaseLampWallScrew": "Luknja za vijak Ø",
   "vase.partWallPlate": "Stenska plošča",
+  "vase.assemblyFits": "Preverjeno: ni trkov.",
+  "vase.assemblyCollision": "Trk: {a} in {b} segata drug v drugega.",
   "vase.partsAssemble": "Prikaži sestavljeno",
   "vase.partsAssembledHint": "Sestavljeno, samo za ogled: deli so vstavljeni drug v drugega. Za tisk jih znova razporedite z gumbom spodaj.",
   "status.vaseAssembled": "Sestavljeno: {count} delov na svojem mestu. Za tisk jih znova razporedite.",

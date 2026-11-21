@@ -4581,6 +4581,8 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "Przednia połowa abażuru, otwarta u góry i u dołu, z płaskim tyłem. Płyta tylna z otworami na śruby jest osobną częścią; światło mocuje się na płycie.",
   "prop.vaseLampWallScrew": "Otwór na śrubę Ø",
   "vase.partWallPlate": "Płyta ścienna",
+  "vase.assemblyFits": "Sprawdzono: brak kolizji.",
+  "vase.assemblyCollision": "Kolizja: {a} i {b} wchodzą w siebie.",
   "vase.partsAssemble": "Pokaż złożone",
   "vase.partsAssembledHint": "Złożone, tylko do podglądu: części siedzą jedna w drugiej. Aby drukować, rozłóż je ponownie przyciskiem poniżej.",
   "status.vaseAssembled": "Złożone: {count} części na miejscu. Rozłóż je ponownie, aby drukować.",

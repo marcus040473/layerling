@@ -4673,6 +4673,8 @@ export const MESSAGES_EN = {
   "vase.lampWallHint": "The front half of the shade, open at the top and bottom, with a flat back. The back plate with its screw holes is a part of its own; the light sits on the plate.",
   "prop.vaseLampWallScrew": "Screw hole Ø",
   "vase.partWallPlate": "Wall plate",
+  "vase.assemblyFits": "Checked: no collisions.",
+  "vase.assemblyCollision": "Collision: {a} and {b} run into each other.",
   "vase.partsAssemble": "Show assembled",
   "vase.partsAssembledHint": "Assembled, for looking only: the parts sit inside one another. To print, lay them out again with the button below.",
   "status.vaseAssembled": "Assembled: {count} parts in place round the vase. Lay them out again to print.",

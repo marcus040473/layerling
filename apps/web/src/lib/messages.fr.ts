@@ -4659,6 +4659,8 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "La moitié avant de l'abat-jour, ouverte en haut et en bas, à dos plat. La plaque arrière avec ses trous de vis est une pièce à part ; la lumière se fixe sur la plaque.",
   "prop.vaseLampWallScrew": "Trou de vis Ø",
   "vase.partWallPlate": "Plaque murale",
+  "vase.assemblyFits": "Vérifié : aucune collision.",
+  "vase.assemblyCollision": "Collision : {a} et {b} se traversent.",
   "vase.partsAssemble": "Afficher assemblé",
   "vase.partsAssembledHint": "Assemblé, pour visualiser seulement : les pièces sont emboîtées. Pour imprimer, disposez-les à nouveau avec le bouton ci-dessous.",
   "status.vaseAssembled": "Assemblé : {count} pièces en place. Disposez-les à nouveau pour imprimer.",

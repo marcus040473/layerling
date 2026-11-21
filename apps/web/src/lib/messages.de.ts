@@ -4672,6 +4672,8 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "vase.lampWallHint": "Die vordere Hälfte des Schirms, oben und unten offen, mit flacher Rückseite. Die Rückplatte mit Schraublöchern ist ein eigenes Teil; das Licht sitzt auf der Platte.",
   "prop.vaseLampWallScrew": "Schraubenloch Ø",
   "vase.partWallPlate": "Wandplatte",
+  "vase.assemblyFits": "Geprüft: keine Kollisionen.",
+  "vase.assemblyCollision": "Kollision: {a} und {b} stecken ineinander.",
   "vase.partsAssemble": "Zusammengebaut zeigen",
   "vase.partsAssembledHint": "Zusammengebaut, nur zum Ansehen: Die Teile stecken ineinander. Zum Drucken mit dem Knopf darunter wieder anlegen.",
   "status.vaseAssembled": "Zusammengebaut: {count} Teile an ihrem Platz. Zum Drucken wieder anlegen.",

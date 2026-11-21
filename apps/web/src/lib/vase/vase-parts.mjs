@@ -941,8 +941,11 @@ export function buildParts(input, { outward = 0 } = {}) {
         most = Math.max(most, y)
       }
       if (yBack < most + 0.3) return null
-      const yNeck = Math.max(yBack - headDepth, ys[0] + 0.05, ys[K + 1] + 0.05)
-      const half = neck + (yBack - yNeck)
+      // The dovetail's head has its place at the wall, the last `headDepth` before the rail's back - not at the end
+      // of the wedge, which is only as wide as the neck until it has grown that far (so it passes between the
+      // holder's rails). (A hair wider than the neck there, so no three points of the outline lie in a line.)
+      const yNeck = Math.max(Math.min(back - headDepth, yBack - 0.05), ys[0] + 0.05, ys[K + 1] + 0.05)
+      const half = neck + Math.max(0.001, yBack - yNeck - (yBack > back - headDepth ? 0 : 0.05))
       // Counter-clockwise seen from above: up the right side, along the back, down the left, back along the pot.
       const points = [[neck, ys[0]], [neck, yNeck], [half, yBack], [-half, yBack], [-neck, yNeck], [-neck, ys[K + 1]]]
       for (let k = K; k >= 1; k--) points.push([xs[k], ys[k]])
@@ -977,10 +980,13 @@ export function buildParts(input, { outward = 0 } = {}) {
     // The holder, lying on its back as it is printed: a plate with two rails that lean in over the pocket (45
     // degrees), a ramp at the lower end the rail's wedge sits on, and countersunk holes in the pocket's floor - the
     // screws are hidden once the pot hangs.
-    const fit = c + 0.1
-    const plate = 4, lip = headDepth + 1.2, margin = 6
+    // `fit` is the play to each side of the rail, `behind` the gap between the rail's back and the plate. The rails'
+    // slanted faces are moved out by both: moved by the play alone and back by the gap, a face at 45 degrees would
+    // lie on the rail's again.
+    const fit = c + 0.1, behind = 0.3
+    const plate = 4, lip = headDepth + behind + 1.2, margin = 6
     const railLength = margin + (top - bottom) - 4
-    const pocket = head + fit
+    const pocket = head + fit + behind
     const outerU = pocket + 6.5, plateU = pocket + 9
     const h = new MeshBuilder()
     /** A prism: a polygon (counter-clockwise) between two levels, put into space by `place`; `mirror` where that turns it over. */
@@ -1040,7 +1046,7 @@ export function buildParts(input, { outward = 0 } = {}) {
     // The two rails (a section in u and height, run along the holder), a little into the plate.
     const z0 = plate - 0.3
     for (const side of [1, -1]) {
-      const section = [[pocket, z0], [outerU, z0], [outerU, plate + lip], [neck + fit, plate + lip], [neck + fit, plate + headDepth], [pocket, plate]]
+      const section = [[pocket, z0], [outerU, z0], [outerU, plate + lip], [neck + fit, plate + lip], [neck + fit, plate + headDepth + behind], [pocket, plate]]
       const polygon = side > 0 ? section : section.map(([u, w]) => [-u, w]).reverse()
       prism(polygon, margin * 0.4, railLength - 1.5, (u, w, v) => [u, v, w], true)
     }
@@ -1050,12 +1056,33 @@ export function buildParts(input, { outward = 0 } = {}) {
     parts.push({
       id: 'wandhalter', name: 'Wandhalter', mesh: h.mesh(), z: 0, merge: false, flip: false,
       // Put together it stands behind the pot: its plate 0.3 mm behind the rail, the ramp under the rail's wedge.
-      stand: { y: back + 0.3 + plate, z: bottom - margin + 0.3 },
+      stand: { y: back + behind + plate, z: bottom - margin + behind },
       info: `${screws.length === 1 ? 'Ein Loch' : `${screws.length} Löcher`} für Senkkopfschrauben Ø ${fmt(p.lampWallScrew)} mm, ${fmt(2 * plateU)} × ${fmt(railLength)} mm. Flach drucken, die Leisten nach oben; mit der Rampe nach unten an die Wand schrauben und den Topf von oben einschieben. Für Töpfe bis etwa 2 kg, am besten aus PETG.`,
     })
   })
 
   return { parts, lift, notes }
+}
+
+/**
+ * A part's mesh where it sits when everything is put together, in the vase's coordinates: `z` above the vase's
+ * bottom, or - for a part built lying down as it is printed - stood up at its `stand` (a quarter turn, so the
+ * triangles still face out).
+ */
+export function assembledMesh(part) {
+  const source = part.mesh.vertices
+  const vertices = new Float64Array(source.length)
+  for (let i = 0; i < source.length; i += 3) {
+    vertices[i] = source[i]
+    if (part.stand) {
+      vertices[i + 1] = part.stand.y - source[i + 2]
+      vertices[i + 2] = source[i + 1] + part.stand.z
+    } else {
+      vertices[i + 1] = source[i + 1]
+      vertices[i + 2] = source[i + 2] + (part.z ?? 0)
+    }
+  }
+  return { vertices, indices: part.mesh.indices }
 }
 
 const fmt = (v, digits = 1) => v.toLocaleString('de-DE', { maximumFractionDigits: digits })

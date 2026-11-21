@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { toCreasedNormals } from "@/lib/creasedNormals";
 import { isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
 import { printVolume, printWeight, vaseChecks, VASE_MODE_BOTTOM } from "@/lib/vase/vase-geometry.mjs";
-import { buildParts, layoutParts, meshBox, placePoint, type VasePart } from "@/lib/vase/vase-parts.mjs";
+import { assemblyCollisions } from "@/lib/vase/vase-collisions.mjs";
+import { assembledMesh, buildParts, layoutParts, meshBox, placePoint, type VasePart } from "@/lib/vase/vase-parts.mjs";
 import { t, type MessageKey } from "@/lib/i18n";
 import { createLocalId } from "@/lib/localIds";
 import { buildVaseBody, type VaseBody, type VaseBodyWorkerRequest, type VaseBodyWorkerResponse } from "@/lib/vaseBody";
@@ -439,13 +440,32 @@ function accessoryKind(part: VasePart, settings: VaseSettings): VaseAccessoryKin
  * is raised by vaseAssemblyRaise to stand on it.
  */
 export function vaseAccessories(shape: { width: number; depth: number; height: number; vase?: unknown }, assembled = false): VaseAccessory[] {
+  return accessoriesOf(shape, assembled).accessories;
+}
+
+/**
+ * Two bodies that run into one another when a vase's accessories are put together round it: accessories, or the
+ * vase itself (null), and how deep at least they overlap (mm; see vase-collisions.mjs).
+ */
+export type VaseCollision = { a: VaseAccessory | null; b: VaseAccessory | null; mm: number };
+
+/**
+ * Whether a vase and its accessories collide when put together: the pairs that overlap by more than a play of
+ * 0.2 mm. A vase built solid for the slicer's vase mode is not held against its parts (printed, it is a thin shell);
+ * its parts are still held against one another.
+ */
+export function vaseAssemblyCollisions(shape: { width: number; depth: number; height: number; vase?: unknown }): VaseCollision[] {
+  return accessoriesOf(shape, true, true).collisions;
+}
+
+function accessoriesOf(shape: { width: number; depth: number; height: number; vase?: unknown }, assembled: boolean, collide = false): { accessories: VaseAccessory[]; collisions: VaseCollision[] } {
   const width = Math.max(0.1, shape.width);
   const depth = Math.max(0.1, shape.depth);
   const height = Math.max(0.1, shape.height);
   const settings = vaseSettingsInFrame(shape.vase, width, depth, height);
   const { parts, lift } = buildParts(settings);
   const own = parts.filter((part) => !part.merge);
-  if (!own.length) return [];
+  if (!own.length) return { accessories: [], collisions: [] };
   const body = buildVaseCached(settings);
   const { map } = fittedVaseMesh(shape);
   // In this layout the vase and every part stand on the bed (z = 0), the vase where it is.
@@ -455,18 +475,14 @@ export function vaseAccessories(shape: { width: number; depth: number; height: n
   parts.forEach((part, index) => {
     if (part.merge) return;
     const pose = layout.parts[index];
-    const { vertices, indices } = part.mesh;
+    // Put together: in the vase's own coordinates, where the part sits (assembledMesh). Heights count from the
+    // lowest point of the vase's object, as the vase's own do.
+    const { vertices, indices } = assembled ? assembledMesh(part) : part.mesh;
     const positions: number[] = [];
     for (let t = 0; t < indices.length; t += 1) {
       const v = indices[t] * 3;
       if (assembled) {
-        // In the vase's own coordinates: a part built lying down is stood up where it belongs (a quarter turn, so
-        // its triangles still face out), any other sits `z` above the vase's bottom. Heights count from the lowest
-        // point of the vase's object, as the vase's own do.
-        const [x, y, z] = part.stand
-          ? [vertices[v], part.stand.y - vertices[v + 2], vertices[v + 1] + part.stand.z]
-          : [vertices[v], vertices[v + 1], vertices[v + 2] + (part.z ?? 0)];
-        positions.push((x - map.cx) * map.sx, (z - map.minZ) * map.sy, -(y - map.cy) * map.sz);
+        positions.push((vertices[v] - map.cx) * map.sx, (vertices[v + 2] - map.minZ) * map.sy, -(vertices[v + 1] - map.cy) * map.sz);
         continue;
       }
       const [x, y, z] = placePoint(pose, vertices[v], vertices[v + 1], vertices[v + 2]);
@@ -478,7 +494,14 @@ export function vaseAccessories(shape: { width: number; depth: number; height: n
     counts.set(kind, count);
     result.push({ id: part.id, kind, index: count, positions });
   });
-  return result;
+  if (!collide) return { accessories: result, collisions: [] };
+  const named = (id: string) => result.find((accessory) => accessory.id === id) ?? null;
+  const bodies = [
+    ...(settings.body === "voll" ? [] : [{ id: "", vertices: body.vertices, indices: body.indices }]),
+    ...own.map((part) => ({ id: part.id, ...assembledMesh(part) })),
+  ];
+  const collisions = assemblyCollisions(bodies).map(({ a, b, depth }) => ({ a: named(a), b: named(b), mm: depth }));
+  return { accessories: result, collisions };
 }
 
 /**
@@ -547,11 +570,12 @@ export function sceneWithVaseAccessories(
   vaseId: string,
   name: (vase: WorkplaneShape, accessory: VaseAccessory) => string,
   assembled = false,
-): { shapes: WorkplaneShape[]; parts: WorkplaneShape[]; missing: VaseAccessoryKind[] } {
+): { shapes: WorkplaneShape[]; parts: WorkplaneShape[]; missing: VaseAccessoryKind[]; collisions?: VaseCollision[] } {
   const found = shapes.find((shape) => shape.id === vaseId);
   if (!found || found.kind !== "vase") return { shapes, parts: [], missing: [] };
   const frame = { width: shapeWidth(found), depth: shapeDepth(found), height: found.height, vase: found.vase };
-  const accessories = vaseAccessories(frame, assembled);
+  // Put together, the parts are held against the vase and against one another.
+  const { accessories, collisions } = accessoriesOf(frame, assembled, assembled);
   const missing = askedAccessories(found.vase).filter((kind) => !accessories.some((accessory) => accessory.kind === kind));
   // The vase where it stands without its parts under it, and from there raised onto them if they are put together.
   const rest = (found.elevation ?? 0) - (found.vaseAssembled ?? 0);
@@ -562,7 +586,7 @@ export function sceneWithVaseAccessories(
   const scene = moved ? shapes.map((shape) => (shape.id === vaseId ? vase : shape)) : shapes;
   if (!accessories.length) return { shapes: moved ? scene.filter((shape) => shape.vasePartOf !== vase.id) : shapes, parts: [], missing };
   const parts = accessories.map((accessory) => vaseAccessoryShape(vase, accessory, name(vase, accessory)));
-  return { shapes: [...scene.filter((shape) => shape.vasePartOf !== vase.id), ...parts], parts, missing };
+  return { shapes: [...scene.filter((shape) => shape.vasePartOf !== vase.id), ...parts], parts, missing, ...(assembled ? { collisions } : {}) };
 }
 
 /** The kinds of part the settings ask for: what the vase tool builds when the vase allows it (an insert needs a wide enough opening). */

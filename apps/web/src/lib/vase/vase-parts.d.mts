@@ -19,6 +19,8 @@ export type VasePart = {
 export type VasePose = { flip: boolean; dx: number; dy: number; dz: number };
 
 export function buildParts(input?: unknown, options?: { outward?: number }): { parts: VasePart[]; lift: number; notes: string[] };
+/** A part's mesh where it sits when everything is put together, in the vase's coordinates. */
+export function assembledMesh(part: VasePart): { vertices: Float64Array; indices: Uint32Array };
 export function meshBox(vertices: ArrayLike<number>): { min: number[]; max: number[] };
 export function placePoint(pose: VasePose, x: number, y: number, z: number): [number, number, number];
 export function layoutParts(

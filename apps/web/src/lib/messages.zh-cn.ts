@@ -4567,6 +4567,8 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "灯罩的前半部分，上下敞开，背面是平的。带螺丝孔的背板是独立零件；光源装在背板上。",
   "prop.vaseLampWallScrew": "螺丝孔直径",
   "vase.partWallPlate": "壁挂背板",
+  "vase.assemblyFits": "已检查：无碰撞。",
+  "vase.assemblyCollision": "碰撞：{a} 与 {b} 互相穿插。",
   "vase.partsAssemble": "显示组装效果",
   "vase.partsAssembledHint": "已组装，仅供查看：各部件相互嵌套。要打印，请用下方按钮重新摆放。",
   "status.vaseAssembled": "已组装：{count} 个部件已就位。要打印，请重新摆放。",

@@ -404,22 +404,24 @@ describe("a pot for the wall", () => {
     expect(holder.merge).toBe(false);
     expect(openEdges(holder.mesh)).toBe(0);
     expect(volume(holder.mesh)).toBeGreaterThan(0);
-    // Lying on its back: 4 mm of plate, the rails 5.2 mm above it; nothing hangs over by more than 45 degrees.
+    // Lying on its back: 4 mm of plate, the rails 5.5 mm above it.
     expect(reach(holder.mesh, 2).low).toBe(0);
-    expect(reach(holder.mesh, 2).high).toBeCloseTo(9.2, 6);
+    expect(reach(holder.mesh, 2).high).toBeCloseTo(9.5, 6);
     expect(holder.info).toContain("2 Löcher für Senkkopfschrauben Ø 4,5 mm");
-    // The pocket takes the rail with the fit's clearance on each side: 22 mm of rail, 22.6 mm of pocket at the plate.
+    // The pocket takes the rail with play: 22 mm of rail; at the plate the pocket is 23.2 mm - the fit's 0.3 mm to
+    // each side, and as much again for the 0.3 mm the plate stays behind the rail (the slanted faces would lie on
+    // one another otherwise).
     let pocket = Infinity;
     for (let i = 0; i < holder.mesh.vertices.length; i += 3) {
       const [x, y, z] = [holder.mesh.vertices[i], holder.mesh.vertices[i + 1], holder.mesh.vertices[i + 2]];
       if (Math.abs(z - 4) < 1e-6 && y > 20 && x > 5 && x < 15) pocket = Math.min(pocket, x);
     }
-    expect(pocket).toBeCloseTo(11.3, 6);
-    // The rails lean in over the pocket at 45 degrees: 4 mm narrower on each side, 4 mm up.
+    expect(pocket).toBeCloseTo(11.6, 6);
+    // The rails lean in over the pocket at 45 degrees: 4.3 mm narrower on each side, 4.3 mm up.
     let lip = Infinity;
     for (let i = 0; i < holder.mesh.vertices.length; i += 3) {
       const [x, y, z] = [holder.mesh.vertices[i], holder.mesh.vertices[i + 1], holder.mesh.vertices[i + 2]];
-      if (Math.abs(z - 8) < 1e-6 && y > 20 && x > 0) lip = Math.min(lip, x);
+      if (Math.abs(z - 8.3) < 1e-6 && y > 20 && x > 0) lip = Math.min(lip, x);
     }
     expect(lip).toBeCloseTo(7.3, 6);
     // Wider screws, wider holes.
@@ -553,12 +555,12 @@ describe("a vase's accessories put together round it", () => {
     expect(bowl.elevation ?? 0).toBeCloseTo(0, 6);
     expect(bowl.height).toBeCloseTo(20, 6);
     expect(bowl.width).toBeLessThanOrEqual(140);
-    // The holder stands: as tall as it is long when printed, 9.2 mm thick, behind the pot's back (the editor's -z)
+    // The holder stands: as tall as it is long when printed, 9.5 mm thick, behind the pot's back (the editor's -z)
     // with its plate against the wall, 4.3 mm behind the rail.
     const { wall } = vaseShape(normalizeVaseSettings({ ...shape.vase, height: 120, diameter: 140 }));
     const railLength = 6 + (wall.top - wall.bottom) - 4;
     expect(holder.height).toBeCloseTo(railLength, 6);
-    expect(holder.depth).toBeCloseTo(9.2, 6);
+    expect(holder.depth).toBeCloseTo(9.5, 6);
     expect(holder.x).toBeCloseTo(shape.x, 6);
     expect(holder.elevation).toBeCloseTo(20 + wall.bottom - 6 + 0.3, 6);
     // (The rail reaches as far back as the pot did before its back was cut flat: the pot's box is still round its axis.)

@@ -1885,6 +1885,8 @@ export const MESSAGES_PT_BR: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "A metade da frente da cúpula, aberta em cima e embaixo, com o fundo plano. A placa traseira com os furos dos parafusos é uma peça à parte; a luz fica na placa.",
   "prop.vaseLampWallScrew": "Furo do parafuso Ø",
   "vase.partWallPlate": "Placa de parede",
+  "vase.assemblyFits": "Verificado: sem colisões.",
+  "vase.assemblyCollision": "Colisão: {a} e {b} se atravessam.",
   "vase.partsAssemble": "Mostrar montado",
   "vase.partsAssembledHint": "Montado, só para visualizar: as peças ficam umas dentro das outras. Para imprimir, disponha-as de novo com o botão abaixo.",
   "status.vaseAssembled": "Montado: {count} peças no lugar. Disponha-as de novo para imprimir.",

@@ -4666,6 +4666,8 @@ export const MESSAGES_RU: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "Передняя половина абажура, открытая сверху и снизу, с плоской спинкой. Задняя пластина с отверстиями под шурупы – отдельная деталь; свет крепится на пластине.",
   "prop.vaseLampWallScrew": "Отверстие под шуруп Ø",
   "vase.partWallPlate": "Настенная пластина",
+  "vase.assemblyFits": "Проверено: пересечений нет.",
+  "vase.assemblyCollision": "Пересечение: {a} и {b} входят друг в друга.",
   "vase.partsAssemble": "Показать в сборе",
   "vase.partsAssembledHint": "В сборе, только для просмотра: детали вставлены друг в друга. Для печати снова разложите их кнопкой ниже.",
   "status.vaseAssembled": "Собрано: {count} деталей на своих местах. Для печати разложите их снова.",

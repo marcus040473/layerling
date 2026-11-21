@@ -4632,6 +4632,8 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "vase.lampWallHint": "La metà anteriore del paralume, aperta in alto e in basso, con il retro piatto. La piastra posteriore con i fori per le viti è un pezzo a sé; la luce sta sulla piastra.",
   "prop.vaseLampWallScrew": "Foro vite Ø",
   "vase.partWallPlate": "Piastra a parete",
+  "vase.assemblyFits": "Verificato: nessuna collisione.",
+  "vase.assemblyCollision": "Collisione: {a} e {b} si compenetrano.",
   "vase.partsAssemble": "Mostra assemblato",
   "vase.partsAssembledHint": "Assemblato, solo da guardare: le parti sono una dentro l'altra. Per stampare, disponile di nuovo con il pulsante qui sotto.",
   "status.vaseAssembled": "Assemblato: {count} parti al loro posto. Disponile di nuovo per stampare.",
