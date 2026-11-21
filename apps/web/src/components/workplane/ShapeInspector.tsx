@@ -4928,6 +4928,8 @@ export function ShapeInspector({
   proportionLock = false,
   onProportionLockChange,
   onBentTubeSegmentChange,
+  boxWallsPick,
+  onBoxWallsPickChange,
   onShapeDefaultsChange,
 }: {
   shape: WorkplaneShape;
@@ -5008,6 +5010,9 @@ export function ShapeInspector({
   /** With the lock on, changing one of width, depth and height scales the other two by the same factor. */
   proportionLock?: boolean;
   onProportionLockChange?: (locked: boolean) => void;
+  /** Box generator, dividers by hand: the wall or compartment picked, shared with the grips on the box in the view; kept here when unset. */
+  boxWallsPick?: BoxWallsPick;
+  onBoxWallsPickChange?: (pick: BoxWallsPick) => void;
   /** The segment the bent tube's settings are about, or null when none is shown; the workplane lights it up on the tube. */
   onBentTubeSegmentChange?: (shapeId: string, segment: number | null) => void;
   /** Saves the shape's values as the defaults of its kind, or removes them (null): the same "Shape defaults" the settings hold. */
@@ -6017,7 +6022,7 @@ export function ShapeInspector({
         ) : null}
       </div>
       {shape.kind === "boxGenerator" && shape.boxPart !== "lid" && shape.boxDividerMode === "manual" ? (
-        <BoxWallsCard key={`box-walls-${shape.id}`} shape={shape} workspace={workspace} locked={frozen} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
+        <BoxWallsCard key={`box-walls-${shape.id}`} shape={shape} workspace={workspace} locked={frozen} pick={boxWallsPick} onPickChange={onBoxWallsPickChange} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
       ) : null}
       {shape.kind === "gridfinity" ? (
         <GridfinityCompartmentsCard shape={shape} workspace={workspace} locked={frozen} defaults={propertyDefaults?.compartments} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
@@ -8715,17 +8720,24 @@ function BoxWallsCard({
   shape,
   workspace,
   locked,
+  pick: sharedPick,
+  onPickChange,
   onUpdate,
   onInteractionActiveChange,
 }: {
   shape: WorkplaneShape;
   workspace: WorkplaneWorkspaceSettings;
   locked: boolean;
+  /** The pick when the view shares it with its grips on the box; without it the card keeps its own. */
+  pick?: BoxWallsPick;
+  onPickChange?: (pick: BoxWallsPick) => void;
   onUpdate: ShapeInspectorUpdate;
   onInteractionActiveChange?: (active: boolean) => void;
 }) {
   const [open, setOpen] = useInspectorCard("boxWalls", true);
-  const [pick, setPick] = useState<BoxWallsPick>(null);
+  const [ownPick, setOwnPick] = useState<BoxWallsPick>(null);
+  const pick = onPickChange ? sharedPick ?? null : ownPick;
+  const setPick = onPickChange ?? setOwnPick;
   const size = { width: shape.width, depth: shapeOverallFootprintDimensions(shape).depth, height: shape.height };
   const box = normalizeBoxGenerator(size, shape);
   const room = boxGeneratorWallRoom(size, shape);
@@ -8801,6 +8813,7 @@ function BoxWallsCard({
                 ? t("boxGenerator.compartmentPicked", { width: plain(compartment.maxX - compartment.minX), depth: plain(compartment.maxZ - compartment.minZ) })
                 : t("boxGenerator.wallsHint")}
           </p>
+          {!pick ? <p className="cylinder-wrap-hint box-walls-hint">{t("boxGenerator.wallsOnBoxHint")}</p> : null}
           <div className="bent-tube-segment-actions">
             <button className="inspector-action-button" type="button" disabled={locked || full} data-testid="box-walls-add-across" onClick={() => add("x")}>
               <Plus size={17} strokeWidth={2.5} />

@@ -4376,6 +4376,64 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .rotation-angle-badge {
   border-color: #d1995e;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay .box-walls-overlay-line {
+  stroke: rgba(255, 255, 255, 0.55);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay .box-walls-overlay-line.picked {
+  stroke: #ffb347;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-grip,
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-remove,
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-split button {
+  border: 2px solid #e07b00;
+  background: #ffffff;
+  color: #4c4c4c;
+  box-shadow: 0 1px 4px rgba(31, 31, 31, 0.35);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-grip.move {
+  background: #ffd591;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-grip.move.picked,
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-grip:hover,
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-grip:focus-visible {
+  background: #e07b00;
+  outline: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-remove {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-remove:hover,
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-remove:focus-visible {
+  color: #ffffff;
+  background: #c0392b;
+  outline: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-size {
+  color: #313131;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 3px rgba(31, 31, 31, 0.3);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-split button {
+  border-color: #c4c4c4;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-split button:hover,
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-split button:focus-visible {
+  color: #ffffff;
+  background: #e07b00;
+  border-color: #e07b00;
+  outline: none;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-plan .box-walls-plan-box {
   fill: none;
   stroke: #8f8f8f;

@@ -3236,6 +3236,7 @@ export const MESSAGES_ES: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "Colocas cada pared tú mismo, abajo en «Separadores a mano»: dónde está, dónde empieza y dónde termina. Si vuelves a Cuadrícula uniforme, tus paredes se guardan para más tarde.",
   "boxGenerator.wallsPlan": "La caja vista desde arriba con sus separadores; la parte trasera de la caja está arriba",
   "boxGenerator.wallsHint": "La caja vista desde arriba, con la parte trasera arriba. Arrastra una pared para moverla y arrastra uno de sus extremos para acortarla o alargarla. Haz clic en un compartimento y una pared nueva dividirá solo ese.",
+  "boxGenerator.wallsOnBoxHint": "También funciona directamente sobre la caja en la vista: arrastra el punto de una pared para moverla, arrastra los puntos de sus extremos para cambiar su longitud y divide un compartimento con los dos botones pequeños que hay en él.",
   "boxGenerator.wallAcross": "Pared {number}, transversal",
   "boxGenerator.wallAlong": "Pared {number}, longitudinal",
   "boxGenerator.compartment": "Compartimento {number}, {width} × {depth} mm",

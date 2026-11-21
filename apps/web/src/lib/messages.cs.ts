@@ -3245,6 +3245,7 @@ export const MESSAGES_CS: Record<MessageKey, string> = {
   "boxGenerator.dividersManualHint": "Každou stěnu si postavíte sami, níže v části „Přepážky ručně“: kde stojí, kde začíná a kde končí. Když se vrátíte k Rovnoměrné mřížce, vaše stěny zůstanou uložené na později.",
   "boxGenerator.wallsPlan": "Krabička shora s přepážkami; zadní strana krabičky je nahoře",
   "boxGenerator.wallsHint": "Krabička shora, zadní strana je nahoře. Tažením stěnu posunete, tažením za jeden z jejích konců ji zkrátíte nebo prodloužíte. Klikněte na přihrádku a nová stěna rozdělí jen tu.",
+  "boxGenerator.wallsOnBoxHint": "Jde to i přímo na krabičce v pohledu: tažením za bod na stěně ji posunete, tažením za body na jejích koncích změníte její délku a přihrádku rozdělíte dvěma malými tlačítky v ní.",
   "boxGenerator.wallAcross": "Stěna {number}, napříč",
   "boxGenerator.wallAlong": "Stěna {number}, podél",
   "boxGenerator.compartment": "Přihrádka {number}, {width} × {depth} mm",

@@ -3108,6 +3108,7 @@ export const MESSAGES_ZH_CN: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "每一块隔板都由你自己放置，在下方的“手动隔板”中设定：它的位置、起点和终点。切换回均匀网格后，你的隔板会保留，以后还能用。",
   "boxGenerator.wallsPlan": "从上方看的盒子及其隔板；盒子的后侧在上方",
   "boxGenerator.wallsHint": "从上方看的盒子，后侧在上方。拖动隔板可移动它，拖动它的一端可把它缩短或加长。点击一个格子，新隔板就只分割这个格子。",
+  "boxGenerator.wallsOnBoxHint": "也可以直接在视图中的盒子上操作：拖动隔板上的圆点可移动它，拖动两端的圆点可改变长度，用格子里的两个小按钮可分割格子。",
   "boxGenerator.wallAcross": "隔板 {number}，横向",
   "boxGenerator.wallAlong": "隔板 {number}，纵向",
   "boxGenerator.compartment": "格子 {number}，{width} × {depth} 毫米",

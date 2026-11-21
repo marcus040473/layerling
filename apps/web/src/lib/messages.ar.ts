@@ -3242,6 +3242,7 @@ export const MESSAGES_AR: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "تضع كل جدار بنفسك في «الفواصل يدويًا» بالأسفل: أين يقف، وأين يبدأ، وأين ينتهي. إذا عدت إلى الشبكة المنتظمة فستبقى جدرانك محفوظة لوقت لاحق.",
   "boxGenerator.wallsPlan": "العلبة من الأعلى مع فواصلها؛ الجهة الخلفية للعلبة في الأعلى",
   "boxGenerator.wallsHint": "العلبة من الأعلى، والجهة الخلفية في الأعلى. اسحب جدارًا لتحريكه، واسحب أحد طرفيه لتقصيره أو إطالته. انقر على حجرة، وسيقسم الجدار الجديد تلك الحجرة فقط.",
+  "boxGenerator.wallsOnBoxHint": "يعمل ذلك أيضًا مباشرة على العلبة في العرض: اسحب النقطة على الجدار لتحريكه، واسحب النقطتين عند طرفيه لتغيير طوله، وقسّم الحجرة بالزرين الصغيرين داخلها.",
   "boxGenerator.wallAcross": "الجدار {number}، بالعرض",
   "boxGenerator.wallAlong": "الجدار {number}، بالطول",
   "boxGenerator.compartment": "الحجرة {number}، ‏{width} × {depth} مم",

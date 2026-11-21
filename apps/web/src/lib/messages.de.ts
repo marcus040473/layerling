@@ -3166,6 +3166,7 @@ export const MESSAGES_DE: Record<MessageKey, string> = {
   "boxGenerator.dividersManualHint": "Du setzt jede Wand selbst, unten bei „Trennwände von Hand“: wo sie steht, wo sie anfängt und wo sie aufhört. Stellst du zurück auf Gleichmäßiges Raster, bleiben deine Wände für später erhalten.",
   "boxGenerator.wallsPlan": "Die Box von oben mit ihren Trennwänden; die Rückseite der Box ist oben",
   "boxGenerator.wallsHint": "Die Box von oben, hinten ist oben. Zieh eine Wand, um sie zu verschieben, und zieh an einem ihrer Enden, um sie kürzer oder länger zu machen. Klick auf ein Fach, dann teilt eine neue Wand nur dieses Fach.",
+  "boxGenerator.wallsOnBoxHint": "Das geht auch direkt auf der Box in der Ansicht: Zieh am Punkt auf einer Wand, um sie zu verschieben, zieh an den Punkten an ihren Enden, um ihre Länge zu ändern, und teile ein Fach mit den zwei kleinen Knöpfen darin.",
   "boxGenerator.wallAcross": "Wand {number}, quer",
   "boxGenerator.wallAlong": "Wand {number}, längs",
   "boxGenerator.compartment": "Fach {number}, {width} × {depth} mm",

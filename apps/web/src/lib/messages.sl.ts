@@ -2334,6 +2334,7 @@ export const MESSAGES_SL: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "Vsako steno postavite sami, spodaj pri »Pregrade ročno«: kje stoji, kje se začne in kje konča. Če se vrnete na Enakomerno mrežo, vaše stene ostanejo shranjene za pozneje.",
   "boxGenerator.wallsPlan": "Škatla od zgoraj s pregradami; zadnja stran škatle je zgoraj",
   "boxGenerator.wallsHint": "Škatla od zgoraj, zadnja stran je zgoraj. Povlecite steno, da jo premaknete, in povlecite enega od njenih koncev, da jo skrajšate ali podaljšate. Kliknite predal in nova stena razdeli samo tega.",
+  "boxGenerator.wallsOnBoxHint": "Deluje tudi neposredno na škatli v pogledu: povlecite piko na steni, da jo premaknete, povlecite piki na njenih koncih, da spremenite njeno dolžino, in razdelite predal z dvema majhnima gumboma v njem.",
   "boxGenerator.wallAcross": "Stena {number}, prečno",
   "boxGenerator.wallAlong": "Stena {number}, vzdolžno",
   "boxGenerator.compartment": "Predal {number}, {width} × {depth} mm",

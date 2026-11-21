@@ -3167,6 +3167,7 @@ export const MESSAGES_EN = {
   "boxGenerator.dividersManualHint": "You set every wall yourself, in \"Dividers by hand\" below: where it stands, where it starts and where it ends. Back to Even grid, your walls are kept for later.",
   "boxGenerator.wallsPlan": "The box from above with its dividers; the back of the box is at the top",
   "boxGenerator.wallsHint": "The box from above, its back at the top. Drag a wall to move it, drag one of its ends to make it shorter or longer. Click a compartment and a new wall splits just that one.",
+  "boxGenerator.wallsOnBoxHint": "It also works right on the box in the view: drag the dot on a wall to move it, drag the dots at its ends to change its length, and use the two small buttons in a compartment to split it.",
   "boxGenerator.wallAcross": "Wall {number}, across",
   "boxGenerator.wallAlong": "Wall {number}, along",
   "boxGenerator.compartment": "Compartment {number}, {width} × {depth} mm",

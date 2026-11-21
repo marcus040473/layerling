@@ -3122,6 +3122,7 @@ export const MESSAGES_PL: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "Każdą ściankę ustawiasz samodzielnie, niżej w „Przegrody ręcznie”: gdzie stoi, gdzie się zaczyna i gdzie kończy. Po powrocie do Równej siatki twoje ścianki zostają zachowane na później.",
   "boxGenerator.wallsPlan": "Pudełko widziane z góry z przegrodami; tył pudełka jest u góry",
   "boxGenerator.wallsHint": "Pudełko widziane z góry, tył jest u góry. Przeciągnij ściankę, aby ją przesunąć, a jeden z jej końców, aby ją skrócić lub wydłużyć. Kliknij przegródkę, a nowa ścianka podzieli tylko ją.",
+  "boxGenerator.wallsOnBoxHint": "Działa to także bezpośrednio na pudełku w widoku: przeciągnij punkt na ściance, aby ją przesunąć, przeciągnij punkty na jej końcach, aby zmienić jej długość, i podziel przegródkę dwoma małymi przyciskami w jej środku.",
   "boxGenerator.wallAcross": "Ścianka {number}, w poprzek",
   "boxGenerator.wallAlong": "Ścianka {number}, wzdłuż",
   "boxGenerator.compartment": "Przegródka {number}, {width} × {depth} mm",

@@ -3167,6 +3167,7 @@ export const MESSAGES_NL: Record<MessageKey, string> = {
   "boxGenerator.dividersManualHint": "Je zet elke wand zelf, hieronder bij ‘Tussenwanden met de hand’: waar hij staat, waar hij begint en waar hij ophoudt. Ga je terug naar Gelijkmatig raster, dan blijven je wanden bewaard voor later.",
   "boxGenerator.wallsPlan": "De doos van boven met de tussenwanden; de achterkant van de doos is boven",
   "boxGenerator.wallsHint": "De doos van boven, de achterkant is boven. Sleep een wand om hem te verplaatsen en sleep aan een van de uiteinden om hem korter of langer te maken. Klik op een vak, dan verdeelt een nieuwe wand alleen dat vak.",
+  "boxGenerator.wallsOnBoxHint": "Het kan ook direct op de doos in het beeld: sleep de stip op een wand om hem te verplaatsen, sleep de stippen aan de uiteinden om de lengte te veranderen, en verdeel een vak met de twee kleine knoppen erin.",
   "boxGenerator.wallAcross": "Wand {number}, dwars",
   "boxGenerator.wallAlong": "Wand {number}, in de lengte",
   "boxGenerator.compartment": "Vak {number}, {width} × {depth} mm",
