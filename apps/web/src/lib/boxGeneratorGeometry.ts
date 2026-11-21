@@ -19,7 +19,10 @@ import type { ManifoldToplevel } from "manifold-3d";
  * Part "box" is the open box: a floor, a wall all round and, if columns or rows are more than one, fixed dividers that
  * are one piece with the wall and floor. With the dividers set by hand (boxDividerMode "manual") the grid of columns and
  * rows gives way to a list of walls, each one running along the width or the depth, placed anywhere and as long as it is
- * asked to be: from wall to wall, from a wall to somewhere inside, or standing free. Part "lid" is the lid, printed top side down: a plate, and for the style
+ * asked to be: from wall to wall, from a wall to somewhere inside, or standing free. Part "insert" is the dividers as a
+ * loose piece: a thin plate the size of the box's inside less the play, with the dividers standing on it, for a box that
+ * is smooth inside (boxInsert). Its dividers are measured as the box's are, from the inside of the box, which lies the
+ * play outside the insert all round. Part "lid" is the lid, printed top side down: a plate, and for the style
  * "overlap" a skirt that goes down over the outside of the box, for "plug" a ring that stands up from the plate and fits
  * inside the box. Both parts take the same settings, so a box and its lid
  * are two copies of the shape with another part. The width and depth are always those of the part itself; for an
@@ -30,7 +33,7 @@ import type { ManifoldToplevel } from "manifold-3d";
  */
 
 export type BoxGeneratorShape = "rectangle" | "round" | "polygon";
-export type BoxGeneratorPart = "box" | "lid";
+export type BoxGeneratorPart = "box" | "lid" | "insert";
 export type BoxGeneratorLidStyle = "restOn" | "overlap" | "plug";
 export type BoxGeneratorDividerMode = "grid" | "manual";
 /**
@@ -55,6 +58,8 @@ export const DEFAULT_BOX_GENERATOR_SIDES = 6;
 export const DEFAULT_BOX_GENERATOR_DIVIDER = 1.6;
 export const DEFAULT_BOX_GENERATOR_LID_PLATE = 2.4;
 export const DEFAULT_BOX_GENERATOR_FIT = 0.3;
+/** The plate an insert's dividers stand on, in mm, when it is made for a box. */
+export const DEFAULT_BOX_GENERATOR_INSERT_FLOOR = 0.8;
 export const MIN_BOX_GENERATOR_WALL = 0.4;
 export const MIN_BOX_GENERATOR_SIDES = 3;
 export const MAX_BOX_GENERATOR_SIDES = 12;
@@ -70,6 +75,16 @@ export const MIN_BOX_GENERATOR_SCOOP_RADIUS = 2;
 export const MAX_BOX_GENERATOR_SCOOP_RADIUS = 60;
 export const MAX_BOX_GENERATOR_SCOOPS = 60;
 const SCOOP_SEGMENTS = 16;
+/**
+ * A shaped pocket: the box is filled solid above its floor (boxPocketFill mm high) and the outline of a part is cut into
+ * that filling, `depth` mm deep from its top, so the part lies in a pocket of its own shape. `points` are the outline in
+ * mm from the left and the back of the inside of the box.
+ */
+export type BoxGeneratorPocket = { points: { x: number; z: number }[]; depth: number };
+export const MAX_BOX_GENERATOR_POCKETS = 12;
+export const MAX_BOX_GENERATOR_POCKET_POINTS = 400;
+/** The least filling left between a pocket and the box's wall, in mm: two lines of a 0.4 mm nozzle. */
+const POCKET_WALL_GAP = 0.8;
 export const MAX_BOX_GENERATOR_COMPARTMENTS = 12;
 /** The most dividers set by hand that one box takes. */
 export const MAX_BOX_GENERATOR_WALLS = 40;
@@ -106,6 +121,11 @@ export type BoxGeneratorFields = {
   boxWalls?: BoxGeneratorWall[];
   boxScoops?: BoxGeneratorScoop[];
   boxScoopRadius?: number;
+  boxPockets?: BoxGeneratorPocket[];
+  /** How high the box is filled above its floor when it has shaped pockets, in mm; unset or more than fits: up to the rim. */
+  boxPocketFill?: number;
+  /** The box's dividers are a loose insert (part "insert"): the box itself is drawn without them, smooth inside. */
+  boxInsert?: boolean;
   boxPart?: BoxGeneratorPart;
   boxLidStyle?: BoxGeneratorLidStyle;
   boxLidPlate?: number;
@@ -147,7 +167,7 @@ export function normalizeBoxGeneratorShape(value: unknown): BoxGeneratorShape {
 }
 
 export function normalizeBoxGeneratorPart(value: unknown): BoxGeneratorPart {
-  return value === "lid" ? "lid" : "box";
+  return value === "lid" || value === "insert" ? value : "box";
 }
 
 export function normalizeBoxGeneratorLidStyle(value: unknown): BoxGeneratorLidStyle {
@@ -183,6 +203,32 @@ export function normalizeBoxGeneratorWalls(value: unknown): BoxGeneratorWall[] {
     walls.push({ dir: wall.dir, at, from: Math.min(a, b), to: Math.max(a, b), ...(slant !== 0 ? { slant } : {}) });
   }
   return walls;
+}
+
+/** The shaped pockets as a clean list: outlines of at least three finite points that enclose an area, at most MAX_BOX_GENERATOR_POCKETS. */
+export function normalizeBoxGeneratorPockets(value: unknown): BoxGeneratorPocket[] {
+  if (!Array.isArray(value)) return [];
+  const pockets: BoxGeneratorPocket[] = [];
+  for (const entry of value) {
+    if (pockets.length >= MAX_BOX_GENERATOR_POCKETS) break;
+    if (!entry || typeof entry !== "object") continue;
+    const pocket = entry as Partial<BoxGeneratorPocket>;
+    if (!Array.isArray(pocket.points)) continue;
+    const measure = (n: number) => Math.round(clamp(n, -1e4, 1e4) * 1000) / 1000;
+    const points = pocket.points
+      .filter((point) => point && typeof point === "object" && typeof point.x === "number" && typeof point.z === "number" && Number.isFinite(point.x) && Number.isFinite(point.z))
+      .slice(0, MAX_BOX_GENERATOR_POCKET_POINTS)
+      .map((point) => ({ x: measure(point.x), z: measure(point.z) }));
+    if (points.length < 3 || Math.abs(signedArea(points)) < 1) continue;
+    pockets.push({ points, depth: Math.round(clamp(finite(pocket.depth, 1e4), 0.4, 1e4) * 1000) / 1000 });
+  }
+  return pockets;
+}
+
+export function boxGeneratorPocketsEqual(a: readonly BoxGeneratorPocket[] | undefined, b: readonly BoxGeneratorPocket[] | undefined) {
+  if (a === b) return true;
+  if (!a || !b) return (a?.length ?? 0) === 0 && (b?.length ?? 0) === 0;
+  return a.length === b.length && a.every((pocket, index) => pocket.depth === b[index].depth && pocket.points.length === b[index].points.length && pocket.points.every((point, at) => point.x === b[index].points[at].x && point.z === b[index].points[at].z));
 }
 
 export function normalizeBoxGeneratorScoopSide(value: unknown): BoxGeneratorScoopSide {
@@ -280,6 +326,9 @@ export function normalizeBoxGenerator(size: BoxGeneratorSize, fields: BoxGenerat
     boxWalls: normalizeBoxGeneratorWalls(fields.boxWalls),
     boxScoops: normalizeBoxGeneratorScoops(fields.boxScoops),
     boxScoopRadius: clamp(finite(fields.boxScoopRadius, DEFAULT_BOX_GENERATOR_SCOOP_RADIUS), MIN_BOX_GENERATOR_SCOOP_RADIUS, MAX_BOX_GENERATOR_SCOOP_RADIUS),
+    boxPockets: normalizeBoxGeneratorPockets(fields.boxPockets),
+    boxPocketFill: clamp(finite(fields.boxPocketFill, 1e4), 1, 1e4),
+    boxInsert: fields.boxInsert === true,
     boxPart: normalizeBoxGeneratorPart(fields.boxPart),
     boxLidStyle: normalizeBoxGeneratorLidStyle(fields.boxLidStyle),
     boxLidPlate: clamp(finite(fields.boxLidPlate, DEFAULT_BOX_GENERATOR_LID_PLATE), MIN_BOX_GENERATOR_WALL, Math.max(MIN_BOX_GENERATOR_WALL, height - 0.5)),
@@ -667,8 +716,51 @@ export function boxGeneratorMirroredWalls(walls: readonly BoxGeneratorWall[], ro
   return result;
 }
 
+/**
+ * The outlines of shaped pockets for a part: its outlines seen from above (in mm from the left and the back of the
+ * inside of the box) joined, grown by the play all round with rounded corners, and thinned out to a number of points a
+ * box stores. Holes in the part are left out, the pocket being cut from above. Only what lies at least partly in a room
+ * `width` by `depth` is kept; an empty list when nothing does.
+ */
+export function boxGeneratorPocketOutlines(runtime: ManifoldToplevel, loops: ReadonlyArray<ReadonlyArray<Point>>, clearance: number, room: { width: number; depth: number }): Point[][] {
+  const made: { delete(): void }[] = [];
+  const keep = <T extends { delete(): void }>(value: T) => {
+    made.push(value);
+    return value;
+  };
+  try {
+    const joined = keep(new runtime.CrossSection(loops.filter((loop) => loop.length >= 3).map((loop) => loop.map((point): [number, number] => [point.x, point.z])), "NonZero"));
+    const grown = clearance > 0 ? keep(joined.offset(clearance, "Round", 2, 32)) : joined;
+    const outlines: Point[][] = [];
+    for (const polygon of grown.toPolygons()) {
+      let points = polygon.map(([x, z]) => ({ x, z }));
+      if (signedArea(points) <= 1) continue;
+      // Thinned out until it fits: first to a twentieth of a millimetre, then coarser for an outline with very many points.
+      for (let tolerance = 0.05; ; tolerance *= 2) {
+        const thinned = keep(keep(new runtime.CrossSection([points.map((point): [number, number] => [point.x, point.z])], "Positive")).simplify(tolerance)).toPolygons();
+        const largest = thinned.sort((a, b) => b.length - a.length)[0];
+        if (largest) points = largest.map(([x, z]) => ({ x, z }));
+        if (points.length <= MAX_BOX_GENERATOR_POCKET_POINTS || tolerance > 5) break;
+      }
+      const box = bounds(points);
+      if (box.maxX <= 0 || box.maxZ <= 0 || box.minX >= room.width || box.minZ >= room.depth) continue;
+      const round = (value: number) => Math.round(value * 100) / 100;
+      outlines.push(points.slice(0, MAX_BOX_GENERATOR_POCKET_POINTS).map((point) => ({ x: round(point.x), z: round(point.z) })));
+    }
+    return outlines;
+  } catch {
+    return [];
+  } finally {
+    made.forEach((value) => value.delete());
+  }
+}
+
 /** Whether the box's dividers need the 2D kernel: set by hand, with a wall at a slant. */
 export function boxGeneratorNeedsKernel(fields: BoxGeneratorFields) {
+  // Shaped pockets are cut into the box by the kernel.
+  if ((fields.boxPart ?? "box") === "box" && !fields.boxInsert && Array.isArray(fields.boxPockets) && fields.boxPockets.length > 0) return true;
+  // An insert's dividers are joined to its plate by the kernel.
+  if (fields.boxPart === "insert") return true;
   // Finger scoops are joined to the box by the kernel.
   if (fields.boxPart !== "lid" && Array.isArray(fields.boxScoops) && fields.boxScoops.length > 0) return true;
   if (fields.boxDividerMode !== "manual" || !Array.isArray(fields.boxWalls) || fields.boxWalls.length === 0) return false;
@@ -731,10 +823,12 @@ function pointInside(outline: Point[]): Point {
  */
 export function boxGeneratorWallRoom(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}) {
   const settings = normalizeBoxGenerator(size, fields);
-  if (settings.boxPart !== "box") return null;
-  const inner = insetConvex(counterClockwise(boxGeneratorOutline(settings)), settings.boxWall);
+  if (settings.boxPart === "lid") return null;
+  // An insert's room is the inside of its box: the insert's own outline, the play wider all round.
+  const whole = counterClockwise(boxGeneratorOutline(settings));
+  const inner = settings.boxPart === "insert" ? whole : insetConvex(whole, settings.boxWall);
   if (!inner) return null;
-  const box = bounds(inner);
+  const box = settings.boxPart === "insert" ? insertRoom(settings, whole) : bounds(inner);
   const shift = (points: Point[]) => points.map((point) => ({ x: point.x - box.minX, z: point.z - box.minZ }));
   const compartments: BoxGeneratorCompartment[] = boxGeneratorPlan(size, fields).cells.map((cell) => {
     const outline = shift(cell);
@@ -742,7 +836,8 @@ export function boxGeneratorWallRoom(size: BoxGeneratorSize, fields: BoxGenerato
   });
   const outside = bounds(boxGeneratorOutline(settings));
   // `inset` is how far the room's left and back lie inside the left and back of the whole box.
-  return { width: box.maxX - box.minX, depth: box.maxZ - box.minZ, inset: { x: box.minX - outside.minX, z: box.minZ - outside.minZ }, outline: shift(inner), compartments };
+  // `origin` is the room's left back corner measured from the middle of the part's outline, as the part is drawn.
+  return { width: box.maxX - box.minX, depth: box.maxZ - box.minZ, origin: { x: box.minX, z: box.minZ }, inset: { x: box.minX - outside.minX, z: box.minZ - outside.minZ }, outline: shift(inner), compartments };
 }
 
 /**
@@ -806,6 +901,8 @@ export type BoxGeneratorPlan = {
    */
   /** A plug lid: the ring that fits into the box (`outline`, with `hole` as the ring's inside, null for a solid plug) and the plate's thickness. */
   plug: { outline: Point[]; hole: Point[] | null; plate: number; loops: Point[][] } | null;
+  /** With shaped pockets: the height of the box's own floor, which no pocket goes below, and the top of the filling they are cut into. */
+  pockets?: { floor: number; top: number };
   issues: BoxGeneratorIssue[];
 };
 
@@ -842,9 +939,20 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
     return { settings, outer, cells: [inner], floorTop: Math.min(settings.boxLidPlate, settings.height - 0.5), stack: null, plate: null, plug: null, issues };
   }
 
-  // The lid of a stackable box has its plate for a floor and one open space for its cavity.
-  const use = stackedLid ? { ...settings, boxFloor: settings.boxLidPlate, boxColumns: 1, boxRows: 1, boxGridfinityPlate: false } : settings;
-  let floorTop = Math.min(use.boxFloor, settings.height - 0.5);
+  if (settings.boxPart === "insert") {
+    // The cells are what the dividers leave open of the insert's outline, for the sizes shown and the lid; the body is made in createBoxGeneratorGeometry.
+    const room = insertRoom(settings, outer);
+    const open = compartmentRegions(settings, outer, room, 0);
+    return { settings, outer, cells: open.regions.map((region) => region.outline), floorTop: Math.min(settings.boxFloor, settings.height - 0.5), stack: null, plate: null, plug: null, issues };
+  }
+  // The lid of a stackable box has its plate for a floor and one open space for its cavity; so has a box whose dividers are a loose insert.
+  const plain = stackedLid || settings.boxInsert;
+  const use = plain ? { ...settings, boxFloor: stackedLid ? settings.boxLidPlate : settings.boxFloor, boxDividerMode: "grid" as const, boxColumns: 1, boxRows: 1, boxGridfinityPlate: stackedLid ? false : settings.boxGridfinityPlate } : settings;
+  const ownFloor = Math.min(use.boxFloor, settings.height - 0.5);
+  let floorTop = ownFloor;
+  // Shaped pockets: the box is filled above its floor, and the pockets are cut into the filling (createBoxGeneratorGeometry).
+  const pocketed = settings.boxPart === "box" && !plain && settings.boxPockets.length > 0;
+  if (pocketed) floorTop = Math.min(settings.height, ownFloor + settings.boxPocketFill);
   if (!inner) {
     issues.push({ code: "wallTooThick" });
     return { settings, outer, cells: [], floorTop: settings.height, stack: null, plate: null, plug: null, issues };
@@ -876,10 +984,13 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
       }
     }
   }
-  const room = compartmentRegions(use, inner, bounds(inner), 0);
+  // Filled to the rim there is no compartment left open: the top is one flat face for the pockets to be cut into.
+  const room = pocketed && floorTop > settings.height - 0.5 ? { regions: [], solid: 0 } : compartmentRegions(use, inner, bounds(inner), 0);
+  if (pocketed && room.regions.length === 0) floorTop = settings.height;
   if (room.solid > 0) issues.push({ code: "compartmentSolid", count: room.solid });
   const islands = room.regions.map((region) => region.holes);
-  return { settings, outer, cells: room.regions.map((region) => region.outline), islands: islands.some((list) => list.length > 0) ? islands : undefined, floorTop, stack, plate, plug: null, issues };
+  const pockets = pocketed ? { floor: ownFloor, top: floorTop } : undefined;
+  return { settings, outer, cells: room.regions.map((region) => region.outline), islands: islands.some((list) => list.length > 0) ? islands : undefined, floorTop, stack, plate, plug: null, pockets, issues };
 }
 
 /**
@@ -921,6 +1032,58 @@ function compartmentRegions(use: NormalizedBoxGenerator, cut: Point[], box: Retu
     }
   }
   return { regions, solid };
+}
+
+/** The bounds of the box's inside as an insert sees them: the insert's own bounds, the play wider all round. */
+function insertRoom(settings: NormalizedBoxGenerator, outer: Point[]) {
+  const own = bounds(outer);
+  return { minX: own.minX - settings.boxFit, maxX: own.maxX + settings.boxFit, minZ: own.minZ - settings.boxFit, maxZ: own.maxZ + settings.boxFit };
+}
+
+/** The dividers of a part as walls: those set by hand, or the grid's from wall to wall, measured in a room this wide and deep. */
+function dividerWalls(settings: NormalizedBoxGenerator, width: number, depth: number): BoxGeneratorWall[] {
+  if (settings.boxDividerMode === "manual") return settings.boxWalls.filter((wall) => boxGeneratorWallLength(wall) >= MIN_BOX_GENERATOR_WALL_LENGTH);
+  const walls: BoxGeneratorWall[] = [];
+  const cellWidth = (width - (settings.boxColumns - 1) * settings.boxDivider) / settings.boxColumns;
+  const cellDepth = (depth - (settings.boxRows - 1) * settings.boxDivider) / settings.boxRows;
+  if (cellWidth > 0) for (let column = 1; column < settings.boxColumns; column += 1) walls.push({ dir: "z", at: column * (cellWidth + settings.boxDivider) - settings.boxDivider / 2, from: 0, to: depth });
+  if (cellDepth > 0) for (let row = 1; row < settings.boxRows; row += 1) walls.push({ dir: "x", at: row * (cellDepth + settings.boxDivider) - settings.boxDivider / 2, from: 0, to: width });
+  return walls;
+}
+
+/**
+ * An insert as closed triangles: everything inside its outline, from the bed to its height, that is plate or wall. The
+ * plate is a slab and every wall a block, both reaching past the outline and past bed and top, so the outline's prism
+ * cuts them cleanly and no two faces merely lie on each other. Null when Manifold cannot make it.
+ */
+function insertTriangles(runtime: ManifoldToplevel, settings: NormalizedBoxGenerator, outer: Point[]): Triangle[] | null {
+  const made: { delete(): void }[] = [];
+  const keep = <T extends { delete(): void }>(value: T) => {
+    made.push(value);
+    return value;
+  };
+  try {
+    const room = insertRoom(settings, outer);
+    const width = room.maxX - room.minX;
+    const depth = room.maxZ - room.minZ;
+    const floor = Math.min(settings.boxFloor, settings.height - 0.5);
+    const block = (points: Point[], y0: number, y1: number) => keep(runtime.Manifold.hull(points.flatMap((point): [number, number, number][] => [[point.x, y0, point.z], [point.x, y1, point.z]])));
+    const far = Math.max(width, depth) + 10;
+    const parts = [block([{ x: room.minX - far, z: room.minZ - far }, { x: room.maxX + far, z: room.minZ - far }, { x: room.maxX + far, z: room.maxZ + far }, { x: room.minX - far, z: room.maxZ + far }], -1, floor)];
+    for (const wall of dividerWalls(settings, width, depth)) {
+      parts.push(block(boxGeneratorWallQuad(wall, settings.boxDivider, { width, depth }).map((point) => ({ x: point.x + room.minX, z: point.z + room.minZ })), floor / 2, settings.height + 1));
+    }
+    const prism: MeshBuilder = { positions: [], indices: [] };
+    addCap(prism, outer, [], 0, "down");
+    addCap(prism, outer, [], settings.height, "up");
+    addWall(prism, outer, 0, settings.height, "out");
+    const result = keep(keep(manifoldOfTriangles(runtime, trianglesOf(prism))).intersect(keep(runtime.Manifold.union(parts))));
+    return result.status() === "NoError" && !result.isEmpty() ? trianglesOfManifold(result) : null;
+  } catch {
+    return null;
+  } finally {
+    new Set(made).forEach((value) => value.delete());
+  }
 }
 
 /** Whether an outline has no corner that points inwards. */
@@ -1118,6 +1281,28 @@ export function boxGeneratorMatchingLidPatch(size: BoxGeneratorSize, fields: Box
     height = settings.boxStackable ? Math.ceil(room * 2) / 2 : 3;
   }
   return { boxPart: "lid" as const, width: grown.width, depth: grown.depth, height };
+}
+
+/**
+ * What turns a box into its matching insert: the part, the size that fits the inside with the play all round, a height
+ * that ends a little under the rim, the corner radius of the inside, and a thin plate for the dividers to stand on.
+ * Dividers, their thickness and the play stay the box's own, so the insert's walls stand where the box's would.
+ */
+export function boxGeneratorMatchingInsertPatch(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}) {
+  const settings = normalizeBoxGenerator(size, fields);
+  const shrink = 2 * (settings.boxWall + settings.boxFit);
+  const floorTop = boxGeneratorPlan(size, { ...fields, boxPart: "box" }).floorTop;
+  const round = (value: number) => Math.round(value * 100) / 100;
+  return {
+    boxPart: "insert" as const,
+    width: round(Math.max(1, size.width - shrink)),
+    depth: round(Math.max(1, size.depth - shrink)),
+    height: round(Math.max(2, settings.height - floorTop - 0.5)),
+    boxCornerRadius: round(Math.max(0, settings.boxCornerRadius - settings.boxWall - settings.boxFit)),
+    boxFloor: DEFAULT_BOX_GENERATOR_INSERT_FLOOR,
+    boxInsert: undefined,
+    boxScoops: undefined,
+  };
 }
 
 type MeshBuilder = {
@@ -1343,12 +1528,65 @@ function joinScoops(runtime: ManifoldToplevel, body: Triangle[], pieces: ScoopPi
 }
 
 /**
+ * The box with its shaped pockets cut out by Manifold; the box as it is when that fails. Each pocket's outline is held
+ * inside the box's inside, a little away from the wall so the wall is never cut and no fin too thin to print is left, and
+ * is cut from above down to its depth, never below the box's own floor.
+ */
+function cutPockets(runtime: ManifoldToplevel, body: Triangle[], settings: NormalizedBoxGenerator, outer: Point[], levels: { floor: number; top: number }): Triangle[] {
+  const inner = insetConvex(outer, settings.boxWall);
+  const limit = insetConvex(outer, settings.boxWall + POCKET_WALL_GAP);
+  if (!inner || !limit) return body;
+  const origin = bounds(inner);
+  const made: { delete(): void }[] = [];
+  const keep = <T extends { delete(): void }>(value: T) => {
+    made.push(value);
+    return value;
+  };
+  try {
+    const ring = (points: Point[]) => counterClockwise(points).map((point): [number, number] => [point.x, point.z]);
+    const room = keep(new runtime.CrossSection([ring(limit)], "Positive"));
+    const cuts = settings.boxPockets.flatMap((pocket) => {
+      const outline = keep(new runtime.CrossSection([ring(pocket.points.map((point) => ({ x: point.x + origin.minX, z: point.z + origin.minZ })))], "Positive"));
+      const held = keep(outline.intersect(room));
+      const bottom = Math.max(levels.floor, levels.top - pocket.depth);
+      const loops = held.toPolygons().map((polygon) => dropDuplicates(polygon.map(([x, z]) => ({ x, z })))).filter((loop) => loop.length >= 3 && Math.abs(signedArea(loop)) > 0.5);
+      return regionsOfLoops(loops).regions.map((region) => {
+        const prism: MeshBuilder = { positions: [], indices: [] };
+        addCap(prism, region.outline, region.holes, bottom, "down");
+        addCap(prism, region.outline, region.holes, settings.height + 1, "up");
+        addWall(prism, region.outline, bottom, settings.height + 1, "out");
+        for (const hole of region.holes) addWall(prism, hole, bottom, settings.height + 1, "in");
+        return keep(manifoldOfTriangles(runtime, trianglesOf(prism)));
+      });
+    });
+    if (cuts.length === 0) return body;
+    const result = keep(keep(manifoldOfTriangles(runtime, body)).subtract(keep(runtime.Manifold.union(cuts))));
+    return result.status() === "NoError" && !result.isEmpty() ? trianglesOfManifold(result) : body;
+  } catch {
+    return body;
+  } finally {
+    new Set(made).forEach((value) => value.delete());
+  }
+}
+
+/**
  * The closed solid of a part from y = 0 to the height: the bottom, the outer wall, the top face between outline and
  * cells, the cells' walls facing inward and the floor of each cell.
  */
 export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGeneratorFields = {}): THREE.BufferGeometry {
-  const { outer, cells, islands, floorTop, settings, stack, plate, plug } = boxGeneratorPlan(size, fields);
+  const { outer, cells, islands, floorTop, settings, stack, plate, plug, pockets } = boxGeneratorPlan(size, fields);
   const mesh: MeshBuilder = { positions: [], indices: [] };
+  if (settings.boxPart === "insert") {
+    // The dividers are joined to the plate by Manifold: until it has loaded the insert is drawn as its plate alone and asks for it.
+    const runtime = loadedManifoldRuntime();
+    if (!runtime) requestManifoldRuntime();
+    const made = runtime ? insertTriangles(runtime, settings, outer) : null;
+    if (made) return geometryOf(made.flat(2), Array.from({ length: made.length * 3 }, (_, k) => k));
+    addCap(mesh, outer, [], 0, "down");
+    addWall(mesh, outer, 0, floorTop, "out");
+    addCap(mesh, outer, [], floorTop, "up");
+    return geometryOf(mesh.positions, mesh.indices);
+  }
   if (plug) {
     // The plate on the bed, the ring standing up from it: its outside, its top, and its inside down to the plate.
     addCap(mesh, outer, [], 0, "down");
@@ -1384,7 +1622,7 @@ export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGe
   });
   let { positions, indices } = mesh;
   const scooped = settings.boxPart === "box" && !plug ? scoopPieces(settings, outer, cells, islands, floorTop) : [];
-  if (plate || scooped.length > 0) {
+  if (plate || scooped.length > 0 || pockets) {
     // The sockets and the scoops need Manifold: until it has loaded the floor is drawn plain and asks for it (manifoldRevision in the cache key).
     const runtime = loadedManifoldRuntime();
     if (!runtime) requestManifoldRuntime();
@@ -1394,12 +1632,17 @@ export function createBoxGeneratorGeometry(size: BoxGeneratorSize, fields: BoxGe
         body.push([0, 1, 2].map((k) => [positions[indices[i + k] * 3], positions[indices[i + k] * 3 + 1], positions[indices[i + k] * 3 + 2]] as [number, number, number]));
       }
       if (scooped.length > 0) body = joinScoops(runtime, body, scooped, floorTop);
+      if (pockets) body = cutPockets(runtime, body, settings, outer, pockets);
       // The mesh holds its heights as 32-bit numbers: the sockets' top is put on exactly the floor's, or a sliver is left between them.
       if (plate) body = gridfinityCutSockets(runtime, body, plate.cells, Math.fround(floorTop) - GRIDFINITY_BASEPLATE_HEIGHT);
       positions = body.flat(2);
       indices = Array.from({ length: positions.length / 3 }, (_, k) => k);
     }
   }
+  return geometryOf(positions, indices);
+}
+
+function geometryOf(positions: number[], indices: number[]) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   geometry.setIndex(indices);
@@ -1424,6 +1667,9 @@ export function boxGeneratorFieldsOf(shape: Partial<WorkplaneShape>): BoxGenerat
     boxWalls: shape.boxWalls,
     boxScoops: shape.boxScoops,
     boxScoopRadius: shape.boxScoopRadius,
+    boxPockets: shape.boxPockets,
+    boxPocketFill: shape.boxPocketFill,
+    boxInsert: shape.boxInsert,
     boxPart: shape.boxPart,
     boxLidStyle: shape.boxLidStyle,
     boxLidPlate: shape.boxLidPlate,

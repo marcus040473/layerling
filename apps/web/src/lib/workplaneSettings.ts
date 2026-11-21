@@ -12,7 +12,7 @@ import { MAX_HIRTH_STEEP_FLANK, MAX_HIRTH_TEETH, MIN_HIRTH_STEEP_FLANK, MIN_HIRT
 import { PORT_PROFILES } from "@/lib/portGeometry";
 import { MAX_DRILL_POINT_ANGLE, MIN_DRILL_POINT_ANGLE } from "@/lib/drillPoint";
 import { MAX_GEAR_TEETH, MIN_GEAR_TEETH } from "@/lib/gearGeometry";
-import { boxGeneratorWallList, normalizeBoxGeneratorScoops, normalizeBoxGeneratorWalls } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorWallList, normalizeBoxGeneratorPockets, normalizeBoxGeneratorScoops, normalizeBoxGeneratorWalls } from "@/lib/boxGeneratorGeometry";
 import { GRIDFINITY_LABEL_FONTS, MIN_GRIDFINITY_LABEL_TEXT_SIZE } from "@/lib/gridfinityGeometry";
 import type { PortProfile } from "@/types/layerling";
 
@@ -650,7 +650,11 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       const boxScoops = boxGeneratorWallList(source.boxScoops);
       entry.boxScoops = boxScoops ? normalizeBoxGeneratorScoops(boxScoops) : fallbackEntry?.boxScoops;
       entry.boxScoopRadius = optionalShapeNumber(source.boxScoopRadius, fallbackEntry?.boxScoopRadius, 2, 60);
-      entry.boxPart = source.boxPart === "box" || source.boxPart === "lid" ? source.boxPart : fallbackEntry?.boxPart;
+      const boxPockets = boxGeneratorWallList(source.boxPockets);
+      entry.boxPockets = boxPockets ? normalizeBoxGeneratorPockets(boxPockets) : fallbackEntry?.boxPockets;
+      entry.boxPocketFill = optionalShapeNumber(source.boxPocketFill, fallbackEntry?.boxPocketFill, 1, MAX_CUSTOM_SHAPE_DIMENSION);
+      entry.boxPart = source.boxPart === "box" || source.boxPart === "lid" || source.boxPart === "insert" ? source.boxPart : fallbackEntry?.boxPart;
+      entry.boxInsert = source.boxInsert === true ? true : source.boxInsert === false ? undefined : fallbackEntry?.boxInsert;
       entry.boxLidStyle = source.boxLidStyle === "restOn" || source.boxLidStyle === "overlap" || source.boxLidStyle === "plug" ? source.boxLidStyle : fallbackEntry?.boxLidStyle;
       entry.boxLidPlate = optionalShapeNumber(source.boxLidPlate, fallbackEntry?.boxLidPlate, 0.4, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.boxFit = optionalShapeNumber(source.boxFit, fallbackEntry?.boxFit, 0, 2);

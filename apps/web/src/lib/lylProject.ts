@@ -33,7 +33,7 @@ import { isThreadProfile } from "@/lib/threadProfiles";
 import { PORT_PROFILES } from "@/lib/portGeometry";
 import { normalizePaintStroke, PAINT_MAX_STROKES } from "@/lib/paint";
 import { MAX_GEAR_TEETH, MIN_GEAR_TEETH } from "@/lib/gearGeometry";
-import { MAX_BOX_GENERATOR_SCOOPS, MAX_BOX_GENERATOR_WALLS } from "@/lib/boxGeneratorGeometry";
+import { MAX_BOX_GENERATOR_POCKETS, MAX_BOX_GENERATOR_POCKET_POINTS, MAX_BOX_GENERATOR_SCOOPS, MAX_BOX_GENERATOR_WALLS } from "@/lib/boxGeneratorGeometry";
 import { GRIDFINITY_LABEL_FONTS, GRIDFINITY_LABEL_TEXT_KEYS, MAX_GRIDFINITY_LABEL_TEXT_LENGTH, MAX_GRIDFINITY_OUTLINE_POINTS } from "@/lib/gridfinityGeometry";
 import type { PortProfile } from "@/types/layerling";
 import { normalizeSnapGrid, normalizeWorkspaceSettings } from "@/lib/workplaneSettings";
@@ -1969,7 +1969,7 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   }
   if (kind === "boxGenerator") {
     // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
-    for (const key of ["boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxLidPlate", "boxFit", "boxGridfinityColumns", "boxGridfinityRows", "boxStackHeight", "boxScoopRadius"] as const) {
+    for (const key of ["boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxLidPlate", "boxFit", "boxGridfinityColumns", "boxGridfinityRows", "boxStackHeight", "boxScoopRadius", "boxPocketFill"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (value < 0 || value > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
@@ -1977,17 +1977,36 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
     if (definition.boxShape !== undefined && definition.boxShape !== "rectangle" && definition.boxShape !== "round" && definition.boxShape !== "polygon") {
       throw new Error(`${label}.boxShape must be rectangle, round or polygon`);
     }
-    if (definition.boxPart !== undefined && definition.boxPart !== "box" && definition.boxPart !== "lid") {
-      throw new Error(`${label}.boxPart must be box or lid`);
+    if (definition.boxPart !== undefined && definition.boxPart !== "box" && definition.boxPart !== "lid" && definition.boxPart !== "insert") {
+      throw new Error(`${label}.boxPart must be box, lid or insert`);
     }
     if (definition.boxLidStyle !== undefined && definition.boxLidStyle !== "restOn" && definition.boxLidStyle !== "overlap" && definition.boxLidStyle !== "plug") {
       throw new Error(`${label}.boxLidStyle must be restOn, overlap or plug`);
     }
-    for (const key of ["boxGridfinity", "boxGridfinityFloor", "boxGridfinityPlate", "boxStackable", "boxLidCompartments"] as const) {
+    for (const key of ["boxGridfinity", "boxGridfinityFloor", "boxGridfinityPlate", "boxStackable", "boxLidCompartments", "boxInsert"] as const) {
       if (definition[key] !== undefined && typeof definition[key] !== "boolean") throw new Error(`${label}.${key} must be true or false`);
     }
     if (definition.boxDividerMode !== undefined && definition.boxDividerMode !== "grid" && definition.boxDividerMode !== "manual") {
       throw new Error(`${label}.boxDividerMode must be grid or manual`);
+    }
+    if (definition.boxPockets !== undefined) {
+      if (!Array.isArray(definition.boxPockets)) throw new Error(`${label}.boxPockets must be an array`);
+      const pockets = definition.boxPockets as unknown[];
+      if (pockets.length > MAX_BOX_GENERATOR_POCKETS) throw new Error(`${label}.boxPockets has too many entries`);
+      pockets.forEach((entry, index) => {
+        const at = `${label}.boxPockets[${index}]`;
+        if (!entry || typeof entry !== "object") throw new Error(`${at} must be an object`);
+        const pocket = entry as Record<string, unknown>;
+        const depth = finiteNumber(pocket.depth, `${at}.depth`);
+        if (depth < 0 || depth > 1e6) throw new Error(`${at}.depth is outside the supported range`);
+        if (!Array.isArray(pocket.points) || pocket.points.length < 3 || pocket.points.length > MAX_BOX_GENERATOR_POCKET_POINTS) throw new Error(`${at}.points must be a list of 3 to ${MAX_BOX_GENERATOR_POCKET_POINTS} points`);
+        (pocket.points as unknown[]).forEach((point, position) => {
+          if (!point || typeof point !== "object") throw new Error(`${at}.points[${position}] must be an object`);
+          for (const key of ["x", "z"] as const) {
+            if (Math.abs(finiteNumber((point as Record<string, unknown>)[key], `${at}.points[${position}].${key}`)) > 1e6) throw new Error(`${at}.points[${position}].${key} is outside the supported range`);
+          }
+        });
+      });
     }
     if (definition.boxScoops !== undefined) {
       if (!Array.isArray(definition.boxScoops)) throw new Error(`${label}.boxScoops must be an array`);

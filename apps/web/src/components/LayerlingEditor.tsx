@@ -22,7 +22,7 @@ import { hingePartScope, hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
 import { GRIDFINITY_SWALLOWTAIL_KEY_THICKNESS, gridfinityHasLabelText, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlatePieceKeys, gridfinityPlatePieces, gridfinityPlateSplit, gridfinityPlateToWorld, gridfinitySceneWithKeys, gridfinitySceneWithPieces, gridfinitySwallowtailKeyCount, gridfinitySwallowtailKeyProfile, gridfinitySwallowtailKeys } from "@/lib/gridfinityGeometry";
-import { boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorMatchingLidPatch, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorMatchingInsertPatch, boxGeneratorMatchingLidPatch, boxGeneratorPocketOutlines, boxGeneratorWallRoom, MAX_BOX_GENERATOR_POCKETS, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
 import { curvedTextPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING } from "@/lib/textGeometry";
@@ -13677,6 +13677,74 @@ export function LayerlingEditor({
     commitShapes([...shapesRef.current, lid], [lid.id], t("status.boxLidMade", { name }));
   }, [commitShapes]);
 
+  /**
+   * A shaped pocket for a part: the part's outline seen from above, where it lies over the box, is grown by the box's play
+   * and cut into a filling of the box (boxPockets), as deep as the part is high. The part itself stays as it is.
+   */
+  const makeBoxPocket = useCallback(async (boxId: string, sourceId: string) => {
+    if (refuseLockedSelection()) return;
+    const box = shapesRef.current.find((shape) => shape.id === boxId);
+    const source = shapesRef.current.find((shape) => shape.id === sourceId);
+    if (!box || !source || box.kind !== "boxGenerator") return;
+    if (!gridfinityPlateFlat(box)) {
+      setNotice(t("status.boxPocketTilted"));
+      return;
+    }
+    const size = { width: shapeWidth(box), depth: shapeDepth(box), height: box.height };
+    const settings = normalizeBoxGenerator(size, box);
+    const room = boxGeneratorWallRoom(size, box);
+    if (!room) return;
+    if (settings.boxPockets.length >= MAX_BOX_GENERATOR_POCKETS) {
+      setNotice(t("status.boxPocketFull", { count: MAX_BOX_GENERATOR_POCKETS }));
+      return;
+    }
+    const sourceFingerprint = projectShapesFingerprint(shapesRef.current);
+    const sourceProjectId = projectInfoRef.current.projectId;
+    setNotice(t("status.gridfinityOutlineReading"), true);
+    try {
+      const { loops } = await silhouetteLoops([withHoleMode(source, false)]);
+      // From the workplane into the box's own frame, then measured from the left and the back of its inside.
+      const own = gridfinityOutlineToPlate(loops.map((loop) => loop.map(([x, z]) => ({ x, z }))), box).map((loop) => loop.map((point) => ({ x: point.x - room.origin.x, z: point.z - room.origin.z })));
+      const outlines = boxGeneratorPocketOutlines(await getManifoldRuntime(), own, settings.boxFit, room).slice(0, MAX_BOX_GENERATOR_POCKETS - settings.boxPockets.length);
+      if (outlines.length === 0) {
+        setNotice(t("status.boxPocketOutside"));
+        return;
+      }
+      if (projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint) {
+        setNotice(t("status.gridfinityOutlineChanged"));
+        return;
+      }
+      const depth = Math.max(1, Math.round(source.height * 10) / 10);
+      const pocketed = canonicalizeShape({ ...box, boxPockets: [...settings.boxPockets, ...outlines.map((points) => ({ points, depth }))] });
+      commitShapes(shapesRef.current.map((shape) => (shape.id === box.id ? pocketed : shape)), box.id, t("status.boxPocketMade", { name: displayShapeName(source) }));
+    } catch (error) {
+      setNotice(error instanceof Error ? localizedError(error.message) : t("status.boxPocketOutside"), true);
+    }
+  }, [commitShapes, refuseLockedSelection]);
+
+  /**
+   * The box's dividers as a loose insert: a copy of the box set to Insert is laid in front of it, sized to fit its inside
+   * with the play all round (boxGeneratorMatchingInsertPatch), and the box itself is drawn smooth inside from then on.
+   */
+  const makeBoxInsert = useCallback((boxId: string) => {
+    const box = shapesRef.current.find((shape) => shape.id === boxId);
+    if (!box || box.kind !== "boxGenerator") return;
+    if (box.locked) {
+      setNotice(t("status.objectLocked"), true);
+      return;
+    }
+    if (historyViewStateRef.current) {
+      setNotice(t("status.historyViewBlocksEdits"), true);
+      return;
+    }
+    const size = { width: shapeWidth(box), depth: shapeDepth(box), height: box.height };
+    const patch = boxGeneratorMatchingInsertPatch(size, boxGeneratorFieldsOf(box));
+    const name = `${displayShapeName(box)} \u2013 ${t("boxGenerator.partInsert")}`;
+    const beside = applyShapeMoveDelta(withCopyName(cloneWorkplaneShapeTreeWithFreshIds(box, "copy"), shapeNamesIn(shapesRef.current), copyNamePatterns()), { ...ZERO_MOVE_DELTA, dz: size.depth / 2 + patch.depth / 2 + 10 });
+    const insert = canonicalizeShape({ ...beside, ...patch, size: resizedShapeSize(patch.width, patch.depth), name });
+    commitShapes([...shapesRef.current.map((shape) => (shape.id === boxId ? canonicalizeShape({ ...shape, boxInsert: true }) : shape)), insert], [insert.id], t("status.boxInsertMade", { name }));
+  }, [commitShapes]);
+
   const makeSwallowtailKeys = useCallback(async (plateId: string) => {
     const fail = (message: string) => {
       setNotice(message, true);
@@ -20879,6 +20947,7 @@ export function LayerlingEditor({
           onSelectionColor={setSelectionColor}
           onSelectionUpdateShapes={updateShapesTogether}
           onSelectionFitGridfinityOutline={fitGridfinityOutline}
+          onSelectionMakeBoxPocket={makeBoxPocket}
           onSelectionLock={toggleLocked}
           onSelectionHide={toggleHidden}
           onWrapAroundCylinder={selectedShapes.length === 1 && offersCylinderWrap(selectedShape) ? wrapSelectionAroundCylinder : undefined}
@@ -20898,6 +20967,7 @@ export function LayerlingEditor({
           onVaseAssembled={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id, true) : undefined}
           vaseAssemblyReport={selectedShape && vaseAssemblyReport?.vaseId === selectedShape.id ? vaseAssemblyReport.lines : undefined}
           onMakeBoxLid={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLid(selectedShape.id) : undefined}
+          onMakeBoxInsert={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxInsert(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
           onBoltSplit={selectedShapes.length === 1 && selectedShape && boltSplitFits(selectedShape) && !historyViewState ? (pins, filament) => void splitBoltForPrint(selectedShape.id, { pins, filament }) : undefined}
           onGridfinitySplit={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && !historyViewState ? () => void splitGridfinityPlate(selectedShape.id) : undefined}

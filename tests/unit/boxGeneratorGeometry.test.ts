@@ -12,6 +12,8 @@ import {
   boxGeneratorInsideOutline,
   boxGeneratorGridfinityRoom,
   boxGeneratorGridWalls,
+  boxGeneratorPocketOutlines,
+  boxGeneratorMatchingInsertPatch,
   boxGeneratorScoopOf,
   boxGeneratorScoopsWith,
   boxGeneratorMirroredWalls,
@@ -643,6 +645,97 @@ describe("the matching lid of a box", () => {
       expect(both.map((scoop) => scoop.side).sort()).toEqual(["back", "front"]);
       expect(boxGeneratorScoopsWith(both, left, null)).toHaveLength(1);
       expect(normalizeBoxGenerator(SIZE, { boxScoops: [{ x: 1, z: 2, side: "up" }, { x: Number.NaN, z: 2 }, null] as never, boxScoopRadius: 500 })).toMatchObject({ boxScoops: [{ x: 1, z: 2, side: "front" }], boxScoopRadius: 60 });
+    });
+
+    it("makes the dividers a loose insert: a thin plate with the walls on it, and the box smooth inside", async () => {
+      const runtime = await manifoldModule();
+      runtime.setup();
+      rememberManifoldRuntime(runtime);
+      const boxFields = manual([{ dir: "z", at: 60, from: 0, to: 85.2 }, { dir: "x", at: 30, from: 0, to: 60 }, { dir: "x", at: 60, from: 80, to: 100 }], { boxFit: 0.3 });
+      // The box with its dividers as an insert is the box without dividers.
+      expect(volumeOf(createBoxGeneratorGeometry(SIZE, { ...boxFields, boxInsert: true }))).toBeCloseTo(volumeOf(createBoxGeneratorGeometry(SIZE, PLAIN)), 3);
+      expect(boxGeneratorPlan(SIZE, { ...boxFields, boxInsert: true }).cells).toHaveLength(1);
+      const patch = boxGeneratorMatchingInsertPatch(SIZE, boxFields);
+      expect(patch).toMatchObject({ boxPart: "insert", width: 126 - 5.4, depth: 90 - 5.4, height: 48 - 2.4 - 0.5, boxCornerRadius: 0, boxFloor: 0.8 });
+      const { width, depth, height, ...rest } = patch;
+      const insertSize = { width, depth, height };
+      const insertFields = { ...boxFields, ...rest };
+      const geometry = createBoxGeneratorGeometry(insertSize, insertFields);
+      expect(openEdges(geometry)).toBe(0);
+      // The plate, and the walls above it: each as long as in the box less the play where it ran to the box's wall.
+      const wallArea = 1.6 * (85.2 - 0.6) + 1.6 * (60 - 0.8 - 0.3) + 1.6 * 20;
+      expect(volumeOf(geometry)).toBeCloseTo(width * depth * 0.8 + wallArea * (height - 0.8), 0);
+      // The first wall stands 60 mm from the inside of the box, so 59.7 mm from the insert's own left edge.
+      const position = geometry.getAttribute("position");
+      const xs = new Set<number>();
+      for (let i = 0; i < position.count; i += 1) if (position.getY(i) > 10) xs.add(Math.round(position.getX(i) * 100) / 100);
+      expect(xs.has(Math.round((-width / 2 + 59.7 - 0.8) * 100) / 100)).toBe(true);
+      expect(boxGeneratorWallRoom(insertSize, insertFields)).toMatchObject({ width: expect.closeTo(121.2, 5), depth: expect.closeTo(85.2, 5), inset: { x: expect.closeTo(-0.3, 5), z: expect.closeTo(-0.3, 5) } });
+      expect(boxGeneratorWallRoom(insertSize, insertFields)!.compartments).toHaveLength(3);
+      // The grid's dividers, a round box and a slanted wall: closed bodies; without the kernel, the plate alone.
+      expect(openEdges(createBoxGeneratorGeometry(insertSize, { boxPart: "insert", boxFloor: 0.8, boxColumns: 3, boxRows: 2 }))).toBe(0);
+      expect(openEdges(createBoxGeneratorGeometry(insertSize, { ...insertFields, boxShape: "round", boxWalls: [{ dir: "x", at: 10, from: 0, to: 121.2, slant: 60 }, { dir: "z", at: 60, from: 0, to: 500 }] }))).toBe(0);
+      rememberManifoldRuntime(null as never);
+      expect(volumeOf(createBoxGeneratorGeometry(insertSize, insertFields))).toBeCloseTo(width * depth * 0.8, 1);
+      rememberManifoldRuntime(runtime);
+    });
+
+    it("fills the box and cuts a shaped pocket into the filling, as deep as it is asked to be and never through the floor", async () => {
+      const runtime = await manifoldModule();
+      runtime.setup();
+      rememberManifoldRuntime(runtime);
+      const square = [{ x: 20, z: 20 }, { x: 60, z: 20 }, { x: 60, z: 50 }, { x: 20, z: 50 }];
+      const fields = { boxCornerRadius: 0, boxPockets: [{ points: square, depth: 10 }] };
+      expect(boxGeneratorNeedsKernel(fields)).toBe(true);
+      const geometry = createBoxGeneratorGeometry(SIZE, fields);
+      expect(openEdges(geometry)).toBe(0);
+      // Filled to the rim, less the pocket of 40 x 30 mm, 10 mm deep.
+      expect(volumeOf(geometry)).toBeCloseTo(126 * 90 * 48 - 40 * 30 * 10, 0);
+      // Deeper than the filling it ends on the box's own floor.
+      expect(volumeOf(createBoxGeneratorGeometry(SIZE, { boxCornerRadius: 0, boxPockets: [{ points: square, depth: 500 }] }))).toBeCloseTo(126 * 90 * 48 - 40 * 30 * (48 - 2.4), 0);
+      // A filling of 20 mm leaves the box open above it, with its dividers; the pocket is cut from the filling's top.
+      const low = { boxCornerRadius: 0, boxColumns: 2, boxPocketFill: 20, boxPockets: [{ points: square, depth: 8 }] };
+      const lowGeometry = createBoxGeneratorGeometry(SIZE, low);
+      expect(openEdges(lowGeometry)).toBe(0);
+      expect(boxGeneratorPlan(SIZE, low).cells).toHaveLength(2);
+      expect(boxGeneratorPlan(SIZE, low).floorTop).toBeCloseTo(22.4, 6);
+      const open = volumeOf(createBoxGeneratorGeometry(SIZE, { boxCornerRadius: 0, boxColumns: 2 }));
+      // The pocket reaches 0.2 mm into the divider: that is cut away all the way up too, so the part can be put in from above.
+      expect(volumeOf(lowGeometry) - open).toBeCloseTo((121.2 - 1.6) * 85.2 * 20 - 40 * 30 * 8 - 0.2 * 30 * (48 - 22.4), 0);
+      // A pocket that reaches past the inside is held 0.8 mm away from the wall, so the wall stays whole.
+      const wide = createBoxGeneratorGeometry(SIZE, { boxCornerRadius: 0, boxPockets: [{ points: [{ x: -50, z: 30 }, { x: 300, z: 30 }, { x: 300, z: 50 }, { x: -50, z: 50 }], depth: 10 }] });
+      expect(openEdges(wide)).toBe(0);
+      expect(volumeOf(wide)).toBeCloseTo(126 * 90 * 48 - (121.2 - 1.6) * 20 * 10, 0);
+      // Round box, several pockets, one of them with a corner pointing inwards: a closed body. Without the kernel, the filled box.
+      const more = { boxShape: "round" as const, boxPockets: [{ points: square, depth: 6 }, { points: [{ x: 70, z: 20 }, { x: 100, z: 20 }, { x: 100, z: 60 }, { x: 85, z: 35 }, { x: 70, z: 60 }], depth: 12 }] };
+      expect(openEdges(createBoxGeneratorGeometry(SIZE, more))).toBe(0);
+      rememberManifoldRuntime(null as never);
+      expect(volumeOf(createBoxGeneratorGeometry(SIZE, fields))).toBeCloseTo(126 * 90 * 48, 1);
+      rememberManifoldRuntime(runtime);
+      expect(normalizeBoxGenerator(SIZE, { boxPockets: [{ points: square, depth: 5 }, { points: [{ x: 1, z: 1 }], depth: 5 }, { points: square }, null] as never }).boxPockets.map((pocket) => pocket.depth)).toEqual([5, 10000]);
+    });
+
+    it("makes a pocket's outline from a part's outlines: joined, grown by the play, thinned out, and only what lies over the box", async () => {
+      const runtime = await manifoldModule();
+      runtime.setup();
+      const room = { width: 121.2, depth: 85.2 };
+      const square = (x: number, z: number, size: number) => [{ x, z }, { x: x + size, z }, { x: x + size, z: z + size }, { x, z: z + size }];
+      // Two squares that overlap give one outline; grown by 0.5 mm it reaches from 9.5 to 40.5.
+      const [joined, ...rest] = boxGeneratorPocketOutlines(runtime, [square(10, 10, 20), square(20, 10, 20)], 0.5, room);
+      expect(rest).toHaveLength(0);
+      expect(Math.min(...joined.map((point) => point.x))).toBeCloseTo(9.5, 1);
+      expect(Math.max(...joined.map((point) => point.x))).toBeCloseTo(40.5, 1);
+      expect(Math.max(...joined.map((point) => point.z))).toBeCloseTo(30.5, 1);
+      // A ring gives its outside only; a part beside the box gives nothing.
+      const ring = boxGeneratorPocketOutlines(runtime, [square(10, 10, 40), square(20, 20, 20).reverse()], 0, room);
+      expect(ring).toHaveLength(1);
+      expect(ring[0]).toHaveLength(4);
+      expect(boxGeneratorPocketOutlines(runtime, [square(200, 10, 20)], 0.3, room)).toEqual([]);
+      // A circle of very many points comes back with few enough to store.
+      const circle = Array.from({ length: 5000 }, (_, index) => ({ x: 50 + 20 * Math.cos((index / 5000) * Math.PI * 2), z: 40 + 20 * Math.sin((index / 5000) * Math.PI * 2) }));
+      const [round] = boxGeneratorPocketOutlines(runtime, [circle], 0.3, room);
+      expect(round.length).toBeLessThanOrEqual(400);
+      expect(round.length).toBeGreaterThan(20);
     });
 
     it("keeps only walls that make sense, and cuts them to the inside without changing the list", () => {

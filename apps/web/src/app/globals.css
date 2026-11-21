@@ -10546,6 +10546,12 @@ html[data-theme="dark"] .rotation-angle-badge {
 }
 
 /* Box generator, dividers by hand: the box from above (BoxWallsPlan). */
+.box-walls-plan .box-walls-plan-pocket {
+  fill: rgba(47, 143, 91, 0.18);
+  stroke: #2f8f5b;
+  pointer-events: none;
+}
+
 .box-walls-plan .box-walls-plan-scoop {
   stroke: #2f8f5b;
   stroke-linecap: round;
