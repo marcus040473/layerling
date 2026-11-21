@@ -170,10 +170,11 @@ export function ScalePercentPanel({
         ) : null}
       </ToolSection>
 
-      {error ? <p className="edge-modifier-error" role="alert">{error}</p> : isUnchangedPercent(settings.percent) ? (
+      {!error && isUnchangedPercent(settings.percent) ? (
         <ToolStatus state="needed" text={t("toolSidebar.nothingToApply")} />
       ) : null}
-
+      {/* The message stands right before the buttons' row, where it stays in view with them (Discussion #1869). */}
+      {error ? <p className="edge-modifier-error" role="alert">{error}</p> : null}
       <div className="edge-modifier-footer">
         <ToolCancel onClick={onCancel} />
         <ToolApply label={t("scalePercent.apply")} disabled={!canApply} onClick={() => onApply(percentToApply)} />

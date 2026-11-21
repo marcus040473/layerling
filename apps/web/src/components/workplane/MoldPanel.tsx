@@ -272,7 +272,7 @@ export function MoldPanel({
                 : t("mold.analysis.noUndercut")}</p>
               {!analysis.findings.some((finding) => finding.kind === "airTrap") && settings.sprue ? <p>{t("mold.analysis.airOk")}</p> : null}
               {analysis.findings.length ? (
-                <ul className="layer-check-list" aria-label={t("layerCheck.listLabel")}>
+                <ul className="layer-check-list" aria-label={t("mold.analysis")}>
                   {analysis.findings.map((finding) => (
                     <li key={finding.id} className={`layer-check-row ${finding.level}`} data-kind={finding.kind}>
                       <span className="layer-check-row-text">

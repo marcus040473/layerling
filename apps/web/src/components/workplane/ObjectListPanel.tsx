@@ -204,10 +204,9 @@ export function ObjectListPanel({
     return translated || shape.kind;
   };
 
-  // A part whose shape is locked keeps its name (#1277), so the list does not open a field the editor then refuses
-  // (Issue #1836). A part under the padlock alone can still be renamed.
   const startRename = (shape: WorkplaneShape, e: MouseEvent) => {
     e.stopPropagation();
+    // Lock shape (#1836): the name is held with the shape, so no field opens that would refuse what is typed into it.
     if (shape.shapeLocked) return;
     setEditingId(shape.id);
     setEditingDraft(getShapeDisplayName(shape));

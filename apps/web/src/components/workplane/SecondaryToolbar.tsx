@@ -23,7 +23,7 @@ import { ribbonSectionOrders, useRibbonOrder } from "@/lib/ribbonOrder";
 import { ribbonToolOrderFor, sortByRibbonToolOrder, useRibbonToolOrder } from "@/lib/ribbonToolOrder";
 import { ribbonCollapsePriority, ribbonFoldOf, useRibbonFold } from "@/lib/ribbonFold";
 import { normalizePolygonSides, normalizeStarInnerPercent, SKETCH_POLYGON_MAX_SIDES, SKETCH_POLYGON_MIN_SIDES, SKETCH_STAR_MAX_INNER_PERCENT, SKETCH_STAR_MIN_INNER_PERCENT } from "@/lib/sketchPrimitives";
-import { SketchBoltCircleIcon, SketchEllipseIcon, SketchHalfCircleIcon, SketchPieSliceIcon, ToolbarAlignIcon, ToolbarAttachmentsIcon, ToolbarBuildPlatesIcon, ToolbarCenterOnWorkplaneIcon, ToolbarChamferIcon, ToolbarCaretDownIcon, ToolbarCookieCutterIcon, ToolbarFlexiIcon, ToolbarLidIcon, ToolbarMoldIcon,
+import { SketchBoltCircleIcon, SketchEllipseIcon, SketchHalfCircleIcon, SketchPieSliceIcon, ToolbarAlignIcon, ToolbarMoldIcon, ToolbarAttachmentsIcon, ToolbarBuildPlatesIcon, ToolbarCenterOnWorkplaneIcon, ToolbarChamferIcon, ToolbarCaretDownIcon, ToolbarCookieCutterIcon, ToolbarFlexiIcon, ToolbarLidIcon,
   ToolbarCableChannelIcon, ToolbarCopyIcon, ToolbarDuplicateIcon, ToolbarDropToWorkplaneIcon, ToolbarBundleIcon, ToolbarGroupIcon, ToolbarGuideIcon, ToolbarHideSelectedIcon, ToolbarHomeIcon, ToolbarImportIcon, ToolbarIntersectionIcon,ToolbarClearanceIcon, ToolbarPrintCheckIcon, ToolbarLayerCheckIcon, ToolbarHullIcon, ToolbarLoftSketchesIcon, ToolbarKeyboardIcon, ToolbarFilletIcon, ToolbarHistoryIcon, ToolbarHollowIcon, ToolbarOffsetIcon, ToolbarCutOutIcon, ToolbarPunchIcon, ToolbarDeleteFaceIcon, ToolbarSimplifyIcon, ToolbarMakeExactIcon, ToolbarSurfaceTextureIcon, ToolbarPaintIcon, ToolbarMirrorIcon, ToolbarRotationPivotIcon, ToolbarPatternIcon, ToolbarHolePatternIcon, ToolbarFaceToolIcon, ToolbarSupportRibIcon, ToolbarStencilBridgeIcon, ToolbarConstructionLineIcon, ToolbarMiddleLineIcon, ToolbarLayFlatIcon, ToolbarMateFacesIcon, ToolbarNoteIcon, ToolbarSplitIcon, ToolbarPasteIcon, ToolbarRedoIcon, ToolbarSnapGridIcon, ToolbarSettingsIcon, ToolbarShapeAddIcon, ToolbarTrashIcon, ToolbarUngroupIcon, ToolbarUndoIcon, ToolbarVectorExportIcon } from "../icons";
 import { type SketchPrimitive, type SketchTool } from "../SketchWorkspace";
 import { CommandPalette, type PaletteCommand } from "./CommandPalette";
@@ -326,6 +326,8 @@ export function SecondaryToolbar({
   mateFacesActive,
   onHolePattern,
   holePatternActive,
+  onThreadInsert,
+  threadInsertActive,
   canHolePattern,
   onFaceTool,
   faceToolActive,
@@ -521,6 +523,8 @@ export function SecondaryToolbar({
   mateFacesActive: boolean;
   onHolePattern: () => void;
   holePatternActive: boolean;
+  onThreadInsert: () => void;
+  threadInsertActive: boolean;
   canHolePattern: boolean;
   onFaceTool: () => void;
   faceToolActive: boolean;
@@ -796,6 +800,13 @@ export function SecondaryToolbar({
     onToolbarModeChange(mode);
   };
   const addShapeFromMenu = (shape: ShapeAsset) => {
+    if (shape.id === "threadInsert") {
+      if (canHolePattern || threadInsertActive) {
+        onThreadInsert();
+        closeShapesAfterPick();
+      }
+      return;
+    }
     onAddShape({ ...shape, name: shapeAssetLabel(shape) });
     closeShapesAfterPick();
   };
@@ -1091,7 +1102,8 @@ export function SecondaryToolbar({
         title={shapeAssetMenuLabel(shape).replace(/\s+/g, " ")}
         aria-label={shapeAssetMenuLabel(shape).replace(/\s+/g, " ")}
         style={{ "--shape-default-color": shapeAssetColor(shape, shapeCustomizations[shape.kind]) } as CSSProperties}
-        draggable
+        draggable={shape.id !== "threadInsert"}
+        disabled={shape.id === "threadInsert" && !canHolePattern && !threadInsertActive}
         onClick={() => {
           if (suppressNextShapeClickRef.current) {
             suppressNextShapeClickRef.current = false;
@@ -1141,6 +1153,10 @@ export function SecondaryToolbar({
           addShapeFromMenu(shape);
         }}
         onDragStart={(event) => {
+          if (shape.id === "threadInsert") {
+            event.preventDefault();
+            return;
+          }
           event.dataTransfer.effectAllowed = "copy";
           event.dataTransfer.setData("application/x-layerling-shape", JSON.stringify(shape));
         }}

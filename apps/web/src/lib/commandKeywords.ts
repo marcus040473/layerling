@@ -93,6 +93,7 @@ export const COMMAND_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
 
 /** The words of a shape, beyond its name: what people call it elsewhere. */
 export const SHAPE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
+  threadInsert: ["thread insert", "threaded insert", "heat set", "heat-set", "heat set insert", "brass insert", "insert nut", "screw insert", "m3 insert", "hole for insert", "gewindeeinsatz", "gewindeeinsätze", "gewindebuchse", "einpressmutter", "einschmelzmutter", "messingeinsatz", "schraubeneinsatz", "bohrung für einsatz"],
   box: ["cube", "block", "quader", "wuerfel", "würfel", "rechteck"],
   roundedBox: ["rounded cube", "abgerundet", "rounded box", "rundquader"],
   cylinder: ["tube", "pipe", "rod", "zylinder", "rohr", "stab", "walze", "drill point", "drilled hole", "blind hole", "bohrerspitze", "bohrspitze", "bohrung", "sackloch"],

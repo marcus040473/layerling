@@ -345,7 +345,8 @@ describe("the surface texture card in a shape's settings", () => {
 
   it("lets a box be a texture mask, which turns it transparent", () => {
     const box = canonicalizeShape({ ...cylinder, id: "b1", name: "Box", kind: "box" });
-    const { panel, calls } = mount(box);
+    // The mask choice is in the docked tool, so the card is mounted as inside an editor.
+    const { panel, calls } = mount(box, true);
     const mask = [...panel.querySelectorAll<HTMLSelectElement>("select")].find((select) => [...select.options].some((option) => option.value === "exclude"))!;
     expect(mask.value).toBe("none");
     choose(mask, "exclude");

@@ -44,7 +44,7 @@ Obliko lahko povlečeš čez rob plošče in jo pustiš tam, približno za širi
 
 ## Zaskakovanje med premikanjem
 
-Če oblika vlečeš čez delovno ravnino, se zaskoči na druge oblike: njen levi, desni, sprednji ali zadnji rob ali njena sredina se položi natanko na rob ali sredino druge oblike. Roza pomožna črta kaže, na kaj je ravno pripeta. Tako postaviš dva dela poravnana drug ob drugega ali sredinsko drug za drugim, ne da bi vpisoval številke. To velja tudi, če je mreža izklopljena. Šteje tudi sredina delovne ravnine: rožnate črte pokažejo, kdaj oblika stoji na sredini plošče vzdolž X, Y ali obeh.
+Če oblika vlečeš čez delovno ravnino, se zaskoči na druge oblike: njen levi, desni, sprednji ali zadnji rob ali njena sredina se položi natanko na rob ali sredino druge oblike. Roza pomožna črta kaže, na kaj je ravno pripeta. Tako postaviš dva dela poravnana drug ob drugega ali sredinsko drug za drugim, ne da bi vpisoval številke. To velja tudi, če je mreža izklopljena. Šteje tudi sredina delovne ravnine: rožnate črte pokažejo, kdaj oblika stoji na sredini plošče vzdolž X, Y ali obeh. Oblika, ki stoji pokonci s stranicami vzdolž X in Y, se zaskoči tudi na steno, v katero zadene, tudi na notranjo steno škatle, izdolbenega telesa ali uvoženega ohišja, tako da del sede tesno v kot ohišja.
 
 Pripenjanje deluje tudi pri spreminjanju velikosti: ko vlečeš stranski ročaj, se ta stranica ustavi na robovih in središčih drugih oblik in ob steni, v katero zadene, tudi ob notranji steni škatle, izdolbenega telesa ali uvoženega ohišja, rožnata črta pa pokaže kje. Ta mera ostane natančno taka, zunaj mreže. Tako del zapolni ohišje od stene do stene: prisloni ga k eni steni in njegovo drugo stranico povleci do nasprotne. Z [[Alt]] oblika raste iz sredine in vlečena stranica se pripne enako; s [[Shift]] obdrži razmerja in se ne pripne. To deluje na ravni delovni ravnini za oblike, ki stojijo pokonci s stranicami vzdolž X in Y, {{ui:workspace.objectSnap}} pa to izklopi skupaj s pripenjanjem med premikanjem.
 
@@ -52,7 +52,7 @@ Pripenjanje deluje tudi pri spreminjanju velikosti: ko vlečeš stranski ročaj,
 
 Ali povleci rdečo ali zeleno puščico na vrhu izbire: premika samo vzdolž X ali samo vzdolž Y, oblika pa sledi miški po tej črti tudi v nizkem pogledu, kjer prosto vlečenje uide daleč. Puščici se pripenjata kot pri vlečenju, [[Alt]] to izklopi, prevoženo razdaljo pa lahko potem klikneš in vpišeš natančno.
 
-Če je [[Alt]] že pritisnjen, ko se vlečenje začne, vlečeš kopijo, kot v Tinkercadu: oblika ostane, kjer je, kopija pa pristane tam, kjer spustiš. Če [[Alt]] pritisneš šele med potjo, se zaskakovanje prekine in oblika sledi samo mreži. Tudi pri vlečenju kopije se zaskoči šele, ko [[Alt]] med potjo spustiš. Zaskakovanje lahko povsem izklopiš v meniju pripenjanja spodaj desno ({{ui:inspector.objectSnap}}) ali v nastavitvah. Zaenkrat se zaskoči samo premikanje na običajni delovni ravnini, ne dviganje in ne sprememba velikosti.
+Če je [[Alt]] že pritisnjen, ko se vlečenje začne, vlečeš kopijo, kot v Tinkercadu: oblika ostane, kjer je, kopija pa pristane tam, kjer spustiš. Če [[Alt]] pritisneš šele med potjo, se zaskakovanje prekine in oblika sledi samo mreži. Tudi pri vlečenju kopije se zaskoči šele, ko [[Alt]] med potjo spustiš. Zaskakovanje lahko povsem izklopiš v meniju pripenjanja spodaj desno ({{ui:inspector.objectSnap}}) ali v nastavitvah. Na običajni delovni ravnini se zaskočijo premikanje in stranski ročaji, dviganje in ročaj na zgornji ploskvi pa ne.
 
 ## Poravnava
 
@@ -162,6 +162,17 @@ Luknje sprejme tudi okrogla stena valja, cevi ali izvrtine: lonček za svinčnik
 Umetna inteligenca lahko isto naredi prek vmesnika MCP, z `layerling_perforate_face` (glej poglavje [Umetna inteligenca z MCP](chapter:ai-z-mcp)).
 
 Na plošči ali pokrovu z zarezami ob straneh {{ui:holePattern.arrangement.perimeter}} razporedi luknje neenakomerno. Zato ima {{ui:holePattern.title}} poleg {{ui:holePattern.mode.pattern}} še drugi zavihek, {{ui:holePattern.mode.mounting}}: luknje postavi v vogale najmanjšega pravokotnika okoli izbrane ploskve, v enaki razdalji od njegovih stranic, tudi na zasukani ali zarezani plošči. {{ui:holePattern.mounting.distance}} se meri do roba luknje, vključno z glavo vijaka, ali z {{ui:holePattern.mounting.toCenter}} do njenega središča. Z {{ui:holePattern.mounting.count}} gredo štiri v vogale, ostale pa v parih, enakomerno razporejene ob stranicah, na primer za vodotesen pokrov. Na okrogli ploskvi, na primer na pokrovu okrogle škatle, se enakomerno razporedijo po krogu, tri ali več. Vrsta in mere lukenj so enake kot pri vzorcu: navadna, z valjastim ali stožčastim povrtanjem, skoznja ali do globine. Nastanejo kot navadne oblike lukenj, združene s telesom v skupino, zato nanje deluje tudi {{ui:inspector.groupHoleDiameter}} skupine.
+
+## Luknja za navojno vložko
+
+Vtaljiva navojna vložka se s spajkalnikom vtisne v plastični del in vijakom da navoj, ki se ne obrabi. {{ui:threadInsert.title}} naredi luknjo zanjo, kamor klikneš, in ti najprej pove, ali ima telo tam dovolj materiala. Izberi natanko eno telo, odpri knjižnico oblik in klikni {{ui:threadInsert.title}} v razdelku {{ui:library.section.holes}}. Najdeš ga tudi s [[Ctrl]]+[[K]]. Za razliko od drugih oblik ga ni mogoče povleči v načrt, ker deluje na izbrano telo.
+
+1. V oknu izberi {{ui:threadInsert.size}}: od M2 do M8, kratke M3, M4 in M5 ali 1/4-20. Pri {{ui:threadInsert.custom}} vneseš premer luknje in dolžino vložke; stena, ki mora ostati okoli luknje, sledi iz premera. Okno pokaže premer in globino luknje ter to steno.
+2. Klikni mesto na telesu. Gre ravna ploskev, pa tudi zunanja stena valja ali cevi; vsaka druga krivulja je zavrnjena z opombo. Obroč kaže luknjo: zelen tam, kjer ima telo steno ob luknji in globino za njo, ki ju vložka potrebuje, rdeč tam, kjer eno od obeh manjka. Rdeči pove, katera in za koliko, ter kako široko mora biti telo okoli luknje.
+3. Obroč premakneš tako, da povlečeš čez telo, ali pa pod {{ui:threadInsert.position}} vneseš razdaljo od levega in spodnjega roba ravne ploskve. {{ui:threadInsert.center}} ga postavi na sredino ploskve, ki jo kaže vijolična oznaka. Po vsakem premiku se znova izmeri.
+4. {{ui:threadInsert.repick}} izbere drugo mesto, [[Esc]] pa zapre orodje. Šele {{ui:threadInsert.apply}} naredi luknjo, in to samo tam, kjer je obroč zelen.
+
+Luknja je navadna oblika luknje, združena s telesom, kakor luknje polja lukenj, jedro CAD pa jo izreže kot pravi valj, zato je izvrtina natančna. {{ui:editor.tool.ungroup}} jo spet osvobodi. Globoka je toliko, kolikor je dolga vložka, in malo moli iz ploskve, da se čisto odpre. Umetna inteligenca lahko isto naredi prek vmesnika MCP z `layerling_thread_insert` (glej poglavje [Umetna inteligenca z MCP](chapter:ai-z-mcp)).
 
 ## Vlečenje ploskve navzven ali navznoter
 

@@ -36,6 +36,9 @@ const box = canonicalizeShape({
 function mount(shape: WorkplaneShape) {
   const updates: Array<Partial<WorkplaneShape>> = [];
   container = document.createElement("div");
+  // In this build the texture is a tool docked in the editor's right column, and the mask choice is in that tool: the
+  // card is mounted as inside an editor.
+  container.className = "layerling-editor";
   document.body.appendChild(container);
   root = createRoot(container);
   act(() => {

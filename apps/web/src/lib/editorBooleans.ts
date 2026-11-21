@@ -1,7 +1,7 @@
 
 import { bentTubeParameterPatch, bentTubeProfileRadii, bentTubeSettings } from "@/lib/bentTubeGeometry";
 import { BUNDLE_SCOPE_BASE } from "@/lib/cadModifierGroups";
-import { removeLooseSplinters } from "@/lib/meshSplinters";
+import { removeLooseSplinters, type DrawnMesh } from "@/lib/meshSplinters";
 import { closeSmallMeshHoles } from "@/lib/meshHoleFill";
 import { meshIsConvex } from "@/lib/meshConvexity";
 import type { ManifoldToplevel } from "manifold-3d";
@@ -1408,11 +1408,13 @@ function isPileOfSolids(shape: WorkplaneShape) {
 }
 
 async function unionOverlappingExportMeshesRaw(shapes: WorkplaneShape[], meshes: MeshData[], cut?: readonly boolean[]) {
-  // The meshes whose loose pieces are parts someone drew. A body a loose hole was cut from is none any more, and
-  // neither is a mesh layerling worked out itself, such as a group cut with its holes: a cut may have left splinters there.
-  const drawnMeshes = (indices: readonly number[]) => indices
-    .filter((index) => !cut?.[index] && shapes[index]?.importedMesh?.sourceFormat !== "json")
-    .map((index) => meshes[index]);
+  // The meshes whose loose pieces are parts someone drew. A body a loose hole was cut from is none any more. A mesh
+  // layerling worked out itself, such as a group cut with its holes, may hold the splinters of that cut, so it is
+  // marked: there only a piece of more than a handful of triangles is a drawn one. Every group the editor keeps is
+  // such a mesh, and left out altogether the teeth and dots of a grouped logo still went as splinters (Issue #1781).
+  const drawnMeshes = (indices: readonly number[]): DrawnMesh[] => indices
+    .filter((index) => !cut?.[index])
+    .map((index) => (shapes[index]?.importedMesh?.sourceFormat === "json" ? { ...meshes[index], workedOut: true } : meshes[index]));
   const gruppen = overlappingExportClusters(meshes.map((mesh) => meshBounds(mesh.vertices)));
   if (!gruppen.some((gruppe) => gruppe.length > 1 || isPileOfSolids(shapes[gruppe[0]]))) {
     return { meshes, quellen: meshes.map((_, index) => index), verschmolzen: 0, gescheitert: 0, gestutzt: meshes.map((_, index) => Boolean(cut?.[index])), gezeichnet: meshes.map((_, index) => drawnMeshes([index])) };
@@ -1422,7 +1424,7 @@ async function unionOverlappingExportMeshesRaw(shapes: WorkplaneShape[], meshes:
   // Which results a cut or a merge of several bodies made: only there a splinter can have been left behind (#585).
   const gestutzt: boolean[] = [];
   // The meshes each result was made from: their loose pieces are parts someone drew, not splinters (Issue #1781).
-  const gezeichnet: MeshData[][] = [];
+  const gezeichnet: DrawnMesh[][] = [];
   // Which input shape each result stands for - a merged body takes its first
   // member, so the 3MF export can keep names and colours.
   const quellen: number[] = [];
@@ -1845,7 +1847,7 @@ async function colorSeparatedExportMeshesRaw(shapes: WorkplaneShape[], meshes: M
   if (farben.length <= 1) {
     return unionOverlappingExportMeshesRaw(shapes, meshes, cut);
   }
-  const koerper: { mesh: MeshData; quelle: number; farbe: number; gestutzt: boolean; gezeichnet: MeshData[] }[] = [];
+  const koerper: { mesh: MeshData; quelle: number; farbe: number; gestutzt: boolean; gezeichnet: DrawnMesh[] }[] = [];
   let verschmolzen = 0;
   let gescheitert = 0;
   for (const [farbe, gruppe] of farben.entries()) {
@@ -1869,7 +1871,7 @@ async function colorSeparatedExportMeshesRaw(shapes: WorkplaneShape[], meshes: M
   const ergebnis: MeshData[] = [];
   const quellen: number[] = [];
   const gestutzt: boolean[] = [];
-  const gezeichnet: MeshData[][] = [];
+  const gezeichnet: DrawnMesh[][] = [];
 
   /** The bodies of another colour that reach a body and came later: the shapes that cut it (Discussion #79). */
   const spaeter = (index: number) => koerper
@@ -1967,7 +1969,7 @@ async function colorSeparatedExportMeshesRaw(shapes: WorkplaneShape[], meshes: M
  * What an export writes: the loose splinters a cut or the colour separation leaves behind are left out (#352), as
  * `splinters` counts. A slicer shows them as spikes, and they can lift a flat design off the plate.
  */
-function withoutSplinters<T extends { meshes: MeshData[]; gestutzt: boolean[]; gezeichnet: MeshData[][] }>(result: T): T & { splinters: number } {
+function withoutSplinters<T extends { meshes: MeshData[]; gestutzt: boolean[]; gezeichnet: DrawnMesh[][] }>(result: T): T & { splinters: number } {
   let splinters = 0;
   const meshes = result.meshes.map((mesh, index) => {
     // Only what a cut, a merge of several bodies or the colour separation made can hold a splinter. A body they did
@@ -3023,12 +3025,6 @@ export function restoreGroupedChildren(group: WorkplaneShape, placements?: reado
  * A group that mixes solids and holes cuts only its own solids (#394), so its parts come with a scope of their own:
  * the kernel cuts its holes into its solids before the rest is added. Left closed it went as its mesh, and four
  * such groups patterned and grouped were thousands of triangles the edge tool could not finish (#996).
- *
- * A tube, ring or bent tube whose bore cuts as a hole (#892) comes as the two bodies it is wherever shapes are combined:
- * its solid and its bore, a hole (`splitBoreTube`). Grouping cuts it that way, and the kernel combines the parts once
- * more; handed over as the one hollow body, the tube was only added, and the box it passes through closed its bore
- * again as soon as an edge of the group was chamfered (Issue #1790). Inside a group it counts as a solid and a hole
- * both, so that group gets its scope and the bore cuts there what it cut when that group was made.
  */
 export type EdgeToolPart = { shape: WorkplaneShape; scope: number[] };
 
@@ -3039,9 +3035,9 @@ export function restoreGroupedChildrenForEdges(group: WorkplaneShape, scope: num
   if (group.groupOperation === "hull" || group.groupOperation === "intersection" || group.groupOperation === "loft") return [{ shape: group, scope }];
   return restoreGroupedChildren(group).flatMap((child) => {
     const grandChildren = child.groupedShapes ?? [];
-    // What cuts and what is cut among them; a tube whose bore cuts as a hole is both (Issue #1790).
-    const someHole = grandChildren.some((part) => part.hole || splitBoreTube(part).length > 1);
-    const someSolid = grandChildren.some((part) => !part.hole);
+    // A tube whose bore cuts as a hole counts as both, a solid and a hole (#1790): a group with one in it cuts its own
+    // solids with that bore, so it opens into a scope of its own as any group that mixes the two.
+    const cutParts = grandChildren.flatMap(splitBoreTube);
     // Only while its mesh is still nothing but its parts. Every computed group carries its mesh, so that alone says
     // nothing; baking an edge treatment, a deform or a simplification drops the parts, and texture, wrap or vase stay out.
     const plainParts = grandChildren.length > 0
@@ -3054,16 +3050,16 @@ export function restoreGroupedChildrenForEdges(group: WorkplaneShape, scope: num
     const plainGroup = plainParts && (child.groupOperation === undefined || child.groupOperation === "group");
     // A bundle of nothing but holes cuts what it is grouped with, as its holes would one by one. Left closed it went as
     // its mesh, each round hole a polygon of 96 flat strips, and filleting their rims lost a whole hole (#1503).
-    const holeBundle = plainParts && child.groupOperation === "bundle" && Boolean(child.hole) && grandChildren.every((part) => part.hole);
+    const holeBundle = plainParts && child.groupOperation === "bundle" && Boolean(child.hole) && cutParts.every((part) => part.hole);
     const opensCleanly = holeBundle || (plainGroup
-      && (!someSolid || !someHole)
-      && (child.hole || !someHole));
+      && (cutParts.every((part) => part.hole) || cutParts.every((part) => !part.hole))
+      && (child.hole || cutParts.every((part) => !part.hole)));
     // Opened into the same level, so it numbers the scopes inside it on with that level's count.
     if (opensCleanly) return restoreGroupedChildrenForEdges(child, scope, nestedScopes);
     const opensInOwnScope = plainGroup
       && !child.hole
-      && someHole
-      && someSolid;
+      && cutParts.some((part) => part.hole)
+      && cutParts.some((part) => !part.hole);
     if (opensInOwnScope) return restoreGroupedChildrenForEdges(child, [...scope, nestedScopes.count++], { count: 0 });
     // A bundle that mixes solids and holes: its holes cut what it is grouped with, not its own solids (#646). Left closed it
     // went as its mesh, which has the hole already taken out of its own solids and so no hole at all: a peg standing in its
@@ -3077,9 +3073,11 @@ export function restoreGroupedChildrenForEdges(group: WorkplaneShape, scope: num
       && !child.surfaceTexture
       && !child.cylinderWrap
       && !child.vase
-      && someHole
-      && someSolid;
+      && cutParts.some((part) => part.hole)
+      && cutParts.some((part) => !part.hole);
     if (opensAsBundle) return restoreGroupedChildrenForEdges(child, [...scope, BUNDLE_SCOPE_BASE + nestedScopes.count++], { count: 0 });
+    // A tube whose bore cuts as a hole goes as the group was cut: the tube and its bore, a hole (#1790). Handed on as the
+    // one hollow tube it is, its bore cut nothing, and a chamfer on the group filled the opening it had made in the rest.
     return splitBoreTube(child).map((shape) => ({ shape, scope }));
   });
 }

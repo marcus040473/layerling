@@ -162,11 +162,11 @@ export function writeTape(projectId: string | null | undefined, tape: SavedTape 
 const TAPE_WHOLE_EDGES_STORAGE_KEY = "layerling.editor.tapeWholeEdges";
 
 /**
- * Whether a click on an edge measures the whole edge (#308). The switch is a choice of the person measuring, not a part
- * of the design, so it is kept for the editor like the lock of the proportions: the 3D view is built anew after a
- * sketch, and a switch that lived only in the view came back on by itself (Issue #1805). On until it is switched off.
+ * The tape measure's "Measure edges" switch, kept in the browser (#1805): it came back switched on whenever the 3D view
+ * was built again - after the sketch, after a reload, in the next design -, since only the view itself held it.
+ * On unless it was switched off.
  */
-export function readTapeWholeEdges(): boolean {
+export function readTapeWholeEdges() {
   try {
     return window.localStorage.getItem(TAPE_WHOLE_EDGES_STORAGE_KEY) !== "false";
   } catch {
@@ -178,6 +178,6 @@ export function writeTapeWholeEdges(wholeEdges: boolean) {
   try {
     window.localStorage.setItem(TAPE_WHOLE_EDGES_STORAGE_KEY, String(wholeEdges));
   } catch {
-    // Without storage the switch holds until the 3D view is left.
+    // Without storage the switch lasts until the 3D view is built again.
   }
 }

@@ -1,10 +1,10 @@
+import { splitBoltForShape, type BoltSplitOptions, type BoltSplitShapeResult } from "@/lib/boltSplit";
 import { buildsDiffer, BUILD_ID, isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
 import { checkClearance, type ClearanceOptions, type ClearanceResult } from "@/lib/clearanceCheck";
 import { buildGroupedShapeFromSelection, exportSolidVolume, faceReadJoins, faceReadPositions, previewSplitConnectors, splitShapeIfCrossed, splitShapesByPlane, type ExportSolidVolume, type RebuildStretchedGroup, type GroupBuildResult, type SplitConnectorPreview, type SplitShapesOutcome } from "@/lib/editorBooleans";
 import { packValue, packedTransfer, unpackValue } from "@/lib/geometryTransfer";
 import { articulateShapes, type FlexiOptions, type FlexiShapesResult } from "@/lib/flexiJoints";
 import { lidForShapes, lidTopForShapes, type LidOptions, type LidShapeResult } from "@/lib/lidTool";
-import { splitBoltForShape, type BoltSplitOptions, type BoltSplitShapeResult } from "@/lib/boltSplit";
 import { analyseMoldForShapes, moldForShapes, type MoldAnalysisResult, type MoldOptions, type MoldShapeResult } from "@/lib/moldTool";
 import { checkPrint, type PrintCheckOptions, type PrintCheckResult } from "@/lib/printCheck";
 import { checkLayers, type LayerCheckOptions, type LayerCheckResult } from "@/lib/layerCheck";
@@ -321,13 +321,6 @@ export function checkPrintOffThread(source: readonly WorkplaneShape[], options: 
   }, signal);
 }
 
-/** analyseMoldForShapes (lib/moldTool.ts) off the page, quietly: the mold panel's live check. Called off, it never answers. */
-export function analyseMoldOffThread(targets: readonly WorkplaneShape[], options: MoldOptions, signal?: AbortSignal): Promise<MoldAnalysisResult> {
-  const onPage = () => analyseMoldForShapes([...targets], options);
-  if (containsText([...targets])) return onPage();
-  return runGeometryTask<MoldAnalysisResult>("moldCheck", { targets: [...targets], options }, onPage, () => ({ analysis: null, error: t("status.computeTimedOut") }), signal, true);
-}
-
 /**
  * checkLayers (lib/layerCheck.ts) off the page, telling `progress` how far it got. Calling it off through the signal stops
  * the worker at once (the next check starts a fresh one); the check never answers then. On the page (no worker, or text in
@@ -341,17 +334,24 @@ export function checkLayersOffThread(source: readonly WorkplaneShape[], options:
   }, signal, false, progress);
 }
 
+/** splitBoltForShape (lib/boltSplit.ts) off the page: a screw or rod cut lengthwise and laid flat for printing. */
+export function splitBoltOffThread(shape: WorkplaneShape, options: Partial<BoltSplitOptions>, signal?: AbortSignal): Promise<BoltSplitShapeResult> {
+  const onPage = () => splitBoltForShape(shape, options);
+  return runGeometryTask<BoltSplitShapeResult>("boltSplit", { shape, options }, onPage, () => ({ parts: null, error: t("status.computeTimedOut") }), signal);
+}
+
+/** analyseMoldForShapes (lib/moldTool.ts) off the page, quietly: the mold panel's live check. Called off, it never answers. */
+export function analyseMoldOffThread(targets: readonly WorkplaneShape[], options: MoldOptions, signal?: AbortSignal): Promise<MoldAnalysisResult> {
+  const onPage = () => analyseMoldForShapes([...targets], options);
+  if (containsText([...targets])) return onPage();
+  return runGeometryTask<MoldAnalysisResult>("moldCheck", { targets: [...targets], options }, onPage, () => ({ analysis: null, error: t("status.computeTimedOut") }), signal, true);
+}
+
 /** lidForShapes (lib/lidTool.ts) off the page: the lid for a body open at the top (#1009). */
 export function lidForShapesOffThread(targets: readonly WorkplaneShape[], options: LidOptions, signal?: AbortSignal): Promise<LidShapeResult> {
   const onPage = () => lidForShapes([...targets], options);
   if (containsText([...targets])) return onPage();
   return runGeometryTask<LidShapeResult>("lid", { targets: [...targets], options }, onPage, () => ({ lid: null, error: t("status.computeTimedOut") }), signal);
-}
-
-/** splitBoltForShape (lib/boltSplit.ts) off the page: a screw or rod cut lengthwise and laid flat for printing. */
-export function splitBoltOffThread(shape: WorkplaneShape, options: Partial<BoltSplitOptions>, signal?: AbortSignal): Promise<BoltSplitShapeResult> {
-  const onPage = () => splitBoltForShape(shape, options);
-  return runGeometryTask<BoltSplitShapeResult>("boltSplit", { shape, options }, onPage, () => ({ parts: null, error: t("status.computeTimedOut") }), signal);
 }
 
 /** moldForShapes (lib/moldTool.ts) off the page: the mold or die for a master. */

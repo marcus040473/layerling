@@ -44,7 +44,7 @@ Du kan dra ut en form förbi kanten på plattan och lämna den där, ungefär en
 
 ## Fästa under flytt
 
-När du drar en form över arbetsytan fäster den automatiskt mot andra former: dess vänstra, högra, främre eller bakre kant – eller dess mittpunkt – landar exakt i linje med en kant eller mittpunkt på en annan form. En rosa stödlinje visar vad den fäster mot. Så hamnar två delar kant i kant bredvid varandra eller centrerade bakom varandra utan att skriva siffror. Det fungerar även med rutnätet avslaget. Arbetsytans mitt räknas också: de rosa linjerna syns när formen står mitt på plattan längs X, Y eller båda.
+När du drar en form över arbetsytan fäster den automatiskt mot andra former: dess vänstra, högra, främre eller bakre kant – eller dess mittpunkt – landar exakt i linje med en kant eller mittpunkt på en annan form. En rosa stödlinje visar vad den fäster mot. Så hamnar två delar kant i kant bredvid varandra eller centrerade bakom varandra utan att skriva siffror. Det fungerar även med rutnätet avslaget. Arbetsytans mitt räknas också: de rosa linjerna syns när formen står mitt på plattan längs X, Y eller båda. En form som står upprätt med sidorna längs X och Y fäster också mot väggen den stöter emot – även innerväggen i en låda, en urgröpt kropp eller ett importerat hölje – så att en del hamnar tätt in i hörnet av ett hölje.
 
 Även storleksändring fäster: när du drar i ett sidohandtag stannar den sidan vid kanter och mittpunkter på andra former samt mot väggar den stöter emot – även innerväggen i en låda, en urgröpt kropp eller ett importerat hölje – och den rosa linjen visar var. Det måttet behålls exakt, oberoende av rutnätet. Så fyller en del ut insidan av ett skal från vägg till vägg: ställ den intill ena väggen och dra andra sidan mot den motsatta väggen. Med [[Alt]] växer formen från sin mitt medan den dragna sidan fäster på samma sätt; med [[Shift]] behåller den sina proportioner utan fästning. Detta fungerar på den plana arbetsytan för former som står upprätt längs X och Y, och {{ui:workspace.objectSnap}} slår av det ihop med fästning vid flytt.
 
@@ -52,7 +52,7 @@ Håll ned [[Shift]] medan du drar för att låsa rörelsen till en axel: formen 
 
 Eller dra i den röda eller gröna pilen ovanför markeringen: då flyttas formen bara längs X eller Y, och den följer musen längs linjen även i en låg sidovy där fri dragning annars skenar iväg. Pilarna fäster precis som en vanlig dragning, [[Alt]] släpper fästningen och efteråt kan du klicka på flyttsträckan och skriva in exakt värde.
 
-Håller du [[Alt]] nere redan när dragningen börjar drar du fram en kopia, som i Tinkercad: ursprungsformen stannar där den är och kopian landar där du släpper. Trycker du [[Alt]] först under färden pausas fästningen tillfälligt så att formen bara följer rutnätet. Även en kopia fäster så fort du släpper [[Alt]] längs vägen. För att slå av fästning helt använder du rutnätsmenyn nere till höger ({{ui:inspector.objectSnap}}) eller inställningarna. För närvarande fäster bara flytt på den vanliga arbetsytan och storleksändring i sidled, inte höjning i höjdled.
+Håller du [[Alt]] nere redan när dragningen börjar drar du fram en kopia, som i Tinkercad: ursprungsformen stannar där den är och kopian landar där du släpper. Trycker du [[Alt]] först under färden pausas fästningen tillfälligt så att formen bara följer rutnätet. Även en kopia fäster så fort du släpper [[Alt]] längs vägen. För att slå av fästning helt använder du rutnätsmenyn nere till höger ({{ui:inspector.objectSnap}}) eller inställningarna. På den vanliga arbetsytan fäster flytt och sidohandtagen, inte höjning och handtaget på ovansidan.
 
 ## Rikta in
 
@@ -166,6 +166,17 @@ Den runda väggen på en cylinder, ett rör eller ett hål kan också perforeras
 En AI kan göra samma sak över MCP-bryggan med `layerling_perforate_face` (se kapitlet [AI med MCP](chapter:ai-with-mcp)).
 
 På en platta eller ett lock med skåror i sidorna fördelar {{ui:holePattern.arrangement.perimeter}} hålen ojämnt. Därför har {{ui:holePattern.title}} en andra flik bredvid {{ui:holePattern.mode.pattern}}, {{ui:holePattern.mode.mounting}}: den lägger hålen i hörnen på den minsta rektangeln runt den valda ytan, lika långt från dess sidor, även på en vriden eller skårad platta. {{ui:holePattern.mounting.distance}} mäts till hålets kant, skruvhuvudet inräknat, eller med {{ui:holePattern.mounting.toCenter}} till dess mitt. Med {{ui:holePattern.mounting.count}} hamnar fyra i hörnen och resten parvis, jämnt fördelade längs sidorna, till exempel för ett vattentätt lock. På en rund yta, som locket till en rund ask, fördelas de jämnt runt en cirkel, tre eller fler. Håltyp och mått är desamma som för mönstret: rakt, med cylindrisk eller konisk försänkning, genomgående eller till ett visst djup. De skapas som vanliga hålformer grupperade med kroppen, så gruppens {{ui:inspector.groupHoleDiameter}} fungerar på dem också.
+
+## Hål för en gänginsats
+
+En gängad värmeinsats pressas in i en plastdel med en lödkolv och ger skruvar en gänga som inte slits ut. {{ui:threadInsert.title}} gör hålet för den där du klickar och talar först om huruvida kroppen har tillräckligt med material där. Markera exakt en kropp, öppna formbiblioteket och klicka på {{ui:threadInsert.title}} under {{ui:library.section.holes}}. Du hittar den också med [[Ctrl]]+[[K]]. Till skillnad från de andra formerna går den inte att dra in i designen, eftersom den verkar på den markerade kroppen.
+
+1. Välj {{ui:threadInsert.size}} i fönstret: M2 till M8, de korta M3, M4 och M5 eller 1/4-20. Med {{ui:threadInsert.custom}} skriver du in hålets diameter och insatsens längd; väggen som måste finnas kvar runt hålet följer av diametern. Fönstret visar hålets diameter och djup samt den väggen.
+2. Klicka på platsen på kroppen. En plan yta fungerar, och det gör även utsidan av en cylinder eller ett rör; varje annan kurva avvisas med en hint. En ring visar hålet: grön där kroppen har den vägg bredvid hålet och det djup bakom det som insatsen behöver, röd där något av dem inte räcker. Röd säger vilket och med hur mycket, och hur bred kroppen måste vara runt hålet.
+3. Flytta ringen genom att dra över kroppen, eller skriv in avståndet från vänster- och nederkanten på en plan yta under {{ui:threadInsert.position}}. {{ui:threadInsert.center}} lägger den mitt på ytan, där det lila märket visar den. Varje flytt mäts om.
+4. {{ui:threadInsert.repick}} väljer en annan plats och [[Esc]] stänger verktyget. Först {{ui:threadInsert.apply}} skapar hålet, och bara där ringen är grön.
+
+Hålet är en vanlig hålform grupperad med kroppen, precis som hålen i hålmönstret, och CAD-kärnan skär ut det som en riktig cylinder, så borrningen blir exakt. {{ui:editor.tool.ungroup}} frigör det igen. Det är lika djupt som insatsen är lång och sticker ut en bit ur ytan så att det öppnas rent. En AI kan göra samma sak över MCP-bryggan med `layerling_thread_insert` (se kapitlet [AI med MCP](chapter:ai-with-mcp)).
 
 ## Dra ut eller trycka in en yta
 

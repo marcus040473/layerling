@@ -1,161 +1,159 @@
 [
   {
     "title": {
-      "de": "Pinsel, Magnet-Lasso, Höhenband und mehr beim Bemalen",
-      "en": "Brush, magnetic lasso, height band and more for painting"
+      "de": "3MF und OBJ: kleine Teile einer Gruppe bleiben",
+      "en": "3MF and OBJ: small parts of a group stay"
     },
     "body": {
-      "de": "Das Mal-Werkzeug hat zwei neue Arten. „Pinsel“: Mit gedrückter Maustaste oder dem Stift malst du eine Linie auf den Körper, über Rundungen und Kanten hinweg; mit einem Stift oder Zeichentablett malt leichter Druck dünner. „Magnet-Lasso“: Klicke ungefähr entlang einer Kante, einer Rundung oder des Rands schon gemalter Farbe, und die Linie legt sich daran an, wie das Magnet-Lasso beim Nachzeichnen von Bildern. Es folgt auch sanften Wölbungen wie dem Rand einer Augenhöhle, und „Glätten“ macht die Linie von Lasso und Magnet-Lasso ruhiger, ohne Ecken abzurunden. Neu sind außerdem eine durchsichtige Kugel, die zeigt, wo Pinsel und Kreis malen (Größe mit Strg+Mausrad oder [ und ]), „Als Kugel“ zum Malen auch um Kanten herum, das „Höhenband“ rund um den Körper und „Lücken füllen“ gegen Farbsprenkel.",
-      "en": "The Paint tool has two new kinds. Brush: hold the mouse button or a pen down and paint a line on the body, over curves and edges; with a pen or a drawing tablet a light touch paints thinner. Magnetic lasso: click roughly along an edge, a bend or the border of paint already on the body, and the line clings to it, as the magnetic lasso does when tracing a picture. It follows gentle bends too, such as the rim of an eye socket, and Smoothing evens out the line of the lasso and the magnetic lasso without rounding its corners. Also new: a see-through ball showing where the brush and the circle paint (resize with Ctrl+wheel or [ and ]), As a ball for painting round edges too, Height band for a band round the whole body, and Fill gaps against stray specks."
+      "de": "Bei mehrfarbigen Entwürfen fehlten im 3MF und OBJ weiterhin sehr kleine Teile einer Gruppe, etwa die Zähne und Punkte in einem Logo, während sie in der STL da waren. Jetzt bleiben auch solche Teile in der Datei.",
+      "en": "In designs of several colours, very small parts of a group, such as the teeth and dots of a logo, were still missing from the 3MF and OBJ, while the STL had them. Now such parts stay in the file too."
     }
   },
   {
     "title": {
-      "de": "Schiebe-Riegel und Türriegel für Deckel",
-      "en": "Slide latches and barrel bolts for lids"
+      "de": "Kein Stocken mehr beim Speichern großer importierter Baugruppen",
+      "en": "No more freezing while large imported assemblies are saved"
     },
     "body": {
-      "de": "Im Deckel-Werkzeug gibt es bei „Verschlüsse“ jetzt die Art „Schieber“: eine Schiene am Körper, eine Nase am Deckel und ein flach gedruckter Schieber mit Griffrillen, Pfeil und eingraviertem „OPEN“, der von rechts in die Schiene geschoben wird. Nach links hält er den Deckel, nach rechts gibt er ihn frei. Als dritte Art gibt es „Riegel“: ein Türriegel, der im Rohr unter dem Rand mitgedruckt wird; nach rechts in eine Öse am Deckel geschoben, kippt der Griff in eine Kerbe und hält.",
-      "en": "The Lid tool's Latches now come as Sliders too: a rail on the body, a nose on the lid, and a slider printed flat with grip grooves, an arrow and OPEN cut in, slid into the rail from the right. Slid left it holds the lid, slid right it lets go. A third kind, Bolts, is a barrel bolt printed in place in a tube below the rim: slid right into a keeper on the lid, its knob tips into a notch and holds."
-    }
-  },
-  {
-    "title": {
-      "de": "Niedrigere Trennstege in ausgehöhlten Boxen",
-      "en": "Lower dividers in hollowed boxes"
-    },
-    "body": {
-      "de": "Hat eine ausgehöhlte Box Trennstege, lassen sich jetzt auch ihre Dicke (0,8 bis 3 mm) und ihre Höhe über dem Boden (ab 3 mm bis zum Rand) einstellen, nach derselben Regel wie die Trennwandhöhe in Gridfinity-Behältern.",
-      "en": "A hollowed box's dividers now take a thickness (0.8 to 3 mm) and a height over the floor (from 3 mm up to the rim), by the same rule as the divider height in Gridfinity bins."
-    }
-  },
-  {
-    "title": {
-      "de": "Gussformen und Prägestempel aus einem Teil",
-      "en": "Casting molds and stamp-and-die sets from a part"
-    },
-    "body": {
-      "de": "Der neue Knopf „Gussform & Prägestempel“ macht aus dem gewählten Körper eine zweiteilige Gussform mit Zentrierkegeln, Einguss, Entlüftungen und Hebelschlitzen, einen Silikon-Gießrahmen, eine offene Form oder Stempel und Matrize für Leder, Karton und dünnes Blech. Die Teile liegen druckfertig daneben; das Fenster nennt das Volumen und warnt vor Hinterschnitten, an denen ein Guss hängen bliebe.",
-      "en": "The new Mold & die button turns the selected body into a two-part casting mold with keys, sprue, vents and pry slots, a silicone pour box, an open mold, or a stamp and die for leather, card and thin metal. The parts lie beside it ready to print; the window gives the volume and warns of undercuts where a cast would stick."
-    }
-  },
-  {
-    "title": {
-      "de": "Niedrigere Trennwände in Gridfinity-Behältern",
-      "en": "Lower dividers in Gridfinity bins"
-    },
-    "body": {
-      "de": "Die Trennwände eines Gridfinity-Behälters oder einer Schale müssen nicht mehr über die ganze Höhe reichen: Stell unter „Fächer“ die „Trennwandhöhe“ ein, gemessen vom Boden, ab 3 mm. Die Wände bleiben, wie sie sind, und eine Etikettenleiste an einer Trennwand sitzt mit ihr tiefer.",
-      "en": "The dividers in a Gridfinity bin or tray no longer have to run their full height: set \"Divider height\" under \"Compartments\", measured from the floor, from 3 mm up. The walls stay as they are, and a label shelf on a divider comes down with it."
-    }
-  },
-  {
-    "title": {
-      "de": "Text auf den Etikettenleisten von Gridfinity-Schalen",
-      "en": "Text on a Gridfinity tray's label shelves",
-      "da": "Tekst på Gridfinity-skålens etikethylder"
-    },
-    "body": {
-      "de": "Auch die Etikettenleisten einer Gridfinity-Schale können jetzt einen Text tragen, an der Wand oder in einem Fach, mit Schriftart, Buchstabenfarbe und Buchstabengröße wie bei einem Behälter. Eine Leiste mit Text sitzt 0,4 mm tiefer, sodass die Buchstaben bündig mit der Oberkante der Schale enden. Tipp den Text im Eigenschaften-Fenster unter der Leiste bei „Text“ ein.",
-      "en": "A Gridfinity tray's label shelves now take a text too, along a wall or in a compartment, with the same font, letter colour and letter size as a bin's. A shelf with a text sits 0.4 mm lower, so the letters end level with the tray's top. Type the text under \"Text\" below the shelf in the Properties panel.",
-      "da": "En Gridfinity-skåls etikethylder kan nu også tage en tekst, langs en væg eller i et rum, med samme font, bogstavfarve og bogstavstørrelse som en bakkes. En hylde med tekst sidder 0,4 mm lavere, så bogstaverne ender i flugt med skålens top. Skriv teksten under \"Tekst\" under hyldens værdier i Egenskaber."
-    }
-  },
-  {
-    "title": {
-      "de": "Bodenplatten, passend zum Drucker geteilt",
-      "en": "Baseplates split to fit your printer",
-      "da": "Bundplader deles, så de passer til din printer"
-    },
-    "body": {
-      "de": "Ist dein Drucker in den Arbeitsbereich-Einstellungen gewählt, hat eine Bodenplatte, die größer ist als sein Druckbett, im Eigenschaften-Fenster den Knopf „Passend zum Drucker teilen“. Er teilt die Platte an den Zellgrenzen in so wenige Platten wie möglich, die auf das Druckbett passen, jede mit „Swallowtail“, und legt die Verbinder davor, die sie zusammenhalten. Die Platten bleiben, wo ihre Zellen waren, also schiebe oder drehe sie eine nach der anderen auf das Druckbett.",
-      "en": "With your printer chosen in the workspace settings, a baseplate larger than the printer's bed has \"Split to fit the printer\" in its Properties panel. It cuts the plate on its cell lines into the fewest plates that fit the bed, each with \"Swallowtail\", and lays out the keys that hold them together. The plates stay where their cells were, so move or turn them onto the bed one by one.",
-      "da": "Når din printer er valgt i arbejdsområdeindstillingerne, har en bundplade, der er større end printerens byggeplade, \"Del til printeren\" i Egenskaber. Den skærer pladen langs cellernes kanter i de færrest mulige plader, der passer på byggepladen, hver med \"Svalehale\", og lægger de samlestykker, der holder dem sammen, frem foran dem. Pladerne ligger, hvor deres celler lå, så flyt eller drej dem ind på byggepladen én ad gang."
-    }
-  },
-  {
-    "title": {
-      "de": "Gridfinity-Boden, Raster-Anpassung und Trennstege",
-      "en": "Gridfinity floor, fit to the grid and dividers"
-    },
-    "body": {
-      "de": "Eine Box mit offener Oberseite kann beim Aushöhlen jetzt eine Gridfinity-Grundplatte im Boden bekommen.\n\n– „Gridfinity-Boden“ macht den Boden 6,2 mm dick und spart für jedes ganze 42-mm-Feld eine Mulde aus. Der Regler „Felder im Boden“ legt fest, wie viele es höchstens sind.\n– „Wände ans Raster anpassen“ verdickt die Wände, sodass der Innenraum genau die Felder mit 0,5 mm Spiel ist. Machst du den Körper größer, wächst die Zahl der Mulden mit.\n– „Trennstege“ stellt gleichmäßig verteilte Wände auf den Boden, quer und längs je bis zu 8.",
-      "en": "A box with its top open can now get a Gridfinity baseplate in its floor when you hollow it.\n\n– Gridfinity floor makes the floor 6.2 mm thick and cuts a socket for every whole 42 mm cell. The Cells in the floor slider sets how many at most.\n– Fit the walls to the grid thickens the walls so the inside is exactly the cells with 0.5 mm of play. Make the body larger and the number of sockets grows with it.\n– Dividers stands evenly spaced walls on the floor, up to 8 across and 8 along."
+      "de": "In Entwürfen mit einer importierten STEP-Baugruppe, etwa einer Platine im Gehäuse, blieb der Editor nach fast jeder Änderung für mehrere Sekunden stehen, weil das automatische Speichern jedes Mal den ganzen Entwurf neu gepackt hat. Jetzt wird nur noch neu gepackt, was sich geändert hat, und der Editor bleibt währenddessen bedienbar.",
+      "en": "In designs with an imported STEP assembly, a circuit board in an enclosure for example, the editor froze for several seconds after almost every change, because the automatic save packed the whole design again each time. Now only what has changed is packed again, and the editor stays usable meanwhile."
     },
     "guide": {
-      "section": "hollowing"
+      "chapter": "files"
     }
   },
   {
     "title": {
-      "de": "Befestigungslöcher für Platten und Deckel",
-      "en": "Mounting holes for plates and lids",
-      "da": "Monteringshuller til plader og låg"
+      "de": "3MF aus dem Scanner: ein Körper statt Tausender",
+      "en": "3MF from a scanner: one body instead of thousands"
     },
     "body": {
-      "de": "Das Lochmuster hat einen zweiten Reiter „Befestigungslöcher“. Er setzt Schraubenlöcher in die Ecken des kleinsten Rechtecks um die gewählte Fläche, gleich weit von den Seiten, auch bei einer gedrehten oder eingekerbten Platte, bei der „Entlang der Kante“ die Löcher ungleichmäßig verteilt.\n\n– Abstand zu den Seiten: bis zur Kante des Lochs (ein Schraubenkopf zählt mit) oder bis zur Lochmitte.\n– Anzahl: vier in den Ecken, die übrigen paarweise gleichmäßig entlang der Seiten, etwa für einen wasserdichten Deckel.\n– Auf einer runden Fläche, zum Beispiel dem Deckel einer runden Box, verteilen sie sich gleichmäßig auf einem Kreis, mindestens drei.\n– Einfach, mit Senkung oder Kegelsenkung, durch oder bis zu einer Tiefe.\n\nEs entstehen gewöhnliche Lochformen, mit dem Körper gruppiert, die Bohrungskarte der Gruppe wirkt also auch auf sie.",
-      "en": "The Hole pattern has a second tab, Mounting holes. It puts screw holes in the corners of the smallest rectangle round the picked face, the same distance from its sides, even on a turned or notched plate where \"Along the edge\" spreads the holes unevenly.\n\n– Distance from the sides: to the hole's edge (a screw head counts) or to the hole's middle.\n– Number of holes: four in the corners, the rest in pairs, evenly spaced along the sides, for example for a watertight lid.\n– On a round face, such as the lid of a round box, they go evenly round a circle, three or more.\n– Plain, counterbore or countersink, through or to a depth.\n\nThey are made as ordinary hole shapes grouped with the body, so the group's hole diameter card works on them too.",
-      "da": "Hulmønsteret har en anden fane, Monteringshuller. Den sætter skruehuller i hjørnerne af det mindste rektangel omkring den valgte flade, i samme afstand fra dets sider, også på en drejet eller udskåret plade, hvor \"Langs kanten\" fordeler hullerne ujævnt.\n\n– Afstand fra siderne: til hullets kant (et skruehoved medregnes) eller til hullets midte.\n\n– Antal huller: fire i hjørnerne, resten parvis, jævnt fordelt langs siderne, for eksempel til et vandtæt låg.\n\n– På en rund flade, som låget på en rund æske, sidder de jævnt fordelt rundt på en cirkel, tre eller flere.\n\n– Almindeligt, med cylindrisk forsænkning eller kegleforsænkning, gennemgående eller til en dybde.\n\nDe laves som almindelige hulformer grupperet med formen, så gruppens \"Huldiameter\" virker på dem også."
+      "de": "Eine 3MF aus einem 3D-Scanner trägt an fast jedem Punkt eine eigene Farbe. layerling machte daraus je Farbe einen Körper: aus einem Scan wurden über 42.000 Körper, der Import dauerte Minuten. Eine solche Datei kommt jetzt als ein Körper in einer Farbe herein, mit einem Hinweis, dass der Farbverlauf nicht erhalten bleibt. Dateien mit wenigen Farben werden wie bisher je Farbe ein Körper.",
+      "en": "A 3MF from a 3D scanner carries its own colour at almost every point. layerling made one body per colour: one scan became more than 42,000 bodies, and the import took minutes. Such a file now comes in as one body in a single colour, with a note that the colour gradient is not kept. Files with a few colours still become one body per colour."
     },
     "guide": {
-      "section": "holePattern"
+      "chapter": "files"
     }
   },
   {
     "title": {
-      "de": "Neue Form: Kreisausschnitt",
-      "en": "New shape: Sector",
-      "da": "Ny form: Cirkeludsnit"
+      "de": "Skizze auf Platte 2 bearbeiten",
+      "en": "Edit a sketch on plate 2"
     },
     "body": {
-      "de": "In der Formenbibliothek unter den Grundformen (nach dem Torus) gibt es den „Kreisausschnitt“: eine Kreisscheibe, die du über den Winkel (1 bis 360°) wie einen Uhrzeiger zurückschneidest, von zwölf Uhr im Uhrzeigersinn.\n\n– Innen-Ø: bei 0 ein volles Stück, darüber ein Ring oder ein Ringsegment.\n– Enden runden: rundet die beiden Enden bis zum Halbkreis. So entsteht ein gebogenes Langloch, zum Beispiel für Monitorhalter und andere Teile, die sich drehen und festklemmen lassen.\n– Durchmesser und Höhe wie beim Zylinder.\n\nDer Rahmen bleibt der volle Kreis, die Form dreht sich also um die Mitte des Kreises.",
-      "en": "The shape library has a new basic shape after the Torus, the Sector: a disc that you cut back with the angle (1 to 360°) like a clock hand, from twelve o'clock clockwise.\n\n– Inner diameter: 0 is a solid piece, more gives a ring or a ring segment.\n– End rounding: rounds the two ends, up to a half circle. That gives a curved slot, for example for monitor mounts and other parts that turn and get clamped.\n– Diameter and height as on the Cylinder.\n\nThe frame stays the full circle, so the shape turns about the circle's middle.",
-      "da": "Formbiblioteket har en ny grundform efter Torus, Cirkeludsnit: en skive, som du skærer ind med vinklen (1 til 360°) som en urviser, fra klokken tolv og med uret.\n\n– Indvendig diameter: 0 er et massivt stykke, mere giver en ring eller et ringstykke.\n\n– Afrunding af enderne: runder de to ender, op til en halvcirkel. Det giver et buet langhul, for eksempel til skærmbeslag og andre dele, der drejes og spændes fast.\n\n– Diameter og højde som på cylinderen.\n\nRammen forbliver den fulde cirkel, så formen drejer om cirklens midte."
+      "de": "Bei mehreren Druckplatten zeigte „Skizze bearbeiten“ für einen Körper auf einer weiteren Platte die erste Platte, und der Umriss des Körpers lag außerhalb der Zeichenfläche. Die Skizze öffnet sich jetzt auf der Platte, auf der der Körper steht.",
+      "en": "With several build plates, Edit sketch for a body on a further plate showed the first plate, and the body's outline lay outside the sketch area. The sketch now opens on the plate the body stands on."
     },
     "guide": {
-      "chapter": "shapes"
+      "section": "buildPlates"
     }
   },
   {
     "title": {
-      "de": "Mehrkant mit runden Ecken",
-      "en": "Polygon with rounded corners",
-      "da": "Polygon med runde hjørner"
+      "de": "Fase an einer Gruppe verschließt die Rohrbohrung nicht mehr",
+      "en": "A chamfer on a group no longer closes a tube's bore"
     },
     "body": {
-      "de": "Ein Mehrkant hat jetzt unter „Seiten“ einen Regler „Eckenverrundung“ und einen Ziehpunkt am Modell, wie bei der Box mit runden Ecken. Ein Radius für alle Ecken, bei jeder Seitenzahl.\n\nDer Radius gilt in mm, ein gestreckter Mehrkant behält also runde Ecken. Der größte Wert ist dort, wo sich benachbarte Rundungen treffen. 0 ist der einfache Mehrkant, genau wie bisher.",
-      "en": "A polygon now has a \"Corner fillet\" slider under \"Sides\" and a drag dot on the model, like the Rounded box. One radius for every corner, for any number of sides.\n\nThe radius is in mm, so a stretched polygon keeps round corners. The largest value is where neighbouring roundings meet. 0 is the plain polygon, exactly as before.",
-      "da": "En polygon har nu skyderen \"Hjørnerunding\" under \"Sider\" og et trækpunkt på modellen, ligesom den rundede kasse. Én radius gælder for alle hjørner, uanset antal sider.\n\nDen angives i millimeter, så en strakt polygon beholder runde hjørner. Den største værdi er der, hvor nabohjørnernes rundinger mødes. 0 er den almindelige polygon, præcis som før."
+      "de": "Ein Rohr, Ring oder gebogenes Rohr mit „Bohrung schneidet beim Gruppieren wie ein Loch“ öffnet, womit es gruppiert ist. Eine Fase oder Verrundung an dieser Gruppe hat die Öffnung wieder verschlossen. Jetzt bleibt sie offen.",
+      "en": "A tube, ring or bent tube with \"Bore cuts as a hole when grouped\" opens whatever it is grouped with. A chamfer or fillet on that group closed the opening again. Now it stays open."
+    }
+  },
+  {
+    "title": {
+      "de": "3D-Maus: Richtungen bleiben nach einem Neustart richtig",
+      "en": "3D mouse: directions stay right after a restart"
+    },
+    "body": {
+      "de": "Nach einem Neustart des Browsers liest layerling eine 3D-Maus als Spielcontroller, bis du wieder auf „3D-Maus verbinden“ klickst. Bei manchen Geräten laufen die Richtungen dabei andersherum, und die angehakten Richtungen passten dann nicht mehr. layerling merkt sie sich jetzt für beide Wege getrennt: Unter Einstellungen, Bedienung, 3D-Maus steht eine Zeile, wenn die Maus gerade als Spielcontroller gelesen wird, und was du dann anhakst, gilt nur dafür. Deine bisherigen Einstellungen bleiben für die verbundene Maus erhalten.",
+      "en": "After the browser is restarted, layerling reads a 3D mouse as a game controller until you click Connect 3D mouse again. On some devices the directions run the other way round there, and the ticked directions no longer fitted. layerling now keeps them apart for the two ways: under Settings, Controls, 3D mouse a line says when the mouse is read as a game controller, and what you tick then holds for that only. Your settings so far stay with the connected mouse."
     },
     "guide": {
-      "chapter": "shapes"
+      "section": "settingsView"
     }
   },
   {
     "title": {
-      "de": "Bohrungen einer Gruppe auf einmal ändern",
-      "en": "Change the holes of a group at once",
-      "da": "Skift hullerne i en gruppe på én gang"
+      "de": "Wenn die 3D-Ansicht nicht startet: klare Meldung",
+      "en": "When the 3D view does not start: a clear message"
     },
     "body": {
-      "de": "Enthält eine Gruppe, oder eine Gruppe darin, runde Bohrungen, zeigt ihr Fenster einen Regler „Bohrungsdurchmesser“ für alle gleichzeitig und den Schalter „Einzeln“, der jede Bohrung mit eigenem Durchmesser auflistet.\n\nJede Bohrung behält ihre Mitte und ihre Tiefe. Die Gruppen werden von innen nach außen neu aufgebaut, wie bei „Gruppe bearbeiten → Fertig“, als ein Schritt zum Rückgängigmachen. Platinen, Schilder, QR-Codes und Bündel bleiben unberührt, und nur runde Bohrungen zählen, eckige oder ovale ändern sich nicht.",
-      "en": "When a group, or a group inside it, holds round holes, its window shows a \"Hole diameter\" slider for all of them at once and a \"One by one\" switch that lists each hole with its own diameter.\n\nEvery hole keeps its middle and its depth. The groups are rebuilt from the inside out, the way Edit group → Done does it, as one undo step. Boards, tags, QR codes and bundles are left alone, and only round holes count, so square or oval ones are not touched.",
-      "da": "Når gruppen, eller en gruppe i den, indeholder runde huller, viser dens vindue skyderen \"Huldiameter\" for dem alle på én gang og kontakten \"Ét ad gangen\", som viser hvert hul med sin egen diameter.\n\nHvert hul beholder sit centrum og sin dybde. Grupperne bygges igen indefra og ud, som \"Redigér gruppe\" og \"Udført\" gør det, i ét fortrydelsestrin. Plader, skilte, QR-koder og bundter lades urørt, og kun runde huller tæller, så firkantede eller ovale ændres ikke."
+      "de": "Gibt der Browser layerling keinen Zugriff auf die Grafik (WebGL), erschien bisher nur „layerling ist auf einen Fehler gestoßen“. Jetzt sagt das Fenster, was los ist: Die Ursache liegt im Browser oder im Grafiktreiber, deine Entwürfe bleiben erhalten. Darunter steht, was meistens hilft: Browser oder Rechner neu starten, die Grafikbeschleunigung einschalten, Browser und Grafiktreiber aktualisieren oder einen anderen Browser versuchen. Den zuletzt gespeicherten Stand kannst du dort weiter als .lyl sichern.",
+      "en": "When the browser gives layerling no access to the graphics (WebGL), all you saw was \"layerling ran into an error\". The window now says what is going on: the cause lies in the browser or the graphics driver, and your designs are kept. Below that it lists what usually helps: restart the browser or the computer, turn on graphics acceleration, update the browser and the graphics driver, or try another browser. You can still save the last stored state as a .lyl file from there."
+    }
+  },
+  {
+    "title": {
+      "de": "Druckplatten: Name auf Platte 1 und im Dateinamen",
+      "en": "Build plates: name on plate 1 and in the file name"
+    },
+    "body": {
+      "de": "Hat die erste Druckplatte einen eigenen Namen, steht er jetzt auch auf der Platte, wie bei den weiteren Platten: „Platte 1: Deckel“, der Name des Entwurfs klein darüber. Wählst du im Exportfenster eine einzelne Platte, beginnt der Dateiname mit dem Namen dieser Platte statt mit dem des Entwurfs; eine Platte ohne Namen heißt „Entwurf - Platte 2“.",
+      "en": "When the first build plate has a name of its own, it is now written on the plate as on the further plates: \"Plate 1: Lid\", with the design's name in small above it. And when you pick a single plate in the export window, the file name starts as that plate's name instead of the design's; a plate without a name becomes \"Design - Plate 2\"."
     },
     "guide": {
-      "chapter": "shapes"
+      "section": "buildPlates"
     }
   },
   {
     "title": {
-      "de": "Gridfinity-Behälter mit Überstand",
-      "en": "Gridfinity bins that overhang the grid",
-      "da": "Gridfinity-bakker, der rækker ud over gitteret"
+      "de": "Objektliste: Name bei gesperrter Form",
+      "en": "Object list: the name of a locked shape"
     },
     "body": {
-      "de": "Füllt eine Bodenplatte mit Ausgleich eine Schublade, die kein ganzes Raster misst, kann ein Behälter jetzt auf jeder Seite über das Raster hinausreichen, über den Ausgleich bis an die Wand, damit nichts daneben hinunterfällt. Die Füße bleiben auf dem Raster. Eine Fase unter dem Überstand lässt ihn ohne Stützen drucken; ein massiver Überstand oder ein Stapelrand auf dem Raster sind wählbar.",
-      "en": "When a padded baseplate fills a drawer that is not whole units, a bin can now reach out beyond the grid on any side, over the padding to the wall, so nothing falls down beside it. Its feet stay on the grid. A chamfer under the overhang lets it print without supports; a solid overhang or a lip kept on the grid are there to choose.",
-      "da": "Når en grundplade med kantfyld udfylder en skuffle, der ikke er et helt antal gitterenheder, kan en bakke nu række ud over gitteret på hver side, over kantfyldet til væggen, så intet falder ned ved siden af den. Dens fødder bliver på gitteret. En fase under overhænget gør, at den kan printes uden støtte; et massivt overhæng eller \"Hold stabelkraven på gitteret\" kan du vælge imellem."
+      "de": "Ist bei einem Teil die Form gesperrt (das Schild), bleibt auch sein Name, wie er ist. Die Objektliste bot trotzdem den Stift an und öffnete das Namensfeld, nahm den neuen Namen dann aber nicht an. Jetzt fehlt der Stift bei solchen Teilen. Zum Umbenennen das Schild in der Zeile anklicken, dann ist die Form entsperrt.",
+      "en": "When the shape of a part is locked (the shield), its name stays as it is too. The object list still offered the pencil and opened the name field, but then did not take the new name. The pencil is now left out for such parts. To rename one, click the shield in its row, which unlocks the shape."
+    },
+    "guide": {
+      "section": "objectList"
+    }
+  },
+  {
+    "title": {
+      "de": "Anleitung: genaue Wortfolge mit Anführungszeichen suchen",
+      "en": "User guide: search for an exact phrase with quotation marks"
+    },
+    "body": {
+      "de": "Das Suchfeld der Anleitung versteht jetzt Anführungszeichen: \"auf dem Kreisbogen\" findet nur die Abschnitte, in denen diese Wörter genau so hintereinander stehen. Ein einzelnes Wort in Anführungszeichen wird nur als ganzes Wort gefunden. Bisher fand eine Suche mit Anführungszeichen gar nichts.",
+      "en": "The search box of the user guide now understands quotation marks: \"circular arc\" finds only the sections where these words stand next to each other in this order. A single word in quotation marks is found only as a whole word. Until now a search with quotation marks found nothing at all."
+    },
+    "guide": {
+      "section": "commandSearch"
+    }
+  },
+  {
+    "title": {
+      "de": "Griffe ausblenden mit Umschalt+Q",
+      "en": "Hide the handles with Shift+Q"
+    },
+    "body": {
+      "de": "Bei sehr kleinen Teilen verdecken die Quadrate und Pfeile um die Auswahl leicht das, woran du gerade arbeitest. Umschalt+Q blendet alle Griffe aus und wieder ein, so wie Q die Maße und Abstände. Das Teil lässt sich weiter ziehen, und seine Maße tippst du rechts ein.\n\nDamit du auch ohne Griffe siehst, was ausgewählt ist, ist die ausgewählte Zeile in der Objektliste jetzt kräftiger eingefärbt und hat links einen orangen Balken.",
+      "en": "On very small parts the squares and arrows around the selection easily cover what you are working on. Shift+Q hides all handles and shows them again, as Q does for the sizes and distances. You can still drag the part, and type its sizes at the right.\n\nSo that you see what is selected without the handles, the selected row in the object list now has a stronger colour and an orange bar at its left."
+    },
+    "guide": {
+      "chapter": "measuring"
+    }
+  },
+  {
+    "title": {
+      "de": "Fehlermeldung bleibt bei den Knöpfen sichtbar",
+      "en": "Error message stays in view with the buttons"
+    },
+    "body": {
+      "de": "In einem langen Werkzeugfenster, etwa beim Aushöhlen, blieben „Abbrechen“ und „Anwenden“ immer sichtbar, die Meldung, warum etwas nicht geht, stand aber ganz unten und war erst nach dem Herunterrollen zu sehen. Ein Klick schien dann nichts zu tun. Die Meldung steht jetzt direkt über den Knöpfen und bleibt dort sichtbar.",
+      "en": "In a long tool panel, Hollow for example, Cancel and Apply always stayed in view, but the message why something cannot be done stood at the very bottom and only showed after scrolling down. A click then seemed to do nothing. The message now stands right above the buttons and stays in view there."
+    }
+  },
+  {
+    "title": {
+      "de": "Maßband misst sofort",
+      "en": "Tape measure measures at once"
+    },
+    "body": {
+      "de": "Ein Klick auf das Maßband schaltet jetzt gleich „Maß hinzufügen“ ein: Maßband anklicken, ersten Punkt klicken, zweiten Punkt klicken, fertig. Bisher musste man nach dem Öffnen erst noch das Plus wählen.\n\nEin weiterer Klick auf das Plus legt das Werkzeug weg, die Schaltflächen bleiben offen – etwa um zwischendurch einen Körper auszuwählen. Sind die Maße ausgeblendet, öffnet sich das Maßband ohne eingeschaltetes Werkzeug, damit sie ausgeblendet bleiben.",
+      "en": "A click on the tape measure now switches Add measurement on straight away: click the tape measure, click the first point, click the second, done. Until now you had to pick the plus after opening it.\n\nAnother click on the plus puts the tool down and leaves the buttons open, to select a body in between for example. If the measurements are hidden, the tape measure opens without the tool, so they stay hidden."
+    },
+    "guide": {
+      "section": "tapeMeasure"
     }
   }
 ]

@@ -78,12 +78,14 @@ export function DeleteFacePanel({
         />
       </ToolSection>
 
-      {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : (
+      {error ? null : (
         <ToolStatus
           state={preparing || busy ? "working" : faceCount === 0 ? "needed" : "ready"}
           text={preparing ? t("deleteFace.preparing") : busy ? t("deleteFace.working") : faceCount === 0 ? t("toolSidebar.waiting") : t("toolSidebar.ready")}
         />
       )}
+      {/* The message stands right before the buttons' row, where it stays in view with them (Discussion #1869). */}
+      {error ? <div className="edge-modifier-error" role="alert">{cadModifierUserErrorMessage(error)}</div> : null}
       <div className="edge-modifier-footer">
         <ToolCancel onClick={onCancel} />
         <ToolApply label={t("deleteFace.apply")} busy={busy} busyLabel={t("deleteFace.working")} danger disabled={busy || preparing || faceCount === 0} onClick={onApply} />

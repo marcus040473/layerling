@@ -135,35 +135,37 @@ describe("the bodies of a group for the edge tool", () => {
     if (!outer) throw new Error("did not group");
     expect(scopedParts(outer)).toHaveLength(2);
   });
-  // Issue #1790: a tube whose bore cuts as a hole is two bodies wherever shapes are combined, and the edge tool combines
-  // them again in the kernel. It handed the tube over as the one hollow body, and the box it passes through closed its bore.
-  it("hands a tube whose bore cuts as a hole over as its outer cylinder and its bore", () => {
+
+  // #1790: a tube whose bore cuts as a hole when grouped is a solid and a hole at once.
+  it("hands on a tube whose bore cuts as a hole as the tube and its bore, a hole", () => {
     const tube = shape({ id: "tube", kind: "tube", height: 60, bevel: 3, tubeBoreHole: true });
-    const group = groupedShape([shape({ id: "box", width: 40, depth: 40, size: 40 }), tube]);
+    const group = groupedShape([tube, shape({ id: "block", width: 30, depth: 30, size: 30, height: 10 })]);
     if (!group) throw new Error("did not group");
-    const parts = scopedParts(group);
-    expect(parts.map((part) => [part.shape.kind, part.shape.hole === true, part.shape.width, part.scope])).toEqual([
-      ["box", false, 40, []],
+    expect(scopedParts(group).map((part) => [part.shape.kind, part.shape.hole === true, part.shape.width, part.scope])).toEqual([
       ["cylinder", false, 20, []],
       ["cylinder", true, 14, []],
+      ["box", false, 30, []],
     ]);
-    // Without the switch the tube stays the one body it is.
-    const plain = groupedShape([shape({ id: "box", width: 40, depth: 40, size: 40 }), { ...tube, tubeBoreHole: undefined }]);
+    // Without the switch the tube stays the one hollow tube it is.
+    const plain = groupedShape([{ ...tube, tubeBoreHole: undefined }, shape({ id: "block" })]);
     if (!plain) throw new Error("did not group");
-    expect(restoreGroupedChildrenForEdges(plain).map((part) => part.kind)).toEqual(["box", "tube"]);
+    expect(scopedParts(plain).map((part) => part.shape.kind)).toEqual(["tube", "box"]);
   });
 
-  it("keeps the bore of a tube inside a group of solids to that group, as the group's own mesh has it", () => {
-    // Grouped on its own the inner group cut the bore into its own block only; the plate beside it stays whole.
-    const inner = groupedShape([shape({ id: "block" }), shape({ id: "tube", kind: "tube", height: 60, bevel: 3, tubeBoreHole: true })]);
+  it("keeps such a bore to its own group when that group is grouped again", () => {
+    const inner = groupedShape([
+      shape({ id: "tube", kind: "tube", height: 60, bevel: 3, tubeBoreHole: true }),
+      shape({ id: "block", width: 30, depth: 30, size: 30, height: 10 }),
+    ]);
     if (!inner) throw new Error("did not group");
-    const outer = groupedShape([shape({ id: "plate", width: 40, depth: 40, size: 40, height: 6 }), inner]);
+    const outer = groupedShape([inner, shape({ id: "plate", elevation: 40, width: 30, depth: 30, size: 30, height: 10 })]);
     if (!outer) throw new Error("did not group");
+    // The bore cut the block it was grouped with, not the plate added later: it stays in the inner group's scope.
     expect(scopedParts(outer).map((part) => [baseId(part.shape.id).split("-bore-")[0], part.shape.hole === true, part.scope])).toEqual([
-      ["plate", false, []],
-      ["block", false, [0]],
       ["tube", false, [0]],
       ["tube", true, [0]],
+      ["block", false, [0]],
+      ["plate", false, []],
     ]);
   });
 });

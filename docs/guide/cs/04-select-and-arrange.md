@@ -44,15 +44,15 @@ Tvar lze odtáhnout za okraj, přibližně o jednu šířku podložky na každou
 
 ## Přichytávání při přesouvání
 
-Při tažení po pracovní rovině se levý, pravý, přední a zadní okraj i střed přichytávají na odpovídající okraje či středy jiných tvarů. Růžová vodicí čára ukazuje místo přichycení. Bez zadávání čísel tak díly položíte těsně vedle sebe nebo je vystředíte. Funguje to i při vypnuté mřížce. Počítá se i střed pracovní roviny: růžové čáry ukážou, kdy tvar sedí uprostřed desky ve směru X, Y nebo v obou.
+Při tažení po pracovní rovině se levý, pravý, přední a zadní okraj i střed přichytávají na odpovídající okraje či středy jiných tvarů. Růžová vodicí čára ukazuje místo přichycení. Bez zadávání čísel tak díly položíte těsně vedle sebe nebo je vystředíte. Funguje to i při vypnuté mřížce. Počítá se i střed pracovní roviny: růžové čáry ukážou, kdy tvar sedí uprostřed desky ve směru X, Y nebo v obou. Tvar, který stojí rovně a má strany podél X a Y, se přichytí i ke stěně, na kterou narazí, také k vnitřní stěně krabice, dutého tělesa nebo importovaného pouzdra, takže díl sedne těsně do rohu pouzdra.
 
-Přichytávání funguje i při změně velikosti: když táhneš za boční úchyt, ta strana se zastaví u hran a středů jiných tvarů a u stěny, na kterou narazí, také u vnitřní stěny krabice, vydutého tělesa nebo importovaného pouzdra, a růžová čára ukáže kde. Tento rozměr zůstane přesně takový, mimo mřížku. Tak díl vyplní pouzdro od stěny ke stěně: přilož ho k jedné stěně a jeho druhou stranu přetáhni k protější. S [[Alt]] tvar roste od středu a tažená strana se přichytí stejně; s [[Shift]] si zachová proporce a nepřichytává se. Platí to na rovné pracovní rovině pro tvary, které stojí rovně a mají strany podél X a Y, a {{ui:workspace.objectSnap}} to vypne spolu s přichytáváním při posunu.
+Přichytávání funguje i při změně velikosti: když táhneš za boční úchyt, ta strana se zastaví u hran a středů jiných tvarů a u stěny, na kterou narazí, také u vnitřní stěny krabice, dutého tělesa nebo importovaného pouzdra, a růžová čára ukáže kde. Tento rozměr zůstane přesně takový, mimo mřížku. Tak díl vyplní pouzdro od stěny ke stěně: přilož ho k jedné stěně a jeho druhou stranu přetáhni k protější. S [[Alt]] tvar roste od středu a tažená strana se přichytí stejně; s [[Shift]] si zachová proporce a nepřichytává se. Platí to na rovné pracovní rovině pro tvary, které stojí rovně a mají strany podél X a Y, a {{ui:workspace.objectSnap}} to vypne spolu s přichytáváním při posunu.
 
 [[Shift]] během tažení omezí posun na osu X nebo Y podle toho, v kterém směru jste táhli více. Druhá souřadnice se zachová. Klávesu stiskněte nejlépe až po zahájení pohybu, protože Shift+klik na nevybraný tvar jej pouze přidá do výběru.
 
 Nebo táhněte za červenou či zelenou šipku nahoře na výběru: posouvá jen ve směru X nebo jen ve směru Y a tvar sleduje myš po této přímce i v pohledu z nízkého úhlu, kde volné tažení uteče daleko. Šipky se přichytávají jako při tažení, [[Alt]] přichytávání vypne a ujetou vzdálenost pak můžete kliknout a zadat přesně.
 
-Přidržíte-li [[Alt]] už před zahájením tažení, přesouváte kopii jako v Tinkercadu. Originál zůstane a kopie dopadne na místo uvolnění. Stisknutí [[Alt]] až během tažení pozastaví přichytávání k objektům, zůstane jen krok mřížky. I kopie se začne přichytávat po uvolnění [[Alt]] během pohybu. Trvale přichytávání vypnete přes {{ui:inspector.objectSnap}} v nabídce mřížky vpravo dole nebo v nastavení. Zatím se týká jen posouvání po běžné pracovní rovině, nikoli zvedání a změny rozměrů.
+Přidržíte-li [[Alt]] už před zahájením tažení, přesouváte kopii jako v Tinkercadu. Originál zůstane a kopie dopadne na místo uvolnění. Stisknutí [[Alt]] až během tažení pozastaví přichytávání k objektům, zůstane jen krok mřížky. I kopie se začne přichytávat po uvolnění [[Alt]] během pohybu. Trvale přichytávání vypnete přes {{ui:inspector.objectSnap}} v nabídce mřížky vpravo dole nebo v nastavení. Na běžné pracovní rovině se přichytávají posouvání a boční úchyty; zvedání a úchyt na horní stěně ne.
 
 ## Zarovnání
 
@@ -162,6 +162,17 @@ Otvory přijme i kulatá stěna válce, trubky nebo díry: stojánek na tužky, 
 AI může provést totéž přes `layerling_perforate_face`, viz [Modelování s AI](chapter:ai-with-mcp).
 
 U desky nebo víka s výřezy v bocích rozloží {{ui:holePattern.arrangement.perimeter}} otvory nerovnoměrně. Proto má {{ui:holePattern.title}} vedle {{ui:holePattern.mode.pattern}} druhou kartu, {{ui:holePattern.mode.mounting}}: umístí otvory do rohů nejmenšího obdélníku kolem vybrané plochy, vždy ve stejné vzdálenosti od jeho stran, i na otočené nebo vyříznuté desce. {{ui:holePattern.mounting.distance}} se měří k okraji otvoru včetně hlavy šroubu, nebo s {{ui:holePattern.mounting.toCenter}} k jeho středu. S {{ui:holePattern.mounting.count}} jdou čtyři do rohů a zbytek po dvojicích, rovnoměrně rozmístěný podél stran, například pro vodotěsné víko. Na kulaté ploše, třeba na víku kulaté krabičky, se rozmístí rovnoměrně po kružnici, tři nebo více. Typ a velikosti otvorů jsou stejné jako u vzoru: obyčejný, se zahloubením pro válcovou nebo zápustnou hlavu, průchozí nebo do hloubky. Vzniknou jako běžné tvary otvorů seskupené s tělesem, takže na ně působí i {{ui:inspector.groupHoleDiameter}} skupiny.
+
+## Otvor pro závitovou vložku
+
+Zalisovací závitová vložka se zatlačí do plastového dílu páječkou a šroubům dá závit, který se neopotřebuje. {{ui:threadInsert.title}} vytvoří otvor pro ni tam, kam kliknete, a nejprve vám řekne, zda má díl na tom místě dost materiálu. Vyberte právě jedno těleso, otevřete knihovnu tvarů a klikněte na {{ui:threadInsert.title}} v sekci {{ui:library.section.holes}}. Najdete ho také pomocí [[Ctrl]]+[[K]]. Na rozdíl od ostatních tvarů ho nelze přetáhnout do návrhu, protože pracuje s vybraným tělesem.
+
+1. V okně zvolte {{ui:threadInsert.size}}: M2 až M8, krátké M3, M4 a M5, nebo 1/4-20. U {{ui:threadInsert.custom}} zadáte průměr otvoru a délku vložky; stěna, která musí kolem otvoru zůstat, vyplyne z průměru. Okno ukazuje průměr a hloubku otvoru a tuto stěnu.
+2. Klikněte na místo na dílu. Funguje rovná plocha i vnější stěna válce nebo trubky; jakákoli jiná křivka se odmítne s nápovědou. Kroužek ukazuje otvor: zelený tam, kde má díl stěnu vedle otvoru a hloubku za ním, které vložka potřebuje, červený tam, kde jedno z toho chybí. Červená barva říká, které a o kolik, a jak široký musí být díl kolem otvoru.
+3. Kroužek posunete tažením po dílu, nebo u rovné plochy zadáte vzdálenost od levého a dolního okraje v části {{ui:threadInsert.position}}. {{ui:threadInsert.center}} ho umístí na střed plochy, který ukazuje fialová značka. Každý posun se změří znovu.
+4. {{ui:threadInsert.repick}} vybere jiné místo a [[Esc]] nástroj zavře. Otvor vytvoří teprve {{ui:threadInsert.apply}}, a to jen tam, kde je kroužek zelený.
+
+Otvor je běžný tvar otvoru sloučený s tělesem, stejně jako otvory z rastru otvorů, a jádro CAD ho řeže jako pravý válec, takže vývrt je přesný. {{ui:editor.tool.ungroup}} otvor opět uvolní. Je tak hluboký, jak je vložka dlouhá, a o kousek vyčnívá z plochy, aby se čistě otevřel. AI může provést totéž přes most MCP pomocí `layerling_thread_insert`, viz [Modelování s AI](chapter:ai-with-mcp).
 
 ## Vysunutí plochy ven nebo dovnitř
 
