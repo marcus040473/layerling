@@ -3221,6 +3221,7 @@ export const MESSAGES_IT: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "Metti tu ogni parete, più sotto in «Divisori a mano»: dove sta, dove comincia e dove finisce. Se torni a Griglia regolare, le tue pareti restano salvate per dopo.",
   "boxGenerator.wallsPlan": "La scatola vista dall’alto con i suoi divisori; il retro della scatola è in alto",
   "boxGenerator.wallsHint": "La scatola vista dall’alto, con il retro in alto. Trascina una parete per spostarla e trascina una delle sue estremità per accorciarla o allungarla. Fai clic su uno scomparto e una nuova parete dividerà solo quello.",
+  "boxGenerator.wallsOnBoxHint": "Funziona anche direttamente sulla scatola nella vista: trascina il punto su una parete per spostarla, trascina i punti alle sue estremità per cambiarne la lunghezza e dividi uno scomparto con i due piccoli pulsanti al suo interno.",
   "boxGenerator.wallAcross": "Parete {number}, trasversale",
   "boxGenerator.wallAlong": "Parete {number}, longitudinale",
   "boxGenerator.compartment": "Scomparto {number}, {width} × {depth} mm",

@@ -3238,6 +3238,7 @@ export const MESSAGES_SV: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "Du sätter varje vägg själv, nedan under ”Mellanväggar för hand”: var den står, var den börjar och var den slutar. Går du tillbaka till Jämnt rutnät sparas dina väggar till senare.",
   "boxGenerator.wallsPlan": "Lådan sedd uppifrån med sina mellanväggar; lådans baksida är överst",
   "boxGenerator.wallsHint": "Lådan sedd uppifrån, baksidan är överst. Dra i en vägg för att flytta den och dra i en av dess ändar för att göra den kortare eller längre. Klicka på ett fack, så delar en ny vägg bara det facket.",
+  "boxGenerator.wallsOnBoxHint": "Det går också direkt på lådan i vyn: dra i punkten på en vägg för att flytta den, dra i punkterna vid dess ändar för att ändra längden och dela ett fack med de två små knapparna i det.",
   "boxGenerator.wallAcross": "Vägg {number}, på tvären",
   "boxGenerator.wallAlong": "Vägg {number}, på längden",
   "boxGenerator.compartment": "Fack {number}, {width} × {depth} mm",

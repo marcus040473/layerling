@@ -550,7 +550,9 @@ export function boxGeneratorWallRoom(size: BoxGeneratorSize, fields: BoxGenerato
     const outline = shift(cell);
     return { outline, ...bounds(outline), label: pointInside(outline) };
   });
-  return { width: box.maxX - box.minX, depth: box.maxZ - box.minZ, outline: shift(inner), compartments };
+  const outside = bounds(boxGeneratorOutline(settings));
+  // `inset` is how far the room's left and back lie inside the left and back of the whole box.
+  return { width: box.maxX - box.minX, depth: box.maxZ - box.minZ, inset: { x: box.minX - outside.minX, z: box.minZ - outside.minZ }, outline: shift(inner), compartments };
 }
 
 /**

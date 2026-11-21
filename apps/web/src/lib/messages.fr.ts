@@ -3155,6 +3155,7 @@ export const MESSAGES_FR: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "Vous placez chaque cloison vous-même, plus bas dans « Cloisons à la main » : où elle se trouve, où elle commence et où elle s’arrête. Si vous revenez à Grille régulière, vos cloisons sont gardées pour plus tard.",
   "boxGenerator.wallsPlan": "La boîte vue de dessus avec ses cloisons ; l’arrière de la boîte est en haut",
   "boxGenerator.wallsHint": "La boîte vue de dessus, l’arrière en haut. Faites glisser une cloison pour la déplacer, et l’une de ses extrémités pour la raccourcir ou l’allonger. Cliquez sur un compartiment : une nouvelle cloison ne divise alors que celui-ci.",
+  "boxGenerator.wallsOnBoxHint": "Cela fonctionne aussi directement sur la boîte dans la vue : faites glisser le point d’une cloison pour la déplacer, les points à ses extrémités pour changer sa longueur, et divisez un compartiment avec les deux petits boutons qui s’y trouvent.",
   "boxGenerator.wallAcross": "Cloison {number}, en travers",
   "boxGenerator.wallAlong": "Cloison {number}, en long",
   "boxGenerator.compartment": "Compartiment {number}, {width} × {depth} mm",

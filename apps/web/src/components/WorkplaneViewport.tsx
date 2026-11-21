@@ -128,6 +128,8 @@ import { movePivotToDepthUnder, WorkspaceSettings, createThreeScene, rebuildWork
 import { pointInsideOutline } from "@/lib/screenHull";
 import { isTypingTarget } from "@/lib/editorKeyTargets";
 import { liftHandleOffset, screenAngle, framePoint, selectionFrameCorners, workplaneFootprintY, syncTransformOverlay, syncAlignOverlay, syncMirrorOverlay, syncLayFlatHover } from "./workplane/viewportTransformOverlays";
+import { BoxWallsOverlay, boxWallsEditable, syncBoxWallsOverlay, type BoxWallsOverlayState } from "./workplane/BoxWallsOverlay";
+import type { BoxWallsPick } from "./workplane/BoxWallsPlan";
 import { ClearanceMarkOverlay, clearanceFocusBox, syncClearanceMarkOverlay, type ClearanceMark, type ClearanceMarkOverlayState } from "./workplane/ClearanceMarkOverlay";
 import { clipThinWallOverlay, syncThinWallOverlay, type PrintCheckView } from "./workplane/ThinWallOverlay";
 import { restoreLayerViewCamera, saveLayerViewCamera, syncLayerViewOverlay, type LayerView } from "./workplane/LayerViewOverlay";
@@ -1956,6 +1958,10 @@ export function WorkplaneViewport({
   const sectionMeasureOverlayRef = useRef<SectionMeasureOverlayState | null>(null);
   const [clearanceMarkOverlay, setClearanceMarkOverlay] = useState<ClearanceMarkOverlayState | null>(null);
   const clearanceMarkOverlayRef = useRef<ClearanceMarkOverlayState | null>(null);
+  // Box generator, dividers by hand: the grips on the box itself, and the wall or compartment picked there or in the settings.
+  const [boxWallsOverlay, setBoxWallsOverlay] = useState<BoxWallsOverlayState | null>(null);
+  const boxWallsOverlayRef = useRef<BoxWallsOverlayState | null>(null);
+  const [boxWallsPick, setBoxWallsPick] = useState<BoxWallsPick>(null);
   const clearanceMarkRef = useRef<ClearanceMark | null>(clearanceMark);
   clearanceMarkRef.current = clearanceMark;
   // Mitte des Feinreglers: folgt jeder Aenderung, die nicht vom Feinregler selbst kommt.
@@ -2575,6 +2581,9 @@ export function WorkplaneViewport({
   });
 
   const selectedShape = useMemo(() => (selectedIds.length === 1 ? shapes.find((shape) => shape.id === selectedIds[0]) ?? null : null), [selectedIds, shapes]);
+  // The wall picked belongs to one box; another selection starts with none.
+  const selectedShapeId = selectedShape?.id;
+  useEffect(() => setBoxWallsPick(null), [selectedShapeId]);
   useEffect(() => {
     syncBentTubeSegment(threeRef.current, selectedShape, bentTubeSegment);
   }, [bentTubeSegment, selectedShape]);
@@ -3753,6 +3762,7 @@ export function WorkplaneViewport({
         syncSectionMeasureOverlay(state, sectionMeasureModeRef.current && sectionSettingsRef.current.enabled, sectionMeasureRef.current, sectionMeasureOverlayRef, setSectionMeasureOverlay, workspaceRef.current.accuracy);
         syncProtractorOverlay(state, protractorOpenRef.current, protractorModelRef.current, protractorOverlayRef, setProtractorOverlay);
         syncClearanceMarkOverlay(state, clearanceMarkRef.current, clearanceMarkOverlayRef, setClearanceMarkOverlay);
+        syncBoxWallsOverlay(state, selectedIdsRef.current.length === 1 && !transformRef.current && !dragRef.current ? shapesRef.current.find((shape) => shape.id === selectedIdsRef.current[0]) ?? null : null, boxWallsOverlayRef, setBoxWallsOverlay);
         clipThinWallOverlay(state);
         syncRulerDimensionOverlay(state, previewShapes, rulerDimensionOverlayRef, setRulerDimensionOverlay, workspaceRef.current.accuracy);
         syncCornerRulerToolOverlay(state, cornerRulerModelRef.current, previewShapes, selectedIdsRef.current, cornerRulerOverlayRef, setCornerRulerOverlay, workspaceRef.current.accuracy, resolvedThemeRef.current);
@@ -9967,6 +9977,17 @@ export function WorkplaneViewport({
           {!workplaneMode && !splitActive && mirrorOverlay ? <MirrorOverlay overlay={mirrorOverlay} onMirror={onMirrorSelection} onPreview={onMirrorPreview} onPreviewClear={onMirrorPreviewClear} /> : null}
           {!splitActive && sectionMeasureOverlay ? <SectionMeasureOverlay overlay={sectionMeasureOverlay} /> : null}
           {clearanceMarkOverlay ? <ClearanceMarkOverlay overlay={clearanceMarkOverlay} /> : null}
+          {boxWallsOverlay && selectedShape && boxWallsEditable(selectedShape) && !workplaneMode && !splitActive && !modifierActive && !tapeMode && !tapeDeleteMode && !tapeMoveMode ? (
+            <BoxWallsOverlay
+              overlay={boxWallsOverlay}
+              shape={selectedShape}
+              pick={boxWallsPick}
+              threeRef={threeRef}
+              onPick={setBoxWallsPick}
+              onWallsChange={(boxWalls) => onUpdateShape(selectedShape.id, { boxWalls })}
+              onDragActiveChange={onInteractionActiveChange}
+            />
+          ) : null}
           {!workplaneMode && !splitActive && tapeOverlay && (tapeOverlay.points.length > 0 || tapeOverlay.hover) ? (
             <TapeOverlay
               overlay={tapeOverlay}
@@ -10100,6 +10121,8 @@ export function WorkplaneViewport({
           }}
           proportionLock={proportionLock}
           onProportionLockChange={changeProportionLock}
+          boxWallsPick={boxWallsPick}
+          onBoxWallsPickChange={setBoxWallsPick}
           onBentTubeSegmentChange={changeBentTubeSegment}
           onShapeDefaultsChange={(kind, entry) => {
             changeWorkspace((current) => ({ ...current, shapeCustomizations: withShapeDefaults(current.shapeCustomizations, kind, entry) }));

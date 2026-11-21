@@ -3755,6 +3755,7 @@ export const MESSAGES_DA: Partial<Record<MessageKey, string>> = {
   "boxGenerator.dividersManualHint": "Du sætter selv hver væg, nedenfor under „Skillevægge i hånden“: hvor den står, hvor den begynder, og hvor den ender. Går du tilbage til Jævnt gitter, gemmes dine vægge til senere.",
   "boxGenerator.wallsPlan": "Kassen set oppefra med dens skillevægge; kassens bagside er øverst",
   "boxGenerator.wallsHint": "Kassen set oppefra, bagsiden er øverst. Træk i en væg for at flytte den, og træk i en af dens ender for at gøre den kortere eller længere. Klik på et rum, så deler en ny væg kun det rum.",
+  "boxGenerator.wallsOnBoxHint": "Det virker også direkte på kassen i visningen: Træk i prikken på en væg for at flytte den, træk i prikkerne ved dens ender for at ændre længden, og del et rum med de to små knapper i det.",
   "boxGenerator.wallAcross": "Væg {number}, på tværs",
   "boxGenerator.wallAlong": "Væg {number}, på langs",
   "boxGenerator.compartment": "Rum {number}, {width} × {depth} mm",
