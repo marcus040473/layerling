@@ -22,3 +22,5 @@ Zu jedem PR gibt es den englischen Text (`.md`) und eine deutsche Erklärung (`-
 | 1836 | `fix-1836-shape-lock-rename` | Objektliste: Bei gesperrter Form wird kein Namensfeld mehr angeboten, das dann nichts tut (Issue #1836) | `issue-1836-shape-lock-rename-link.txt` |
 | 1874 | `fix-1874-shared-thumbnail-sync` | Geteilter Ordner: Das Vorschaubild wird auch auf dem anderen Rechner gefunden (Issue #1874) | `issue-1874-shared-thumbnail-sync-link.txt` |
 | – | `fix-stack-dividers-foot-room` | Stapelbare Box mit Trennern: Trenner enden unter dem Fuß (von dir am 20.11. gemeldet) | `stack-dividers-foot-room-link.txt` |
+| #1806 | `mold-own-openings` | Gussform: Öffnungen selbst setzen (neue Funktion, 21.11.) | `mold-own-openings-link.txt` |
+| #1851 | `bolt-filament-pin-pr` | Schraube teilen: Filament als Stifte (neue Funktion, 21.11.) | `bolt-filament-pin-link.txt` |
