@@ -17,7 +17,7 @@ import { createCrescentGeometry } from "@/lib/crescentGeometry";
 import { createSectorGeometry } from "@/lib/sectorGeometry";
 import { createSlotGeometry } from "@/lib/slotGeometry";
 import { createDovetailGeometry } from "@/lib/dovetailGeometry";
-import { boxGeneratorFieldsOf, createBoxGeneratorGeometry } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorFieldsOf, boxGeneratorNeedsKernel, createBoxGeneratorGeometry } from "@/lib/boxGeneratorGeometry";
 import { createParaboloidGeometry } from "@/lib/roundBodyGeometry";
 import { createCurvedConeGeometry } from "@/lib/curvedCone";
 import { createScrewBossGeometry } from "@/lib/screwBoss";
@@ -488,7 +488,7 @@ export function tapeShapeTopologyKey(shape: WorkplaneShape): string {
     dovetailNeckWidth: shape.dovetailNeckWidth,
     dovetailClearance: shape.dovetailClearance,
     ...boxGeneratorFieldsOf(shape),
-    boxKernel: shape.boxGridfinityPlate ? manifoldRevision() : undefined,
+    boxKernel: shape.boxGridfinityPlate || boxGeneratorNeedsKernel(shape) ? manifoldRevision() : undefined,
     loftBottomOutline: shape.loftBottomOutline,
     loftTopOutline: shape.loftTopOutline,
     loftBottomWidth: shape.loftBottomWidth,
@@ -946,7 +946,7 @@ export function shapeGeometrySignature(shape: WorkplaneShape): string {
     dovetailNeckWidth: shape.dovetailNeckWidth,
     dovetailClearance: shape.dovetailClearance,
     ...boxGeneratorFieldsOf(shape),
-    boxKernel: shape.boxGridfinityPlate ? manifoldRevision() : undefined,
+    boxKernel: shape.boxGridfinityPlate || boxGeneratorNeedsKernel(shape) ? manifoldRevision() : undefined,
     loftBottomOutline: shape.loftBottomOutline,
     loftTopOutline: shape.loftTopOutline,
     loftBottomWidth: shape.loftBottomWidth,

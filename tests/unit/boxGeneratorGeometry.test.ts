@@ -12,6 +12,9 @@ import {
   boxGeneratorInsideOutline,
   boxGeneratorGridfinityRoom,
   boxGeneratorGridWalls,
+  boxGeneratorNeedsKernel,
+  boxGeneratorWallEnds,
+  boxGeneratorWallFromEnds,
   boxGeneratorWallRoom,
   boxGeneratorWallsInside,
   normalizeBoxGeneratorWalls,
@@ -491,6 +494,51 @@ describe("the matching lid of a box", () => {
       expect(boxGeneratorIssues(SIZE, fields)).toContainEqual({ code: "compartmentSolid", count: 1 });
       expect(boxGeneratorPlan(SIZE, fields).cells).toHaveLength(1);
       expect(openEdges(createBoxGeneratorGeometry(SIZE, fields))).toBe(0);
+    });
+
+    it("takes a wall at a slant: drawn with the straight walls until the kernel is there, then a closed body with the slanted wall in it", async () => {
+      const fields = manual([{ dir: "z", at: 30, from: 0, to: 85.2 }, { dir: "x", at: 20, from: 50, to: 100, slant: 40 }]);
+      expect(boxGeneratorNeedsKernel(fields)).toBe(true);
+      expect(boxGeneratorNeedsKernel(manual([{ dir: "z", at: 30, from: 0, to: 85.2 }]))).toBe(false);
+      const straightOnly = volumeOf(createBoxGeneratorGeometry(SIZE, manual([{ dir: "z", at: 30, from: 0, to: 85.2 }])));
+      rememberManifoldRuntime(null as never);
+      expect(volumeOf(createBoxGeneratorGeometry(SIZE, fields))).toBeCloseTo(straightOnly, 3);
+      const runtime = await manifoldModule();
+      runtime.setup();
+      rememberManifoldRuntime(runtime);
+      const geometry = createBoxGeneratorGeometry(SIZE, fields);
+      const plan = boxGeneratorPlan(SIZE, fields);
+      expect(openEdges(geometry)).toBe(0);
+      // The wall stands free: 1.6 mm thick square to its run, as long as the line between its ends.
+      expect(plan.cells).toHaveLength(2);
+      expect(plan.islands?.flat()).toHaveLength(1);
+      expect(volumeOf(geometry) - straightOnly).toBeCloseTo(1.6 * Math.hypot(50, 40) * ROOM_HEIGHT, 0);
+    });
+
+    it("closes a slanted wall against the box's wall and against other walls: from corner to corner it makes two rooms", async () => {
+      const runtime = await manifoldModule();
+      runtime.setup();
+      rememberManifoldRuntime(runtime);
+      const corner = manual([{ dir: "x", at: 0, from: 0, to: INNER.width, slant: INNER.depth }]);
+      expect(boxGeneratorPlan(SIZE, corner).cells).toHaveLength(2);
+      expect(openEdges(createBoxGeneratorGeometry(SIZE, corner))).toBe(0);
+      // A slanted wall between two straight ones, in a round box and with stacking.
+      const mixed = [{ dir: "z" as const, at: 40, from: 0, to: 500 }, { dir: "x" as const, at: 60, from: 0, to: 500 }, { dir: "x" as const, at: 10, from: 40, to: 110, slant: 50 }, { dir: "z" as const, at: 10, from: 10, to: 60, slant: 25 }];
+      for (const more of [{}, { boxShape: "round" }, { boxShape: "polygon", boxSides: 5 }, { boxStackable: true }, { boxCornerRadius: 12 }] as const) {
+        const geometry = createBoxGeneratorGeometry(SIZE, manual(mixed, more));
+        expect(openEdges(geometry)).toBe(0);
+        expect(volumeOf(geometry)).toBeLessThan(126 * 90 * 48);
+      }
+    });
+
+    it("tells a wall by its two ends and back, whichever way round they are given", () => {
+      expect(boxGeneratorWallFromEnds({ x: 10, z: 20 }, { x: 60, z: 20 })).toEqual({ dir: "x", at: 20, from: 10, to: 60 });
+      expect(boxGeneratorWallFromEnds({ x: 60, z: 50 }, { x: 10, z: 20 })).toEqual({ dir: "x", at: 20, from: 10, to: 60, slant: 30 });
+      expect(boxGeneratorWallFromEnds({ x: 30, z: 70 }, { x: 10, z: 5 })).toEqual({ dir: "z", at: 10, from: 5, to: 70, slant: 20 });
+      expect(boxGeneratorWallEnds({ dir: "z", at: 10, from: 5, to: 70, slant: 20 })).toEqual([{ x: 10, z: 5 }, { x: 30, z: 70 }]);
+      // Given end before beginning it is the same wall told the other way round; a slant of nothing is left out.
+      expect(normalizeBoxGeneratorWalls([{ dir: "x", at: 10, from: 50, to: 5, slant: 8 }, { dir: "x", at: 10, from: 5, to: 50, slant: 0 }, { dir: "z", at: 5, from: 0, to: 9, slant: -20 }]))
+        .toEqual([{ dir: "x", at: 18, from: 5, to: 50, slant: -8 }, { dir: "x", at: 10, from: 5, to: 50 }, { dir: "z", at: 5, from: 0, to: 9, slant: -5 }]);
     });
 
     it("keeps only walls that make sense, and cuts them to the inside without changing the list", () => {

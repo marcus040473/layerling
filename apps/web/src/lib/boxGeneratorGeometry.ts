@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { WorkplaneShape } from "@/types/layerling";
 import { GRIDFINITY_BASEPLATE_HEIGHT, GRIDFINITY_BASEPLATE_RADIUS, GRIDFINITY_DRAWER_CLEARANCE, GRIDFINITY_FLOOR, GRIDFINITY_GRID, MAX_GRIDFINITY_LARGE_PLATE_UNITS, gridfinityCutSockets, gridfinityOutlineCells } from "@/lib/gridfinityGeometry";
 import { loadedManifoldRuntime, requestManifoldRuntime } from "@/lib/manifoldHandle";
+import type { ManifoldToplevel } from "manifold-3d";
 
 /*
  * The box generator: one parametric shape for a box and its lid, from a few settings instead of a fixed template.
@@ -37,8 +38,12 @@ export type BoxGeneratorDividerMode = "grid" | "manual";
  * (back to front). All measures are in mm from the inside of the box, from its left and its back: `at` to the middle of
  * the wall across its run, `from` and `to` where it begins and ends along its run. For a round or many-sided box the
  * inside is measured at its widest and deepest, and the wall ends where it meets the box's wall.
+ *
+ * A wall can stand at a slant: `slant` is how many mm its end lies further across than its beginning (further to the
+ * front for "x", further to the right for "z", negative the other way), so it runs from (from, at) to (to, at + slant).
+ * Unset or 0 the wall is straight. The thickness of a slanted wall is measured square to it, as of a straight one.
  */
-export type BoxGeneratorWall = { dir: "x" | "z"; at: number; from: number; to: number };
+export type BoxGeneratorWall = { dir: "x" | "z"; at: number; from: number; to: number; slant?: number };
 
 export const DEFAULT_BOX_GENERATOR_WIDTH = 126;
 export const DEFAULT_BOX_GENERATOR_DEPTH = 90;
@@ -154,7 +159,12 @@ export function normalizeBoxGeneratorWalls(value: unknown): BoxGeneratorWall[] {
     const measure = (n: number) => Math.round(clamp(n, 0, 1e4) * 1000) / 1000;
     const a = measure(wall.from as number);
     const b = measure(wall.to as number);
-    walls.push({ dir: wall.dir, at: measure(wall.at as number), from: Math.min(a, b), to: Math.max(a, b) });
+    const start = measure(wall.at as number);
+    // The slant ends inside the measures too; given end before beginning, the wall is the same one told the other way round.
+    const end = typeof wall.slant === "number" && Number.isFinite(wall.slant) ? measure(start + wall.slant) : start;
+    const [at, far] = a <= b ? [start, end] : [end, start];
+    const slant = Math.round((far - at) * 1000) / 1000;
+    walls.push({ dir: wall.dir, at, from: Math.min(a, b), to: Math.max(a, b), ...(slant !== 0 ? { slant } : {}) });
   }
   return walls;
 }
@@ -174,7 +184,7 @@ export function boxGeneratorWallList(value: unknown): unknown[] | undefined {
 export function boxGeneratorWallsEqual(a: readonly BoxGeneratorWall[] | undefined, b: readonly BoxGeneratorWall[] | undefined) {
   if (a === b) return true;
   if (!a || !b) return (a?.length ?? 0) === 0 && (b?.length ?? 0) === 0;
-  return a.length === b.length && a.every((wall, index) => wall.dir === b[index].dir && wall.at === b[index].at && wall.from === b[index].from && wall.to === b[index].to);
+  return a.length === b.length && a.every((wall, index) => wall.dir === b[index].dir && wall.at === b[index].at && wall.from === b[index].from && wall.to === b[index].to && (wall.slant ?? 0) === (b[index].slant ?? 0));
 }
 
 export type NormalizedBoxGenerator = Required<BoxGeneratorFields> & BoxGeneratorSize;
@@ -462,6 +472,11 @@ function openRegions(inner: Point[], strips: Strip[]): { regions: { outline: Poi
     });
     if (corners.length >= 3 && Math.abs(signedArea(corners)) > 1e-6) loops.push(corners);
   }
+  return regionsOfLoops(loops);
+}
+
+/** Loops sorted into rooms: each counter-clockwise loop an outline, each clockwise one a wall standing free in the room around it (given back counter-clockwise). Rooms narrower than a compartment may be are left out and counted. */
+function regionsOfLoops(loops: Point[][]): { regions: { outline: Point[]; holes: Point[][] }[]; solid: number } {
   const outlines = loops.filter((loop) => signedArea(loop) > 0);
   const inside = (point: Point, outline: Point[]) => {
     let hit = false;
@@ -490,6 +505,79 @@ function openRegions(inner: Point[], strips: Strip[]): { regions: { outline: Poi
 }
 
 /**
+ * As openRegions, for walls at any angle: the inside less every wall's outline, worked out by the 2D kernel. Slivers
+ * smaller than a hundredth of a square millimetre, which a slanted wall can leave where it meets another, are dropped.
+ */
+function kernelRegions(runtime: ManifoldToplevel, inner: Point[], walls: Point[][]) {
+  const made: { delete(): void }[] = [];
+  const keep = <T extends { delete(): void }>(value: T) => {
+    made.push(value);
+    return value;
+  };
+  try {
+    const ring = (points: Point[]) => counterClockwise(points).map((point): [number, number] => [point.x, point.z]);
+    const room = keep(new runtime.CrossSection([ring(inner)], "Positive"));
+    const taken = keep(runtime.CrossSection.union(walls.map((wall) => keep(new runtime.CrossSection([ring(wall)], "Positive")))));
+    const open = keep(room.subtract(taken));
+    const loops = open.toPolygons().map((polygon) => dropDuplicates(polygon.map(([x, z]) => ({ x, z })))).filter((loop) => loop.length >= 3 && Math.abs(signedArea(loop)) > 0.01);
+    return regionsOfLoops(loops);
+  } finally {
+    made.forEach((value) => value.delete());
+  }
+}
+
+/** The two ends of a wall's middle line, in mm from the left and the back of the inside: its beginning and its end. */
+export function boxGeneratorWallEnds(wall: BoxGeneratorWall): [Point, Point] {
+  const far = wall.at + (wall.slant ?? 0);
+  return wall.dir === "x" ? [{ x: wall.from, z: wall.at }, { x: wall.to, z: far }] : [{ x: wall.at, z: wall.from }, { x: far, z: wall.to }];
+}
+
+export function boxGeneratorWallLength(wall: BoxGeneratorWall) {
+  return Math.hypot(wall.to - wall.from, wall.slant ?? 0);
+}
+
+/**
+ * The wall whose middle line runs between two points: along the width when it reaches further that way than along the
+ * depth, else along the depth, beginning at the end that lies further left (or further back).
+ */
+export function boxGeneratorWallFromEnds(a: Point, b: Point): BoxGeneratorWall {
+  const round = (value: number) => Math.round(Math.max(0, value) * 1000) / 1000;
+  const dir: BoxGeneratorWall["dir"] = Math.abs(b.x - a.x) >= Math.abs(b.z - a.z) ? "x" : "z";
+  const along = (point: Point) => (dir === "x" ? point.x : point.z);
+  const across = (point: Point) => (dir === "x" ? point.z : point.x);
+  const [start, end] = along(a) <= along(b) ? [a, b] : [b, a];
+  const at = round(across(start));
+  const slant = Math.round((round(across(end)) - at) * 1000) / 1000;
+  return { dir, at, from: round(along(start)), to: round(along(end)), ...(slant !== 0 ? { slant } : {}) };
+}
+
+/**
+ * The outline of a wall seen from above, `thickness` wide square to its middle line, in mm from the left and the back of
+ * the inside. With `room` given, a straight wall is held inside it, and an end that lies on a side of the room or beyond
+ * is drawn out past it, so that a slanted wall closes against the box's wall instead of touching it with one corner.
+ */
+export function boxGeneratorWallQuad(wall: BoxGeneratorWall, thickness: number, room?: { width: number; depth: number }): Point[] {
+  let [a, b] = boxGeneratorWallEnds(wall);
+  const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+  const ux = (b.x - a.x) / length;
+  const uz = (b.z - a.z) / length;
+  if (room) {
+    const outside = (point: Point) => point.x <= 1e-6 || point.z <= 1e-6 || point.x >= room.width - 1e-6 || point.z >= room.depth - 1e-6;
+    const reach = 2 * thickness + 1;
+    if (outside(a)) a = { x: a.x - ux * reach, z: a.z - uz * reach };
+    if (outside(b)) b = { x: b.x + ux * reach, z: b.z + uz * reach };
+  }
+  const nx = (-uz * thickness) / 2;
+  const nz = (ux * thickness) / 2;
+  return [{ x: a.x - nx, z: a.z - nz }, { x: b.x - nx, z: b.z - nz }, { x: b.x + nx, z: b.z + nz }, { x: a.x + nx, z: a.z + nz }];
+}
+
+/** Whether the box's dividers need the 2D kernel: set by hand, with a wall at a slant. */
+export function boxGeneratorNeedsKernel(fields: BoxGeneratorFields) {
+  return fields.boxDividerMode === "manual" && fields.boxPart !== "lid" && Array.isArray(fields.boxWalls) && fields.boxWalls.some((wall) => Boolean(wall?.slant));
+}
+
+/**
  * The dividers set by hand that lie inside a box whose inside is `width` by `depth` at its widest and deepest: each one
  * held inside it, and those left shorter than a wall may be, dropped. The stored list is not changed by this, so a wall
  * that a smaller box cuts short is whole again when the box grows.
@@ -498,6 +586,8 @@ export function boxGeneratorWallsInside(walls: readonly BoxGeneratorWall[], widt
   return walls.flatMap((wall) => {
     const run = wall.dir === "x" ? width : depth;
     const across = wall.dir === "x" ? depth : width;
+    // A slanted wall is not cut straight at the sides: that would turn it. What lies outside is cut off when the box is built.
+    if (wall.slant) return boxGeneratorWallLength(wall) < MIN_BOX_GENERATOR_WALL_LENGTH ? [] : [wall];
     const from = clamp(wall.from, 0, run);
     const to = clamp(wall.to, 0, run);
     if (to - from < MIN_BOX_GENERATOR_WALL_LENGTH || wall.at < 0 || wall.at > across) return [];
@@ -684,10 +774,18 @@ export function boxGeneratorPlan(size: BoxGeneratorSize, fields: BoxGeneratorFie
   if (use.boxDividerMode === "manual" && !stackedLid) {
     // Dividers set by hand: what is left of the inside when every wall's strip is taken out of it.
     const half = use.boxDivider / 2;
-    const strips = boxGeneratorWallsInside(use.boxWalls, box.maxX - box.minX, box.maxZ - box.minZ).map((wall) => wall.dir === "x"
-      ? { minX: box.minX + wall.from, maxX: box.minX + wall.to, minZ: box.minZ + wall.at - half, maxZ: box.minZ + wall.at + half }
-      : { minX: box.minX + wall.at - half, maxX: box.minX + wall.at + half, minZ: box.minZ + wall.from, maxZ: box.minZ + wall.to });
-    const room = openRegions(inner, strips);
+    const width = box.maxX - box.minX;
+    const depth = box.maxZ - box.minZ;
+    const straight = boxGeneratorWallsInside(use.boxWalls.filter((wall) => !wall.slant), width, depth);
+    const slanted = use.boxWalls.filter((wall) => wall.slant && boxGeneratorWallLength(wall) >= MIN_BOX_GENERATOR_WALL_LENGTH);
+    // Slanted walls are cut out by the 2D kernel; until it has loaded the box is drawn with its straight walls and asks for it.
+    const runtime = slanted.length > 0 ? loadedManifoldRuntime() : null;
+    if (slanted.length > 0 && !runtime) requestManifoldRuntime();
+    const room = runtime
+      ? kernelRegions(runtime, inner, [...straight, ...slanted].map((wall) => boxGeneratorWallQuad(wall, use.boxDivider, { width, depth }).map((point) => ({ x: point.x + box.minX, z: point.z + box.minZ }))))
+      : openRegions(inner, straight.map((wall) => wall.dir === "x"
+        ? { minX: box.minX + wall.from, maxX: box.minX + wall.to, minZ: box.minZ + wall.at - half, maxZ: box.minZ + wall.at + half }
+        : { minX: box.minX + wall.at - half, maxX: box.minX + wall.at + half, minZ: box.minZ + wall.from, maxZ: box.minZ + wall.to }));
     if (room.solid > 0) issues.push({ code: "compartmentSolid", count: room.solid });
     const islands = room.regions.map((region) => region.holes);
     return { settings, outer, cells: room.regions.map((region) => region.outline), islands: islands.some((list) => list.length > 0) ? islands : undefined, floorTop, stack, plate, plug: null, issues };

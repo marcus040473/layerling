@@ -5,7 +5,8 @@ import * as THREE from "three";
 import { SquareSplitHorizontal, SquareSplitVertical, X } from "lucide-react";
 import { projectToScreen, type ThreeState } from "@/components/workplane/ViewportOverlays";
 import { boxWallDragged, type BoxWallsPick } from "@/components/workplane/BoxWallsPlan";
-import { boxGeneratorSplitWall, boxGeneratorWallRoom, MAX_BOX_GENERATOR_WALLS, normalizeBoxGenerator, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorSplitWall, boxGeneratorWallEnds, boxGeneratorWallRoom, MAX_BOX_GENERATOR_WALLS, normalizeBoxGenerator, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
+import { manifoldRevision } from "@/lib/manifoldHandle";
 import { shapeDepth, shapeWidth } from "@/lib/workplaneShapes";
 import { t } from "@/lib/i18n";
 import type { WorkplaneShape } from "@/types/layerling";
@@ -31,14 +32,15 @@ export type BoxWallsOverlayState = {
 type Room = NonNullable<ReturnType<typeof boxGeneratorWallRoom>>;
 
 // A shape is never changed in place, so the room of one is worked out once.
-const rooms = new WeakMap<WorkplaneShape, { room: Room | null; walls: BoxGeneratorWall[]; divider: number }>();
+const rooms = new WeakMap<WorkplaneShape, { room: Room | null; walls: BoxGeneratorWall[]; divider: number; kernel: number }>();
 
 function roomOf(shape: WorkplaneShape) {
   let entry = rooms.get(shape);
-  if (!entry) {
+  // Slanted walls are cut by the 2D kernel; the compartments are worked out again once it has loaded.
+  if (!entry || entry.kernel !== manifoldRevision()) {
     const size = { width: shapeWidth(shape), depth: shapeDepth(shape), height: shape.height };
     const box = normalizeBoxGenerator(size, shape);
-    entry = { room: boxGeneratorWallRoom(size, shape), walls: box.boxWalls, divider: box.boxDivider };
+    entry = { room: boxGeneratorWallRoom(size, shape), walls: box.boxWalls, divider: box.boxDivider, kernel: manifoldRevision() };
     rooms.set(shape, entry);
   }
   return entry;
@@ -118,11 +120,12 @@ export function syncBoxWallsOverlay(
   const next: BoxWallsOverlayState = {
     shapeId: shape.id,
     walls: walls.map((wall, index) => {
+      // A straight wall is shown as far as the room goes; a slanted one as it is, held inside the room's sides.
       const run = wall.dir === "x" ? room.width : room.depth;
-      const from = clamp(wall.from, run);
-      const to = clamp(wall.to, run);
-      const point = (along: number) => (wall.dir === "x" ? screen(along, wall.at) : screen(wall.at, along));
-      return { index, dir: wall.dir, from: point(from), to: point(to), middle: point((from + to) / 2) };
+      const [a, b] = boxGeneratorWallEnds(wall.slant ? wall : { ...wall, from: clamp(wall.from, run), to: clamp(wall.to, run) });
+      const inside = (point: { x: number; z: number }) => ({ x: clamp(point.x, room.width), z: clamp(point.z, room.depth) });
+      const [from, to] = [inside(a), inside(b)];
+      return { index, dir: wall.dir, from: screen(from.x, from.z), to: screen(to.x, to.z), middle: screen((from.x + to.x) / 2, (from.z + to.z) / 2) };
     }),
     compartments: room.compartments.map((compartment, index) => {
       const corners = [screen(compartment.minX, compartment.minZ), screen(compartment.maxX, compartment.minZ), screen(compartment.maxX, compartment.maxZ), screen(compartment.minX, compartment.maxZ)];
@@ -188,9 +191,9 @@ export function BoxWallsOverlay({
     if (!current || current.pointer !== event.pointerId || !state) return;
     const at = pointerInRoom(state, shape, event.clientX, event.clientY);
     if (!at) return;
-    const next = boxWallDragged(current.wall, current.part, at.x - current.x, at.z - current.z, room, walls.filter((_wall, index) => index !== current.index), event.altKey ? 0.1 : undefined);
+    const next = boxWallDragged(current.wall, current.part, at.x - current.x, at.z - current.z, room, walls.filter((_wall, index) => index !== current.index), event.altKey ? 0.1 : undefined, event.altKey);
     const now = walls[current.index];
-    if (!now || (now.at === next.at && now.from === next.from && now.to === next.to)) return;
+    if (!now || (now.dir === next.dir && now.at === next.at && now.from === next.from && now.to === next.to && (now.slant ?? 0) === (next.slant ?? 0))) return;
     current.moved = true;
     onWallsChange(walls.map((wall, index) => (index === current.index ? next : wall)));
   };
