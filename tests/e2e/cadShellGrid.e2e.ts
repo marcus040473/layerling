@@ -115,6 +115,69 @@ describe("a Gridfinity floor, fit and dividers with the real OCCT kernel", () =>
     expect(kernel.getVolume(divided)).toBeGreaterThan(kernel.getVolume(shelled));
   });
 
+  /** As `hollow`, the box turned about its height by `degrees` (x towards z) before it is hollowed. */
+  function hollowTurned(width: number, depth: number, height: number, degrees: number) {
+    const { original } = hollow(width, depth, height);
+    const angle = (degrees * Math.PI) / 180;
+    const turned = kernel.transform(original, [Math.cos(angle), 0, -Math.sin(angle), 0, 0, 1, 0, 0, Math.sin(angle), 0, Math.cos(angle), 0]);
+    const at = (x: number, z: number) => ({ x: x * Math.cos(angle) - z * Math.sin(angle), z: x * Math.sin(angle) + z * Math.cos(angle) });
+    return { original: turned, shelled: shellSolid(kernel, turned, 2, "top"), at };
+  }
+
+  it("turns the dividers with a box that stands turned on the workplane", () => {
+    const { original, shelled, at } = hollowTurned(100, 80, 40, 30);
+    const divided = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0 }, null);
+    expect(kernel.getSubShapes(divided, "solid")).toHaveLength(1);
+    // One divider across, through the middle of the box's own width: solid along the box's own depth, hollow beside it.
+    for (const z of [-30, -10, 10, 30]) expect(solid(divided, at(0, z).x, 20, at(0, z).z)).toBe(true);
+    for (const x of [-30, -10, 10, 30]) expect(solid(divided, at(x, 12).x, 20, at(x, 12).z)).toBe(false);
+    // Along the scene's own z, where the divider of a box that was not turned would stand, it is hollow.
+    expect(solid(divided, 0, 20, 25)).toBe(false);
+    // As much is added as in the same box standing straight.
+    const plain = hollow(100, 80, 40);
+    const added = kernel.getVolume(shellDividersSolid(kernel, plain.original, plain.shelled, { x: 1, z: 0 }, null)) - kernel.getVolume(plain.shelled);
+    expect(kernel.getVolume(divided) - kernel.getVolume(shelled)).toBeCloseTo(added, 0);
+  });
+
+  it("keeps across and along the box's own when it is turned by more than an eighth of a turn and its turn is told", () => {
+    const { original, shelled, at } = hollowTurned(100, 80, 40, 60);
+    // The editor counts the turn the other way round: this box is turned by -60 as it counts.
+    const divided = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0, angle: -60 }, null);
+    expect(solid(divided, at(0, 25).x, 20, at(0, 25).z)).toBe(true);
+    expect(solid(divided, at(25, 0).x, 20, at(25, 0).z)).toBe(false);
+    // Without the turn told, the nearest reading of the rectangle is taken: the divider then runs the other way.
+    const guessed = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0 }, null);
+    expect(solid(guessed, at(25, 0).x, 20, at(25, 0).z)).toBe(true);
+  });
+
+  it("builds dividers set by hand: from wall to wall, ending inside the box, at a slant, and in a turned box", () => {
+    const { original, shelled } = hollow(100, 80, 40);
+    // The inside is 96 x 76, from -48, -38. One wall along the depth 30 mm from the left; one across from the left wall to it.
+    const walls = [{ dir: "z" as const, at: 30, from: 0, to: 500 }, { dir: "x" as const, at: 20, from: 0, to: 30 }];
+    const divided = shellDividersSolid(kernel, original, shelled, { x: 3, z: 3, manual: true, walls }, null);
+    expect(kernel.isValid(divided)).toBe(true);
+    expect(kernel.getSubShapes(divided, "solid")).toHaveLength(1);
+    expect(solid(divided, -18, 20, 30)).toBe(true);
+    expect(solid(divided, -18, 20, -30)).toBe(true);
+    expect(solid(divided, -35, 20, -18)).toBe(true);
+    // The grid's counts are not built beside them, and the short wall ends at the long one.
+    expect(solid(divided, 0, 20, 0)).toBe(false);
+    expect(solid(divided, 10, 20, -18)).toBe(false);
+    expect(kernel.getVolume(divided) - kernel.getVolume(shelled)).toBeCloseTo(1.2 * 76 * 38 + 1.2 * (30 - 0.6) * 38, -1);
+    // A wall from corner to corner closes against the box's wall at both ends.
+    const slanted = shellDividersSolid(kernel, original, shelled, { x: 0, z: 0, manual: true, walls: [{ dir: "x", at: 0, from: 0, to: 96, slant: 76 }] }, null);
+    expect(kernel.getSubShapes(slanted, "solid")).toHaveLength(1);
+    for (const f of [0.02, 0.3, 0.5, 0.7, 0.98]) expect(solid(slanted, -48 + 96 * f, 20, -38 + 76 * f)).toBe(true);
+    expect(solid(slanted, 20, 20, -20)).toBe(false);
+    // In a turned box the walls are measured in the box's own inside.
+    const turned = hollowTurned(100, 80, 40, 30);
+    const inTurned = shellDividersSolid(kernel, turned.original, turned.shelled, { x: 0, z: 0, manual: true, walls }, null);
+    expect(solid(inTurned, turned.at(-18, 30).x, 20, turned.at(-18, 30).z)).toBe(true);
+    expect(solid(inTurned, turned.at(-35, -18).x, 20, turned.at(-35, -18).z)).toBe(true);
+    expect(solid(inTurned, turned.at(10, -18).x, 20, turned.at(10, -18).z)).toBe(false);
+    expect(kernel.getVolume(inTurned) - kernel.getVolume(turned.shelled)).toBeCloseTo(kernel.getVolume(divided) - kernel.getVolume(shelled), 0);
+  });
+
   it("makes dividers lower and thicker, by the Gridfinity compartments' rule (Discussion #1560)", () => {
     const { original, shelled } = hollow(100, 80, 40);
     // The floor is the 2 mm wall: 15 mm over it the dividers end at 17, not at the rim (40).

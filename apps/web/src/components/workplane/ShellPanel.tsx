@@ -9,6 +9,7 @@ import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
+import { ShellWallsEditor, shellGridWalls } from "@/components/workplane/ShellWallsEditor";
 import { MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
 import { DEFAULT_SHELL_SHELF_WIDTH, SHELL_SHELF_MAX_HEIGHT, SHELL_SHELF_MAX_WIDTH, SHELL_SHELF_MIN_HEIGHT, SHELL_SHELF_MIN_WIDTH } from "@/lib/shellShelfLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
@@ -47,6 +48,8 @@ export function ShellPanel({
   gridColumns,
   gridRows,
   dividers,
+  insideWidth = 0,
+  insideDepth = 0,
   dividerFullHeight = 0,
   shelf,
   shelfHeight,
@@ -98,6 +101,9 @@ export function ShellPanel({
   gridRows: number;
   /** Dividers across (x) and along (z) the inside; null for none. */
   dividers: ShellDividers | null;
+  /** The inside of the box, in mm (the body's width and depth less the wall both sides): the room dividers set by hand are measured in. */
+  insideWidth?: number;
+  insideDepth?: number;
   /** About how high the dividers stand at full height, over the floor, in mm: the most the height slider offers. */
   dividerFullHeight?: number;
   /** The width in mm of the ledge round the inside of the wall for a plate to rest on; 0 for none (#1663). */
@@ -290,6 +296,25 @@ export function ShellPanel({
             </button>
           </div>
           {dividers && gridCells === 0 ? (<>
+            <div className="shell-opening-options shell-dividers-mode" role="group" aria-label={t("prop.boxDividerMode")}>
+              <button type="button" aria-pressed={!dividers.manual} className={!dividers.manual ? "active" : ""} disabled={busy} data-testid="shell-dividers-even" onClick={() => onDividersChange({ ...dividers, manual: undefined, x: Math.max(dividers.x, dividers.x + dividers.z > 0 ? 0 : 1), z: dividers.z })}>
+                {t("boxGenerator.dividersGrid")}
+              </button>
+              <button
+                type="button"
+                aria-pressed={dividers.manual === true}
+                className={dividers.manual ? "active" : ""}
+                disabled={busy}
+                data-testid="shell-dividers-manual"
+                // Set by hand for the first time, the even dividers become the walls to begin with; later the walls are kept.
+                onClick={() => onDividersChange({ ...dividers, manual: true, walls: dividers.walls?.length ? dividers.walls : shellGridWalls(dividers.x, dividers.z, insideWidth, insideDepth) })}
+              >
+                {t("boxGenerator.dividersManual")}
+              </button>
+            </div>
+            {dividers.manual ? (
+              <ShellWallsEditor width={insideWidth} depth={insideDepth} walls={dividers.walls ?? []} thickness={dividers.thickness ?? SHELL_DIVIDER_THICKNESS} workspace={workspace} disabled={busy} onChange={(walls) => onDividersChange({ ...dividers, manual: true, walls })} />
+            ) : (<>
             <EdgeModifierSlider
               label={t("shell.dividersAcross")}
               value={dividers.x}
@@ -312,6 +337,7 @@ export function ShellPanel({
               disabled={busy}
               onChange={(value) => onDividersChange({ ...dividers, z: Math.round(value) })}
             />
+            </>)}
             <EdgeModifierSlider
               label={t("prop.gridfinityDividerThickness")}
               value={dividers.thickness ?? SHELL_DIVIDER_THICKNESS}

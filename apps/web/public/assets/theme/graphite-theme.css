@@ -4440,6 +4440,30 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .rotation-angle-badge {
   outline: none;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .shell-walls-actions button {
+  color: #4c4c4c;
+  background: #ffffff;
+  border: 1px solid #c4c4c4;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .shell-walls-actions button:hover:not(:disabled) {
+  color: #98540d;
+  background: #f3f3f3;
+  border-color: #d1995e;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .shell-walls-actions button {
+  color: #d8d8d8;
+  background: #353535;
+  border-color: #505050;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .shell-walls-actions button:hover:not(:disabled) {
+  color: #ffd9a8;
+  background: #414141;
+  border-color: #777777;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-plan .box-walls-plan-pocket {
   fill: rgba(47, 143, 91, 0.18);
   stroke: #2f8f5b;
