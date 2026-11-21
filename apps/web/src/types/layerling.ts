@@ -461,11 +461,19 @@ export type ShapeCustomization = {
    */
   boxDividerMode?: "grid" | "manual";
   boxWalls?: { dir: "x" | "z"; at: number; from: number; to: number; slant?: number }[];
+  /**
+   * Box generator: finger scoops, each for the compartment that holds its point (x, z in mm from the left and the back of
+   * the inside), the floor running up into that side in a quarter round of boxScoopRadius mm.
+   */
+  boxScoops?: { x: number; z: number; side: "front" | "back" | "left" | "right" }[];
+  boxScoopRadius?: number;
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid";
   boxLidStyle?: "restOn" | "overlap" | "plug";
   boxLidPlate?: number;
   boxFit?: number;
+  /** Box generator: a plug lid of a box with dividers reaches into every compartment (unset or true) or has one ring (false). */
+  boxLidCompartments?: boolean;
   /** Box generator: ready for Gridfinity, with the cells across and along (a rectangular box takes its size from them). */
   boxGridfinity?: boolean;
   boxGridfinityColumns?: number;
@@ -1484,11 +1492,19 @@ export type WorkplaneShape = {
    */
   boxDividerMode?: "grid" | "manual";
   boxWalls?: { dir: "x" | "z"; at: number; from: number; to: number; slant?: number }[];
+  /**
+   * Box generator: finger scoops, each for the compartment that holds its point (x, z in mm from the left and the back of
+   * the inside), the floor running up into that side in a quarter round of boxScoopRadius mm.
+   */
+  boxScoops?: { x: number; z: number; side: "front" | "back" | "left" | "right" }[];
+  boxScoopRadius?: number;
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid";
   boxLidStyle?: "restOn" | "overlap" | "plug";
   boxLidPlate?: number;
   boxFit?: number;
+  /** Box generator: a plug lid of a box with dividers reaches into every compartment (unset or true) or has one ring (false). */
+  boxLidCompartments?: boolean;
   /** Box generator: ready for Gridfinity, with the cells across and along (a rectangular box takes its size from them). */
   boxGridfinity?: boolean;
   boxGridfinityColumns?: number;

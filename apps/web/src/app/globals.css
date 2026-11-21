@@ -10531,6 +10531,12 @@ html[data-theme="dark"] .rotation-angle-badge {
   cursor: pointer;
 }
 
+.box-walls-overlay-split button.on {
+  color: #ffffff;
+  background: #2f8f5b;
+  border-color: #2f8f5b;
+}
+
 .box-walls-overlay-split button:hover,
 .box-walls-overlay-split button:focus-visible {
   color: #ffffff;
@@ -10540,6 +10546,12 @@ html[data-theme="dark"] .rotation-angle-badge {
 }
 
 /* Box generator, dividers by hand: the box from above (BoxWallsPlan). */
+.box-walls-plan .box-walls-plan-scoop {
+  stroke: #2f8f5b;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
 .box-walls-plan {
   display: block;
   width: 100%;

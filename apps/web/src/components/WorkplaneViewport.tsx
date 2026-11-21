@@ -9985,6 +9985,7 @@ export function WorkplaneViewport({
               threeRef={threeRef}
               onPick={setBoxWallsPick}
               onWallsChange={(boxWalls) => onUpdateShape(selectedShape.id, { boxWalls })}
+              onScoopsChange={(boxScoops) => onUpdateShape(selectedShape.id, { boxScoops: boxScoops.length > 0 ? boxScoops : undefined })}
               onDragActiveChange={onInteractionActiveChange}
             />
           ) : null}

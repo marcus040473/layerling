@@ -4426,12 +4426,22 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .rotation-angle-badge {
   border-color: #c4c4c4;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-split button.on {
+  color: #ffffff;
+  background: #2f8f5b;
+  border-color: #2f8f5b;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-split button:hover,
 :where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-overlay-split button:focus-visible {
   color: #ffffff;
   background: #e07b00;
   border-color: #e07b00;
   outline: none;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-plan .box-walls-plan-scoop {
+  stroke: #2f8f5b;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .box-walls-plan .box-walls-plan-box {

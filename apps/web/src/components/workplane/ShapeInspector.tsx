@@ -9,7 +9,7 @@ import { SnapGridMenuItems } from "@/components/workplane/SnapGridMenu";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
 import { BOX_WALLS_PLAN_MIN_LENGTH, BoxWallsPlan, type BoxWallsPick } from "@/components/workplane/BoxWallsPlan";
-import { Amphora, Boxes, BrickWall, Droplets, Layers2, Soup, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
+import { FlipHorizontal2, FlipVertical2, Amphora, Boxes, BrickWall, Droplets, Layers2, Soup, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
 import { boltPinDiameter, boltSplitFits } from "@/lib/boltSplit";
@@ -225,6 +225,12 @@ import {
   boxGeneratorIssues,
   boxGeneratorGridWalls,
   boxGeneratorSplitWall,
+  boxGeneratorMirroredWalls,
+  boxGeneratorScoopOf,
+  boxGeneratorScoopsWith,
+  normalizeBoxGeneratorScoopSide,
+  MIN_BOX_GENERATOR_SCOOP_RADIUS,
+  MAX_BOX_GENERATOR_SCOOP_RADIUS,
   boxGeneratorWallEnds,
   boxGeneratorWallFromEnds,
   boxGeneratorWallRoom,
@@ -3001,9 +3007,14 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       label: t("prop.boxLidStyle"),
       value: box.boxLidStyle,
       options: [{ value: "restOn", label: t("boxGenerator.lidRestOn") }, { value: "overlap", label: t("boxGenerator.lidOverlap") }, { value: "plug", label: t("boxGenerator.lidPlug") }],
-      hint: t(box.boxLidStyle === "overlap" ? "boxGenerator.lidOverlapHint" : box.boxLidStyle === "plug" ? "boxGenerator.lidPlugHint" : "boxGenerator.lidRestOnHint"),
+      // A plug lid that reaches into the compartments says so, and how it goes on the box.
+      hint: t(box.boxLidStyle === "overlap" ? "boxGenerator.lidOverlapHint" : box.boxLidStyle === "plug" ? (box.boxPart === "lid" && box.boxLidCompartments && (box.boxDividerMode === "manual" ? box.boxWalls.length > 0 : box.boxColumns * box.boxRows > 1) ? "boxGenerator.lidCompartmentsHint" : "boxGenerator.lidPlugHint") : "boxGenerator.lidRestOnHint"),
       onChange: (value) => onUpdate({ boxLidStyle: normalizeBoxGeneratorLidStyle(value) }),
     });
+    // A plug lid of a box with dividers: a ring for every compartment, or the one ring of a box without.
+    if (box.boxPart === "lid" && box.boxLidStyle === "plug" && (box.boxDividerMode === "manual" ? box.boxWalls.length > 0 : box.boxColumns * box.boxRows > 1)) {
+      properties.push({ type: "toggle", id: "boxLidCompartments", label: t("prop.boxLidCompartments"), value: box.boxLidCompartments, onChange: (value) => onUpdate({ boxLidCompartments: value ? undefined : false }) });
+    }
     if (box.boxPart === "lid" && (box.boxLidStyle === "overlap" || box.boxLidStyle === "plug" || (box.boxLidStyle === "restOn" && box.boxStackable))) {
       properties.push({ id: "boxLidPlate", label: t("prop.boxLidPlate"), value: box.boxLidPlate, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, onChange: (value) => onUpdate({ boxLidPlate: value }) });
     }
@@ -6023,7 +6034,7 @@ export function ShapeInspector({
           </div>
         ) : null}
       </div>
-      {shape.kind === "boxGenerator" && shape.boxPart !== "lid" && shape.boxDividerMode === "manual" ? (
+      {shape.kind === "boxGenerator" && shape.boxPart !== "lid" ? (
         <BoxWallsCard key={`box-walls-${shape.id}`} shape={shape} workspace={workspace} locked={frozen} pick={boxWallsPick} onPickChange={onBoxWallsPickChange} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
       ) : null}
       {shape.kind === "gridfinity" ? (
@@ -8744,7 +8755,9 @@ function BoxWallsCard({
   const box = normalizeBoxGenerator(size, shape);
   const room = boxGeneratorWallRoom(size, shape);
   if (!room) return null;
-  const walls = box.boxWalls;
+  // With the grid's dividers the card shows the compartments and their finger scoops; the walls are there to set only by hand.
+  const manual = box.boxDividerMode === "manual";
+  const walls = manual ? box.boxWalls : [];
   const wall = pick?.type === "wall" ? walls[pick.index] : undefined;
   const compartment = pick?.type === "compartment" ? room.compartments[pick.index] : undefined;
   const write = (next: BoxGeneratorWall[]) => onUpdate({ boxWalls: next });
@@ -8800,11 +8813,31 @@ function BoxWallsCard({
       },
     );
   }
+  // The finger scoop of the picked compartment: none, or the side its floor runs up into; with any scoop, their radius.
+  const scoopRows: ShapePropertyConfig[] = [];
+  if (compartment) {
+    const scoop = boxGeneratorScoopOf(compartment, box.boxScoops);
+    scoopRows.push({
+      type: "select",
+      id: "boxScoop",
+      label: t("prop.boxScoop"),
+      value: scoop?.side ?? "none",
+      options: [{ value: "none", label: t("boxGenerator.scoopNone") }, { value: "front", label: t("boxGenerator.scoopFront") }, { value: "back", label: t("boxGenerator.scoopBack") }, { value: "left", label: t("boxGenerator.scoopLeft") }, { value: "right", label: t("boxGenerator.scoopRight") }],
+      hint: t("boxGenerator.scoopHint"),
+      onChange: (value) => {
+        const next = boxGeneratorScoopsWith(box.boxScoops, compartment, value === "none" ? null : normalizeBoxGeneratorScoopSide(value));
+        onUpdate({ boxScoops: next.length > 0 ? next : undefined });
+      },
+    });
+  }
+  if (box.boxScoops.length > 0) {
+    scoopRows.push({ id: "boxScoopRadius", label: t("prop.boxScoopRadius"), value: box.boxScoopRadius, min: MIN_BOX_GENERATOR_SCOOP_RADIUS, max: MAX_BOX_GENERATOR_SCOOP_RADIUS, step: 0.5, onChange: (value) => onUpdate({ boxScoopRadius: value }) });
+  }
   const plain = (value: number) => String(Math.round(value * 10) / 10);
   return (
     <div className={`property-card ${open ? "" : "collapsed"}`} data-testid="box-walls-card">
       <button className="property-card-header" type="button" aria-expanded={open} aria-controls={`box-walls-${shape.id}`} onClick={() => setOpen((current) => !current)}>
-        <span>{t("inspector.boxWalls")}</span>
+        <span>{t(manual ? "inspector.boxWalls" : "inspector.boxCompartments")}</span>
         <ChevronUp className={open ? "" : "collapsed"} size={25} strokeWidth={2.8} />
       </button>
       {open ? (
@@ -8813,6 +8846,7 @@ function BoxWallsCard({
             room={room}
             walls={walls}
             thickness={box.boxDivider}
+            scoops={box.boxScoops}
             pick={pick}
             disabled={locked}
             label={t("boxGenerator.wallsPlan")}
@@ -8828,10 +8862,10 @@ function BoxWallsCard({
               ? t(wall.dir === "x" ? "boxGenerator.wallAcross" : "boxGenerator.wallAlong", { number: pick.index + 1 })
               : compartment && pick?.type === "compartment"
                 ? t("boxGenerator.compartmentPicked", { width: plain(compartment.maxX - compartment.minX), depth: plain(compartment.maxZ - compartment.minZ) })
-                : t("boxGenerator.wallsHint")}
+                : t(manual ? "boxGenerator.wallsHint" : "boxGenerator.compartmentsHint")}
           </p>
-          {!pick ? <p className="cylinder-wrap-hint box-walls-hint">{t("boxGenerator.wallsOnBoxHint")}</p> : null}
-          <div className="bent-tube-segment-actions">
+          {!pick && manual ? <p className="cylinder-wrap-hint box-walls-hint">{t("boxGenerator.wallsOnBoxHint")}</p> : null}
+          {manual ? <div className="bent-tube-segment-actions">
             <button className="inspector-action-button" type="button" disabled={locked || full} data-testid="box-walls-add-across" onClick={() => add("x")}>
               <Plus size={17} strokeWidth={2.5} />
               <span>{t("boxGenerator.wallAddAcross")}</span>
@@ -8840,7 +8874,8 @@ function BoxWallsCard({
               <Plus size={17} strokeWidth={2.5} />
               <span>{t("boxGenerator.wallAddAlong")}</span>
             </button>
-          </div>
+          </div> : null}
+          {scoopRows.length > 0 ? <ShapePropertyRows properties={scoopRows} workspace={workspace} disabled={locked} onInteractionActiveChange={onInteractionActiveChange} /> : null}
           {wall && pick?.type === "wall" ? (
             <>
               <ShapePropertyRows properties={properties} workspace={workspace} disabled={locked} onInteractionActiveChange={onInteractionActiveChange} />
@@ -8855,6 +8890,18 @@ function BoxWallsCard({
                 </button>
               </div>
             </>
+          ) : null}
+          {walls.length > 0 ? (
+            <div className="bent-tube-segment-actions">
+              <button className="inspector-action-button" type="button" disabled={locked || full} title={t("boxGenerator.wallsMirrorHint")} data-testid="box-walls-mirror-x" onClick={() => { write(boxGeneratorMirroredWalls(walls, room, "x")); setPick(null); }}>
+                <FlipHorizontal2 size={17} strokeWidth={2.5} />
+                <span>{t("boxGenerator.wallsMirrorX")}</span>
+              </button>
+              <button className="inspector-action-button" type="button" disabled={locked || full} title={t("boxGenerator.wallsMirrorHint")} data-testid="box-walls-mirror-z" onClick={() => { write(boxGeneratorMirroredWalls(walls, room, "z")); setPick(null); }}>
+                <FlipVertical2 size={17} strokeWidth={2.5} />
+                <span>{t("boxGenerator.wallsMirrorZ")}</span>
+              </button>
+            </div>
           ) : null}
           {walls.length > 0 ? (
             <button className="inspector-action-button box-walls-clear" type="button" disabled={locked} data-testid="box-walls-clear" onClick={() => { write([]); setPick(null); }}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallQuad, type BoxGeneratorCompartment, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorScoopOf, boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallQuad, type BoxGeneratorCompartment, type BoxGeneratorScoop, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
 
 /*
  * The box generator's dividers set by hand, drawn from above: the inside of the box with its compartments and walls, the
@@ -64,6 +64,7 @@ export function BoxWallsPlan({
   room,
   walls,
   thickness,
+  scoops = [],
   pick,
   disabled,
   label,
@@ -78,6 +79,8 @@ export function BoxWallsPlan({
   walls: readonly BoxGeneratorWall[];
   /** The dividers' thickness in mm. */
   thickness: number;
+  /** The finger scoops: a compartment with one shows a green line along the side its floor runs up into. */
+  scoops?: readonly BoxGeneratorScoop[];
   pick: BoxWallsPick;
   disabled?: boolean;
   /** What the drawing is, for a screen reader. */
@@ -229,6 +232,16 @@ export function BoxWallsPlan({
                 onPick(chosen ? null : { type: "compartment", index });
               }}
             />
+            {(() => {
+              const scoop = boxGeneratorScoopOf(compartment, scoops);
+              if (!scoop) return null;
+              const inset = 2.5 / scale;
+              const [x1, z1, x2, z2] = scoop.side === "front" ? [compartment.minX + inset, compartment.maxZ - inset, compartment.maxX - inset, compartment.maxZ - inset]
+                : scoop.side === "back" ? [compartment.minX + inset, compartment.minZ + inset, compartment.maxX - inset, compartment.minZ + inset]
+                  : scoop.side === "left" ? [compartment.minX + inset, compartment.minZ + inset, compartment.minX + inset, compartment.maxZ - inset]
+                    : [compartment.maxX - inset, compartment.minZ + inset, compartment.maxX - inset, compartment.maxZ - inset];
+              return <line className="box-walls-plan-scoop" x1={x1} y1={z1} x2={x2} y2={z2} strokeWidth={3 / scale} data-testid="box-walls-plan-scoop" />;
+            })()}
             {wide > text.length * font * 0.62 && deep > font * 1.5 ? (
               <text className="box-walls-plan-size" x={compartment.label.x} y={compartment.label.z} fontSize={font} textAnchor="middle" dominantBaseline="central">{text}</text>
             ) : null}

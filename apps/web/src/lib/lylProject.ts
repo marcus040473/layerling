@@ -33,7 +33,7 @@ import { isThreadProfile } from "@/lib/threadProfiles";
 import { PORT_PROFILES } from "@/lib/portGeometry";
 import { normalizePaintStroke, PAINT_MAX_STROKES } from "@/lib/paint";
 import { MAX_GEAR_TEETH, MIN_GEAR_TEETH } from "@/lib/gearGeometry";
-import { MAX_BOX_GENERATOR_WALLS } from "@/lib/boxGeneratorGeometry";
+import { MAX_BOX_GENERATOR_SCOOPS, MAX_BOX_GENERATOR_WALLS } from "@/lib/boxGeneratorGeometry";
 import { GRIDFINITY_LABEL_FONTS, GRIDFINITY_LABEL_TEXT_KEYS, MAX_GRIDFINITY_LABEL_TEXT_LENGTH, MAX_GRIDFINITY_OUTLINE_POINTS } from "@/lib/gridfinityGeometry";
 import type { PortProfile } from "@/types/layerling";
 import { normalizeSnapGrid, normalizeWorkspaceSettings } from "@/lib/workplaneSettings";
@@ -1969,7 +1969,7 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   }
   if (kind === "boxGenerator") {
     // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
-    for (const key of ["boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxLidPlate", "boxFit", "boxGridfinityColumns", "boxGridfinityRows", "boxStackHeight"] as const) {
+    for (const key of ["boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxLidPlate", "boxFit", "boxGridfinityColumns", "boxGridfinityRows", "boxStackHeight", "boxScoopRadius"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (value < 0 || value > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
@@ -1983,11 +1983,26 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
     if (definition.boxLidStyle !== undefined && definition.boxLidStyle !== "restOn" && definition.boxLidStyle !== "overlap" && definition.boxLidStyle !== "plug") {
       throw new Error(`${label}.boxLidStyle must be restOn, overlap or plug`);
     }
-    for (const key of ["boxGridfinity", "boxGridfinityFloor", "boxGridfinityPlate", "boxStackable"] as const) {
+    for (const key of ["boxGridfinity", "boxGridfinityFloor", "boxGridfinityPlate", "boxStackable", "boxLidCompartments"] as const) {
       if (definition[key] !== undefined && typeof definition[key] !== "boolean") throw new Error(`${label}.${key} must be true or false`);
     }
     if (definition.boxDividerMode !== undefined && definition.boxDividerMode !== "grid" && definition.boxDividerMode !== "manual") {
       throw new Error(`${label}.boxDividerMode must be grid or manual`);
+    }
+    if (definition.boxScoops !== undefined) {
+      if (!Array.isArray(definition.boxScoops)) throw new Error(`${label}.boxScoops must be an array`);
+      const scoops = definition.boxScoops as unknown[];
+      if (scoops.length > MAX_BOX_GENERATOR_SCOOPS) throw new Error(`${label}.boxScoops has too many entries`);
+      scoops.forEach((entry, index) => {
+        const at = `${label}.boxScoops[${index}]`;
+        if (!entry || typeof entry !== "object") throw new Error(`${at} must be an object`);
+        const scoop = entry as Record<string, unknown>;
+        if (scoop.side !== "front" && scoop.side !== "back" && scoop.side !== "left" && scoop.side !== "right") throw new Error(`${at}.side must be front, back, left or right`);
+        for (const key of ["x", "z"] as const) {
+          const value = finiteNumber(scoop[key], `${at}.${key}`);
+          if (value < 0 || value > 1e6) throw new Error(`${at}.${key} is outside the supported range`);
+        }
+      });
     }
     if (definition.boxWalls !== undefined) {
       if (!Array.isArray(definition.boxWalls)) throw new Error(`${label}.boxWalls must be an array`);

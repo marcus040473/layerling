@@ -2,10 +2,10 @@
 
 import { useRef, type Dispatch, type MutableRefObject, type PointerEvent as ReactPointerEvent, type SetStateAction } from "react";
 import * as THREE from "three";
-import { SquareSplitHorizontal, SquareSplitVertical, X } from "lucide-react";
+import { Hand, SquareSplitHorizontal, SquareSplitVertical, X } from "lucide-react";
 import { projectToScreen, type ThreeState } from "@/components/workplane/ViewportOverlays";
 import { boxWallDragged, type BoxWallsPick } from "@/components/workplane/BoxWallsPlan";
-import { boxGeneratorSplitWall, boxGeneratorWallEnds, boxGeneratorWallRoom, MAX_BOX_GENERATOR_WALLS, normalizeBoxGenerator, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorScoopOf, boxGeneratorScoopsWith, boxGeneratorSplitWall, boxGeneratorWallEnds, boxGeneratorWallRoom, MAX_BOX_GENERATOR_WALLS, normalizeBoxGenerator, type BoxGeneratorScoop, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
 import { manifoldRevision } from "@/lib/manifoldHandle";
 import { shapeDepth, shapeWidth } from "@/lib/workplaneShapes";
 import { t } from "@/lib/i18n";
@@ -24,7 +24,9 @@ type Screen = { x: number; y: number };
 export type BoxWallsOverlayState = {
   shapeId: string;
   walls: { index: number; dir: BoxGeneratorWall["dir"]; from: Screen; to: Screen; middle: Screen }[];
-  compartments: { index: number; at: Screen; text: string; room: "none" | "label" | "buttons" }[];
+  compartments: { index: number; at: Screen; text: string; room: "none" | "label" | "buttons"; scoop: boolean }[];
+  /** Whether the dividers are set by hand: only then are there walls to move and compartments to split. */
+  manual: boolean;
   full: boolean;
   signature: string;
 };
@@ -32,7 +34,7 @@ export type BoxWallsOverlayState = {
 type Room = NonNullable<ReturnType<typeof boxGeneratorWallRoom>>;
 
 // A shape is never changed in place, so the room of one is worked out once.
-const rooms = new WeakMap<WorkplaneShape, { room: Room | null; walls: BoxGeneratorWall[]; divider: number; kernel: number }>();
+const rooms = new WeakMap<WorkplaneShape, { room: Room | null; walls: BoxGeneratorWall[]; scoops: BoxGeneratorScoop[]; manual: boolean; divider: number; kernel: number }>();
 
 function roomOf(shape: WorkplaneShape) {
   let entry = rooms.get(shape);
@@ -40,15 +42,18 @@ function roomOf(shape: WorkplaneShape) {
   if (!entry || entry.kernel !== manifoldRevision()) {
     const size = { width: shapeWidth(shape), depth: shapeDepth(shape), height: shape.height };
     const box = normalizeBoxGenerator(size, shape);
-    entry = { room: boxGeneratorWallRoom(size, shape), walls: box.boxWalls, divider: box.boxDivider, kernel: manifoldRevision() };
+    entry = { room: boxGeneratorWallRoom(size, shape), walls: box.boxDividerMode === "manual" ? box.boxWalls : [], scoops: box.boxScoops, manual: box.boxDividerMode === "manual", divider: box.boxDivider, kernel: manifoldRevision() };
     rooms.set(shape, entry);
   }
   return entry;
 }
 
-/** Whether a shape is a box whose dividers are set by hand and can be edited on it. */
+/**
+ * Whether a shape is a box whose compartments can be edited on it: with dividers set by hand its walls and compartments,
+ * with the grid's dividers the finger scoops of its compartments.
+ */
 export function boxWallsEditable(shape: WorkplaneShape | null | undefined): shape is WorkplaneShape {
-  return Boolean(shape && shape.kind === "boxGenerator" && shape.boxPart !== "lid" && shape.boxDividerMode === "manual" && !shape.importedMesh && !shape.locked && !shape.hidden);
+  return Boolean(shape && shape.kind === "boxGenerator" && shape.boxPart !== "lid" && !shape.importedMesh && !shape.locked && !shape.hidden);
 }
 
 /**
@@ -57,7 +62,7 @@ export function boxWallsEditable(shape: WorkplaneShape | null | undefined): shap
  */
 function frameOf(state: ThreeState, shape: WorkplaneShape) {
   const record = state.shapeRecords.get(shape.id);
-  const { room, walls, divider } = roomOf(shape);
+  const { room, walls, divider, scoops, manual } = roomOf(shape);
   if (!record || !room) return null;
   let mesh: THREE.Mesh | null = null;
   record.object.traverse((child) => {
@@ -70,7 +75,7 @@ function frameOf(state: ThreeState, shape: WorkplaneShape) {
   if (!bounds) return null;
   found.updateWorldMatrix(true, false);
   const origin = new THREE.Vector3(bounds.min.x + room.inset.x, bounds.max.y, bounds.min.z + room.inset.z);
-  return { mesh: found, origin, room, walls, divider };
+  return { mesh: found, origin, room, walls, divider, scoops, manual };
 }
 
 /** The place under the pointer on the top of the box, in mm from the left and the back of the room; null beside the view. */
@@ -107,7 +112,7 @@ export function syncBoxWallsOverlay(
     setOverlay(null);
   };
   if (!shape || !frame) return clear();
-  const { mesh, origin, room, walls } = frame;
+  const { mesh, origin, room, walls, scoops, manual } = frame;
   const world = (x: number, z: number) => mesh.localToWorld(origin.clone().add(new THREE.Vector3(x, 0, z)));
   // With a corner of the room behind the camera the picture of it makes no sense; nothing is drawn then.
   if (state.camera instanceof THREE.PerspectiveCamera) {
@@ -136,13 +141,15 @@ export function syncBoxWallsOverlay(
         at: screen(compartment.label.x, compartment.label.z),
         text: `${Math.round(compartment.maxX - compartment.minX)} × ${Math.round(compartment.maxZ - compartment.minZ)}`,
         room: wide >= 84 && high >= 56 ? "buttons" as const : wide >= 56 && high >= 26 ? "label" as const : "none" as const,
+        scoop: Boolean(boxGeneratorScoopOf(compartment, scoops)),
       };
     }),
+    manual,
     full: walls.length >= MAX_BOX_GENERATOR_WALLS,
     signature: "",
   };
   const rounded = (point: Screen) => `${Math.round(point.x)},${Math.round(point.y)}`;
-  next.signature = JSON.stringify([shape.id, next.full, next.walls.map((wall) => [wall.dir, rounded(wall.from), rounded(wall.to)]), next.compartments.map((entry) => [rounded(entry.at), entry.text, entry.room])]);
+  next.signature = JSON.stringify([shape.id, next.full, next.walls.map((wall) => [wall.dir, rounded(wall.from), rounded(wall.to)]), next.compartments.map((entry) => [rounded(entry.at), entry.text, entry.room, entry.scoop]), manual]);
   if (overlayRef.current?.signature === next.signature) return;
   overlayRef.current = next;
   setOverlay(next);
@@ -155,6 +162,7 @@ export function BoxWallsOverlay({
   threeRef,
   onPick,
   onWallsChange,
+  onScoopsChange,
   onDragActiveChange,
 }: {
   overlay: BoxWallsOverlayState;
@@ -164,11 +172,18 @@ export function BoxWallsOverlay({
   threeRef: MutableRefObject<ThreeState | null>;
   onPick: (pick: BoxWallsPick) => void;
   onWallsChange: (walls: BoxGeneratorWall[]) => void;
+  /** A finger scoop switched on or off in a compartment. */
+  onScoopsChange: (scoops: BoxGeneratorScoop[]) => void;
   onDragActiveChange?: (active: boolean) => void;
 }) {
   const drag = useRef<{ index: number; part: "move" | "from" | "to"; x: number; z: number; wall: BoxGeneratorWall; pointer: number; moved: boolean } | null>(null);
-  const { room, walls, divider } = roomOf(shape);
+  const { room, walls, divider, scoops } = roomOf(shape);
   if (!room || overlay.shapeId !== shape.id) return null;
+  // The scoop of a compartment: on at the front, or off again; its side is chosen in the settings.
+  const toggleScoop = (index: number) => {
+    const compartment = room.compartments[index];
+    if (compartment) onScoopsChange(boxGeneratorScoopsWith(scoops, compartment, boxGeneratorScoopOf(compartment, scoops) ? null : "front"));
+  };
 
   const begin = (event: ReactPointerEvent<HTMLButtonElement>, index: number, part: "move" | "from" | "to") => {
     event.stopPropagation();
@@ -245,14 +260,21 @@ export function BoxWallsOverlay({
       {overlay.compartments.map((compartment) => compartment.room === "none" ? null : (
         <div key={`compartment-${compartment.index}`} className="box-walls-overlay-compartment" style={{ left: compartment.at.x, top: compartment.at.y }}>
           <span className="box-walls-overlay-size">{compartment.text}</span>
-          {compartment.room === "buttons" && !overlay.full ? (
+          {compartment.room === "buttons" ? (
             <span className="box-walls-overlay-split">
+              <button type="button" className={compartment.scoop ? "on" : undefined} title={t("boxGenerator.scoopToggle")} aria-label={t("boxGenerator.scoopToggle")} aria-pressed={compartment.scoop} data-testid="box-walls-overlay-scoop" onPointerDown={(event) => event.stopPropagation()} onClick={() => toggleScoop(compartment.index)}>
+                <Hand size={14} strokeWidth={2.2} />
+              </button>
+              {overlay.manual && !overlay.full ? (
+                <>
               <button type="button" title={t("boxGenerator.wallAddAcross")} aria-label={t("boxGenerator.wallAddAcross")} data-testid="box-walls-overlay-across" onPointerDown={(event) => event.stopPropagation()} onClick={() => split(compartment.index, "x")}>
                 <SquareSplitVertical size={15} strokeWidth={2.2} />
               </button>
               <button type="button" title={t("boxGenerator.wallAddAlong")} aria-label={t("boxGenerator.wallAddAlong")} data-testid="box-walls-overlay-along" onPointerDown={(event) => event.stopPropagation()} onClick={() => split(compartment.index, "z")}>
                 <SquareSplitHorizontal size={15} strokeWidth={2.2} />
               </button>
+                </>
+              ) : null}
             </span>
           ) : null}
         </div>

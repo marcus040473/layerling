@@ -12,7 +12,7 @@ import { MAX_HIRTH_STEEP_FLANK, MAX_HIRTH_TEETH, MIN_HIRTH_STEEP_FLANK, MIN_HIRT
 import { PORT_PROFILES } from "@/lib/portGeometry";
 import { MAX_DRILL_POINT_ANGLE, MIN_DRILL_POINT_ANGLE } from "@/lib/drillPoint";
 import { MAX_GEAR_TEETH, MIN_GEAR_TEETH } from "@/lib/gearGeometry";
-import { boxGeneratorWallList, normalizeBoxGeneratorWalls } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorWallList, normalizeBoxGeneratorScoops, normalizeBoxGeneratorWalls } from "@/lib/boxGeneratorGeometry";
 import { GRIDFINITY_LABEL_FONTS, MIN_GRIDFINITY_LABEL_TEXT_SIZE } from "@/lib/gridfinityGeometry";
 import type { PortProfile } from "@/types/layerling";
 
@@ -647,10 +647,15 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       // The walls set by hand come as a list, or as the text of one, which is how layerling_read_scene gives them.
       const boxWalls = boxGeneratorWallList(source.boxWalls);
       entry.boxWalls = boxWalls ? normalizeBoxGeneratorWalls(boxWalls) : fallbackEntry?.boxWalls;
+      const boxScoops = boxGeneratorWallList(source.boxScoops);
+      entry.boxScoops = boxScoops ? normalizeBoxGeneratorScoops(boxScoops) : fallbackEntry?.boxScoops;
+      entry.boxScoopRadius = optionalShapeNumber(source.boxScoopRadius, fallbackEntry?.boxScoopRadius, 2, 60);
       entry.boxPart = source.boxPart === "box" || source.boxPart === "lid" ? source.boxPart : fallbackEntry?.boxPart;
       entry.boxLidStyle = source.boxLidStyle === "restOn" || source.boxLidStyle === "overlap" || source.boxLidStyle === "plug" ? source.boxLidStyle : fallbackEntry?.boxLidStyle;
       entry.boxLidPlate = optionalShapeNumber(source.boxLidPlate, fallbackEntry?.boxLidPlate, 0.4, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.boxFit = optionalShapeNumber(source.boxFit, fallbackEntry?.boxFit, 0, 2);
+      // Unset means yes, so only a no is kept.
+      entry.boxLidCompartments = source.boxLidCompartments === false ? false : source.boxLidCompartments === true ? undefined : fallbackEntry?.boxLidCompartments;
       entry.boxGridfinity = source.boxGridfinity === true ? true : source.boxGridfinity === false ? undefined : fallbackEntry?.boxGridfinity;
       entry.boxGridfinityColumns = optionalShapeNumber(source.boxGridfinityColumns, fallbackEntry?.boxGridfinityColumns, 1, 12);
       entry.boxGridfinityRows = optionalShapeNumber(source.boxGridfinityRows, fallbackEntry?.boxGridfinityRows, 1, 12);
