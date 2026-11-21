@@ -53,6 +53,7 @@ export function ShellPanel({
   shelfOffered,
   workspace,
   busy,
+  previewBusy = false,
   error,
   roundedEdgesHint,
   appliedFeatureCount,
@@ -107,6 +108,8 @@ export function ShellPanel({
   shelfOffered: boolean;
   workspace: WorkplaneWorkspaceSettings;
   busy: boolean;
+  /** The preview is being built for the settings as they are now (Discussion #1811). */
+  previewBusy?: boolean;
   error: string | null;
   /** A rounded box with rounded top and bottom edges: a wall that is too thick has that as its reason (#401). */
   roundedEdgesHint?: boolean;
@@ -567,7 +570,7 @@ export function ShellPanel({
         </div>
       </ToolAdvanced>
 
-      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <ToolStatus state="working" text={t("shell.working")} /> : null}
+      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <ToolStatus state="working" text={t("shell.working")} /> : previewBusy ? <ToolStatus state="working" text={t("edge.previewBusy")} /> : null}
       <div className="edge-modifier-footer">
         <ToolCancel onClick={onCancel} />
         <ToolApply label={t("shell.apply")} busy={busy} busyLabel={t("shell.working")} disabled={busy} onClick={onApply} />

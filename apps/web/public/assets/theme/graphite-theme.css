@@ -7875,6 +7875,11 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .theme-check {
   border: 1px dashed #7a889b;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) button.outliner-swatch:hover,
+:where(html[data-theme="dark"][data-palette="graphite"]) button.outliner-swatch:focus-visible {
+  outline: 2px solid var(--primary);
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .outliner-shape-name {
   color: #2e2e2e;
 }
@@ -10728,6 +10733,16 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .history-view-inside {
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .tape-hover-point {
   fill: rgba(155, 80, 0, 0.28);
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tape-thickness-line {
+  fill: none;
+  stroke: #b66108;
+}
+
+:where(html[data-theme="dark"][data-palette="graphite"]) .tape-thickness-end {
+  fill: #b66108;
+  stroke: #ffffff;
 }
 
 :where(html[data-theme="dark"][data-palette="graphite"]) .tape-centre circle {
