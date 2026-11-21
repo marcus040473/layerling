@@ -258,6 +258,8 @@ type WorkplaneViewportProps = {
   onSelectionUpdateShapes?: (changes: readonly { id: string; patch: Partial<WorkplaneShape> }[], message?: string) => void;
   /** Fits the selected baseplate into the outline of the other selected shape (#1061). */
   onSelectionFitGridfinityOutline?: (plateId: string, sourceId: string) => Promise<void> | void;
+  /** Box generator: a pocket in the box (the first id) shaped as the other part is seen from above. */
+  onSelectionMakeBoxPocket?: (boxId: string, sourceId: string) => Promise<void> | void;
   onSelectionLock?: () => void;
   onSelectionHide?: () => void;
   /** Wraps the selected body around a cylinder of this diameter (#106). */
@@ -285,6 +287,7 @@ type WorkplaneViewportProps = {
   /** Lays the selected Swallowtail baseplate's keys out in front of it (#1061). */
   onGridfinityKeys?: () => void;
   onMakeBoxLid?: () => void;
+  onMakeBoxInsert?: () => void;
   /** Splits the selected baseplate into plates that fit the printer (#1388). */
   onGridfinitySplit?: () => void;
   onBoltSplit?: (pins: boolean, filament: boolean) => void;
@@ -1704,6 +1707,7 @@ export function WorkplaneViewport({
   onSelectionColor,
   onSelectionUpdateShapes,
   onSelectionFitGridfinityOutline,
+  onSelectionMakeBoxPocket,
   onSelectionLock,
   onSelectionHide,
   onWrapAroundCylinder,
@@ -1722,6 +1726,7 @@ export function WorkplaneViewport({
   vaseAssemblyReport,
   onGridfinityKeys,
   onMakeBoxLid,
+  onMakeBoxInsert,
   onGridfinitySplit,
   onBoltSplit,
   onLayerText,
@@ -10156,6 +10161,7 @@ export function WorkplaneViewport({
           vaseAssemblyReport={vaseAssemblyReport}
           onGridfinityKeys={onGridfinityKeys}
           onMakeBoxLid={onMakeBoxLid}
+          onMakeBoxInsert={onMakeBoxInsert}
           onGridfinitySplit={onGridfinitySplit}
           onBoltSplit={onBoltSplit}
           onLayerText={onLayerText}
@@ -10180,6 +10186,7 @@ export function WorkplaneViewport({
           onSetColor={onSelectionColor}
           onUpdateShapes={onSelectionUpdateShapes}
           onFitGridfinityOutline={onSelectionFitGridfinityOutline}
+          onMakeBoxPocket={onSelectionMakeBoxPocket}
           onToggleLocked={onSelectionLock}
           onToggleHidden={onSelectionHide}
           onInteractionActiveChange={onInteractionActiveChange}

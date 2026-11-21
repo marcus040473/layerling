@@ -6,7 +6,7 @@ import { pulleyFootprint } from "@/lib/pulleyGeometry";
 import { GRIDFINITY_OVERHANG_KEYS, GRIDFINITY_PADDING_KEYS, normalizeGridfinityOverhang, gridfinityCompartmentLabelsEqual, gridfinityDividerPositionsEqual, gridfinityFootprintPatch, gridfinityOpeningsEqual, gridfinityOutlinesEqual, normalizeGridfinityPadding } from "@/lib/gridfinityGeometry";
 import { MCP_SHAPE_SETTING_KEYS } from "@/lib/mcpShapeSettings";
 import { bentTubeSegmentsEqual } from "@/lib/bentTubeGeometry";
-import { boxGeneratorScoopsEqual, boxGeneratorWallsEqual } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorPocketsEqual, boxGeneratorScoopsEqual, boxGeneratorWallsEqual } from "@/lib/boxGeneratorGeometry";
 import { vaseSettingsEqual } from "@/lib/vaseSettings";
 import { qrSettingsEqual } from "@/lib/qrCode";
 import { torusTubeRatio } from "@/lib/torusShape";
@@ -964,6 +964,9 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     boxGeneratorWallsEqual(a.boxWalls, b.boxWalls) &&
     boxGeneratorScoopsEqual(a.boxScoops, b.boxScoops) &&
     a.boxScoopRadius === b.boxScoopRadius &&
+    a.boxInsert === b.boxInsert &&
+    boxGeneratorPocketsEqual(a.boxPockets, b.boxPockets) &&
+    a.boxPocketFill === b.boxPocketFill &&
     a.boxPart === b.boxPart &&
     a.boxLidStyle === b.boxLidStyle &&
     a.boxLidPlate === b.boxLidPlate &&

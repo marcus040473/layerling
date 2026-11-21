@@ -27,6 +27,8 @@ export type BoxWallsOverlayState = {
   compartments: { index: number; at: Screen; text: string; room: "none" | "label" | "buttons"; scoop: boolean }[];
   /** Whether the dividers are set by hand: only then are there walls to move and compartments to split. */
   manual: boolean;
+  /** Whether compartments can have finger scoops: those of a box, not of a loose insert. */
+  scoops: boolean;
   full: boolean;
   signature: string;
 };
@@ -145,11 +147,12 @@ export function syncBoxWallsOverlay(
       };
     }),
     manual,
+    scoops: (shape.boxPart ?? "box") === "box",
     full: walls.length >= MAX_BOX_GENERATOR_WALLS,
     signature: "",
   };
   const rounded = (point: Screen) => `${Math.round(point.x)},${Math.round(point.y)}`;
-  next.signature = JSON.stringify([shape.id, next.full, next.walls.map((wall) => [wall.dir, rounded(wall.from), rounded(wall.to)]), next.compartments.map((entry) => [rounded(entry.at), entry.text, entry.room, entry.scoop]), manual]);
+  next.signature = JSON.stringify([shape.id, next.full, next.walls.map((wall) => [wall.dir, rounded(wall.from), rounded(wall.to)]), next.compartments.map((entry) => [rounded(entry.at), entry.text, entry.room, entry.scoop]), manual, shape.boxPart]);
   if (overlayRef.current?.signature === next.signature) return;
   overlayRef.current = next;
   setOverlay(next);
@@ -262,9 +265,9 @@ export function BoxWallsOverlay({
           <span className="box-walls-overlay-size">{compartment.text}</span>
           {compartment.room === "buttons" ? (
             <span className="box-walls-overlay-split">
-              <button type="button" className={compartment.scoop ? "on" : undefined} title={t("boxGenerator.scoopToggle")} aria-label={t("boxGenerator.scoopToggle")} aria-pressed={compartment.scoop} data-testid="box-walls-overlay-scoop" onPointerDown={(event) => event.stopPropagation()} onClick={() => toggleScoop(compartment.index)}>
+              {overlay.scoops ? <button type="button" className={compartment.scoop ? "on" : undefined} title={t("boxGenerator.scoopToggle")} aria-label={t("boxGenerator.scoopToggle")} aria-pressed={compartment.scoop} data-testid="box-walls-overlay-scoop" onPointerDown={(event) => event.stopPropagation()} onClick={() => toggleScoop(compartment.index)}>
                 <Hand size={14} strokeWidth={2.2} />
-              </button>
+              </button> : null}
               {overlay.manual && !overlay.full ? (
                 <>
               <button type="button" title={t("boxGenerator.wallAddAcross")} aria-label={t("boxGenerator.wallAddAcross")} data-testid="box-walls-overlay-across" onPointerDown={(event) => event.stopPropagation()} onClick={() => split(compartment.index, "x")}>

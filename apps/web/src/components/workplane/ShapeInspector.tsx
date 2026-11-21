@@ -229,6 +229,7 @@ import {
   boxGeneratorScoopOf,
   boxGeneratorScoopsWith,
   normalizeBoxGeneratorScoopSide,
+  normalizeBoxGeneratorPart,
   MIN_BOX_GENERATOR_SCOOP_RADIUS,
   MAX_BOX_GENERATOR_SCOOP_RADIUS,
   boxGeneratorWallEnds,
@@ -2889,9 +2890,9 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         id: "boxPart",
         label: t("prop.boxPart"),
         value: box.boxPart,
-        options: [{ value: "box", label: t("boxGenerator.partBox") }, { value: "lid", label: t("boxGenerator.partLid") }],
-        hint: t(box.boxPart === "box" ? "boxGenerator.partBoxHint" : "boxGenerator.partLidHint"),
-        onChange: (value) => onUpdate({ boxPart: value === "lid" ? "lid" : "box" }),
+        options: [{ value: "box", label: t("boxGenerator.partBox") }, { value: "lid", label: t("boxGenerator.partLid") }, { value: "insert", label: t("boxGenerator.partInsert") }],
+        hint: t(box.boxPart === "box" ? "boxGenerator.partBoxHint" : box.boxPart === "insert" ? "boxGenerator.partInsertHint" : "boxGenerator.partLidHint"),
+        onChange: (value) => onUpdate({ boxPart: normalizeBoxGeneratorPart(value) }),
       },
       {
         type: "select",
@@ -2911,8 +2912,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     if (box.boxShape === "polygon") {
       properties.push({ id: "boxSides", label: t("prop.boxSides"), value: box.boxSides, min: MIN_BOX_GENERATOR_SIDES, max: MAX_BOX_GENERATOR_SIDES, step: 1, onChange: (value) => onUpdate({ boxSides: Math.round(value) }) });
     }
-    properties.push({ id: "boxWall", label: t("prop.boxWall"), value: box.boxWall, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, Math.min(width, depth) / 2 - 0.5), step: 0.1, hint: wallIssue, onChange: (value) => onUpdate(box.boxPart === "box" && box.boxGridfinity && gridfinityRectangle ? { boxWall: value, ...gridfinityBoxPatch(box.boxGridfinityColumns, box.boxGridfinityRows, value) } : { boxWall: value }) });
-    if (box.boxPart === "box") {
+if (box.boxPart !== "insert") properties.push({ id: "boxWall", label: t("prop.boxWall"), value: box.boxWall, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, Math.min(width, depth) / 2 - 0.5), step: 0.1, hint: wallIssue, onChange: (value) => onUpdate(box.boxPart === "box" && box.boxGridfinity && gridfinityRectangle ? { boxWall: value, ...gridfinityBoxPatch(box.boxGridfinityColumns, box.boxGridfinityRows, value) } : { boxWall: value }) });
+    if (box.boxPart !== "lid") {
       properties.push(
         { id: "boxFloor", label: t("prop.boxFloor"), value: box.boxFloor, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, hint: plateHint ?? (box.boxGridfinity && !box.boxGridfinityFloor ? undefined : gridfinityHint), onChange: (value) => onUpdate({ boxFloor: value }) },
         {
@@ -2935,6 +2936,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
           { id: "boxRows", label: t("prop.boxRows"), value: box.boxRows, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, hint: solidIssue ? t("boxGenerator.issueCompartments", { count: String(solidIssue.code === "compartmentSolid" ? solidIssue.count : 0) }) : undefined, onChange: (value) => onUpdate({ boxRows: Math.round(value) }) },
         );
       }
+      if (box.boxPart === "box") {
       properties.push({
         type: "toggle",
         id: "boxGridfinity",
@@ -2979,6 +2981,11 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         value: box.boxGridfinityPlate,
         onChange: (value) => onUpdate({ boxGridfinityPlate: value ? true : undefined }),
       });
+      }
+      // The dividers as a loose insert: the box stays smooth inside, and a copy set to Insert carries the dividers.
+      if (box.boxPart === "box" && (box.boxInsert || box.boxDividerMode === "manual" || box.boxColumns * box.boxRows > 1)) {
+        properties.push({ type: "toggle", id: "boxInsert", label: t("prop.boxInsert"), value: box.boxInsert, onChange: (value) => onUpdate({ boxInsert: value ? true : undefined }) });
+      }
       if (box.boxDividerMode === "manual" || box.boxColumns * box.boxRows > 1) {
         properties.push({ id: "boxDivider", label: t("prop.boxDivider"), value: box.boxDivider, min: MIN_BOX_GENERATOR_WALL, max: 20, step: 0.1, onChange: (value) => onUpdate({ boxDivider: value }) });
       }
@@ -3001,7 +3008,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         });
       }
     }
-    properties.push({
+    if (box.boxPart !== "insert") properties.push({
       type: "select",
       id: "boxLidStyle",
       label: t("prop.boxLidStyle"),
@@ -3018,8 +3025,8 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     if (box.boxPart === "lid" && (box.boxLidStyle === "overlap" || box.boxLidStyle === "plug" || (box.boxLidStyle === "restOn" && box.boxStackable))) {
       properties.push({ id: "boxLidPlate", label: t("prop.boxLidPlate"), value: box.boxLidPlate, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, onChange: (value) => onUpdate({ boxLidPlate: value }) });
     }
-    if (box.boxLidStyle === "overlap" || (box.boxPart === "lid" && box.boxLidStyle === "plug") || (box.boxStackable && (box.boxPart === "box" || box.boxLidStyle === "restOn"))) {
-      properties.push({ id: "boxFit", label: t("prop.boxFit"), value: box.boxFit, min: 0, max: MAX_BOX_GENERATOR_FIT, step: 0.05, hint: box.boxLidStyle === "overlap" ? fitHint : undefined, onChange: (value) => onUpdate({ boxFit: value }) });
+    if (box.boxPart === "insert" || box.boxLidStyle === "overlap" || (box.boxPart === "lid" && box.boxLidStyle === "plug") || (box.boxStackable && (box.boxPart === "box" || box.boxLidStyle === "restOn"))) {
+      properties.push({ id: "boxFit", label: t("prop.boxFit"), value: box.boxFit, min: 0, max: MAX_BOX_GENERATOR_FIT, step: 0.05, hint: box.boxPart !== "insert" && box.boxLidStyle === "overlap" ? fitHint : undefined, onChange: (value) => onUpdate({ boxFit: value }) });
     }
     return properties;
   }
@@ -4924,6 +4931,7 @@ export function ShapeInspector({
   vaseAssemblyReport,
   onGridfinityKeys,
   onMakeBoxLid,
+  onMakeBoxInsert,
   onGridfinitySplit,
   onBoltSplit,
   onLayerText,
@@ -4992,6 +5000,8 @@ export function ShapeInspector({
   onGridfinityKeys?: () => void;
   /** A box generator box: lays out a matching lid beside it, with the box's own outline, wall, play and stacking. */
   onMakeBoxLid?: () => void;
+  /** Box generator: lays the box's dividers beside it as a loose insert and draws the box smooth inside. */
+  onMakeBoxInsert?: () => void;
   /** Splits this baseplate into plates that fit the printer, with their keys (#1388). */
   onGridfinitySplit?: () => void;
   /** A screw or rod split lengthwise and laid flat for printing, with centring pins or without (lib/boltSplit.ts). */
@@ -5983,7 +5993,16 @@ export function ShapeInspector({
                 ) : null}
               </>
             ) : null}
-            {shape.kind === "boxGenerator" && shape.boxPart !== "lid" && onMakeBoxLid ? (
+            {shape.kind === "boxGenerator" && (shape.boxPart ?? "box") === "box" && onMakeBoxInsert && (shape.boxDividerMode === "manual" ? (shape.boxWalls?.length ?? 0) > 0 : (shape.boxColumns ?? 1) * (shape.boxRows ?? 1) > 1) ? (
+              <>
+                <p className="cylinder-wrap-hint">{t("inspector.boxMakeInsertHint")}</p>
+                <button className="inspector-action-button" type="button" disabled={frozen} data-testid="box-make-insert" onClick={onMakeBoxInsert}>
+                  <Plus size={17} strokeWidth={2.5} />
+                  <span>{t("inspector.boxMakeInsert")}</span>
+                </button>
+              </>
+            ) : null}
+            {shape.kind === "boxGenerator" && (shape.boxPart ?? "box") === "box" && onMakeBoxLid ? (
               <>
                 <p className="cylinder-wrap-hint">{t("inspector.boxMakeLidHint")}</p>
                 <button className="inspector-action-button" type="button" disabled={frozen} onClick={onMakeBoxLid}>
@@ -8815,7 +8834,7 @@ function BoxWallsCard({
   }
   // The finger scoop of the picked compartment: none, or the side its floor runs up into; with any scoop, their radius.
   const scoopRows: ShapePropertyConfig[] = [];
-  if (compartment) {
+  if (compartment && box.boxPart === "box") {
     const scoop = boxGeneratorScoopOf(compartment, box.boxScoops);
     scoopRows.push({
       type: "select",
@@ -8830,8 +8849,18 @@ function BoxWallsCard({
       },
     });
   }
-  if (box.boxScoops.length > 0) {
+  if (box.boxScoops.length > 0 && box.boxPart === "box") {
     scoopRows.push({ id: "boxScoopRadius", label: t("prop.boxScoopRadius"), value: box.boxScoopRadius, min: MIN_BOX_GENERATOR_SCOOP_RADIUS, max: MAX_BOX_GENERATOR_SCOOP_RADIUS, step: 0.5, onChange: (value) => onUpdate({ boxScoopRadius: value }) });
+  }
+  // Shaped pockets: how high the box is filled, and the depth of the pocket made last.
+  const pocketRows: ShapePropertyConfig[] = [];
+  if (box.boxPart === "box" && box.boxPockets.length > 0) {
+    const inside = Math.max(1, Math.round((shape.height - Math.min(box.boxFloor, shape.height - 0.5)) * 10) / 10);
+    const last = box.boxPockets[box.boxPockets.length - 1];
+    pocketRows.push(
+      { id: "boxPocketFill", label: t("prop.boxPocketFill"), value: Math.min(box.boxPocketFill, inside), min: 1, max: inside, step: 0.5, hint: t("boxGenerator.pocketFillHint"), onChange: (value) => onUpdate({ boxPocketFill: value >= inside - 1e-6 ? undefined : value }) },
+      { id: "boxPocketDepth", label: t("prop.boxPocketDepth"), value: Math.min(last.depth, inside), min: 0.5, max: inside, step: 0.5, onChange: (value) => onUpdate({ boxPockets: box.boxPockets.map((pocket, index) => (index === box.boxPockets.length - 1 ? { ...pocket, depth: value } : pocket)) }) },
+    );
   }
   const plain = (value: number) => String(Math.round(value * 10) / 10);
   return (
@@ -8847,6 +8876,7 @@ function BoxWallsCard({
             walls={walls}
             thickness={box.boxDivider}
             scoops={box.boxScoops}
+            pockets={box.boxPart === "box" ? box.boxPockets : []}
             pick={pick}
             disabled={locked}
             label={t("boxGenerator.wallsPlan")}
@@ -8875,6 +8905,22 @@ function BoxWallsCard({
               <span>{t("boxGenerator.wallAddAlong")}</span>
             </button>
           </div> : null}
+          {pocketRows.length > 0 ? (
+            <>
+              <p className="cylinder-wrap-hint box-walls-hint" data-testid="box-pockets-count">{t("boxGenerator.pocketsCount", { count: box.boxPockets.length })}</p>
+              <ShapePropertyRows properties={pocketRows} workspace={workspace} disabled={locked} onInteractionActiveChange={onInteractionActiveChange} />
+              <div className="bent-tube-segment-actions">
+                <button className="inspector-action-button" type="button" disabled={locked} data-testid="box-pockets-remove-last" onClick={() => onUpdate({ boxPockets: box.boxPockets.length > 1 ? box.boxPockets.slice(0, -1) : undefined })}>
+                  <Trash2 size={17} strokeWidth={2.5} />
+                  <span>{t("boxGenerator.pocketRemoveLast")}</span>
+                </button>
+                <button className="inspector-action-button" type="button" disabled={locked} data-testid="box-pockets-remove-all" onClick={() => onUpdate({ boxPockets: undefined })}>
+                  <Eraser size={17} strokeWidth={2.5} />
+                  <span>{t("boxGenerator.pocketRemoveAll")}</span>
+                </button>
+              </div>
+            </>
+          ) : null}
           {scoopRows.length > 0 ? <ShapePropertyRows properties={scoopRows} workspace={workspace} disabled={locked} onInteractionActiveChange={onInteractionActiveChange} /> : null}
           {wall && pick?.type === "wall" ? (
             <>
@@ -10448,6 +10494,7 @@ export function SelectionInspector({
   onSetColor,
   onUpdateShapes,
   onFitGridfinityOutline,
+  onMakeBoxPocket,
   onToggleLocked,
   onToggleHidden,
   onInteractionActiveChange,
@@ -10467,6 +10514,8 @@ export function SelectionInspector({
   onUpdateShapes?: (changes: readonly { id: string; patch: Partial<WorkplaneShape> }[], message?: string) => void;
   /** A baseplate and one other shape selected: fit the plate into what the other stands on (#1061). */
   onFitGridfinityOutline?: (plateId: string, sourceId: string) => Promise<void> | void;
+  /** A box from the box generator and one other part: a pocket in the box shaped as the part is seen from above. */
+  onMakeBoxPocket?: (boxId: string, sourceId: string) => Promise<void> | void;
   onToggleLocked: () => void;
   /** Hides the selected parts, or shows them again when all of them are hidden (#491); the button of a single part's panel. */
   onToggleHidden?: () => void;
@@ -10519,6 +10568,9 @@ export function SelectionInspector({
   // A baseplate and one other shape: the plate can be fitted into what the other stands on (#1061).
   const outlinePlates = shapes.length === 2 ? shapes.filter((shape) => shape.kind === "gridfinity" && normalizeGridfinityType(shape.gridfinityType) === "baseplate") : [];
   const outlineSource = outlinePlates.length === 1 ? shapes.find((shape) => shape !== outlinePlates[0]) : undefined;
+  // A box from the box generator and one other part: the part gets a pocket of its own shape in the box.
+  const pocketBoxes = shapes.length === 2 ? shapes.filter((shape) => shape.kind === "boxGenerator" && (shape.boxPart ?? "box") === "box") : [];
+  const pocketSource = pocketBoxes.length === 1 ? shapes.find((shape) => shape !== pocketBoxes[0]) : undefined;
   const pick = (color: string) => {
     onSetColor(color);
     rememberColor(color);
@@ -10655,6 +10707,11 @@ export function SelectionInspector({
       {outlineSource && onFitGridfinityOutline ? (
         <button type="button" className="inspector-action-button" disabled={anyLocked} title={t("inspector.gridfinityOutlineFitHint")} onClick={() => void onFitGridfinityOutline(outlinePlates[0].id, outlineSource.id)}>
           {t("inspector.gridfinityOutlineFit")}
+        </button>
+      ) : null}
+      {pocketSource && onMakeBoxPocket ? (
+        <button type="button" className="inspector-action-button" disabled={anyLocked} title={t("inspector.boxMakePocketHint")} data-testid="box-make-pocket" onClick={() => void onMakeBoxPocket(pocketBoxes[0].id, pocketSource.id)}>
+          {t("inspector.boxMakePocket")}
         </button>
       ) : null}
       <p className="selection-inspector-hint">{t("inspector.selectionHint")}</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { boxGeneratorScoopOf, boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallQuad, type BoxGeneratorCompartment, type BoxGeneratorScoop, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorScoopOf, boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallQuad, type BoxGeneratorCompartment, type BoxGeneratorPocket, type BoxGeneratorScoop, type BoxGeneratorWall } from "@/lib/boxGeneratorGeometry";
 
 /*
  * The box generator's dividers set by hand, drawn from above: the inside of the box with its compartments and walls, the
@@ -65,6 +65,7 @@ export function BoxWallsPlan({
   walls,
   thickness,
   scoops = [],
+  pockets = [],
   pick,
   disabled,
   label,
@@ -81,6 +82,8 @@ export function BoxWallsPlan({
   thickness: number;
   /** The finger scoops: a compartment with one shows a green line along the side its floor runs up into. */
   scoops?: readonly BoxGeneratorScoop[];
+  /** The shaped pockets, drawn as their outlines. */
+  pockets?: readonly BoxGeneratorPocket[];
   pick: BoxWallsPick;
   disabled?: boolean;
   /** What the drawing is, for a screen reader. */
@@ -249,6 +252,9 @@ export function BoxWallsPlan({
         );
       })}
       <g clipPath={`url(#${clipId})`}>
+        {pockets.map((pocket, index) => (
+          <polygon key={`pocket-${index}`} className="box-walls-plan-pocket" points={points(pocket.points)} strokeWidth={1.5 / scale} strokeDasharray={`${4 / scale} ${3 / scale}`} data-testid="box-walls-plan-pocket" />
+        ))}
         {walls.map((wall, index) => (
           <polygon key={`wall-${index}`} className={`box-walls-plan-wall${pick?.type === "wall" && pick.index === index ? " picked" : ""}`} {...box(wall, thickness)} />
         ))}

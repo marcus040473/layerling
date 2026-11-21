@@ -467,8 +467,16 @@ export type ShapeCustomization = {
    */
   boxScoops?: { x: number; z: number; side: "front" | "back" | "left" | "right" }[];
   boxScoopRadius?: number;
+  /**
+   * Box generator: shaped pockets. The box is filled boxPocketFill mm high above its floor (unset: to the rim) and each
+   * pocket's outline, in mm from the left and the back of the inside, is cut `depth` mm into the filling.
+   */
+  boxPockets?: { points: { x: number; z: number }[]; depth: number }[];
+  boxPocketFill?: number;
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
-  boxPart?: "box" | "lid";
+  boxPart?: "box" | "lid" | "insert";
+  /** Box generator: the dividers are a loose insert (a copy with boxPart "insert"); the box itself is drawn smooth inside. */
+  boxInsert?: boolean;
   boxLidStyle?: "restOn" | "overlap" | "plug";
   boxLidPlate?: number;
   boxFit?: number;
@@ -1498,8 +1506,16 @@ export type WorkplaneShape = {
    */
   boxScoops?: { x: number; z: number; side: "front" | "back" | "left" | "right" }[];
   boxScoopRadius?: number;
+  /**
+   * Box generator: shaped pockets. The box is filled boxPocketFill mm high above its floor (unset: to the rim) and each
+   * pocket's outline, in mm from the left and the back of the inside, is cut `depth` mm into the filling.
+   */
+  boxPockets?: { points: { x: number; z: number }[]; depth: number }[];
+  boxPocketFill?: number;
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
-  boxPart?: "box" | "lid";
+  boxPart?: "box" | "lid" | "insert";
+  /** Box generator: the dividers are a loose insert (a copy with boxPart "insert"); the box itself is drawn smooth inside. */
+  boxInsert?: boolean;
   boxLidStyle?: "restOn" | "overlap" | "plug";
   boxLidPlate?: number;
   boxFit?: number;

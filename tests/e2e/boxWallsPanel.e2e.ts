@@ -35,6 +35,7 @@ function mount(fields: Partial<WorkplaneShape>) {
   let shape = { ...makeShapeFromAsset(asset, { x: 0, z: 0 }), width: 126, depth: 90, height: 48, boxCornerRadius: 0, boxWall: 2.4, ...fields } as WorkplaneShape;
   const patches: Partial<WorkplaneShape>[] = [];
   const active: boolean[] = [];
+  const made: string[] = [];
   const noteActive = (value: boolean) => active.push(value);
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -50,11 +51,12 @@ function mount(fields: Partial<WorkplaneShape>) {
       render();
     },
     onInteractionActiveChange: noteActive,
+    onMakeBoxInsert: () => made.push("insert"),
     onSnapChange: () => {},
     onSnapOpenChange: () => {},
   }));
   act(render);
-  return { panel: container, patches, active, shape: () => shape };
+  return { panel: container, patches, active, made, shape: () => shape };
 }
 
 const all = <T extends Element>(panel: HTMLElement, id: string) => [...panel.querySelectorAll<T>(`[data-testid="${id}"]`)];
@@ -210,5 +212,37 @@ describe("box generator, dividers by hand", () => {
     expect(shape().boxWalls).toEqual([{ dir: "x", at: 20, from: 0, to: 60, slant: 30 }]);
     click(one(panel, "box-walls-turn"));
     expect(shape().boxWalls).toEqual([{ dir: "z", at: 45, from: 5, to: 65, slant: -30 }]);
+  });
+
+  it("offers the dividers as a loose insert: a button beside a box with dividers, and an insert's own settings", () => {
+    expect(one(mount({}).panel, "box-make-insert")).toBeUndefined();
+    act(() => root?.unmount());
+    const box = mount({ boxColumns: 2 });
+    click(one(box.panel, "box-make-insert"));
+    expect(box.made).toEqual(["insert"]);
+    act(() => root?.unmount());
+    // An insert has a plate, dividers and a play, no wall of its own and no lid style; its walls can be set as a box's.
+    const insert = mount({ boxPart: "insert", boxDividerMode: "manual", boxFloor: 0.8, boxWalls: [{ dir: "z", at: 60, from: 0, to: 500 }] });
+    expect(names(insert.panel)).toEqual(expect.arrayContaining(["Floor", "Divider thickness", "Fit per side"]));
+    expect(names(insert.panel)).not.toContain("Wall");
+    expect(one(insert.panel, "box-make-insert")).toBeUndefined();
+    expect(all(insert.panel, "box-walls-wall")).toHaveLength(1);
+    expect(all(insert.panel, "box-walls-compartment")).toHaveLength(2);
+    expect([...insert.panel.querySelectorAll("select")].some((select) => select.querySelector('option[value="plug"]'))).toBe(false);
+  });
+
+  it("lists the shaped pockets of a box, with the filling's height and the last pocket's depth, and takes them away", () => {
+    const square = (x: number) => [{ x, z: 20 }, { x: x + 20, z: 20 }, { x: x + 20, z: 40 }, { x, z: 40 }];
+    expect(one(mount({}).panel, "box-pockets-count")).toBeUndefined();
+    act(() => root?.unmount());
+    const { panel, shape } = mount({ boxPockets: [{ points: square(10), depth: 8 }, { points: square(60), depth: 12 }] });
+    expect(one(panel, "box-pockets-count").textContent).toBe("Shaped pockets: 2");
+    expect(all(panel, "box-walls-plan-pocket")).toHaveLength(2);
+    expect(names(panel)).toEqual(expect.arrayContaining(["Filling height", "Depth of the last pocket"]));
+    click(one(panel, "box-pockets-remove-last"));
+    expect(shape().boxPockets).toEqual([{ points: square(10), depth: 8 }]);
+    click(one(panel, "box-pockets-remove-all"));
+    expect(shape().boxPockets).toBeUndefined();
+    expect(one(panel, "box-pockets-count")).toBeUndefined();
   });
 });
