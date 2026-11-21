@@ -10545,6 +10545,58 @@ html[data-theme="dark"] .rotation-angle-badge {
   outline: none;
 }
 
+/* Hollow, dividers by hand: the buttons under the drawing (ShellWallsEditor). */
+.shell-walls-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shell-walls-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.shell-walls-actions button {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 8px;
+  color: #6d4b28;
+  background: #ffffff;
+  border: 1px solid #d8c5b1;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.shell-walls-actions button:hover:not(:disabled) {
+  color: #98540d;
+  background: #f8f4ed;
+  border-color: #d1995e;
+}
+
+.shell-walls-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+html[data-theme="dark"] .shell-walls-actions button {
+  color: #e8d9c8;
+  background: #3a3029;
+  border-color: #6b5a4b;
+}
+
+html[data-theme="dark"] .shell-walls-actions button:hover:not(:disabled) {
+  color: #ffd9a8;
+  background: #4a3d33;
+  border-color: #b98a55;
+}
+
 /* Box generator, dividers by hand: the box from above (BoxWallsPlan). */
 .box-walls-plan .box-walls-plan-pocket {
   fill: rgba(47, 143, 91, 0.18);

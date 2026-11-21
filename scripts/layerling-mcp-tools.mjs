@@ -1673,6 +1673,12 @@ export const tools = [
         dividersZ: { type: "integer", description: "Dividers along the inside, 0 to 8 (top open only)." },
         dividerHeight: { type: "number", description: "With dividers: how high they stand over the floor, in mm, at least 3; unset, 0, or within 0.1 mm of the rim or over it: up to the rim. The same rule as gridfinityDividerHeight." },
         dividerThickness: { type: "number", description: "With dividers: their thickness in mm, 0.8 to 3. Default 1.2." },
+        dividerWalls: {
+          type: "array",
+          maxItems: 40,
+          items: { type: "object", properties: { dir: { type: "string", enum: ["x", "z"] }, at: { type: "number" }, from: { type: "number" }, to: { type: "number" }, slant: { type: "number" } }, required: ["dir", "at", "from", "to"] },
+          description: "Dividers set by hand in place of dividersX and dividersZ (top open only): each wall runs along the width (dir x) or the depth (dir z) of the box's inside, with at, from and to in mm from the left and the back of the inside, as the box generator's boxWalls; slant sets its end that many mm further across than its beginning, for a wall at an angle. A wall may end inside the box or stand free. Measured in the box's own inside, also when the box stands turned on the workplane.",
+        },
         shelf: { type: "number", description: "Width in millimetres (0.5 to 5) of a ledge all round the inside of the wall for a plate to rest on (#1663); only with the top as the one open side; leave out for none." },
         shelfHeight: { type: "number", description: "With shelf: how high in millimetres (4 to 200) the top of the ledge lies above the inside of the floor; default 20." },
       },

@@ -29,8 +29,21 @@ export const MIN_SHELL_DIVIDER_HEIGHT = MIN_GRIDFINITY_DIVIDER_HEIGHT;
 export const MAX_SHELL_DIVIDERS = 8;
 
 export type ShellGrid = { cells: number; fit: boolean; magnets?: boolean };
-/** `height`: over the floor, in mm, 0 or unset the full height; `thickness`: in mm, unset 1.2. */
-export type ShellDividers = { x: number; z: number; height?: number; thickness?: number };
+/**
+ * A divider set by hand, as the box generator's (BoxGeneratorWall): it runs along the width ("x") or the depth ("z") of
+ * the box's inside, `at`, `from` and `to` in mm from the left and the back of the inside, and with `slant` its end lies
+ * that many mm further across than its beginning.
+ */
+export type ShellDividerWall = { dir: "x" | "z"; at: number; from: number; to: number; slant?: number };
+/** The most dividers set by hand that one box takes. */
+export const MAX_SHELL_DIVIDER_WALLS = 40;
+/**
+ * `height`: over the floor, in mm, 0 or unset the full height; `thickness`: in mm, unset 1.2. With `manual` the dividers
+ * are the `walls`, each placed freely, instead of `x` across and `z` along evenly spaced. `angle` says how the box is
+ * turned about its height, in degrees, so that across and along stay the box's own when it is turned more than an
+ * eighth of a turn; the dividers always follow the box's inside, whichever way it is turned.
+ */
+export type ShellDividers = { x: number; z: number; height?: number; thickness?: number; manual?: boolean; walls?: ShellDividerWall[]; angle?: number };
 
 export const GRID_NEEDS_TOP_MESSAGE = "A Gridfinity floor needs a body hollowed with only its top open.";
 export const GRID_TOO_LOW_MESSAGE = "The body is too low for a Gridfinity floor: the floor takes 6.2 mm and the cavity needs 3 mm above it.";
@@ -65,7 +78,34 @@ export function normalizeShellDividers(value: unknown): ShellDividers | null {
     const t = Math.min(MAX_SHELL_DIVIDER_THICKNESS, Math.max(MIN_SHELL_DIVIDER_THICKNESS, Math.round(thickness * 1000) / 1000));
     if (Math.abs(t - SHELL_DIVIDER_THICKNESS) > 1e-9) out.thickness = t;
   }
-  return out.x + out.z > 0 ? out : null;
+  const { manual, walls, angle } = value as Record<string, unknown>;
+  const list = normalizeShellDividerWalls(walls);
+  if (list.length > 0) out.walls = list;
+  if (manual === true) out.manual = true;
+  if (typeof angle === "number" && Number.isFinite(angle) && Math.abs(angle % 360) > 1e-9) out.angle = Math.round((angle % 360) * 1000) / 1000;
+  return (out.manual ? list.length : out.x + out.z) > 0 ? out : null;
+}
+
+/** The dividers set by hand as a clean list: walls with a direction and finite measures, none below zero, each one's beginning before its end. */
+export function normalizeShellDividerWalls(value: unknown): ShellDividerWall[] {
+  if (!Array.isArray(value)) return [];
+  const walls: ShellDividerWall[] = [];
+  for (const entry of value) {
+    if (walls.length >= MAX_SHELL_DIVIDER_WALLS) break;
+    if (!entry || typeof entry !== "object") continue;
+    const wall = entry as Partial<ShellDividerWall>;
+    if (wall.dir !== "x" && wall.dir !== "z") continue;
+    if (![wall.at, wall.from, wall.to].every((n) => typeof n === "number" && Number.isFinite(n))) continue;
+    const measure = (n: number) => Math.round(Math.min(1e4, Math.max(0, n)) * 1000) / 1000;
+    const a = measure(wall.from as number);
+    const b = measure(wall.to as number);
+    const start = measure(wall.at as number);
+    const end = typeof wall.slant === "number" && Number.isFinite(wall.slant) ? measure(start + wall.slant) : start;
+    const [at, far] = a <= b ? [start, end] : [end, start];
+    const slant = Math.round((far - at) * 1000) / 1000;
+    walls.push({ dir: wall.dir, at, from: Math.min(a, b), to: Math.max(a, b), ...(slant !== 0 ? { slant } : {}) });
+  }
+  return walls;
 }
 
 /**

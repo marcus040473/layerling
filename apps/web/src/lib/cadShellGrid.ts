@@ -202,7 +202,17 @@ export function shellDividersSolid(kernel: OcctKernel, original: ShapeHandle, bo
   let result: ShapeHandle | null = null;
   try {
     const { polygon, top, bottom } = cavityOutline(cad, body, DIVIDERS_NEEDS_TOP_MESSAGE);
-    const b = bounds(polygon);
+    // The dividers follow the box's own inside, also when the box stands turned on the workplane: its frame is found from
+    // the cavity's outline, and across and along are measured in it.
+    const turn = cavityTurn(polygon, dividers.angle);
+    const cos = Math.cos(turn);
+    const sin = Math.sin(turn);
+    const b = bounds(turn === 0 ? polygon : polygon.map((p) => ({ x: p.x * cos + p.z * sin, z: -p.x * sin + p.z * cos })));
+    /** A block given in the box's own frame, turned into the scene's. */
+    const framed = (low: { x: number; y: number; z: number }, high: { x: number; y: number; z: number }) => {
+      const piece = cad.makeBoxFromCorners(low, high);
+      return turn === 0 ? piece : cad.transform(piece, [cos, 0, -sin, 0, 0, 1, 0, 0, sin, 0, cos, 0]);
+    };
     // The floor of a plain hollow body is as thick as its wall: found from the cavity's lowest point.
     const base = floorTop ?? cavityFloor(cad, body, polygon, bottom, top);
     const pieces: ShapeHandle[] = [];
@@ -214,13 +224,48 @@ export function shellDividersSolid(kernel: OcctKernel, original: ShapeHandle, bo
     // dividers, not on the rim, and did not hold. Where that leaves no divider at all, the body says so.
     const dividerTop = Math.min(gridfinityDividerHeightTop(dividers.height, base, top), shelfTop ?? top, top - Math.max(0, stackRoom));
     if (dividerTop < base + MIN_STACKED_DIVIDER) throw new Error(DIVIDERS_FAILED_MESSAGE);
-    for (let i = 1; i <= dividers.x; i += 1) {
-      const x = b.minX + ((b.maxX - b.minX) * i) / (dividers.x + 1);
-      pieces.push(cad.makeBoxFromCorners({ x: x - t / 2, y: base - 0.2, z: b.minZ - 1 }, { x: x + t / 2, y: dividerTop, z: b.maxZ + 1 }));
-    }
-    for (let i = 1; i <= dividers.z; i += 1) {
-      const z = b.minZ + ((b.maxZ - b.minZ) * i) / (dividers.z + 1);
-      pieces.push(cad.makeBoxFromCorners({ x: b.minX - 1, y: base - 0.2, z: z - t / 2 }, { x: b.maxX + 1, y: dividerTop, z: z + t / 2 }));
+    if (dividers.manual) {
+      // Set by hand: each wall a block along its own line, from its beginning to its end; an end on a side of the inside
+      // (or past it) is drawn out beyond it, so that a slanted wall closes against the box's wall. The outline clips them.
+      const width = b.maxX - b.minX;
+      const depth = b.maxZ - b.minZ;
+      for (const wall of dividers.walls ?? []) {
+        const run = wall.dir === "x" ? width : depth;
+        const across = wall.dir === "x" ? depth : width;
+        const straight = !wall.slant;
+        const from = straight ? Math.min(run, Math.max(0, wall.from)) : wall.from;
+        const to = straight ? Math.min(run, Math.max(0, wall.to)) : wall.to;
+        if (straight && (wall.at < 0 || wall.at > across)) continue;
+        const far = wall.at + (wall.slant ?? 0);
+        let a = wall.dir === "x" ? { x: from, z: wall.at } : { x: wall.at, z: from };
+        let e = wall.dir === "x" ? { x: to, z: far } : { x: far, z: to };
+        const length = Math.hypot(e.x - a.x, e.z - a.z);
+        if (length < 1) continue;
+        const ux = (e.x - a.x) / length;
+        const uz = (e.z - a.z) / length;
+        const outside = (p: { x: number; z: number }) => p.x <= 1e-6 || p.z <= 1e-6 || p.x >= width - 1e-6 || p.z >= depth - 1e-6;
+        const reach = 2 * t + 1;
+        if (outside(a)) a = { x: a.x - ux * reach, z: a.z - uz * reach };
+        if (outside(e)) e = { x: e.x + ux * reach, z: e.z + uz * reach };
+        const half = Math.hypot(e.x - a.x, e.z - a.z) / 2;
+        // The block lies along x through the origin; turned by the wall's own angle and the box's, and moved to the wall's middle.
+        const middle = { x: b.minX + (a.x + e.x) / 2, z: b.minZ + (a.z + e.z) / 2 };
+        const angle = Math.atan2(uz, ux) + turn;
+        const ca = Math.cos(angle);
+        const sa = Math.sin(angle);
+        const block = cad.makeBoxFromCorners({ x: -half, y: base - 0.2, z: -t / 2 }, { x: half, y: dividerTop, z: t / 2 });
+        pieces.push(cad.transform(block, [ca, 0, -sa, middle.x * cos - middle.z * sin, 0, 1, 0, 0, sa, 0, ca, middle.x * sin + middle.z * cos]));
+      }
+      if (pieces.length === 0) throw new Error(DIVIDERS_FAILED_MESSAGE);
+    } else {
+      for (let i = 1; i <= dividers.x; i += 1) {
+        const x = b.minX + ((b.maxX - b.minX) * i) / (dividers.x + 1);
+        pieces.push(framed({ x: x - t / 2, y: base - 0.2, z: b.minZ - 1 }, { x: x + t / 2, y: dividerTop, z: b.maxZ + 1 }));
+      }
+      for (let i = 1; i <= dividers.z; i += 1) {
+        const z = b.minZ + ((b.maxZ - b.minZ) * i) / (dividers.z + 1);
+        pieces.push(framed({ x: b.minX - 1, y: base - 0.2, z: z - t / 2 }, { x: b.maxX + 1, y: dividerTop, z: z + t / 2 }));
+      }
     }
     const clipped = cad.common(original, cad.fuseAll(pieces));
     const joined = cad.simplify(cad.fuseAll([body, clipped]));
@@ -236,6 +281,53 @@ export function shellDividersSolid(kernel: OcctKernel, original: ShapeHandle, bo
       }
     });
   }
+}
+
+/**
+ * How the inside of a box is turned about its height, in radians: the turn of the smallest rectangle round the cavity's
+ * outline, its sides being the box's own across and along. An outline whose rectangle along the scene's axes is as small
+ * (within half a percent) is not turned at all, so a round box and a box standing straight give 0. Of the four ways a
+ * rectangle can be read, the one nearest to `hint` (the body's own turn, in degrees) is taken, or nearest to 0 without one.
+ */
+export function cavityTurn(polygon: readonly Cell[], hint?: number): number {
+  const area = (angle: number) => {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    for (const p of polygon) {
+      const x = p.x * cos + p.z * sin;
+      const z = -p.x * sin + p.z * cos;
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minZ = Math.min(minZ, z);
+      maxZ = Math.max(maxZ, z);
+    }
+    return (maxX - minX) * (maxZ - minZ);
+  };
+  let best = 0;
+  let bestArea = area(0);
+  const straight = bestArea;
+  // The smallest rectangle has a side along one of the outline's sides: only the longer ones are tried, a curve's short chords tell nothing.
+  polygon.forEach((p, index) => {
+    const q = polygon[(index + 1) % polygon.length];
+    if (Math.hypot(q.x - p.x, q.z - p.z) < 1) return;
+    const angle = Math.atan2(q.z - p.z, q.x - p.x);
+    const found = area(angle);
+    if (found < bestArea - 1e-9) {
+      bestArea = found;
+      best = angle;
+    }
+  });
+  if (bestArea > straight * 0.995) best = 0;
+  // Into the quarter round the hint (or round 0): a rectangle reads the same turned by a quarter turn, with across and along swapped.
+  const quarter = Math.PI / 2;
+  // The editor counts a body's turn the other way round than the angle of x towards z used here.
+  const target = typeof hint === "number" && Number.isFinite(hint) ? (-hint * Math.PI) / 180 : 0;
+  const turned = best + Math.round((target - best) / quarter) * quarter;
+  return Math.abs(turned) < 1e-9 ? 0 : turned;
 }
 
 /** The height of the cavity's floor: where the middle of the inside starts to be hollow, found by walking up. */

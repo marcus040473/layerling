@@ -22,7 +22,7 @@ import { hingePartScope, hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
 import { GRIDFINITY_SWALLOWTAIL_KEY_THICKNESS, gridfinityHasLabelText, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlatePieceKeys, gridfinityPlatePieces, gridfinityPlateSplit, gridfinityPlateToWorld, gridfinitySceneWithKeys, gridfinitySceneWithPieces, gridfinitySwallowtailKeyCount, gridfinitySwallowtailKeyProfile, gridfinitySwallowtailKeys } from "@/lib/gridfinityGeometry";
-import { boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorMatchingInsertPatch, boxGeneratorMatchingLidPatch, boxGeneratorPocketOutlines, boxGeneratorWallRoom, MAX_BOX_GENERATOR_POCKETS, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorWallList, boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorMatchingInsertPatch, boxGeneratorMatchingLidPatch, boxGeneratorPocketOutlines, boxGeneratorWallRoom, MAX_BOX_GENERATOR_POCKETS, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
 import { curvedTextPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING } from "@/lib/textGeometry";
@@ -8517,7 +8517,8 @@ export function LayerlingEditor({
     const stack = extras.stack ?? 0;
     const stackFoot = stack > 0 && !offset ? normalizeShellStackFoot(extras.stackFoot) : null;
     const grid = offset ? null : extras.grid ?? null;
-    const dividers = offset ? null : extras.dividers ?? null;
+    // The body's own turn about its height goes along, so across and along stay the box's own when it stands turned.
+    const dividers = offset || !extras.dividers ? null : normalizeShellDividers({ ...extras.dividers, angle: shape.rotation });
     const shelf = offset ? undefined : extras.shelf;
     if (bodyLocked(shape) || isNonSolidShape(shape)) {
       throw new Error("Select one unlocked object to hollow");
@@ -17165,7 +17166,7 @@ export function LayerlingEditor({
         const edges: ShellEdges = params.edges === "sharp" ? "sharp" : "round";
         const stack = typeof params.stack === "number" && params.stack > 0 ? clampShellStackHeight(params.stack) : 0;
         const grid = normalizeShellGrid({ cells: params.gridCells, fit: params.gridFit === true, magnets: params.gridMagnets === true });
-        const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness });
+        const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness, ...(params.dividerWalls !== undefined ? { manual: true, walls: boxGeneratorWallList(params.dividerWalls) } : {}) });
         if (grid && dividers) throw new Error(DIVIDERS_WITH_GRID_MESSAGE);
         const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth, gripSides: params.stackGripSides, gripHeight: params.stackGripHeight, gripAt: params.stackGripAt }) : null;
         const shelf = typeof params.shelf === "number" && params.shelf > 0
@@ -21621,6 +21622,8 @@ export function LayerlingEditor({
           gridRows={shellTool.gridRows ?? shellGridEstimate(shapeWidth(selectedShape), shapeDepth(selectedShape), shellTool.thickness).rows}
           onGridSize={(columns, rows) => setShellTool((current) => current ? { ...current, gridColumns: columns, gridRows: rows, error: null } : current)}
           dividers={shellTool.dividers ?? null}
+          insideWidth={Math.max(0, shapeWidth(selectedShape) - 2 * shellTool.thickness)}
+          insideDepth={Math.max(0, shapeDepth(selectedShape) - 2 * shellTool.thickness)}
           // The dividers' full height over the floor: the body's height less its floor (the Gridfinity floor's 6.2 mm, or the wall).
           // Under a shelf ledge, up to its top: the ledge's height is measured from the wall's floor.
           dividerFullHeight={Math.max(0, Math.round((Math.min(selectedShape.height, (shellTool.shelf ?? 0) > 0 ? shellTool.thickness + (shellTool.shelfHeight ?? DEFAULT_SHELL_SHELF_HEIGHT) : Infinity) - ((shellTool.gridCells ?? 0) > 0 ? shellGridFloor({ magnets: shellTool.gridMagnets }) : shellTool.thickness)) * 10) / 10)}
