@@ -180,6 +180,17 @@ has it. The way it was done that day: one branch per fix from Stefan's `main` fo
 taken onto `marcus` with `git cherry-pick -x`, so `marcus` did not have to take Stefan's whole newest version in the
 same step. Typecheck and the full `npm test` on `marcus` before the push, as always.
 
+## State of `marcus` on 21 November 2026
+
+`marcus` is at `ec9cfea2c`: Stefan's main at 8aa6047f1 (v1.167.0 and 37 commits) merged in (`c73992658`), plus the two
+features that are not at Stefan yet: filament pieces as the pins of a split screw (`bolt-filament-pin-pr`, Discussion
+#1851) and the Mold tool's switch to set the openings oneself (`mold-own-openings`, Discussion #1806). Both wait for
+Marcus to open the PR. Thread insert (new from Stefan) was rebuilt as a docked window; `PunchPanel` and
+`CableChannelPanel` are still in card style. Typecheck, `npm test` (6198 passed) and `npm run test:e2e` (1692 passed)
+were green. The twelve fixes of 20 November are all at Stefan now (nine as Marcus's PRs #1910 to #1919, three fixed by
+Stefan himself), so `marcus` has Stefan's version of them. The older sections above that give `marcus` as v1.156.2 are
+out of date.
+
 ## Status page
 
 Marcus's overview is a page on claude.ai that Copilot cannot reach. Do not try. Tell Marcus in German what you did, and
