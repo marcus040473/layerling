@@ -454,6 +454,13 @@ export type ShapeCustomization = {
   boxColumns?: number;
   boxRows?: number;
   boxDivider?: number;
+  /**
+   * Box generator: dividers from the grid of columns and rows (unset or "grid") or set by hand ("manual"), and the walls
+   * set by hand: each runs along the width ("x") or the depth ("z"), with `at`, `from` and `to` in mm from the left and
+   * the back of the inside (see BoxGeneratorWall in boxGeneratorGeometry.ts).
+   */
+  boxDividerMode?: "grid" | "manual";
+  boxWalls?: { dir: "x" | "z"; at: number; from: number; to: number }[];
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid";
   boxLidStyle?: "restOn" | "overlap" | "plug";
@@ -1470,6 +1477,13 @@ export type WorkplaneShape = {
   boxColumns?: number;
   boxRows?: number;
   boxDivider?: number;
+  /**
+   * Box generator: dividers from the grid of columns and rows (unset or "grid") or set by hand ("manual"), and the walls
+   * set by hand: each runs along the width ("x") or the depth ("z"), with `at`, `from` and `to` in mm from the left and
+   * the back of the inside (see BoxGeneratorWall in boxGeneratorGeometry.ts).
+   */
+  boxDividerMode?: "grid" | "manual";
+  boxWalls?: { dir: "x" | "z"; at: number; from: number; to: number }[];
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid";
   boxLidStyle?: "restOn" | "overlap" | "plug";

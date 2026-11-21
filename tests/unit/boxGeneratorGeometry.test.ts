@@ -11,6 +11,10 @@ import {
   boxGeneratorGridfinityFloor,
   boxGeneratorInsideOutline,
   boxGeneratorGridfinityRoom,
+  boxGeneratorGridWalls,
+  boxGeneratorWallRoom,
+  boxGeneratorWallsInside,
+  normalizeBoxGeneratorWalls,
   boxGeneratorMatchingLidPatch,
   boxGeneratorMatchingLidSize,
   boxGeneratorPlan,
@@ -405,5 +409,102 @@ describe("the matching lid of a box", () => {
       expect(boxPart).toBe("lid");
       expect(boxGeneratorIssues({ width, depth, height }, { ...fields, boxPart })).toEqual([]);
     }
+  });
+  describe("dividers set by hand", () => {
+    const PLAIN = { boxCornerRadius: 0 } as const;
+    const INNER = { width: 126 - 4.8, depth: 90 - 4.8 };
+    const ROOM_HEIGHT = 48 - 2.4;
+    const manual = (boxWalls: { dir: "x" | "z"; at: number; from: number; to: number }[], more: object = {}) => ({ ...PLAIN, boxDividerMode: "manual" as const, boxDivider: 1.6, boxWalls, ...more });
+
+    it("ignores the walls while the dividers follow the grid, and the grid while they are set by hand", () => {
+      const walls = [{ dir: "z" as const, at: 40, from: 0, to: 200 }];
+      expect(volumeOf(createBoxGeneratorGeometry(SIZE, { ...PLAIN, boxWalls: walls }))).toBeCloseTo(volumeOf(createBoxGeneratorGeometry(SIZE, PLAIN)), 3);
+      expect(volumeOf(createBoxGeneratorGeometry(SIZE, manual([], { boxColumns: 3, boxRows: 2 })))).toBeCloseTo(volumeOf(createBoxGeneratorGeometry(SIZE, PLAIN)), 3);
+    });
+
+    it("builds the grid's dividers as walls from wall to wall with the same body", () => {
+      const grid = { ...PLAIN, boxColumns: 3, boxRows: 2, boxDivider: 1.6 };
+      const walls = boxGeneratorGridWalls(SIZE, grid);
+      expect(walls).toHaveLength(3);
+      expect(walls.filter((wall) => wall.dir === "z")).toHaveLength(2);
+      const byHand = createBoxGeneratorGeometry(SIZE, manual(walls));
+      expect(openEdges(byHand)).toBe(0);
+      expect(volumeOf(byHand)).toBeCloseTo(volumeOf(createBoxGeneratorGeometry(SIZE, grid)), 0);
+      expect(boxGeneratorPlan(SIZE, manual(walls)).cells).toHaveLength(6);
+    });
+
+    it("takes a wall that ends inside the box: one room, the wall's volume added", () => {
+      const fields = manual([{ dir: "z", at: 50, from: 0, to: 40 }]);
+      const plan = boxGeneratorPlan(SIZE, fields);
+      const geometry = createBoxGeneratorGeometry(SIZE, fields);
+      expect(plan.cells).toHaveLength(1);
+      expect(plan.islands).toBeUndefined();
+      expect(openEdges(geometry)).toBe(0);
+      expect(volumeOf(geometry) - volumeOf(createBoxGeneratorGeometry(SIZE, PLAIN))).toBeCloseTo(1.6 * 40 * ROOM_HEIGHT, 1);
+    });
+
+    it("takes a wall that stands free, touching only the floor", () => {
+      const fields = manual([{ dir: "x", at: 30, from: 20, to: 70 }]);
+      const plan = boxGeneratorPlan(SIZE, fields);
+      const geometry = createBoxGeneratorGeometry(SIZE, fields);
+      expect(plan.cells).toHaveLength(1);
+      expect(plan.islands?.[0]).toHaveLength(1);
+      expect(openEdges(geometry)).toBe(0);
+      expect(volumeOf(geometry) - volumeOf(createBoxGeneratorGeometry(SIZE, PLAIN))).toBeCloseTo(1.6 * 50 * ROOM_HEIGHT, 1);
+    });
+
+    it("joins walls that cross or meet into one piece, counting what they share once", () => {
+      // A wall along the depth from wall to wall, one across it that ends on its middle line, and one that crosses it.
+      const fields = manual([
+        { dir: "z", at: 60, from: 0, to: INNER.depth },
+        { dir: "x", at: 30, from: 0, to: 60 },
+        { dir: "x", at: 60, from: 40, to: 100 },
+      ]);
+      const plan = boxGeneratorPlan(SIZE, fields);
+      const geometry = createBoxGeneratorGeometry(SIZE, fields);
+      expect(plan.cells).toHaveLength(3);
+      expect(openEdges(geometry)).toBe(0);
+      const area = 1.6 * INNER.depth + 1.6 * (60 - 0.8) + 1.6 * (60 - 1.6);
+      expect(volumeOf(geometry) - volumeOf(createBoxGeneratorGeometry(SIZE, PLAIN))).toBeCloseTo(area * ROOM_HEIGHT, 0);
+    });
+
+    it("ends a wall where it meets the wall of a round, a rounded and a many-sided box, each a closed body", () => {
+      const walls = [{ dir: "z" as const, at: 40, from: 0, to: 500 }, { dir: "x" as const, at: 30, from: 30, to: 500 }, { dir: "x" as const, at: 70, from: 55, to: 75 }];
+      for (const more of [{ boxShape: "round" }, { boxShape: "polygon", boxSides: 6 }, { boxShape: "polygon", boxSides: 3 }, { boxShape: "rectangle", boxCornerRadius: 12 }] as const) {
+        const fields = { boxDividerMode: "manual" as const, boxWalls: walls, ...more };
+        const geometry = createBoxGeneratorGeometry(SIZE, fields);
+        expect(openEdges(geometry)).toBe(0);
+        expect(volumeOf(geometry)).toBeGreaterThan(volumeOf(createBoxGeneratorGeometry(SIZE, more)));
+        expect(volumeOf(geometry)).toBeLessThan(126 * 90 * 48);
+      }
+    });
+
+    it("stays closed with stacking and with many walls, also ones lying on each other", () => {
+      const many = Array.from({ length: 40 }, (_, index) => ({ dir: index % 2 ? "x" as const : "z" as const, at: 4 + index * 2.1, from: (index * 7) % 30, to: 40 + ((index * 13) % 60) }));
+      expect(openEdges(createBoxGeneratorGeometry(SIZE, manual(many)))).toBe(0);
+      expect(openEdges(createBoxGeneratorGeometry(SIZE, manual(many, { boxShape: "round" })))).toBe(0);
+      expect(openEdges(createBoxGeneratorGeometry(SIZE, manual([{ dir: "z", at: 50, from: 10, to: 60 }, { dir: "z", at: 50.5, from: 30, to: 80 }], { boxStackable: true })))).toBe(0);
+    });
+
+    it("leaves a room narrower than 2 mm solid and says so", () => {
+      const fields = manual([{ dir: "z", at: 2, from: 0, to: INNER.depth }]);
+      expect(boxGeneratorIssues(SIZE, fields)).toContainEqual({ code: "compartmentSolid", count: 1 });
+      expect(boxGeneratorPlan(SIZE, fields).cells).toHaveLength(1);
+      expect(openEdges(createBoxGeneratorGeometry(SIZE, fields))).toBe(0);
+    });
+
+    it("keeps only walls that make sense, and cuts them to the inside without changing the list", () => {
+      expect(normalizeBoxGeneratorWalls([{ dir: "x", at: 10, from: 50, to: 5 }, { dir: "y", at: 1, from: 0, to: 9 }, { dir: "z", at: Number.NaN, from: 0, to: 9 }, null, { dir: "z", at: -4, from: 0, to: 9 }]))
+        .toEqual([{ dir: "x", at: 10, from: 5, to: 50 }, { dir: "z", at: 0, from: 0, to: 9 }]);
+      expect(normalizeBoxGeneratorWalls(Array.from({ length: 60 }, () => ({ dir: "x", at: 1, from: 0, to: 9 })))).toHaveLength(40);
+      expect(boxGeneratorWallsInside([{ dir: "z", at: 50, from: 0, to: 500 }, { dir: "z", at: 200, from: 0, to: 50 }, { dir: "x", at: 20, from: 121, to: 500 }], INNER.width, INNER.depth))
+        .toEqual([{ dir: "z", at: 50, from: 0, to: INNER.depth }]);
+      const lid = { ...manual([{ dir: "z", at: 50, from: 0, to: 40 }]), boxPart: "lid" as const, boxLidStyle: "overlap" as const };
+      expect(boxGeneratorPlan(SIZE, lid).cells).toHaveLength(1);
+      expect(boxGeneratorWallRoom(SIZE, lid)).toBeNull();
+      const room = boxGeneratorWallRoom(SIZE, PLAIN);
+      expect(room?.width).toBeCloseTo(INNER.width, 6);
+      expect(room?.depth).toBeCloseTo(INNER.depth, 6);
+    });
   });
 });

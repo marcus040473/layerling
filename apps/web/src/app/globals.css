@@ -10414,6 +10414,132 @@ html[data-theme="dark"] .rotation-angle-badge {
   cursor: default;
 }
 
+/* Box generator, dividers by hand: the box from above (BoxWallsPlan). */
+.box-walls-plan {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  margin: 2px 0 6px;
+  touch-action: none;
+  user-select: none;
+}
+
+.box-walls-plan .box-walls-plan-box {
+  fill: none;
+  stroke: #b9a48d;
+  stroke-linejoin: round;
+}
+
+.box-walls-plan .box-walls-plan-floor {
+  fill: #fbf7f1;
+  stroke: none;
+}
+
+.box-walls-plan .box-walls-plan-compartment {
+  fill: #fbf7f1;
+  stroke: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.box-walls-plan .box-walls-plan-compartment:hover,
+.box-walls-plan .box-walls-plan-compartment:focus-visible {
+  fill: #f6e9d6;
+}
+
+.box-walls-plan .box-walls-plan-compartment.picked {
+  fill: #fbd9a8;
+}
+
+.box-walls-plan .box-walls-plan-size {
+  fill: #7a6855;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.box-walls-plan .box-walls-plan-wall {
+  fill: #9c8670;
+  pointer-events: none;
+}
+
+.box-walls-plan .box-walls-plan-wall.picked {
+  fill: #e07b00;
+}
+
+.box-walls-plan .box-walls-plan-reach {
+  fill: transparent;
+  cursor: move;
+  outline: none;
+}
+
+.box-walls-plan .box-walls-plan-reach:hover,
+.box-walls-plan .box-walls-plan-reach:focus-visible {
+  fill: rgba(224, 123, 0, 0.22);
+}
+
+.box-walls-plan .box-walls-plan-grip {
+  fill: #ffffff;
+  stroke: #e07b00;
+}
+
+.box-walls-plan .box-walls-plan-grip.across {
+  cursor: ew-resize;
+}
+
+.box-walls-plan .box-walls-plan-grip.along {
+  cursor: ns-resize;
+}
+
+.box-walls-plan.disabled .box-walls-plan-reach,
+.box-walls-plan.disabled .box-walls-plan-compartment {
+  cursor: default;
+}
+
+.shape-inspector .box-walls-hint {
+  margin: 0 0 8px;
+}
+
+.shape-inspector .inspector-action-button.box-walls-clear {
+  width: 100%;
+  margin: 0 0 8px;
+}
+
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-box {
+  stroke: #7d6a57;
+}
+
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-floor,
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-compartment {
+  fill: #2b241e;
+}
+
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-compartment:hover,
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-compartment:focus-visible {
+  fill: #3a2f25;
+}
+
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-compartment.picked {
+  fill: #5b3f1c;
+}
+
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-size {
+  fill: #d9c8b6;
+}
+
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-wall {
+  fill: #b39c85;
+}
+
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-wall.picked {
+  fill: #ff9d2e;
+}
+
+html[data-theme="dark"] .box-walls-plan .box-walls-plan-grip {
+  fill: #2b241e;
+  stroke: #ff9d2e;
+}
+
 .shape-inspector .bent-tube-segment-actions {
   display: flex;
   gap: 8px;

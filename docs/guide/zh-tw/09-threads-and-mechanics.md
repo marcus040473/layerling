@@ -272,6 +272,8 @@ microSD 卡槽也是左邊緣的接頭，位於電路板下方（Zero 2 W 上在
 
 {{ui:prop.boxColumns}}和{{ui:prop.boxRows}}把盒子分成格子。隔板厚{{ui:prop.boxDivider}}，與壁和底是一體的。比 2 mm 窄的格子保持實心，面板會告訴你有幾個。
 
+把 {{ui:prop.boxDividerMode}} 設為 {{ui:boxGenerator.dividersManual}} 後，每一塊隔板都由你自己放置，而不再使用均勻網格。{{ui:inspector.boxWalls}} 卡片從上方顯示盒子，後側在上方，並標出每個格子的尺寸。{{ui:boxGenerator.wallAddAcross}} 和 {{ui:boxGenerator.wallAddAlong}} 會在你點選的格子中間放一塊隔板；如果沒有選取格子，就放在最大的格子裡。這樣隔板可以止於另一塊隔板，而不必貫穿整個盒子。拖曳隔板可移動它，拖曳它兩端中的一端可把它縮短或加長；端點會吸附到盒子的側邊和與它相交的隔板上，隔板也可以獨立立在中間。需要精確數值時，選取一塊隔板，輸入它的距離、{{ui:prop.boxWallStart}} 和 {{ui:prop.boxWallEnd}}；{{ui:boxGenerator.wallTurn}} 把它旋轉，{{ui:boxGenerator.wallRemove}} 把它刪除，{{ui:boxGenerator.wallsClear}} 則重新開始。第一次切換時會沿用網格的隔板，切換回 {{ui:boxGenerator.dividersGrid}} 後你的隔板仍會保留。一個盒子最多可放 40 塊隔板。
+
 蓋子是同一個形狀的副本，把{{ui:prop.boxPart}}設為{{ui:boxGenerator.partLid}}。它依列印時的樣子繪製，蓋板貼在列印床上。{{ui:boxGenerator.lidRestOn}}是與盒子一樣大的平板。{{ui:boxGenerator.lidOverlap}}帶一圈和壁一樣厚的裙邊，向下罩住盒子外側；{{ui:prop.boxLidPlate}}是蓋板的厚度，{{ui:prop.boxFit}}是每一側的間隙。一個部件的寬和長始終是它自己的，所以罩蓋比盒子大：在{{ui:prop.boxFit}}下，面板會給出合適的尺寸。 {{ui:boxGenerator.lidPlug}} 與盒子一樣大：一塊板，上面立著一個插入盒子的環，厚度與壁相同，每側比內部小 {{ui:prop.boxFit}}；{{ui:prop.boxLidPlate}} 是板的厚度。列印時板貼著列印板，所以環不需要支撐。 在盒子的設定下方，{{ui:inspector.boxMakeLid}} 會在旁邊放上配套的蓋子：輪廓、壁、間隙、蓋子類型和堆疊都相同，並設好蓋子所需的尺寸和高度（罩住的蓋子更寬，可堆疊的蓋子留有凹槽和凸緣的空間）。
 
 > **提示：** 列印出來的配合比繪製的略緊。先列印蓋子，並以十分之一毫米為單位調整{{ui:prop.boxFit}}，直到能順暢合上。鉸鏈和鎖扣還不屬於這個形狀；請在旁邊使用鉸鏈和卡扣形狀。

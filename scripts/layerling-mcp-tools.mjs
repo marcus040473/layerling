@@ -372,6 +372,22 @@ export const shapeSettingSchema = {
   boxColumns: { type: "integer", description: "Box generator only: compartments side by side along the width, 1 to 12, default 1. Dividers are one piece with the wall and floor; a compartment narrower than 2 mm stays solid." },
   boxRows: { type: "integer", description: "Box generator only: compartments one behind the other along the depth, 1 to 12, default 1." },
   boxDivider: { type: "number", description: "Box generator only: thickness in mm of the dividers between compartments, default 1.6." },
+  boxDividerMode: { type: "string", enum: ["grid", "manual"], description: "Box generator only: grid (default) makes the dividers from boxColumns and boxRows, manual from the walls in boxWalls, each placed freely; boxColumns and boxRows are then ignored. The walls are kept when the mode goes back to grid." },
+  boxWalls: {
+    type: "array",
+    maxItems: 40,
+    items: {
+      type: "object",
+      properties: {
+        dir: { type: "string", enum: ["x", "z"], description: "x: the wall runs along the width (left to right); z: it runs along the depth (back to front)." },
+        at: { type: "number", description: "mm from the inside of the box to the middle of the wall, across its run: from the back for dir x, from the left for dir z." },
+        from: { type: "number", description: "mm from the inside of the box to where the wall begins along its run: from the left for dir x, from the back for dir z. 0 begins at the box's wall." },
+        to: { type: "number", description: "mm to where the wall ends, measured as from. A value past the inside ends at the box's wall." },
+      },
+      required: ["dir", "at", "from", "to"],
+    },
+    description: "Box generator only, with boxDividerMode manual: the dividers set by hand, boxDivider thick and as high as the box, one piece with the wall and floor. A wall may run from wall to wall, end inside the box or at another wall, or stand free. The inside is the outer width and depth less 2 x boxWall (for a round or polygon box measured at its widest and deepest, the wall ending where it meets the box's wall). Example for a 126 x 90 mm box with a 2.4 mm wall (inside 121.2 x 85.2): [{ dir: \"z\", at: 60, from: 0, to: 85.2 }, { dir: \"x\", at: 40, from: 0, to: 60 }] is one wall front to back and one from the left wall to it. The whole list is replaced; [] removes all walls. A room narrower than 2 mm stays solid.",
+  },
   boxPart: { type: "string", enum: ["box", "lid"], description: "Box generator only: the open box (default) or its lid, drawn as it prints with the plate on the bed. Create two shapes with the same settings for a box and its lid; each one's width and depth are its own." },
   boxLidStyle: { type: "string", enum: ["restOn", "overlap", "plug"], description: "Box generator only: restOn is a flat plate as large as the box, overlap a plate with a skirt that goes over the outside of the box, plug a plate as large as the box with a ring (wall thick, boxFit smaller than the inside) that fits into it. An overlap lid is wider than its box by 2 x (boxWall + boxFit) on each axis." },
   boxLidPlate: { type: "number", description: "Box generator only: thickness in mm of an overlap lid's plate, default 2.4." },

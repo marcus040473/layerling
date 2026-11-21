@@ -8,6 +8,7 @@ import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicke
 import { SnapGridMenuItems } from "@/components/workplane/SnapGridMenu";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
+import { BOX_WALLS_PLAN_MIN_LENGTH, BoxWallsPlan, type BoxWallsPick } from "@/components/workplane/BoxWallsPlan";
 import { Amphora, Boxes, BrickWall, Droplets, Layers2, Soup, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
@@ -222,6 +223,11 @@ import {
   MIN_BOX_GENERATOR_SIDES,
   MIN_BOX_GENERATOR_WALL,
   boxGeneratorIssues,
+  boxGeneratorGridWalls,
+  boxGeneratorSplitWall,
+  boxGeneratorWallRoom,
+  MAX_BOX_GENERATOR_WALLS,
+  type BoxGeneratorWall,
   boxGeneratorPlan,
   boxGeneratorGridfinityBoxSize,
   boxGeneratorGridfinityFit,
@@ -2901,9 +2907,26 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     if (box.boxPart === "box") {
       properties.push(
         { id: "boxFloor", label: t("prop.boxFloor"), value: box.boxFloor, min: MIN_BOX_GENERATOR_WALL, max: Math.max(MIN_BOX_GENERATOR_WALL, shape.height - 0.5), step: 0.1, hint: plateHint ?? (box.boxGridfinity && !box.boxGridfinityFloor ? undefined : gridfinityHint), onChange: (value) => onUpdate({ boxFloor: value }) },
-        { id: "boxColumns", label: t("prop.boxColumns"), value: box.boxColumns, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, onChange: (value) => onUpdate({ boxColumns: Math.round(value) }) },
-        { id: "boxRows", label: t("prop.boxRows"), value: box.boxRows, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, hint: solidIssue ? t("boxGenerator.issueCompartments", { count: String(solidIssue.code === "compartmentSolid" ? solidIssue.count : 0) }) : undefined, onChange: (value) => onUpdate({ boxRows: Math.round(value) }) },
+        {
+          // Dividers from the grid of columns and rows, or set by hand one by one (the card "Dividers by hand" below).
+          type: "select",
+          id: "boxDividerMode",
+          label: t("prop.boxDividerMode"),
+          value: box.boxDividerMode,
+          options: [{ value: "grid", label: t("boxGenerator.dividersGrid") }, { value: "manual", label: t("boxGenerator.dividersManual") }],
+          hint: box.boxDividerMode === "manual" ? (solidIssue ? t("boxGenerator.issueCompartments", { count: String(solidIssue.code === "compartmentSolid" ? solidIssue.count : 0) }) : t("boxGenerator.dividersManualHint")) : undefined,
+          // Set by hand for the first time, the grid's dividers become the walls to begin with; later the walls are kept.
+          onChange: (value) => onUpdate(value === "manual"
+            ? { boxDividerMode: "manual", ...(box.boxWalls.length === 0 ? { boxWalls: boxGeneratorGridWalls({ width, depth, height: shape.height }, shape) } : {}) }
+            : { boxDividerMode: undefined }),
+        },
       );
+      if (box.boxDividerMode !== "manual") {
+        properties.push(
+          { id: "boxColumns", label: t("prop.boxColumns"), value: box.boxColumns, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, onChange: (value) => onUpdate({ boxColumns: Math.round(value) }) },
+          { id: "boxRows", label: t("prop.boxRows"), value: box.boxRows, min: 1, max: MAX_BOX_GENERATOR_COMPARTMENTS, step: 1, hint: solidIssue ? t("boxGenerator.issueCompartments", { count: String(solidIssue.code === "compartmentSolid" ? solidIssue.count : 0) }) : undefined, onChange: (value) => onUpdate({ boxRows: Math.round(value) }) },
+        );
+      }
       properties.push({
         type: "toggle",
         id: "boxGridfinity",
@@ -2948,7 +2971,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
         value: box.boxGridfinityPlate,
         onChange: (value) => onUpdate({ boxGridfinityPlate: value ? true : undefined }),
       });
-      if (box.boxColumns * box.boxRows > 1) {
+      if (box.boxDividerMode === "manual" || box.boxColumns * box.boxRows > 1) {
         properties.push({ id: "boxDivider", label: t("prop.boxDivider"), value: box.boxDivider, min: MIN_BOX_GENERATOR_WALL, max: 20, step: 0.1, onChange: (value) => onUpdate({ boxDivider: value }) });
       }
     }
@@ -5993,6 +6016,9 @@ export function ShapeInspector({
           </div>
         ) : null}
       </div>
+      {shape.kind === "boxGenerator" && shape.boxPart !== "lid" && shape.boxDividerMode === "manual" ? (
+        <BoxWallsCard key={`box-walls-${shape.id}`} shape={shape} workspace={workspace} locked={frozen} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
+      ) : null}
       {shape.kind === "gridfinity" ? (
         <GridfinityCompartmentsCard shape={shape} workspace={workspace} locked={frozen} defaults={propertyDefaults?.compartments} onUpdate={onUpdate} onInteractionActiveChange={onInteractionActiveChange} />
       ) : null}
@@ -8674,6 +8700,138 @@ function GridfinityCompartmentsCard({
       {open ? (
         <div className="property-list" id={`gridfinity-compartments-${shape.id}`}>
           <ShapePropertyRows properties={properties} defaults={cardDefaults} workspace={workspace} disabled={locked} onInteractionActiveChange={onInteractionActiveChange} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The box generator's dividers set by hand: the box from above with its compartments and walls (BoxWallsPlan), buttons
+ * that put a wall across or along the compartment that is picked (or the whole box when none is), and for the wall that
+ * is picked its place, beginning and end as numbers, a button that turns it and one that removes it.
+ */
+function BoxWallsCard({
+  shape,
+  workspace,
+  locked,
+  onUpdate,
+  onInteractionActiveChange,
+}: {
+  shape: WorkplaneShape;
+  workspace: WorkplaneWorkspaceSettings;
+  locked: boolean;
+  onUpdate: ShapeInspectorUpdate;
+  onInteractionActiveChange?: (active: boolean) => void;
+}) {
+  const [open, setOpen] = useInspectorCard("boxWalls", true);
+  const [pick, setPick] = useState<BoxWallsPick>(null);
+  const size = { width: shape.width, depth: shapeOverallFootprintDimensions(shape).depth, height: shape.height };
+  const box = normalizeBoxGenerator(size, shape);
+  const room = boxGeneratorWallRoom(size, shape);
+  if (!room) return null;
+  const walls = box.boxWalls;
+  const wall = pick?.type === "wall" ? walls[pick.index] : undefined;
+  const compartment = pick?.type === "compartment" ? room.compartments[pick.index] : undefined;
+  const write = (next: BoxGeneratorWall[]) => onUpdate({ boxWalls: next });
+  const change = (index: number, next: BoxGeneratorWall) => write(walls.map((entry, position) => (position === index ? next : entry)));
+  const remove = (index: number) => {
+    write(walls.filter((_entry, position) => position !== index));
+    setPick(null);
+  };
+  // A new wall splits the compartment that is picked through its middle, or the largest one when none is.
+  const add = (dir: BoxGeneratorWall["dir"]) => {
+    const area = (entry: (typeof room.compartments)[number]) => (entry.maxX - entry.minX) * (entry.maxZ - entry.minZ);
+    const target = compartment ?? [...room.compartments].sort((a, b) => area(b) - area(a))[0] ?? { minX: 0, maxX: room.width, minZ: 0, maxZ: room.depth };
+    write([...walls, boxGeneratorSplitWall(target, dir, room, box.boxDivider)]);
+    setPick({ type: "wall", index: walls.length });
+  };
+  // Turned about its middle, as long as before where the room allows it.
+  const turn = (index: number) => {
+    const current = walls[index];
+    const middle = (current.from + current.to) / 2;
+    const run = current.dir === "x" ? room.depth : room.width;
+    const half = Math.min((current.to - current.from) / 2, run / 2);
+    const start = clamp(current.at - half, 0, Math.max(0, run - 2 * half));
+    const round = (value: number) => Math.round(value * 100) / 100;
+    change(index, { dir: current.dir === "x" ? "z" : "x", at: round(clamp(middle, 0, current.dir === "x" ? room.width : room.depth)), from: round(start), to: round(start + 2 * half) });
+  };
+  const full = walls.length >= MAX_BOX_GENERATOR_WALLS;
+  const properties: ShapePropertyConfig[] = [];
+  if (wall && pick?.type === "wall") {
+    const index = pick.index;
+    const run = wall.dir === "x" ? room.width : room.depth;
+    const across = wall.dir === "x" ? room.depth : room.width;
+    const from = clamp(wall.from, 0, run);
+    const to = clamp(wall.to, 0, run);
+    const round = (value: number) => Math.round(value * 100) / 100;
+    properties.push(
+      { id: "boxWallAt", label: t(wall.dir === "x" ? "prop.boxWallFromBack" : "prop.boxWallFromLeft"), value: clamp(wall.at, 0, across), min: 0, max: round(across), step: 0.1, onChange: (value) => change(index, { ...wall, at: round(clamp(value, 0, across)) }) },
+      { id: "boxWallStart", label: t("prop.boxWallStart"), value: from, min: 0, max: round(Math.max(0, to - BOX_WALLS_PLAN_MIN_LENGTH)), step: 0.1, hint: t(wall.dir === "x" ? "boxGenerator.wallMeasuredLeft" : "boxGenerator.wallMeasuredBack"), onChange: (value) => change(index, { ...wall, from: round(clamp(value, 0, to - BOX_WALLS_PLAN_MIN_LENGTH)), to }) },
+      { id: "boxWallEnd", label: t("prop.boxWallEnd"), value: to, min: round(Math.min(run, from + BOX_WALLS_PLAN_MIN_LENGTH)), max: round(run), step: 0.1, onChange: (value) => change(index, { ...wall, from, to: round(clamp(value, from + BOX_WALLS_PLAN_MIN_LENGTH, run)) }) },
+    );
+  }
+  const plain = (value: number) => String(Math.round(value * 10) / 10);
+  return (
+    <div className={`property-card ${open ? "" : "collapsed"}`} data-testid="box-walls-card">
+      <button className="property-card-header" type="button" aria-expanded={open} aria-controls={`box-walls-${shape.id}`} onClick={() => setOpen((current) => !current)}>
+        <span>{t("inspector.boxWalls")}</span>
+        <ChevronUp className={open ? "" : "collapsed"} size={25} strokeWidth={2.8} />
+      </button>
+      {open ? (
+        <div className="property-list" id={`box-walls-${shape.id}`}>
+          <BoxWallsPlan
+            room={room}
+            walls={walls}
+            thickness={box.boxDivider}
+            pick={pick}
+            disabled={locked}
+            label={t("boxGenerator.wallsPlan")}
+            wallLabel={(entry, index) => t(entry.dir === "x" ? "boxGenerator.wallAcross" : "boxGenerator.wallAlong", { number: index + 1 })}
+            compartmentLabel={(entry, index) => t("boxGenerator.compartment", { number: index + 1, width: plain(entry.maxX - entry.minX), depth: plain(entry.maxZ - entry.minZ) })}
+            onPick={setPick}
+            onWallChange={change}
+            onWallRemove={remove}
+            onDragActiveChange={onInteractionActiveChange}
+          />
+          <p className="cylinder-wrap-hint box-walls-hint" role="status">
+            {wall && pick?.type === "wall"
+              ? t(wall.dir === "x" ? "boxGenerator.wallAcross" : "boxGenerator.wallAlong", { number: pick.index + 1 })
+              : compartment && pick?.type === "compartment"
+                ? t("boxGenerator.compartmentPicked", { width: plain(compartment.maxX - compartment.minX), depth: plain(compartment.maxZ - compartment.minZ) })
+                : t("boxGenerator.wallsHint")}
+          </p>
+          <div className="bent-tube-segment-actions">
+            <button className="inspector-action-button" type="button" disabled={locked || full} data-testid="box-walls-add-across" onClick={() => add("x")}>
+              <Plus size={17} strokeWidth={2.5} />
+              <span>{t("boxGenerator.wallAddAcross")}</span>
+            </button>
+            <button className="inspector-action-button" type="button" disabled={locked || full} data-testid="box-walls-add-along" onClick={() => add("z")}>
+              <Plus size={17} strokeWidth={2.5} />
+              <span>{t("boxGenerator.wallAddAlong")}</span>
+            </button>
+          </div>
+          {wall && pick?.type === "wall" ? (
+            <>
+              <ShapePropertyRows properties={properties} workspace={workspace} disabled={locked} onInteractionActiveChange={onInteractionActiveChange} />
+              <div className="bent-tube-segment-actions">
+                <button className="inspector-action-button" type="button" disabled={locked} data-testid="box-walls-turn" onClick={() => turn(pick.index)}>
+                  <RefreshCw size={17} strokeWidth={2.5} />
+                  <span>{t("boxGenerator.wallTurn")}</span>
+                </button>
+                <button className="inspector-action-button" type="button" disabled={locked} data-testid="box-walls-remove" onClick={() => remove(pick.index)}>
+                  <Trash2 size={17} strokeWidth={2.5} />
+                  <span>{t("boxGenerator.wallRemove")}</span>
+                </button>
+              </div>
+            </>
+          ) : null}
+          {walls.length > 0 ? (
+            <button className="inspector-action-button box-walls-clear" type="button" disabled={locked} data-testid="box-walls-clear" onClick={() => { write([]); setPick(null); }}>
+              <Eraser size={17} strokeWidth={2.5} />
+              <span>{t("boxGenerator.wallsClear")}</span>
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
