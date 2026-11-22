@@ -974,6 +974,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.boxInsert === b.boxInsert &&
     boxGeneratorPocketsEqual(a.boxPockets, b.boxPockets) &&
     a.boxPocketFill === b.boxPocketFill &&
+    JSON.stringify(a.lidFor ?? null) === JSON.stringify(b.lidFor ?? null) &&
     a.boxPart === b.boxPart &&
     a.boxLidStyle === b.boxLidStyle &&
     a.boxLidPlate === b.boxLidPlate &&
