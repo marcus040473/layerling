@@ -260,8 +260,10 @@ describe("finding the name tag (#215)", () => {
     expect(nameTagAsset.kind).toBe("text");
     // The name tag, the icon tag, the QR code (#553), the SBC board (#1098) and, after the vase, the plant pot and the
     // lampshade are the library's six entries beyond the kinds, plus the thread insert tool. The double countersink is
-    // not listed on its own (#621): one entry less.
-    expect(libraryShapeAssets).toHaveLength(toolbarShapeAssets.length + 6);
+    // not listed on its own (#621): one entry less. The box generator is no longer offered (a box is made with Hollow):
+    // another one less.
+    expect(libraryShapeAssets).toHaveLength(toolbarShapeAssets.length + 5);
+    expect(libraryShapeAssets.some((asset) => asset.id === "boxGenerator")).toBe(false);
     // The catalogue of kinds keeps one tile per kind.
     expect(toolbarShapeAssets.some((asset) => asset.id === "nameTag")).toBe(false);
     expect(parseDroppedShapeAsset(JSON.stringify(nameTagAsset))).toMatchObject({ id: "nameTag", kind: "text" });
