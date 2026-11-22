@@ -125,4 +125,13 @@ describe("hollow, dividers set by hand", () => {
     expect(scoops).toEqual([]);
     expect(normalizeShellDividers({ x: 0, z: 0, scoops: [{ x: 10, z: 10, side: "back" }], scoopRadius: 8 })).toEqual({ x: 0, z: 0, scoops: [{ x: 10, z: 10, side: "back" }], scoopRadius: 8 });
   });
+
+  it("keeps shaped pockets in the settings, with the filling's height, also in a box without dividers", () => {
+    const square = [{ x: 10, z: 10 }, { x: 40, z: 10 }, { x: 40, z: 30 }, { x: 10, z: 30 }];
+    expect(normalizeShellDividers({ x: 0, z: 0, pockets: [{ points: square, depth: 8 }, { points: [{ x: 1, z: 1 }], depth: 3 }, { points: square }], pocketFill: 20 }))
+      .toEqual({ x: 0, z: 0, pockets: [{ points: square, depth: 8 }, { points: square, depth: 10000 }], pocketFill: 20 });
+    // Without a pocket the filling's height means nothing and is dropped.
+    expect(normalizeShellDividers({ x: 1, z: 0, pocketFill: 20 })).toEqual({ x: 1, z: 0 });
+    expect(normalizeShellDividers({ x: 0, z: 0, pockets: [] })).toBeNull();
+  });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolHelp, ToolHint, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
@@ -10,7 +11,7 @@ import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { ShellScoopsEditor, ShellWallsEditor, shellGridWalls } from "@/components/workplane/ShellWallsEditor";
-import { MAX_SHELL_SCOOP_RADIUS, MIN_SHELL_SCOOP_RADIUS, SHELL_SCOOP_RADIUS, MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
+import { MAX_SHELL_POCKETS, type ShellPocket, MAX_SHELL_SCOOP_RADIUS, MIN_SHELL_SCOOP_RADIUS, SHELL_SCOOP_RADIUS, MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
 import { DEFAULT_SHELL_SHELF_WIDTH, SHELL_SHELF_MAX_HEIGHT, SHELL_SHELF_MAX_WIDTH, SHELL_SHELF_MIN_HEIGHT, SHELL_SHELF_MIN_WIDTH } from "@/lib/shellShelfLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import type { ShellEdges, ShellOpenings, WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -50,6 +51,8 @@ export function ShellPanel({
   dividers,
   insideWidth = 0,
   insideDepth = 0,
+  pocketParts = [],
+  onAddPocket,
   dividerFullHeight = 0,
   shelf,
   shelfHeight,
@@ -104,6 +107,9 @@ export function ShellPanel({
   /** The inside of the box, in mm (the body's width and depth less the wall both sides): the room dividers set by hand are measured in. */
   insideWidth?: number;
   insideDepth?: number;
+  /** The other parts of the design a shaped pocket can be made for, and what makes one for the part chosen. */
+  pocketParts?: readonly { id: string; name: string }[];
+  onAddPocket?: (partId: string) => void;
   /** About how high the dividers stand at full height, over the floor, in mm: the most the height slider offers. */
   dividerFullHeight?: number;
   /** The width in mm of the ledge round the inside of the wall for a plate to rest on; 0 for none (#1663). */
@@ -140,6 +146,14 @@ export function ShellPanel({
   onCancel: () => void;
 }) {
   useLanguage();
+  const [pocketPart, setPocketPart] = useState<string | null>(null);
+  // Without a pocket the filling goes too; without anything else the dividers' settings are none.
+  const removePockets = (left: ShellPocket[]) => {
+    if (!dividers) return;
+    const { pockets: _pockets, pocketFill, ...rest } = dividers;
+    const next = left.length > 0 ? { ...rest, pockets: left, ...(pocketFill ? { pocketFill } : {}) } : rest;
+    onDividersChange(next.manual || next.x + next.z > 0 || (next.scoops?.length ?? 0) > 0 || left.length > 0 ? next : null);
+  };
   const openSides = shellOpenSides(openings);
   const title = t("shell.title");
   return (
@@ -434,6 +448,57 @@ export function ShellPanel({
               />
             ) : null}
             <ToolHint text={t("shell.scoopsHint")} />
+          </div>
+        ) : null}
+
+        {gridCells === 0 && onAddPocket ? (
+          <div className="edge-modifier-field shell-openings shell-pockets" role="group" aria-label={t("shell.pockets")} data-testid="shell-pockets">
+            <span>{t("shell.pockets")}</span>
+            {pocketParts.length > 0 ? (
+              <div className="shell-pocket-add">
+                <select aria-label={t("shell.pocketPart")} value={pocketPart ?? pocketParts[0].id} disabled={busy} data-testid="shell-pocket-part" onChange={(event) => setPocketPart(event.target.value)}>
+                  {pocketParts.map((part) => <option key={part.id} value={part.id}>{part.name}</option>)}
+                </select>
+                <div className="shell-walls-actions">
+                  <button type="button" disabled={busy || (dividers?.pockets?.length ?? 0) >= MAX_SHELL_POCKETS} data-testid="shell-pocket-add" onClick={() => onAddPocket(pocketParts.some((part) => part.id === pocketPart) ? pocketPart! : pocketParts[0].id)}>
+                    {t("inspector.boxMakePocket")}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            {dividers?.pockets?.length ? (<>
+              <ToolHint text={t("boxGenerator.pocketsCount", { count: dividers.pockets.length })} />
+              <EdgeModifierSlider
+                label={t("prop.boxPocketFill")}
+                value={Math.min(dividers.pocketFill ?? dividerFullHeight, dividerFullHeight)}
+                min={1}
+                max={Math.max(1, dividerFullHeight)}
+                step={0.5}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => {
+                  const { pocketFill: _fill, ...rest } = dividers;
+                  onDividersChange(value >= dividerFullHeight - 1e-6 ? rest : { ...rest, pocketFill: value });
+                }}
+              />
+              <EdgeModifierSlider
+                label={t("prop.boxPocketDepth")}
+                value={Math.min(dividers.pockets[dividers.pockets.length - 1].depth, Math.max(1, dividerFullHeight))}
+                min={0.5}
+                max={Math.max(1, dividerFullHeight)}
+                step={0.5}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => onDividersChange({ ...dividers, pockets: dividers.pockets!.map((pocket, index) => (index === dividers.pockets!.length - 1 ? { ...pocket, depth: value } : pocket)) })}
+              />
+              <div className="shell-walls-actions">
+                <button type="button" disabled={busy} data-testid="shell-pocket-remove-last" onClick={() => removePockets(dividers.pockets!.slice(0, -1))}>{t("boxGenerator.pocketRemoveLast")}</button>
+                <button type="button" disabled={busy} data-testid="shell-pocket-remove-all" onClick={() => removePockets([])}>{t("boxGenerator.pocketRemoveAll")}</button>
+              </div>
+            </>) : null}
+            <ToolHint text={t(pocketParts.length > 0 ? "shell.pocketsHint" : "shell.pocketsNoPart")} />
           </div>
         ) : null}
       </>) : null}

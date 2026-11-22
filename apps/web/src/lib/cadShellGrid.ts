@@ -11,6 +11,7 @@ import {
   SHELL_DIVIDER_THICKNESS,
   SHELL_SCOOP_RADIUS,
   SCOOPS_FAILED_MESSAGE,
+  POCKETS_FAILED_MESSAGE,
   shellGridFloor,
   SHELL_GRID_MIN_DEPTH,
   SHELL_GRID_PLAY,
@@ -328,6 +329,29 @@ export function shellDividersSolid(kernel: OcctKernel, original: ShapeHandle, bo
         added.push(cad.common(forth(cad.cut(corner, round)), standing[rooms.indexOf(room)]));
       }
       if (added.length > 0) joined = oneSolid(cad, cad.simplify(cad.fuseAll([joined, ...added])), SCOOPS_FAILED_MESSAGE);
+    }
+    const pockets = dividers.pockets ?? [];
+    if (pockets.length > 0) {
+      // Shaped pockets: what the body leaves open is filled from the floor up, and each part's outline is cut into that
+      // filling from above, never below the floor. The walls and dividers are not touched: only the filling is cut.
+      const fillTop = Math.min(top, base + (dividers.pocketFill ?? Infinity));
+      const outer = cad.getBoundingBox(original);
+      const slab = cad.makeBoxFromCorners({ x: outer.xmin - 1, y: base - 0.2, z: outer.zmin - 1 }, { x: outer.xmax + 1, y: fillTop, z: outer.zmax + 1 });
+      const filling = cad.common(cad.cut(original, joined), slab);
+      const prisms = pockets.map((pocket) => {
+        // A pocket through the whole filling starts a little under it, so its floor is the box's own.
+        const wanted = fillTop - pocket.depth;
+        const low = wanted <= base + 0.05 ? base - 0.1 : wanted;
+        const corners = pocket.points.map((point) => {
+          const lx = b.minX + point.x;
+          const lz = b.minZ + point.z;
+          return { x: lx * cos - lz * sin, y: low, z: lx * sin + lz * cos };
+        });
+        const face = cad.makeFace(cad.makeWire(corners.map((corner, i) => cad.makeLineEdge(corner, corners[(i + 1) % corners.length]))));
+        return cad.extrude(face, 0, top - low + 1, 0);
+      });
+      const cut = cad.cut(filling, prisms.length === 1 ? prisms[0] : cad.fuseAll(prisms));
+      joined = oneSolid(cad, cad.simplify(cad.fuseAll([joined, cut])), POCKETS_FAILED_MESSAGE);
     }
     result = joined;
     return result;

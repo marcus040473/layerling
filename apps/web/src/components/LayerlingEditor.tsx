@@ -133,7 +133,7 @@ import { disposeBoundsTree } from "three-mesh-bvh";
 import { clampShellStackHeight, normalizeShellStackFoot, shellStackFloor, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
 import { magnetsGridLeastSize, magnetsMeetGridCells } from "@/lib/shellGridMagnets";
-import { DIVIDERS_WITH_GRID_MESSAGE, SHELL_GRID_FLOOR, shellGridFloor, SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, SHELL_DIVIDER_THICKNESS, type ShellDividerWall, type ShellDividers, type ShellGrid, type ShellScoop } from "@/lib/shellGridLimits";
+import { DIVIDERS_WITH_GRID_MESSAGE, SHELL_GRID_FLOOR, shellGridFloor, SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, SHELL_DIVIDER_THICKNESS, type ShellDividerWall, type ShellDividers, type ShellGrid, type ShellScoop, MAX_SHELL_POCKETS } from "@/lib/shellGridLimits";
 import { DEFAULT_SHELL_SHELF_HEIGHT, clampShellShelfHeight, clampShellShelfWidth } from "@/lib/shellShelfLimits";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import { createLatestJobRunner, shellPreviewKey } from "@/lib/shellPreview";
@@ -4540,6 +4540,14 @@ export function LayerlingEditor({
   const shellWallsOffered = Boolean(shellPreviewTarget && shellTool && !(shellTool.gridCells ?? 0) && shellOpenSides(shellTool.openings).length === 1 && shellOpenSides(shellTool.openings)[0] === "top");
   const shellWallsDividers = shellWallsOffered ? shellTool?.dividers ?? null : null;
   const shellWallsThickness = shellTool?.thickness ?? 0;
+  const shellPreviewTargetRef = useRef(shellPreviewTarget);
+  shellPreviewTargetRef.current = shellPreviewTarget;
+  const shellToolRef = useRef(shellTool);
+  shellToolRef.current = shellTool;
+  // The other solid parts of the design: one of them can give its outline to a shaped pocket.
+  const shellPocketParts = useMemo(() => (shellWallsOffered && shellPreviewTarget
+    ? shapes.filter((shape) => shape.id !== shellPreviewTarget.id && !shape.hidden && !isNonSolidShape(shape)).map((shape) => ({ id: shape.id, name: displayShapeName(shape) }))
+    : []), [shapes, shellPreviewTarget, shellWallsOffered]);
   const shellWalls = useMemo(() => {
     if (!shellPreviewTarget || !shellWallsOffered) return null;
     const source = shellWallsSource(Math.max(0, shapeWidth(shellPreviewTarget) - 2 * shellWallsThickness), Math.max(0, shapeDepth(shellPreviewTarget) - 2 * shellWallsThickness), shellWallsThickness, {
@@ -13705,6 +13713,44 @@ export function LayerlingEditor({
   }, [commitShapes]);
 
   /**
+   * Hollow, a shaped pocket for a part: the part's outline seen from above, where it lies over the body being hollowed, is
+   * brought into the body's own inside (its width and depth less the wall, turned as the body is turned), grown by 0.3 mm
+   * all round, and added to the tool's settings; the kernel fills the box and cuts it in. The part itself stays as it is.
+   */
+  const addShellPocket = useCallback(async (partId: string) => {
+    const target = shellPreviewTargetRef.current;
+    const tool = shellToolRef.current;
+    const part = shapesRef.current.find((shape) => shape.id === partId);
+    if (!target || !tool || !part) return;
+    if (!gridfinityPlateFlat(target)) {
+      setNotice(t("status.boxPocketTilted"));
+      return;
+    }
+    const width = Math.max(0, shapeWidth(target) - 2 * tool.thickness);
+    const depth = Math.max(0, shapeDepth(target) - 2 * tool.thickness);
+    const had = tool.dividers?.pockets ?? [];
+    if (had.length >= MAX_SHELL_POCKETS) {
+      setNotice(t("status.boxPocketFull", { count: MAX_SHELL_POCKETS }));
+      return;
+    }
+    setNotice(t("status.gridfinityOutlineReading"), true);
+    try {
+      const { loops } = await silhouetteLoops([withHoleMode(part, false)]);
+      const own = gridfinityOutlineToPlate(loops.map((loop) => loop.map(([x, z]) => ({ x, z }))), target).map((loop) => loop.map((point) => ({ x: point.x + width / 2, z: point.z + depth / 2 })));
+      const outlines = boxGeneratorPocketOutlines(await getManifoldRuntime(), own, 0.3, { width, depth }).slice(0, MAX_SHELL_POCKETS - had.length);
+      if (outlines.length === 0) {
+        setNotice(t("status.boxPocketOutside"));
+        return;
+      }
+      const pocketDepth = Math.max(1, Math.round(part.height * 10) / 10);
+      setShellTool((current) => current ? { ...current, dividers: { ...(current.dividers ?? { x: 0, z: 0 }), pockets: [...(current.dividers?.pockets ?? []), ...outlines.map((points) => ({ points, depth: pocketDepth }))] }, error: null } : current);
+      setNotice(t("status.boxPocketMade", { name: displayShapeName(part) }));
+    } catch (error) {
+      setNotice(error instanceof Error ? localizedError(error.message) : t("status.boxPocketOutside"), true);
+    }
+  }, []);
+
+  /**
    * A shaped pocket for a part: the part's outline seen from above, where it lies over the box, is grown by the box's play
    * and cut into a filling of the box (boxPockets), as deep as the part is high. The part itself stays as it is.
    */
@@ -17192,7 +17238,7 @@ export function LayerlingEditor({
         const edges: ShellEdges = params.edges === "sharp" ? "sharp" : "round";
         const stack = typeof params.stack === "number" && params.stack > 0 ? clampShellStackHeight(params.stack) : 0;
         const grid = normalizeShellGrid({ cells: params.gridCells, fit: params.gridFit === true, magnets: params.gridMagnets === true });
-        const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness, ...(params.dividerWalls !== undefined ? { manual: true, walls: boxGeneratorWallList(params.dividerWalls) } : {}), ...(params.scoops !== undefined ? { scoops: boxGeneratorWallList(params.scoops), scoopRadius: params.scoopRadius } : {}) });
+        const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness, ...(params.dividerWalls !== undefined ? { manual: true, walls: boxGeneratorWallList(params.dividerWalls) } : {}), ...(params.scoops !== undefined ? { scoops: boxGeneratorWallList(params.scoops), scoopRadius: params.scoopRadius } : {}), ...(params.pockets !== undefined ? { pockets: boxGeneratorWallList(params.pockets), pocketFill: params.pocketFill } : {}) });
         if (grid && dividers) throw new Error(DIVIDERS_WITH_GRID_MESSAGE);
         const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth, gripSides: params.stackGripSides, gripHeight: params.stackGripHeight, gripAt: params.stackGripAt }) : null;
         const shelf = typeof params.shelf === "number" && params.shelf > 0
@@ -21649,6 +21695,8 @@ export function LayerlingEditor({
           gridRows={shellTool.gridRows ?? shellGridEstimate(shapeWidth(selectedShape), shapeDepth(selectedShape), shellTool.thickness).rows}
           onGridSize={(columns, rows) => setShellTool((current) => current ? { ...current, gridColumns: columns, gridRows: rows, error: null } : current)}
           dividers={shellTool.dividers ?? null}
+          pocketParts={shellPocketParts}
+          onAddPocket={(partId) => void addShellPocket(partId)}
           insideWidth={Math.max(0, shapeWidth(selectedShape) - 2 * shellTool.thickness)}
           insideDepth={Math.max(0, shapeDepth(selectedShape) - 2 * shellTool.thickness)}
           // The dividers' full height over the floor: the body's height less its floor (the Gridfinity floor's 6.2 mm, or the wall).

@@ -4440,6 +4440,18 @@ html[data-theme="dark"]:where([data-palette="graphite"]) .rotation-angle-badge {
   outline: none;
 }
 
+:where(html[data-theme="dark"][data-palette="graphite"]) .shell-pocket-add select {
+  color: #313131;
+  background: #ffffff;
+  border: 1px solid #c4c4c4;
+}
+
+html[data-theme="dark"]:where([data-palette="graphite"]) .shell-pocket-add select {
+  color: #e4e4e4;
+  background: #353535;
+  border-color: #505050;
+}
+
 :where(html[data-theme="dark"][data-palette="graphite"]) .shell-walls-actions button {
   color: #4c4c4c;
   background: #ffffff;
