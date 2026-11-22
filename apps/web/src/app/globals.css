@@ -10545,6 +10545,41 @@ html[data-theme="dark"] .rotation-angle-badge {
   outline: none;
 }
 
+/* On a tablet or phone the grips and buttons on the box are larger, so a finger finds them. */
+@media (pointer: coarse) {
+  .box-walls-overlay-grip {
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border-width: 3px;
+  }
+
+  .box-walls-overlay-grip.end {
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+  }
+
+  .box-walls-overlay-remove {
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+  }
+
+  .box-walls-overlay-split {
+    gap: 8px;
+  }
+
+  .box-walls-overlay-split button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .box-walls-overlay-size {
+    font-size: 13px;
+  }
+}
+
 /* Hollow, dividers by hand: the buttons under the drawing (ShellWallsEditor). */
 .shell-walls-editor {
   display: flex;
