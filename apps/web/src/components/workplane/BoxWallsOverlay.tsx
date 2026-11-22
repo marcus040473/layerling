@@ -242,14 +242,16 @@ export function BoxWallsOverlay({
   // The cross stands beside the middle grip, along the wall as it is seen.
   const cross = (wall: BoxWallsOverlayState["walls"][number]) => {
     const length = Math.hypot(wall.to.x - wall.from.x, wall.to.y - wall.from.y) || 1;
-    return { left: wall.middle.x + ((wall.to.x - wall.from.x) / length) * 24, top: wall.middle.y + ((wall.to.y - wall.from.y) / length) * 24 };
+    // Further away where the grips are larger for a finger.
+    const away = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches ? 38 : 24;
+    return { left: wall.middle.x + ((wall.to.x - wall.from.x) / length) * away, top: wall.middle.y + ((wall.to.y - wall.from.y) / length) * away };
   };
 
   // An end's grip stands a little inside the wall: an end often lies on the middle of another wall, where that one's grip is.
   const endGrip = (wall: BoxWallsOverlayState["walls"][number], part: "from" | "to") => {
     const other = part === "from" ? wall.to : wall.from;
     const length = Math.hypot(other.x - wall[part].x, other.y - wall[part].y) || 1;
-    const inward = Math.min(20, length / 4);
+    const inward = Math.min(typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches ? 30 : 20, length / 4);
     return { left: wall[part].x + ((other.x - wall[part].x) / length) * inward, top: wall[part].y + ((other.y - wall[part].y) / length) * inward };
   };
 
