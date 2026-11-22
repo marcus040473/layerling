@@ -477,6 +477,13 @@ export type ShapeCustomization = {
    */
   boxPockets?: { points: { x: number; z: number }[]; depth: number }[];
   boxPocketFill?: number;
+  /**
+   * A lid made by the Lid tool: the body it closes (its id; the group, where the lid's parts were grouped with the body),
+   * the settings it was made with (lidTool.ts LidOptions), the loose parts lying beside it (a pin, clips, end plugs) and,
+   * with labels, the middles of the box's compartments then (from the box's middle), so each label finds its compartment again.
+   * When that body is hollowed again - other compartments, another wall - the lid is made again in its place.
+   */
+  lidFor?: { body: string; options: Record<string, unknown>; parts?: string[]; rooms?: [number, number][] };
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid" | "insert";
   /** Box generator: the dividers are a loose insert (a copy with boxPart "insert"); the box itself is drawn smooth inside. */
@@ -1531,6 +1538,13 @@ export type WorkplaneShape = {
    */
   boxPockets?: { points: { x: number; z: number }[]; depth: number }[];
   boxPocketFill?: number;
+  /**
+   * A lid made by the Lid tool: the body it closes (its id; the group, where the lid's parts were grouped with the body),
+   * the settings it was made with (lidTool.ts LidOptions), the loose parts lying beside it (a pin, clips, end plugs) and,
+   * with labels, the middles of the box's compartments then (from the box's middle), so each label finds its compartment again.
+   * When that body is hollowed again - other compartments, another wall - the lid is made again in its place.
+   */
+  lidFor?: { body: string; options: Record<string, unknown>; parts?: string[]; rooms?: [number, number][] };
   /** Box generator: the box or its lid, the lid's style, the lid plate's thickness and the fit per side, in mm. */
   boxPart?: "box" | "lid" | "insert";
   /** Box generator: the dividers are a loose insert (a copy with boxPart "insert"); the box itself is drawn smooth inside. */
