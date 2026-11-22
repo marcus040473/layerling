@@ -3,7 +3,7 @@ import { repairClampedMeshBase } from "@/lib/importedMeshBase";
 import { fieldFormulasEqual } from "@/lib/fieldFormulas";
 import { threadFootprintPatch } from "@/lib/threadGeometry";
 import { pulleyFootprint } from "@/lib/pulleyGeometry";
-import { GRIDFINITY_OVERHANG_KEYS, GRIDFINITY_PADDING_KEYS, normalizeGridfinityOverhang, gridfinityCompartmentLabelsEqual, gridfinityDividerPositionsEqual, gridfinityFootprintPatch, gridfinityOpeningsEqual, gridfinityOutlinesEqual, normalizeGridfinityPadding } from "@/lib/gridfinityGeometry";
+import { GRIDFINITY_OVERHANG_KEYS, GRIDFINITY_PADDING_KEYS, normalizeGridfinityOverhang, gridfinityCompartmentLabelsEqual, gridfinityCompartmentSplitsEqual, gridfinityDividerPositionsEqual, gridfinityFootprintPatch, gridfinityOpeningsEqual, gridfinityOutlinesEqual, normalizeGridfinityPadding } from "@/lib/gridfinityGeometry";
 import { MCP_SHAPE_SETTING_KEYS } from "@/lib/mcpShapeSettings";
 import { bentTubeSegmentsEqual } from "@/lib/bentTubeGeometry";
 import { vaseSettingsEqual } from "@/lib/vaseSettings";
@@ -604,6 +604,13 @@ export function canonicalizeShape(unrepaired: WorkplaneShape): WorkplaneShape {
     mirrorY: shape.mirrorY || undefined,
     mirrorZ: shape.mirrorZ || undefined,
   };
+  // The Roof (#1931) keeps its three sides and a corner on top, whatever else asks to change them.
+  if (shape.kind === "polygon" && shape.polygonRoof) {
+    next.sides = 3;
+    next.polygonFlat = undefined;
+  } else if (next.polygonRoof !== undefined) {
+    next.polygonRoof = undefined;
+  }
   if (shape.kind === "thread") {
     const footprint = threadFootprintPatch(next);
     Object.assign(next, footprint);
@@ -945,6 +952,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     gridfinityDividerPositionsEqual(a.gridfinityDividerPositionsX, b.gridfinityDividerPositionsX) &&
     gridfinityDividerPositionsEqual(a.gridfinityDividerPositionsZ, b.gridfinityDividerPositionsZ) &&
     gridfinityCompartmentLabelsEqual(a.gridfinityCompartmentLabels, b.gridfinityCompartmentLabels) &&
+    gridfinityCompartmentSplitsEqual(a.gridfinityCompartmentSplits, b.gridfinityCompartmentSplits) &&
     gridfinityOpeningsEqual(a.gridfinityOpenings, b.gridfinityOpenings) &&
     a.gridfinityOpeningCorner === b.gridfinityOpeningCorner &&
     a.gridfinityOpeningCornerSize === b.gridfinityOpeningCornerSize &&
@@ -984,6 +992,8 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.portProfile === b.portProfile &&
     a.portClearance === b.portClearance &&
     a.cornerFillet === b.cornerFillet &&
+    Boolean(a.polygonFlat) === Boolean(b.polygonFlat) &&
+    Boolean(a.polygonRoof) === Boolean(b.polygonRoof) &&
     sameNumberList(a.cornerFillets, b.cornerFillets) &&
     a.topBottomFillet === b.topBottomFillet &&
     a.bottomFillet === b.bottomFillet &&
@@ -1023,8 +1033,10 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     (a.textSpacing ?? 0) === (b.textSpacing ?? 0) &&
     Boolean(a.textKerning) === Boolean(b.textKerning) &&
     (a.textLetterWidth ?? 100) === (b.textLetterWidth ?? 100) &&
+    Boolean(a.textFullCircle) === Boolean(b.textFullCircle) &&
     JSON.stringify(a.textKeyring ?? null) === JSON.stringify(b.textKeyring ?? null) &&
     JSON.stringify(a.textEdge ?? null) === JSON.stringify(b.textEdge ?? null) &&
+    JSON.stringify(a.textFlush ?? null) === JSON.stringify(b.textFlush ?? null) &&
     qrSettingsEqual(a.qrCode, b.qrCode) &&
     (a.sbcBoard?.board ?? null) === (b.sbcBoard?.board ?? null) &&
     (a.sbcBoard?.clearance ?? 0) === (b.sbcBoard?.clearance ?? 0) &&

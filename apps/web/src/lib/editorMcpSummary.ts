@@ -96,7 +96,7 @@ function mcpShapeSettings(shape: WorkplaneShape): Record<string, string | number
     } else if (key === "gridfinityOutline" && Array.isArray(value)) {
       // As the plate's box stretches it (#1061), so that given back it keeps the box.
       settings[key] = JSON.stringify(gridfinityOutlinePoints(shape)?.map((p) => ({ x: Math.round(p.x * 100) / 100, z: Math.round(p.z * 100) / 100 })));
-    } else if ((key === "bentTubeSegments" || key === "gridfinityDividerPositionsX" || key === "gridfinityDividerPositionsZ" || key === "gridfinityCompartmentLabels" || key === "gridfinityOpenings") && Array.isArray(value)) {
+    } else if ((key === "bentTubeSegments" || key === "gridfinityDividerPositionsX" || key === "gridfinityDividerPositionsZ" || key === "gridfinityCompartmentLabels" || key === "gridfinityCompartmentSplits" || key === "gridfinityOpenings") && Array.isArray(value)) {
       // Eine Liste passt nicht in die flache Auskunft; als Text geht sie
       // hinaus und wird so auch wieder angenommen.
       settings[key] = JSON.stringify(value);
@@ -168,7 +168,7 @@ export function mcpShapeSummary(shape: WorkplaneShape): LayerlingMcpShapeSummary
       ? { sketchStroke: shape.sketchProfile.stroke ?? null, silhouette: Boolean(shape.sketchProfile.silhouette), sketchInset: shape.sketchProfile.inset ?? null }
       : {}),
     // A text's fill (#215) reads like a sketch body's: its stroke, and whether the counters are left out.
-    ...(shape.kind === "text" ? { textStroke: shape.textStroke ?? null, textSilhouette: Boolean(shape.textSilhouette), textStretch: Boolean(shape.textStretch), textVertical: Boolean(shape.textVertical), textSpacing: shape.textSpacing ?? 0, textKerning: Boolean(shape.textKerning), textLetterWidth: shape.textLetterWidth ?? 100, textEdge: shape.textEdge ?? null } : {}),
+    ...(shape.kind === "text" ? { textStroke: shape.textStroke ?? null, textSilhouette: Boolean(shape.textSilhouette), textStretch: Boolean(shape.textStretch), textVertical: Boolean(shape.textVertical), textSpacing: shape.textSpacing ?? 0, textKerning: Boolean(shape.textKerning), textLetterWidth: shape.textLetterWidth ?? 100, textFullCircle: Boolean(shape.textFullCircle), textEdge: shape.textEdge ?? null } : {}),
     // A name tag's key ring hole (#215), on the layers it goes through; the bottom one carries the ear.
     ...(shape.kind === "text" && shape.textKeyring ? { textKeyring: shape.textKeyring } : {}),
     ...(shape.layeredText ? { layeredText: true } : {}),
