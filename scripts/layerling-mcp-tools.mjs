@@ -1673,6 +1673,13 @@ export const tools = [
         dividersZ: { type: "integer", description: "Dividers along the inside, 0 to 8 (top open only)." },
         dividerHeight: { type: "number", description: "With dividers: how high they stand over the floor, in mm, at least 3; unset, 0, or within 0.1 mm of the rim or over it: up to the rim. The same rule as gridfinityDividerHeight." },
         dividerThickness: { type: "number", description: "With dividers: their thickness in mm, 0.8 to 3. Default 1.2." },
+        scoops: {
+          type: "array",
+          maxItems: 60,
+          items: { type: "object", properties: { x: { type: "number" }, z: { type: "number" }, side: { type: "string", enum: ["front", "back", "left", "right"] } }, required: ["x", "z", "side"] },
+          description: "Finger scoops (top open only, not with gridCells): each names a compartment by a point inside it, x and z in mm from the left and the back of the box's inside, and runs that compartment's floor up into the chosen side in a quarter round of scoopRadius, so small parts can be pushed out with a finger. Works with or without dividers.",
+        },
+        scoopRadius: { type: "number", description: "With scoops: their radius in mm, 2 to 60. Default 12; held to the room above the floor and to the compartment's size." },
         dividerWalls: {
           type: "array",
           maxItems: 40,

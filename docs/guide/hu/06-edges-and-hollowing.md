@@ -85,6 +85,8 @@ Ha a teteje az egyetlen nyitott oldal, a {{ui:shell.grid}} Gridfinity alaplapot 
 
 A válaszfalak magának a doboznak a belsejéhez igazodnak, akkor is, ha a doboz elforgatva áll a munkasíkon. Ha {{ui:boxGenerator.dividersGrid}} helyett {{ui:boxGenerator.dividersManual}} beállításra váltasz, magad helyezed el a falakat, mint a dobozgenerátorban: a panel felülről mutatja a belsőt, a {{ui:boxGenerator.wallAddAcross}} és a {{ui:boxGenerator.wallAddAlong}} a kattintott rekeszbe tesz falat, a falat húzással helyezed át, a végénél fogva rövidíted vagy hosszabbítod, a fal vonalából kihúzott vég (vagy a {{ui:prop.boxWallSlant}}) pedig ferdére állítja. Az első átváltáskor az egyenletes válaszfalak falakként megmaradnak.
 
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+
 Ha a felső oldal az egyetlen nyitott oldal, a {{ui:shell.shelf}} a fal belső oldalán körbefutó peremet készít, amelyen egy lap nyugodhat, például egy polc vagy egy közbenső fenék a dobozban ({{ui:shell.shelfWidth}}, kezdetben 1,5 mm, 0,5-től 5 mm-ig). A {{ui:shell.shelfHeight}} a fenék belső oldalától a perem felső síkjáig értendő (kezdetben 20 mm). A perem 2 mm vastag, és követi a belső tér alakját, a lekerekített sarkokat és a kerek dobozokat is. Egyenes falakat és a perem magasságánál egyértelműen magasabb testet igényel; bekapcsolt {{ui:shell.stack}} mellett a gallér a perem köré épül. Ha nem megy, az eszközablak megmondja, miért.
 
 ![Az eredmény: 3 mm falú héj, felül nyitva.](shot:hollow-result)

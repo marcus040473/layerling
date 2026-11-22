@@ -9,6 +9,8 @@ import {
   GRID_NO_CELL_MESSAGE,
   GRID_TOO_LOW_MESSAGE,
   SHELL_DIVIDER_THICKNESS,
+  SHELL_SCOOP_RADIUS,
+  SCOOPS_FAILED_MESSAGE,
   shellGridFloor,
   SHELL_GRID_MIN_DEPTH,
   SHELL_GRID_PLAY,
@@ -187,6 +189,14 @@ export function shellGridSolid(kernel: OcctKernel, original: ShapeHandle, shelle
   }
 }
 
+/** How far a scoop's block ends before the lines where its round only touches the floor and the side, in mm. */
+const SCOOP_TANGENT_GAP = 0.05;
+
+/** How high a scoop may reach: the room between the floor and the rim. */
+function dividerTopOf(top: number, base: number) {
+  return Math.max(0, top - base);
+}
+
 /** Dividers under the foot of a box stacked on this one are at least this high over the floor, in mm; lower, there is no room for them. */
 const MIN_STACKED_DIVIDER = 1;
 
@@ -267,9 +277,59 @@ export function shellDividersSolid(kernel: OcctKernel, original: ShapeHandle, bo
         pieces.push(framed({ x: b.minX - 1, y: base - 0.2, z: z - t / 2 }, { x: b.maxX + 1, y: dividerTop, z: z + t / 2 }));
       }
     }
-    const clipped = cad.common(original, cad.fuseAll(pieces));
-    const joined = cad.simplify(cad.fuseAll([body, clipped]));
-    result = oneSolid(cad, joined, DIVIDERS_FAILED_MESSAGE);
+    // A box with scoops alone has no dividers to join.
+    let joined = pieces.length > 0 ? cad.simplify(cad.fuseAll([body, cad.common(original, cad.fuseAll(pieces))])) : body;
+    if (pieces.length > 0) joined = oneSolid(cad, joined, DIVIDERS_FAILED_MESSAGE);
+    const scoops = dividers.scoops ?? [];
+    if (scoops.length > 0) {
+      // The compartments are what the body leaves open of the body before it: each a solid of its own. Worked in the
+      // box's own frame (turned back), where a compartment's sides lie along x and z.
+      const back = (shape: ShapeHandle) => (turn === 0 ? shape : cad.transform(shape, [cos, 0, sin, 0, 0, 1, 0, 0, -sin, 0, cos, 0]));
+      const forth = (shape: ShapeHandle) => (turn === 0 ? shape : cad.transform(shape, [cos, 0, -sin, 0, 0, 1, 0, 0, sin, 0, cos, 0]));
+      // Each compartment is turned back on its own: the parts of a turned shape are handed out as they lay before the turn.
+      const open = cad.cut(original, joined);
+      // Turned back they are only measured; the scoop is cut to the compartment as it stands in the scene.
+      const standing = cad.isSolid(open) ? [open] : cad.getSubShapes(open, "solid");
+      const rooms = standing.map(back);
+      const radiusAsked = dividers.scoopRadius ?? SHELL_SCOOP_RADIUS;
+      const added: ShapeHandle[] = [];
+      const used = new Set<ShapeHandle>();
+      // The last scoop named for a compartment counts.
+      for (const scoop of [...scoops].reverse()) {
+        const at = { x: b.minX + scoop.x, y: base + 0.5, z: b.minZ + scoop.z };
+        const room = rooms.find((entry) => !used.has(entry) && cad.containsPoint(entry, at));
+        if (!room) continue;
+        used.add(room);
+        const box = cad.getBoundingBox(room);
+        const across = scoop.side === "front" || scoop.side === "back";
+        const radius = Math.min(radiusAsked, dividerTopOf(top, base), across ? box.zmax - box.zmin : box.xmax - box.xmin);
+        if (radius < 0.5) continue;
+        // The corner between floor and side as a block, less a cylinder lying along the side: what is left is the scoop.
+        // The block ends a hair before the lines where the cylinder only touches floor and side: the kernel cannot cut
+        // along a line of mere contact, and what is left out there is a few thousandths of a millimetre high.
+        const short = radius - SCOOP_TANGENT_GAP;
+        let corner: ShapeHandle;
+        let round: ShapeHandle;
+        if (across) {
+          const z0 = scoop.side === "front" ? box.zmax - short : box.zmin - 0.2;
+          const z1 = scoop.side === "front" ? box.zmax + 0.2 : box.zmin + short;
+          const axisZ = scoop.side === "front" ? box.zmax - radius : box.zmin + radius;
+          corner = cad.makeBoxFromCorners({ x: box.xmin - 1, y: base - 0.2, z: z0 }, { x: box.xmax + 1, y: base + short, z: z1 });
+          // The kernel's cylinder stands along z; laid along x, from the compartment's left to its right.
+          const length = box.xmax - box.xmin + 4;
+          round = cad.translate(cad.transform(cad.makeCylinder(radius, length), [0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0]), box.xmin - 2, base + radius, axisZ);
+        } else {
+          const x0 = scoop.side === "right" ? box.xmax - short : box.xmin - 0.2;
+          const x1 = scoop.side === "right" ? box.xmax + 0.2 : box.xmin + short;
+          const axisX = scoop.side === "right" ? box.xmax - radius : box.xmin + radius;
+          corner = cad.makeBoxFromCorners({ x: x0, y: base - 0.2, z: box.zmin - 1 }, { x: x1, y: base + short, z: box.zmax + 1 });
+          round = cad.translate(cad.makeCylinder(radius, box.zmax - box.zmin + 4), axisX, base + radius, box.zmin - 2);
+        }
+        added.push(cad.common(forth(cad.cut(corner, round)), standing[rooms.indexOf(room)]));
+      }
+      if (added.length > 0) joined = oneSolid(cad, cad.simplify(cad.fuseAll([joined, ...added])), SCOOPS_FAILED_MESSAGE);
+    }
+    result = joined;
     return result;
   } finally {
     made.forEach((handle) => {

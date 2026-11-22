@@ -86,6 +86,8 @@ summary: 对指定的边做倒角或圆角，为盒子、杯子和壳体抽出�
 
 隔板跟随盒子自身的内部，即使盒子在工作平面上是转过角度放置的也一样。从 {{ui:boxGenerator.dividersGrid}} 切换到 {{ui:boxGenerator.dividersManual}} 后，隔板由你自己放置，和盒子生成器里一样：面板从上方显示内部，{{ui:boxGenerator.wallAddAcross}} 和 {{ui:boxGenerator.wallAddAlong}} 在你点击的格子里放一块隔板，拖动隔板可移动它，拖动一端可把它缩短或加长，把一端拖离隔板的直线（或设置 {{ui:prop.boxWallSlant}}）可让它倾斜。第一次切换时会把均匀的隔板沿用为可编辑的隔板。
 
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+
 当顶部是唯一开口的一侧时，{{ui:shell.shelf}} 会沿壁的内侧一圈做出台阶，供一块板放置其上，例如盒内的搁板或夹层底板（{{ui:shell.shelfWidth}}，起始 1.5 mm，范围 0.5 至 5 mm）。{{ui:shell.shelfHeight}} 从底部内侧量到台阶上表面（起始 20 mm）。台阶厚 2 mm，随内侧形状走，圆角和圆形盒子也可以。它需要竖直的壁，以及明显高于台阶高度的实体；开启 {{ui:shell.stack}} 时，围口会围绕它建造。如果行不通，工具窗口会说明原因。
 
 ![结果：壁厚 3 mm、顶部开口的壳体。](shot:hollow-result)

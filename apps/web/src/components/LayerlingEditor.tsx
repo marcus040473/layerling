@@ -22,6 +22,7 @@ import { hingePartScope, hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
 import { GRIDFINITY_SWALLOWTAIL_KEY_THICKNESS, gridfinityHasLabelText, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlatePieceKeys, gridfinityPlatePieces, gridfinityPlateSplit, gridfinityPlateToWorld, gridfinitySceneWithKeys, gridfinitySceneWithPieces, gridfinitySwallowtailKeyCount, gridfinitySwallowtailKeyProfile, gridfinitySwallowtailKeys } from "@/lib/gridfinityGeometry";
+import { shellWallsSource } from "@/components/workplane/BoxWallsOverlay";
 import { boxGeneratorWallList, boxGeneratorFieldsOf, boxGeneratorInsideOutline, boxGeneratorMatchingInsertPatch, boxGeneratorMatchingLidPatch, boxGeneratorPocketOutlines, boxGeneratorWallRoom, MAX_BOX_GENERATOR_POCKETS, normalizeBoxGenerator } from "@/lib/boxGeneratorGeometry";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
@@ -132,7 +133,7 @@ import { disposeBoundsTree } from "three-mesh-bvh";
 import { clampShellStackHeight, normalizeShellStackFoot, shellStackFloor, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
 import { magnetsGridLeastSize, magnetsMeetGridCells } from "@/lib/shellGridMagnets";
-import { DIVIDERS_WITH_GRID_MESSAGE, SHELL_GRID_FLOOR, shellGridFloor, SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
+import { DIVIDERS_WITH_GRID_MESSAGE, SHELL_GRID_FLOOR, shellGridFloor, SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, SHELL_DIVIDER_THICKNESS, type ShellDividerWall, type ShellDividers, type ShellGrid, type ShellScoop } from "@/lib/shellGridLimits";
 import { DEFAULT_SHELL_SHELF_HEIGHT, clampShellShelfHeight, clampShellShelfWidth } from "@/lib/shellShelfLimits";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import { createLatestJobRunner, shellPreviewKey } from "@/lib/shellPreview";
@@ -3708,7 +3709,7 @@ export function LayerlingEditor({
   }, [sketchSelection, sketchTool, sketchActive]);
   const [edgeModifier, setEdgeModifier] = useState<EdgeModifierSession | null>(null);
   // `mode: "offset"` is the Offset tool (#919), which shares the hollow tool's state: `thickness` is then the distance.
-  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; stackFoot?: ShellStackFoot | null; gridCells?: number; gridFit?: boolean; gridMagnets?: boolean; gridColumns?: number; gridRows?: number; dividers?: { x: number; z: number } | null; shelf?: number; shelfHeight?: number; busy: boolean; error: string | null } | null>(null);
+  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; stackFoot?: ShellStackFoot | null; gridCells?: number; gridFit?: boolean; gridMagnets?: boolean; gridColumns?: number; gridRows?: number; dividers?: ShellDividers | null; shelf?: number; shelfHeight?: number; busy: boolean; error: string | null } | null>(null);
   /**
    * The Hollow panel's preview (Discussion #1811): the body hollowed with the panel's settings, shown in the body's place
    * until Apply or Cancel. `fingerprint` is the body it was built from; a body changed since is shown as it is.
@@ -4534,6 +4535,31 @@ export function LayerlingEditor({
   }, [holePatternPreview?.topLayer]);
   // The body the Hollow panel is open for, and its fingerprint: the preview belongs to exactly this state of it.
   const shellPreviewTarget = shellTool && shellTool.mode !== "offset" && selectedShapes.length === 1 ? selectedShape : null;
+  // Hollow with the top as the one open side and no Gridfinity floor: the compartments show on the body in the view while
+  // the panel is open, with the grips of walls set by hand and a button for a finger scoop; what they change goes into the tool.
+  const shellWallsOffered = Boolean(shellPreviewTarget && shellTool && !(shellTool.gridCells ?? 0) && shellOpenSides(shellTool.openings).length === 1 && shellOpenSides(shellTool.openings)[0] === "top");
+  const shellWallsDividers = shellWallsOffered ? shellTool?.dividers ?? null : null;
+  const shellWallsThickness = shellTool?.thickness ?? 0;
+  const shellWalls = useMemo(() => {
+    if (!shellPreviewTarget || !shellWallsOffered) return null;
+    const source = shellWallsSource(Math.max(0, shapeWidth(shellPreviewTarget) - 2 * shellWallsThickness), Math.max(0, shapeDepth(shellPreviewTarget) - 2 * shellWallsThickness), shellWallsThickness, {
+      x: shellWallsDividers?.x ?? 0,
+      z: shellWallsDividers?.z ?? 0,
+      thickness: shellWallsDividers?.thickness ?? SHELL_DIVIDER_THICKNESS,
+      manual: shellWallsDividers?.manual === true,
+      walls: shellWallsDividers?.walls ?? [],
+      scoops: shellWallsDividers?.scoops ?? [],
+    }, shellPreviewTarget.rotation ?? 0);
+    return {
+      source,
+      onWallsChange: (walls: ShellDividerWall[]) => setShellTool((current) => current ? { ...current, dividers: { ...(current.dividers ?? { x: 0, z: 0 }), manual: true, walls }, error: null } : current),
+      onScoopsChange: (scoops: ShellScoop[]) => setShellTool((current) => {
+        if (!current) return current;
+        const { scoops: _scoops, ...rest } = current.dividers ?? { x: 0, z: 0 };
+        return { ...current, dividers: scoops.length > 0 ? { ...rest, scoops } : rest, error: null };
+      }),
+    };
+  }, [shellPreviewTarget, shellWallsOffered, shellWallsDividers, shellWallsThickness]);
   const shellPreviewFingerprint = useMemo(() => (shellPreviewTarget ? projectShapesFingerprint([shellPreviewTarget]) : null), [shellPreviewTarget]);
   const shellPreviewShape = shellPreview && shellPreviewTarget && shellPreview.targetId === shellPreviewTarget.id && shellPreview.fingerprint === shellPreviewFingerprint
     ? shellPreview.shape
@@ -17166,7 +17192,7 @@ export function LayerlingEditor({
         const edges: ShellEdges = params.edges === "sharp" ? "sharp" : "round";
         const stack = typeof params.stack === "number" && params.stack > 0 ? clampShellStackHeight(params.stack) : 0;
         const grid = normalizeShellGrid({ cells: params.gridCells, fit: params.gridFit === true, magnets: params.gridMagnets === true });
-        const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness, ...(params.dividerWalls !== undefined ? { manual: true, walls: boxGeneratorWallList(params.dividerWalls) } : {}) });
+        const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness, ...(params.dividerWalls !== undefined ? { manual: true, walls: boxGeneratorWallList(params.dividerWalls) } : {}), ...(params.scoops !== undefined ? { scoops: boxGeneratorWallList(params.scoops), scoopRadius: params.scoopRadius } : {}) });
         if (grid && dividers) throw new Error(DIVIDERS_WITH_GRID_MESSAGE);
         const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth, gripSides: params.stackGripSides, gripHeight: params.stackGripHeight, gripAt: params.stackGripAt }) : null;
         const shelf = typeof params.shelf === "number" && params.shelf > 0
@@ -20967,6 +20993,7 @@ export function LayerlingEditor({
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
           onVaseAssembled={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id, true) : undefined}
           vaseAssemblyReport={selectedShape && vaseAssemblyReport?.vaseId === selectedShape.id ? vaseAssemblyReport.lines : undefined}
+          shellWalls={shellWalls}
           onMakeBoxLid={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxLid(selectedShape.id) : undefined}
           onMakeBoxInsert={selectedShapes.length === 1 && selectedShape?.kind === "boxGenerator" && !historyViewState ? () => makeBoxInsert(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}

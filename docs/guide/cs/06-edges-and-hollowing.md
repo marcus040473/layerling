@@ -85,6 +85,8 @@ Když je nahoře jediná otevřená strana, {{ui:shell.grid}} vloží do dna zá
 
 Přepážky se řídí vnitřkem samotné krabičky, i když krabička stojí na pracovní rovině otočená. Po přepnutí z {{ui:boxGenerator.dividersGrid}} na {{ui:boxGenerator.dividersManual}} si stěny stavíte sami, jako v generátoru krabiček: panel ukazuje vnitřek shora, {{ui:boxGenerator.wallAddAcross}} a {{ui:boxGenerator.wallAddAlong}} postaví stěnu do přihrádky, na kterou jste klikli, stěnu posunete tažením a tažením za konec ji zkrátíte nebo prodloužíte, a konec vytažený z přímky stěny (nebo {{ui:prop.boxWallSlant}}) ji postaví šikmo. Při prvním přepnutí se rovnoměrné přepážky převezmou jako stěny.
 
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+
 Je-li horní strana jedinou otevřenou stranou, {{ui:shell.shelf}} vytvoří po celém obvodu vnitřní strany stěny římsu, na které může ležet deska, například police nebo mezidno v krabici ({{ui:shell.shelfWidth}}, na začátku 1,5 mm, 0,5 až 5 mm). {{ui:shell.shelfHeight}} se měří od vnitřní strany dna k horní ploše římsy (na začátku 20 mm). Římsa je silná 2 mm a sleduje tvar vnitřku, včetně zaoblených rohů a kulatých krabic. Vyžaduje svislé stěny a těleso zřetelně vyšší než výška římsy; při zapnutém {{ui:shell.stack}} se límec staví kolem ní. Když to nejde, okno nástroje řekne proč.
 
 ![Výsledný kryt se stěnou 3 mm a otevřenou horní stranou.](shot:hollow-result)

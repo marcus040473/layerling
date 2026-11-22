@@ -86,6 +86,8 @@ Quando la parte superiore è l'unico lato aperto, {{ui:shell.grid}} mette una pi
 
 I divisori seguono l’interno della scatola stessa, anche quando la scatola è ruotata sul piano di lavoro. Passando da {{ui:boxGenerator.dividersGrid}} a {{ui:boxGenerator.dividersManual}} metti tu le pareti, come nel generatore di scatole: il pannello mostra l’interno dall’alto, {{ui:boxGenerator.wallAddAcross}} e {{ui:boxGenerator.wallAddAlong}} mettono una parete nello scomparto su cui hai fatto clic, una parete si trascina per spostarla e da un’estremità per accorciarla o allungarla, e un’estremità tirata fuori dalla linea della parete (oppure {{ui:prop.boxWallSlant}}) la inclina. Al primo passaggio i divisori regolari vengono ripresi come pareti.
 
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+
 Con la parte superiore come unico lato aperto, {{ui:shell.shelf}} crea un bordo tutto intorno all'interno della parete su cui può appoggiare una piastra, per esempio un ripiano o un doppio fondo nella scatola ({{ui:shell.shelfWidth}}, all'inizio 1,5 mm, da 0,5 a 5 mm). {{ui:shell.shelfHeight}} si misura dall'interno del fondo fino alla faccia superiore del bordo (all'inizio 20 mm). Il bordo è spesso 2 mm e segue la forma dell'interno, angoli arrotondati e scatole rotonde compresi. Richiede pareti dritte e un corpo nettamente più alto dell'altezza del bordo; con {{ui:shell.stack}} attivo, il collare viene costruito intorno. Se non funziona, la finestra dello strumento ne spiega il motivo.
 
 ![Il risultato: un guscio con pareti spesse 3 mm e apertura superiore.](shot:hollow-result)

@@ -426,7 +426,14 @@ export const threadInsertLibraryAsset: ToolbarShapeAsset = {
   color: "#b69b46",
 };
 
-export const libraryShapeAssets: ToolbarShapeAsset[] = [threadInsertLibraryAsset, ...toolbarShapeAssets.flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "vase" ? [asset, planterAsset, lampshadeAsset] : asset.id === "port" ? [asset, sbcBoardAsset] : asset.id === "doubleCountersink" ? [] : [asset]))];
+/**
+ * Shapes that are no longer offered for adding: a design that has one still opens and shows it, and its settings still
+ * work. The box generator went this way: a box is made by hollowing a body (Hollow), which has its dividers, scoops and
+ * the rest.
+ */
+export const RETIRED_SHAPE_IDS: ReadonlySet<string> = new Set(["boxGenerator"]);
+
+export const libraryShapeAssets: ToolbarShapeAsset[] = [threadInsertLibraryAsset, ...toolbarShapeAssets.filter((asset) => !RETIRED_SHAPE_IDS.has(asset.id)).flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "vase" ? [asset, planterAsset, lampshadeAsset] : asset.id === "port" ? [asset, sbcBoardAsset] : asset.id === "doubleCountersink" ? [] : [asset]))];
 
 /**
  * The colour a new shape of this asset starts with: the asset's own, unless the shape

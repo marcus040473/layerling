@@ -7,7 +7,7 @@ import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolHint } from "@/components/workplane/ToolPanelParts";
 import { boxGeneratorMirroredWalls, boxGeneratorSplitWall, boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallRoom, MAX_BOX_GENERATOR_WALLS } from "@/lib/boxGeneratorGeometry";
 import { t } from "@/lib/i18n";
-import type { ShellDividerWall } from "@/lib/shellGridLimits";
+import type { ShellDividerWall, ShellScoop } from "@/lib/shellGridLimits";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
 /*
@@ -32,6 +32,7 @@ export function ShellWallsEditor({
   width,
   depth,
   walls,
+  scoops = [],
   thickness,
   workspace,
   disabled,
@@ -41,6 +42,8 @@ export function ShellWallsEditor({
   width: number;
   depth: number;
   walls: readonly ShellDividerWall[];
+  /** The finger scoops, shown in the drawing as a green line along their side. */
+  scoops?: readonly ShellScoop[];
   thickness: number;
   workspace: WorkplaneWorkspaceSettings;
   disabled?: boolean;
@@ -84,6 +87,7 @@ export function ShellWallsEditor({
         room={room}
         walls={walls}
         thickness={thickness}
+        scoops={scoops}
         pick={pick}
         disabled={disabled}
         label={t("boxGenerator.wallsPlan")}

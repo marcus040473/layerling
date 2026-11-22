@@ -10,7 +10,7 @@ import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { ShellWallsEditor, shellGridWalls } from "@/components/workplane/ShellWallsEditor";
-import { MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
+import { MAX_SHELL_SCOOP_RADIUS, MIN_SHELL_SCOOP_RADIUS, SHELL_SCOOP_RADIUS, MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
 import { DEFAULT_SHELL_SHELF_WIDTH, SHELL_SHELF_MAX_HEIGHT, SHELL_SHELF_MAX_WIDTH, SHELL_SHELF_MIN_HEIGHT, SHELL_SHELF_MIN_WIDTH } from "@/lib/shellShelfLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import type { ShellEdges, ShellOpenings, WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -312,8 +312,22 @@ export function ShellPanel({
                 {t("boxGenerator.dividersManual")}
               </button>
             </div>
+            {dividers.scoops?.length ? (<>
+              <EdgeModifierSlider
+                label={t("prop.boxScoopRadius")}
+                value={dividers.scoopRadius ?? SHELL_SCOOP_RADIUS}
+                min={MIN_SHELL_SCOOP_RADIUS}
+                max={MAX_SHELL_SCOOP_RADIUS}
+                step={0.5}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => onDividersChange({ ...dividers, scoopRadius: value })}
+              />
+              <ToolHint text={t("shell.scoopsHint")} />
+            </>) : null}
             {dividers.manual ? (
-              <ShellWallsEditor width={insideWidth} depth={insideDepth} walls={dividers.walls ?? []} thickness={dividers.thickness ?? SHELL_DIVIDER_THICKNESS} workspace={workspace} disabled={busy} onChange={(walls) => onDividersChange({ ...dividers, manual: true, walls })} />
+              <ShellWallsEditor width={insideWidth} depth={insideDepth} walls={dividers.walls ?? []} scoops={dividers.scoops ?? []} thickness={dividers.thickness ?? SHELL_DIVIDER_THICKNESS} workspace={workspace} disabled={busy} onChange={(walls) => onDividersChange({ ...dividers, manual: true, walls })} />
             ) : (<>
             <EdgeModifierSlider
               label={t("shell.dividersAcross")}
@@ -395,6 +409,7 @@ export function ShellPanel({
             </>) : null}
           </>) : null}
           <ToolHint text={t(gridCells > 0 ? "shell.dividersNoGrid" : "shell.dividersHint")} />
+          {gridCells === 0 ? <ToolHint text={t("shell.onBoxHint")} /> : null}
         </div>
       </>) : null}
 
