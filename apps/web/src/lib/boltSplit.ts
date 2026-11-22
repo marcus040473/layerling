@@ -67,8 +67,6 @@ export const BOLT_PIN_DIAMETER_LIMITS: readonly [number, number] = [2, 6];
 /** Material kept round a hole, mm; the thinner wall where a pin would not fit otherwise. */
 const PIN_WALL = 0.6;
 const PIN_WALL_THIN = 0.4;
-/** The least thread diameter that takes a piece of filament on its axis, mm. */
-const BOLT_FILAMENT_MIN_THREAD = 4;
 /** The thinnest pin, where the thread's own is too thick to fit, mm. */
 export const BOLT_PIN_MIN_DIAMETER = 1.5;
 /** A pin is shorter than its two holes by this at each end, and chamfered by PIN_CHAMFER. */
@@ -88,13 +86,18 @@ function filamentPiece(hole: number) {
 }
 
 /**
+ * The smallest thread that takes filament, mm: M4. An M3.5 (#1908) passes the wall rule below just, but the channel
+ * would take well over half its core, so the screw would be weak; the texts say "from M4 up".
+ */
+export const BOLT_FILAMENT_MIN_DIAMETER = 4;
+
+/**
  * Whether this thread's core takes the channel for a piece of filament on its axis (from M4 up), and how high its roof
  * is: `null` where the core is too thin.
  */
 export function boltFilamentChannel(shape: WorkplaneShape, pinPlay = BOLT_SPLIT_DEFAULTS.pinPlay): { radius: number; top: number } | null {
   const settings = threadSettings(shape);
-  // M3.5's core would just take the channel, with 0.4 mm of wall: too little to print round a long pin, so M4 is the least.
-  if (settings.diameter < BOLT_FILAMENT_MIN_THREAD) return null;
+  if (settings.diameter < BOLT_FILAMENT_MIN_DIAMETER - 1e-6) return null;
   const coreRadius = settings.diameter / 2 - settings.depth;
   const radius = BOLT_FILAMENT_DIAMETER / 2 + boltFilamentPlay(pinPlay);
   const top = Math.min(radius * Math.SQRT2, coreRadius - CHANNEL_WALL);
