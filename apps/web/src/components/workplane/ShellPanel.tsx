@@ -9,7 +9,7 @@ import { cadModifierUserErrorMessage } from "@/lib/cadModifierRuntime";
 import { numberLocale, t } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
-import { ShellWallsEditor, shellGridWalls } from "@/components/workplane/ShellWallsEditor";
+import { ShellScoopsEditor, ShellWallsEditor, shellGridWalls } from "@/components/workplane/ShellWallsEditor";
 import { MAX_SHELL_SCOOP_RADIUS, MIN_SHELL_SCOOP_RADIUS, SHELL_SCOOP_RADIUS, MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
 import { DEFAULT_SHELL_SHELF_WIDTH, SHELL_SHELF_MAX_HEIGHT, SHELL_SHELF_MAX_WIDTH, SHELL_SHELF_MIN_HEIGHT, SHELL_SHELF_MIN_WIDTH } from "@/lib/shellShelfLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
@@ -286,16 +286,20 @@ export function ShellPanel({
           <div className="shell-opening-options">
             <button
               type="button"
-              aria-pressed={dividers !== null && gridCells === 0}
-              className={dividers !== null && gridCells === 0 ? "active" : ""}
+              // Scoops alone, in a box without dividers, do not switch this on.
+              aria-pressed={dividers !== null && gridCells === 0 && (dividers.manual === true || dividers.x + dividers.z > 0)}
+              className={dividers !== null && gridCells === 0 && (dividers.manual === true || dividers.x + dividers.z > 0) ? "active" : ""}
               // The bins fill a Gridfinity floor's cells with 0.5 mm between them: no room for a divider anywhere.
               disabled={busy || gridCells > 0}
-              onClick={() => onDividersChange(dividers ? null : { x: 1, z: 1 })}
+              // Switched off, the finger scoops stay; switched on, they stay too.
+              onClick={() => onDividersChange(dividers && (dividers.manual === true || dividers.x + dividers.z > 0)
+                ? (dividers.scoops?.length ? { x: 0, z: 0, scoops: dividers.scoops, ...(dividers.scoopRadius ? { scoopRadius: dividers.scoopRadius } : {}) } : null)
+                : { ...(dividers ?? {}), x: 1, z: 1 })}
             >
               {t("shell.dividers")}
             </button>
           </div>
-          {dividers && gridCells === 0 ? (<>
+          {dividers && gridCells === 0 && (dividers.manual === true || dividers.x + dividers.z > 0) ? (<>
             <div className="shell-opening-options shell-dividers-mode" role="group" aria-label={t("prop.boxDividerMode")}>
               <button type="button" aria-pressed={!dividers.manual} className={!dividers.manual ? "active" : ""} disabled={busy} data-testid="shell-dividers-even" onClick={() => onDividersChange({ ...dividers, manual: undefined, x: Math.max(dividers.x, dividers.x + dividers.z > 0 ? 0 : 1), z: dividers.z })}>
                 {t("boxGenerator.dividersGrid")}
@@ -312,20 +316,6 @@ export function ShellPanel({
                 {t("boxGenerator.dividersManual")}
               </button>
             </div>
-            {dividers.scoops?.length ? (<>
-              <EdgeModifierSlider
-                label={t("prop.boxScoopRadius")}
-                value={dividers.scoopRadius ?? SHELL_SCOOP_RADIUS}
-                min={MIN_SHELL_SCOOP_RADIUS}
-                max={MAX_SHELL_SCOOP_RADIUS}
-                step={0.5}
-                workspace={workspace}
-                length
-                disabled={busy}
-                onChange={(value) => onDividersChange({ ...dividers, scoopRadius: value })}
-              />
-              <ToolHint text={t("shell.scoopsHint")} />
-            </>) : null}
             {dividers.manual ? (
               <ShellWallsEditor width={insideWidth} depth={insideDepth} walls={dividers.walls ?? []} scoops={dividers.scoops ?? []} thickness={dividers.thickness ?? SHELL_DIVIDER_THICKNESS} workspace={workspace} disabled={busy} onChange={(walls) => onDividersChange({ ...dividers, manual: true, walls })} />
             ) : (<>
@@ -411,6 +401,41 @@ export function ShellPanel({
           <ToolHint text={t(gridCells > 0 ? "shell.dividersNoGrid" : "shell.dividersHint")} />
           {gridCells === 0 ? <ToolHint text={t("shell.onBoxHint")} /> : null}
         </div>
+
+        {gridCells === 0 ? (
+          <div className="edge-modifier-field shell-openings shell-scoops" role="group" aria-label={t("prop.boxScoop")} data-testid="shell-scoops">
+            <span>{t("prop.boxScoop")}</span>
+            <ShellScoopsEditor
+              width={insideWidth}
+              depth={insideDepth}
+              across={dividers && !dividers.manual ? dividers.x : 0}
+              along={dividers && !dividers.manual ? dividers.z : 0}
+              walls={dividers?.manual ? dividers.walls ?? [] : null}
+              scoops={dividers?.scoops ?? []}
+              thickness={dividers?.thickness ?? SHELL_DIVIDER_THICKNESS}
+              disabled={busy}
+              onChange={(scoops) => {
+                const { scoops: _scoops, ...rest } = dividers ?? { x: 0, z: 0 };
+                const next = scoops.length > 0 ? { ...rest, scoops } : rest;
+                onDividersChange(next.manual || next.x + next.z > 0 || scoops.length > 0 ? next : null);
+              }}
+            />
+            {dividers?.scoops?.length ? (
+              <EdgeModifierSlider
+                label={t("prop.boxScoopRadius")}
+                value={dividers.scoopRadius ?? SHELL_SCOOP_RADIUS}
+                min={MIN_SHELL_SCOOP_RADIUS}
+                max={MAX_SHELL_SCOOP_RADIUS}
+                step={0.5}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => onDividersChange({ ...dividers, scoopRadius: value })}
+              />
+            ) : null}
+            <ToolHint text={t("shell.scoopsHint")} />
+          </div>
+        ) : null}
       </>) : null}
 
       {stackOffered ? (

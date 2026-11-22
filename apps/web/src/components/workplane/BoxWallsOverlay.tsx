@@ -202,7 +202,7 @@ export function syncBoxWallsOverlay(
         index,
         at: screen(compartment.label.x, compartment.label.z),
         text: `${Math.round(compartment.maxX - compartment.minX)} × ${Math.round(compartment.maxZ - compartment.minZ)}`,
-        room: wide >= 84 && high >= 56 ? "buttons" as const : wide >= 56 && high >= 26 ? "label" as const : "none" as const,
+        room: wide >= 64 && high >= 44 ? "buttons" as const : wide >= 48 && high >= 22 ? "label" as const : "none" as const,
         scoop: Boolean(boxGeneratorScoopOf(compartment, scoops)),
       };
     }),

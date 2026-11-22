@@ -5,7 +5,7 @@ import { Eraser, FlipHorizontal2, FlipVertical2, Plus, RefreshCw, Trash2 } from 
 import { BOX_WALLS_PLAN_MIN_LENGTH, BoxWallsPlan, type BoxWallsPick } from "@/components/workplane/BoxWallsPlan";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolHint } from "@/components/workplane/ToolPanelParts";
-import { boxGeneratorMirroredWalls, boxGeneratorSplitWall, boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallRoom, MAX_BOX_GENERATOR_WALLS } from "@/lib/boxGeneratorGeometry";
+import { boxGeneratorScoopOf, boxGeneratorScoopsWith, boxGeneratorMirroredWalls, boxGeneratorSplitWall, boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallRoom, MAX_BOX_GENERATOR_WALLS } from "@/lib/boxGeneratorGeometry";
 import { t } from "@/lib/i18n";
 import type { ShellDividerWall, ShellScoop } from "@/lib/shellGridLimits";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -143,6 +143,84 @@ export function ShellWallsEditor({
           </div>
         </>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Hollow, finger scoops: the inside of the box from above with its compartments (those of the even dividers, or of the
+ * walls set by hand; the walls are only shown here). A compartment is picked by a tap, and a row of buttons sets the side
+ * its floor runs up into, or none. One button gives every compartment a scoop at the front, another takes all away.
+ */
+export function ShellScoopsEditor({
+  width,
+  depth,
+  across,
+  along,
+  walls,
+  scoops,
+  thickness,
+  disabled,
+  onChange,
+}: {
+  width: number;
+  depth: number;
+  /** The even dividers across and along; not used when `walls` are given. */
+  across: number;
+  along: number;
+  /** The walls set by hand, or null with the even dividers. */
+  walls: readonly ShellDividerWall[] | null;
+  scoops: readonly ShellScoop[];
+  thickness: number;
+  disabled?: boolean;
+  onChange: (scoops: ShellScoop[]) => void;
+}) {
+  const [picked, setPicked] = useState<number | null>(null);
+  const shown = walls ?? shellGridWalls(across, along, width, depth);
+  const room = boxGeneratorWallRoom({ width: width + 2, depth: depth + 2, height: 10 }, { boxWall: 1, boxFloor: 1, boxCornerRadius: 0, boxDividerMode: "manual", boxDivider: thickness, boxWalls: [...shown] });
+  if (!room || width < 4 || depth < 4) return null;
+  // A box with one compartment needs no picking.
+  const index = room.compartments.length === 1 ? 0 : picked !== null && picked < room.compartments.length ? picked : null;
+  const compartment = index === null ? undefined : room.compartments[index];
+  const now = compartment ? boxGeneratorScoopOf(compartment, scoops)?.side ?? "none" : "none";
+  const plain = (value: number) => String(Math.round(value * 10) / 10);
+  const sides = [["none", "boxGenerator.scoopNone"], ["front", "boxGenerator.scoopFront"], ["back", "boxGenerator.scoopBack"], ["left", "boxGenerator.scoopLeft"], ["right", "boxGenerator.scoopRight"]] as const;
+  return (
+    <div className="shell-walls-editor" data-testid="shell-scoops-editor">
+      <BoxWallsPlan
+        room={room}
+        walls={shown}
+        thickness={thickness}
+        scoops={scoops}
+        pick={index === null ? null : { type: "compartment", index }}
+        disabled
+        label={t("boxGenerator.wallsPlan")}
+        wallLabel={(entry, position) => t(entry.dir === "x" ? "boxGenerator.wallAcross" : "boxGenerator.wallAlong", { number: position + 1 })}
+        compartmentLabel={(entry, position) => t("boxGenerator.compartment", { number: position + 1, width: plain(entry.maxX - entry.minX), depth: plain(entry.maxZ - entry.minZ) })}
+        onPick={(pick) => setPicked(pick?.type === "compartment" ? pick.index : null)}
+        onWallChange={() => {}}
+        onWallRemove={() => {}}
+      />
+      <ToolHint text={t(compartment ? "shell.scoopsPick" : "shell.scoopsPanelHint")} />
+      {compartment ? (
+        <div className="shell-opening-options shell-scoop-sides" role="group" aria-label={t("prop.boxScoop")}>
+          {sides.map(([side, label]) => (
+            <button key={side} type="button" aria-pressed={now === side} className={now === side ? "active" : ""} disabled={disabled} data-testid={`shell-scoop-${side}`} onClick={() => onChange(boxGeneratorScoopsWith(scoops, compartment, side === "none" ? null : side))}>
+              {t(label)}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <div className="shell-walls-actions">
+        <button type="button" disabled={disabled} data-testid="shell-scoops-all" onClick={() => onChange(room.compartments.reduce<ShellScoop[]>((list, entry) => boxGeneratorScoopsWith(list, entry, boxGeneratorScoopOf(entry, scoops)?.side ?? "front"), []))}>
+          <Plus size={15} strokeWidth={2.5} /><span>{t("shell.scoopsAll")}</span>
+        </button>
+        {scoops.length > 0 ? (
+          <button type="button" disabled={disabled} data-testid="shell-scoops-none" onClick={() => onChange([])}>
+            <Eraser size={15} strokeWidth={2.5} /><span>{t("shell.scoopsNone")}</span>
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
