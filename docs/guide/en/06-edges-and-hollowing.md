@@ -86,7 +86,9 @@ With the top as the only open side, {{ui:shell.grid}} puts a Gridfinity baseplat
 
 The dividers follow the box's own inside, also when the box stands turned on the workplane. Switched from {{ui:boxGenerator.dividersGrid}} to {{ui:boxGenerator.dividersManual}}, they are walls you place yourself, as in the box generator: the panel draws the inside from above, {{ui:boxGenerator.wallAddAcross}} and {{ui:boxGenerator.wallAddAlong}} put a wall through the compartment you clicked, a wall is dragged to move it and by an end to shorten or lengthen it, and an end pulled off the wall's line (or {{ui:prop.boxWallSlant}}) sets it at a slant. The first switch takes the even dividers over as walls.
 
-{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}} {{ui:shell.scoopsPanelHint}}
+
+**{{ui:shell.pockets}}:** {{ui:shell.pocketsHint}} {{ui:boxGenerator.pocketFillHint}}
 
 With the top as the only open side, {{ui:shell.shelf}} lays a ledge all round the inside of the wall for a plate to rest on, for example a shelf or a false floor in the box ({{ui:shell.shelfWidth}}, 1.5 mm to begin with, 0.5 to 5 mm). {{ui:shell.shelfHeight}} is measured from the inside of the floor to the top of the ledge (20 mm to begin with). The ledge is 2 mm thick and follows the shape of the inside, rounded corners and round boxes included. It needs walls that go straight up and a body clearly taller than the height of the ledge; with {{ui:shell.stack}} switched on, the collar is built round it. If it does not work, the tool window says why.
 

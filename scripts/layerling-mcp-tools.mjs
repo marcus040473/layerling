@@ -1706,6 +1706,13 @@ export const tools = [
           description: "Finger scoops (top open only, not with gridCells): each names a compartment by a point inside it, x and z in mm from the left and the back of the box's inside, and runs that compartment's floor up into the chosen side in a quarter round of scoopRadius, so small parts can be pushed out with a finger. Works with or without dividers.",
         },
         scoopRadius: { type: "number", description: "With scoops: their radius in mm, 2 to 60. Default 12; held to the room above the floor and to the compartment's size." },
+        pockets: {
+          type: "array",
+          maxItems: 12,
+          items: { type: "object", properties: { points: { type: "array", minItems: 3, maxItems: 400, items: { type: "object", properties: { x: { type: "number" }, z: { type: "number" } }, required: ["x", "z"] } }, depth: { type: "number" } }, required: ["points", "depth"] },
+          description: "Shaped pockets (top open only, not with gridCells), for a part that should lie in a pocket of its own outline: the box is filled solid above its floor (pocketFill mm high, to the rim when unset) and each outline, points in mm from the left (x) and the back (z) of the box's inside, is cut depth mm into the filling from its top, never below the floor. Walls and dividers are not cut.",
+        },
+        pocketFill: { type: "number", description: "With pockets: how high the box is filled above its floor, in mm; unset or more than fits: up to the rim." },
         dividerWalls: {
           type: "array",
           maxItems: 40,

@@ -86,7 +86,9 @@ Ist oben die einzige offene Seite, legt {{ui:shell.grid}} eine Gridfinity-Grundp
 
 Die Trennstege richten sich nach dem Inneren der Box selbst, auch wenn die Box gedreht auf der Arbeitsebene steht. Stellst du von {{ui:boxGenerator.dividersGrid}} auf {{ui:boxGenerator.dividersManual}} um, setzt du die Wände selbst, wie im Boxen-Generator: Das Fenster zeigt das Innere von oben, {{ui:boxGenerator.wallAddAcross}} und {{ui:boxGenerator.wallAddAlong}} ziehen eine Wand durch das angeklickte Fach, eine Wand ziehst du zum Verschieben und an einem Ende zum Kürzen oder Verlängern, und ein Ende, das du aus der Linie der Wand ziehst (oder {{ui:prop.boxWallSlant}}), stellt sie schräg. Beim ersten Umschalten werden die gleichmäßigen Trennstege als Wände übernommen.
 
-{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}} {{ui:shell.scoopsPanelHint}}
+
+**{{ui:shell.pockets}}:** {{ui:shell.pocketsHint}} {{ui:boxGenerator.pocketFillHint}}
 
 Ist oben die einzige offene Seite, legt {{ui:shell.shelf}} rundum an der Innenseite der Wand eine Auflage an, auf die eine Platte gelegt werden kann, zum Beispiel ein Regalboden oder ein Zwischenboden in der Box ({{ui:shell.shelfWidth}}, zu Beginn 1,5 mm, 0,5 bis 5 mm). {{ui:shell.shelfHeight}} wird von der Innenseite des Bodens bis zur Oberkante der Auflage gemessen (zu Beginn 20 mm). Die Auflage ist 2 mm dick und folgt der Form der Innenseite, abgerundete Ecken und runde Boxen eingeschlossen. Sie braucht Wände, die gerade nach oben gehen, und einen Körper, der deutlich höher ist als die Höhe der Auflage; ist {{ui:shell.stack}} eingeschaltet, wird der Kragen um sie herum gebaut. Geht es nicht, sagt das Werkzeugfenster, warum.
 

@@ -86,7 +86,9 @@ Når toppen er den eneste åbne side, lægger {{ui:shell.grid}} en Gridfinity-gr
 
 Skillevæggene følger kassens eget indre, også når kassen står drejet på arbejdsplanet. Skifter du fra {{ui:boxGenerator.dividersGrid}} til {{ui:boxGenerator.dividersManual}}, sætter du selv væggene, som i kassegeneratoren: Panelet viser det indre oppefra, {{ui:boxGenerator.wallAddAcross}} og {{ui:boxGenerator.wallAddAlong}} sætter en væg gennem det rum, du klikkede på, en væg trækkes for at flytte den og i en ende for at gøre den kortere eller længere, og en ende, der trækkes ud af væggens linje (eller {{ui:prop.boxWallSlant}}), stiller den skråt. Første gang du skifter, overtages de jævne skillevægge som vægge.
 
-{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}} {{ui:shell.scoopsPanelHint}}
+
+**{{ui:shell.pockets}}:** {{ui:shell.pocketsHint}} {{ui:boxGenerator.pocketFillHint}}
 
 Når toppen er den eneste åbne side, lægger {{ui:shell.shelf}} en kant hele vejen rundt på indersiden af væggen, som en plade kan hvile på, for eksempel en hylde eller en mellembund i æsken ({{ui:shell.shelfWidth}}, til at begynde med 1,5 mm, 0,5 til 5 mm). {{ui:shell.shelfHeight}} måles fra indersiden af bunden til oversiden af kanten (til at begynde med 20 mm). Kanten er 2 mm tyk og følger indersidens form, også afrundede hjørner og runde æsker. Den kræver lodrette vægge og et legeme, der er tydeligt højere end kantens højde; med {{ui:shell.stack}} slået til bygges kraven rundt om den. Hvis det ikke virker, siger værktøjsvinduet hvorfor.
 

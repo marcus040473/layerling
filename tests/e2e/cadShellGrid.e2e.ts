@@ -213,6 +213,40 @@ describe("a Gridfinity floor, fit and dividers with the real OCCT kernel", () =>
     expect(kernel.getVolume(inTurned) - kernel.getVolume(turned.shelled)).toBeCloseTo(kernel.getVolume(scooped) - kernel.getVolume(shelled), -1);
   });
 
+  it("fills the box and cuts a shaped pocket into the filling, as deep as asked and never through the floor", () => {
+    const { original, shelled } = hollow(100, 80, 40);
+    // The inside is 96 x 76 from -48, -38, the floor 2 mm thick. A pocket of 40 x 30 mm, 10 mm deep, 20 mm from the left and the back.
+    const square = [{ x: 20, z: 20 }, { x: 60, z: 20 }, { x: 60, z: 50 }, { x: 20, z: 50 }];
+    const made = shellDividersSolid(kernel, original, shelled, { x: 0, z: 0, pockets: [{ points: square, depth: 10 }] }, null);
+    expect(kernel.isValid(made)).toBe(true);
+    expect(kernel.getSubShapes(made, "solid")).toHaveLength(1);
+    // Filled to the rim, less the pocket.
+    expect(kernel.getVolume(made)).toBeCloseTo(100 * 80 * 40 - 40 * 30 * 10, -1);
+    expect(solid(made, 30, 39, 30)).toBe(true);
+    expect(solid(made, -8, 35, -3)).toBe(false);
+    expect(solid(made, -8, 29, -3)).toBe(true);
+    // Deeper than the filling it ends on the box's own floor.
+    const through = shellDividersSolid(kernel, original, shelled, { x: 0, z: 0, pockets: [{ points: square, depth: 500 }] }, null);
+    expect(kernel.getSubShapes(through, "solid")).toHaveLength(1);
+    expect(solid(through, -8, 3, -3)).toBe(false);
+    expect(solid(through, -8, 1, -3)).toBe(true);
+    // A filling of 15 mm leaves the box open above it, with its divider; the pocket is cut from the filling's top.
+    const low = shellDividersSolid(kernel, original, shelled, { x: 1, z: 0, pocketFill: 15, pockets: [{ points: [{ x: 10, z: 20 }, { x: 40, z: 20 }, { x: 40, z: 50 }, { x: 10, z: 50 }], depth: 8 }] }, null);
+    expect(kernel.getSubShapes(low, "solid")).toHaveLength(1);
+    expect(solid(low, 30, 10, 0)).toBe(true);
+    expect(solid(low, 30, 25, 0)).toBe(false);
+    expect(solid(low, -23, 12, -3)).toBe(false);
+    expect(solid(low, -23, 6, -3)).toBe(true);
+    expect(solid(low, 0, 30, 20)).toBe(true);
+    // In a turned box the pocket lies where the box's own inside has it.
+    const turned = hollowTurned(100, 80, 40, 30);
+    const inTurned = shellDividersSolid(kernel, turned.original, turned.shelled, { x: 0, z: 0, pockets: [{ points: square, depth: 10 }] }, null);
+    expect(kernel.getSubShapes(inTurned, "solid")).toHaveLength(1);
+    expect(solid(inTurned, turned.at(-8, -3).x, 35, turned.at(-8, -3).z)).toBe(false);
+    expect(solid(inTurned, turned.at(30, 30).x, 39, turned.at(30, 30).z)).toBe(true);
+    expect(kernel.getVolume(inTurned)).toBeCloseTo(kernel.getVolume(made), -1);
+  });
+
   it("makes dividers lower and thicker, by the Gridfinity compartments' rule (Discussion #1560)", () => {
     const { original, shelled } = hollow(100, 80, 40);
     // The floor is the 2 mm wall: 15 mm over it the dividers end at 17, not at the rim (40).

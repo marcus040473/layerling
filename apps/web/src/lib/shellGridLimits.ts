@@ -43,7 +43,16 @@ export const MAX_SHELL_DIVIDER_WALLS = 40;
  * turned about its height, in degrees, so that across and along stay the box's own when it is turned more than an
  * eighth of a turn; the dividers always follow the box's inside, whichever way it is turned.
  */
-export type ShellDividers = { x: number; z: number; height?: number; thickness?: number; manual?: boolean; walls?: ShellDividerWall[]; angle?: number; scoops?: ShellScoop[]; scoopRadius?: number };
+export type ShellDividers = { x: number; z: number; height?: number; thickness?: number; manual?: boolean; walls?: ShellDividerWall[]; angle?: number; scoops?: ShellScoop[]; scoopRadius?: number; pockets?: ShellPocket[]; pocketFill?: number };
+/**
+ * A shaped pocket: the box is filled solid above its floor (pocketFill mm high, to the rim when unset) and the outline
+ * of a part is cut into that filling, `depth` mm deep from its top, so the part lies in a pocket of its own shape.
+ * `points` are the outline in mm from the left and the back of the inside.
+ */
+export type ShellPocket = { points: { x: number; z: number }[]; depth: number };
+export const MAX_SHELL_POCKETS = 12;
+export const MAX_SHELL_POCKET_POINTS = 400;
+export const POCKETS_FAILED_MESSAGE = "The shaped pockets could not be built on this body. Remove the last one or choose another part.";
 /**
  * A finger scoop: the floor of the compartment that holds the point (x, z in mm from the left and the back of the
  * inside) runs up into that side of the compartment in a quarter round, so small parts can be pushed out with a finger.
@@ -102,8 +111,35 @@ export function normalizeShellDividers(value: unknown): ShellDividers | null {
       if (Math.abs(r - SHELL_SCOOP_RADIUS) > 1e-9) out.scoopRadius = r;
     }
   }
-  // Dividers there are, or scoops alone in a box without dividers.
-  return (out.manual ? list.length : out.x + out.z) > 0 || dips.length > 0 ? out : null;
+  const { pockets, pocketFill } = value as Record<string, unknown>;
+  const cut = normalizeShellPockets(pockets);
+  if (cut.length > 0) {
+    out.pockets = cut;
+    if (typeof pocketFill === "number" && Number.isFinite(pocketFill) && pocketFill > 0) out.pocketFill = Math.round(Math.min(1e4, Math.max(1, pocketFill)) * 1000) / 1000;
+  }
+  // Dividers there are, or scoops or shaped pockets alone in a box without dividers.
+  return (out.manual ? list.length : out.x + out.z) > 0 || dips.length > 0 || cut.length > 0 ? out : null;
+}
+
+/** The shaped pockets as a clean list: outlines of at least three finite points, each with a depth. */
+export function normalizeShellPockets(value: unknown): ShellPocket[] {
+  if (!Array.isArray(value)) return [];
+  const pockets: ShellPocket[] = [];
+  for (const entry of value) {
+    if (pockets.length >= MAX_SHELL_POCKETS) break;
+    if (!entry || typeof entry !== "object") continue;
+    const pocket = entry as Partial<ShellPocket>;
+    if (!Array.isArray(pocket.points)) continue;
+    const measure = (n: number) => Math.round(Math.min(1e4, Math.max(-1e4, n)) * 1000) / 1000;
+    const points = pocket.points
+      .filter((point) => point && typeof point === "object" && typeof point.x === "number" && typeof point.z === "number" && Number.isFinite(point.x) && Number.isFinite(point.z))
+      .slice(0, MAX_SHELL_POCKET_POINTS)
+      .map((point) => ({ x: measure(point.x), z: measure(point.z) }));
+    if (points.length < 3) continue;
+    const depth = typeof pocket.depth === "number" && Number.isFinite(pocket.depth) ? Math.min(1e4, Math.max(0.4, pocket.depth)) : 1e4;
+    pockets.push({ points, depth: Math.round(depth * 1000) / 1000 });
+  }
+  return pockets;
 }
 
 /** The finger scoops as a clean list: points with finite measures, none below zero, and a side. */
