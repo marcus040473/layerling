@@ -7,7 +7,7 @@ layerling prinaša strežnik MCP. MCP je standard, prek katerega lahko pomočnik
 
 Most med odjemalcem z umetno inteligenco in urejevalnikom teče **lokalno na tvojem računalniku**. Vseeno upoštevaj: kar umetna inteligenca prebere, torej prizor in slike pogleda, gre ponudniku tvojega odjemalca z umetno inteligenco, tako kot vsak drug vnos tam.
 
-> **Pomembno:** Most MCP je v razvojnem strežniku, ki ga sam zaženeš na svojem računalniku. Na layerling.com in v namestitvah s statičnim gostovanjem je izklopljen. Kopija, ki jo upravljaš sam, na primer slika Docker na NAS, ga lahko vklopi z dostopnim ključem; glej »Kopija na NAS ali strežniku« spodaj.
+> **Pomembno:** Most MCP je v razvojnem strežniku, ki ga sam zaženeš na svojem računalniku. Na layerling.com in v namestitvah s statičnim gostovanjem je izklopljen. Kopija, ki jo upravljaš sam, na primer slika Docker na NAS, ga lahko vklopi z dostopnim ključem; glej »Kopija na NAS ali strežniku« spodaj. Povsem brez nameščanja gre prek posrednika; glej »Brez nameščanja: samo UI in brskalnik« spodaj.
 
 ## Korak za korakom za začetnike
 
@@ -70,6 +70,22 @@ Podrobna navodila za vse tri so v [README na GitHubu](https://github.com/henmedi
 Kopija, ki jo upravljaš sam, lahko dovoli odjemalcu z umetno inteligenco, da njene odprte urejevalnike upravlja prek omrežja. To je privzeto izklopljeno, saj lahko kdor upravlja most, bere in spreminja odprte načrte. Na strežniku nastavi `LAYERLING_MCP_REMOTE` na `true` in `LAYERLING_MCP_TOKEN` na skrivnost z vsaj 16 znaki (pri sliki Docker pod `environment:` v datoteki Compose; nova gradnja ni potrebna). Odpri zavihek urejevalnika te kopije in ga pusti odprtega, odjemalcu MCP pa daj naslov in isti ključ: `LAYERLING_URL=http://nas:3000` in `LAYERLING_MCP_TOKEN=<ključ>`.
 
 Samo odjemalec s ključem lahko našteje ali upravlja urejevalnike. Strani urejevalnika ga ne potrebujejo, štejejo pa samo pod naslovom ali imenom, ki ga lahko uporablja samo tvoje lastno omrežje (naslov IP, ime brez pike ali tako na `.local` ali `.lan`); prava domena za povratnim posrednikom pride v `LAYERLING_MCP_ALLOWED_HOSTS`. Uporabljaj ga v omrežju, ki mu zaupaš, in HTTPS čez to. Podrobnosti so v README.
+
+## Brez nameščanja: samo UI in brskalnik
+
+Layerling, ki je samo stran v brskalniku, na primer kopija na statičnem gostovanju, nima svojega mostu, klepet v brskalniku pa ne more zagnati strežnika MCP. Za to je **povezava z UI**: stran urejevalnika se poveže s posrednikom na internetu in tvoja aplikacija UI se poveže z istim posrednikom. Na računalnik se ne namesti nič.
+
+1. Odpri {{ui:workspace.title}} (zobnik) in pojdi na {{ui:aiLink.title}}.
+2. Če je polje {{ui:aiLink.relay}} prazno, vpiši naslov posrednika. Spletno mesto ima lahko svojega; sicer ga nekdo poganja, glej spodaj.
+3. Vklopi {{ui:aiLink.enable}} in počakaj na vrstico, ki sporoči, da je povezava vzpostavljena.
+4. Kopiraj {{ui:aiLink.address}} in ga v svoji aplikaciji UI dodaj kot konektor, torej kot oddaljeni strežnik MCP. V aplikaciji Claude je to v nastavitvah pod Konektorji. To narediš enkrat.
+5. Pusti zavihek urejevalnika odprt in povej UI, kaj naj zgradi.
+
+Datoteke, ki jih UI izvozi ali shrani, pristanejo v mapi prenosov tvojega brskalnika, ker na tvoj računalnik ne more pisati.
+
+> **Pomembno:** Kdor pozna naslov, lahko bere in spreminja projekte, odprte v tem brskalniku. Daj ga samo svoji aplikaciji UI. {{ui:aiLink.newAddress}} naredi novega, stari pa takoj preneha veljati. Vse, kar UI počne, gre prek posrednika; zato uporabi takega, ki mu zaupaš, ali poganjaj svojega.
+
+**Poganjanje posrednika.** Posrednik je majhen program v projektu, `scripts/layerling-mcp-relay.mjs`. Potrebuje samo Node.js in ničesar ne shranjuje: zažene ga `npm run mcp:relay`, pred njim pa mora biti HTTPS. Na Cloudflare Workers teče brezplačno (`scripts/cloudflare-relay`). Kdor gradi spletno mesto, lahko naslov posrednika za vse obiskovalce vpiše z `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. Podrobnosti so v README.
 
 ## Kaj zna umetna inteligenca
 

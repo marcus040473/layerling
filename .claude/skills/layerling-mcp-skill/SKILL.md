@@ -25,6 +25,10 @@ node scripts/layerling-mcp-server.mjs
 
 The MCP server talks to the app through `/api/layerling-mcp`. Open editor tabs heartbeat into that route and receive commands from it. Production and static builds return 404 for the MCP route, unless the server of a self-hosted copy (a NAS, the Docker image) switched it on with `LAYERLING_MCP_REMOTE=true` and `LAYERLING_MCP_TOKEN` (at least 16 characters); then the MCP client needs `LAYERLING_URL` and the same `LAYERLING_MCP_TOKEN`, and an editor tab of that copy must be open.
 
+### Over the browser relay
+
+A layerling that is only a page (static hosting) can be driven without any local install: the user switches on Workspace settings, AI connection in the editor, and the AI client connects to the address shown there, `https://<relay>/mcp/<code>`, as a remote MCP server (see the README, "An AI and the browser only"). The tools are the same, with these differences: `layerling_open_editor` is not offered (ask the user to open layerling and switch the connection on); `layerling_list_editors` lists the tabs of that one browser; `layerling_export_mesh` takes no `path` - with `download` true (the default) the user's browser saves the file into its downloads folder, with `download` false it comes back as base64 - and `layerling_save_project` always saves into the browser's downloads folder; both take an optional `fileName`. When a tool answers that no editor is connected, the tab is closed or the connection is switched off.
+
 ## Client Compatibility
 
 Codex can use this folder as a skill and the MCP server as tools. Install the folder under `~/.codex/skills/layerling-mcp-skill` and configure the MCP server in Codex.

@@ -7,7 +7,7 @@ A layerling egy MCP-szerverrel érkezik. Az MCP egy szabvány, amelyen keresztü
 
 Az MI-kliens és a szerkesztő közötti híd **helyben, a számítógépeden** fut. Ne feledd azonban: amit az MI beolvas, vagyis a jelenet és a nézetről készült képek, az az MI-kliensed szolgáltatójához kerül, mint ott bármely más bemenet.
 
-> **Fontos:** Az MCP-híd abban a fejlesztői szerverben létezik, amelyet magad indítasz el a számítógépeden. A layerling.com-on és a statikus tárhelyű telepítésekben ki van kapcsolva. Egy magad üzemeltetett példány, például a NAS-on futó Docker-image, hozzáférési tokennel bekapcsolhatja; lásd lent az „Egy példány NAS-on vagy szerveren” részt.
+> **Fontos:** Az MCP-híd abban a fejlesztői szerverben létezik, amelyet magad indítasz el a számítógépeden. A layerling.com-on és a statikus tárhelyű telepítésekben ki van kapcsolva. Egy magad üzemeltetett példány, például a NAS-on futó Docker-image, hozzáférési tokennel bekapcsolhatja; lásd lent az „Egy példány NAS-on vagy szerveren” részt. Telepítés nélkül egy közvetítőn keresztül működik; lásd lent a „Telepítés nélkül: csak MI és böngésző” részt.
 
 ## Lépésről lépésre kezdőknek
 
@@ -70,6 +70,22 @@ Mindhárom részletes leírása a [GitHubon lévő README-ben](https://github.co
 Egy magad üzemeltetett példány megengedheti, hogy egy MI-kliens a hálózaton keresztül vezérelje a nyitott szerkesztőit. Ez alapból ki van kapcsolva, mert aki vezérelheti a hidat, az olvashatja és módosíthatja a nyitott terveket. A szerveren állítsd a `LAYERLING_MCP_REMOTE` értékét `true`-ra, a `LAYERLING_MCP_TOKEN` értékét pedig egy legalább 16 karakteres titokra (a Docker-image-nél a compose fájl `environment:` részében; nem kell újraépíteni). Nyiss meg egy szerkesztőlapot ezen a példányon, és tartsd nyitva, az MCP-kliensnek pedig add meg a címet és ugyanazt a tokent: `LAYERLING_URL=http://nas:3000` és `LAYERLING_MCP_TOKEN=<a token>`.
 
 Csak egy tokennel rendelkező kliens sorolhatja fel vagy vezérelheti a szerkesztőket. A szerkesztőoldalaknak nem kell token, de csak olyan címen vagy néven számítanak, amelyet kizárólag a saját hálózatod használhat (IP-cím, pont nélküli név, vagy `.local` vagy `.lan` végződésű név); egy fordított proxy mögötti valódi domain a `LAYERLING_MCP_ALLOWED_HOSTS` értékébe kerül. Megbízható hálózaton használd, azon túl pedig HTTPS-sel. A részletek a README-ben vannak.
+
+## Telepítés nélkül: csak MI és böngésző
+
+Annak a layerlingnek, amely csak egy oldal a böngészőben, például egy statikus tárhelyen lévő példány, nincs saját hídja, és a böngészőben futó csevegés nem tudja elindítani az MCP-szervert. Erre való az **MI-kapcsolat**: a szerkesztő oldala egy interneten lévő közvetítőhöz kapcsolódik, és az MI-alkalmazásod ugyanahhoz a közvetítőhöz kapcsolódik. A számítógépedre semmi sem települ.
+
+1. Nyisd meg a {{ui:workspace.title}} ablakot (a fogaskerék), és menj a {{ui:aiLink.title}} oldalra.
+2. Ha a {{ui:aiLink.relay}} mező üres, írd be egy közvetítő címét. Egy webhely hozhatja a sajátját; különben valaki üzemeltet egyet, lásd lent.
+3. Kapcsold be a {{ui:aiLink.enable}} kapcsolót, és várd meg a sort, amely jelzi a kapcsolatot.
+4. Másold ki a {{ui:aiLink.address}} mezőt, és add hozzá az MI-alkalmazásodban összekötőként, vagyis távoli MCP-szerverként. A Claude alkalmazásban ez a beállításokban, a Connectors alatt található. Ezt egyszer kell megtenned.
+5. Hagyd nyitva a szerkesztő lapját, és mondd meg az MI-nek, mit építsen.
+
+Azok a fájlok, amelyeket az MI exportál vagy elment, a böngésződ letöltési mappájába kerülnek, mert a számítógépedre nem tud írni.
+
+> **Fontos:** Aki ismeri a címet, olvashatja és módosíthatja az ebben a böngészőben megnyitott terveket. Csak az MI-alkalmazásodnak add meg. A {{ui:aiLink.newAddress}} gomb újat készít, és a régi azonnal megszűnik működni. Minden, amit az MI tesz, a közvetítőn megy át, ezért olyat használj, amelyben megbízol, vagy üzemeltess sajátot.
+
+**Közvetítő üzemeltetése.** A közvetítő egy kis program a projektben, `scripts/layerling-mcp-relay.mjs`. Csak Node.js kell hozzá, és semmit sem tárol: a `npm run mcp:relay` indítja el, és HTTPS-nek kell előtte lennie. A Cloudflare Workers szolgáltatáson ingyen fut (`scripts/cloudflare-relay`). Aki webhelyet épít, a `NEXT_PUBLIC_LAYERLING_MCP_RELAY` beállítással minden látogatónak kitöltheti a közvetítő címét. A részletek a README-ben vannak.
 
 ## Mit tud az MI
 

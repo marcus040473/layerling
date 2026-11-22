@@ -7,7 +7,7 @@ layerling include un server MCP. MCP è uno standard che permette a un assistent
 
 Il collegamento tra il client IA e l’editor funziona **in locale sul tuo computer**. Tieni però presente che ciò che l’IA legge — la scena e le immagini della vista — viene inviato al fornitore del client IA, come qualsiasi altro dato inserito in quel servizio.
 
-> **Importante:** il collegamento MCP è disponibile nel server di sviluppo che avvii tu sul computer. È disattivato su layerling.com e nelle installazioni con hosting statico. Una copia ospitata da te, per esempio l’immagine Docker su un NAS, può attivarlo con un token di accesso; vedi «Una copia su NAS o server» più avanti.
+> **Importante:** il collegamento MCP è disponibile nel server di sviluppo che avvii tu sul computer. È disattivato su layerling.com e nelle installazioni con hosting statico. Una copia ospitata da te, per esempio l’immagine Docker su un NAS, può attivarlo con un token di accesso; vedi «Una copia su NAS o server» più avanti. Senza installare nulla funziona tramite un relay; vedi «Senza installare nulla: solo IA e browser» più sotto.
 
 ## Passo dopo passo per principianti
 
@@ -74,6 +74,22 @@ Le istruzioni dettagliate per ciascun client sono nel [README su GitHub](https:/
 Una copia ospitata da te può consentire a un client IA di controllare via rete gli editor aperti. Questa funzione è disattivata per impostazione predefinita, perché chiunque possa controllare il collegamento può leggere e modificare i progetti aperti. Sul server imposta `LAYERLING_MCP_REMOTE` su `true` e `LAYERLING_MCP_TOKEN` su un segreto di almeno 16 caratteri (per l’immagine Docker, inseriscili nella sezione `environment:` del file compose; non serve ricostruire l’immagine). Apri una scheda dell’editor di quella copia e lasciala aperta; poi fornisci al client MCP l’indirizzo e lo stesso token: `LAYERLING_URL=http://nas:3000` e `LAYERLING_MCP_TOKEN=<il token>`.
 
 Solo un client in possesso del token può elencare o controllare gli editor. Le pagine dell’editor non richiedono il token, ma vengono riconosciute solo se raggiunte tramite un indirizzo o un nome utilizzabile esclusivamente nella tua rete (un indirizzo IP, un nome senza punto oppure uno che termina in `.local` o `.lan`). Se usi un dominio reale dietro un proxy inverso, aggiungilo a `LAYERLING_MCP_ALLOWED_HOSTS`. Usa la funzione su una rete di cui ti fidi e attiva HTTPS quando il collegamento esce da quella rete. Il README contiene tutti i dettagli.
+
+## Senza installare nulla: solo IA e browser
+
+Un layerling che è solo una pagina nel browser, per esempio una copia su hosting statico, non ha un collegamento proprio, e una chat nel browser non può avviare il server MCP. Per questo c'è la **connessione IA**: la pagina dell'editor si collega a un relay su internet, e la tua app di IA si collega allo stesso relay. Sul tuo computer non si installa nulla.
+
+1. Apri le {{ui:workspace.title}} (l'ingranaggio) e vai a {{ui:aiLink.title}}.
+2. Se il campo {{ui:aiLink.relay}} è vuoto, inserisci l'indirizzo di un relay. Un sito può averne uno proprio; altrimenti qualcuno ne gestisce uno, vedi sotto.
+3. Attiva {{ui:aiLink.enable}} e aspetta la riga che segnala la connessione.
+4. Copia l'{{ui:aiLink.address}} e aggiungilo nella tua app di IA come connettore, cioè come server MCP remoto. Nell'app di Claude si trova nelle impostazioni, sotto Connettori. Lo fai una volta sola.
+5. Lascia aperta la scheda dell'editor e di' all'IA che cosa costruire.
+
+I file che l'IA esporta o salva finiscono nella cartella dei download del tuo browser, perché non può scrivere sul tuo computer.
+
+> **Importante:** chi conosce l'indirizzo può leggere e modificare i progetti aperti in questo browser. Dallo solo alla tua app di IA. {{ui:aiLink.newAddress}} ne crea uno nuovo, e il vecchio smette subito di funzionare. Tutto ciò che l'IA fa passa dal relay: usane uno di cui ti fidi, oppure gestisci il tuo.
+
+**Gestire un relay.** Il relay è un piccolo programma del progetto, `scripts/layerling-mcp-relay.mjs`. Gli serve solo Node.js e non conserva nulla: `npm run mcp:relay` lo avvia, e davanti ci vuole HTTPS. Su Cloudflare Workers funziona gratis (`scripts/cloudflare-relay`). Chi costruisce un sito può inserire l'indirizzo del relay per tutti i visitatori con `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. I dettagli sono nel README.
 
 ## Cosa può fare l’IA
 

@@ -7,7 +7,7 @@ layerling bringt einen MCP-Server mit. MCP ist ein Standard, über den ein KI-As
 
 Die Brücke zwischen KI-Client und Editor läuft **lokal auf deinem Rechner**. Bedenke aber: Was die KI liest, also die Szene und die Bilder der Ansicht, geht an den Anbieter deines KI-Clients, so wie jede andere Eingabe dort auch.
 
-> **Wichtig:** Die MCP-Brücke gibt es im Entwicklungsserver, den du selbst auf deinem Rechner startest. Auf layerling.com und in Installationen mit statischem Hosting ist sie abgeschaltet. Eine Kopie, die du selbst betreibst, etwa das Docker-Image auf einer NAS, kann sie mit einem Zugriffsschlüssel einschalten; siehe „Eine Kopie auf NAS oder Server“ unten.
+> **Wichtig:** Die MCP-Brücke gibt es im Entwicklungsserver, den du selbst auf deinem Rechner startest. Auf layerling.com und in Installationen mit statischem Hosting ist sie abgeschaltet. Eine Kopie, die du selbst betreibst, etwa das Docker-Image auf einer NAS, kann sie mit einem Zugriffsschlüssel einschalten; siehe „Eine Kopie auf NAS oder Server“ unten. Ganz ohne Installation geht es über eine Vermittlungsstelle; siehe „Ohne Installation: nur KI und Browser“ unten.
 
 ## Schritt für Schritt für Einsteiger
 
@@ -74,6 +74,22 @@ Die ausführliche Anleitung für jeden Client steht in der [README auf GitHub](h
 Eine Kopie, die du selbst betreibst, kann einen KI-Client ihre offenen Editoren übers Netz steuern lassen. Das ist standardmäßig aus, denn wer die Brücke steuern kann, kann die offenen Entwürfe lesen und ändern. Setze auf dem Server `LAYERLING_MCP_REMOTE` auf `true` und `LAYERLING_MCP_TOKEN` auf ein Geheimnis von mindestens 16 Zeichen (beim Docker-Image unter `environment:` der Compose-Datei; ein Neubau ist nicht nötig). Öffne einen Editor-Tab dieser Kopie und lass ihn offen, und gib dem MCP-Client die Adresse und denselben Schlüssel: `LAYERLING_URL=http://nas:3000` und `LAYERLING_MCP_TOKEN=<der Schlüssel>`.
 
 Nur ein Client mit dem Schlüssel kann die Editoren auflisten oder steuern. Die Editor-Seiten brauchen keinen, zählen aber nur unter einer Adresse oder einem Namen, den nur dein eigenes Netz benutzen kann (eine IP-Adresse, ein Name ohne Punkt oder einer auf `.local` oder `.lan`); eine echte Domain hinter einem Reverse-Proxy kommt in `LAYERLING_MCP_ALLOWED_HOSTS`. Nutze es in einem Netz, dem du vertraust, und HTTPS darüber hinaus. Die Einzelheiten stehen in der README.
+
+## Ohne Installation: nur KI und Browser
+
+Ein layerling, das nur eine Seite im Browser ist, etwa eine Kopie auf statischem Hosting, hat keine eigene Brücke, und ein Chat im Browser kann den MCP-Server nicht starten. Dafür gibt es die **KI-Verbindung**: Die Editor-Seite verbindet sich mit einer Vermittlungsstelle im Internet, und deine KI-App verbindet sich mit derselben Vermittlungsstelle. Auf deinem Rechner wird nichts installiert.
+
+1. Öffne die {{ui:workspace.title}} (das Zahnrad) und gehe zu {{ui:aiLink.title}}.
+2. Ist das Feld {{ui:aiLink.relay}} leer, trage die Adresse einer Vermittlungsstelle ein. Eine Website kann ihre eigene mitbringen; sonst betreibt jemand eine, siehe unten.
+3. Schalte {{ui:aiLink.enable}} ein und warte auf die Zeile, die die Verbindung meldet.
+4. Kopiere die {{ui:aiLink.address}} und trage sie in deiner KI-App als Connector ein, also als entfernten MCP-Server. In der Claude-App steht das in den Einstellungen unter Connectors. Das machst du einmal.
+5. Lass den Editor-Tab offen und sag der KI, was sie bauen soll.
+
+Dateien, die die KI exportiert oder speichert, landen im Download-Ordner deines Browsers, denn auf deinen Rechner kann sie nicht schreiben.
+
+> **Wichtig:** Wer die Adresse kennt, kann die in diesem Browser geöffneten Entwürfe lesen und ändern. Gib sie nur deiner KI-App. {{ui:aiLink.newAddress}} macht eine neue, und die alte gilt sofort nicht mehr. Alles, was die KI tut, läuft über die Vermittlungsstelle; nimm also eine, der du vertraust, oder betreibe deine eigene.
+
+**Eine Vermittlungsstelle betreiben.** Die Vermittlungsstelle ist ein kleines Programm im Projekt, `scripts/layerling-mcp-relay.mjs`. Sie braucht nur Node.js und speichert nichts: `npm run mcp:relay` startet sie, davor gehört HTTPS. Auf Cloudflare Workers läuft sie kostenlos (`scripts/cloudflare-relay`). Wer eine Website baut, trägt die Adresse mit `NEXT_PUBLIC_LAYERLING_MCP_RELAY` für alle Besucher ein. Die Einzelheiten stehen in der README.
 
 ## Was die KI kann
 

@@ -1,0 +1,16 @@
+// The Layerling relay as a Cloudflare Worker; see worker.mjs. Deploy with `npx wrangler deploy` from this folder.
+{
+  "name": "layerling-relay",
+  "main": "worker.mjs",
+  "compatibility_date": "2025-10-01",
+  // The tool list is shared with the MCP server for Node, which imports Node's own modules.
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [{ "name": "RELAY", "class_name": "LayerlingRelay" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["LayerlingRelay"] }],
+  "vars": {
+    // The sites whose editors may connect, separated by commas, e.g. "https://layerling.com". Empty: any site.
+    "ALLOWED_ORIGINS": ""
+  }
+}

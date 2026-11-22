@@ -485,6 +485,7 @@ den Host-Port bei einem der beiden (z. B. `"3100:3000"`).
 | `npm run export` | Statischer Export für einfaches Webhosting |
 | `npm run printers:update` | Druckervorlagen aus den OrcaSlicer-Profilen auffrischen |
 | `npm run mcp:layerling` | MCP-Server für KI-Clients starten (siehe unten) |
+| `npm run mcp:relay` | Vermittlungsstelle starten, die ein layerling im Browser mit einer KI-App verbindet (siehe unten) |
 
 ## layerling-MCP-Skill
 
@@ -606,6 +607,45 @@ auf `.local` oder `.lan`). So kann keine Webseite im Internet über deinen Brows
 Kopie unter einer echten Domain, etwa hinter einem Reverse-Proxy, trägst du sie in `LAYERLING_MCP_ALLOWED_HOSTS` ein
 (durch Kommas getrennt). Nutze das in einem Netz, dem du vertraust, und HTTPS für alles darüber hinaus: Der Schlüssel
 wandert in einem Kopfzeilenfeld mit.
+
+### Nur KI und Browser, ohne Installation
+
+Ein layerling, das nur eine Seite ist - ein statischer Export auf einfachem Webspace -, hat keine Brücke, und ein Chat im
+Browser kann den MCP-Server nicht starten. Dafür hat der Editor eine **KI-Verbindung** (Arbeitsbereich-Einstellungen,
+KI-Verbindung): Die Seite verbindet sich mit einer **Vermittlungsstelle** im Internet, und die KI-App verbindet sich als
+entfernter MCP-Server mit derselben Vermittlungsstelle. Auf dem Rechner des Nutzers wird nichts installiert.
+
+```
+KI-App  --  MCP über HTTP  -->  Vermittlungsstelle  <--  die Editor-Seite fragt nach Befehlen  --  Browser
+```
+
+1. Im Editor die Arbeitsbereich-Einstellungen öffnen, zu KI-Verbindung gehen, die Adresse der Vermittlungsstelle
+   eintragen, falls die Website keine vorgibt, und die Verbindung einschalten.
+2. Die dort gezeigte Adresse (`https://<vermittlung>/mcp/<code>`) kopieren und in der KI-App als Connector eintragen, also
+   als entfernten MCP-Server. Ein Client, der Schlüssel nicht in Adressen haben will, nimmt `https://<vermittlung>/mcp` mit
+   dem Code als Bearer-Token.
+3. Den Editor-Tab offen lassen und der KI sagen, was sie bauen soll.
+
+Der Code entsteht im Browser und ist der Schlüssel: Wer die Adresse kennt, kann die in diesem Browser geöffneten Entwürfe
+lesen und ändern. „Neue Adresse erzeugen“ in den Einstellungen ersetzt ihn. Die Verbindung ist aus, bis der Nutzer sie
+einschaltet, und gilt dann für alle layerling-Tabs dieses Browsers. Dateien, die die KI exportiert oder speichert
+(`layerling_export_mesh`, `layerling_save_project`), legt der Browser in seinen Download-Ordner, und
+`layerling_open_editor` wird nicht angeboten, weil die KI auf dem Rechner des Nutzers keinen Browser starten kann.
+
+**Eine Vermittlungsstelle betreiben.** Die Vermittlungsstelle speichert nichts: Befehle und Antworten gehen nur durch ihren
+Arbeitsspeicher. Alles, was die KI tut, läuft über sie; nimm also eine, der du vertraust, oder betreibe deine eigene.
+
+- **Node.js**, auf jedem kleinen Server oder Container: `npm run mcp:relay` (oder `node scripts/layerling-mcp-relay.mjs`;
+  kein Build und keine Pakete nötig). `PORT` (8787) und `HOST` legen fest, wo sie lauscht, und
+  `LAYERLING_RELAY_ALLOWED_ORIGINS` begrenzt, von welchen Websites sich Editoren verbinden dürfen
+  (`https://layerling.example.com,https://example.github.io`). Davor gehört HTTPS: Eine über https geladene Seite darf
+  nicht mit einer Vermittlungsstelle über einfaches http sprechen.
+- **Cloudflare Workers**, kostenlos für eine Handvoll Leute: `npx wrangler deploy` in `scripts/cloudflare-relay`
+  (`ALLOWED_ORIGINS` steht in der dortigen `wrangler.jsonc`).
+
+Eine Website kann ihre Vermittlungsstelle beim Bauen für alle Besucher eintragen, mit
+`NEXT_PUBLIC_LAYERLING_MCP_RELAY=https://<vermittlung>` (für `npm run export` wie für `npm run build`); ein Besucher kann
+trotzdem eine andere eintragen.
 
 ## Mitmachen
 

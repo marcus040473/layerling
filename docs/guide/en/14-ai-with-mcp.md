@@ -7,7 +7,7 @@ layerling comes with an MCP server. MCP is a standard through which an AI assist
 
 The bridge between AI client and editor runs **locally on your computer**. Keep in mind, though: what the AI reads, meaning the scene and the pictures of the view, goes to the provider of your AI client, like any other input there.
 
-> **Important:** The MCP bridge exists in the development server that you start yourself on your computer. On layerling.com and in installations with static hosting it is switched off. A copy you host yourself, such as the Docker image on a NAS, can switch it on with an access token; see "A copy on a NAS or server" below.
+> **Important:** The MCP bridge exists in the development server that you start yourself on your computer. On layerling.com and in installations with static hosting it is switched off. A copy you host yourself, such as the Docker image on a NAS, can switch it on with an access token; see "A copy on a NAS or server" below. Without installing anything it works through a relay; see "Without installing anything: AI and browser only" below.
 
 ## Step by step for beginners
 
@@ -74,6 +74,22 @@ The detailed instructions for each client are in the [README on GitHub](https://
 A copy you host yourself can let an AI client drive its open editors over the network. It is off by default, because whoever can drive the bridge can read and change the open designs. On the server, set `LAYERLING_MCP_REMOTE` to `true` and `LAYERLING_MCP_TOKEN` to a secret of at least 16 characters (for the Docker image in `environment:` of the compose file; no rebuild needed). Open an editor tab of that copy and keep it open, and give the MCP client the address and the same token: `LAYERLING_URL=http://nas:3000` and `LAYERLING_MCP_TOKEN=<the token>`.
 
 Only a client with the token can list or drive the editors. The editor pages need none, but they only count under an address or name that only your own network can use (an IP address, a name without a dot, or one ending in `.local` or `.lan`); a real domain behind a reverse proxy goes into `LAYERLING_MCP_ALLOWED_HOSTS`. Use it on a network you trust, and HTTPS beyond it. The README has the details.
+
+## Without installing anything: AI and browser only
+
+A layerling that is only a page in the browser, such as a copy on static hosting, has no bridge of its own, and a chat in the browser cannot start the MCP server. For this there is the **AI connection**: the editor page connects to a relay on the internet, and your AI app connects to the same relay. Nothing is installed on your computer.
+
+1. Open the {{ui:workspace.title}} (the gear) and go to {{ui:aiLink.title}}.
+2. If the field {{ui:aiLink.relay}} is empty, enter the address of a relay. A site can bring its own; otherwise somebody runs one, see below.
+3. Switch on {{ui:aiLink.enable}} and wait for the line that says it is connected.
+4. Copy the {{ui:aiLink.address}} and add it in your AI app as a connector, that is, as a remote MCP server. In the Claude app this is in the settings under Connectors. You do this once.
+5. Leave the editor tab open and tell the AI what to build.
+
+Files the AI exports or saves land in your browser's downloads folder, because it cannot write to your computer.
+
+> **Important:** Whoever has the address can read and change the designs open in this browser. Give it to your AI app only. {{ui:aiLink.newAddress}} makes a new one, and the old one stops working at once. Everything the AI does passes through the relay, so use one you trust, or run your own.
+
+**Running a relay.** The relay is a small program in the project, `scripts/layerling-mcp-relay.mjs`. It needs only Node.js and stores nothing: `npm run mcp:relay` starts it, and HTTPS belongs in front of it. On Cloudflare Workers it runs free of charge (`scripts/cloudflare-relay`). Whoever builds a site can fill in the relay's address for all its visitors with `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. The README has the details.
 
 ## What the AI can do
 

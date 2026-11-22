@@ -7,7 +7,7 @@ layerling ma wbudowany serwer MCP. MCP to standard, przez który asystent AI mo�
 
 Most między klientem AI a edytorem działa **lokalnie na Twoim komputerze**. Pamiętaj jednak: to, co odczytuje AI, czyli scena i zdjęcia widoku, trafia do dostawcy Twojego klienta AI, jak każde inne dane, które tam wpisujesz.
 
-> **Ważne:** most MCP istnieje w serwerze deweloperskim, który uruchamiasz sam na swoim komputerze. Na layerling.com i w instalacjach ze statycznym hostingiem jest wyłączony. Kopia, którą hostujesz sam, na przykład obraz Docker na NAS-ie, może go włączyć z tokenem dostępu. Zobacz niżej „Kopia na NAS-ie albo serwerze”.
+> **Ważne:** most MCP istnieje w serwerze deweloperskim, który uruchamiasz sam na swoim komputerze. Na layerling.com i w instalacjach ze statycznym hostingiem jest wyłączony. Kopia, którą hostujesz sam, na przykład obraz Docker na NAS-ie, może go włączyć z tokenem dostępu. Zobacz niżej „Kopia na NAS-ie albo serwerze”. Zupełnie bez instalowania działa to przez pośrednika; zobacz „Bez instalowania: tylko AI i przeglądarka” niżej.
 
 ## Krok po kroku dla początkujących
 
@@ -74,6 +74,22 @@ Szczegółowe instrukcje dla każdego klienta są w [README na GitHubie](https:/
 Kopia, którą hostujesz sam, może pozwolić klientowi AI sterować przez sieć jej otwartymi edytorami. Domyślnie jest to wyłączone, bo kto może sterować mostem, może czytać i zmieniać otwarte projekty. Na serwerze ustaw `LAYERLING_MCP_REMOTE` na `true` i `LAYERLING_MCP_TOKEN` na sekret o długości co najmniej 16 znaków (dla obrazu Docker w `environment:` pliku compose, bez przebudowy). Otwórz kartę edytora tej kopii i zostaw ją otwartą, a klientowi MCP podaj adres i ten sam token: `LAYERLING_URL=http://nas:3000` i `LAYERLING_MCP_TOKEN=<token>`.
 
 Tylko klient z tokenem może wypisywać edytory i nimi sterować. Strony edytora nie potrzebują tokena, ale liczą się tylko pod adresem albo nazwą, której może używać wyłącznie Twoja sieć (adres IP, nazwa bez kropki albo kończąca się na `.local` lub `.lan`). Prawdziwa domena za odwrotnym proxy trafia do `LAYERLING_MCP_ALLOWED_HOSTS`. Używaj tego w sieci, której ufasz, a poza nią przez HTTPS. Szczegóły są w README.
+
+## Bez instalowania: tylko AI i przeglądarka
+
+Layerling, który jest tylko stroną w przeglądarce, na przykład kopią na statycznym hostingu, nie ma własnego mostu, a czat w przeglądarce nie potrafi uruchomić serwera MCP. Do tego służy **połączenie z AI**: strona edytora łączy się z pośrednikiem w internecie, a twoja aplikacja AI łączy się z tym samym pośrednikiem. Na twoim komputerze nic się nie instaluje.
+
+1. Otwórz {{ui:workspace.title}} (koło zębate) i przejdź do {{ui:aiLink.title}}.
+2. Jeśli pole {{ui:aiLink.relay}} jest puste, wpisz adres pośrednika. Witryna może mieć własnego; w przeciwnym razie ktoś go prowadzi, zobacz niżej.
+3. Włącz {{ui:aiLink.enable}} i poczekaj na wiersz, który potwierdzi połączenie.
+4. Skopiuj {{ui:aiLink.address}} i dodaj go w swojej aplikacji AI jako konektor, czyli jako zdalny serwer MCP. W aplikacji Claude jest to w ustawieniach, w części Konektory. Robisz to raz.
+5. Zostaw kartę edytora otwartą i powiedz AI, co ma zbudować.
+
+Pliki, które AI eksportuje lub zapisuje, trafiają do folderu pobranych plików twojej przeglądarki, bo na twoim komputerze nie może ona zapisywać.
+
+> **Ważne:** kto zna adres, może czytać i zmieniać projekty otwarte w tej przeglądarce. Podaj go tylko swojej aplikacji AI. {{ui:aiLink.newAddress}} tworzy nowy, a stary natychmiast przestaje działać. Wszystko, co robi AI, przechodzi przez pośrednika, więc używaj takiego, któremu ufasz, albo prowadź własnego.
+
+**Prowadzenie pośrednika.** Pośrednik to mały program w projekcie, `scripts/layerling-mcp-relay.mjs`. Potrzebuje tylko Node.js i niczego nie przechowuje: uruchamia go `npm run mcp:relay`, a przed nim powinien stać HTTPS. Na Cloudflare Workers działa za darmo (`scripts/cloudflare-relay`). Kto buduje witrynę, może wpisać adres pośrednika dla wszystkich odwiedzających za pomocą `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. Szczegóły są w README.
 
 ## Co potrafi AI
 

@@ -7,7 +7,7 @@ layerling incluye un servidor MCP. MCP es un estándar con el que un asistente d
 
 El puente entre el cliente de IA y el editor funciona **en local, en tu ordenador**. Pero ten en cuenta que lo que lee la IA, es decir, la escena y las capturas de la vista, va al proveedor de tu cliente de IA, como cualquier otra cosa que le escribas.
 
-> **Importante:** El puente MCP existe en el servidor de desarrollo que arrancas tú mismo en tu ordenador. En layerling.com y en las instalaciones con alojamiento estático está desactivado. Una copia que alojes tú, como la imagen de Docker en un NAS, puede activarlo con un token de acceso; consulta «Una copia en un NAS o un servidor», más abajo.
+> **Importante:** El puente MCP existe en el servidor de desarrollo que arrancas tú mismo en tu ordenador. En layerling.com y en las instalaciones con alojamiento estático está desactivado. Una copia que alojes tú, como la imagen de Docker en un NAS, puede activarlo con un token de acceso; consulta «Una copia en un NAS o un servidor», más abajo. Sin instalar nada funciona a través de un repetidor; mira «Sin instalar nada: solo la IA y el navegador» más abajo.
 
 ## Paso a paso para principiantes
 
@@ -74,6 +74,22 @@ Las instrucciones detalladas para cada cliente están en el [README de GitHub](h
 Una copia que alojes tú puede dejar que un cliente de IA maneje sus editores abiertos a través de la red. Está desactivado de forma predeterminada, porque quien pueda manejar el puente puede leer y cambiar los diseños abiertos. En el servidor, pon `LAYERLING_MCP_REMOTE` a `true` y `LAYERLING_MCP_TOKEN` a un secreto de al menos 16 caracteres (en la imagen de Docker, en `environment:` del archivo compose; no hace falta reconstruirla). Abre una pestaña del editor de esa copia y déjala abierta, y dale al cliente MCP la dirección y el mismo token: `LAYERLING_URL=http://nas:3000` y `LAYERLING_MCP_TOKEN=<the token>`.
 
 Solo un cliente con el token puede listar o manejar los editores. Las páginas del editor no lo necesitan, pero solo cuentan si usan una dirección o un nombre que únicamente pueda usar tu propia red (una dirección IP, un nombre sin punto o uno que termine en `.local` o `.lan`); un dominio real detrás de un proxy inverso va en `LAYERLING_MCP_ALLOWED_HOSTS`. Úsalo en una red de confianza, y con HTTPS fuera de ella. El README tiene los detalles.
+
+## Sin instalar nada: solo la IA y el navegador
+
+Un layerling que es solo una página en el navegador, por ejemplo una copia en un alojamiento estático, no tiene puente propio, y un chat en el navegador no puede arrancar el servidor MCP. Para eso está la **conexión con la IA**: la página del editor se conecta a un repetidor en internet, y tu aplicación de IA se conecta al mismo repetidor. No se instala nada en tu ordenador.
+
+1. Abre los {{ui:workspace.title}} (el engranaje) y ve a {{ui:aiLink.title}}.
+2. Si el campo {{ui:aiLink.relay}} está vacío, escribe la dirección de un repetidor. Un sitio puede traer el suyo; si no, alguien gestiona uno, mira más abajo.
+3. Activa {{ui:aiLink.enable}} y espera a la línea que avisa de que hay conexión.
+4. Copia la {{ui:aiLink.address}} y añádela en tu aplicación de IA como conector, es decir, como servidor MCP remoto. En la aplicación de Claude está en los ajustes, en Conectores. Lo haces una sola vez.
+5. Deja abierta la pestaña del editor y dile a la IA qué construir.
+
+Los archivos que la IA exporta o guarda van a la carpeta de descargas de tu navegador, porque no puede escribir en tu ordenador.
+
+> **Importante:** Quien tenga la dirección puede leer y cambiar los diseños abiertos en este navegador. Dásela solo a tu aplicación de IA. {{ui:aiLink.newAddress}} crea una nueva, y la anterior deja de funcionar al instante. Todo lo que hace la IA pasa por el repetidor, así que usa uno en el que confíes o gestiona el tuyo.
+
+**Gestionar un repetidor.** El repetidor es un programa pequeño del proyecto, `scripts/layerling-mcp-relay.mjs`. Solo necesita Node.js y no guarda nada: `npm run mcp:relay` lo arranca, y delante debe haber HTTPS. En Cloudflare Workers funciona gratis (`scripts/cloudflare-relay`). Quien construye un sitio puede rellenar la dirección del repetidor para todos sus visitantes con `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. Los detalles están en el README.
 
 ## Lo que puede hacer la IA
 

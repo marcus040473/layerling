@@ -7,7 +7,7 @@ layerling leveres med en MCP-server. MCP er en standard hvorigennem en AI-assist
 
 Broen mellem AI-klient og editor kører **lokalt på din computer**. Husk dog: hvad AI'en læser, altså scenen og billederne af visningen, går til udbyderen af din AI-klient, som enhver anden input der.
 
-> **Vigtigt:** MCP-broen findes i udviklingsserveren som du selv starter på din computer. På layerling.com og i installationer med statisk hosting er den slået fra. En kopi du selv hoster, såsom Docker-imaget på en NAS, kan slå den til med et adgangstoken; se "En kopi på en NAS eller server" nedenunder.
+> **Vigtigt:** MCP-broen findes i udviklingsserveren som du selv starter på din computer. På layerling.com og i installationer med statisk hosting er den slået fra. En kopi du selv hoster, såsom Docker-imaget på en NAS, kan slå den til med et adgangstoken; se "En kopi på en NAS eller server" nedenunder. Helt uden installation går det gennem en formidler; se "Uden installation: kun AI og browser" nedenfor.
 
 ## Trin for trin for begyndere
 
@@ -74,6 +74,22 @@ De detaljerede instruktioner for alle tre er i [README på GitHub](https://githu
 En kopi du selv hoster kan lade en AI-klient drive dens åbne editorer over netværket. Det er slået fra som standard, fordi den der kan drive broen også kan læse og ændre de åbne designs. På serveren, sæt `LAYERLING_MCP_REMOTE` til `true` og `LAYERLING_MCP_TOKEN` til en hemmelighed på mindst 16 tegn (for Docker-imaget i `environment:` af compose-filen; intet rebuild nødvendigt). Åbn en editor-fane af den kopi og hold den åben, og giv MCP-klienten adressen og den samme token: `LAYERLING_URL=http://nas:3000` og `LAYERLING_MCP_TOKEN=<tokenen>`.
 
 Kun en klient med tokenen kan liste eller drive editorerne. Editor-siderne har ikke brug for nogen, men de tæller kun under en adresse eller et navn som kun dit eget netværk kan bruge (en IP-adresse, et navn uden et punktum, eller et der ender på `.local` eller `.lan`); et rigtigt domæne bag en reverse proxy kommer i `LAYERLING_MCP_ALLOWED_HOSTS`. Brug det på et netværk du stoler på, og HTTPS ud over det. README har detaljerne.
+
+## Uden installation: kun AI og browser
+
+Et layerling, der kun er en side i browseren, for eksempel en kopi på statisk hosting, har ingen egen bro, og en chat i browseren kan ikke starte MCP-serveren. Til det er der **AI-forbindelsen**: Editorsiden forbinder til en formidler på internettet, og din AI-app forbinder til den samme formidler. Der installeres intet på din computer.
+
+1. Åbn {{ui:workspace.title}} (tandhjulet), og gå til {{ui:aiLink.title}}.
+2. Hvis feltet {{ui:aiLink.relay}} er tomt, så angiv adressen på en formidler. Et websted kan have sin egen; ellers driver nogen en, se nedenfor.
+3. Slå {{ui:aiLink.enable}} til, og vent på linjen, der melder, at der er forbindelse.
+4. Kopiér {{ui:aiLink.address}}, og tilføj den i din AI-app som en connector, altså som en ekstern MCP-server. I Claude-appen står det i indstillingerne under Connectors. Det gør du én gang.
+5. Lad editorfanen være åben, og fortæl AI'en, hvad den skal bygge.
+
+Filer, som AI'en eksporterer eller gemmer, lander i din browsers mappe med overførsler, fordi den ikke kan skrive til din computer.
+
+> **Vigtigt:** Den, der kender adressen, kan læse og ændre de designs, der er åbne i denne browser. Giv den kun til din AI-app. {{ui:aiLink.newAddress}} laver en ny, og den gamle holder straks op med at virke. Alt, hvad AI'en gør, går gennem formidleren, så brug en, du stoler på, eller driv din egen.
+
+**At drive en formidler.** Formidleren er et lille program i projektet, `scripts/layerling-mcp-relay.mjs`. Den behøver kun Node.js og gemmer intet: `npm run mcp:relay` starter den, og der skal HTTPS foran. På Cloudflare Workers kører den gratis (`scripts/cloudflare-relay`). Den, der bygger et websted, kan udfylde formidlerens adresse for alle besøgende med `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. Detaljerne står i README.
 
 ## Hvad AI'en kan gøre
 

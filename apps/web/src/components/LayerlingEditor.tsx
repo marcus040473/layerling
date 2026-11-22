@@ -283,6 +283,7 @@ import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSetting
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
+import { MCP_RELAY_CHANGED_EVENT, MCP_RELAY_HEARTBEAT_MS, MCP_RELAY_STORAGE_KEY, readMcpRelaySettings, relayBridgeUrl, relayDownload, setMcpRelayStatus } from "@/lib/mcpRelayLink";
 import { EXACT_MESH_FAILED_MESSAGE, exactMeshFreeformShare } from "@/lib/cadMeshExactMessages";
 import type { CadFaceInfo, CadModifierComponentMesh, CadModifierDeflection, CadModifierDisplayEdge, CadModifierEdge, CadModifierEnclosurePart, CadModifierExactReport, CadModifierFaces, CadModifierGridfinityPart, CadModifierHelicalGearPart, CadModifierHirthPart, CadModifierKind, CadModifierMeshPart, CadModifierPrimitivePart, CadModifierProfilePart, CadModifierQuality, CadModifierSpringPart, CadModifierThreadPart, CadModifierWorkerRequest, CadModifierWorkerResponse } from "@/lib/cadModifierTypes";
 import { getSectionBounds, sectionAxisLetter, sectionMeshInFrame, sectionPlacementWorkplane, sectionPointFromFrame, sectionPointToFrame, type SectionFrame, type SectionOrientation, type SectionPlaneAxis, type SectionPlaneSettings } from "@/lib/sectionView";
@@ -18428,15 +18429,12 @@ export function LayerlingEditor({
       return;
     }
     const localDevelopment = process.env.NODE_ENV !== "production" && ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
-    // The static export has no bridge. A copy somebody hosts themselves (a NAS, the Docker image) has one only
-    // when its server switched remote use on (LAYERLING_MCP_REMOTE and LAYERLING_MCP_TOKEN); it says so itself.
-    if (!localDevelopment && process.env.NEXT_PUBLIC_STATIC_EXPORT === "true") {
-      return;
-    }
 
     let cancelled = false;
     let stopBridge: (() => void) | null = null;
-    const startBridge = () => {
+    // `endpoint` is the bridge of this site, or with `relay` a relay on the internet the user switched on in the
+    // settings (mcpRelayLink.ts): the same messages, sent to another site, and files saved by the browser.
+    const startBridge = (endpoint: string = LAYERLING_MCP_ROUTE, relay = false) => {
       const identity = readMcpEditorIdentity();
       let stopped = false;
       let polling = false;
@@ -18446,7 +18444,7 @@ export function LayerlingEditor({
       const heartbeat = () => {
         const projectInfo = projectInfoRef.current;
         const currentShapes = shapesRef.current;
-        void fetch(LAYERLING_MCP_ROUTE, {
+        void fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -18463,11 +18461,18 @@ export function LayerlingEditor({
               lastError: edgeModifierRef.current?.error ?? lastMcpErrorRef.current,
             },
           }),
-        }).catch(() => undefined);
+        })
+          .then((response) => {
+            // The settings show how the relay is; a question for a command stays open too long to tell.
+            if (relay && !stopped) setMcpRelayStatus(response.ok ? "connected" : "unreachable");
+          })
+          .catch(() => {
+            if (relay && !stopped) setMcpRelayStatus("unreachable");
+          });
       };
 
       const submitResult = (commandId: string, ok: boolean, data?: unknown, error?: string) => {
-        void fetch(LAYERLING_MCP_ROUTE, {
+        void fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -18484,18 +18489,29 @@ export function LayerlingEditor({
         let retry = false;
         pollAbortController = new AbortController();
         try {
-          const response = await fetch(LAYERLING_MCP_ROUTE, {
+          const response = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type: "poll", editorId: identity.editorId }),
             signal: pollAbortController.signal,
           });
           if (!response.ok) throw new Error(`Layerling MCP poll returned HTTP ${response.status}`);
-          const payload = (await response.json().catch(() => null)) as { command?: LayerlingMcpCommand | null } | null;
+          const payload = (await response.json().catch(() => null)) as { command?: LayerlingMcpCommand | null; unknown?: boolean } | null;
+          // The relay forgot this tab (it started anew, or the computer slept): say who is here, then ask again.
+          if (payload?.unknown) {
+            heartbeat();
+            retry = !stopped;
+          }
           const command = payload?.command;
           if (command) {
             try {
-              const data = await executeMcpCommandRef.current?.(command);
+              let data = await executeMcpCommandRef.current?.(command);
+              // No computer can be written to over the relay, so a file the AI asked for is saved by the browser.
+              const file = relay ? relayDownload(command.params, data) : null;
+              if (file) {
+                await downloadBlobFile(file.fileName, new Blob([file.bytes]));
+                data = file.answer;
+              }
               submitResult(command.id, true, data);
             } catch (error) {
               submitResult(command.id, false, undefined, error instanceof Error ? localizedError(error.message) : String(error));
@@ -18522,33 +18538,73 @@ export function LayerlingEditor({
 
       heartbeat();
       void poll();
-      const heartbeatTimer = window.setInterval(heartbeat, LAYERLING_MCP_HEARTBEAT_MS);
+      const heartbeatTimer = window.setInterval(heartbeat, relay ? MCP_RELAY_HEARTBEAT_MS : LAYERLING_MCP_HEARTBEAT_MS);
       window.addEventListener("focus", heartbeat);
       document.addEventListener("visibilitychange", heartbeat);
-      stopBridge = () => {
+      // The relay is told when the tab goes or the connection is switched off, so the AI hears it at once.
+      const sayBye = () => {
+        void fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "bye", editorId: identity.editorId }),
+          keepalive: true,
+        }).catch(() => undefined);
+      };
+      if (relay) window.addEventListener("pagehide", sayBye);
+      return () => {
         stopped = true;
         window.clearInterval(heartbeatTimer);
         if (pollRetryTimer !== null) window.clearTimeout(pollRetryTimer);
         pollAbortController?.abort();
         window.removeEventListener("focus", heartbeat);
         document.removeEventListener("visibilitychange", heartbeat);
+        if (relay) {
+          window.removeEventListener("pagehide", sayBye);
+          sayBye();
+        }
       };
     };
 
+    // The static export has no bridge of its own. A copy somebody hosts themselves (a NAS, the Docker image) has
+    // one only when its server switched remote use on (LAYERLING_MCP_REMOTE and LAYERLING_MCP_TOKEN); it says so itself.
     if (localDevelopment) {
-      startBridge();
-    } else {
+      stopBridge = startBridge();
+    } else if (process.env.NEXT_PUBLIC_STATIC_EXPORT !== "true") {
       void fetch(`${LAYERLING_MCP_ROUTE}?status=1`)
         .then((response) => (response.ok ? response.json() : null))
         .then((payload: { remote?: boolean } | null) => {
-          if (!cancelled && payload?.remote === true) startBridge();
+          if (!cancelled && payload?.remote === true) stopBridge = startBridge();
         })
         .catch(() => undefined);
     }
 
+    // The relay, for a Layerling that is only a page: on once the user switched it on, and connected anew when
+    // the settings change, here or in another tab of this browser.
+    let stopRelay: (() => void) | null = null;
+    const connectRelay = () => {
+      stopRelay?.();
+      stopRelay = null;
+      const settings = readMcpRelaySettings();
+      if (!settings.enabled || !settings.url) {
+        setMcpRelayStatus("off");
+        return;
+      }
+      setMcpRelayStatus("connecting");
+      stopRelay = startBridge(relayBridgeUrl(settings), true);
+    };
+    const followRelayStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === MCP_RELAY_STORAGE_KEY) connectRelay();
+    };
+    connectRelay();
+    window.addEventListener(MCP_RELAY_CHANGED_EVENT, connectRelay);
+    window.addEventListener("storage", followRelayStorage);
+
     return () => {
       cancelled = true;
       stopBridge?.();
+      stopRelay?.();
+      window.removeEventListener(MCP_RELAY_CHANGED_EVENT, connectRelay);
+      window.removeEventListener("storage", followRelayStorage);
     };
   }, []);
 

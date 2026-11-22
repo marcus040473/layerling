@@ -53,6 +53,9 @@ test-results/
 playwright-report/
 .playwright-cli/
 
+# What wrangler leaves behind when the relay's Worker is tried out or deployed (scripts/cloudflare-relay).
+.wrangler/
+
 # Local workspace state
 .codex/
 .codex-run/

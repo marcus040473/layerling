@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { mkdir, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, resolve as resolvePath } from "node:path";
+import { basename, dirname, resolve as resolvePath } from "node:path";
+import { fileURLToPath } from "node:url";
 import { tools } from "./layerling-mcp-tools.mjs";
 import { isLocalBridgeUrl, openEditorAndWait } from "./layerling-mcp-open.mjs";
 import { createNotesSeen, notesWaitMs, waitForNotes } from "./layerling-mcp-notes-wait.mjs";
@@ -85,6 +86,12 @@ async function bridgeCommand(action, args = {}, defaultTimeoutMs = 15000) {
   return payload.data;
 }
 
+/**
+ * What each tool does with the bridge. The MCP server below hands it the bridge of the Layerling at
+ * LAYERLING_URL; the relay (layerling-mcp-relay-core.mjs) hands it the editors of one browser that
+ * connected over the internet. `bridgeGet` lists the editors, `bridgeCommand` sends one a command.
+ */
+export function createToolCaller({ bridgeGet, bridgeCommand }) {
 // The requests layerling_wait_for_notes has handed over, and the notes the agent wrote itself (#1191).
 const notesSeen = createNotesSeen();
 
@@ -353,14 +360,19 @@ async function callTool(name, args) {
   }
 }
 
-function textContent(value) {
+return callTool;
+}
+
+const callTool = createToolCaller({ bridgeGet, bridgeCommand });
+
+export function textContent(value) {
   return {
     type: "text",
     text: typeof value === "string" ? value : JSON.stringify(value, null, 2),
   };
 }
 
-function toolResult(value) {
+export function toolResult(value) {
   if (value?.dataUrl?.startsWith?.("data:image/png;base64,")) {
     return {
       content: [
@@ -434,19 +446,34 @@ async function handleMessage(message) {
   }
 }
 
-let buffer = "";
-process.stdin.setEncoding("utf8");
-process.stdin.on("data", (chunk) => {
-  buffer += chunk;
-  const lines = buffer.split(/\r?\n/);
-  buffer = lines.pop() || "";
-  lines.forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed) return;
-    try {
-      void handleMessage(JSON.parse(trimmed));
-    } catch (error) {
-      sendError(null, -32700, error instanceof Error ? error.message : String(error));
-    }
+/**
+ * Started as a program (node scripts/layerling-mcp-server.mjs) this file talks MCP on stdin and stdout.
+ * The relay imports it for createToolCaller only and must not read stdin, so the names are compared:
+ * a name survives a symlinked folder and a drive letter written in another case, which a full path does not.
+ */
+function startedAsProgram() {
+  try {
+    return basename(process.argv[1] || "") === basename(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (startedAsProgram()) {
+  let buffer = "";
+  process.stdin.setEncoding("utf8");
+  process.stdin.on("data", (chunk) => {
+    buffer += chunk;
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() || "";
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      try {
+        void handleMessage(JSON.parse(trimmed));
+      } catch (error) {
+        sendError(null, -32700, error instanceof Error ? error.message : String(error));
+      }
+    });
   });
-});
+}

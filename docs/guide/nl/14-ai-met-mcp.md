@@ -7,7 +7,7 @@ layerling heeft een MCP-server aan boord. MCP is een standaard waarmee een AI-as
 
 De brug tussen AI-client en editor draait **lokaal op je computer**. Houd er wel rekening mee: wat de AI leest, dus de scène en de afbeeldingen van de weergave, gaat naar de aanbieder van je AI-client, net als alle andere invoer daar.
 
-> **Belangrijk:** De MCP-brug zit in de ontwikkelserver die je zelf op je computer start. Op layerling.com en in installaties met statische hosting staat hij uit. Een kopie die je zelf host, zoals de Docker-image op een NAS, kan hem aanzetten met een toegangstoken; zie "Een kopie op een NAS of server" hieronder.
+> **Belangrijk:** De MCP-brug zit in de ontwikkelserver die je zelf op je computer start. Op layerling.com en in installaties met statische hosting staat hij uit. Een kopie die je zelf host, zoals de Docker-image op een NAS, kan hem aanzetten met een toegangstoken; zie "Een kopie op een NAS of server" hieronder. Zonder iets te installeren gaat het via een doorgeefpunt; zie 'Zonder installatie: alleen AI en browser' hieronder.
 
 ## Stap voor stap voor beginners
 
@@ -70,6 +70,22 @@ De uitgebreide instructies voor alle drie staan in de [README op GitHub](https:/
 Een kopie die je zelf host, kan een AI-client via het netwerk zijn geopende editors laten besturen. Standaard staat dat uit, omdat wie de brug kan besturen de geopende ontwerpen kan lezen en wijzigen. Zet op de server `LAYERLING_MCP_REMOTE` op `true` en `LAYERLING_MCP_TOKEN` op een geheim van minstens 16 tekens (voor de Docker-image in `environment:` van het compose-bestand; opnieuw bouwen is niet nodig). Open een editortabblad van die kopie en laat het open, en geef de MCP-client het adres en hetzelfde token: `LAYERLING_URL=http://nas:3000` en `LAYERLING_MCP_TOKEN=<the token>`.
 
 Alleen een client met het token kan de editors opsommen of besturen. De editorpagina's hebben er geen nodig, maar ze tellen alleen mee onder een adres of naam die alleen je eigen netwerk kan gebruiken (een IP-adres, een naam zonder punt, of een die eindigt op `.local` of `.lan`); een echt domein achter een reverse proxy zet je in `LAYERLING_MCP_ALLOWED_HOSTS`. Gebruik het op een netwerk dat je vertrouwt, en HTTPS daarbuiten. De README heeft de details.
+
+## Zonder installatie: alleen AI en browser
+
+Een layerling dat alleen een pagina in de browser is, bijvoorbeeld een kopie op statische hosting, heeft geen eigen brug, en een chat in de browser kan de MCP-server niet starten. Daarvoor is er de **AI-verbinding**: de editorpagina verbindt met een doorgeefpunt op internet, en je AI-app verbindt met hetzelfde doorgeefpunt. Op je computer wordt niets geïnstalleerd.
+
+1. Open de {{ui:workspace.title}} (het tandwiel) en ga naar {{ui:aiLink.title}}.
+2. Is het veld {{ui:aiLink.relay}} leeg, vul dan het adres van een doorgeefpunt in. Een website kan er zelf een meebrengen; anders beheert iemand er een, zie hieronder.
+3. Zet {{ui:aiLink.enable}} aan en wacht op de regel die meldt dat er verbinding is.
+4. Kopieer het {{ui:aiLink.address}} en voeg het in je AI-app toe als connector, dus als externe MCP-server. In de Claude-app staat dat in de instellingen onder Connectors. Dat doe je één keer.
+5. Laat het editortabblad open en vertel de AI wat hij moet bouwen.
+
+Bestanden die de AI exporteert of opslaat, komen in de downloadmap van je browser, want naar je computer kan hij niet schrijven.
+
+> **Belangrijk:** Wie het adres kent, kan de ontwerpen die in deze browser open staan lezen en wijzigen. Geef het alleen aan je AI-app. {{ui:aiLink.newAddress}} maakt een nieuw adres, en het oude werkt meteen niet meer. Alles wat de AI doet, loopt via het doorgeefpunt; gebruik er dus een dat je vertrouwt, of beheer je eigen.
+
+**Een doorgeefpunt beheren.** Het doorgeefpunt is een klein programma in het project, `scripts/layerling-mcp-relay.mjs`. Het heeft alleen Node.js nodig en bewaart niets: `npm run mcp:relay` start het, en er hoort HTTPS voor. Op Cloudflare Workers draait het gratis (`scripts/cloudflare-relay`). Wie een website bouwt, vult het adres met `NEXT_PUBLIC_LAYERLING_MCP_RELAY` voor alle bezoekers in. De details staan in de README.
 
 ## Wat de AI kan
 

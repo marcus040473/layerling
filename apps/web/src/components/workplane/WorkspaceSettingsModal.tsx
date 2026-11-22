@@ -4,7 +4,7 @@ import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { RibbonButtonsSetting } from "@/components/workplane/RibbonButtonsSetting";
 import type { GuideSection } from "@/lib/guideLinks";
 import { MAX_OVERHANG_ANGLE, MIN_OVERHANG_ANGLE } from "@/lib/overhangLimits";
-import { ArchiveRestore, Box as BoxIcon, ChevronDown, Download, Grid3X3, History, MousePointer2, Palette, PanelTop, Plus, RotateCcw, Ruler, Trash2, X } from "lucide-react";
+import { ArchiveRestore, Bot, Box as BoxIcon, ChevronDown, Download, Grid3X3, History, MousePointer2, Palette, PanelTop, Plus, RotateCcw, Ruler, Trash2, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useMovablePanel } from "@/lib/useMovablePanel";
 import { SpaceMouseSetting } from "@/components/workplane/SpaceMouseSetting";
@@ -13,6 +13,7 @@ import { usePrinterPlayFor } from "@/lib/usePrinterPlay";
 import { PrinterPlaySetting } from "@/components/workplane/PrinterPlaySetting";
 import { SettingsFileButtons } from "@/components/workplane/SettingsFileButtons";
 import { FileBackupSettingsSection } from "@/components/workplane/FileBackupSettingsSection";
+import { AiLinkSettingsSection } from "@/components/workplane/AiLinkSettingsSection";
 import { createPortal } from "react-dom";
 import { HexColorInput, HexColorPicker } from "react-colorful";
 import { APP_THEME_OPTIONS, type AppThemePreference } from "@/lib/appTheme";
@@ -107,7 +108,7 @@ import { MAX_TEXT_LENGTH } from "@/lib/textLength";
 import { DEFAULT_HIRTH_BORE, DEFAULT_HIRTH_TEETH, MAX_HIRTH_TEETH, MIN_HIRTH_TEETH, MIN_HIRTH_TOOTH_HEIGHT, hirthBoreLimit, hirthToothHeightLimit } from "@/lib/hirthGeometry";
 
 type WorkspaceSettings = WorkplaneWorkspaceSettings;
-type WorkspaceSettingsSection = "appearance" | "controls" | "output" | "ribbon" | "measurement" | "workplane" | "shapes" | "history" | "backups";
+type WorkspaceSettingsSection = "appearance" | "controls" | "output" | "ribbon" | "measurement" | "workplane" | "shapes" | "history" | "backups" | "ai";
 // The question mark of each tab opens that tab's own part of the guide.
 const SETTINGS_HELP_SECTION: Record<WorkspaceSettingsSection, GuideSection> = {
   appearance: "settingsAppearance",
@@ -119,6 +120,7 @@ const SETTINGS_HELP_SECTION: Record<WorkspaceSettingsSection, GuideSection> = {
   shapes: "shapeSettings",
   history: "backingUp",
   backups: "fileBackups",
+  ai: "aiInBrowser",
 };
 
 const MIN_WORKSPACE_SIZE = 60;
@@ -836,6 +838,10 @@ export function WorkspaceSettingsModal({
             <button className={activeSection === "backups" ? "active" : ""} data-help={t("backups.settingsTitle")} aria-current={activeSection === "backups" ? "page" : undefined} onClick={() => setActiveSection("backups")}>
               <ArchiveRestore size={18} />
               <span>{t("backups.settingsTitle")}</span>
+            </button>
+            <button className={activeSection === "ai" ? "active" : ""} data-help={t("aiLink.title")} aria-current={activeSection === "ai" ? "page" : undefined} onClick={() => setActiveSection("ai")}>
+              <Bot size={18} />
+              <span>{t("aiLink.title")}</span>
             </button>
           </nav>
 
@@ -1718,6 +1724,8 @@ export function WorkspaceSettingsModal({
               ) : null}
 
               {activeSection === "backups" ? <FileBackupSettingsSection /> : null}
+
+              {activeSection === "ai" ? <AiLinkSettingsSection /> : null}
 
               {activeSection === "history" ? (
                 <>

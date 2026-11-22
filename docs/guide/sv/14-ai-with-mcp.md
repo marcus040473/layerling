@@ -7,7 +7,7 @@ layerling skickar med en MCP-server. MCP är en standard som låter en AI-assist
 
 Bryggan mellan AI-klient och redigerare körs **lokalt på din dator**. Tänk dock på att det AI:n läser – alltså scenen och bilderna av vyn – skickas till leverantören av din AI-klient, precis som all annan indata där.
 
-> **Viktigt:** MCP-bryggan finns i utvecklingsservern som du själv startar på din dator. På layerling.com och i installationer med statisk hosting är den avstängd. En kopia som du driftar själv, till exempel Docker-avbildningen på en NAS, kan slå på den med en åtkomsttoken; se ”En kopia på en NAS eller server” nedan.
+> **Viktigt:** MCP-bryggan finns i utvecklingsservern som du själv startar på din dator. På layerling.com och i installationer med statisk hosting är den avstängd. En kopia som du driftar själv, till exempel Docker-avbildningen på en NAS, kan slå på den med en åtkomsttoken; se ”En kopia på en NAS eller server” nedan. Helt utan installation går det via en förmedlare; se ”Utan installation: bara AI och webbläsare” nedan.
 
 ## Steg för steg för nybörjare
 
@@ -74,6 +74,22 @@ De utförliga instruktionerna för varje klient finns i [README på GitHub](http
 En kopia som du driftar själv kan låta en AI-klient styra sina öppna redigerare över nätverket. Det är avstängt som standard, eftersom den som kan styra bryggan kan läsa och ändra de öppna designerna. På servern sätter du `LAYERLING_MCP_REMOTE` till `true` och `LAYERLING_MCP_TOKEN` till en hemlighet på minst 16 tecken (för Docker-avbildningen under `environment:` i compose-filen; inget nybygge behövs). Öppna en redigerarflik av den kopian och låt den vara öppen, och ge MCP-klienten adressen och samma token: `LAYERLING_URL=http://nas:3000` och `LAYERLING_MCP_TOKEN=<ditt token>`.
 
 Bara en klient med detta token kan lista eller styra redigerarna. Redigerarsidorna behöver inget, men de räknas bara under en adress eller ett namn som enbart ditt eget nätverk kan använda (en IP-adress, ett namn utan punkt, eller ett som slutar på `.local` eller `.lan`); en riktig domän bakom en omvänd proxy läggs i `LAYERLING_MCP_ALLOWED_HOSTS`. Använd det i ett nätverk du litar på, och HTTPS utanför det. README har detaljerna.
+
+## Utan installation: bara AI och webbläsare
+
+Ett layerling som bara är en sida i webbläsaren, till exempel en kopia på statiskt webbhotell, har ingen egen brygga, och en chatt i webbläsaren kan inte starta MCP-servern. För det finns **AI-anslutningen**: editorsidan ansluter till en förmedlare på internet, och din AI-app ansluter till samma förmedlare. Ingenting installeras på din dator.
+
+1. Öppna {{ui:workspace.title}} (kugghjulet) och gå till {{ui:aiLink.title}}.
+2. Om fältet {{ui:aiLink.relay}} är tomt anger du adressen till en förmedlare. En webbplats kan ha en egen; annars driver någon en, se nedan.
+3. Slå på {{ui:aiLink.enable}} och vänta på raden som säger att anslutningen är uppe.
+4. Kopiera {{ui:aiLink.address}} och lägg till den i din AI-app som en koppling, alltså som en fjärransluten MCP-server. I Claude-appen finns det i inställningarna under Connectors. Det gör du en gång.
+5. Låt editorfliken vara öppen och säg till AI:n vad den ska bygga.
+
+Filer som AI:n exporterar eller sparar hamnar i webbläsarens mapp för hämtade filer, eftersom den inte kan skriva till din dator.
+
+> **Viktigt:** Den som har adressen kan läsa och ändra de designer som är öppna i den här webbläsaren. Ge den bara till din AI-app. {{ui:aiLink.newAddress}} gör en ny, och den gamla slutar genast att fungera. Allt AI:n gör går genom förmedlaren, så använd en du litar på eller driv din egen.
+
+**Driva en förmedlare.** Förmedlaren är ett litet program i projektet, `scripts/layerling-mcp-relay.mjs`. Den behöver bara Node.js och sparar ingenting: `npm run mcp:relay` startar den, och HTTPS ska ligga framför. På Cloudflare Workers körs den gratis (`scripts/cloudflare-relay`). Den som bygger en webbplats kan fylla i förmedlarens adress åt alla besökare med `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. Detaljerna finns i README.
 
 ## Vad AI:n kan göra
 

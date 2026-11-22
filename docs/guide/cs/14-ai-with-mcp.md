@@ -7,7 +7,7 @@ Layerling obsahuje MCP server. MCP je standard, který umožňuje AI asistentovi
 
 Most mezi AI klientem a editorem běží **lokálně na vašem počítači**. Co však AI přečte, tedy scénu a snímky, se odesílá poskytovateli AI stejně jako ostatní vstupy v daném klientovi.
 
-> **Důležité:** MCP je dostupné ve vývojovém serveru, který si spustíte sami. Na layerling.com a statickém hostingu je vypnuté. Vlastní server, například Docker na NASu, jej může zpřístupnit s přístupovým tokenem; viz část o instalaci na NASu níže.
+> **Důležité:** MCP je dostupné ve vývojovém serveru, který si spustíte sami. Na layerling.com a statickém hostingu je vypnuté. Vlastní server, například Docker na NASu, jej může zpřístupnit s přístupovým tokenem; viz část o instalaci na NASu níže. Úplně bez instalace to jde přes prostředníka; viz „Bez instalace: jen AI a prohlížeč“ níže.
 
 ## Krok za krokem pro začátečníky
 
@@ -70,6 +70,22 @@ Podrobné návody pro všechny tři klienty jsou v [README na GitHubu](https://g
 Vlastní instalace může dovolit AI klientovi ovládat otevřené editory přes síť. Výchozí stav je vypnuto, protože přístup k mostu umožňuje číst a měnit otevřené projekty. Na serveru nastavte `LAYERLING_MCP_REMOTE` na `true` a `LAYERLING_MCP_TOKEN` na tajný řetězec alespoň 16 znaků. V Dockeru patří do `environment:` souboru Compose a není nutné znovu sestavovat obraz. Otevřete editor této instalace a ponechte kartu otevřenou. Klientovi nastavte adresu a stejný token: `LAYERLING_URL=http://nas:3000` a `LAYERLING_MCP_TOKEN=<token>`.
 
 Editory může vypisovat a ovládat jen klient se správným tokenem. Samotné stránky editoru jej nepotřebují, ale automaticky se přijímají jen místní adresy: IP adresa, název bez tečky nebo s koncovkou `.local` či `.lan`. Skutečnou doménu za reverzním proxy je nutné přidat do `LAYERLING_MCP_ALLOWED_HOSTS`. Používejte důvěryhodnou síť, mimo ni HTTPS. Podrobnosti jsou v README.
+
+## Bez instalace: jen AI a prohlížeč
+
+Layerling, který je jen stránkou v prohlížeči, například kopie na statickém hostingu, nemá vlastní most a chat v prohlížeči neumí spustit server MCP. K tomu slouží **připojení AI**: stránka editoru se připojí k prostředníkovi na internetu a vaše aplikace AI se připojí ke stejnému prostředníkovi. Do počítače se nic neinstaluje.
+
+1. Otevřete {{ui:workspace.title}} (ozubené kolečko) a přejděte na {{ui:aiLink.title}}.
+2. Je-li pole {{ui:aiLink.relay}} prázdné, zadejte adresu prostředníka. Web může mít vlastního; jinak ho někdo provozuje, viz níže.
+3. Zapněte {{ui:aiLink.enable}} a počkejte na řádek, který ohlásí připojení.
+4. Zkopírujte {{ui:aiLink.address}} a přidejte ji ve své aplikaci AI jako konektor, tedy jako vzdálený server MCP. V aplikaci Claude je to v nastavení v části Konektory. Uděláte to jednou.
+5. Nechte kartu editoru otevřenou a řekněte AI, co má postavit.
+
+Soubory, které AI exportuje nebo uloží, skončí ve složce stažených souborů vašeho prohlížeče, protože do vašeho počítače zapisovat nemůže.
+
+> **Důležité:** Kdo zná adresu, může číst a měnit návrhy otevřené v tomto prohlížeči. Dejte ji jen své aplikaci AI. {{ui:aiLink.newAddress}} vytvoří novou a stará ihned přestane platit. Všechno, co AI dělá, prochází prostředníkem; použijte proto takového, kterému věříte, nebo provozujte vlastního.
+
+**Provoz prostředníka.** Prostředník je malý program v projektu, `scripts/layerling-mcp-relay.mjs`. Potřebuje jen Node.js a nic neukládá: `npm run mcp:relay` ho spustí a před něj patří HTTPS. Na Cloudflare Workers běží zdarma (`scripts/cloudflare-relay`). Kdo sestavuje web, může adresu prostředníka vyplnit všem návštěvníkům pomocí `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. Podrobnosti jsou v README.
 
 ## Co AI dokáže
 

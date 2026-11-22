@@ -7,7 +7,7 @@ layerling est livré avec un serveur MCP. MCP est une norme grâce à laquelle u
 
 Le pont entre le client AI et l'éditeur s'exécute **localement sur votre ordinateur**. Gardez cependant à l’esprit : ce que l’IA lit, c’est-à-dire la scène et les images de la vue, va au fournisseur de votre client IA, comme toute autre entrée.
 
-> **Important :** Le pont MCP existe dans le serveur de développement que vous démarrez vous-même sur votre ordinateur. Sur layerling.com et dans les installations avec hébergement statique, il est désactivé. Une copie que vous hébergez vous-même, comme l'image Docker sur un NAS, peut l'activer avec un jeton d'accès ; voir « Une copie sur un NAS ou un serveur » ci-dessous.
+> **Important :** Le pont MCP existe dans le serveur de développement que vous démarrez vous-même sur votre ordinateur. Sur layerling.com et dans les installations avec hébergement statique, il est désactivé. Une copie que vous hébergez vous-même, comme l'image Docker sur un NAS, peut l'activer avec un jeton d'accès ; voir « Une copie sur un NAS ou un serveur » ci-dessous. Sans rien installer, cela passe par un relais ; voir « Sans rien installer : seulement l'IA et le navigateur » plus bas.
 
 ## Pas à pas pour débutants
 
@@ -70,6 +70,22 @@ Les instructions détaillées pour les trois se trouvent dans le [README sur Git
 Une copie que vous hébergez vous-même peut permettre à un client IA de piloter ses éditeurs ouverts sur le réseau. Il est désactivé par défaut, car quiconque peut conduire le pont peut lire et modifier les conceptions ouvertes. Sur le serveur, définissez `LAYERLING_MCP_REMOTE` sur `true` et `LAYERLING_MCP_TOKEN` sur un secret d'au moins 16 caractères (pour l'image Docker dans `environment:` du fichier de composition ; aucune reconstruction n'est nécessaire). Ouvrez un onglet d'éditeur de cette copie et laissez-le ouvert, et donnez au client MCP l'adresse et le même jeton : `LAYERLING_URL=http://nas:3000` et `LAYERLING_MCP_TOKEN=<the token>`.
 
 Seul un client disposant du jeton peut lister ou piloter les éditeurs. Les pages de l'éditeur n'en ont pas besoin, mais elles ne comptent que sous une adresse ou un nom que seul votre propre réseau peut utiliser (une adresse IP, un nom sans point ou se terminant par `.local` ou `.lan`) ; un domaine réel derrière un proxy inverse va dans `LAYERLING_MCP_ALLOWED_HOSTS`. Utilisez-le sur un réseau de confiance, et HTTPS au-delà. Le README contient les détails.
+
+## Sans rien installer : seulement l'IA et le navigateur
+
+Un layerling qui n'est qu'une page dans le navigateur, par exemple une copie sur un hébergement statique, n'a pas de pont à lui, et une discussion dans le navigateur ne peut pas démarrer le serveur MCP. Pour cela il y a la **connexion IA** : la page de l'éditeur se connecte à un relais sur Internet, et votre application d'IA se connecte au même relais. Rien n'est installé sur votre ordinateur.
+
+1. Ouvrez les {{ui:workspace.title}} (la roue dentée) et allez à {{ui:aiLink.title}}.
+2. Si le champ {{ui:aiLink.relay}} est vide, saisissez l'adresse d'un relais. Un site peut fournir le sien ; sinon quelqu'un en héberge un, voir plus bas.
+3. Activez {{ui:aiLink.enable}} et attendez la ligne qui annonce la connexion.
+4. Copiez l'{{ui:aiLink.address}} et ajoutez-la dans votre application d'IA comme connecteur, c'est-à-dire comme serveur MCP distant. Dans l'application Claude, cela se trouve dans les paramètres, sous Connecteurs. Vous ne le faites qu'une fois.
+5. Laissez l'onglet de l'éditeur ouvert et dites à l'IA quoi construire.
+
+Les fichiers que l'IA exporte ou enregistre arrivent dans le dossier de téléchargements de votre navigateur, car elle ne peut pas écrire sur votre ordinateur.
+
+> **Important :** Quiconque connaît l'adresse peut lire et modifier les dessins ouverts dans ce navigateur. Ne la donnez qu'à votre application d'IA. {{ui:aiLink.newAddress}} en crée une nouvelle, et l'ancienne cesse aussitôt de fonctionner. Tout ce que fait l'IA passe par le relais ; utilisez-en donc un en qui vous avez confiance, ou hébergez le vôtre.
+
+**Héberger un relais.** Le relais est un petit programme du projet, `scripts/layerling-mcp-relay.mjs`. Il n'a besoin que de Node.js et ne conserve rien : `npm run mcp:relay` le démarre, et il faut du HTTPS devant. Sur Cloudflare Workers il fonctionne gratuitement (`scripts/cloudflare-relay`). Qui construit un site peut y inscrire l'adresse du relais pour tous ses visiteurs avec `NEXT_PUBLIC_LAYERLING_MCP_RELAY`. Les détails sont dans le README.
 
 ## Ce que l'IA peut faire
 

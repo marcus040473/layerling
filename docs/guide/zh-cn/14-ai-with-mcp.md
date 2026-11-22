@@ -7,7 +7,7 @@ layerling 自带一个 MCP 服务器。MCP 是一项标准，AI 助手可通过�
 
 AI 客户端与编辑器之间的桥梁**在你的电脑上本地运行**。但要注意：AI 读取的内容，也就是场景和视图图片，会像其他任何输入一样发送给你的 AI 服务商。
 
-> **重要：** MCP 桥梁只存在于你在自己电脑上启动的开发服务器中。在 layerling.com 以及使用静态托管的安装中，它是关闭的。你自己托管的副本（例如 NAS 上的 Docker 镜像）可以用访问令牌开启它；参见下文“NAS 或服务器上的副本”。
+> **重要：** MCP 桥梁只存在于你在自己电脑上启动的开发服务器中。在 layerling.com 以及使用静态托管的安装中，它是关闭的。你自己托管的副本（例如 NAS 上的 Docker 镜像）可以用访问令牌开启它；参见下文“NAS 或服务器上的副本”。 完全不安装也可以，通过中继即可；见下文“无需安装：只要 AI 和浏览器”。
 
 ## 新手分步指南
 
@@ -74,6 +74,22 @@ Antigravity 会自动发现 `.agents/skills/layerling-mcp-skill` 中的工作区
 你自己托管的副本可以让 AI 客户端通过网络驱动其已打开的编辑器。它默认关闭，因为任何能驱动桥梁的人都能读取并修改已打开的设计。在服务器上，把 `LAYERLING_MCP_REMOTE` 设为 `true`，把 `LAYERLING_MCP_TOKEN` 设为至少 16 个字符的密钥（Docker 镜像写在 compose 文件的 `environment:` 下；无需重新构建）。打开该副本的一个编辑器标签页并保持打开，然后把地址和同一个令牌交给 MCP 客户端：`LAYERLING_URL=http://nas:3000` 和 `LAYERLING_MCP_TOKEN=<the token>`。
 
 只有持有令牌的客户端才能列出或驱动编辑器。编辑器页面不需要令牌，但只有在仅限你所在网络使用的地址或名称下才计入（IP 地址、不含点的名称，或以 `.local` 或 `.lan` 结尾的名称）；反向代理后面的真实域名要写入 `LAYERLING_MCP_ALLOWED_HOSTS`。请仅在可信网络中使用，跨网络时使用 HTTPS。详情见 README。
+
+## 无需安装：只要 AI 和浏览器
+
+只是浏览器中一个页面的 layerling（例如静态托管上的副本）没有自己的桥梁，浏览器里的聊天也无法启动 MCP 服务器。为此有 **AI 连接**：编辑器页面连接到互联网上的中继，你的 AI 应用也连接到同一个中继。你的电脑上不需要安装任何东西。
+
+1. 打开{{ui:workspace.title}}（齿轮），进入{{ui:aiLink.title}}。
+2. 如果{{ui:aiLink.relay}}一栏是空的，填入一个中继的地址。网站可以自带一个；否则由某人运行一个，见下文。
+3. 打开{{ui:aiLink.enable}}，等待提示已连接的那一行。
+4. 复制{{ui:aiLink.address}}，在你的 AI 应用中把它添加为连接器，也就是远程 MCP 服务器。在 Claude 应用中，它位于设置里的连接器。只需做一次。
+5. 保持编辑器标签页打开，然后告诉 AI 要搭建什么。
+
+AI 导出或保存的文件会进入你浏览器的下载文件夹，因为它无法写入你的电脑。
+
+> **重要：** 知道这个地址的人都能读取并修改此浏览器中打开的设计。只把它交给你的 AI 应用。{{ui:aiLink.newAddress}}会生成一个新地址，旧地址立即失效。AI 所做的一切都经过中继，所以请使用你信任的中继，或自己运行一个。
+
+**运行中继。** 中继是项目中的一个小程序 `scripts/layerling-mcp-relay.mjs`。它只需要 Node.js，不保存任何东西：`npm run mcp:relay` 启动它，前面应当有 HTTPS。在 Cloudflare Workers 上可以免费运行（`scripts/cloudflare-relay`）。构建网站的人可以用 `NEXT_PUBLIC_LAYERLING_MCP_RELAY` 为所有访问者填好中继地址。详情见 README。
 
 ## AI 能做什么
 

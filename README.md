@@ -474,6 +474,7 @@ host-side port on one of them (e.g. `"3100:3000"`).
 | `npm run guide:images` | Retake the guide's pictures from the running program (needs `npm run dev -- -p 3010`; see `docs/guide/README.md`) |
 | `npm run printers:update` | Refresh the printer presets from OrcaSlicer's profiles |
 | `npm run mcp:layerling` | Start the MCP server for AI clients (see below) |
+| `npm run mcp:relay` | Start the relay that connects a layerling in the browser with an AI app (see below) |
 
 ## layerling MCP Skill
 
@@ -586,6 +587,42 @@ network can use (an IP address, a name without a dot, or one ending in `.local` 
 internet from reaching your NAS through your browser. If you open the copy under a real domain, for example behind a
 reverse proxy, list it in `LAYERLING_MCP_ALLOWED_HOSTS` (comma-separated). Use this on a network you trust, and use HTTPS
 for anything beyond it: the token travels in a header.
+
+### An AI and the browser only, with nothing installed
+
+A layerling that is only a page - a static export on plain web hosting - has no bridge, and a chat in the browser cannot
+start the MCP server. For this the editor has an **AI connection** (Workspace settings, AI connection): the page connects
+to a **relay** on the internet, and the AI app connects to the same relay as a remote MCP server. Nothing is installed on
+the user's computer.
+
+```
+AI app  --  MCP over HTTP  -->  relay  <--  the editor page asks for commands  --  browser
+```
+
+1. In the editor open the Workspace settings, go to AI connection, enter the relay's address if the site has not filled
+   one in, and switch the connection on.
+2. Copy the address shown there (`https://<relay>/mcp/<code>`) and add it in the AI app as a connector, a remote MCP
+   server. A client that keeps keys out of addresses can use `https://<relay>/mcp` with the code as a Bearer token.
+3. Keep the editor tab open and tell the AI what to build.
+
+The code is made in the browser and is the key: whoever has the address can read and change the designs open in that
+browser. "Make a new address" in the settings replaces it. The connection is off until the user switches it on, and it
+then holds for every layerling tab of that browser. Files the AI exports or saves (`layerling_export_mesh`,
+`layerling_save_project`) are saved by the browser into its downloads folder, and `layerling_open_editor` is not offered,
+because the AI cannot start a browser on the user's computer.
+
+**Running a relay.** The relay keeps nothing: commands and answers pass through its memory. Everything the AI does goes
+through it, so use one you trust or run your own.
+
+- **Node.js**, on any small server or container: `npm run mcp:relay` (or `node scripts/layerling-mcp-relay.mjs`; no build
+  and no packages needed). `PORT` (8787) and `HOST` set where it listens, and `LAYERLING_RELAY_ALLOWED_ORIGINS` limits
+  which sites' editors may connect (`https://layerling.example.com,https://example.github.io`). Put HTTPS in front of it:
+  a page served over https may not talk to a relay over plain http.
+- **Cloudflare Workers**, free of charge for a handful of people: `npx wrangler deploy` in `scripts/cloudflare-relay`
+  (set `ALLOWED_ORIGINS` in its `wrangler.jsonc`).
+
+A site can fill in its relay for all visitors at build time with `NEXT_PUBLIC_LAYERLING_MCP_RELAY=https://<relay>`
+(for `npm run export` and `npm run build` alike); a visitor can still enter another one.
 
 ## Contributing
 

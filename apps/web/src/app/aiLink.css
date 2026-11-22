@@ -1,0 +1,99 @@
+/* The AI connection page in the settings (AiLinkSettingsSection.tsx). */
+.workspace-ai-link {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-ai-link .workspace-toggle {
+  margin: 0;
+}
+
+.workspace-ai-link input[type="url"],
+.workspace-ai-link input[type="text"] {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  color: var(--foreground);
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 600;
+}
+
+.workspace-ai-link input[aria-invalid="true"] {
+  border-color: #c0392b;
+}
+
+.workspace-ai-link-hint {
+  margin: -4px 0 0;
+  color: var(--muted-strong);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.workspace-ai-link-warning {
+  margin: 0;
+  font-weight: 700;
+}
+
+.workspace-ai-link-status {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--foreground);
+  border: 1px solid var(--border-strong);
+  border-left-width: 4px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.workspace-ai-link-status[data-status="connected"] {
+  border-left-color: #2e9e5b;
+}
+
+.workspace-ai-link-status[data-status="connecting"] {
+  border-left-color: #d49a1c;
+}
+
+.workspace-ai-link-status[data-status="unreachable"] {
+  border-left-color: #c0392b;
+}
+
+.workspace-ai-link-address {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.workspace-ai-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.workspace-ai-link-row input {
+  flex: 1 1 220px;
+}
+
+.workspace-ai-link-row small {
+  color: var(--muted-strong);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.workspace-ai-link-row button {
+  min-height: 30px;
+  padding: 0 12px;
+  color: var(--foreground);
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  cursor: pointer;
+}
