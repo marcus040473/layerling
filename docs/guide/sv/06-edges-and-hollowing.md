@@ -86,6 +86,8 @@ När toppen är den enda öppna sidan lägger {{ui:shell.grid}} en Gridfinity-ba
 
 Mellanväggarna följer lådans egen insida, även när lådan står vriden på arbetsplanet. Byter du från {{ui:boxGenerator.dividersGrid}} till {{ui:boxGenerator.dividersManual}} sätter du väggarna själv, som i lådgeneratorn: panelen visar insidan uppifrån, {{ui:boxGenerator.wallAddAcross}} och {{ui:boxGenerator.wallAddAlong}} sätter en vägg genom facket du klickade på, en vägg dras för att flytta den och i en ände för att göra den kortare eller längre, och en ände som dras ur väggens linje (eller {{ui:prop.boxWallSlant}}) ställer den snett. Första gången du byter tas de jämna mellanväggarna över som väggar.
 
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+
 När toppen är den enda öppna sidan lägger {{ui:shell.shelf}} en kant hela vägen runt på insidan av väggen som en platta kan vila på, till exempel en hylla eller ett mellanbotten i lådan ({{ui:shell.shelfWidth}}, från början 1,5 mm, 0,5 till 5 mm). {{ui:shell.shelfHeight}} mäts från insidan av botten till kantens ovansida (från början 20 mm). Kanten är 2 mm tjock och följer insidans form, även rundade hörn och runda lådor. Den kräver raka väggar och en kropp som är tydligt högre än kantens höjd; med {{ui:shell.stack}} påslaget byggs kragen runt den. Om det inte går säger verktygsfönstret varför.
 
 ![Resultatet: ett skal med 3 mm vägg, öppet upptill.](shot:hollow-result)

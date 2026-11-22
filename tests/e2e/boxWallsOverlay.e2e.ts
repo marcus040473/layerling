@@ -160,7 +160,7 @@ describe("box generator, dividers by hand on the box", () => {
     expect(pick()).toBeNull();
   });
 
-  it("switches the finger scoop of the compartment whose hand button is clicked on and off", () => {
+  it("switches the finger scoop of the compartment whose hand button is clicked on, through its sides, and off", () => {
     const { panel, scoops } = mount([{ dir: "z", at: 60, from: 0, to: 85.2 }]);
     const buttons = () => all(panel, "box-walls-overlay-scoop");
     expect(buttons()).toHaveLength(2);
@@ -170,6 +170,11 @@ describe("box generator, dividers by hand on the box", () => {
     expect(scoops()![0].x).toBeLessThan(59);
     expect(left().getAttribute("aria-pressed")).toBe("true");
     expect(buttons().filter((button) => button.getAttribute("aria-pressed") === "true")).toHaveLength(1);
+    // Each further click goes on to the next side, and after the last one the scoop is off again.
+    for (const side of ["back", "left", "right"]) {
+      click(left());
+      expect(scoops()!.map((scoop) => scoop.side)).toEqual([side]);
+    }
     click(left());
     expect(scoops()).toEqual([]);
   });

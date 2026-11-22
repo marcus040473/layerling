@@ -86,6 +86,8 @@ Cuando la parte superior es el único lado abierto, {{ui:shell.grid}} pone una p
 
 Los separadores siguen el interior de la propia caja, también cuando la caja está girada sobre el plano de trabajo. Al cambiar de {{ui:boxGenerator.dividersGrid}} a {{ui:boxGenerator.dividersManual}} colocas las paredes tú mismo, como en el generador de cajas: el panel muestra el interior desde arriba, {{ui:boxGenerator.wallAddAcross}} y {{ui:boxGenerator.wallAddAlong}} ponen una pared en el compartimento en el que has hecho clic, una pared se arrastra para moverla y por un extremo para acortarla o alargarla, y un extremo sacado de la línea de la pared (o {{ui:prop.boxWallSlant}}) la inclina. En el primer cambio, los separadores uniformes se conservan como paredes.
 
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+
 Con la parte superior como único lado abierto, {{ui:shell.shelf}} coloca un saliente por todo el interior de la pared sobre el que puede apoyarse una placa, por ejemplo un estante o un doble fondo en la caja ({{ui:shell.shelfWidth}}, 1,5 mm al principio, de 0,5 a 5 mm). {{ui:shell.shelfHeight}} se mide desde el interior del fondo hasta la cara superior del saliente (20 mm al principio). El saliente tiene 2 mm de grosor y sigue la forma del interior, incluidas las esquinas redondeadas y las cajas redondas. Necesita paredes rectas y un cuerpo claramente más alto que la altura del saliente; con {{ui:shell.stack}} activado, el collar se construye alrededor. Si no funciona, la ventana de la herramienta dice por qué.
 
 ![El resultado: un cuerpo hueco con una pared de 3 mm, abierto por arriba.](shot:hollow-result)

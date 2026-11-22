@@ -85,6 +85,8 @@ Stene rastejo navznoter. Zunaj ostane vse, kot je.
 
 Pregrade sledijo notranjosti same škatle, tudi kadar škatla stoji zasukana na delovni ravnini. Ko preklopite z {{ui:boxGenerator.dividersGrid}} na {{ui:boxGenerator.dividersManual}}, stene postavljate sami, kot v generatorju škatel: plošča prikaže notranjost od zgoraj, {{ui:boxGenerator.wallAddAcross}} in {{ui:boxGenerator.wallAddAlong}} postavita steno v kliknjeni predal, steno povlečete, da jo premaknete, in za konec, da jo skrajšate ali podaljšate, konec, povlečen iz črte stene (ali {{ui:prop.boxWallSlant}}), pa jo postavi poševno. Ob prvem preklopu se enakomerne pregrade prevzamejo kot stene.
 
+{{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}}
+
 Ko je zgornja stran edina odprta stran, {{ui:shell.shelf}} naredi rob po vsej notranji strani stene, na katerem lahko počiva plošča, na primer polica ali vmesno dno v škatli ({{ui:shell.shelfWidth}}, na začetku 1,5 mm, od 0,5 do 5 mm). {{ui:shell.shelfHeight}} se meri od notranje strani dna do zgornje ploskve roba (na začetku 20 mm). Rob je debel 2 mm in sledi obliki notranjosti, tudi zaobljenim kotom in okroglim škatlam. Potrebuje navpične stene in telo, ki je jasno višje od višine roba; pri vklopljenem {{ui:shell.stack}} se ovratnik zgradi okoli njega. Če ne gre, okno orodja pove, zakaj.
 
 ![Rezultat: lupina s steno 3 mm, zgoraj odprta.](shot:hollow-result)

@@ -43,7 +43,17 @@ export const MAX_SHELL_DIVIDER_WALLS = 40;
  * turned about its height, in degrees, so that across and along stay the box's own when it is turned more than an
  * eighth of a turn; the dividers always follow the box's inside, whichever way it is turned.
  */
-export type ShellDividers = { x: number; z: number; height?: number; thickness?: number; manual?: boolean; walls?: ShellDividerWall[]; angle?: number };
+export type ShellDividers = { x: number; z: number; height?: number; thickness?: number; manual?: boolean; walls?: ShellDividerWall[]; angle?: number; scoops?: ShellScoop[]; scoopRadius?: number };
+/**
+ * A finger scoop: the floor of the compartment that holds the point (x, z in mm from the left and the back of the
+ * inside) runs up into that side of the compartment in a quarter round, so small parts can be pushed out with a finger.
+ */
+export type ShellScoop = { x: number; z: number; side: "front" | "back" | "left" | "right" };
+export const SHELL_SCOOP_RADIUS = 12;
+export const MIN_SHELL_SCOOP_RADIUS = 2;
+export const MAX_SHELL_SCOOP_RADIUS = 60;
+export const MAX_SHELL_SCOOPS = 60;
+export const SCOOPS_FAILED_MESSAGE = "The finger scoops could not be built on this body. Switch them off or choose another side.";
 
 export const GRID_NEEDS_TOP_MESSAGE = "A Gridfinity floor needs a body hollowed with only its top open.";
 export const GRID_TOO_LOW_MESSAGE = "The body is too low for a Gridfinity floor: the floor takes 6.2 mm and the cavity needs 3 mm above it.";
@@ -83,7 +93,33 @@ export function normalizeShellDividers(value: unknown): ShellDividers | null {
   if (list.length > 0) out.walls = list;
   if (manual === true) out.manual = true;
   if (typeof angle === "number" && Number.isFinite(angle) && Math.abs(angle % 360) > 1e-9) out.angle = Math.round((angle % 360) * 1000) / 1000;
-  return (out.manual ? list.length : out.x + out.z) > 0 ? out : null;
+  const { scoops, scoopRadius } = value as Record<string, unknown>;
+  const dips = normalizeShellScoops(scoops);
+  if (dips.length > 0) {
+    out.scoops = dips;
+    if (typeof scoopRadius === "number" && Number.isFinite(scoopRadius)) {
+      const r = Math.min(MAX_SHELL_SCOOP_RADIUS, Math.max(MIN_SHELL_SCOOP_RADIUS, Math.round(scoopRadius * 1000) / 1000));
+      if (Math.abs(r - SHELL_SCOOP_RADIUS) > 1e-9) out.scoopRadius = r;
+    }
+  }
+  // Dividers there are, or scoops alone in a box without dividers.
+  return (out.manual ? list.length : out.x + out.z) > 0 || dips.length > 0 ? out : null;
+}
+
+/** The finger scoops as a clean list: points with finite measures, none below zero, and a side. */
+export function normalizeShellScoops(value: unknown): ShellScoop[] {
+  if (!Array.isArray(value)) return [];
+  const scoops: ShellScoop[] = [];
+  for (const entry of value) {
+    if (scoops.length >= MAX_SHELL_SCOOPS) break;
+    if (!entry || typeof entry !== "object") continue;
+    const scoop = entry as Partial<ShellScoop>;
+    if (![scoop.x, scoop.z].every((n) => typeof n === "number" && Number.isFinite(n))) continue;
+    const measure = (n: number) => Math.round(Math.min(1e4, Math.max(0, n)) * 1000) / 1000;
+    const side = scoop.side === "back" || scoop.side === "left" || scoop.side === "right" ? scoop.side : "front";
+    scoops.push({ x: measure(scoop.x as number), z: measure(scoop.z as number), side });
+  }
+  return scoops;
 }
 
 /** The dividers set by hand as a clean list: walls with a direction and finite measures, none below zero, each one's beginning before its end. */
