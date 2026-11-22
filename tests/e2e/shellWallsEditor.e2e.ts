@@ -2,8 +2,8 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
-import { ShellWallsEditor, shellGridWalls } from "@/components/workplane/ShellWallsEditor";
-import { normalizeShellDividers, type ShellDividerWall } from "@/lib/shellGridLimits";
+import { ShellScoopsEditor, ShellWallsEditor, shellGridWalls } from "@/components/workplane/ShellWallsEditor";
+import { normalizeShellDividers, type ShellDividerWall, type ShellScoop } from "@/lib/shellGridLimits";
 import { DEFAULT_WORKPLANE_WORKSPACE } from "@/lib/workplaneSettings";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -84,5 +84,45 @@ describe("hollow, dividers set by hand", () => {
     // Walls kept beside an even grid are stored for the way back to "by hand", and the grid's counts decide.
     expect(normalizeShellDividers({ x: 1, z: 0, walls })).toEqual({ x: 1, z: 0, walls: [{ dir: "x", at: 24, from: 5, to: 30, slant: -4 }] });
     expect(normalizeShellDividers({ x: 0, z: 0, walls })).toBeNull();
+  });
+
+  it("gives the compartment that is picked a finger scoop at a side, every compartment one, and takes them away", () => {
+    let scoops: ShellScoop[] = [];
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    const render = () => root!.render(createElement(ShellScoopsEditor, {
+      width: 96,
+      depth: 76,
+      across: 1,
+      along: 0,
+      walls: null,
+      scoops,
+      thickness: 1.2,
+      onChange: (next: ShellScoop[]) => {
+        scoops = next;
+        render();
+      },
+    }));
+    act(render);
+    const panel = container;
+    expect(all(panel, "box-walls-compartment")).toHaveLength(2);
+    // Nothing is picked yet: no side to choose.
+    expect(all(panel, "shell-scoop-front")).toHaveLength(0);
+    const left = all<SVGElement>(panel, "box-walls-compartment").find((entry) => entry.getAttribute("points")!.startsWith("0,"))!;
+    pointer(left, "pointerdown");
+    click(all(panel, "shell-scoop-left")[0]);
+    expect(scoops).toEqual([{ x: expect.any(Number), z: expect.any(Number), side: "left" }]);
+    expect(scoops[0].x).toBeLessThan(47);
+    expect(all(panel, "shell-scoop-left")[0].getAttribute("aria-pressed")).toBe("true");
+    expect(all(panel, "box-walls-plan-scoop")).toHaveLength(1);
+    // Every compartment: the one that has a scoop keeps its side, the other gets one at the front.
+    click(all(panel, "shell-scoops-all")[0]);
+    expect(scoops.map((scoop) => scoop.side).sort()).toEqual(["front", "left"]);
+    click(all(panel, "shell-scoop-none")[0]);
+    expect(scoops.map((scoop) => scoop.side)).toEqual(["front"]);
+    click(all(panel, "shell-scoops-none")[0]);
+    expect(scoops).toEqual([]);
+    expect(normalizeShellDividers({ x: 0, z: 0, scoops: [{ x: 10, z: 10, side: "back" }], scoopRadius: 8 })).toEqual({ x: 0, z: 0, scoops: [{ x: 10, z: 10, side: "back" }], scoopRadius: 8 });
   });
 });
