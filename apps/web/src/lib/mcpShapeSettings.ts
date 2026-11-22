@@ -50,7 +50,7 @@ export const MCP_SHAPE_SETTING_KEYS = [
   "boxShape", "boxSides", "boxCornerRadius", "boxWall", "boxFloor", "boxColumns", "boxRows", "boxDivider", "boxDividerMode", "boxWalls", "boxScoops", "boxScoopRadius", "boxInsert", "boxPockets", "boxPocketFill", "boxPart", "boxLidStyle", "boxLidPlate", "boxFit", "boxLidCompartments", "boxGridfinity", "boxGridfinityColumns", "boxGridfinityRows", "boxGridfinityFloor", "boxGridfinityPlate", "boxStackable", "boxStackHeight",
   "loftBottomOutline", "loftTopOutline", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftBottomSides", "loftTopSides", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTopWall", "loftTwist", "loftTiltX", "loftTiltZ", "loftSmooth", "loftSegments", "loftSections", "loftThrough", "slotEndRatio", "torusTubeRatio",
   "screwHoleShaft", "screwHoleHeadDepth", "screwHoleAngle", "drillPointAngle", "screwHoleSlot", "screwHoleRecess", "screwHoleChamfer", "portProfile", "portClearance",
-  "cornerFillet", "topBottomFillet", "bottomFillet", "roundedBoxQuality",
+  "cornerFillet", "polygonFlat", "topBottomFillet", "bottomFillet", "roundedBoxQuality",
   "bentTubeProfile", "bentTubeInnerProfile", "bentTubeSize", "bentTubeWall", "bentTubeQuality", "bentTubeSegments",
   "vase",
   "text", "font",
