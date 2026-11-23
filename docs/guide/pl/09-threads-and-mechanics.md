@@ -278,6 +278,8 @@ Aby stępić ostrą krawędź na brzegu pogłębienia walcowego, ustaw {{ui:prop
 
 ## Generator pudełek
 
+> **Uwaga:** {{ui:shape.boxGenerator}} nie ma już na liście kształtów. Pudełko robi się teraz z dowolnego kształtu narzędziem {{ui:editor.tool.hollow}}, które ma przegrody, ścianki stawiane ręcznie, wgłębienia na palce, gniazda na kształt i luźną wkładkę, a pokrywkę narzędziem {{ui:editor.tool.lid}}, która podąża za pudełkiem, gdy je zmieniasz. Oba opisano w rozdziale o krawędziach i drążeniu. Projekt z pudełkiem z generatora nadal się otwiera i nadal dotyczy go to, co następuje.
+
 {{ui:shape.boxGenerator}} robi pudełko i jego pokrywkę z kilku ustawień. Zapisywane są tylko ustawienia; bryła jest za każdym razem budowana z nich od nowa, więc projekt zawsze otwiera się tak samo. W polu {{ui:prop.boxShape}} wybierasz {{ui:boxGenerator.shapeRectangle}} (z parametrem {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (koło, gdy szerokość i długość są równe) albo {{ui:boxGenerator.shapePolygon}} z liczbą rogów {{ui:prop.boxSides}}. Szerokość, długość i wysokość to wymiar zewnętrzny. {{ui:prop.boxWall}} i {{ui:prop.boxFloor}} zaczynają od 2,4 mm, co jest dobrą wartością do druku FDM. Ścianka zbyt gruba jak na pudełko nie zostawia miejsca w środku, a panel o tym mówi, zamiast po cichu rysować pełny klocek.
 
 {{ui:prop.boxColumns}} i {{ui:prop.boxRows}} dzielą pudełko na przegródki. Przegródki o grubości {{ui:prop.boxDivider}} są jednym kawałkiem ze ścianką i dnem. Przegródka węższa niż 2 mm zostaje pełna, a panel podaje, ile ich jest.

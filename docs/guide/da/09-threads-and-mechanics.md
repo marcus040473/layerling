@@ -280,6 +280,8 @@ Skruer med cylinderhoved sælges efter længden under hovedet, undersænkede skr
 
 ## Kassegenerator
 
+> **Bemærk:** {{ui:shape.boxGenerator}} står ikke længere på formlisten. En kasse laves nu af enhver form med {{ui:editor.tool.hollow}}, som har skillevæggene, de vægge du selv sætter, grebsfordybningerne, formrummene og den løse indsats, og dens låg med {{ui:editor.tool.lid}}, som følger kassen, når du ændrer den. Begge er beskrevet i kapitlet om kanter og udhuling. Et design med en kasse fra generatoren kan stadig åbnes, og det følgende gælder fortsat for den.
+
 {{ui:shape.boxGenerator}} laver en kasse og dens låg ud fra nogle få indstillinger. Kun indstillingerne gemmes; legemet bygges op af dem hver gang, så et projekt altid åbner ens. Under {{ui:prop.boxShape}} vælger du {{ui:boxGenerator.shapeRectangle}} (med en {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (en cirkel, når bredde og længde er ens) eller {{ui:boxGenerator.shapePolygon}} med {{ui:prop.boxSides}} hjørner. Bredde, længde og højde er ydermålet. {{ui:prop.boxWall}} og {{ui:prop.boxFloor}} starter på 2,4 mm, en god værdi til FDM-print. En væg, der er for tyk til kassen, levner ingen indvendig plads, og panelet siger det i stedet for stille og roligt at tegne en massiv blok.
 
 {{ui:prop.boxColumns}} og {{ui:prop.boxRows}} deler kassen i rum. Skillevæggene, {{ui:prop.boxDivider}} tykke, er ét stykke med væggen og bunden. Et rum, der er smallere end 2 mm, forbliver massivt, og panelet fortæller, hvor mange der er.

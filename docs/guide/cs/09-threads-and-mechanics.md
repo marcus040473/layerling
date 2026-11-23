@@ -278,6 +278,8 @@ Chcete-li srazit ostrou hranu na okraji zahloubení, nastavte u {{ui:shape.count
 
 ## Generátor krabiček
 
+> **Poznámka:** {{ui:shape.boxGenerator}} už v seznamu tvarů není. Krabička se teď dělá z jakéhokoli tvaru nástrojem {{ui:editor.tool.hollow}}, který má přepážky, stěny umístěné ručně, prolisy pro prsty, tvarová lůžka a volnou vložku, a její víko nástrojem {{ui:editor.tool.lid}}, které krabičku následuje, když ji změníte. Obojí popisuje kapitola o hranách a vydutí. Návrh s krabičkou z generátoru se dál otevře a dál pro ni platí, co následuje.
+
 {{ui:shape.boxGenerator}} vytvoří krabičku a její víko z několika nastavení. Ukládají se jen nastavení; těleso se z nich pokaždé postaví znovu, takže se projekt otevře vždy stejně. V části {{ui:prop.boxShape}} vyberete {{ui:boxGenerator.shapeRectangle}} (s hodnotou {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (kruh, když jsou šířka a délka stejné) nebo {{ui:boxGenerator.shapePolygon}} s {{ui:prop.boxSides}} rohy. Šířka, délka a výška jsou vnější rozměr. {{ui:prop.boxWall}} a {{ui:prop.boxFloor}} začínají na 2,4 mm, což je dobrá hodnota pro FDM tisk. Stěna příliš tlustá pro krabičku nenechá žádný vnitřek a panel to řekne, místo aby mlčky nakreslil plný blok.
 
 {{ui:prop.boxColumns}} a {{ui:prop.boxRows}} rozdělí krabičku na přihrádky. Přepážky silné podle {{ui:prop.boxDivider}} tvoří jeden kus se stěnou a dnem. Přihrádka užší než 2 mm zůstane plná a panel vám řekne, kolik jich je.

@@ -278,6 +278,8 @@ Die {{ui:shape.finishingWasher}} (Diskussion #1131) ist die gewölbte Scheibe un
 
 ## Boxen-Generator
 
+> **Hinweis:** Der {{ui:shape.boxGenerator}} steht nicht mehr in der Formenliste. Eine Kiste entsteht jetzt aus jeder Form mit {{ui:editor.tool.hollow}} - dort gibt es die Trennstege, die selbst gesetzten Wände, die Griffmulden, die Formfächer und den losen Einsatz - und ihr Deckel mit {{ui:editor.tool.lid}}, der der Kiste folgt, wenn du sie änderst. Beides steht im Kapitel über Kanten und Aushöhlen. Ein Entwurf mit einer Kiste aus dem Generator lässt sich weiter öffnen, und für sie gilt weiter, was hier folgt.
+
 Der {{ui:shape.boxGenerator}} baut eine Box und ihren Deckel aus wenigen Einstellungen. Gespeichert werden nur die Einstellungen; der Körper wird jedes Mal daraus neu gebaut, ein Projekt öffnet sich also immer gleich. Unter {{ui:prop.boxShape}} wählst du {{ui:boxGenerator.shapeRectangle}} (mit einem {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (ein Kreis, wenn Breite und Länge gleich sind) oder {{ui:boxGenerator.shapePolygon}} mit {{ui:prop.boxSides}}. Breite, Länge und Höhe sind das Außenmaß. {{ui:prop.boxWall}} und {{ui:prop.boxFloor}} beginnen bei 2,4 mm, einem guten Wert für den FDM-Druck. Ist die Wand zu dick für die Box, bleibt innen kein Platz; das Feld sagt es dir, statt stillschweigend einen vollen Block zu zeichnen.
 
 {{ui:prop.boxColumns}} und {{ui:prop.boxRows}} teilen die Box in Fächer. Die Trennwände, {{ui:prop.boxDivider}} dick, sind mit Wand und Boden aus einem Stück. Ein Fach, das schmaler als 2 mm wäre, bleibt voll, und das Feld sagt dir, wie viele es sind.

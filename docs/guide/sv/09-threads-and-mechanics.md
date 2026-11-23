@@ -278,6 +278,8 @@ Skruvar med cylindriskt huvud säljs efter längden under skallen, försänkta s
 
 ## Lådgenerator
 
+> **Obs:** {{ui:shape.boxGenerator}} finns inte längre i formlistan. En låda görs nu av vilken form som helst med {{ui:editor.tool.hollow}}, som har mellanväggarna, väggarna du sätter själv, greppgroparna, formfacken och den lösa insatsen, och dess lock med {{ui:editor.tool.lid}}, som följer lådan när du ändrar den. Båda beskrivs i kapitlet om kanter och urholkning. En design med en låda från generatorn går fortfarande att öppna, och det som följer här gäller fortfarande för den.
+
 {{ui:shape.boxGenerator}} gör en låda och dess lock av några få inställningar. Bara inställningarna sparas; kroppen byggs av dem varje gång, så ett projekt öppnas alltid likadant. Under {{ui:prop.boxShape}} väljer du {{ui:boxGenerator.shapeRectangle}} (med en {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (en cirkel när bredd och längd är lika) eller {{ui:boxGenerator.shapePolygon}} med {{ui:prop.boxSides}} hörn. Bredd, längd och höjd är ytterstorleken. {{ui:prop.boxWall}} och {{ui:prop.boxFloor}} börjar på 2,4 mm, ett bra värde för FDM-utskrift. En vägg som är för tjock för lådan lämnar ingen insida, och panelen säger det i stället för att tyst rita en massiv kloss.
 
 {{ui:prop.boxColumns}} och {{ui:prop.boxRows}} delar lådan i fack. Skiljeväggarna, {{ui:prop.boxDivider}} tjocka, sitter ihop med väggen och botten i ett stycke. Ett fack som är smalare än 2 mm förblir massivt, och panelen berättar hur många det gäller.

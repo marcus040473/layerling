@@ -279,6 +279,8 @@ La {{ui:shape.finishingWasher}} (una rosetta, Discussion #1131) è la rondella b
 
 ## Generatore di scatole
 
+> **Nota:** il {{ui:shape.boxGenerator}} non è più nell'elenco delle forme. Ora una scatola si fa da qualsiasi forma con {{ui:editor.tool.hollow}}, che ha i divisori, le pareti messe a mano, gli incavi per le dita, le sedi sagomate e l'inserto estraibile, e il suo coperchio con {{ui:editor.tool.lid}}, che segue la scatola quando la modifichi. Entrambi sono descritti nel capitolo su spigoli e svuotamento. Un progetto con una scatola del generatore si apre ancora, e quanto segue continua a valere per essa.
+
 Il {{ui:shape.boxGenerator}} crea una scatola e il suo coperchio a partire da poche impostazioni. Vengono salvate solo le impostazioni; il corpo viene ricostruito ogni volta da esse, così un progetto si apre sempre uguale. Sotto {{ui:prop.boxShape}} scegli {{ui:boxGenerator.shapeRectangle}} (con un {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (un cerchio quando larghezza e lunghezza sono uguali) oppure {{ui:boxGenerator.shapePolygon}} con {{ui:prop.boxSides}} angoli. Larghezza, lunghezza e altezza sono la misura esterna. {{ui:prop.boxWall}} e {{ui:prop.boxFloor}} partono da 2,4 mm, un buon valore per la stampa FDM. Una parete troppo spessa per la scatola non lascia spazio all'interno, e il pannello lo segnala invece di disegnare in silenzio un blocco pieno.
 
 {{ui:prop.boxColumns}} e {{ui:prop.boxRows}} dividono la scatola in scomparti. I divisori, spessi quanto {{ui:prop.boxDivider}}, sono un pezzo unico con la parete e il fondo. Uno scomparto più stretto di 2 mm resta pieno, e il pannello ti dice quanti sono.

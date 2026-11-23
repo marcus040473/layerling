@@ -276,6 +276,8 @@ microSD 卡槽也是左边缘的接口，位于电路板下方（Zero 2 W 上在
 
 ## 盒子生成器
 
+> **注意：**{{ui:shape.boxGenerator}} 已不在形状列表中。现在用 {{ui:editor.tool.hollow}} 把任意形状做成盒子，它有隔板、自己放置的壁、取物凹槽、形状槽和可取出的内衬；盖子用 {{ui:editor.tool.lid}} 来做，修改盒子时盖子会跟着变。两者都在“边缘与掏空”一章里说明。含有生成器盒子的设计仍然可以打开，下面的内容对它仍然适用。
+
 {{ui:shape.boxGenerator}}根据几项设置做出一个盒子和它的盖子。只保存设置；每次都由设置重新生成实体，所以项目每次打开都一样。在{{ui:prop.boxShape}}下选择{{ui:boxGenerator.shapeRectangle}}（带{{ui:prop.boxCornerRadius}}）、{{ui:boxGenerator.shapeRound}}（宽和长相等时是圆）或带{{ui:prop.boxSides}}个角的{{ui:boxGenerator.shapePolygon}}。宽、长、高是外部尺寸。{{ui:prop.boxWall}}和{{ui:prop.boxFloor}}起始为 2.4 mm，这是 FDM 打印的好值。壁对盒子来说太厚时，里面没有空间，面板会明确告诉你，而不是悄悄画出一个实心块。
 
 {{ui:prop.boxColumns}}和{{ui:prop.boxRows}}把盒子分成格子。隔板厚{{ui:prop.boxDivider}}，与壁和底是一体的。比 2 mm 窄的格子保持实心，面板会告诉你有几个。
