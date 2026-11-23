@@ -173,6 +173,19 @@ version on `shell-shelf`. Merge `shell-shelf` into `marcus`, never the other way
 Possible PRs to Stefan, only when Marcus says so: the Gridfinity floor (`shell-gridfinity-floor`), the two newer commits
 of `shell-stackable`, the stacking foot and lid, the lid stacking top.
 
+## G. Lid made again for a box with magnets or screws (Discussion #1985), 23 November 2026
+
+Stefan asked Marcus to look at it: a lid made a second time for a box that has an earlier lid's posts and pockets stood a
+peg in every old pocket, and screws after magnets left both in the box.
+
+Fixed on branch `ccr-591691ea-xzu2y4` (commit `3f0fa8d`, on the fork's `main` at Stefan's 1.169.1): a lid with magnets or
+screws replaces the old posts and pockets; a lid with neither keeps its lip out of the old pockets
+(`lidTargetsWithoutCorners` in `lidTool.ts`, used in `makeLid`). All five checks green (6460 unit, 1719 e2e).
+PR text: `uebergabe/pr-texte/lid-again.md`, German `lid-again-de.md`. **Marcus opens the PR himself.** For Stefan, put that
+one commit on a branch from Stefan's `main` (cherry-pick), so the PR does not carry `uebergabe/`. Not merged into `marcus` yet.
+
+Open question from Stefan in the same discussion, not built: pegs in the corners as a third choice beside magnets and screws.
+
 ## Status page
 
 Marcus's overview is a page on claude.ai that Copilot cannot reach. Do not try. Tell Marcus in German what you did, and
