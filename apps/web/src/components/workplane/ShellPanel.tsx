@@ -734,8 +734,7 @@ export function ShellPanel({
         </div>
       </ToolAdvanced>
 
-      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <ToolStatus state="working" text={t("shell.working")} /> : previewBusy ? <ToolStatus state="working" text={t("edge.previewBusy")} /> : null}
-      {/* The usual next step for a box: straight on to its lid, the hollowing kept on the way. */}
+      {/* The usual next step for a box: straight on to its lid, the hollowing kept on the way. Above the message, which stands right before the buttons' row (#1869). */}
       {onMakeLid && openSides.includes("top") ? (
         <div className="tool-next-step">
           <button type="button" className="secondary" data-testid="shell-then-lid" disabled={busy || Boolean(error)} onClick={onMakeLid}>
@@ -743,6 +742,7 @@ export function ShellPanel({
           </button>
         </div>
       ) : null}
+      {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <ToolStatus state="working" text={t("shell.working")} /> : previewBusy ? <ToolStatus state="working" text={t("edge.previewBusy")} /> : null}
       <div className="edge-modifier-footer">
         <ToolCancel onClick={onCancel} />
         <ToolApply label={t("shell.apply")} busy={busy} busyLabel={t("shell.working")} disabled={busy} onClick={onApply} />
