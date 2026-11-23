@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Selecting and arranging - מדריך המשתמש של layerling</title>
+    <meta name="description" content="Selecting shapes, finding them in the object list, aligning, mirroring, rotating, laying flat on a face and multiplying in patterns.">
+    <link rel="canonical" href="https://layerling.com/guide/select-and-arrange.html">
+    <meta name="robots" content="noindex">
+    <link rel="alternate" hreflang="en" href="https://layerling.com/guide/select-and-arrange.html">
+    <link rel="alternate" hreflang="cs" href="https://layerling.com/prirucka/select-and-arrange.html">
+    <link rel="alternate" hreflang="da" href="https://layerling.com/vejledning/select-and-arrange.html">
+    <link rel="alternate" hreflang="de" href="https://layerling.com/anleitung/auswaehlen-und-anordnen.html">
+    <link rel="alternate" hreflang="es-ES" href="https://layerling.com/guia-es/select-and-arrange.html">
+    <link rel="alternate" hreflang="fr" href="https://layerling.com/guide-fr/select-and-arrange.html">
+    <link rel="alternate" hreflang="it" href="https://layerling.com/it/select-and-arrange.html">
+    <link rel="alternate" hreflang="hu" href="https://layerling.com/utmutato/select-and-arrange.html">
+    <link rel="alternate" hreflang="nl" href="https://layerling.com/handleiding/selecteren-en-schikken.html">
+    <link rel="alternate" hreflang="pl" href="https://layerling.com/instrukcja/select-and-arrange.html">
+    <link rel="alternate" hreflang="sl" href="https://layerling.com/navodila/izbiranje-in-razporejanje.html">
+    <link rel="alternate" hreflang="sv" href="https://layerling.com/handbok/select-and-arrange.html">
+    <link rel="alternate" hreflang="ru" href="https://layerling.com/ru/select-and-arrange.html">
+    <link rel="alternate" hreflang="ar" href="https://layerling.com/dalil/select-and-arrange.html">
+    <link rel="alternate" hreflang="zh-CN" href="https://layerling.com/zh-cn/select-and-arrange.html">
+    <link rel="alternate" hreflang="zh-TW" href="https://layerling.com/zh-tw/select-and-arrange.html">
+    <meta property="og:title" content="Selecting and arranging - מדריך המשתמש של layerling">
+    <meta property="og:description" content="Selecting shapes, finding them in the object list, aligning, mirroring, rotating, laying flat on a face and multiplying in patterns.">
+    <meta property="og:image" content="https://layerling.com/assets/layerling/layerling-social.png">
+    <link rel="icon" href="/assets/layerling/layerling-logo.svg">
+    <script>try{var t=localStorage.getItem("layerling.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;else if(t==="graphite"){document.documentElement.dataset.theme="dark";document.documentElement.dataset.palette="graphite"}}catch(e){}</script>
+    <style>
+:root {
+  color-scheme: light;
+  --ground: #fbf8f0; --card: #ffffff; --ink: #231a11; --muted: #7a6650; --edge: #ede4d4;
+  --accent: #ad6206; --accent-ink: #ffffff; --tint: #f6ecd9; --code: #f3ece0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #17130e; --card: #201a13; --ink: #f1e9dc; --muted: #b3a48d; --edge: #362d21;
+    --accent: #f0a23a; --accent-ink: #1c1408; --tint: #2b2116; --code: #2a2218;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #17130e; --card: #201a13; --ink: #f1e9dc; --muted: #b3a48d; --edge: #362d21;
+  --accent: #f0a23a; --accent-ink: #1c1408; --tint: #2b2116; --code: #2a2218;
+}
+/* Graphite is the dark theme with the warm browns turned grey (the program's own Graphite, see scripts/generate-graphite-theme.mjs); the orange accent stays. */
+:root[data-theme="dark"][data-palette="graphite"] {
+  --ground: #1a1a1a; --card: #202020; --ink: #e7e7e7; --muted: #8d8d8d; --edge: #303030;
+  --accent-ink: #191919; --tint: #262626; --code: #272727;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 76px; }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 16px/1.7 "Avenir Next", Avenir, "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+a { color: var(--accent); }
+.bar { position: sticky; top: 0; z-index: 5; background: var(--ground); border-bottom: 1px solid var(--edge); }
+.bar-inner { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; margin-right: auto; }
+.brand img { width: 34px; height: 34px; }
+.brand b { font-size: 19px; letter-spacing: -0.03em; }
+.brand-text { display: flex; align-items: baseline; gap: 10px; }
+.brand-note { color: var(--muted); font-size: 13px; font-weight: 600; }
+.guide-search { position: relative; flex: 0 1 280px; min-width: 0; margin: 0; }
+.guide-search input { width: 100%; padding: 7px 12px; border: 1px solid var(--edge); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; font-size: 14px; }
+.guide-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.guide-results { position: absolute; left: 0; right: 0; top: calc(100% + 6px); max-height: min(70vh, 460px); overflow-y: auto; background: var(--card); border: 1px solid var(--edge); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14); z-index: 7; }
+.guide-results[hidden] { display: none; }
+.guide-results a { display: block; padding: 8px 12px; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--edge); }
+.guide-results a:last-child { border-bottom: 0; }
+.guide-results a:hover, .guide-results a:focus-visible { background: var(--tint); outline: none; }
+.guide-results b { display: block; font-size: 14px; }
+.guide-results span { display: block; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.guide-results mark { background: transparent; color: var(--accent); font-weight: 800; }
+.guide-results p { margin: 0; padding: 10px 12px; color: var(--muted); font-size: 14px; }
+mark.guide-hit { background: #ffd54a; color: #231a11; border-radius: 2px; padding: 0 1px; cursor: pointer; }
+.editor-elsewhere { max-width: 1100px; margin: 0 auto; padding: 0 16px 10px; color: var(--muted); font-size: 14px; text-align: right; }
+.editor-elsewhere[hidden] { display: none; }
+.bar a.button { padding: 7px 14px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 14px; text-decoration: none; }
+.bar .lang-menu { position: relative; font-size: 14px; font-weight: 600; }
+.bar .lang-menu summary { color: var(--muted); cursor: pointer; list-style: none; }
+.bar .lang-menu summary::-webkit-details-marker { display: none; }
+.bar .lang-menu summary::after { content: " \25BE"; font-size: 11px; }
+.bar .lang-menu ul { position: absolute; right: 0; margin: 8px 0 0; padding: 4px; list-style: none; min-width: 9em; background: var(--card); border: 1px solid var(--edge); border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14); }
+.bar .lang-menu a { display: block; padding: 5px 10px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+.bar .lang-menu a:hover { background: var(--tint); }
+.bar .lang-menu a[aria-current] { font-weight: 800; }
+.not-translated { margin: 0 0 20px; padding: 10px 14px; border-radius: 8px; background: var(--tint); color: var(--ink); font-size: 15px; }
+.shell { max-width: 1100px; margin: 0 auto; padding: 24px 16px 72px; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 40px; align-items: start; }
+nav.chapters { position: sticky; top: 76px; font-size: 14px; }
+nav.chapters h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+nav.chapters ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.chapters a { display: block; padding: 5px 10px; border-radius: 7px; color: var(--ink); text-decoration: none; line-height: 1.35; }
+nav.chapters a:hover { background: var(--tint); }
+nav.chapters a[aria-current="page"] { background: var(--tint); color: var(--accent); font-weight: 700; }
+main { min-width: 0; max-width: 760px; }
+h1 { margin: 0 0 8px; font-size: 34px; line-height: 1.15; letter-spacing: -0.025em; text-wrap: balance; }
+h2 { margin: 40px 0 8px; font-size: 23px; letter-spacing: -0.015em; text-wrap: balance; }
+h3 { margin: 26px 0 6px; font-size: 17px; }
+.lead { color: var(--muted); font-size: 18px; margin: 0 0 20px; }
+p, ul, ol { margin: 0 0 14px; }
+li { margin-bottom: 4px; }
+strong.ui { font-weight: 700; white-space: nowrap; }
+kbd { padding: 1px 6px; border: 1px solid var(--edge); border-bottom-width: 2px; border-radius: 5px; background: var(--card); font: 600 0.86em/1.5 ui-monospace, Consolas, monospace; }
+code { padding: 1px 5px; border-radius: 5px; background: var(--code); font: 0.9em ui-monospace, Consolas, monospace; }
+pre { overflow-x: auto; padding: 14px 16px; border-radius: 8px; background: var(--code); direction: ltr; text-align: left; }
+pre code { padding: 0; background: none; }
+figure { margin: 22px 0; }
+figure img { display: block; width: 100%; height: auto; border: 1px solid var(--edge); border-radius: 8px; background: var(--card); }
+figcaption { margin-top: 6px; color: var(--muted); font-size: 13.5px; }
+aside.tip { margin: 18px 0; padding: 12px 16px; border-radius: 8px; background: var(--tint); border: 1px solid var(--edge); }
+aside.tip > :last-child { margin-bottom: 0; }
+/* A card: one tool, one step to a line (#1322). The picture sits on a light tile in every theme, as the
+   toolbar button shows it; the steps line up under the tool's name. */
+.tool-card { margin: 12px 0; padding: 12px 16px 10px; border: 1px solid var(--edge); border-radius: 12px; background: var(--card); }
+.card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.card-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #ffffff; border: 1px solid var(--edge); }
+.card-icon img { width: 30px; height: 30px; object-fit: contain; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .card-icon { background: #ece4d6; border-color: transparent; } }
+:root[data-theme="dark"] .card-icon { background: #ece4d6; border-color: transparent; }
+:root[data-theme="dark"][data-palette="graphite"] .card-icon { background: #e4e4e4; }
+.card-title { font-size: 17px; font-weight: 700; line-height: 1.35; }
+.card-title strong.ui { white-space: normal; }
+.card-keys { margin-inline-start: auto; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.card-steps { list-style: none; margin: 0; padding: 0; }
+.tool-card:not(.no-icon) .card-steps { padding-inline-start: 52px; }
+.card-steps li { position: relative; margin: 0; padding: 3px 0; padding-inline-start: 20px; }
+.card-steps li.step::before { content: ""; position: absolute; inset-inline-start: 5px; top: 0.82em; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); opacity: 0.6; }
+.card-steps li.result::before { content: "\2192"; position: absolute; inset-inline-start: 0; top: 3px; color: var(--accent); font-weight: 700; }
+[dir="rtl"] .card-steps li.result::before { content: "\2190"; }
+.card-steps li.result { color: var(--accent); }
+.card-steps li.result a { text-decoration: underline; }
+.card-steps li.tip { margin: 6px 0 4px; padding: 7px 12px; border-radius: 8px; background: var(--tint); font-size: 15px; }
+@media (max-width: 560px) { .tool-card:not(.no-icon) .card-steps { padding-inline-start: 0; } }
+.table-scroll { overflow-x: auto; margin: 0 0 16px; }
+table { border-collapse: collapse; font-size: 15px; min-width: 100%; }
+table.keys { table-layout: fixed; }
+table.keys td:first-child { width: 42%; }
+th, td { padding: 7px 12px; border-bottom: 1px solid var(--edge); text-align: start; vertical-align: top; }
+th { color: var(--muted); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+/* Where a link from the program lands, the section is outlined from its heading to its end. */
+.guide-part:has(> :is(h2, h3):target) { outline: 3px solid var(--accent); outline-offset: 10px; border-radius: 6px; }
+:is(h2, h3):target { scroll-margin-top: 24px; }
+.toc { margin: 0 0 24px; padding: 12px 16px; border: 1px solid var(--edge); border-radius: 8px; background: var(--card); font-size: 14.5px; }
+.toc b { display: block; margin-bottom: 4px; color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.toc ul { margin: 0; padding-inline-start: 18px; }
+.pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--edge); }
+.pager a { display: block; max-width: 48%; padding: 10px 14px; border: 1px solid var(--edge); border-radius: 8px; background: var(--card); text-decoration: none; color: var(--ink); }
+.pager a small { display: block; color: var(--muted); font-size: 12px; }
+.pager a.next { margin-inline-start: auto; text-align: end; }
+.cards { list-style: none; margin: 24px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.cards a { display: block; height: 100%; padding: 14px 16px; border: 1px solid var(--edge); border-radius: 8px; background: var(--card); text-decoration: none; color: var(--ink); }
+.cards a:hover { border-color: var(--accent); }
+.cards b { display: block; margin-bottom: 2px; }
+.cards span { color: var(--muted); font-size: 14px; line-height: 1.45; display: block; }
+footer.note { max-width: 1100px; margin: 0 auto; padding: 0 16px 12px; color: var(--muted); font-size: 14px; }
+.site-footer { max-width: 1100px; margin: 0 auto; padding: 14px 16px 40px; border-top: 1px solid var(--edge); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; color: var(--muted); font-size: 13px; }
+.site-footer .trademark { flex: 1 0 100%; margin: 0; font-size: 12px; line-height: 1.45; }
+.site-footer a { color: var(--muted); text-decoration: none; }
+.site-footer a:hover { color: var(--accent); text-decoration: underline; }
+.site-footer .dot { margin: 0 8px; }
+@media (max-width: 820px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  nav.chapters { position: static; }
+  nav.chapters ol { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  h1 { font-size: 28px; }
+  .brand-note { display: none; }
+}
+@media (max-width: 720px) {
+  .bar-inner { flex-wrap: wrap; }
+  .guide-search { order: 5; flex: 1 1 100%; }
+}
+.print-link { margin: 0 0 14px; }
+.print-link a, nav.chapters .print-link a { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border: 1px solid var(--accent); border-radius: 8px; background: var(--tint); color: var(--accent); font-weight: 700; line-height: 1.3; text-decoration: none; }
+.print-link a:hover, .print-link a:focus-visible, nav.chapters .print-link a:hover, nav.chapters .print-link a:focus-visible { background: var(--accent); color: var(--accent-ink); }
+.print-link svg { flex: none; }
+.print-link.in-page { margin: 0 0 22px; max-width: 360px; }
+.print-actions { margin: 0 0 24px; }
+.print-actions button { padding: 8px 16px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 700; cursor: pointer; }
+.print-chapter { margin-top: 56px; padding-top: 8px; border-top: 1px solid var(--edge); }
+.print-chapter > h2 { margin-top: 20px; font-size: 28px; }
+.print-contents { margin: 0 0 24px; padding-inline-start: 22px; columns: 2; column-gap: 32px; }
+.print-contents li { break-inside: avoid; }
+@media (max-width: 560px) { .print-contents { columns: 1; } }
+@media print {
+  @page { margin: 16mm 14mm; }
+  :root, :root[data-theme="dark"], :root[data-theme="dark"][data-palette="graphite"] {
+    color-scheme: light;
+    --ground: #ffffff; --card: #ffffff; --ink: #1a1a1a; --muted: #5c5c5c; --edge: #cfcfcf;
+    --accent: #8a4d04; --tint: #f1f1f1; --code: #f1f1f1;
+  }
+  body { font-size: 11pt; line-height: 1.55; }
+  .bar, nav.chapters, .pager, .print-actions { display: none; }
+  mark.guide-hit { background: none; color: inherit; padding: 0; }
+  .shell { display: block; padding: 0; }
+  main { max-width: none; }
+  h2, h3, h4 { break-after: avoid; }
+  figure, table, pre, aside.tip, .tool-card { break-inside: avoid; }
+  figure img { max-height: 120mm; width: auto; max-width: 100%; }
+  .print-all .site-footer, .print-all footer.note { display: none; }
+  .print-chapter { margin-top: 0; padding-top: 0; border-top: 0; break-before: page; }
+}
+</style>
+  </head>
+  <body>
+    <header class="bar"><div class="bar-inner">
+      <a class="brand" href="/madrich/index.html"><img src="/assets/layerling/layerling-logo.svg" alt=""><span class="brand-text"><b>layerling</b><span class="brand-note">מדריך למשתמש</span></span></a>
+      <form class="guide-search" id="guide-search" role="search" data-index="/madrich/search-index.json" data-nothing="לא נמצא דבר." data-umlauts="false"><input type="search" id="guide-search-input" name="q" placeholder="חיפוש במדריך" aria-label="חיפוש במדריך" aria-controls="guide-results" aria-expanded="false" autocomplete="off" spellcheck="false"><div class="guide-results" id="guide-results" hidden></div></form>
+      <details class="lang-menu"><summary aria-label="שפה">עברית</summary><ul><li><a href="/guide/select-and-arrange.html" hreflang="en" lang="en">English</a></li><li><a href="/prirucka/select-and-arrange.html" hreflang="cs" lang="cs">Čeština</a></li><li><a href="/vejledning/select-and-arrange.html" hreflang="da" lang="da">Dansk</a></li><li><a href="/anleitung/auswaehlen-und-anordnen.html" hreflang="de" lang="de">Deutsch</a></li><li><a href="/guia-es/select-and-arrange.html" hreflang="es-ES" lang="es-ES">Español</a></li><li><a href="/guide-fr/select-and-arrange.html" hreflang="fr" lang="fr">Français</a></li><li><a href="/it/select-and-arrange.html" hreflang="it" lang="it">Italiano</a></li><li><a href="/utmutato/select-and-arrange.html" hreflang="hu" lang="hu">Magyar</a></li><li><a href="/handleiding/selecteren-en-schikken.html" hreflang="nl" lang="nl">Nederlands</a></li><li><a href="/instrukcja/select-and-arrange.html" hreflang="pl" lang="pl">Polski</a></li><li><a href="/guia-pt-pt/select-and-arrange.html" hreflang="pt-PT" lang="pt-PT">Português de Portugal</a></li><li><a href="/guia/select-and-arrange.html" hreflang="pt-BR" lang="pt-BR">Português do Brasil</a></li><li><a href="/navodila/izbiranje-in-razporejanje.html" hreflang="sl" lang="sl">Slovenščina</a></li><li><a href="/handbok/select-and-arrange.html" hreflang="sv" lang="sv">Svenska</a></li><li><a href="/kilavuz/select-and-arrange.html" hreflang="tr" lang="tr">Türkçe</a></li><li><a href="/ru/select-and-arrange.html" hreflang="ru" lang="ru">Русский</a></li><li><a href="/madrich/select-and-arrange.html" hreflang="he" lang="he" aria-current="true">עברית</a></li><li><a href="/dalil/select-and-arrange.html" hreflang="ar" lang="ar">العربية</a></li><li><a href="/guide-ja/select-and-arrange.html" hreflang="ja" lang="ja">日本語</a></li><li><a href="/zh-cn/select-and-arrange.html" hreflang="zh-CN" lang="zh-CN">简体中文</a></li><li><a href="/zh-tw/select-and-arrange.html" hreflang="zh-TW" lang="zh-TW">繁體中文</a></li></ul></details>
+      <a class="button" id="open-editor" href="/">פתיחת העורך</a>
+    </div><p class="editor-elsewhere" id="editor-elsewhere" role="status" hidden>העורך כבר פתוח בכרטיסייה אחרת - פשוט לעבור אליה.</p></header>
+    <div class="shell">
+      <nav class="chapters" aria-label="פרקים"><h2>פרקים</h2><p class="print-link"><a href="/madrich/print-all.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg><span>המדריך המלא להדפסה</span></a></p><ol><li><a href="/madrich/getting-started.html">Getting started</a></li><li><a href="/madrich/view-and-workplane.html">View and workplane</a></li><li><a href="/madrich/shapes.html">Placing and adjusting shapes</a></li><li><a href="/madrich/select-and-arrange.html" aria-current="page">Selecting and arranging</a></li><li><a href="/madrich/solids-and-holes.html">Solids and holes</a></li><li><a href="/madrich/edges-and-hollowing.html">Breaking edges and hollowing bodies</a></li><li><a href="/madrich/sketches.html">Sketches: from outline to body</a></li><li><a href="/madrich/text.html">Text and curved lettering</a></li><li><a href="/madrich/threads-and-mechanics.html">Threads, gears and other parts</a></li><li><a href="/madrich/measuring-and-notes.html">Measuring and notes</a></li><li><a href="/madrich/printing.html">Preparing for 3D printing</a></li><li><a href="/madrich/files-and-saving.html">Files, saving and sharing</a></li><li><a href="/madrich/shortcuts.html">Keyboard shortcuts</a></li><li><a href="/madrich/ai-with-mcp.html">Building with an AI (MCP)</a></li><li><a href="/madrich/offline-and-install.html">Installing as an app, working offline and self-hosting</a></li><li><a href="/madrich/videos.html">Videos about layerling</a></li><li><a href="/madrich/tablet-and-touch.html">Tablet and touch</a></li></ol></nav>
+      <main>
+<h1>Selecting and arranging</h1>
+<p class="lead">Selecting shapes, finding them in the object list, aligning, mirroring, rotating, laying flat on a face and multiplying in patterns.</p>
+<p class="not-translated" role="note" lang="he">פרק זה עדיין לא תורגם לשפה שלך. הטקסט האנגלי מופיע להלן.</p>
+<div class="toc"><b>בעמוד זה</b><ul><li><a href="#selecting">Selecting</a></li><li><a href="#the-object-list">The object list</a></li><li><a href="#typing-a-position">Typing a position</a></li><li><a href="#parking-parts-beside-the-plate">Parking parts beside the plate</a></li><li><a href="#snapping-while-moving">Snapping while moving</a></li><li><a href="#aligning">Aligning</a></li><li><a href="#mirroring">Mirroring</a></li><li><a href="#rotating-and-setting-the-pivot">Rotating and setting the pivot</a></li><li><a href="#laying-flat-on-a-face">Laying flat on a face</a></li><li><a href="#patterns-row-and-circle">Patterns: row and circle</a></li><li><a href="#hole-pattern-on-a-face">Hole pattern on a face</a></li><li><a href="#hole-for-a-thread-insert">Hole for a thread insert</a></li><li><a href="#magnet-pocket">Magnet pocket</a></li><li><a href="#pushing-a-face-out-or-in">Pushing a face out or in</a></li><li><a href="#changing-several-parts-at-once">Changing several parts at once</a></li><li><a href="#scaling-by-percent">Scaling by percent</a></li><li><a href="#undoing">Undoing</a></li><li><a href="#looking-back-the-history-view">Looking back: the history view</a></li></ul></div>
+<section class="guide-part"><h2 id="selecting">Selecting</h2>
+<p>A click on a shape selects it. With <kbd>Shift</kbd> you add more or take them away again. While <kbd>Shift</kbd> is held and two or more shapes are selected, a small number below the mouse pointer counts them. A click on empty space clears the selection, and so does <kbd>Esc</kbd>. Drag a frame on the empty workplane to select everything it touches; with <kbd>Shift</kbd> held, the frame adds what was not selected and takes away what was. If you would rather pick one part out of a cluster, switch on <strong class="ui">«כיוון המסגרת קובע»</strong> in the settings (area <strong class="ui">«שליטה»</strong>): a frame dragged to the right then takes only what lies completely inside it, one dragged to the left still everything it touches, and its line is dashed. Hold <kbd>Alt</kbd> while you drag to turn the frame around for that one drag, for example to take whole bodies from the side where the direction would not allow it. And <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>A</kbd></span> selects all visible bodies. While you drag a body or a handle of the frame, <kbd>Esc</kbd> cancels as long as the mouse button is still held: everything goes back as it was, and nothing is added to the history.</p>
+<p>A shape behind another one, such as a hole inside a body, you reach without turning the view: right-click the spot and choose <strong class="ui">«בחירת אחר…»</strong>. The menu then lists every shape under the pointer, from front to back. The one your pointer is on is outlined in the view, even through the shapes in front of it; a click selects it, and with <kbd>Shift</kbd> it is added to the selection. The entry is there whenever more than one shape lies under the pointer; on a tablet, a long press opens the same menu.</p>
+<p>What is in your way you hide (<strong class="ui">«הסתרת הנבחרים»</strong>, <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>H</kbd></span>). Hidden shapes stay in the design, they are just not visible and stay out of the export; the export window says beforehand how many there are. <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd></span> brings them all back. What should stay put you lock with the padlock at the top of the settings or with <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>L</kbd></span>. A locked shape cannot be moved, resized, turned, recoloured or deleted: its handles turn grey, a padlock shows beside the arrow on top, and the tools that would change it are greyed out. Hovering a handle still shows its sizes, and a key that would change it says &quot;Object locked&quot;. While one locked shape is in the selection, nothing changes for the others either. Hiding, renaming, copying and duplicating still work. To keep a part as it is and still build with it, lock only its shape: the shield beside the padlock, <strong class="ui">«נעילת צורה»</strong> in the right-click menu, or <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></span>. It can still be moved, turned, lifted, lined up, copied and grouped with others, but its size, its settings and its name stay as they are: the handles that change its size are gone, the fields for them are greyed out, and resizing, mirroring, ungrouping, the edge tools and deleting are refused. A copy keeps the lock, and so does the part inside a group, which can then be moved and taken apart again but not resized. The object list has the shield as well, beside the padlock: a part whose shape is locked always shows it, the others show it on the selected row and under the mouse, and a click on it locks or unlocks the shape.</p>
+<p>To work on a few parts deep inside a design, select them and choose <strong class="ui">«הסתרת האחרים»</strong> in the right-click menu or under <strong class="ui">«אפשרויות נראות»</strong>: everything else is hidden in one step, so <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Z</kbd></span> or <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>H</kbd></span> brings it back. <strong class="ui">«היפוך הבחירה»</strong> in the right-click menu selects every visible shape that was not selected and lets go of the ones that were. Both are in the command search (<span dir="ltr"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>) as well, where you can also give them a key of your own.</p>
+<p>A number on the button of the group <strong class="ui">«נראות»</strong> says how many shapes are hidden, and a click on it shows them all again. A design that is opened with hidden shapes says so once, with a button to show them. A part you hide while a group is open stays hidden when you close it with <strong class="ui">«סיום»</strong>: the group keeps its size and the parts left stay as they are, the hidden part still counts when the group is aligned, and showing all hidden shapes leaves it alone. Open the group again to show it.</p>
+</section><section class="guide-part"><h2 id="the-object-list">The object list</h2>
+<p>With many parts it is easy to lose track in the view. The object list (<strong class="ui">«הצגת רשימת הגופים»</strong> or <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd></span>) shows all shapes as a list. It stays open or closed as you left it, for every design, until you close it; the choice is kept in the browser.</p>
+<figure><img src="/guide/img/object-list.webp" alt="The object list: the group &quot;Group&quot; with two parts and a sphere beside it. A folder icon opens the group." width="1280" height="800" loading="lazy"><figcaption>The object list: the group &quot;Group&quot; with two parts and a sphere beside it. A folder icon opens the group.</figcaption></figure>
+<ul><li>A click on an entry selects the shape, including parts inside a group. As in a file manager, <kbd>Ctrl</kbd> (<kbd>Cmd</kbd> on a Mac) adds an entry or takes it away again, and <kbd>Shift</kbd> selects every entry from the one clicked last to this one, in the order the list shows; <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Shift</kbd></span> adds them to what is selected. In the view, <kbd>Shift</kbd> adds and takes away instead. The arrows fold groups open and shut.</li><li>The letter after the name says whether a part is <strong class="ui">«מלא»</strong> or <strong class="ui">«חור»</strong>: it is the first letter of the word, and the word shows when you hold the mouse over it.</li><li>Under the name stands what kind of shape it is. A body that is no longer a plain shape (rounded, hollowed or imported) says <strong class="ui">«גוף מדויק»</strong> when the STEP export writes it exactly, and <strong class="ui">«רשת»</strong> when it is only triangles and goes as STL. A taper, lean or twist set after rounding or hollowing a body bends only its mesh, so it then says <strong class="ui">«רשת»</strong>.</li><li>Padlock and eye lock and hide single parts.</li><li>The colour dot in front of the name selects every visible shape of that colour; the hatched dot of a hole selects every hole. With <kbd>Ctrl</kbd> (<kbd>Cmd</kbd> on a Mac) or <kbd>Shift</kbd> they are added to what is selected. <strong class="ui">«בחירת אותו צבע»</strong> in the right-click menu and in the command search (<span dir="ltr"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>) does the same for the colours of the selected shapes. Hidden shapes stay out, as with <strong class="ui">«בחירת הכול»</strong>.</li><li><strong class="ui">«שינוי שם»</strong> gives a part a name of its own; the pencil beside the name at the top of the settings does the same for the selected shape. Sensible names help enormously in larger designs. When you group or bundle shapes and exactly one of them carries a name of its own, the group takes that name; with none or several it is called <strong class="ui">«קבוצה»</strong> or <strong class="ui">«איגוד»</strong>, and the parts keep their names inside it.</li><li>The A–Z button in the title bar (<strong class="ui">«מיון צורות עם שם א–ת»</strong>) sorts the shapes you have named alphabetically, with numbers counted as numbers (Part 2 before Part 10). Shapes that still carry their default name stay below in the order you added them, the newest last, and parts inside groups are sorted the same way. Only the list changes, never the design. A second click shows everything in the order added again, and the browser remembers the choice.</li><li>The handle at the left of a row (six dots) moves a shape in the list: drag it up or down, or focus it and press <kbd>↑</kbd> or <kbd>↓</kbd>. That changes the design's own order, the one the list returns to when the A–Z sort is off, and Undo takes it back. With the A–Z sort or a search on, the handles are hidden.</li><li>To put a shape into a group, fold the group open with its arrow and drag the shape by its handle onto the group's parts; the group gets an orange frame. The shape stays where it is and keeps its name, and so does the group: a group is merged again with it, a bundle just takes it in. The parts of a folded-open group have a handle of their own: drag one out of the group and it lies loose again, at the place in the list where you drop it, or drop it on another folded-open group to move it there. A group left with one part is gone and leaves that part. Undo takes each of these back in one step. While you are editing a group, this is off.</li><li>The search field finds shapes by name and by kind, so also &quot;cylinder&quot; or &quot;hole&quot;. It also looks inside groups, however deeply nested: a group holding a match stays in the list and folds open to show the matching parts and the groups that lead to them. A group found by its own name shows all its parts when you open it.</li><li>The arrow on the far left of the title bar folds the list down to its title bar and back.</li></ul>
+<p>The list sits docked just right of the view cube. Drag it by its title bar to put it anywhere on the workplane; it passes underneath the view cube and the view bar. Drop it back beside the view cube, or double-click the title bar, and it docks again. Where it was and whether it was folded are remembered in this browser. To make the list wider or narrower, drag its lower right corner, from 240 to 600 pixels; the width is remembered in this browser as well.</p>
+</section><section class="guide-part"><h2 id="typing-a-position">Typing a position</h2>
+<p>The card <strong class="ui">«מיקום»</strong> in the properties panel shows where the selected body stands, and you can type it: <strong class="ui">«X»</strong> and <strong class="ui">«Y»</strong> are the middle of its box on the plate, with the same signs as the distances shown on the workplane, and <strong class="ui">«Z (גובה)»</strong> is the height of its underside. With <strong class="ui">«נמדד מ-»</strong> at the top of the card you switch to <strong class="ui">«קצה»</strong>: X and Y then show the body's left and front edges, so you put an edge exactly on a measure. The setting stays until you switch back to <strong class="ui">«מרכז»</strong>. X counts to the right, Y towards the back and Z up, by the right-hand rule as in Tinkercad and CAD programs; the axis arrows on the plate show the directions. The values go in the unit you set, and the sliders reach as far as dragging does.</p>
+</section><section class="guide-part"><h2 id="parking-parts-beside-the-plate">Parking parts beside the plate</h2>
+<p>You can drag a shape past the edge of the plate and leave it there, about one plate width beyond each side, to keep it for later. The arrow keys move it as far as you like. A parked part still belongs to the design and goes into the export with everything else. To leave it out, hide it or export only the selection. If you have picked a printer, layerling warns at export when something sits outside its plate.</p>
+</section><section class="guide-part"><h2 id="snapping-while-moving">Snapping while moving</h2>
+<p>When you drag a shape across the workplane, it snaps to other shapes: its left, right, front or back edge or its centre lands exactly on an edge or centre of another shape. A pink guide line shows what it is holding on to. That way two parts sit flush side by side or centred one behind the other without typing numbers. It works with the grid switched off, too. The centre of the workplane counts too: the pink lines show when the shape sits in the middle of the plate along X, along Y or both. A shape standing upright with its sides along X and Y also snaps to the wall it runs into, the inside wall of a box, a hollowed body or an imported case as well, so a part goes flush into the corner of a case.</p>
+<p>Resizing snaps too: when you drag a side handle, that side stops at the edges and centres of other shapes and at the wall it runs into, the inside wall of a box, a hollowed body or an imported case as well, and the pink line shows where. That size is kept exactly, off the grid. So a part fills a case from wall to wall: put it against one wall and drag its other side to the opposite one. With <kbd>Alt</kbd> the shape grows from its middle and the dragged side snaps the same way; with <kbd>Shift</kbd> it keeps its proportions and does not snap. This works on the flat workplane, for shapes standing upright with their sides along X and Y, and <strong class="ui">«הצמדה לצורות אחרות בזמן הזזה ושינוי גודל»</strong> switches it off together with snapping while moving. A corner handle snaps both of its sides the same way, so a part fills the corner of a case in one drag; selected on its own, a round body, a thread, a Gridfinity bin, a Gridfinity baseplate without an outline, or text that is curved or not stretched to its frame does not snap at its corner: it keeps one diameter, whole units or a frame round its letters.</p>
+<p>Hold <kbd>Shift</kbd> while dragging to keep the move on one axis: the shape follows whichever direction, X or Y, you have dragged further in, and leaves the other alone. Best press <kbd>Shift</kbd> once you are already dragging; on a shape that is not selected yet, a click with <kbd>Shift</kbd> only adds it to the selection.</p>
+<p>Or pull the red or the green arrow on top of the selection: it moves along X or along Y only, and the shape follows the mouse along that line even in a low view, where a free drag runs off far. The arrows snap as a drag does, <kbd>Alt</kbd> lets go, and afterwards you can click the distance moved and type the exact value.</p>
+<p>With <kbd>Alt</kbd> already held when the drag begins, you drag a copy, as in Tinkercad: the shape stays where it is and the copy lands where you let go. Pressing <kbd>Alt</kbd> only on the way pauses snapping; the shape then follows the grid only. A copy, too, snaps only once you let go of <kbd>Alt</kbd> on the way. To switch snapping off for good, use the grid menu in the bottom right (<strong class="ui">«הצמדה לצורות»</strong>) or the settings. On the normal workplane, moving and the side and corner handles snap; lifting and the handle on the top face do not.</p>
+</section><section class="guide-part"><h2 id="aligning">Aligning</h2>
+<p>Two or more selected shapes are lined up with <strong class="ui">«יישור»</strong> (<kbd>L</kbd>, or right-click the selection and choose it): points appear around the selection for left, centre and right, front, centre and back, and top, centre and bottom. A click on a point moves all shapes there. If you first click one of the selected shapes, it stays in place and the others line up with it. A locked shape in the selection is that fixed shape by itself. Left, right, front, back, top and bottom go by the box round a shape; the centre of a triangle, a pentagon or a star is its own middle, so a hole centred on one sits in the middle of the shape and not of its box.</p>
+<p>A shape turned at an angle, say by 45°, has its box round it to line up with, not its own edges. To line up with the edges, set a workplane on a face of that shape first (<strong class="ui">«הצבת מישור עבודה»</strong>, then click the face): the points then stand on the axes of that plane, and the shapes are measured and moved along them, as in Tinkercad. Reset the workplane to line up along the plate again.</p>
+<figure><img src="/guide/img/align.webp" alt="Align shows the possible targets as dots around the selection." width="1280" height="800" loading="lazy"><figcaption>Align shows the possible targets as dots around the selection.</figcaption></figure>
+<p>The key is <kbd>L</kbd>. <kbd>Esc</kbd> cancels.</p>
+<section class="guide-part"><h3 id="matching-sizes">Matching sizes</h3>
+<p>Hold <kbd>Alt</kbd> while aligning and the dots turn into squares: a click no longer moves the shapes but changes their size. A dot at a side stretches each shape to that side, its other side staying where it is, as if you had dragged its handle there. The dot in the middle leaves each shape in its place and gives it the width, length or height in that direction. That way you swap a box for a cylinder of the same size, say, or replace a broken piece of a mesh with a clean shape. Move over a dot with <kbd>Alt</kbd> held and you see beforehand how large the shapes become.</p>
+<p>The reference is the shape you clicked first; only the others change. Without one, the side dots stretch all shapes to the farthest side, and the middle dot gives them all the size of the largest. A cylinder stays round, so it grows in the other direction too. A shape turned at an angle stays as it is; shapes turned by 90° work.</p>
+</section><section class="guide-part"><h3 id="equal-gaps">Equal gaps</h3>
+<p>Beside the middle point of each line stands a wider dot with a bar on each side. It spreads three or more shapes in that direction so that the space between neighbouring edges is the same everywhere, whatever size each shape is. The first and the last shape stay where they are, the ones between move. A row of holes of different sizes gets the same wall between them, for example. Move over the dot and you see beforehand where the shapes go; the status bar then tells you the gap. Where there is not enough room between the outer shapes, the gap becomes negative and the shapes overlap evenly, as nested cups do.</p>
+<p>If a board (a base the others stand on, such as a flat box, not an SBC board) is among the selected shapes, longer in that direction than all the others, the shapes are spread on it: the gap at its edges is as large as the one between them, and a single shape comes to its middle. Shapes in several rows, such as the animals of a peg puzzle, are spread row by row; shapes whose boxes overlap across the direction form one row. Where the shapes stand in no clean columns, as the animals do from front to back, the shapes standing side by side move as a whole row instead. The whole puzzle then takes one click from left to right and one from front to back.</p>
+<p>Without a board, hold <kbd>Shift</kbd> and click an empty spot of the plate first: the plate is then the fixed shape, equal gaps spread the shapes over the whole plate with the same gap to its edges, and the other dots line them up on its edges or its middle. Another click with <kbd>Shift</kbd> on the empty plate lets it go. A click on empty space without <kbd>Shift</kbd> ends Align, as <kbd>L</kbd> and <kbd>Esc</kbd> do.</p>
+<p>Hold <kbd>Alt</kbd> and click the dot to type the gap yourself, say 5 mm: the shapes line up that far apart, starting at the first shape or at the one you clicked first; on a board the row comes to its middle. A locked shape stays where it is, so one between the outer shapes stops the equal gaps. On a tablet, which has no Alt key, the switch <strong class="ui">«מצב גודל»</strong> beside the dots does the same: switch it on and the dots stay squares and the gap dot opens its field, until you switch it off.</p>
+</section></section><section class="guide-part"><h2 id="mirroring">Mirroring</h2>
+<p><strong class="ui">«שיקוף»</strong> (<kbd>M</kbd>, or right-click the selection and choose it) flips the selection across a plane: <strong class="ui">«שמאל-ימין»</strong>, <strong class="ui">«קדימה-אחורה»</strong> or <strong class="ui">«למעלה-למטה»</strong>. Click the matching axis arrow. That is handy for symmetric parts: build one half, copy it and mirror the copy.</p>
+</section><section class="guide-part"><h2 id="rotating-and-setting-the-pivot">Rotating and setting the pivot</h2>
+<p>You rotate with the curved arrows on the shape, with the numbers in the settings or with <kbd>R</kbd> in 45° steps. When you drag on the rotation circle, the turn snaps to every tick, that is every 22.5°; hold <kbd>Shift</kbd> for finer steps, and extra ticks appear every 11.25°. Drag outside the circle to turn freely in 1° steps, or in 45° steps with <kbd>Shift</kbd>. Normally the selection turns about its centre. Sometimes it should not, for example when a tilted tube is to be turned further at its end. For that there is <strong class="ui">«קביעת ציר סיבוב»</strong>: afterwards click on a face. A flat face supplies its centre, for example the axis of a tube end. On a group or a bundle the face runs on across parts that meet, as on one body, and the pivot goes to the middle of the whole face once the parts are joined, except on a group or bundle with text in it, or a bundle with a hole among its parts. The selection now turns about that point. A second click on the tool removes it again.</p>
+<p>The angles stay with the body. In its settings, <strong class="ui">«סיבוב»</strong> shows them as <strong class="ui">«סביב X»</strong>, <strong class="ui">«סביב Y»</strong> and <strong class="ui">«סביב Z (גובה)»</strong>, named like the position: Y runs across the plate, Z is up. Type an angle there and the body turns to it - about its centre, or about its own pivot if it has one. While a turned body is selected, its angles also show below it on the workplane; <strong class="ui">«הצגת הזוויות של גופים מסובבים»</strong> in the settings switches that off.</p>
+<figure><img src="/guide/img/rotation-card.webp" alt="A body turned about two axes: its angles stand under it, and the Rotation card in its settings takes them as numbers." width="1280" height="800" loading="lazy"><figcaption>A body turned about two axes: its angles stand under it, and the Rotation card in its settings takes them as numbers.</figcaption></figure>
+<p>With <strong>one body</strong> selected, the pivot belongs to that body: select other parts and come back, and it is still there. It moves, turns and scales with the body, is saved in the project and comes back with Undo. Under <strong class="ui">«מיקום»</strong> the pivot has its own X, Y and Z, which you can type or nudge, and <strong class="ui">«הסרה»</strong> takes it away. You can also drag the pivot's red marker with the mouse: it slides over the surface of the bodies and snaps to corners, edge midpoints and edges, so a hinge pin lands exactly on a corner. With several bodies selected the pivot is only for that selection, and a new selection removes it. Grouping or bundling them keeps it: the group takes the pivot as its own, with X, Y and Z under <strong class="ui">«מיקום»</strong>. Hold Shift while dragging the red marker and it snaps to the centre of the face under the pointer instead - the axis of a round face, the middle of a flat one or the tip of a cone - looking through transparent bodies.</p>
+</section><section class="guide-part"><h2 id="laying-flat-on-a-face">Laying flat on a face</h2>
+<p>Should a part lie on its best side for printing? Select it, click <strong class="ui">«השכבה על פאה»</strong> and then the face that should go down. While you move the pointer over the part, the face under it lights up, so you see which one you are about to pick; turn the view to check the other sides. The part turns so that this face rests on the workplane.</p>
+<p>Two parts should meet face to face, or line up flush? Select the part that should move, click <strong class="ui">«יישור פאות»</strong>, then click its face and after that the face of the other part. In the tool window, <strong class="ui">«פאה מול פאה»</strong> puts the faces against each other (back to back, touching), <strong class="ui">«באותו מישור»</strong> lays them in one plane side by side; <strong class="ui">«מרווח»</strong> leaves room between them, for example for clearance. <strong class="ui">«יישור»</strong> moves the part: it turns the shortest way until the faces are parallel - not at all if they already are - and then slides only towards the other face, so it keeps its place sideways. The other part stays where it is, and one Undo takes it all back.</p>
+<figure><img src="/guide/img/mate-faces.webp" alt="The Align faces tool window: the part that moves is picked, a face of the other part comes next, then face to face or flush, and an optional gap." width="1280" height="800" loading="lazy"><figcaption>The Align faces tool window: the part that moves is picked, a face of the other part comes next, then face to face or flush, and an optional gap.</figcaption></figure>
+<p><strong>Holes on one axis:</strong> <strong class="ui">«אותו ציר»</strong> lines up round faces instead: a hole over a hole, a pin in a hole, a screw in its clearance hole. Choose it before you click the faces. Then click the round inside of a hole (or the outside of a pin) on the part that moves, and a round face of the other part; the whole round face lights up while you point at it. <strong class="ui">«יישור»</strong> turns the part the shortest way until the two axes are parallel and slides it straight across onto the other axis. Along the axis it stays where it was, so a pin keeps its height; push it in afterwards. This works on imported meshes too, as long as the hole is made of facets around one axis.</p>
+<p><strong>A point onto a point:</strong> <strong class="ui">«נקודה לנקודה»</strong> moves the part straight, without turning it, so that one of its points lands on a point of another part. Click a corner, a spot on an edge, the centre of a round edge or a reference point on the part that moves, then the point where it should land; a dot shows which point the pointer would take. Under <strong class="ui">«הזזה לאורך»</strong> switch off the axes it should not move along: with only X and Y on, the point ends up straight above or below the other; with only Z on, at the same height. One Undo takes it back.</p>
+<p><strong>Turning by a second and third pair:</strong> after <strong class="ui">«יישור»</strong> the panel stays open for a second pair of points. The first point stays where it landed, marked in blue, and <strong class="ui">«סיבוב»</strong> turns the part about it until the line through its second point runs through the point you picked on the other part - so two edges come to lie on one line, even when the parts are not the same length. A third pair turns the part about the line through the two blue points until its third point faces the third point you picked, so the faces line up too - like aligning by three points in other CAD programs. <strong class="ui">«סיום»</strong> ends it at any step; each step is one Undo.</p>
+<p><strong>An exact angle between two faces:</strong> <strong class="ui">«יישור פאות»</strong> leaves the faces parallel; there is no tool of its own for an angle between them, but this gets you there. First bring the faces together with <strong class="ui">«יישור פאות»</strong>, so they are parallel. Then set the pivot on the edge where they meet (<strong class="ui">«קביעת ציר סיבוב»</strong>, click the edge or a corner) and type the angle, 15 or 30 say, in the <strong class="ui">«סיבוב»</strong> card of the part. It turns about that pivot. The card's axes are the axes of the plate, so this works when the edge runs along X, Y or Z.</p>
+<p>Just as simple are <strong class="ui">«הורדה למישור העבודה»</strong> (<kbd>D</kbd>), which drops the selection onto the workplane, and <strong class="ui">«מירכוז במישור העבודה»</strong>. With the workplane on a face, it centres on the point you picked with <kbd>W</kbd> and moves the selection only along that face, so what stands on it stays on it.</p>
+<p><span dir="ltr"><kbd>Alt</kbd>+<kbd>D</kbd></span> drops several parts as one piece: they all go down by the same distance and so keep their heights to each other, while <kbd>D</kbd> drops every part on its own.</p>
+<p><kbd>C</kbd> picks the selection up, like Cruise in Tinkercad: it follows the mouse pointer and lies down on the face of another body you are over, sloped ones too. A click sets it down there, <kbd>Esc</kbd> leaves it where it was. Its underside then rests on the face, lined up with the face's edges as a new shape would be; it keeps its own turn about its up axis. Several parts travel together and keep their spacing. Over the empty plate, <kbd>C</kbd> stands a tilted part upright on the workplane again. Holding <kbd>Shift</kbd> while you carry sinks the part into the face instead: it stays upright, its top flush with the face and the body below it, which is how a countersink or a counterbore goes into a body; a new shape from the library is placed the same way with <kbd>Shift</kbd> held. <span dir="ltr"><kbd>Shift</kbd>+<kbd>D</kbd></span> drops the selection with its top on the workplane instead of its base. Without a keyboard, the menu of a long press has <strong class="ui">«הנחה על פאה»</strong> for the same.</p>
+</section><section class="guide-part"><h2 id="patterns-row-and-circle">Patterns: row and circle</h2>
+<p>For hole grids, bolt circles and rings of teeth there is the <strong class="ui">«מערך»</strong>. Select the shapes to be multiplied and click it in the ribbon.</p>
+<figure><img src="/guide/img/pattern-tool.webp" alt="The pattern in &quot;Circle&quot; mode: the copies first appear as a preview." width="1280" height="800" loading="lazy"><figcaption>The pattern in &quot;Circle&quot; mode: the copies first appear as a preview.</figcaption></figure>
+<ul><li><strong><strong class="ui">«שורה»</strong>:</strong> The selection is repeated at equal distances. The row steps along all three axes at once, with <strong class="ui">«מרווח X»</strong>, <strong class="ui">«מרווח Y»</strong> and <strong class="ui">«מרווח Z (גובה)»</strong>: one of them gives a straight row, two or three a diagonal row or a staircase. A negative spacing lays the row the other way.</li><li><strong><strong class="ui">«פיזור על גוף»</strong>:</strong> For holes along a plate, a key holder or a coat rack. Put the first piece on or into the body, choose <strong class="ui">«לאורך X»</strong> or <strong class="ui">«לאורך Y»</strong> and set the <strong class="ui">«רווח עד הקצה»</strong>: the original moves that far in from the nearer end (from the edge to the piece's side), and the last copy keeps the same gap to the far end. The spacing then follows the <strong class="ui">«כמות (עם המקור)»</strong>: five holes or nine, they always fill the plate evenly.</li><li><strong><strong class="ui">«רשת»</strong>:</strong> For the holes of a perforated plate or a field of equal pieces. <strong class="ui">«עמודות לאורך X (עם המקור)»</strong> and <strong class="ui">«מרווח X»</strong> lay the columns side by side, <strong class="ui">«שורות לאורך Y (עם המקור)»</strong> and <strong class="ui">«מרווח Y»</strong> the rows from front to back. One column or one row gives a single line. A grid has at most 100 pieces; past that the rows are cut back, and the window says so.</li><li><strong><strong class="ui">«מעגל»</strong>:</strong> The selection is spread around a centre. How many copies there are you set under <strong class="ui">«כמות (עם המקור)»</strong>, and the <strong class="ui">«זווית כוללת»</strong> is 360° for a full circle. Choose whether the copies turn along. <strong class="ui">«עלייה לכל עותק»</strong> lifts every copy a little more than the one before (a screw or an ascending spiral), and <strong class="ui">«שינוי רדיוס לכל עותק»</strong> moves it further from the centre or closer to it (a flat spiral); together they give a conical spiral. A spiral winds once around at most: an angle above 360° counts as a full circle, and there are at most 100 copies.</li></ul>
+<p>Tip: first set the pivot on a face with <strong class="ui">«קביעת ציר סיבוב»</strong>, then the centre of the circle lies exactly there.</p>
+<p>Afterwards the pieces keep the circle's centre as their pivot, also once grouped. That is where another part belongs, for example a ball in the middle of three legs: the middle of the pieces' box is not the centre, since three legs fill a box wider one way than the other. Right-click the pieces and choose <strong class="ui">«סימון ציר הסיבוב»</strong>, and the centre of the part you drag snaps onto it.</p>
+<figure><img src="/guide/img/pattern-spiral.webp" alt="The pattern in &quot;Circle&quot; mode with a rise and a radius change per copy: the copies climb and widen like a spiral." width="1280" height="800" loading="lazy"><figcaption>The pattern in &quot;Circle&quot; mode with a rise and a radius change per copy: the copies climb and widen like a spiral.</figcaption></figure>
+<p>The copies first appear as a preview. Only <strong class="ui">«יצירה»</strong> creates them. If the copies are holes, group them afterwards with the body they should cut into.</p>
+<p>With <strong class="ui">«קיבוץ העותקים»</strong> ticked, <strong class="ui">«יצירה»</strong> groups the original and all copies into one object in the same step, as <strong class="ui">«קיבוץ»</strong> would: a ring of 36 pieces is then one part you can move, colour or cut with. Above 5 pieces the box ticks itself; once you tick or untick it yourself, it stays as you set it. <strong class="ui">«פירוק קבוצה»</strong> brings the pieces back. If grouping does not work out, the pattern still comes in as separate pieces and the message says why.</p>
+</section><section class="guide-part"><h2 id="hole-pattern-on-a-face">Hole pattern on a face</h2>
+<p>For vents, speaker grilles, baskets and enclosures the <strong class="ui">«דוגמת חורים»</strong> spreads holes evenly over a flat face or round the wall of a cylinder. You no longer have to make one hole, repeat it and set it onto the wall. Select exactly one body and click <strong class="ui">«דוגמת חורים»</strong> in the <strong class="ui">«שיקוף ומערך»</strong> group of the ribbon, next to the pattern. You can also right-click the body, or find it with <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>.</p>
+<ol><li>Click a flat face of the body. The whole flat face around your click counts, not just the triangle under the pointer. The round wall of a cylinder, a tube or a bore works too, see below; any other curved face does not: you get a hint and click a flat one instead. On a group or a bundle a face runs on across parts that meet, as on one body; on a bundle only when no hole is among them. The parts are joined shortly after the tool opens; until then only one part's face lights up under the pointer, and a click waits for the join. On a group or bundle with text in it, only one part's face lights up, and the click joins the parts.</li><li>In the window, set how the holes look and lie:</li></ol>
+<ul><li><strong><strong class="ui">«צורת החור»</strong>:</strong> <strong class="ui">«עגול»</strong>, <strong class="ui">«ריבוע»</strong>, <strong class="ui">«מלבן»</strong>, <strong class="ui">«משושה»</strong> or <strong class="ui">«חריץ»</strong>.</li><li><strong>Size:</strong> the <strong class="ui">«קוטר (Ø)»</strong> of a round hole, the <strong class="ui">«אורך צלע»</strong> of a square one, <strong class="ui">«רוחב»</strong> and <strong class="ui">«גובה»</strong> for a rectangle and a slot. For the hexagon the size is the <strong class="ui">«קוטר בין הפינות (Ø)»</strong>.</li><li><strong><strong class="ui">«זווית החורים»</strong>:</strong> <strong class="ui">«ריבוע»</strong>, <strong class="ui">«מלבן»</strong>, <strong class="ui">«משושה»</strong>, <strong class="ui">«חריץ»</strong> (a square at 45 is a diamond): turns every hole in the face by that many degrees, counter-clockwise as you look at the face, from -90 to 90. The rows stay straight; if turned holes would come too close, even diagonally, layerling widens the spacing and the row spacing so a wall stays between them.</li><li><strong><strong class="ui">«שיפוע דרך הדופן»</strong>:</strong> flat faces only, not with a counterbore, countersink or own shape: slopes every hole through the wall, from -60 to 60 degrees. On a standing wall a positive slope puts the inner end higher, so rain runs back out. The size stays the hole's own, so it shows a little longer on the face; both ends of each hole keep the margin. A slope only hides the inside when the wall thickness times sin(angle) is at least the hole's height, so use low slots or a thicker wall for that.</li><li><strong><strong class="ui">«צורה משלך»</strong>:</strong> repeats a shape from the scene in place of a hole: a rivet, a stud or the tread of a diamond plate. Choose it under <strong class="ui">«צורה מהסצנה»</strong>. Its width and depth are the room it takes; it stands upright on the face as it was made, without its own turn. A body is set onto the face and joins it, a hole is cut in as deep as it is high. The shape itself stays where it is.</li><li><strong><strong class="ui">«סוג החור»</strong>:</strong> round holes only. <strong class="ui">«רגיל»</strong> is a straight hole, <strong class="ui">«שקיעה»</strong> adds a pocket for a cap screw's head, <strong class="ui">«שקיעה קונית»</strong> a 90° cone for a countersunk screw. The size is then the <strong class="ui">«קוטר הגוף»</strong>; <strong class="ui">«קוטר הראש»</strong> and, for the counterbore, <strong class="ui">«עומק הראש»</strong> set the head. <strong class="ui">«גודל הבורג»</strong> fills them all in for a metric screw. On a countersink it also offers the inch sizes #2 to #14, whose cone has 82°.</li><li><strong><strong class="ui">«מרווח ממרכז למרכז»</strong>:</strong> the distance from one hole's middle to the next. If it is smaller than the holes allow, layerling raises it to the smallest possible value so a wall stays between the holes. For rectangles and slots it counts along the row, from left to right.</li><li><strong><strong class="ui">«שורות ממרכז למרכז»</strong>:</strong> rectangles and slots only: the distance from one row to the next. So narrow, tall holes stand close side by side while the rows keep apart. A hole 2 mm wide and 14 mm high needs 4 mm along the row and 16 mm from row to row with a 2 mm wall.</li><li><strong><strong class="ui">«דופן בין החורים»</strong>:</strong> the same distance said another way: the wall left between two neighbouring holes, which is the wall thickness in the print. Set it and the spacing centre to centre follows (for rectangles and slots the row spacing too), and the other way round. For hexagons, rectangles and slots layerling measures the least distance between their edges.</li><li><strong><strong class="ui">«סידור»</strong>:</strong> <strong class="ui">«רשת»</strong> puts the holes in rows and columns. <strong class="ui">«מדורג»</strong> shifts every second row by half a spacing and moves the rows closer, so every hole has neighbours at the same distance - with hexagons that makes a honeycomb.</li><li><strong><strong class="ui">«לאורך הקצה»</strong>:</strong> a ring of holes along the outer edge of the face instead, <strong class="ui">«שוליים עד קצה הפאה»</strong> in from it - screw holes round a lid or a plate. <strong class="ui">«פיזור לפי»</strong> <strong class="ui">«מרווח»</strong> keeps about the spacing, <strong class="ui">«מספר»</strong> sets the <strong class="ui">«מספר חורים»</strong>; either way the spacing is evened out so the ring closes without a gap. <strong class="ui">«חור בכל פינה»</strong> (on at first) puts a hole on each corner and shares every side out evenly between them. On a round face, or with the box unticked, the holes go evenly round from the top, and <strong class="ui">«התחלה לאורך הקצה»</strong> moves the whole ring along the edge.</li><li><strong><strong class="ui">«חור באמצע»</strong>:</strong> with <strong class="ui">«לאורך הקצה»</strong> and on the <strong class="ui">«חורי הרכבה»</strong> tab (not for a 19-inch rack). Tick it for one more hole in the middle of the face, like the others - the drain holes in the floor of a plant pot, say. It does not count in the number of holes. For plain round, square and hexagon holes, <strong class="ui">«גודל משלו לחור שבאמצע»</strong> lets you set the <strong class="ui">«גודל החור שבאמצע»</strong>. Where the middle of the face is open, or the hole would come too close to the others, it is left out and a line says so.</li><li><strong><strong class="ui">«שוליים עד קצה הפאה»</strong>:</strong> the clear distance between the holes and the edge of the face. Only holes that lie wholly inside the face minus this margin are made; anything that would reach beyond it is left out. The margin also holds around openings in the face. At 0, plain through holes in a grid or staggered pattern are cut off by the edge instead of left out, so a grille or a honeycomb runs right to the edge (a hole that would only scratch the edge is left out; counterbores, countersinks, blind holes, own shapes and the round wall keep to the face). A line under the field says so.</li><li><strong><strong class="ui">«מסגרת לאורך הקצה»</strong>:</strong> shown only at margin 0, 0 to 10 mm. Above 0 a solid frame that wide stays along the edge and round the face's openings, and the holes are cut off where it starts, so the edge is smooth. The frame is a body of its own (&quot;Frame&quot;), as thick as the body behind the face, grouped with the perforated body. Of the ways to lay the lattice the one leaving the fewest strips thinner than the walls between the holes wins; a line counts any that are left, and a slightly different size or spacing moves them.</li><li><strong><strong class="ui">«שכבה עליונה בצבע שני»</strong>:</strong> for flat faces and plain holes. Tick it and give <strong class="ui">«עובי השכבה העליונה»</strong> (1 mm to start with) and <strong class="ui">«צבע השכבה העליונה»</strong>: the holes go through that layer only. On Create the body becomes a bundle of two bodies, the net in the chosen colour (with the frame, if any) and the body less the net in its own colour, solid below and filling the net's holes up to the face. So the face is flat, and printed face down both colours start on the first layers, with nothing to bridge and no supports in the cells. The 3MF holds the two as separate bodies in their colours.</li><li><strong><strong class="ui">«עומק»</strong>:</strong> <strong class="ui">«דרך כל הגוף»</strong> (the default) cuts through the whole wall. With <strong class="ui">«עומק מותאם»</strong> you give the depth in millimetres, for recesses, say.</li></ul>
+<ol><li>The holes show at once as a preview on the face and follow every value. The window says how many holes fit. <strong class="ui">«פאה אחרת»</strong> chooses another face, <kbd>Esc</kbd> closes the tool, and like the other tool windows it moves by its title bar.</li><li>Only <strong class="ui">«יצירה»</strong> makes the holes.</li></ol>
+<p>The holes are ordinary holes grouped with the body, just as after <strong class="ui">«קיבוץ»</strong>: nothing is baked in. <strong class="ui">«פירוק קבוצה»</strong> dissolves the group again and frees every hole, which you can then move, change or delete one by one. The whole thing is one step for <strong class="ui">«ביטול פעולה»</strong>. The tool does not make more than 400 holes at once; make the holes bigger or the spacing wider then.</p>
+<p>The round wall of a cylinder, a tube or a bore takes holes too: a pen holder, a lamp shade, a tube with vents. Click the wall instead of a flat face; the whole wall lights up under the pointer. Every hole then points straight at the axis, and the rows go round the wall. On a wall that goes all the way round, each row holds a whole number of holes, evened out so the ring closes without a gap and never closer than the spacing; the window says how many go round and how far apart. The margin holds to the rims at the top and the bottom and to openings in the wall, on a part of a wall (a rounded edge, say) to its sides as well. <strong class="ui">«דרך הדופן»</strong> cuts through the one wall you clicked and leaves the far side of a tube whole; on a solid cylinder the holes go in to its middle. Clicked inside a bore, the holes go outward through its wall. <strong class="ui">«לאורך הקצה»</strong> is for flat faces and is not offered on a wall.</p>
+<p>An AI can do the same through the MCP bridge with <code>layerling_perforate_face</code> (see the chapter <a href="/madrich/ai-with-mcp.html">AI with MCP</a>).</p>
+<p>On a plate or lid with notches in its sides, <strong class="ui">«לאורך הקצה»</strong> spreads the holes unevenly. For that the <strong class="ui">«דוגמת חורים»</strong> has a second tab next to <strong class="ui">«דוגמה»</strong>, <strong class="ui">«חורי הרכבה»</strong>: it puts the holes in the corners of the smallest rectangle round the picked face, the same distance from its sides, even on a turned or notched plate. The <strong class="ui">«מרחק מהצדדים»</strong> is measured to the hole's edge, a screw head included, or with <strong class="ui">«נמדד עד מרכז החור»</strong> to its middle. With the <strong class="ui">«מספר חורים»</strong>, four go in the corners and the rest in pairs, evenly spaced along the sides, for example for a watertight lid. On a round face, such as the lid of a round box, they go evenly round a circle, three or more. Hole type and sizes are the same as for the pattern: plain, counterbore or countersink, through or to a depth. They are made as ordinary hole shapes grouped with the body, so the group's <strong class="ui">«קוטר החור»</strong> works on them too.</p>
+<p>On the <strong class="ui">«חורי הרכבה»</strong> tab, <strong class="ui">«חורים עבור»</strong> offers <strong class="ui">«ברגים»</strong> (as above) or <strong class="ui">«ארון תקשורת 19 אינץ׳»</strong>, for a front panel that goes into a 19-inch rack. Four slots of 10.3 × 6.8 mm go in the corners, lying along the panel's long side, 465.1 mm apart across, so they meet the rack's rails; the hole type, sizes and distance do not apply then. <strong class="ui">«גובה הפאנל»</strong> is <strong class="ui">«מותאם לפאנל הזה»</strong> to start with: the panel takes the fewest whole rack units it fits in and sits in their middle, so the upper and lower holes are the same distance from its edges and meet the rail's holes on any unit. Or pick a standard panel from 1U to 6U, with its holes as IEC 60297-3-100 has them; a note says when the face is not that height. A line under the choice tells where the holes came out, and on a face too narrow or too low, why there are none.</p>
+</section><section class="guide-part"><h2 id="hole-for-a-thread-insert">Hole for a thread insert</h2>
+<p>A heat-set thread insert is pressed into a plastic part with a soldering iron and gives screws a thread that does not wear out. The <strong class="ui">«תותבת הברגה»</strong> makes the hole for it where you click and tells you first whether the part has enough material there. Select exactly one body, open the shape library and click <strong class="ui">«תותבת הברגה»</strong> under <strong class="ui">«חורים ופתחים»</strong>. You can also find it with <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>. Unlike the other shapes it cannot be dragged into the design, because it works on the body you selected.</p>
+<ol><li>Choose the <strong class="ui">«גודל התותבת»</strong> in the window: M2 to M8, the short M3, M4 and M5, or 1/4-20. With <strong class="ui">«גודל משלך»</strong> you type the hole diameter and the length of the insert; the wall that has to stay round the hole follows from the diameter. The window shows the hole's diameter and depth and that wall.</li><li>Click the spot on the part. A flat face works, and so does the outside wall of a cylinder or tube; any other curve is refused with a hint. A ring shows the hole: green where the part has the wall beside the hole and the depth behind it that the insert needs, red where one of them falls short. Red says which one and by how much, and how wide the part has to be round the hole.</li><li>Move the ring by dragging over the part, or type the distance from the left and the bottom edge of a flat face under <strong class="ui">«מקום על הפאה»</strong>. <strong class="ui">«הזזה למרכז הפאה»</strong> puts it on the middle of the face, where the purple mark shows it. Every move is measured again.</li><li><strong class="ui">«בחירת מקום אחר»</strong> chooses another spot, and <kbd>Esc</kbd> closes the tool. Only <strong class="ui">«יצירת חור»</strong> makes the hole, and only where the ring is green.</li></ol>
+<p>The hole is an ordinary hole shape grouped with the body, as the holes of the hole pattern are, and the CAD kernel cuts it as a true cylinder, so the bore is exact. <strong class="ui">«פירוק קבוצה»</strong> frees the hole again. It is as deep as the insert is long and stands a little out of the face so that it opens cleanly. An AI can do the same through the MCP bridge with <code>layerling_thread_insert</code> (see the chapter <a href="/madrich/ai-with-mcp.html">AI with MCP</a>).</p>
+</section><section class="guide-part"><h2 id="magnet-pocket">Magnet pocket</h2>
+<p>Figure painters set small round magnets into the joints of a multi-part figure instead of gluing it, so it comes apart for painting and shipping; boxes and lids hold the same way. The <strong class="ui">«כיס מגנט»</strong> tool cuts the pocket for one: as deep as the magnet and 0.2 mm more, so it sits just below the face, and below it a narrower glue well, so the glue has room and the magnet rests on a ledge and cannot slide on into a hollow print. Cut out of the part, pocket and well are an inverted top hat. Select exactly one body, open the shape library and click <strong class="ui">«כיס מגנט»</strong> under <strong class="ui">«חורים ופתחים»</strong>, or find it with <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>.</p>
+<ol><li>Choose the <strong class="ui">«גודל המגנט»</strong>, from 2 × 1 to 12 × 3 mm, or type the magnet's diameter and height. <strong class="ui">«מרווח סביב המגנט (מ״מ לכל צד)»</strong> is the room round the magnet on each side, 0.1 mm to begin with. <strong class="ui">«בור דבק מתחת לכיס»</strong> is on at first. The window shows the pocket's measures.</li><li>Click the spot on the part, a flat face or the outside wall of a cylinder or tube, as for the thread insert. A ring shows the pocket: green where the part has a 1 mm wall beside it and its depth behind it, red where not, with the reason. Drag it over the part, type its place, or move it to the middle of the face.</li><li><strong class="ui">«אותו כיס בחלק שפוגש אותו»</strong> (on at first) looks for the part that meets the face at that spot, at most 1 mm away: the other half of the joint, standing where it fits, as the parts of a figure come from the sculptor. That part gets the same pocket facing this one, so the two magnets meet; a second ring shows it. A line in the window names the part, or says why it gets none (no part there, a curved face, too little material). To reach a face the other part covers, hide that part: it still gets its pocket.</li><li>Only <strong class="ui">«יצירת כיס»</strong> cuts the pockets.</li></ol>
+<p>Each pocket is an ordinary hole grouped with its part, as the thread insert's hole is, and <strong class="ui">«פירוק קבוצה»</strong> frees it again. Before pressing the magnets in, put each pair together so they attract and mark the side that faces out, or one magnet ends up the wrong way round. To give two halves of a part you split magnets right away, the split tool has them as a connector (see the chapter on solids and holes). An AI can do the same through the MCP bridge with <code>layerling_magnet_pocket</code> (see the chapter <a href="/madrich/ai-with-mcp.html">AI with MCP</a>).</p>
+</section><section class="guide-part"><h2 id="pushing-a-face-out-or-in">Pushing a face out or in</h2>
+<p>For a thicker wall, a raised pad on a face or a pocket cut into it, the <strong class="ui">«פאה»</strong> tool works on one flat face. It works on an imported STL too, where there is no sketch to change. Select exactly one body and click <strong class="ui">«פאה»</strong> in the <strong class="ui">«שיקוף ומערך»</strong> group of the ribbon, next to the hole pattern. You can also right-click the body, or find it with <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>.</p>
+<ol><li>Click a flat face of the body. As with the hole pattern, the whole flat face around your click counts; a curved face does not work here, a round wall neither. On a group or a bundle the face runs on across parts that meet, as with the hole pattern.</li><li>In the window:</li></ol>
+<ul><li><strong><strong class="ui">«כיוון»</strong>:</strong> choose <strong class="ui">«החוצה: הוספת חומר»</strong> for material standing on the face or <strong class="ui">«פנימה: חיתוך כיס»</strong> for a pocket cut into it. A pocket goes no deeper than the body behind the face; on a hollow body it can still reach the cavity.</li><li><strong><strong class="ui">«היסט פנימה מקצה הפאה»</strong>:</strong> how far the new outline stays inside the face's edge. Going out, 0 takes the whole face, which makes a wall thicker. Openings in the face grow by the same amount.</li><li><strong><strong class="ui">«רדיוס פינה»</strong>:</strong> rounds every corner of the outline, the inner ones too, so a sharp tip ends in an arc. A notch narrower than twice the radius closes, and a part of the face narrower than twice the inset and the radius together is left out.</li><li><strong><strong class="ui">«עומק»</strong>:</strong> how far the new part stands out of the face, or how deep the pocket goes.</li><li><strong><strong class="ui">«כגוף נפרד (לא מקובץ)»</strong>:</strong> with the switch on, the new part (or the hole of a pocket) is a body of its own beside the body instead of a group with it, so you can resize it, move it or use it to cut at once.</li></ul>
+<ol><li>The result shows at once as a preview and follows every value. <strong class="ui">«פאה אחרת»</strong> chooses another face, <kbd>Esc</kbd> closes the tool.</li><li>Only <strong class="ui">«יצירה»</strong> makes it.</li></ol>
+<p>What the tool adds is an ordinary sketch body, grouped with the body unless <strong class="ui">«כגוף נפרד (לא מקובץ)»</strong> is on (then <strong class="ui">«עריכת קבוצה»</strong> has nothing to open, and the part is free): nothing is baked in. <strong class="ui">«עריכת קבוצה»</strong> opens the group, and <strong class="ui">«עריכת סקיצה»</strong> on the new part shows the outline it follows. On the top or the bottom of a plain sketch body - one area, not grouped, mirrored, tapered, twisted or leaning, and without a stroke, key ring, fillet or chamfer - that is the body's own outline, set in when it is built, so its lines and arcs stay exact wherever the CAD kernel can set them in, for the edge tools and the STEP export. Resized later, the part keeps its inset. On any other face, and on every face of an imported mesh, the outline follows the face's triangles, and a curve is made of short straight pieces. The whole thing is one step for <strong class="ui">«ביטול פעולה»</strong>. To change the inset or the radius later, undo and run the tool again. To round the top edge afterwards, use <strong class="ui">«עיגול פינה»</strong> with <strong class="ui">«קצוות עליונים»</strong> on the group as the last step: like every edge treatment on a group, it joins the group into one body.</p>
+<p>An AI can do the same through the MCP bridge with <code>layerling_push_face</code> (see the chapter <a href="/madrich/ai-with-mcp.html">AI with MCP</a>).</p>
+</section><section class="guide-part"><h2 id="changing-several-parts-at-once">Changing several parts at once</h2>
+<p>With several parts selected, the properties panel on the right shows how many there are and offers what applies to all of them together: <strong class="ui">«מלא»</strong> or <strong class="ui">«חור»</strong>, one colour for all (a click on <strong class="ui">«מלא»</strong> opens the colours) and the lock. With a mixed selection, one click makes them all solids or all holes. If any of the parts is locked, only the lock can be used. Sizes are changed with the handles, with <strong class="ui">«שינוי קנה מידה באחוזים»</strong> or by typing a number into a size label. With several parts the number is the size of the whole selection: every part grows with it, the spaces between them too, as when you drag a handle. Solid and hole also work with a right-click or the <kbd>S</kbd> and <kbd>H</kbd> keys.</p>
+</section><section class="guide-part"><h2 id="scaling-by-percent">Scaling by percent</h2>
+<p>To make one or several parts larger or smaller by the same share, say all the parts of a print file by 20 %, use <strong class="ui">«שינוי קנה מידה באחוזים»</strong>. Select the parts, right-click them and choose <strong class="ui">«שינוי קנה מידה באחוזים»</strong>, or search for it with <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>.</p>
+<p>Under <strong class="ui">«גודל חדש»</strong> you type the new size as a percentage of the current one: 120 % is a fifth larger, 50 % half the size. Width, depth and height change alike, so the proportions stay. The bottom stays where it is, so nothing sinks into the plate.</p>
+<p>For model making, choose <strong class="ui">«קנה מידה של דגם»</strong> instead of <strong class="ui">«אחוזים»</strong> at the top. <strong class="ui">«מידה»</strong> offers the usual gauges from Z (1:220) to 16mm (1:19.05), and in <strong class="ui">«קנה מידה 1:»</strong> you type any other scale, such as 35 for 1:35. If the model is built at the original's real size, leave <strong class="ui">«בגודל מלא»</strong> chosen: 1:87 makes it 87 times smaller. If you built it at some other size, choose <strong class="ui">«בגודל אחר»</strong>, pick <strong class="ui">«גובה»</strong> or <strong class="ui">«אורך»</strong> (the longest side across the plate) and type in <strong class="ui">«גודל אמיתי»</strong> how big the original really is, in metres (in feet with imperial units). A tree that is 16 m tall in real life then becomes 16,000 mm / 87 = 184 mm tall in H0, whatever size it had before. The new size shows under the fields before you press <strong class="ui">«שינוי קנה מידה»</strong>. The scale stays set while the editor is open.</p>
+<p>With several parts you choose how they grow:</p>
+<ul><li><strong><strong class="ui">«יחד»</strong>:</strong> The parts grow around their common centre, and the gaps grow with them. The whole becomes larger as if it were one part.</li><li><strong><strong class="ui">«כל אחד במקומו»</strong>:</strong> Every part grows where it stands, and the gaps between them stay the same.</li></ul>
+<p>The percentage field has the focus when the window opens, so from the keyboard it is <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>K</kbd></span>, the percentage, <kbd>Enter</kbd>; <kbd>Esc</kbd> closes the window. Only <strong class="ui">«שינוי קנה מידה»</strong> (or <kbd>Enter</kbd> in the field) changes the design, and one step back undoes it. With a locked part in the selection it does not open.</p>
+</section><section class="guide-part"><h2 id="undoing">Undoing</h2>
+<p><strong class="ui">«ביטול פעולה»</strong> (<span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Z</kbd></span>) and <strong class="ui">«ביצוע חוזר»</strong> (<span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></span> or <span dir="ltr"><kbd>Ctrl</kbd>+<kbd>Y</kbd></span>) step through your history. How many steps travel with the saved design you set in the settings under <strong class="ui">«היסטוריה»</strong>. Point at either button and its tooltip names the step it would take back or bring again, with the measure where the step has one, such as &quot;Rounded the edges of Box (5 mm)&quot; or &quot;Moved 3 objects (12 mm)&quot;; the message after the step says the same. To go back several steps at once, use the history view below. A message that reports a step just taken, such as &quot;3 shapes deleted&quot;, has an Undo button that takes exactly that step back.</p>
+</section><section class="guide-part"><h2 id="looking-back-the-history-view">Looking back: the history view</h2>
+<p><strong class="ui">«היסטוריה»</strong>, next to undo and redo, opens a view of your history without changing anything. The work area shows the design as it was, and a slider at the bottom runs through every undo step: all the way to the right is the current state, each step to the left is one undo earlier, and states you have undone sit to the right of the current one. The arrow keys step through the states, <kbd>Esc</kbd> returns to the current state. The mouse wheel over the slider does the same, one state per notch, up to an earlier one; <kbd>Page Up</kbd> and <kbd>Page Down</kbd> jump ten states, <kbd>Home</kbd> goes to the oldest state and <kbd>End</kbd> back to the current one. You can turn and zoom the view meanwhile and click objects to bring them back (see below), but nothing can be moved; the design itself stays exactly as it is. If the bar covers something, drag it away by its title bar; a double-click on it brings it back. The list button in the title bar shows every step by name in a list, the newest at the top: a click on a step goes to that state, the state the design is at is marked <strong class="ui">«עכשיו»</strong>, and steps you have undone are grey. The list stays open the next time if you leave it open. The two play buttons under the slider run the history like a film: the one pointing right plays forwards from the state shown, the one pointing left plays backwards, each state for a moment, until the end; pressing the same button again pauses, and moving the slider, the wheel, the keys or the list takes over. Started at the end of its way, it begins again from the other end. <strong class="ui">«מהירות»</strong> sets how long each state stays (slow, normal or fast) and is remembered for next time. Record the screen while it plays to show how a part came about.</p>
+<p>Two things you can take along from an earlier state. <strong class="ui">«פרויקט חדש מהמצב הזה»</strong> puts that state into a new design in the overview, named after this one with the time of that state in brackets - a design saved before layerling recorded times says &quot;copy&quot; instead - and with the history up to that point, so undo keeps working there. <strong class="ui">«ייצוא המצב הזה»</strong> opens the usual export with that state as the design, so you can save it as STL, 3MF, STEP, a picture or a LYL file with the history up to that state.</p>
+<p>You can also bring single objects back into the design. Click an object in the state shown - <kbd>Shift</kbd>+click adds more or takes one off again, a click on empty space picks nothing - and choose <strong class="ui">«החזרה לעיצוב»</strong>. The view closes and a copy of each object lands in the current design exactly as it was in that state and at the spot it had there, selected, next to whatever the design holds now; nothing else changes. It is one step, so undo takes it back. Use it for a version of a part you changed since, or for one you deleted. A group comes back whole; notes and reference points on an object stay behind. Its name carries the time of that state, such as “Box (12:32)”, so it is easy to tell from the version the design has now. To bring back a part from inside a group, select the group and choose <strong class="ui">«פתיחת קבוצה»</strong> or press <kbd>E</kbd>, as in the design: its parts are laid out where editing the group would put them, ready to pick, and the bar says which group you are in. <strong class="ui">«יציאה»</strong> closes it again. This is only to look - the group, the design and the history stay as they are.</p>
+<p><strong class="ui">«מחיקת ההיסטוריה»</strong> sits alone at the bottom left of the bar. After a question it removes every earlier step for good: the design keeps the state it has now (not the one shown), Undo has nothing to go back to and a file saved afterwards carries no history. Use it to share a design without its past, or to start the undo steps over. It cannot be undone; to share a file without touching your own design, choose <strong class="ui">«ללא»</strong> when exporting instead.</p>
+<p>To make a large design lighter without losing its whole history, delete single steps. With the list open, each step shows on the right about how much room deleting it would free, counted as the design is stored: a mesh that several steps share counts for none of them alone, and steps that free less than 10 KB show nothing. A turned body is stored as a new mesh after every turn, so those steps are usually the large ones. The bin beside a step deletes that step alone after a question: the design stays as it is, and Undo from the step after it goes straight to the one before. The step the design stands at cannot be deleted. Above the list stands how much the whole history takes, and <strong class="ui">«מחיקת השלבים הגדולים ביותר»</strong> picks every step that frees 1 MB or more on its own and asks before deleting them together. When a design is too large for the browser to store with its whole history, the note that says so has a <strong class="ui">«הצגת שלבים»</strong> button that opens this list.</p></section>
+<div class="pager"><a href="/madrich/shapes.html"><small>הפרק הקודם</small>Placing and adjusting shapes</a><a class="next" href="/madrich/solids-and-holes.html"><small>הפרק הבא</small>Solids and holes</a></div>
+      </main>
+    </div>
+    <footer class="note">המדריך גדל יחד עם התוכנה. אם משהו חסר או שגוי, ספרו לנו ב <a href="https://github.com/henmedia/layerling/discussions" rel="noopener">דיונים</a>.</footer>
+    <footer class="site-footer"><div><a href="https://layerling.com/support.html?lang=he" rel="noopener">תרומה ל-layerling</a><span class="dot" aria-hidden="true">&middot;</span><a href="https://github.com/henmedia/layerling/discussions" rel="noopener">דיונים</a></div><div><a href="https://github.com/henmedia/layerling" rel="noopener">עוד ב-GitHub</a><span class="dot" aria-hidden="true">&middot;</span><a href="https://github.com/henmedia/layerling/releases" rel="noopener">הערות גרסה v1.170.1</a></div><p class="trademark">Tinkercad הוא סימן מסחרי של Autodesk, Inc. layerling הוא פרויקט עצמאי ואינו קשור ל-Autodesk, נתמך או ממומן על ידה.</p></footer>
+    <script>(function(){var b=document.getElementById("open-editor");if(!b||typeof BroadcastChannel==="undefined")return;var elsewhere=false,c=new BroadcastChannel("layerling-tabs"),id="guide-"+Math.random().toString(36).slice(2);c.onmessage=function(e){var m=e.data;if(m&&m.kind==="here"&&m.tabId!==id&&!elsewhere){elsewhere=true;b.textContent="חזרה לעורך";}};c.postMessage({kind:"ask",tabId:id});b.addEventListener("click",function(e){if(!elsewhere)return;e.preventDefault();window.close();setTimeout(function(){elsewhere=false;b.textContent="פתיחת העורך";var n=document.getElementById("editor-elsewhere");if(n)n.hidden=false;},400);});})();</script>
+    <script>
+function guideFold(text        )         {
+  var out = "";
+  for (var i = 0; i < text.length; i++) {
+    var letter = text.charAt(i).toLowerCase().normalize("NFD").charAt(0);
+    // "ł" has no decomposition, so it is mapped by hand (Polish): one letter in, one letter out.
+    out += letter === "ł" ? "l" : letter;
+  }
+  return out;
+}
+function guideForms(word        , umlauts         )           {
+  var forms = [word];
+  if (umlauts) { var plain = word.split("ae").join("a").split("oe").join("o").split("ue").join("u"); if (plain !== word) forms.push(plain); }
+  if (word.indexOf("ss") >= 0) forms.push(word.split("ss").join(String.fromCharCode(223)));
+  if (word.indexOf(String.fromCharCode(223)) >= 0) forms.push(word.split(String.fromCharCode(223)).join("ss"));
+  return forms;
+}
+function guideWordChar(letter        )          {
+  return letter !== letter.toUpperCase() || (letter >= "0" && letter <= "9");
+}
+function guideFind(text        , forms          , from        )                    {
+  var best                    = null;
+  for (var i = 0; i < forms.length; i++) {
+    // An exact phrase (it begins with a quotation mark) must not start or end inside a word.
+    var exact = forms[i].charAt(0) === String.fromCharCode(34), word = exact ? forms[i].slice(1) : forms[i], k = text.indexOf(word, from);
+    while (exact && k >= 0 && (guideWordChar(text.charAt(k - 1)) || guideWordChar(text.charAt(k + word.length)))) k = text.indexOf(word, k + 1);
+    if (k >= 0 && (!best || k < best.at)) best = { at: k, len: word.length };
+  }
+  return best;
+}
+function guidePrepare(entries                    )                  {
+  return entries.map(function (e) { return { e: e, c: guideFold(e.c), h: guideFold(e.h), t: guideFold(e.t) }; });
+}
+function guideTokens(query        )           {
+  var folded = guideFold(query), marks = String.fromCharCode(34, 171, 187, 8220, 8221, 8222, 12300, 12301, 12302, 12303), straight = String.fromCharCode(34);
+  var tokens           = [], word = "", quoted = false;
+  function isMark(at        ) { return marks.indexOf(folded.charAt(at)) >= 0; }
+  function closes(at        ) { for (var j = at + 1; j < folded.length; j++) if (isMark(j)) return true; return false; }
+  function push() {
+    var w = quoted ? word.split(" ").filter(function (part) { return part.length > 0; }).join(" ") : word;
+    if (w) tokens.push(quoted ? straight + w : w);
+    word = "";
+  }
+  for (var i = 0; i < folded.length; i++) {
+    if (isMark(i)) { var open          = !quoted && closes(i); push(); quoted = open; }
+    else if (folded.charAt(i) === " " && !quoted) push();
+    else word += folded.charAt(i);
+  }
+  push();
+  return tokens;
+}
+function guideSearch(prepared                 , query        , limit         , umlauts          )             {
+  var tokens = guideTokens(query); if (!tokens.length) return [];
+  var forms = tokens.map(function (w) { return guideForms(w, !!umlauts); }), phrase = guideForms(tokens.join(" ").split(String.fromCharCode(34)).join(""), !!umlauts), found             = [];
+  prepared.forEach(function (p) {
+    var score = 0;
+    for (var i = 0; i < tokens.length; i++) {
+      var inH = guideFind(p.h, forms[i], 0), inC = guideFind(p.c, forms[i], 0), at = guideFind(p.t, forms[i], 0);
+      if (!inH && !inC && !at) return;
+      if (inH) score += 10;
+      if (inC) score += 3;
+      if (at) { score += 1; var n = 0, k                    = at; while (k && n < 5) { n++; k = guideFind(p.t, forms[i], k.at + k.len); } score += n * 0.3; }
+    }
+    if (tokens.length > 1 && (guideFind(p.h, phrase, 0) || guideFind(p.t, phrase, 0))) score += 6;
+    found.push({ entry: p.e, score: score, folded: p.t, forms: forms });
+  });
+  found.sort(function (a, b) { return b.score - a.score; });
+  return found.slice(0, limit || 8);
+}
+function guideRanges(text        , query        , umlauts          )               {
+  var tokens = guideTokens(query), longer = tokens.filter(function (w) { return w.length > 1; });
+  if (longer.length) tokens = longer;
+  var all               = [];
+  tokens.forEach(function (w) {
+    var forms = guideForms(w, !!umlauts), f = guideFind(text, forms, 0);
+    while (f) { all.push(f); f = guideFind(text, forms, f.at + f.len); }
+  });
+  all.sort(function (a, b) { return a.at - b.at; });
+  var joined               = [];
+  all.forEach(function (f) {
+    var last = joined[joined.length - 1];
+    if (last && f.at <= last.at + last.len) last.len = Math.max(last.len, f.at + f.len - last.at);
+    else joined.push({ at: f.at, len: f.len });
+  });
+  return joined;
+}
+
+function guideSnippet(hit){
+  var text=hit.entry.t,first=-1;
+  hit.forms.forEach(function(group){var f=guideFind(hit.folded,group,0);if(f&&(first<0||f.at<first))first=f.at;});
+  var from=first>40?first-40:0;
+  if(from>0){var gap=text.indexOf(" ",from);if(gap>=0&&gap<first)from=gap+1;}
+  var end=Math.min(text.length,from+150),marked=[];
+  for(var i=from;i<end;i++)marked.push(false);
+  hit.forms.forEach(function(group){var f=guideFind(hit.folded,group,from);while(f&&f.at<end){for(var j=f.at;j<f.at+f.len&&j<end;j++)marked[j-from]=true;f=guideFind(hit.folded,group,f.at+f.len);}});
+  var parts=[],run="",state=false;
+  if(from>0)parts.push({text:"... ",mark:false});
+  for(var m=0;m<marked.length;m++){if(marked[m]!==state&&run){parts.push({text:run,mark:state});run="";}state=marked[m];run+=text.charAt(from+m);}
+  if(run)parts.push({text:run,mark:state});
+  if(end<text.length)parts.push({text:" ...",mark:false});
+  return parts;
+}
+function guideUnmarkPage(){
+  Array.prototype.forEach.call(document.querySelectorAll("mark.guide-hit"),function(mark){var parent=mark.parentNode;parent.replaceChild(document.createTextNode(mark.textContent),mark);parent.normalize();});
+}
+function guideMarkPage(query,umlauts,anchor){
+  var main=document.querySelector("main");if(!main)return;
+  guideUnmarkPage();
+  var walker=document.createTreeWalker(main,NodeFilter.SHOW_TEXT,null),nodes=[],node,marks=[];
+  while((node=walker.nextNode()))if(node.nodeValue.trim()&&!node.parentNode.closest("script,style"))nodes.push(node);
+  nodes.forEach(function(node){
+    var text=node.nodeValue,ranges=guideRanges(guideFold(text),query,umlauts);if(!ranges.length)return;
+    var piece=document.createDocumentFragment(),pos=0;
+    ranges.forEach(function(r){
+      if(r.at>pos)piece.appendChild(document.createTextNode(text.slice(pos,r.at)));
+      var mark=document.createElement("mark");mark.className="guide-hit";mark.textContent=text.slice(r.at,r.at+r.len);piece.appendChild(mark);marks.push(mark);pos=r.at+r.len;
+    });
+    if(pos<text.length)piece.appendChild(document.createTextNode(text.slice(pos)));
+    node.parentNode.replaceChild(piece,node);
+  });
+  if(!marks.length)return;
+  var target=anchor?document.getElementById(anchor):null,first=marks[0];
+  if(target)for(var i=0;i<marks.length;i++){if(target.compareDocumentPosition(marks[i])&Node.DOCUMENT_POSITION_FOLLOWING){first=marks[i];break;}}
+  first.scrollIntoView({block:"center"});
+}
+(function(){
+  var form=document.getElementById("guide-search");if(!form||!window.fetch)return;
+  var input=form.querySelector("input"),box=document.getElementById("guide-results"),prepared=null,loading=null;
+  var umlauts=form.getAttribute("data-umlauts")==="true";
+  function remember(link){
+    try{sessionStorage.setItem("layerling.guideHit",JSON.stringify({q:input.value,p:link.pathname}));}catch(e){}
+    if(link.pathname===location.pathname)setTimeout(markRemembered,0);
+  }
+  function markRemembered(){
+    var hit=null;try{hit=JSON.parse(sessionStorage.getItem("layerling.guideHit")||"null");sessionStorage.removeItem("layerling.guideHit");}catch(e){}
+    if(!hit||hit.p!==location.pathname||!guideTokens(hit.q||"").length)return;
+    var anchor="";try{anchor=decodeURIComponent(location.hash.slice(1));}catch(e){}
+    guideMarkPage(hit.q,umlauts,anchor);
+  }
+  if(document.readyState==="complete")markRemembered();else window.addEventListener("load",markRemembered);
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")guideUnmarkPage();});
+  document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest("mark.guide-hit"))guideUnmarkPage();});
+  function load(){if(!loading){loading=fetch(form.getAttribute("data-index")).then(function(r){return r.json();}).then(function(list){prepared=guidePrepare(list);}).catch(function(){loading=null;});}return loading;}
+  function close(){box.hidden=true;input.setAttribute("aria-expanded","false");}
+  function render(){
+    if(!guideTokens(input.value).length){close();return;}
+    if(!prepared){load().then(function(){if(prepared)render();});return;}
+    var hits=guideSearch(prepared,input.value,8,umlauts);
+    box.textContent="";
+    if(!hits.length){var none=document.createElement("p");none.textContent=form.getAttribute("data-nothing");box.appendChild(none);}
+    hits.forEach(function(hit){
+      var link=document.createElement("a"),title=document.createElement("b"),line=document.createElement("span");
+      link.href=hit.entry.u;link.addEventListener("click",function(){remember(link);});
+      title.textContent=hit.entry.h?hit.entry.c+" > "+hit.entry.h:hit.entry.c;
+      guideSnippet(hit).forEach(function(part){if(part.mark){var mark=document.createElement("mark");mark.textContent=part.text;line.appendChild(mark);}else line.appendChild(document.createTextNode(part.text));});
+      link.appendChild(title);link.appendChild(line);box.appendChild(link);
+    });
+    box.hidden=false;input.setAttribute("aria-expanded","true");
+  }
+  input.addEventListener("input",render);
+  input.addEventListener("focus",function(){load();if(input.value)render();});
+  input.addEventListener("keydown",function(e){
+    if(e.key==="ArrowDown"){var first=box.querySelector("a");if(first){e.preventDefault();first.focus();}}
+    else if(e.key==="Escape"){input.value="";close();}
+  });
+  form.addEventListener("submit",function(e){e.preventDefault();var first=box.querySelector("a");if(first){remember(first);window.location.href=first.href;}});
+  box.addEventListener("keydown",function(e){
+    var current=document.activeElement;
+    if(e.key==="ArrowDown"&&current.nextElementSibling){e.preventDefault();current.nextElementSibling.focus();}
+    else if(e.key==="ArrowUp"){e.preventDefault();if(current.previousElementSibling)current.previousElementSibling.focus();else input.focus();}
+    else if(e.key==="Escape"){input.focus();close();}
+  });
+  box.addEventListener("click",close);
+  document.addEventListener("click",function(e){if(!form.contains(e.target))close();});
+})();
+</script>
+  </body>
+</html>
