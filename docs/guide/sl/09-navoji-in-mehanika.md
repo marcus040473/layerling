@@ -278,6 +278,8 @@ Vijake s cilindrično glavo prodajajo po dolžini pod glavo, vijake s pogreznjen
 
 ## Generator škatel
 
+> **Opomba:** {{ui:shape.boxGenerator}} ni več na seznamu oblik. Škatla se zdaj naredi iz katere koli oblike z orodjem {{ui:editor.tool.hollow}}, ki ima pregrade, ročno postavljene stene, vdolbine za prste, oblikovana ležišča in snemljivi vložek, njen pokrov pa z orodjem {{ui:editor.tool.lid}}, ki škatli sledi, ko jo spremenite. Oboje je opisano v poglavju o robovih in izdolbljenju. Načrt s škatlo iz generatorja se še vedno odpre in zanjo še naprej velja, kar sledi.
+
 {{ui:shape.boxGenerator}} naredi škatlo in njen pokrov iz nekaj nastavitev. Shranijo se samo nastavitve; telo se iz njih vsakič znova zgradi, zato se projekt vedno odpre enako. Pod {{ui:prop.boxShape}} izbereš {{ui:boxGenerator.shapeRectangle}} (z vrednostjo {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (krog, kadar sta širina in dolžina enaki) ali {{ui:boxGenerator.shapePolygon}} z {{ui:prop.boxSides}} vogali. Širina, dolžina in višina so zunanja mera. {{ui:prop.boxWall}} in {{ui:prop.boxFloor}} sta na začetku 2,4 mm, kar je dobra vrednost za FDM tiskanje. Stena, ki je za škatlo predebela, ne pusti notranjosti, in plošča to pove, namesto da bi molče narisala poln kvader.
 
 {{ui:prop.boxColumns}} in {{ui:prop.boxRows}} razdelita škatlo na predale. Pregrade, debele po {{ui:prop.boxDivider}}, so en kos s steno in dnom. Predal, ožji od 2 mm, ostane poln, plošča pa pove, koliko jih je.

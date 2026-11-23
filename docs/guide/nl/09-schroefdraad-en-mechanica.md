@@ -278,6 +278,8 @@ De {{ui:shape.finishingWasher}} (een rozet, Discussion #1131) is de gewelfde rin
 
 ## Dozengenerator
 
+> **Opmerking:** De {{ui:shape.boxGenerator}} staat niet meer in de vormenlijst. Een doos maak je nu van elke vorm met {{ui:editor.tool.hollow}}, dat de tussenschotten, de zelf geplaatste wanden, de grijpkommen, de vormvakken en het losse inzetstuk heeft, en het deksel met {{ui:editor.tool.lid}}, dat de doos volgt wanneer je die wijzigt. Beide staan in het hoofdstuk over randen en uithollen. Een ontwerp met een doos uit de generator gaat nog steeds open, en wat hier volgt blijft daarvoor gelden.
+
 De {{ui:shape.boxGenerator}} maakt een doos en het deksel daarvan uit een paar instellingen. Alleen de instellingen worden opgeslagen; het lichaam wordt er telkens uit opgebouwd, zodat een project altijd hetzelfde opent. Onder {{ui:prop.boxShape}} kies je {{ui:boxGenerator.shapeRectangle}} (met een {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (een cirkel als breedte en lengte gelijk zijn) of {{ui:boxGenerator.shapePolygon}} met {{ui:prop.boxSides}} hoeken. Breedte, lengte en hoogte zijn de buitenmaat. {{ui:prop.boxWall}} en {{ui:prop.boxFloor}} beginnen op 2,4 mm, een goede waarde voor FDM-printen. Een wand die te dik is voor de doos laat geen binnenruimte over, en het paneel zegt dat in plaats van stilletjes een massief blok te tekenen.
 
 {{ui:prop.boxColumns}} en {{ui:prop.boxRows}} verdelen de doos in vakken. De scheidingswanden, {{ui:prop.boxDivider}} dik, zijn één stuk met de wand en de bodem. Een vak dat smaller is dan 2 mm blijft massief, en het paneel vertelt hoeveel het er zijn.

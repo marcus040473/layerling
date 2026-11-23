@@ -278,6 +278,8 @@ La {{ui:shape.finishingWasher}} (una roseta, Discussion #1131) es la arandela ab
 
 ## Generador de cajas
 
+> **Nota:** el {{ui:shape.boxGenerator}} ya no está en la lista de formas. Ahora una caja se hace a partir de cualquier forma con {{ui:editor.tool.hollow}}, que tiene los separadores, las paredes colocadas a mano, los huecos para los dedos, los huecos a medida y el inserto suelto, y su tapa con {{ui:editor.tool.lid}}, que sigue a la caja cuando la cambias. Ambos se describen en el capítulo sobre aristas y vaciado. Un diseño con una caja del generador se sigue abriendo, y lo que sigue aquí continúa valiendo para ella.
+
 El {{ui:shape.boxGenerator}} crea una caja y su tapa a partir de unos pocos ajustes. Solo se guardan los ajustes; el cuerpo se construye a partir de ellos cada vez, así que un proyecto siempre se abre igual. En {{ui:prop.boxShape}} eliges {{ui:boxGenerator.shapeRectangle}} (con un {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (un círculo cuando el ancho y el largo son iguales) o {{ui:boxGenerator.shapePolygon}} con {{ui:prop.boxSides}} esquinas. El ancho, el largo y el alto son el tamaño exterior. {{ui:prop.boxWall}} y {{ui:prop.boxFloor}} empiezan en 2,4 mm, un buen valor para impresión FDM. Una pared demasiado gruesa para la caja no deja interior, y el panel lo avisa en lugar de dibujar un bloque macizo en silencio.
 
 {{ui:prop.boxColumns}} y {{ui:prop.boxRows}} dividen la caja en compartimentos. Las divisiones, de grosor {{ui:prop.boxDivider}}, son una sola pieza con la pared y la base. Un compartimento más estrecho que 2 mm queda macizo, y el panel te dice cuántos son.

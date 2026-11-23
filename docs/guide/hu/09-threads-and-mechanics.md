@@ -278,6 +278,8 @@ A(z) {{ui:shape.finishingWasher}} (rozetta, Discussion #1131) a süllyesztett va
 
 ## Dobozgenerátor
 
+> **Megjegyzés:** a {{ui:shape.boxGenerator}} már nincs az alakzatok listáján. Doboz most bármely alakzatból készül a {{ui:editor.tool.hollow}} eszközzel, amelyben megvannak az elválasztók, a kézzel elhelyezett falak, az ujjmélyedések, a formafészkek és a kivehető betét, a fedele pedig a {{ui:editor.tool.lid}} eszközzel, amely követi a dobozt, ha megváltoztatod. Mindkettőt az élekről és a kivájásról szóló fejezet írja le. A generátorból származó dobozt tartalmazó terv továbbra is megnyílik, és rá továbbra is érvényes, ami itt következik.
+
 A {{ui:shape.boxGenerator}} néhány beállításból készít egy dobozt és a fedelét. Csak a beállítások mentődnek; a test minden alkalommal ezekből épül újra, így a projekt mindig ugyanúgy nyílik meg. A {{ui:prop.boxShape}} alatt választhatsz: {{ui:boxGenerator.shapeRectangle}} (a {{ui:prop.boxCornerRadius}} értékkel), {{ui:boxGenerator.shapeRound}} (kör, ha a szélesség és a hosszúság egyenlő) vagy {{ui:boxGenerator.shapePolygon}} {{ui:prop.boxSides}} sarokkal. A szélesség, a hosszúság és a magasság a külső méret. A {{ui:prop.boxWall}} és a {{ui:prop.boxFloor}} 2,4 mm-ről indul, ami jó érték FDM nyomtatáshoz. A dobozhoz túl vastag fal nem hagy belső teret, és a panel ezt jelzi, ahelyett hogy csendben egy tömör tömböt rajzolna.
 
 A {{ui:prop.boxColumns}} és a {{ui:prop.boxRows}} rekeszekre osztja a dobozt. A válaszfalak, {{ui:prop.boxDivider}} vastagon, egy darabot alkotnak a fallal és az aljjal. A 2 mm-nél keskenyebb rekesz tömör marad, és a panel megmondja, hány ilyen van.

@@ -278,6 +278,8 @@ The {{ui:shape.finishingWasher}} (a rosette, Discussion #1131) is the domed wash
 
 ## Box generator
 
+> **Note:** The {{ui:shape.boxGenerator}} is no longer in the shape list. A box is now made from any shape with {{ui:editor.tool.hollow}}, which has the dividers, the walls you place yourself, the finger scoops, the shaped pockets and the loose insert, and its lid with {{ui:editor.tool.lid}}, which follows the box when you change it. Both are described in the chapter on edges and hollowing. A design that holds a box from the generator still opens, and what follows here still applies to it.
+
 The {{ui:shape.boxGenerator}} makes a box and its lid from a few settings. Only the settings are saved; the body is built from them each time, so a project always opens the same. Under {{ui:prop.boxShape}} you pick {{ui:boxGenerator.shapeRectangle}} (with a {{ui:prop.boxCornerRadius}}), {{ui:boxGenerator.shapeRound}} (a circle when width and length are equal) or {{ui:boxGenerator.shapePolygon}} with {{ui:prop.boxSides}} corners. Width, length and height are the outer size. The {{ui:prop.boxWall}} and {{ui:prop.boxFloor}} start at 2.4 mm, a good value for FDM printing. A wall too thick for the box leaves no inside, and the panel says so instead of drawing a solid block in silence.
 
 {{ui:prop.boxColumns}} and {{ui:prop.boxRows}} cut the box into compartments. The dividers, {{ui:prop.boxDivider}} thick, are one piece with the wall and the floor. A compartment narrower than 2 mm stays solid, and the panel tells you how many.
