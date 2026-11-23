@@ -10,6 +10,8 @@ hochgeladen. Offen ist nur noch, was du entscheidest.
 - Text für Stefan: `uebergabe/pr-texte/mold-kinds.md` (englisch) und `mold-kinds-de.md` (deutsch)
 - Bilder: `uebergabe/bilder/gussformen/`
 - Text für Facebook: `uebergabe/facebook/gussformen.md`
+- Text für das GitHub-Forum: `uebergabe/forum/gussformen.md`
+- PR in deinem Repo: https://github.com/marcus040473/layerling/pull/5
 
 ## Was neu ist
 
