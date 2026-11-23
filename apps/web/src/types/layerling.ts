@@ -1882,7 +1882,9 @@ export type QrStyle = "code" | "raised" | "engraved";
 /** The single-board computers the SBC board shape knows (#1098). */
 export type SbcBoardType = "pi5" | "pi4" | "pi3bPlus" | "zero2w" | "bttPi12" | "xiaoEsp32c6" | "esp32c3SuperMini" | "esp32c6SuperMini" | "featherEsp32s3" | "arduinoUno" | "arduinoMega" | "arduinoNano" | "wemosD1Mini" | "pico" | "picoW" | "pico2" | "pico2W" | "esp32CamMb" | "esp32s3Cam" | "esp32DevKitC" | "esp32DevKitV1" | "cyd" | "cyd2usb" | "waveshareEsp32s3Zero" | "arduinoProMini" | "nanoPiNeo3Plus" | "waveshareEsp32p4Nano";
 
-export type PattiesPattern = "warp" | "dots" | "petals" | "scales" | "waves" | "cells";
+export type PattiesPattern = "warp" | "dots" | "petals" | "scales" | "waves" | "cells" | "bricks" | "triangles" | "diamonds" | "weave" | "herringbone" | "rays" | "motif";
+/** The figure the motif pattern repeats: one of the ready ones, or one's own, read from a drawing or a picture. */
+export type PattiesMotif = "heart" | "drop" | "moon" | "cross" | "leaf" | "paw" | "custom";
 export type PattiesOutline = "rectangle" | "round" | "fan";
 export type PattiesLayout = "straight" | "polar";
 export type PattiesMode = "stencil" | "raised" | "sunk" | "pieces";
@@ -1893,7 +1895,10 @@ export type PattiesCell = "pill" | "ellipse";
  * settings (lib/pattiesPattern.ts) and the body is built from them every time (lib/pattiesGeometry.ts).
  */
 export type PattiesSettings = {
-  /** Warp grid, dots, flowers, scales, waves, or cells that grow like foam. */
+  /**
+   * Warp grid, dots, flowers, scales, waves, cells that grow like foam, bricks, triangles, diamonds, a weave,
+   * herringbone, rays from a middle, or a figure of one's own repeated.
+   */
   pattern: PattiesPattern;
   /** The plate's edge: a rectangle, round, or the unrolled side of a round vessel with sloped sides. */
   outline: PattiesOutline;
@@ -1921,9 +1926,12 @@ export type PattiesSettings = {
   turn: number;
   /** 0 to 100: how round the corners of the figures are. */
   roundness: number;
-  /** Dots: corners. Flowers: petals of a flower. Waves: pieces every band is cut into. */
+  /** Dots: corners. Flowers: petals of a flower. Waves: pieces every band is cut into. Weave: strips in a field. */
   sides: number;
-  /** 0 to 100, what it means follows the pattern: star depth, petal width, scale width, wave height, disorder. */
+  /**
+   * 0 to 100, what it means follows the pattern: star depth, petal width, scale width, wave height, disorder, how
+   * tall a diamond is, how thick a herringbone bar is, how large the open middle of the rays is.
+   */
   amount: number;
   /** Cells: which of the endless random arrangements. */
   seed: number;
@@ -1941,6 +1949,13 @@ export type PattiesSettings = {
   fanTop: number;
   fanBottom: number;
   fanSide: number;
+  /** Motif: which figure is repeated. */
+  motif: PattiesMotif;
+  /**
+   * Motif "custom": the figure's outlines, each a closed line as x, y, x, y, ... inside a circle of radius 1 round
+   * the origin, y up. Read from an SVG or traced from a picture (lib/pattiesMotif.ts); holes are left out.
+   */
+  motifLoops?: number[][];
 };
 
 export type SbcBoardSettings = {

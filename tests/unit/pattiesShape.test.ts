@@ -5,7 +5,7 @@ import { mcpShapeSummary } from "@/lib/editorMcpSummary";
 import { guideChapterForShape, guideHref, guideSectionForShape } from "@/lib/guideLinks";
 import { exportLylProject, importLylProject } from "@/lib/lylProject";
 import { MCP_SHAPE_SETTING_KEYS } from "@/lib/mcpShapeSettings";
-import { DEFAULT_PATTIES, DEFAULT_PATTIES_DEPTH, DEFAULT_PATTIES_HEIGHT, DEFAULT_PATTIES_WIDTH, normalizePatties } from "@/lib/pattiesPattern";
+import { DEFAULT_PATTIES, DEFAULT_PATTIES_DEPTH, DEFAULT_PATTIES_HEIGHT, DEFAULT_PATTIES_WIDTH, PATTIES_PATTERNS, normalizePatties } from "@/lib/pattiesPattern";
 import { libraryShapeAssets, makeShapeFromAsset, sceneShape, shapeAssetLabel, shapeAssetMenuLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
 import { shapeLibrarySections } from "@/lib/shapeLibrarySections";
 import { canonicalizeShape, shapeSupportsTaper, workplaneShapesEqual } from "@/lib/workplaneShapes";
@@ -74,6 +74,21 @@ describe("Patties: a shape of the library", () => {
     expect(workplaneShapesEqual(byId.get("fan")!, shapes[1])).toBe(true);
   });
 
+  it("keeps a figure of one's own through a saved design file, and tells two figures apart", async () => {
+    const own = [[-0.7, -0.7, 0.7, -0.7, 0, 0.9], [0.2, 0.2, 0.4, 0.2, 0.3, 0.4]];
+    const shapes = [plate({ pattern: "motif", motif: "custom", motifLoops: own }, { id: "own" })];
+    const exported = await exportLylProject({
+      projectId: "patties", projectName: "Patties", createdAt: 1_700_000_000_000, modifiedAt: 1_700_000_100_000,
+      shapes, history: [editorHistoryEntry(shapes, [])], historyIndex: 0, assets: [],
+      workspace: DEFAULT_WORKPLANE_WORKSPACE, snapGrid: DEFAULT_SNAP_GRID, placementElevation: 0,
+    });
+    const restored = (await importLylProject(exported)).shapes[0];
+    expect(restored.patties).toMatchObject({ pattern: "motif", motif: "custom", motifLoops: own });
+    expect(workplaneShapesEqual(restored, shapes[0])).toBe(true);
+    expect(workplaneShapesEqual(restored, plate({ pattern: "motif", motif: "custom", motifLoops: [own[0]] }, { id: "own" }))).toBe(false);
+    expect(workplaneShapesEqual(restored, plate({ pattern: "motif", motif: "custom" }, { id: "own" }))).toBe(false);
+  });
+
   it("refuses a design file whose pattern settings could not have been written by the editor", async () => {
     const shapes = [plate()];
     const exported = await exportLylProject({
@@ -106,7 +121,7 @@ describe("Patties: saved defaults and the AI bridge", () => {
     expect(creatableShapeKinds).toContain("patties");
     expect(MCP_SHAPE_SETTING_KEYS).toContain("patties");
     expect(shapeSettingSchema.patties.description).toMatch(/only/i);
-    for (const word of ["warp", "dots", "petals", "scales", "waves", "cells", "stencil", "raised", "sunk", "pieces", "fan", "polar", "seamless", "cutEdge"]) {
+    for (const word of [...PATTIES_PATTERNS, "heart", "paw", "motifSvg", "stencil", "raised", "sunk", "pieces", "fan", "polar", "seamless", "cutEdge"]) {
       expect(shapeSettingSchema.patties.description, word).toContain(word);
     }
     // The settings go out as text, whole, and come back as the same plate.

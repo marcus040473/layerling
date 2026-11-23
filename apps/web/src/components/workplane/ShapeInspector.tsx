@@ -225,6 +225,7 @@ import { FontPicker } from "@/components/workplane/FontPicker";
 import { SurfacePatternPicker } from "@/components/workplane/SurfacePatternPicker";
 import { QR_BYTE_CAPACITY, qrByteLength, qrTextFits, type QrCodeSettings } from "@/lib/qrCode";
 import { PATTIES_MIN_HEIGHT, pattiesBaseThickness, pattiesPlanOfShape, pattiesSettingsOfShape } from "@/lib/pattiesGeometry";
+import { PattiesMotifLoader } from "@/components/workplane/PattiesMotifLoader";
 import {
   PATTIES_CELLS,
   PATTIES_LAYOUTS,
@@ -242,6 +243,7 @@ import {
   PATTIES_MIN_FAN,
   PATTIES_MIN_GAP,
   PATTIES_MODES,
+  PATTIES_MOTIFS,
   PATTIES_OUTLINES,
   PATTIES_PATTERNS,
   PATTIES_PRESETS,
@@ -3851,6 +3853,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       dots: "prop.pattiesSides.dots",
       petals: "prop.pattiesSides.petals",
       waves: "prop.pattiesSides.waves",
+      weave: "prop.pattiesSides.weave",
     };
     const amountLabel: Partial<Record<PattiesSettings["pattern"], MessageKey>> = {
       dots: "prop.pattiesAmount.dots",
@@ -3858,6 +3861,9 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       scales: "prop.pattiesAmount.scales",
       waves: "prop.pattiesAmount.waves",
       cells: "prop.pattiesAmount.cells",
+      diamonds: "prop.pattiesAmount.diamonds",
+      herringbone: "prop.pattiesAmount.herringbone",
+      rays: "prop.pattiesAmount.rays",
     };
     const rows: ShapePropertyConfig[] = [
       {
@@ -3920,7 +3926,7 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       },
     );
     if (uses("rows")) {
-      rows.push({ id: "pattiesRows", label: t("prop.pattiesRows"), value: settings.rows, min: 0, max: PATTIES_MAX_ROWS, step: 1, hint: t("patties.rowsHint"), onChange: (value) => set({ rows: value }) });
+      rows.push({ id: "pattiesRows", label: t("prop.pattiesRows"), value: settings.rows, min: 0, max: PATTIES_MAX_ROWS, step: 1, hint: t(settings.pattern === "rays" ? "patties.ringsHint" : "patties.rowsHint"), onChange: (value) => set({ rows: value }) });
     }
     rows.push({
       id: "pattiesGap",
@@ -3932,6 +3938,18 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       hint: t(settings.pattern === "petals" ? "patties.gapPetalsHint" : "patties.gapHint"),
       onChange: (value) => set({ gap: clamp(value, PATTIES_MIN_GAP, PATTIES_MAX_GAP) }),
     });
+    if (uses("motif")) {
+      // One's own figure is offered once there is one: it stays with the plate while a ready one is shown.
+      const motifs = PATTIES_MOTIFS.filter((value) => value !== "custom" || Boolean(settings.motifLoops?.length));
+      rows.push({
+        type: "select",
+        id: "pattiesMotif",
+        label: t("prop.pattiesCell"),
+        value: settings.motif === "custom" && !settings.motifLoops?.length ? "heart" : settings.motif,
+        options: motifs.map((value) => ({ value, label: t(`patties.motif.${value}`) })),
+        onChange: (value) => set({ motif: value as PattiesSettings["motif"] }),
+      });
+    }
     if (uses("cell")) {
       rows.push({
         type: "select",
@@ -3959,7 +3977,11 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     }
     if (uses("bulge")) {
       rows.push({ id: "pattiesBulge", label: t("prop.pattiesBulge"), value: settings.bulge, min: -100, max: 100, step: 1, hint: t("patties.bulgeHint"), onChange: (value) => set({ bulge: value }) });
-      if (settings.bulge !== 0) {
+    }
+    if (uses("focus")) {
+      // The focus is where the bulge has its middle; rays have no bulge and start from it. Rays round a ring or up
+      // a vessel start from the ring's own middle.
+      if (uses("bulge") ? settings.bulge !== 0 : !rings && !fan) {
         // Round a ring the pattern has no left and right, only nearer the middle and nearer the rim.
         if (!rings) rows.push({ id: "pattiesFocusX", label: t("prop.pattiesFocusX"), value: settings.focusX, min: -100, max: 100, step: 1, onChange: (value) => set({ focusX: value }) });
         rows.push({ id: "pattiesFocusY", label: t(rings ? "prop.pattiesFocusRing" : "prop.pattiesFocusY"), value: settings.focusY, min: -100, max: 100, step: 1, onChange: (value) => set({ focusY: value }) });
@@ -5884,6 +5906,9 @@ export function ShapeInspector({
                   </button>
                 ) : null}
               </>
+            ) : null}
+            {shape.kind === "patties" && pattiesSettingsOfShape(shape).pattern === "motif" ? (
+              <PattiesMotifLoader disabled={frozen} onLoaded={(motifLoops) => onUpdate({ patties: { ...pattiesSettingsOfShape(shape), motif: "custom", motifLoops } })} />
             ) : null}
             {shape.kind === "patties" && onPattiesSvg ? (
               <>

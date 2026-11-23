@@ -317,6 +317,101 @@ describe("Patties: the patterns", () => {
   });
 });
 
+describe("Patties: bricks, triangles, diamonds, weave, herringbone, rays and motifs", () => {
+  const centre = (loop: PattiesLoop) => loop.reduce((sum, p) => ({ x: sum.x + p.x / loop.length, y: sum.y + p.y / loop.length }), { x: 0, y: 0 });
+
+  it("lays bricks in rows, every second row half a brick along", () => {
+    const plan = pattiesPlan(settingsFor("bricks", { count: 4, rows: 4, roundness: 0, cutEdge: true }), 80, 80);
+    const rows = new Map<number, number[]>();
+    for (const loop of plan.figures) {
+      const c = centre(loop);
+      const row = Math.round(c.y);
+      rows.set(row, [...(rows.get(row) ?? []), c.x]);
+    }
+    expect(rows.size).toBe(4);
+    const [first, second] = [...rows.entries()].sort((a, b) => a[0] - b[0]).map(([, xs]) => xs.sort((a, b) => a - b));
+    // Four whole bricks in the first row; three whole and two halves in the shifted one.
+    expect(first).toHaveLength(4);
+    expect(second).toHaveLength(5);
+    expect(second[1] - first[0]).toBeCloseTo((first[1] - first[0]) / 2, 6);
+  });
+
+  it("stands and hangs triangles in turn, each with three corners", () => {
+    const plan = pattiesPlan(settingsFor("triangles", { count: 5, roundness: 0, cutEdge: false }), 80, 80);
+    expect(plan.figures.length).toBeGreaterThan(20);
+    plan.figures.forEach((loop) => expect(loop).toHaveLength(3));
+    const ups = plan.figures.filter((loop) => loop.filter((p) => p.y > centre(loop).y).length === 1).length;
+    expect(ups).toBeGreaterThan(5);
+    expect(plan.figures.length - ups).toBeGreaterThan(5);
+  });
+
+  it("makes diamonds taller or wider by their setting", () => {
+    const size = (amount: number) => {
+      const loop = pattiesPlan(settingsFor("diamonds", { count: 5, amount, roundness: 0 }), 80, 80).figures[0];
+      const b = box(loop);
+      return (b.maxY - b.minY) / (b.maxX - b.minX);
+    };
+    expect(size(50)).toBeCloseTo(1, 1);
+    expect(size(100)).toBeGreaterThan(1.7);
+    expect(size(0)).toBeLessThan(0.6);
+  });
+
+  it("weaves fields of strips, lying and standing in turn", () => {
+    const plan = pattiesPlan(settingsFor("weave", { count: 4, sides: 3, roundness: 0 }), 80, 80);
+    expect(plan.figures).toHaveLength(4 * 4 * 3);
+    const lying = plan.figures.filter((loop) => { const b = box(loop); return b.maxX - b.minX > b.maxY - b.minY; }).length;
+    expect(lying).toBe(plan.figures.length / 2);
+    expect(pattiesPlan(settingsFor("weave", { count: 4, sides: 1 }), 80, 80).figures).toHaveLength(16);
+  });
+
+  it("leans the bars of the herringbone one way in one column and the other way in the next", () => {
+    const plan = pattiesPlan(settingsFor("herringbone", { count: 4, turn: 45, roundness: 0 }), 80, 80);
+    const rises = (loop: PattiesLoop) => {
+      const left = loop.filter((p) => p.x < centre(loop).x), right = loop.filter((p) => p.x > centre(loop).x);
+      return Math.sign(right.reduce((sum, p) => sum + p.y, 0) / right.length - left.reduce((sum, p) => sum + p.y, 0) / left.length);
+    };
+    const byColumn = new Map<number, Set<number>>();
+    for (const loop of plan.figures) {
+      const column = Math.round(centre(loop).x);
+      byColumn.set(column, (byColumn.get(column) ?? new Set()).add(rises(loop)));
+    }
+    const columns = [...byColumn.entries()].sort((a, b) => a[0] - b[0]).map(([, signs]) => [...signs]);
+    expect(columns).toEqual([[1], [-1], [1], [-1]]);
+  });
+
+  it("sends rays out from the focus and cuts them into rings", () => {
+    const sun = pattiesPlan(settingsFor("rays", { count: 12, rows: 1, amount: 30 }), 80, 80);
+    expect(sun.figures).toHaveLength(12);
+    // The middle stays closed: no ray comes nearer than the open middle.
+    expect(Math.min(...sun.figures.flat().map((p) => Math.hypot(p.x, p.y)))).toBeGreaterThan(10);
+    expect(pattiesPlan(settingsFor("rays", { count: 12, rows: 3, amount: 30 }), 80, 80).figures.length).toBeGreaterThan(30);
+    const moved = pattiesPlan(settingsFor("rays", { count: 12, focusX: 80, focusY: -80 }), 80, 80);
+    const nearest = moved.figures.flat().reduce((best, p) => (Math.hypot(p.x - 29.6, p.y + 29.6) < Math.hypot(best.x - 29.6, best.y + 29.6) ? p : best));
+    expect(nearest.x).toBeGreaterThan(10);
+    expect(nearest.y).toBeLessThan(-10);
+    // Round a ring the rays are spokes, one for every figure round the ring.
+    expect(pattiesPlan(settingsFor("rays", { count: 10, rows: 1, outline: "round", layout: "polar" }), 80, 80).figures).toHaveLength(10);
+  });
+
+  it("repeats a ready figure or one's own, turned if asked", () => {
+    const hearts = pattiesPlan(settingsFor("motif", { count: 4, motif: "heart" }), 80, 80);
+    const paws = pattiesPlan(settingsFor("motif", { count: 4, motif: "paw" }), 80, 80);
+    expect(paws.figures.length).toBe(hearts.figures.length * 5);
+    const own = pattiesPlan(settingsFor("motif", { count: 4, motif: "custom", motifLoops: [[-1, -0.2, 1, -0.2, 1, 0.2, -1, 0.2]] }), 80, 80);
+    const bar = box(own.figures[0]);
+    expect(bar.maxX - bar.minX).toBeGreaterThan((bar.maxY - bar.minY) * 3);
+    const turnedBar = box(pattiesPlan(settingsFor("motif", { count: 4, turn: 90, motif: "custom", motifLoops: [[-1, -0.2, 1, -0.2, 1, 0.2, -1, 0.2]] }), 80, 80).figures[0]);
+    expect(turnedBar.maxY - turnedBar.minY).toBeGreaterThan((turnedBar.maxX - turnedBar.minX) * 3);
+    // One's own that is not there shows the heart; one's own that is there travels with the settings.
+    expect(pattiesPlan(settingsFor("motif", { count: 4, motif: "custom" }), 80, 80).figures).toEqual(hearts.figures);
+    expect(normalizePatties({ motif: "moon", motifLoops: [[-1, 0, 1, 0, 0, 1]] }).motifLoops).toEqual([[-1, 0, 1, 0, 0, 1]]);
+    expect(pattiesSettingsEqual({ motifLoops: [[-1, 0, 1, 0, 0, 1]] }, { motifLoops: [[-1, 0, 1, 0, 0, 1]] })).toBe(true);
+    expect(pattiesSettingsEqual({ motifLoops: [[-1, 0, 1, 0, 0, 1]] }, {})).toBe(false);
+    expect(pattiesSettingsProblem({ motifLoops: "x" })).toBe(".motifLoops must be lists of numbers");
+    expect(pattiesSettingsProblem({ motif: "dragon" })).toContain(".motif must be one of");
+  });
+});
+
 describe("Patties: the fan for a vessel", () => {
   it("has arcs as long as the vessel's rims and is as wide as its side is long", () => {
     const fan = pattiesFan({ fanTop: 80, fanBottom: 60, fanSide: 90 });

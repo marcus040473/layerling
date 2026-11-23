@@ -64,10 +64,12 @@ function choose(select: HTMLSelectElement, value: string) {
 }
 
 describe("Patties in the settings panel", () => {
-  it("offers the six patterns and says how many figures the plate has", () => {
+  it("offers the thirteen patterns and says how many figures the plate has", () => {
     const panel = mount({});
     const pattern = selectWith(panel, "warp")!;
-    expect([...pattern.options].map((option) => option.textContent)).toEqual(["Warp grid", "Dots and stars", "Flowers", "Scales", "Waves, zigzag", "Cells"]);
+    expect([...pattern.options].map((option) => option.textContent)).toEqual([
+      "Warp grid", "Dots and stars", "Flowers", "Scales", "Waves, zigzag", "Cells", "Bricks", "Triangles", "Diamonds", "Weave", "Herringbone", "Rays", "Own figure",
+    ]);
     expect(text(panel)).toContain("81 figures, 55 % of the plate.");
     expect([...selectWith(panel, "stencil")!.options].map((option) => option.value)).toEqual(["stencil", "raised", "sunk", "pieces"]);
     expect([...selectWith(panel, "fan")!.options].map((option) => option.value)).toEqual(["rectangle", "round", "fan"]);
@@ -141,6 +143,39 @@ describe("Patties in the settings panel", () => {
     expect(text(container!)).not.toContain("Ends meet round a vessel");
     act(() => root?.unmount());
     expect(text(mount({}))).toContain("Ends meet round a vessel");
+  });
+
+  it("lets the rays start from a focus of their own and cuts them into rings", () => {
+    const rays = mount({ ...PATTIES_PRESETS.rays, pattern: "rays" });
+    expect(rangeNames(rays)).toEqual(expect.arrayContaining(["Rows", "Open middle (%)", "Focus X (%)", "Focus Y (%)"]));
+    expect(rangeNames(rays)).not.toContain("Bulge (%)");
+    expect(text(rays)).toContain("How many rings the rays are cut into");
+    act(() => root?.unmount());
+    // Round a ring the rays start from the ring's own middle.
+    expect(rangeNames(mount({ ...PATTIES_PRESETS.rays, pattern: "rays", layout: "polar" }))).not.toContain("Focus X (%)");
+  });
+
+  it("offers the ready figures for the motif pattern, and one's own once it is there", () => {
+    const patches: Partial<WorkplaneShape>[] = [];
+    const ready = mount({ ...PATTIES_PRESETS.motif, pattern: "motif" }, (patch) => patches.push(patch));
+    const motif = selectWith(ready, "heart")!;
+    expect([...motif.options].map((option) => option.textContent)).toEqual(["Heart", "Drop", "Moon", "Cross", "Leaf", "Paw"]);
+    choose(motif, "paw");
+    expect(patches.at(-1)?.patties).toMatchObject({ pattern: "motif", motif: "paw" });
+    expect(ready.querySelector("[data-testid=patties-motif-load]")?.textContent).toBe("Load own figure (SVG, PNG, JPG)");
+    expect(ready.querySelector<HTMLInputElement>("[data-testid=patties-motif-file]")?.accept).toContain(".svg");
+    expect(text(ready)).toContain("Holes inside it are filled in");
+    act(() => root?.unmount());
+    const square = [[-0.7, -0.7, 0.7, -0.7, 0.7, 0.7, -0.7, 0.7]];
+    const own = mount({ ...PATTIES_PRESETS.motif, pattern: "motif", motif: "custom", motifLoops: square }, (patch) => patches.push(patch));
+    expect([...selectWith(own, "heart")!.options].map((option) => option.value)).toContain("custom");
+    expect(selectWith(own, "heart")!.value).toBe("custom");
+    // A ready figure chosen keeps one's own with the plate, to go back to.
+    choose(selectWith(own, "heart")!, "moon");
+    expect(patches.at(-1)?.patties).toMatchObject({ motif: "moon", motifLoops: square });
+    act(() => root?.unmount());
+    // No other pattern shows the button.
+    expect(mount({}).querySelector("[data-testid=patties-motif-load]")).toBeNull();
   });
 
   it("offers to save the pattern as a drawing for a cutter where the editor can", () => {

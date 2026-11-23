@@ -8,14 +8,16 @@
  * than the gap, so a plate with the figures cut out stays in one piece and its bars can be printed.
  */
 
-import type { PattiesCell, PattiesLayout, PattiesMode, PattiesOutline, PattiesPattern, PattiesSettings } from "@/types/layerling";
+import { DEFAULT_PATTIES_MOTIF, PATTIES_MOTIFS, normalizePattiesMotifLoops, pattiesMotifOutlines } from "@/lib/pattiesMotifShapes";
+import type { PattiesCell, PattiesLayout, PattiesMode, PattiesMotif, PattiesOutline, PattiesPattern, PattiesSettings } from "@/types/layerling";
 
-export type { PattiesCell, PattiesLayout, PattiesMode, PattiesOutline, PattiesPattern, PattiesSettings };
+export type { PattiesCell, PattiesLayout, PattiesMode, PattiesMotif, PattiesOutline, PattiesPattern, PattiesSettings };
+export { PATTIES_MOTIFS };
 
 export type PattiesPoint = { x: number; y: number };
 export type PattiesLoop = PattiesPoint[];
 
-export const PATTIES_PATTERNS = ["warp", "dots", "petals", "scales", "waves", "cells"] as const satisfies readonly PattiesPattern[];
+export const PATTIES_PATTERNS = ["warp", "dots", "petals", "scales", "waves", "cells", "bricks", "triangles", "diamonds", "weave", "herringbone", "rays", "motif"] as const satisfies readonly PattiesPattern[];
 export const PATTIES_OUTLINES = ["rectangle", "round", "fan"] as const satisfies readonly PattiesOutline[];
 export const PATTIES_LAYOUTS = ["straight", "polar"] as const satisfies readonly PattiesLayout[];
 export const PATTIES_MODES = ["stencil", "raised", "sunk", "pieces"] as const satisfies readonly PattiesMode[];
@@ -50,6 +52,7 @@ export const DEFAULT_PATTIES: PattiesSettings = {
   fanTop: 80,
   fanBottom: 60,
   fanSide: 90,
+  motif: DEFAULT_PATTIES_MOTIF,
 };
 
 export const PATTIES_MIN_COUNT = 1;
@@ -154,7 +157,7 @@ export function normalizePattiesFan(value: unknown, fallback: number): number {
 
 export function normalizePatties(input: Partial<Record<keyof PattiesSettings, unknown>> | null | undefined): PattiesSettings {
   const raw = input ?? {};
-  return {
+  const settings: PattiesSettings = {
     pattern: normalizePattiesPattern(raw.pattern),
     outline: normalizePattiesOutline(raw.outline),
     layout: normalizePattiesLayout(raw.layout),
@@ -179,7 +182,12 @@ export function normalizePatties(input: Partial<Record<keyof PattiesSettings, un
     fanTop: normalizePattiesFan(raw.fanTop, DEFAULT_PATTIES.fanTop),
     fanBottom: normalizePattiesFan(raw.fanBottom, DEFAULT_PATTIES.fanBottom),
     fanSide: normalizePattiesFan(raw.fanSide, DEFAULT_PATTIES.fanSide),
+    motif: oneOf(raw.motif, PATTIES_MOTIFS, DEFAULT_PATTIES.motif),
   };
+  // A figure of one's own travels with the plate whatever is shown, so choosing a ready one does not lose it.
+  const own = normalizePattiesMotifLoops((raw as { motifLoops?: unknown }).motifLoops);
+  if (own) settings.motifLoops = own;
+  return settings;
 }
 
 /** Whether two shapes carry the same pattern; settings that are missing count as their defaults. */
@@ -187,7 +195,8 @@ export function pattiesSettingsEqual(a: Partial<PattiesSettings> | null | undefi
   if (a === b || (!a && !b)) return true;
   const first = normalizePatties(a);
   const second = normalizePatties(b);
-  return (Object.keys(first) as (keyof PattiesSettings)[]).every((key) => first[key] === second[key]);
+  return (Object.keys(first) as (keyof PattiesSettings)[]).every((key) => key === "motifLoops" || first[key] === second[key])
+    && JSON.stringify(first.motifLoops ?? null) === JSON.stringify(second.motifLoops ?? null);
 }
 
 /**
@@ -199,7 +208,7 @@ export function pattiesSettingsProblem(value: unknown): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return " must be an object of settings";
   const source = value as Record<string, unknown>;
   const choices: Record<string, readonly string[]> = {
-    pattern: PATTIES_PATTERNS, outline: PATTIES_OUTLINES, layout: PATTIES_LAYOUTS, mode: PATTIES_MODES, cell: PATTIES_CELLS,
+    pattern: PATTIES_PATTERNS, outline: PATTIES_OUTLINES, layout: PATTIES_LAYOUTS, mode: PATTIES_MODES, cell: PATTIES_CELLS, motif: PATTIES_MOTIFS,
   };
   for (const [key, entry] of Object.entries(source)) {
     if (entry === undefined) continue;
@@ -207,6 +216,10 @@ export function pattiesSettingsProblem(value: unknown): string | null {
       if (typeof entry !== "string" || !choices[key].includes(entry)) return `.${key} must be one of ${choices[key].join(", ")}`;
     } else if (key === "seamless" || key === "cutEdge") {
       if (typeof entry !== "boolean") return `.${key} must be true or false`;
+    } else if (key === "motifLoops") {
+      if (!Array.isArray(entry) || !entry.every((loop) => Array.isArray(loop) && loop.every((number) => typeof number === "number" && Number.isFinite(number)))) {
+        return ".motifLoops must be lists of numbers";
+      }
     } else if (key in DEFAULT_PATTIES) {
       if (typeof entry !== "number" || !Number.isFinite(entry)) return `.${key} must be a number`;
     }
@@ -243,10 +256,17 @@ export const PATTIES_PRESETS: Record<PattiesPattern, Partial<PattiesSettings>> =
   scales: { count: 8, gap: 1, bulge: 0, amount: 30 },
   waves: { count: 4, rows: 0, gap: 1.6, bulge: 0, roundness: 100, sides: 2, amount: 60 },
   cells: { count: 8, gap: 1.6, bulge: 0, roundness: 60, amount: 70 },
+  bricks: { count: 6, rows: 0, gap: 1.4, bulge: 0, roundness: 20 },
+  triangles: { count: 7, gap: 1.4, bulge: 0, roundness: 15 },
+  diamonds: { count: 7, gap: 1.4, bulge: 0, roundness: 0, amount: 50 },
+  weave: { count: 5, gap: 1.2, bulge: 0, roundness: 40, sides: 3 },
+  herringbone: { count: 8, rows: 0, gap: 1.2, bulge: 0, turn: 45, roundness: 60, amount: 40 },
+  rays: { count: 16, rows: 1, gap: 1.6, focusX: 0, focusY: 0, amount: 25 },
+  motif: { count: 6, gap: 1.6, bulge: 0, turn: 0 },
 };
 
 /** Which settings a pattern reads, so the inspector shows only those and a helper knows what it may set. */
-export type PattiesField = "rows" | "bulge" | "focus" | "turn" | "roundness" | "sides" | "amount" | "seed" | "cell";
+export type PattiesField = "rows" | "bulge" | "focus" | "turn" | "roundness" | "sides" | "amount" | "seed" | "cell" | "motif";
 
 const PATTERN_FIELDS: Record<PattiesPattern, readonly PattiesField[]> = {
   warp: ["rows", "bulge", "focus", "turn", "roundness", "cell"],
@@ -255,6 +275,13 @@ const PATTERN_FIELDS: Record<PattiesPattern, readonly PattiesField[]> = {
   scales: ["bulge", "focus", "amount"],
   waves: ["rows", "bulge", "focus", "roundness", "sides", "amount"],
   cells: ["bulge", "focus", "roundness", "amount", "seed"],
+  bricks: ["rows", "bulge", "focus", "roundness"],
+  triangles: ["bulge", "focus", "roundness"],
+  diamonds: ["bulge", "focus", "roundness", "amount"],
+  weave: ["bulge", "focus", "roundness", "sides"],
+  herringbone: ["rows", "bulge", "focus", "turn", "roundness", "amount"],
+  rays: ["rows", "focus", "amount"],
+  motif: ["bulge", "focus", "turn", "motif"],
 };
 
 export function pattiesPatternUses(pattern: PattiesPattern, field: PattiesField) {
@@ -263,7 +290,7 @@ export function pattiesPatternUses(pattern: PattiesPattern, field: PattiesField)
 
 /** The fewest corners, petals or pieces a pattern takes. */
 export function pattiesMinSides(pattern: PattiesPattern) {
-  return pattern === "waves" ? 1 : 3;
+  return pattern === "waves" || pattern === "weave" ? 1 : 3;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -1074,6 +1101,288 @@ function cellFigures(context: Context): PattiesLoop[] {
   return figures;
 }
 
+/** A rectangle round the origin with its corners rounded by a share of its shorter half side. */
+function roundedBox(hx: number, hy: number, share: number, tolerance: number): PattiesLoop {
+  const r = share * Math.min(hx, hy);
+  if (r < 1e-4) return [{ x: -hx, y: -hy }, { x: hx, y: -hy }, { x: hx, y: hy }, { x: -hx, y: hy }];
+  return [
+    ...arcPoints(hx - r, -hy + r, r, -Math.PI / 2, 0, tolerance),
+    ...arcPoints(hx - r, hy - r, r, 0, Math.PI / 2, tolerance),
+    ...arcPoints(-hx + r, hy - r, r, Math.PI / 2, Math.PI, tolerance),
+    ...arcPoints(-hx + r, -hy + r, r, Math.PI, Math.PI * 1.5, tolerance),
+  ];
+}
+
+/** The rows of a grid that fill the patterned ground from bottom to top: how many, how tall, and where the first starts. */
+function gridRows(context: Context, wanted: number, natural: number) {
+  const { region, settings } = context;
+  const padLow = (settings.gap * context.shrink(region.minV, region.minV)) / 2;
+  const padHigh = (settings.gap * context.shrink(region.maxV, region.maxV)) / 2;
+  const total = region.maxV - region.minV + padLow + padHigh;
+  const count = wanted > 0 ? wanted : Math.max(1, Math.round(total / Math.max(natural, 1e-6)));
+  return { count, step: total / count, start: region.minV - padLow };
+}
+
+/** Bricks: rows of rectangles, every second row half a brick along. */
+function brickFigures(context: Context): PattiesLoop[] {
+  const { settings, region } = context;
+  const rows = gridRows(context, settings.rows, context.pitch / 2);
+  const figures: PattiesLoop[] = [];
+  for (let row = 0; row < rows.count; row += 1) {
+    const v = rows.start + row * rows.step;
+    const k = context.shrink(v, v + rows.step);
+    const hx = (context.pitch - settings.gap * k) / 2;
+    const hy = (rows.step - settings.gap * k) / 2;
+    if (hx < (MIN_FIGURE * k) / 2 || hy < (MIN_FIGURE * k) / 2) continue;
+    const brick = roundedBox(hx, hy, settings.roundness / 100, context.chord * k);
+    const odd = row % 2 === 1;
+    // A shifted row has half a brick over each end, unless the row runs round a ring.
+    const last = odd && !region.period ? context.columns : context.columns - 1;
+    for (let i = 0; i <= last; i += 1) {
+      const u = context.originU + (i + (odd ? 0 : 0.5)) * context.pitch + (odd && region.period ? context.pitch : 0);
+      const scale = bulgeScale(settings, region, u, v + rows.step / 2);
+      if (Math.min(hx, hy) * scale >= (MIN_FIGURE * k) / 2) figures.push(placed(brick, u, v + rows.step / 2, scale));
+    }
+  }
+  return figures;
+}
+
+/** Triangles: rows of triangles standing and hanging in turn, each drawn in by half a bar. */
+function triangleFigures(context: Context): PattiesLoop[] {
+  const { settings, region } = context;
+  const from = region.period ? 0 : region.minU;
+  const side = (region.period ?? region.maxU - region.minU) / context.columns;
+  const height = (side * Math.sqrt(3)) / 2;
+  const room = region.maxV - region.minV;
+  const rows = Math.floor(room / height + 1e-9);
+  if (rows < 1) return [];
+  const first = region.minV + (room - rows * height) / 2;
+  const figures: PattiesLoop[] = [];
+  for (let row = 0; row < rows; row += 1) {
+    const v = first + row * height;
+    const k = context.shrink(v, v + height);
+    // Half a bar off every side leaves a smaller triangle round the same middle.
+    const reach = 2 * (side / (2 * Math.sqrt(3)) - (settings.gap * k) / 2);
+    if (reach < MIN_FIGURE * k) continue;
+    const shift = row % 2 === 1 ? side / 2 : 0;
+    // On a plate the rows run half a triangle over each end; round a ring every triangle is there once.
+    for (let i = region.period ? 0 : -1; i <= (region.period ? context.columns - 1 : context.columns); i += 1) {
+      for (const up of [true, false]) {
+        const u = from + shift + (i + (up ? 0.5 : 1)) * side;
+        const middle = v + (up ? height / 3 : (2 * height) / 3);
+        const scale = bulgeScale(settings, region, u, middle);
+        if (reach * scale < MIN_FIGURE * k) continue;
+        const turn = up ? Math.PI / 2 : -Math.PI / 2;
+        const corners = [0, 1, 2].map((corner) => ({ x: Math.cos(turn + (corner * TAU) / 3), y: Math.sin(turn + (corner * TAU) / 3) }));
+        const shape = roundLoopCorners(corners, settings.roundness / 100, (context.chord * k) / reach);
+        figures.push(placed(shape, u, middle, reach * scale));
+      }
+    }
+  }
+  return figures;
+}
+
+/** Diamonds: squares standing on a corner, stretched tall or wide, in a lattice of their own. */
+function diamondFigures(context: Context): PattiesLoop[] {
+  const { settings, region } = context;
+  const from = region.period ? 0 : region.minU;
+  const across = (region.period ?? region.maxU - region.minU) / context.columns;
+  const up = across * Math.pow(2, (settings.amount - 50) / 50);
+  const room = region.maxV - region.minV;
+  const rows = Math.floor(room / up + 1e-9);
+  if (rows < 1) return [];
+  const first = region.minV + (room - rows * up) / 2;
+  const a = across / 2, b = up / 2;
+  // How far the middle is from a side: half a bar less than that is left of the diamond.
+  const toSide = (a * b) / Math.hypot(a, b);
+  const figures: PattiesLoop[] = [];
+  const add = (u: number, v: number) => {
+    const k = context.shrink(v - b, v + b);
+    const share = ((toSide - (settings.gap * k) / 2) / toSide) * bulgeScale(settings, region, u, v);
+    if (Math.min(a, b) * share < (MIN_FIGURE * k) / 2) return;
+    const shape = roundLoopCorners([{ x: a, y: 0 }, { x: 0, y: b }, { x: -a, y: 0 }, { x: 0, y: -b }], settings.roundness / 100, context.chord * k);
+    figures.push(placed(shape, u, v, share));
+  };
+  for (let row = 0; row < rows; row += 1) {
+    for (let i = 0; i < context.columns; i += 1) add(from + (i + 0.5) * across, first + (row + 0.5) * up);
+  }
+  // The diamonds in between: on the corners of the first ones, with halves along the edge.
+  for (let row = 0; row <= rows; row += 1) {
+    for (let i = 0; i <= (region.period ? context.columns - 1 : context.columns); i += 1) add(from + i * across, first + row * up);
+  }
+  return figures;
+}
+
+/** A weave: fields of parallel strips, lying and standing in turn like a woven mat. */
+function weaveFigures(context: Context): PattiesLoop[] {
+  const { settings, region } = context;
+  const rows = gridRows(context, 0, context.pitch);
+  const strips = Math.max(1, settings.sides);
+  const figures: PattiesLoop[] = [];
+  for (let row = 0; row < rows.count; row += 1) {
+    const v = rows.start + row * rows.step;
+    const k = context.shrink(v, v + rows.step);
+    const bar = settings.gap * k;
+    const width = context.pitch - bar, height = rows.step - bar;
+    for (let column = 0; column < context.columns; column += 1) {
+      const u = context.originU + (column + 0.5) * context.pitch;
+      const lying = (row + column) % 2 === 0;
+      // Across the strips the field holds them and the bars between them.
+      const acrossRoom = lying ? height : width;
+      const thick = (acrossRoom - (strips - 1) * bar) / strips;
+      const long = lying ? width : height;
+      const scale = bulgeScale(settings, region, u, v + rows.step / 2);
+      if (thick * scale < MIN_FIGURE * k || long * scale < MIN_FIGURE * k) continue;
+      for (let strip = 0; strip < strips; strip += 1) {
+        const offset = -acrossRoom / 2 + thick / 2 + strip * (thick + bar);
+        const shape = lying
+          ? roundedBox((long * scale) / 2, (thick * scale) / 2, settings.roundness / 100, context.chord * k)
+          : roundedBox((thick * scale) / 2, (long * scale) / 2, settings.roundness / 100, context.chord * k);
+        figures.push(placed(shape, u + (lying ? 0 : offset), v + rows.step / 2 + (lying ? offset : 0)));
+      }
+    }
+  }
+  return figures;
+}
+
+/**
+ * Herringbone: slanted bars stacked in columns, leaning one way in one column and the other way in the next. A bar
+ * is a slanted piece of its column: its ends stand upright on the column's sides, so the columns are a bar apart,
+ * and the bars of a column are a bar apart measured square to their slant.
+ */
+function herringboneFigures(context: Context): PattiesLoop[] {
+  const { settings, region } = context;
+  const slant = (clamp(settings.turn, -75, 75) * Math.PI) / 180;
+  const room = region.maxV - region.minV;
+  const figures: PattiesLoop[] = [];
+  for (let column = 0; column < context.columns; column += 1) {
+    const u = context.originU + (column + 0.5) * context.pitch;
+    const lean = column % 2 === 0 ? slant : -slant;
+    const k = context.shrink(region.minV, region.maxV);
+    const width = context.pitch - settings.gap * k;
+    if (width < MIN_FIGURE * k) continue;
+    // How far the bar's far end is above or below its near end.
+    const rise = width * Math.tan(lean);
+    const between = (settings.gap * k) / Math.cos(lean);
+    const free = room - Math.abs(rise);
+    const tall = settings.rows > 0
+      ? (free + between) / settings.rows - between
+      : Math.max(MIN_FIGURE * k, (0.2 + 0.8 * (settings.amount / 100)) * width * 0.6);
+    const count = settings.rows > 0 ? settings.rows : Math.floor((free + between) / (tall + between) + 1e-9);
+    if (count < 1 || tall < MIN_FIGURE * k) continue;
+    const start = region.minV + Math.max(0, -rise) + (free - (count * (tall + between) - between)) / 2;
+    for (let row = 0; row < count; row += 1) {
+      const low = start + row * (tall + between);
+      const bar: PattiesPoint[] = [
+        { x: -width / 2, y: -rise / 2 - tall / 2 },
+        { x: width / 2, y: rise / 2 - tall / 2 },
+        { x: width / 2, y: rise / 2 + tall / 2 },
+        { x: -width / 2, y: -rise / 2 + tall / 2 },
+      ];
+      const middle = low + rise / 2 + tall / 2;
+      const scale = bulgeScale(settings, region, u, middle);
+      if (tall * scale < MIN_FIGURE * k) continue;
+      figures.push(placed(roundLoopCorners(bar, settings.roundness / 100, context.chord * k), u, middle, scale));
+    }
+  }
+  return figures;
+}
+
+/**
+ * Rays where the pattern runs round a middle or up a vessel: there the middle is the ring's own, and a ray is a
+ * column from the innermost ring to the rim. Its sides lean in as the ring grows, so on the plate the bar between
+ * two rays keeps its width.
+ */
+function rayColumns(context: Context): PattiesLoop[] {
+  const { settings, region } = context;
+  const rings = Math.max(1, settings.rows);
+  const room = region.maxV - region.minV;
+  const figures: PattiesLoop[] = [];
+  for (let ring = 0; ring < rings; ring += 1) {
+    const low = region.minV + (ring * room) / rings;
+    const high = region.minV + ((ring + 1) * room) / rings;
+    // Between two rings a bar as wide as its place asks for, half of it on each side of the line.
+    const bottom = low + (ring === 0 ? 0 : (settings.gap * context.shrink(low, low)) / 2);
+    const top = high - (ring === rings - 1 ? 0 : (settings.gap * context.shrink(high, high)) / 2);
+    if (top - bottom < MIN_FIGURE * context.shrink(bottom, top)) continue;
+    const steps = 10;
+    for (let column = 0; column < context.columns; column += 1) {
+      const left = context.originU + column * context.pitch;
+      const right = left + context.pitch;
+      const sides = Array.from({ length: steps + 1 }, (_, i) => {
+        const v = bottom + ((top - bottom) * i) / steps;
+        return { v, off: (settings.gap * context.shrink(v, v)) / 2 };
+      });
+      if (context.pitch - 2 * sides[0].off < MIN_FIGURE * context.shrink(bottom, bottom) && context.pitch - 2 * sides[steps].off < MIN_FIGURE * context.shrink(top, top)) continue;
+      figures.push([
+        ...sides.map((side) => ({ x: left + Math.min(side.off, context.pitch / 2 - 1e-4), y: side.v })).reverse(),
+        ...sides.map((side) => ({ x: right - Math.min(side.off, context.pitch / 2 - 1e-4), y: side.v })),
+      ]);
+    }
+  }
+  return figures;
+}
+
+/**
+ * Rays: wedges round a middle, like a sun, cut into rings if asked. The bars between them run straight out and
+ * keep their width, so every ray starts where it is wide enough to be a figure.
+ */
+function rayFigures(context: Context): PattiesLoop[] {
+  const { settings, region } = context;
+  if (region.grow !== SAME_SIZE) return rayColumns(context);
+  const minU = region.period ? 0 : region.minU;
+  const maxU = region.period ?? region.maxU;
+  const cu = (minU + maxU) / 2 + (settings.focusX / 100) * ((maxU - minU) / 2);
+  const cv = (region.minV + region.maxV) / 2 + (settings.focusY / 100) * ((region.maxV - region.minV) / 2);
+  const rays = Math.max(3, settings.count);
+  const half = Math.PI / rays;
+  const off = settings.gap / 2;
+  const far = Math.max(Math.hypot(cu - minU, cv - region.minV), Math.hypot(maxU - cu, cv - region.minV), Math.hypot(cu - minU, region.maxV - cv), Math.hypot(maxU - cu, region.maxV - cv));
+  // Where a ray is as wide as the smallest figure, and no nearer the middle than the open middle asks for.
+  const least = (off + MIN_FIGURE / 2) / Math.sin(half);
+  const start = Math.max(least, (settings.amount / 100) * 0.5 * Math.min(maxU - minU, region.maxV - region.minV));
+  if (far <= start + MIN_FIGURE) return [];
+  const rings = Math.max(1, settings.rows);
+  const step = (far - start + settings.gap) / rings;
+  const figures: PattiesLoop[] = [];
+  for (let ray = 0; ray < rays; ray += 1) {
+    const middle = Math.PI / 2 + ray * 2 * half;
+    for (let ring = 0; ring < rings; ring += 1) {
+      const inner = start + ring * step;
+      const outer = inner + step - settings.gap;
+      if (outer - inner < MIN_FIGURE) continue;
+      // On a circle of radius r the bar takes this much of the angle on each side.
+      const lost = (r: number) => Math.asin(Math.min(1, off / r));
+      const loop: PattiesPoint[] = [
+        ...arcPoints(cu, cv, outer, middle - half + lost(outer), middle + half - lost(outer), context.chord),
+        ...arcPoints(cu, cv, inner, middle + half - lost(inner), middle - half + lost(inner), context.chord),
+      ];
+      const cut = keptPieces(clipLoopsToBox([loop], minU, maxU, region.minV, region.maxV), settings.gap);
+      figures.push(...cut);
+    }
+  }
+  return figures;
+}
+
+/** A motif: a ready figure or one's own, once in every place of a honeycomb lattice. */
+function motifFigures(context: Context): PattiesLoop[] {
+  const { settings, region } = context;
+  const full = (context.pitch - settings.gap) / 2;
+  const outlines = pattiesMotifOutlines(settings.motif, settings.motifLoops).map((loop) => turned(loop, (settings.turn * Math.PI) / 180));
+  const figures: PattiesLoop[] = [];
+  for (const centre of staggeredCentres(context, Math.max(full * 2, 0), (context.pitch * Math.sqrt(3)) / 2)) {
+    const k = context.shrink(centre.v - context.pitch / 2, centre.v + context.pitch / 2);
+    const r = ((context.pitch - settings.gap * k) / 2) * bulgeScale(settings, region, centre.u, centre.v);
+    if (r < MIN_FIGURE * k) continue;
+    const parts = outlines.map((outline) => placed(outline, centre.u, centre.v, r));
+    // A figure of several parts is kept whole or not at all: two toes of a paw without the paw are no figure.
+    const whole = parts.every((part) => part.every((p) =>
+      p.y >= region.minV - 1e-7 && p.y <= region.maxV + 1e-7 && (region.period !== null || (p.x >= region.minU - 1e-7 && p.x <= region.maxU + 1e-7))));
+    if (settings.cutEdge || whole) figures.push(...parts);
+  }
+  return figures;
+}
+
 function patternFigures(settings: PattiesSettings, region: Region, chord: number): PattiesLoop[] {
   const context = latticeContext(settings, region, chord);
   if (!context) return [];
@@ -1090,6 +1399,20 @@ function patternFigures(settings: PattiesSettings, region: Region, chord: number
       return waveFigures(context);
     case "cells":
       return cellFigures(context);
+    case "bricks":
+      return brickFigures(context);
+    case "triangles":
+      return triangleFigures(context);
+    case "diamonds":
+      return diamondFigures(context);
+    case "weave":
+      return weaveFigures(context);
+    case "herringbone":
+      return herringboneFigures(context);
+    case "rays":
+      return rayFigures(context);
+    case "motif":
+      return motifFigures(context);
   }
 }
 

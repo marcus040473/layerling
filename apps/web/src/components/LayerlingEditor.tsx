@@ -280,8 +280,9 @@ import { SURFACE_TEXT_FONTS, surfaceTextOutline } from "@/lib/surfaceTextOutline
 import { surfaceTextureCardStaysOpen } from "@/lib/inspectorCards";
 import { canChangeSurfaceTexture, canTextureSurface, isSurfacePatternBundle, offersSurfaceTexture, offersSurfaceTextureMask, rememberPatternColor, sceneWithSurfaceBody, shapeUnderSurfaceTexture, surfaceTextureEntry, surfaceTextureGoldShape, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureResultShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, surfaceTextureLayersToMake, surfaceTextureLayerPlaced, mergedSurfaceTextureOutcome, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
-import { normalizePatties, pattiesFan, pattiesSettingsInput, pattiesShapePatch, pattiesSvg } from "@/lib/pattiesPattern";
+import { normalizePatties, pattiesFan, pattiesSettingsInput, pattiesShapePatch, pattiesSvg, type PattiesSettings } from "@/lib/pattiesPattern";
 import { pattiesPlanOfShape } from "@/lib/pattiesGeometry";
+import { pattiesMotifFromSvg } from "@/lib/pattiesMotif";
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
@@ -2824,6 +2825,26 @@ function mcpShapeCustomization(kind: ShapeKind, params: Record<string, unknown>)
   // und das Paketformat begrenzt sie nicht.
   if (kind === "text" && typeof params.text === "string" && params.text.trim()) settings.text = params.text;
   return settings;
+}
+
+/**
+ * A pattern plate's settings as the bridge sends them, with a figure of one's own read in: `motifSvg`, the text of
+ * an SVG drawing, becomes the motif's outlines, and the motif is then one's own. Null when they are no settings.
+ */
+function mcpPattiesSettings(value: unknown): Partial<Record<keyof PattiesSettings, unknown>> | null {
+  const requested = pattiesSettingsInput(value);
+  if (!requested) return null;
+  const { motifSvg, ...settings } = requested as Record<string, unknown>;
+  if (motifSvg === undefined) return settings;
+  if (typeof motifSvg !== "string") throw new Error("patties.motifSvg must be the text of an SVG drawing");
+  let motifLoops: number[][] | null;
+  try {
+    motifLoops = pattiesMotifFromSvg(motifSvg);
+  } catch (error) {
+    throw new Error(`patties.motifSvg could not be read: ${error instanceof Error ? error.message : "not an SVG"}`);
+  }
+  if (!motifLoops) throw new Error("patties.motifSvg holds no filled outline");
+  return { ...settings, motif: "custom", motifLoops };
 }
 
 /**
@@ -14942,7 +14963,12 @@ export function LayerlingEditor({
             shape = { ...shape, ...vaseShapePatch(shape, normalizeVaseSettings({ ...shape.vase, ...requested })) };
           }
           if (shape.kind === "patties") {
-            if (params.patties !== undefined && !pattiesSettingsInput(params.patties)) throw new Error("patties must be an object of pattern plate settings, or its JSON text");
+            if (params.patties !== undefined) {
+              const requested = mcpPattiesSettings(params.patties);
+              if (!requested) throw new Error("patties must be an object of pattern plate settings, or its JSON text");
+              // A figure of one's own does not come through the shape defaults; it is laid over them here.
+              shape = { ...shape, patties: normalizePatties({ ...shape.patties, ...requested }) };
+            }
             // A fan takes its size from the vessel unless a size was asked for.
             if (shape.patties?.outline === "fan" && requestedWidth === undefined && requestedDepth === undefined) {
               const fan = pattiesFan(normalizePatties(shape.patties));
@@ -15156,7 +15182,7 @@ export function LayerlingEditor({
         if (target.kind === "patties" && params.patties !== undefined) {
           // The settings given are laid over the plate's own, not over the defaults: one setting changed leaves
           // the others. A fan follows its vessel when a measure of the vessel changed and no size was asked for.
-          const requested = pattiesSettingsInput(params.patties);
+          const requested = mcpPattiesSettings(params.patties);
           if (!requested) throw new Error("patties must be an object of pattern plate settings, or its JSON text");
           const next = pattiesShapePatch(target, requested);
           patch.patties = next.patties;

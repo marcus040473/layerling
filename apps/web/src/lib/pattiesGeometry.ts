@@ -56,16 +56,6 @@ export function pattiesPlanOfShape(shape: PattiesShapeFields | null | undefined,
   return plan;
 }
 
-/**
- * The outline and figures as loops in the shape's frame, x along the width and z along the depth: the first loop is
- * the plate's edge, the others are the figures. Loose pieces have no plate, so there every loop is a figure.
- */
-export function pattiesProfileLoops(shape: PattiesShapeFields | null | undefined, width: number, depth: number): { x: number; z: number }[][] {
-  const plan = pattiesPlanOfShape(shape, width, depth);
-  const loop = (points: PattiesLoop) => points.map((p) => ({ x: p.x, z: p.y }));
-  return [loop(plan.outline), ...plan.figures.map(loop)];
-}
-
 type Triangle = [number, number, number];
 
 /**
@@ -222,8 +212,12 @@ class Mesh {
 export function pattiesGeometryFromPlan(plan: PattiesPlan, settings: PattiesSettings, height: number): THREE.BufferGeometry {
   const top = Math.max(PATTIES_MIN_HEIGHT, height);
   const mesh = new Mesh();
-  const outline = plan.outline;
-  const figures = plan.figures.filter((loop) => loop.length >= 3 && pattiesLoopArea(loop) > 0);
+  // The plan is drawn as on paper, y up; on the workplane the back is at -z. Seen from above the plate then reads
+  // as the plan does - a heart with its point to the front, a letter the right way round. Turned over like this a
+  // loop runs the other way, so it is taken backwards and keeps turning counter-clockwise in x and z.
+  const onPlane = (loop: PattiesLoop): PattiesLoop => loop.map((p) => ({ x: p.x, y: -p.y })).reverse();
+  const outline = onPlane(plan.outline);
+  const figures = plan.figures.filter((loop) => loop.length >= 3 && pattiesLoopArea(loop) > 0).map(onPlane);
   const mode = figures.length ? settings.mode : "stencil";
 
   if (mode === "pieces") {

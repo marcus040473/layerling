@@ -5,7 +5,6 @@ import {
   pattiesBaseThickness,
   pattiesFaceTriangles,
   pattiesPlanOfShape,
-  pattiesProfileLoops,
   pattiesSettingsOfShape,
 } from "@/lib/pattiesGeometry";
 import {
@@ -143,6 +142,24 @@ describe("Patties: the body", () => {
     expect(Math.max(...points.map((p) => p[2]))).toBeCloseTo(30, 6);
   });
 
+  it("lies on the workplane as its plan is drawn: the plan's top at the back, nothing mirrored", () => {
+    // One figure of one's own, an arrow-like triangle that points up on paper and leans to the right.
+    const patties = settingsFor("motif", { mode: "pieces", count: 1, frame: 0, motif: "custom", motifLoops: [[-0.8, -0.6, 0.2, -0.6, 0.8, 0.9]] });
+    const points = corners(createPattiesGeometry(40, 2, 40, { patties }));
+    // The tip is the point furthest from the others: on paper up and to the right, on the plane back (-z) and right (+x).
+    const tip = points.reduce((best, p) => (p[0] - p[2] > best[0] - best[2] ? p : best));
+    expect(tip[0]).toBeGreaterThan(0);
+    expect(tip[2]).toBeLessThan(0);
+    const base = points.filter((p) => p[2] > 0);
+    expect(Math.min(...base.map((p) => p[0]))).toBeLessThan(-5);
+    // A fan whose wide rim is the vessel's top stands like a rainbow: the middle of that rim is the point furthest back.
+    const fan = corners(createPattiesGeometry(246.25, 2, 106.28, { patties: settingsFor("dots", { outline: "fan", fanTop: 80, fanBottom: 60, fanSide: 90 }) }));
+    const furthestBack = fan.reduce((best, p) => (p[2] < best[2] ? p : best));
+    const furthestFront = fan.reduce((best, p) => (p[2] > best[2] ? p : best));
+    expect(Math.abs(furthestBack[0])).toBeLessThan(5);
+    expect(Math.abs(furthestFront[0])).toBeGreaterThan(80);
+  });
+
   it("holds as much material as its way of building says", () => {
     const patties = settingsFor("dots", { base: 0.8 });
     const plan = pattiesPlanOfShape({ patties }, 80, 80);
@@ -176,9 +193,6 @@ describe("Patties: the body", () => {
   it("reads a shape without settings as the plate a new one starts with", () => {
     expect(pattiesSettingsOfShape(null)).toEqual(DEFAULT_PATTIES);
     expect(pattiesSettingsOfShape({ patties: { count: 4 } }).count).toBe(4);
-    const loops = pattiesProfileLoops({ patties: DEFAULT_PATTIES }, 80, 80);
-    expect(loops.length).toBe(1 + 81);
-    expect(loops[0]).toEqual([{ x: -40, z: -40 }, { x: 40, z: -40 }, { x: 40, z: 40 }, { x: -40, z: 40 }]);
   });
 
   it("builds a plate of several hundred figures in good time", () => {
