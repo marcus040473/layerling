@@ -58,7 +58,7 @@ import { highestTapeIdNumber, readTape, readTapeWholeEdges, savedTape, writeTape
 import { tapeAddAfterClick, tapeMenuOpensMeasuring } from "@/lib/tapeMenu";
 import { rememberCameraView, useDesignViews } from "@/components/workplane/cameraViews";
 import { timedCameraDamping } from "@/lib/cameraInertia";
-import { fitCameraDepthRange, frameBounds, resetCamera, selectionBounds, startViewOf, setCameraOntoPlane, setCameraToViewDirection, setCameraToViewFace, stepCameraTurn, syncViewCube, toggleCameraProjection, zoomCameraBy } from "@/components/workplane/cameraRig";
+import { fitCameraDepthRange, frameBounds, resetCamera, selectionBounds, startViewOf, setCameraOntoPlane, setCameraToViewDirection, setCameraToViewFace, setViewCubeKeepsTurn, stepCameraTurn, syncViewCube, toggleCameraProjection, zoomCameraBy } from "@/components/workplane/cameraRig";
 import { disposeCutPreviewResources, renderFrame } from "@/components/workplane/renderFrame";
 import { DIMENSION_FORMULA_FIELDS, formulaMatchesMillimeters, formulaToRemember, withFieldFormula } from "@/lib/fieldFormulas";
 import { displayToMillimeters, formatLengthMm, lengthDisplayUnit, measurementOptionLabel, millimetersToDisplay, parseLengthMm, parseMeasurementInput, resolveLengthMm, setLengthUnit } from "@/lib/measurementUnits";
@@ -296,6 +296,8 @@ type WorkplaneViewportProps = {
   /** Splits the selected baseplate into plates that fit the printer (#1388). */
   onGridfinitySplit?: () => void;
   onBoltSplit?: (pins: boolean, filament: boolean) => void;
+  /** Lays so many clips out in front of the selected baseplate, for its clip notches; 0 takes them away. */
+  onGridfinityClips?: (count: number) => void;
   onLayerText?: (patch: TextLayerPatch) => void;
   onTextTags?: (names: string[], gap: number) => void;
   /** Several lines of text under one another, one text each (#1207). */
@@ -1735,6 +1737,7 @@ export function WorkplaneViewport({
   shellWalls = null,
   onGridfinitySplit,
   onBoltSplit,
+  onGridfinityClips,
   onLayerText,
   onTextTags,
   onTextBlock,
@@ -3515,6 +3518,7 @@ export function WorkplaneViewport({
     projectNameRef.current = projectName;
     workspaceRef.current = workspace;
     setMeasureUnit(workspace);
+    setViewCubeKeepsTurn(workspace.viewCubeKeepsTurn);
     if (threeRef.current) threeRef.current.palette = appThemePalette(themePreference);
     // Edge lines on all bodies: shapes already built have to take the setting up.
     const holesChanged = setStrongHoles(workspace.strongHoles, workspace.holeOpacity);
@@ -4162,9 +4166,11 @@ export function WorkplaneViewport({
     cruisePointerRef.current = { x: clientX, y: clientY };
     const target = cruiseTarget(clientX, clientY);
     if (!target) return;
+    const asset = cruiseAssetRef.current;
     const next = {
       ...preview.shape,
-      ...placementPatchForNewShape(preview.shape, target.workplane, target.point, target.sunk),
+      // The roof (#1931) lies on one flat side all the way, not only once it is put down (#1956).
+      ...placementPatchForNewShape(preview.shape, target.workplane, target.point, target.sunk, asset ? libraryAssetTurnX(asset) : 0),
     };
     preview.shape = next;
     updateShapeObjectTransform(preview.object, next);
@@ -10238,6 +10244,7 @@ export function WorkplaneViewport({
           onMakeBoxInsert={onMakeBoxInsert}
           onGridfinitySplit={onGridfinitySplit}
           onBoltSplit={onBoltSplit}
+          onGridfinityClips={onGridfinityClips}
           onLayerText={onLayerText}
           onTextTags={onTextTags}
           onTextBlock={onTextBlock}

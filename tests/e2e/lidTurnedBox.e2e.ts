@@ -136,7 +136,7 @@ describe("a lid for a box with compartments, also one set down turned (real Mani
     const turned = square.rotate([0, turn, 0]);
     const rad = (turn * Math.PI) / 180;
     const spun = ([x, y, z]: readonly number[]) => [x * Math.cos(rad) + z * Math.sin(rad), y, -x * Math.sin(rad) + z * Math.cos(rad)];
-    for (const options of [{ latches: 1 }, { latches: 2, latchBack: true }, { hinge: true, latches: 1, latchStyle: "slider" as const }, { hinge: true, latches: 1, latchStyle: "bolt" as const }, { handle: "tab" as const }, { handle: "notch" as const }, { magnets: true, thickness: 3 }, { hinge: true, magnets: true, thickness: 3 }]) {
+    for (const options of [{ latches: 1 }, { latches: 2, latchBack: true }, { hinge: true, latches: 1, latchStyle: "slider" as const }, { hinge: true, latches: 1, latchStyle: "bolt" as const }, { handle: "tab" as const }, { handle: "notch" as const }, { magnets: true, thickness: 3 }, { hinge: true, magnets: true, thickness: 3 }, { cornerScrews: true }]) {
       const there = lidOf(kernel, turned, options);
       const here = lidOf(kernel, square, options);
       expect((there.lid as Body).volume()).toBeCloseTo((here.lid as Body).volume(), 0);
@@ -158,6 +158,8 @@ describe("a lid for a box with compartments, also one set down turned (real Mani
       });
       here.magnets?.postParts.forEach((part, index) => expect(there.magnets!.postParts[index].rotation).toBeCloseTo(part.rotation + turn, 6));
     }
+    // Screws in the corners (Discussion #1938) take the turned box's corners as the magnets do, their measures kept.
+    expect(lidOf(kernel, turned, { cornerScrews: true }).cornerScrews).toEqual(lidOf(kernel, square, { cornerScrews: true }).cornerScrews);
     // Magnets alone: the pockets lie in the turned box's own corners, inside its outline.
     const pockets = lidOf(kernel, turned, { magnets: true, thickness: 3 }).magnets!.pockets;
     expect(pockets).toHaveLength(4);
