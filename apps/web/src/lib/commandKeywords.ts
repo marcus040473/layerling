@@ -115,6 +115,11 @@ export const SHAPE_KEYWORDS: Readonly<Record<string, readonly string[]>> = {
   sbcBoard: ["sbc", "raspberry", "raspberry pi", "pi 5", "pi 4", "pi zero", "bigtreetech", "btt", "board", "pcb", "single board computer", "platine", "einplatinencomputer"],
   qrCode: ["qr", "qr code", "code", "barcode", "link", "url", "address", "website", "strichcode", "adresse", "webseite"],
   pulley: ["pulley", "gt2", "2gt", "timing belt", "belt", "riemenscheibe", "zahnriemen", "zahnriemenscheibe", "riemen"],
+  patties: [
+    "patties", "pattern", "pattern plate", "stencil", "stamp", "texture mat", "trivet", "screen", "grille", "vent", "voronoi", "cells", "dots", "flowers", "petals", "scales", "waves", "warp grid", "pottery", "ceramics", "clay", "glaze", "mug", "cone",
+    "muster", "musterplatte", "mustergenerator", "schablone", "stempel", "strukturmatte", "untersetzer", "gitter", "lüftungsgitter", "lueftungsgitter", "zellen", "punkte", "blüten", "blueten", "blumen", "schuppen", "wellen", "töpfern", "toepfern", "keramik", "ton", "glasur", "becher", "kegel",
+    "motif", "pochoir", "tampon", "patroon", "sjabloon", "stempel", "patrón", "plantilla", "sello", "motivo", "stencil", "timbro", "wzór", "szablon",
+  ],
   hirth: ["hirth", "face teeth", "stirnverzahnung", "planverzahnung", "indexing", "rastung", "raster"],
   gear: ["cog", "zahnrad", "zahnraeder", "zahnräder", "herringbone", "pfeilrad", "pfeilzahnrad", "helical", "schrägrad"],
   thread: ["screw", "bolt", "nut", "gewinde", "schraube", "mutter"],

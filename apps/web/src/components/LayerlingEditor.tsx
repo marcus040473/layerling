@@ -280,6 +280,8 @@ import { SURFACE_TEXT_FONTS, surfaceTextOutline } from "@/lib/surfaceTextOutline
 import { surfaceTextureCardStaysOpen } from "@/lib/inspectorCards";
 import { canChangeSurfaceTexture, canTextureSurface, isSurfacePatternBundle, offersSurfaceTexture, offersSurfaceTextureMask, rememberPatternColor, sceneWithSurfaceBody, shapeUnderSurfaceTexture, surfaceTextureEntry, surfaceTextureGoldShape, surfacePatternLabel, surfacePatternPartOf, surfacePatternPartWay, surfaceTextureResultShape, surfaceTextureInput, surfaceTextureMaskOf, surfaceTextureMasksFor, surfaceTextureLayersToMake, surfaceTextureLayerPlaced, mergedSurfaceTextureOutcome, textureSurfaceOffThread } from "@/lib/surfaceTextureShape";
 import { normalizeVaseSettings, parseVaseSettingsInput } from "@/lib/vaseSettings";
+import { normalizePatties, pattiesFan, pattiesSettingsInput, pattiesShapePatch, pattiesSvg } from "@/lib/pattiesPattern";
+import { pattiesPlanOfShape } from "@/lib/pattiesGeometry";
 import { sceneWithVaseAccessories, vaseAccessoryKindName, vaseAccessoryName, vaseShapePatch } from "@/lib/vaseShape";
 import { screenAlignedNudge } from "@/lib/keyboardNudge";
 import { LAYERLING_MCP_HEARTBEAT_MS, LAYERLING_MCP_POLL_RETRY_MS, LAYERLING_MCP_ROUTE, type LayerlingMcpCommand, type LayerlingMcpSceneSummary, type LayerlingMcpViewFace } from "@/lib/layerlingMcpProtocol";
@@ -14939,6 +14941,14 @@ export function LayerlingEditor({
             if (params.vase !== undefined && !requested) throw new Error("vase must be an object of vase settings, or its JSON text");
             shape = { ...shape, ...vaseShapePatch(shape, normalizeVaseSettings({ ...shape.vase, ...requested })) };
           }
+          if (shape.kind === "patties") {
+            if (params.patties !== undefined && !pattiesSettingsInput(params.patties)) throw new Error("patties must be an object of pattern plate settings, or its JSON text");
+            // A fan takes its size from the vessel unless a size was asked for.
+            if (shape.patties?.outline === "fan" && requestedWidth === undefined && requestedDepth === undefined) {
+              const fan = pattiesFan(normalizePatties(shape.patties));
+              shape = { ...shape, width: fan.width, depth: fan.depth, size: resizedShapeSize(fan.width, fan.depth) };
+            }
+          }
           if (shape.kind === "gridfinity") {
             shape = { ...shape, ...mcpGridfinityPatch(params) };
             shape = { ...shape, ...mcpGridfinityOutlinePatch(shape, params) };
@@ -15142,6 +15152,17 @@ export function LayerlingEditor({
           // The stored ends were set above as they came; the frame and the place follow from them here.
           const change = mcpLoftChange(params);
           if (Object.keys(change).length) Object.assign(patch, loftShapePatch(target, change));
+        }
+        if (target.kind === "patties" && params.patties !== undefined) {
+          // The settings given are laid over the plate's own, not over the defaults: one setting changed leaves
+          // the others. A fan follows its vessel when a measure of the vessel changed and no size was asked for.
+          const requested = pattiesSettingsInput(params.patties);
+          if (!requested) throw new Error("patties must be an object of pattern plate settings, or its JSON text");
+          const next = pattiesShapePatch(target, requested);
+          patch.patties = next.patties;
+          if (next.width !== undefined && next.depth !== undefined && typeof params.width !== "number" && typeof params.depth !== "number") {
+            Object.assign(patch, { width: next.width, depth: next.depth, size: resizedShapeSize(next.width, next.depth) });
+          }
         }
         if (target.kind === "vase" && params.vase !== undefined) {
           const requested = parseVaseSettingsInput(params.vase);
@@ -21288,6 +21309,7 @@ export function LayerlingEditor({
           onSurfaceRegionLasso={surfaceRegionLasso}
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
+          onPattiesSvg={selectedShapes.length === 1 && selectedShape?.kind === "patties" ? () => void downloadTextFile(projectExportFileName(selectedShape.name, "svg"), pattiesSvg(pattiesPlanOfShape(selectedShape, shapeWidth(selectedShape), shapeDepth(selectedShape))), "image/svg+xml;charset=utf-8") : undefined}
           onBoltSplit={selectedShapes.length === 1 && selectedShape && boltSplitFits(selectedShape) && !historyViewState ? (pins, filament) => void splitBoltForPrint(selectedShape.id, { pins, filament }) : undefined}
           onGridfinitySplit={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && !historyViewState ? () => void splitGridfinityPlate(selectedShape.id) : undefined}
           onGridfinityClips={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinityClipNotches === true && !historyViewState ? (count: number) => void makeGridfinityClips(selectedShape.id, count) : undefined}
