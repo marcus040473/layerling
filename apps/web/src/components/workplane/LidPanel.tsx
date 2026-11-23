@@ -130,6 +130,7 @@ export function LidPanel({
   onCancel,
   neck = null,
   rooms = null,
+  replaces = false,
 }: {
   targetName: string;
   settings: LidOptions;
@@ -150,6 +151,8 @@ export function LidPanel({
    * they are measured, null for a body without an opening at the top.
    */
   rooms?: { outline: [number, number][][]; rooms: { points: [number, number][]; centre: [number, number] }[] } | null;
+  /** The body has a lid from this tool already: the panel starts from its settings, and Apply changes that lid. */
+  replaces?: boolean;
 }) {
   useLanguage();
   // The gap and the pin's play say when they are still what the printer's play gave them (printerPlay.ts).
@@ -242,6 +245,7 @@ export function LidPanel({
       </ToolSection>
 
       <ToolSection title={t("toolSidebar.settings")}>
+        {replaces ? <span className="shell-openings-summary" role="status" data-testid="lid-replaces">{t("lid.replacesHint")}</span> : null}
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.type")}>
           <span>{t("lid.type")}</span>
           <div className="shell-opening-options">
