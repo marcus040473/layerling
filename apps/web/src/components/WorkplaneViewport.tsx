@@ -276,6 +276,7 @@ type WorkplaneViewportProps = {
   onVaseAccessories?: () => void;
   /** Lays the selected Swallowtail baseplate's keys out in front of it (#1061). */
   onGridfinityKeys?: () => void;
+  onPattiesSvg?: () => void;
   /** Splits the selected baseplate into plates that fit the printer (#1388). */
   onGridfinitySplit?: () => void;
   onBoltSplit?: (pins: boolean, filament: boolean) => void;
@@ -1711,6 +1712,7 @@ export function WorkplaneViewport({
   onSurfaceRegionDraw,
   onVaseAccessories,
   onGridfinityKeys,
+  onPattiesSvg,
   onGridfinitySplit,
   onBoltSplit,
   onGridfinityClips,
@@ -10158,6 +10160,7 @@ export function WorkplaneViewport({
           onSurfaceRegionDraw={onSurfaceRegionDraw}
           onVaseAccessories={onVaseAccessories}
           onGridfinityKeys={onGridfinityKeys}
+          onPattiesSvg={onPattiesSvg}
           onGridfinitySplit={onGridfinitySplit}
           onBoltSplit={onBoltSplit}
           onGridfinityClips={onGridfinityClips}
