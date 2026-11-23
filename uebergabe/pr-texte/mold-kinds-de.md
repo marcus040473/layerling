@@ -15,7 +15,7 @@ Die bisherigen Einstellungen ergeben dieselben Formen wie vorher; die vorhandene
 
 - [x] `npm run typecheck`
 - [x] `npm test` (6461 bestanden)
-- [x] `npm run test:e2e` (E2E_COUNT bestanden)
+- [x] `npm run test:e2e` (1747 bestanden)
 - [x] `npm run guide`, `npm run i18n:status`
 - [x] Von Hand im Browser ausprobiert: Hautform an einem Zylinder, Kernform an einem Rohr, zweiteilige Form stehend durch die Trennfuge mit Docht
 
