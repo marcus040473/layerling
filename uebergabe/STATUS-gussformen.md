@@ -49,8 +49,9 @@ Neu dazugekommen sind 37 eigene Prüfungen für die neuen Formen, das Fenster un
 2. **Übersetzungen gegenlesen.** Die neuen Fachwörter (Hautform, Mantel, Zentriernoppen, Schlicker) sollte in jeder
    Sprache jemand lesen, der sie spricht.
 3. **An Stefan schicken.** Das machst du selbst, wenn du einverstanden bist. Der Text liegt bereit.
-4. **Zwei Zwischenstände heißen noch „WIP“.** Beim Zusammenführen am besten zu einem Stand zusammenfassen
-   („Squash and merge“).
+4. **Die Zwischenstände aufräumen.** Zwei heißen noch „WIP“, und in ihren Fußzeilen steht ein Modellname, was
+   deine Regeln nicht wollen. Beim Zusammenführen deshalb zu einem Stand zusammenfassen („Squash and merge“) und
+   die Fußzeile dabei kürzen. Für einen PR an Stefan wird ohnehin ein eigener, sauberer Zweig gebraucht.
 
 ## Bewusst nicht gebaut
 
