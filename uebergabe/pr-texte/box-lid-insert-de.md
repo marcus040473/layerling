@@ -43,7 +43,7 @@ Texte in den 15 Sprachen, die ich vollständig halte, Anleitung Kapitel 6 in 16.
 
 ## Geprüft
 
-- Typprüfung, alle Einzelprüfungen (6527), alle Ablaufprüfungen (1782), Anleitung, Übersetzungsstand.
+- Typprüfung, alle Einzelprüfungen (6528), alle Ablaufprüfungen (1782), Anleitung, Übersetzungsstand.
 - Von Hand: Box mit gleichmäßigem Raster und mit Wänden von Hand, gerade und gedreht; Deckel mit Scharnier, Verschlüssen, Magneten, Stapelmulde, Beschriftung außen und innen; Fächer geändert, Größe geändert, Rückgängig; Einsatz mit jedem dieser Deckel.
 - Neue Prüfungen für alle Teile. Vorher rund 600 Kombinationen aus Deckel und Box durchgerechnet und jeden Deckel auf seine Box gesetzt.
 

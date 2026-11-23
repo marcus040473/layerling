@@ -44,7 +44,7 @@ Texts in the 15 languages I keep complete (en, de, nl, fr, es, it, da, sv, pl, c
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (6527 tests)
+- [x] `npm test` (6528 tests)
 - [x] `npm run test:e2e` (1782 tests)
 - [x] `npm run guide`, `npm run i18n:status`
 - [x] Manually tested the affected workflow: box with an even grid and with walls set by hand, standing square and turned; lid with hinge, latches, magnets, stacking top, labels outside and inside; compartments changed, box resized, undo; insert with each of these lids.
