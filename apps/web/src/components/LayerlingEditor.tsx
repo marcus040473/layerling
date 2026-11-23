@@ -16821,6 +16821,14 @@ export function LayerlingEditor({
         const { ids: _ids, ...given } = params;
         // A parting height given means that height, unless the search is asked for too.
         if (given.parting !== undefined && given.autoParting === undefined) given.autoParting = false;
+        // A casting material named without its figures brings its own shrinkage and density, as it does in the panel;
+        // and what is poured (the cast, or the silicone or plaster of a mold) its usual mixing ratio.
+        const named = typeof given.castMaterial === "string" && Object.hasOwn(MOLD_CAST_MATERIAL_DATA, given.castMaterial) ? MOLD_CAST_MATERIAL_DATA[given.castMaterial as keyof typeof MOLD_CAST_MATERIAL_DATA] : null;
+        if (named && given.shrinkage === undefined) given.shrinkage = named.shrinkage;
+        if (named && given.density === undefined) given.density = named.density;
+        if (given.mixA === undefined && given.mixB === undefined) {
+          [given.mixA, given.mixB] = MOLD_CAST_MATERIAL_DATA[moldPouredMaterial(normalizeMoldOptions(given as Partial<Record<keyof MoldOptions, unknown>>, MOLD_DEFAULTS))].mix;
+        }
         const result = await makeMold(given as Partial<Record<keyof MoldOptions, unknown>>, targets);
         if (!result.ok) throw new Error(result.message);
         const made = currentShapes().filter((shape) => result.ids.includes(shape.id));
