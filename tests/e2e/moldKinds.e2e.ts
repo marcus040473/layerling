@@ -403,6 +403,57 @@ describe("two-part mold in four parts", () => {
   }));
 });
 
+describe("the settings together", () => {
+  /** A figure: a block 30 x 20 x 10 with two domes on it, one higher than the other. */
+  const figure = (kernel: Kernel, keep: Keep) => {
+    const dome = (radius: number, x: number) => keep(keep(keep(kernel.Manifold.sphere(radius, 48)).trimByPlane([0, 0, 1], 0)).translate([x, 0, 10]));
+    return scene(keep(keep(kernel.Manifold.cube([30, 20, 10], true).translate([0, 0, 5])).add(dome(8, -6)).add(dome(4, 11))), keep);
+  };
+
+  it("makes every part whole whatever is switched on with it", () => withKernel((kernel, keep) => {
+    const body = figure(kernel, keep);
+    const everything = { ears: true, screws: true, bands: true, prySlots: true, seal: true, wick: true };
+    const cases: Partial<MoldOptions>[] = [
+      { kind: "twoPart", direction: "x", pour: "seam", ...everything },
+      { kind: "twoPart", direction: "y", pour: "seam", ...everything },
+      { kind: "twoPart", direction: "y", pour: "seam", outer: "shell", ...everything },
+      { kind: "twoPart", direction: "z", outer: "shell", ...everything },
+      { kind: "twoPart", pieces: "four", direction: "auto", outer: "shell", ...everything },
+      { kind: "twoPart", pieces: "four", direction: "x", ownOpenings: true, ...everything },
+      { kind: "skin", gap: 4, wall: 3, direction: "y" },
+      { kind: "skin", gap: 8, shellSplit: false, vents: false },
+      { kind: "halves", direction: "z", gap: 10 },
+      { kind: "halves", direction: "y", gap: 25, moldMaterial: "plaster", shrinkage: 10 },
+      { kind: "box", boxShape: "contour", gap: 6 },
+    ];
+    for (const options of cases) {
+      for (const layout of [false, true]) {
+        const { result, parts } = made(kernel, keep, body, options, layout);
+        const label = JSON.stringify(options);
+        for (const part of parts) {
+          expect(part.solid.status(), label).toBe("NoError");
+          expect(part.solid.volume(), label).toBeGreaterThan(100);
+          // One body each: nothing has come loose of a part.
+          expect(part.solid.decompose().filter((piece) => keep(piece).volume() > 0.5).length, `${label} ${part.role}`).toBe(1);
+        }
+        expect(result.mix!.totalG, label).toBeGreaterThan(0);
+      }
+    }
+  }));
+
+  it("vents the lower dome of a skin mold and tells of a high point a seam cannot vent", () => withKernel((kernel, keep) => {
+    const body = figure(kernel, keep);
+    // The sprue stands over the higher dome; the lower one has a roof of its own in the shell.
+    expect(made(kernel, keep, body, { kind: "skin", gap: 4, wall: 3 }).result.vents).toBe(1);
+    expect(made(kernel, keep, body, { kind: "skin", gap: 4, wall: 3, vents: false }).result.vents).toBe(0);
+    // Standing on its end with the seam through both domes, the figure has no high point beside the seam.
+    const seam = made(kernel, keep, body, { direction: "y", pour: "seam" });
+    expect(seam.result.sprues).toBe(1);
+    expect(seam.result.vents).toBe(1);
+    expect(seam.result.warnings).not.toContain("airTrap");
+  }));
+});
+
 describe("what to mix", () => {
   it("adds the allowance, splits by the ratio and prices the pour", () => {
     const options = normalizeMoldOptions({ ...MOLD_DEFAULTS, kind: "box", allowance: 10, mixA: 100, mixB: 10, price: 30 });

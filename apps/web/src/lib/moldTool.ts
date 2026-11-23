@@ -2419,7 +2419,7 @@ export function moldNotes(result: Extract<MoldResult, { parts: unknown }>, kind:
   return notes;
 }
 
-export type MoldShapeResult = { parts: WorkplaneShape[]; notes: string[]; analysis?: MoldAnalysis | null } | { parts: null; error: string };
+export type MoldShapeResult = { parts: WorkplaneShape[]; notes: string[]; analysis?: MoldAnalysis | null; figures?: MoldFigures | null } | { parts: null; error: string };
 
 /** The master's solid from the shapes: the bodies joined, the holes among them taken off. */
 function masterOf(runtime: ManifoldToplevel, targets: readonly WorkplaneShape[], created: ManifoldSolid[]) {
@@ -2438,6 +2438,14 @@ function masterOf(runtime: ManifoldToplevel, targets: readonly WorkplaneShape[],
     created.push(body);
   }
   return body;
+}
+
+/** The figures of a mold made: what is poured (a two-part mold's cavity with its sprues), the mix, and the warnings. */
+function moldFigures(result: Extract<MoldResult, { parts: unknown }>): MoldFigures {
+  return {
+    volume: result.analysis && result.parts.some((part) => part.role !== "caseFirst" && part.role !== "caseSecond") ? result.analysis.volume : result.volume, mix: result.mix ?? null, warnings: result.warnings,
+    ...(result.saved !== undefined ? { saved: result.saved } : {}), ...(result.outer ? { outer: result.outer } : {}), ...(result.rimCut !== undefined ? { rimCut: result.rimCut } : {}),
+  };
 }
 
 /** What the pour of any kind comes to, for the panel before the mold is made: the volume, the mix, and what there is to warn of. */
@@ -2466,10 +2474,7 @@ export async function analyseMoldForShapes(targets: readonly WorkplaneShape[], g
     return {
       analysis: result.analysis ?? null,
       notes: result.warnings.map((warning) => moldWarningText(warning, result.ownOpenings?.missed, result.rimCut)),
-      figures: {
-        volume: result.analysis?.volume ?? result.volume, mix: result.mix ?? null, warnings: result.warnings,
-        ...(result.saved !== undefined ? { saved: result.saved } : {}), ...(result.outer ? { outer: result.outer } : {}), ...(result.rimCut !== undefined ? { rimCut: result.rimCut } : {}),
-      },
+      figures: moldFigures(result),
     };
   } catch (error) {
     return { analysis: null, error: moldErrorMessage("kernel", error instanceof Error ? error.message : String(error ?? "")) };
@@ -2507,7 +2512,7 @@ export async function moldForShapes(targets: readonly WorkplaneShape[], given: M
       // for the parts of one mold, so all of them are replaced).
       shapes.push(canonicalizeShape({ ...shape, hidden: false, hole: false, locked: false, moldOf: { master: source.id, group, settings: { ...options } } }));
     }
-    return { parts: shapes, notes: moldNotes(result, options.kind), analysis: result.analysis ?? null };
+    return { parts: shapes, notes: moldNotes(result, options.kind), analysis: result.analysis ?? null, figures: options.kind === "die" ? null : moldFigures(result) };
   } catch (error) {
     return { parts: null, error: moldErrorMessage("kernel", error instanceof Error ? error.message : String(error ?? "")) };
   } finally {
