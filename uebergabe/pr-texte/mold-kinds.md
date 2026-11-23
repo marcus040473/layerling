@@ -14,7 +14,7 @@ The earlier settings make the same molds as before; the existing mold tests are 
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (UNIT_COUNT passed)
+- [x] `npm test` (6461 passed)
 - [x] `npm run test:e2e` (E2E_COUNT passed)
 - [x] `npm run guide`, `npm run i18n:status`
 - [x] Manually tested the affected workflow: skin mold on a cylinder, core mold on a tube, two-part mold poured through the seam with a wick, in the browser
