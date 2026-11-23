@@ -31,7 +31,7 @@ import { limitedText } from "@/lib/textLength";
 import { NAME_TAG_LAYERS, NAME_TAG_LETTER_SIZE, textKerningPatch, textLetterSize, textLetterSizePatch, textShrinkPatch, textSpacingPatch } from "@/lib/nameTag";
 import { DEFAULT_ICON_TAG_WIDTH, ICON_TAG_LAYERS, MAX_ICON_TAG_WIDTH, MIN_ICON_TAG_WIDTH, isIconLayerBody, normalizeIconTagCount } from "@/lib/iconTag";
 import { automaticFlexiJoints, automaticFoldJoints, DEFAULT_FLEXI_FOLD, FLEXI_DEFAULTS, normalizeFlexiOptions, type FlexiOptions } from "@/lib/flexiJoints";
-import { LID_HINGE_TYPES, groupedWithMagnets, lidClickBumpsFit, lidStackTopFits, lidDefaults, lidFlipTopFits, lidHandleFits, lidLatchesFit, lidNeckFit, lidNeckFitPatch, lidStandardThread, lidTakesMagnets, lidTetherFits, lidTopEdgeFits, magnetPocketDepth, normalizeLidOptions, type LidOptions, type LidThreadStandard } from "@/lib/lidTool";
+import { LID_HINGE_TYPES, groupedWithMagnets, lidTargetsWithoutCorners, lidClickBumpsFit, lidStackTopFits, lidDefaults, lidFlipTopFits, lidHandleFits, lidLatchesFit, lidNeckFit, lidNeckFitPatch, lidStandardThread, lidTakesMagnets, lidTetherFits, lidTopEdgeFits, magnetPocketDepth, normalizeLidOptions, type LidOptions, type LidThreadStandard } from "@/lib/lidTool";
 import { boltSplitFits, boltSplitStatus, type BoltSplitOptions } from "@/lib/boltSplit";
 import { MOLD_CAST_MATERIAL_DATA, MOLD_DEFAULTS, moldOpeningAngles, moldOpeningAt, moldOpeningVector, normalizeMoldOpenings, normalizeMoldOptions, type MoldAnalysis, type MoldOpeningKind, type MoldOptions } from "@/lib/moldTool";
 import { readMoldSettings, writeMoldSettings } from "@/lib/moldSettings";
@@ -9131,11 +9131,21 @@ export function LayerlingEditor({
     const sourceProjectId = projectInfoRef.current.projectId;
     const changed = () => projectInfoRef.current.projectId !== sourceProjectId || projectShapesFingerprint(shapesRef.current) !== sourceFingerprint;
     setNotice(t("lid.working"), true);
-    const result = await lidForShapesOffThread(targets, options);
+    // A body that has magnets' pockets or screws' holes from an earlier lid (Discussion #1985): the new lid's magnets or
+    // screws take their place, posts and all. A lid that brings none leaves the body as it is, and is worked out as if
+    // the pockets were closed: they are no openings for its lip to go into.
+    const replacesCorners = options.magnets || options.cornerScrews;
+    const rebuildGroup = rebuildStretchedGroupRef.current;
+    const withoutCorners = rebuildGroup ? await lidTargetsWithoutCorners(targets, replacesCorners ? "all" : "pockets", rebuildGroup) : { targets };
+    if ("failure" in withoutCorners) return fail(withoutCorners.failure);
+    if (changed()) return fail(t("lid.error.changed"));
+    const lidTargets = withoutCorners.targets;
+    const bodyTargets = replacesCorners ? lidTargets : targets;
+    const result = await lidForShapesOffThread(lidTargets, options);
     if (!result.lid) return fail(result.error);
     if (changed()) return fail(t("lid.error.changed"));
     // Magnets in the corners of a box with a Gridfinity floor must stay clear of its cells: the box is made larger or has fewer.
-    const crowded = (options.magnets || options.cornerScrews) && result.magnets ? targets.find((shape) => !shape.hole && magnetsMeetGridCells(shape, result.magnets!, shapeWidth(shape), shapeDepth(shape))) : undefined;
+    const crowded = (options.magnets || options.cornerScrews) && result.magnets ? bodyTargets.find((shape) => !shape.hole && magnetsMeetGridCells(shape, result.magnets!, shapeWidth(shape), shapeDepth(shape))) : undefined;
     if (crowded && result.magnets) {
       // The smallest box that holds the same cells with these magnets, so the message says how large to make it.
       const least = magnetsGridLeastSize(crowded, result.magnets, shapeWidth(crowded), shapeDepth(crowded));
@@ -9146,7 +9156,7 @@ export function LayerlingEditor({
         : t("lid.error.magnetsGrid"));
     }
     // A lip or a rim that follows a leaning wall (issue #1868) stays the mesh lid: the exact one is upright.
-    const lid = (result.leaning ? null : await exactLid(targets, options, result.lid, result.magnets)) ?? result.lid;
+    const lid = (result.leaning ? null : await exactLid(lidTargets, options, result.lid, result.magnets)) ?? result.lid;
     if (changed()) return fail(t("lid.error.changed"));
     const type = t(`lid.type.${options.type}`);
     const hinge = result.hinge;
@@ -9247,7 +9257,7 @@ export function LayerlingEditor({
         });
       }
     }
-    const grouped = await groupedWithMagnets(targets, { posts: [...posts, ...(hinge ? [hinge.knuckles] : []), ...(latch ? [latch.body] : []), ...boltLabels, ...(screwThread ? [screwThread] : []), ...(bayonet ? [bayonet.lugs] : []), ...(tether ? [tether.bead] : [])], pockets }, (shapes) => buildGroupedShapeOffThread(shapes, workspaceSettingsRef.current.booleanTriangleLimit, geometryAbortRef.current?.signal));
+    const grouped = await groupedWithMagnets(bodyTargets, { posts: [...posts, ...(hinge ? [hinge.knuckles] : []), ...(latch ? [latch.body] : []), ...boltLabels, ...(screwThread ? [screwThread] : []), ...(bayonet ? [bayonet.lugs] : []), ...(tether ? [tether.bead] : [])], pockets }, (shapes) => buildGroupedShapeOffThread(shapes, workspaceSettingsRef.current.booleanTriangleLimit, geometryAbortRef.current?.signal));
     if (changed()) return fail(t("lid.error.changed"));
     if (!grouped.group) return fail(grouped.failureNotice || t(screw ? "lid.error.screwKernel" : bayonet ? "lid.error.bayonetKernel" : slide ? "lid.error.slideKernel" : hinge ? "lid.error.hingeKernel" : result.magnets ? "lid.error.magnetsKernel" : "lid.error.cutsKernel"));
     const body = canonicalizeShape({ ...grouped.group, groupOperation: "group", name: targets.find((shape) => !shape.hole)?.name ?? grouped.group.name });
