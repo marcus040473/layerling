@@ -3,17 +3,19 @@
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { FocusModeBar } from "@/components/workplane/FocusModeBar";
 import { ProjectNameField } from "@/components/workplane/ProjectNameField";
+import { comboLabel } from "@/lib/keyNames";
+import { pressedKey } from "@/lib/keyPressed";
 import { FOCUS_MODE_CHANGE_EVENT, FOCUS_MODE_SHORTCUT } from "@/lib/focusMode";
 import { ShapeMenuPanel } from "@/components/workplane/ShapeMenuPanel";
 import { ShapeLibraryList } from "@/components/workplane/ShapeLibraryList";
-import { AlertTriangle, ArchiveRestore, ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, Check, CircleHelp, Percent, Circle as CircleIcon, Eye, EyeOff, Hexagon as HexagonIcon, ListTree, Maximize2, Minimize2, Palette, Pentagon as PentagonIcon, Pin, PinOff, Rotate3d, Route as RouteIcon, ScanEye, Search, Sparkles, Square as SquareIcon, Star as StarIcon, Triangle as TriangleIcon, X, House } from "lucide-react";
+import { AlertTriangle, ArchiveRestore, ArrowDownToLine, ArrowLeftRight, ArrowUpFromLine, BookOpen, Check, CircleHelp, Percent, Circle as CircleIcon, Eye, EyeOff, Hexagon as HexagonIcon, ListTree, Maximize2, Minimize2, Palette, Pentagon as PentagonIcon, Pin, PinOff, Rotate3d, Route as RouteIcon, ScanEye, Search, Sparkles, Square as SquareIcon, Star as StarIcon, Triangle as TriangleIcon, X, House } from "lucide-react";
 import { OPEN_FILE_BACKUPS_EVENT } from "@/lib/fileBackups";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useWheelField } from "@/lib/useWheelField";
 import { wheelNextValue } from "@/lib/wheelValueStep";
 import type { ComponentType, ReactNode, SVGProps } from "react";
-import { t, type MessageKey } from "@/lib/i18n";
+import { getLanguage, t, type MessageKey } from "@/lib/i18n";
 import { useLanguage } from "@/lib/useLanguage";
 import { useSimpleMode } from "@/lib/useSimpleMode";
 import { simpleModeKeepsShape, simpleModeKeepsTool } from "@/lib/simpleMode";
@@ -29,6 +31,7 @@ import { type SketchPrimitive, type SketchTool } from "../SketchWorkspace";
 import { CommandPalette, type PaletteCommand } from "./CommandPalette";
 import { customShapeCommands } from "@/lib/customShapeCommands";
 import { COMMAND_KEYWORDS, COMMAND_SHORTCUTS, SHAPE_KEYWORDS } from "@/lib/commandKeywords";
+import { guideHref } from "@/lib/guideLinks";
 import { readCustomShortcuts, runCustomShortcutKey, setCustomShortcutCommandSource } from "@/lib/customShortcuts";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
@@ -906,7 +909,7 @@ export function SecondaryToolbar({
     // while a field has the focus - the browsers' own use of the key (a search
     // bar) is not worth keeping here.
     const openOnShortcut = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey || (event.key ?? "").toLowerCase() !== "k") return;
+      if (!(event.ctrlKey || event.metaKey) || event.shiftKey || event.altKey || pressedKey(event) !== "k") return;
       event.preventDefault();
       openPaletteRef.current();
     };
@@ -1257,10 +1260,12 @@ export function SecondaryToolbar({
     const helpGroup = t("editor.group.help");
     const helpCommands = [
       plain("guide", t("editor.guide"), helpGroup, true, onGuide, { icon: ToolbarGuideIcon }),
+      plain("user-guide", t("guide.fullGuide"), helpGroup, true, () => window.open(guideHref(getLanguage()), "_blank", "noopener"), { icon: BookOpen }),
       plain("shortcuts", t("editor.keyboardShortcuts"), helpGroup, true, onShortcuts, { icon: ToolbarKeyboardIcon }),
       ...(onWhatsNew ? [plain("whats-new", t("whatsNew.footerLink"), helpGroup, true, onWhatsNew, { icon: Sparkles })] : []),
       plain("interactive-help", t("interactiveHelp.title"), helpGroup, true, onInteractiveHelp, { icon: CircleHelp, active: interactiveHelpActive }),
     ];
+    const settingsCommand = plain("settings", t("editor.workspaceSettings"), t("editor.group.help"), true, () => window.dispatchEvent(new Event("layerling:open-workspace-settings")), { icon: ToolbarSettingsIcon });
     if (toolbarMode === "sketch") {
       const modeGroup = t("palette.group.mode");
       const modeCommand = plain("mode-geometry", t("palette.switchGeometry"), modeGroup, true, () => selectToolbarMode("geometry"));
@@ -1272,6 +1277,7 @@ export function SecondaryToolbar({
           plain("sketch-sweep", t("sketch.sweep"), createGroup, true, () => startSketch("sweep")),
           plain("sketch-edit", t("sketch.editTo3d"), createGroup, canEditSketch, onEditSketch),
           modeCommand,
+          settingsCommand,
           ...helpCommands,
         ];
       }
@@ -1311,6 +1317,7 @@ export function SecondaryToolbar({
         plain("sketch-finish", sketchOperation === "revolve" ? t("sketch.finishRevolve") : sketchOperation === "sweep" ? t("sketch.finishSweep") : t("sketch.finishSketch"), finishGroup, true, onSketchFinish),
         plain("sketch-cancel", t("sketch.cancel"), finishGroup, true, onSketchCancel),
         modeCommand,
+        settingsCommand,
         ...helpCommands,
       ];
     }
@@ -1355,7 +1362,7 @@ export function SecondaryToolbar({
       plain("export", t("editor.export"), fileGroup, true, () => onTopPanel("export"), { icon: ToolbarVectorExportIcon }),
       plain("file-backups", t("backups.title"), fileGroup, true, () => window.dispatchEvent(new Event(OPEN_FILE_BACKUPS_EVENT)), { icon: ArchiveRestore, keywords: ["backup", "backups", "version", "versions", "restore", "sicherung", "fassung", "wiederherstellen"] }),
       plain("attachments", t("editor.attachments"), fileGroup, true, () => onTopPanel("attachments"), { icon: ToolbarAttachmentsIcon, keywords: ["attachment", "file", "notes", "instructions", "readme", "anhang", "datei"] }),
-      plain("settings", t("editor.workspaceSettings"), t("editor.group.help"), true, () => window.dispatchEvent(new Event("layerling:open-workspace-settings")), { icon: ToolbarSettingsIcon }),
+      settingsCommand,
       plain("focus-mode", focusMode ? t("focusMode.leave") : t("focusMode.enter"), t("shortcuts.group.view"), Boolean(onFocusModeChange), () => onFocusModeChange?.(!focusMode), { icon: focusMode ? Minimize2 : Maximize2, active: focusMode }),
       plain("mode-sketch", t("palette.switchSketch"), t("palette.group.mode"), true, () => selectToolbarMode("sketch")),
       ...helpCommands,
@@ -1967,7 +1974,7 @@ export function SecondaryToolbar({
               className="action-icon-button toolbar-focus-mode"
               type="button"
               aria-label={t("focusMode.enter")}
-              title={`${t("focusMode.enter")} (${FOCUS_MODE_SHORTCUT}) - ${t("focusMode.enterHint")}`}
+              title={`${t("focusMode.enter")} (${comboLabel(FOCUS_MODE_SHORTCUT)}) - ${t("focusMode.enterHint")}`}
               data-layerling-tool="focus-mode"
               onClick={() => onFocusModeChange(true)}
             >

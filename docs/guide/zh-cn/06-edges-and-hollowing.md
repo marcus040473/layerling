@@ -84,11 +84,11 @@ summary: 对指定的边做倒角或圆角，为盒子、杯子和壳体抽出�
 
 当顶部是唯一开口的一侧时，{{ui:shell.grid}} 会在底部放入 Gridfinity 底板：底厚变为 6.2 毫米，内部能容纳的每个完整的 42 毫米格子都会开出一个凹座。{{ui:shell.gridCells}} 设定最多多少个；滑块止于能放下的数量，少于它时格子靠近中间排列。{{ui:shell.gridFit}} 会加厚壁，使内部恰好是这些格子，留 0.5 毫米间隙：盒子就能放下 Gridfinity 储物盒，把实体放大时，凹座数量也随之增加。{{ui:shell.dividers}} 立在底上、壁与壁之间，{{ui:shell.dividersAcross}} 和 {{ui:shell.dividersAlong}} 各最多 8 个，均匀分布，厚 1.2 毫米。底需要 6.2 毫米，其上的内部需要 3 毫米，所以实体至少要高 9.2 毫米。 {{ui:shell.gridMagnets}} 在每个凹槽下方切出 4 个 6.5 × 2.4 mm 的孔，用于 6 × 2 mm 磁铁，正好在收纳盒磁铁的位置，让收纳盒吸住；此时底板厚 8.6 mm。 {{ui:shell.gridScrews}} 会在每个凹座中心开一个沉头通孔，适用于 4 毫米沉头螺丝，用于把盒子拧在抽屉里或木板上；螺丝头与凹座底面齐平，收纳盒仍可放入，此时底厚同样为 8.6 毫米。
 
-隔板跟随盒子自身的内部，即使盒子在工作平面上是转过角度放置的也一样。从 {{ui:boxGenerator.dividersGrid}} 切换到 {{ui:boxGenerator.dividersManual}} 后，隔板由你自己放置，和盒子生成器里一样：面板从上方显示内部，{{ui:boxGenerator.wallAddAcross}} 和 {{ui:boxGenerator.wallAddAlong}} 在你点击的格子里放一块隔板，拖动隔板可移动它，拖动一端可把它缩短或加长，把一端拖离隔板的直线（或设置 {{ui:prop.boxWallSlant}}）可让它倾斜。第一次切换时会把均匀的隔板沿用为可编辑的隔板。
+隔板跟随盒子自身的内部，即使盒子在工作平面上是转过角度放置的也一样。从 {{ui:shell.dividersGrid}} 切换到 {{ui:shell.dividersManual}} 后，隔板由你自己放置：面板从上方显示内部，{{ui:shell.wallAddAcross}} 和 {{ui:shell.wallAddAlong}} 在你点击的格子里放一块隔板，拖动隔板可移动它，拖动一端可把它缩短或加长，把一端拖离隔板的直线（或设置 {{ui:shell.wallSlant}}）可让它倾斜。第一次切换时会把均匀的隔板沿用为可编辑的隔板。
 
 {{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}} {{ui:shell.scoopsPanelHint}}
 
-**{{ui:shell.pockets}}:** {{ui:shell.pocketsHint}} {{ui:boxGenerator.pocketFillHint}}
+**{{ui:shell.pockets}}:** {{ui:shell.pocketsHint}} {{ui:shell.pocketFillHint}}
 
 **{{ui:shell.insert}}:** {{ui:shell.insertHint}}
 
@@ -218,6 +218,6 @@ summary: 对指定的边做倒角或圆角，为盒子、杯子和壳体抽出�
 
 选中要删除对象的每一个面，而且只选这些面。如果周围的面无法补上缺口，layerling 会提示，且不做任何更改：例如长方体的一个主侧面，没有能顶替它的相邻面。只删除凹槽的底面，会让它变成通透的孔，因为凹槽的壁会一直延伸到另一侧。
 
-{{ui:editor.tool.deleteFace}} 需要精确的面：它适用于以 STEP 导入的零件和 layerling 的形状。凡是 layerling 以网格保存的都没有精确面：导入的 STL、OBJ 或 3MF，分割、包裹或简化过的实体，或者非常精细的形状，例如很长的文字。能导入 STEP 时就导入 STEP。对精细的导入零件，少数几个面也可能超出 CAD 内核的处理能力：45 秒后删除会被中止，且不做任何更改。如果实体在边处理之后调整了尺寸，同时保留了边的尺寸，那么在新尺寸下它没有精确的面，直到撤销这次尺寸调整。
+{{ui:editor.tool.deleteFace}} 需要精确的面：它适用于以 STEP 导入的零件和 layerling 的形状。凡是 layerling 以网格保存的都没有精确面：导入的 STL、OBJ 或 3MF，分割、包裹或简化过的实体，或者非常精细的形状，例如很长的文字。能导入 STEP 时就导入 STEP。导入的 STL、OBJ 或 3MF 先点击 {{ui:editor.tool.makeExact}}，通常就能得到精确面。对精细的导入零件，少数几个面也可能超出 CAD 内核的处理能力：45 秒后删除会被中止，且不做任何更改。如果实体在边处理之后调整了尺寸，同时保留了边的尺寸，那么在新尺寸下它没有精确的面，直到撤销这次尺寸调整。
 
 用 {{ui:editor.tool.makeExact}} 转为精确实体的导入网格，在文件三角形有缺陷的地方，可能会在位于同一平面的面之间留下发丝般细的面，使一个侧面变成无法单独删除的细条。这样的细面窄得无法点中；若它接触某个所选面，并继续通向该所选面所在平面内的另一个面，就会连同与它相连、同样接触该所选面所在平面内某个面的细面一起随该所选面删除，窗口会把它们计为一并删除的面。

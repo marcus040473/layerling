@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import { Eraser, FlipHorizontal2, FlipVertical2, Plus, RefreshCw, Trash2 } from "lucide-react";
-import { BOX_WALLS_PLAN_MIN_LENGTH, BoxWallsPlan, type BoxWallsPick } from "@/components/workplane/BoxWallsPlan";
+import { SHELL_WALLS_PLAN_MIN_LENGTH, ShellWallsPlan, type ShellWallsPick } from "@/components/workplane/ShellWallsPlan";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolHint } from "@/components/workplane/ToolPanelParts";
-import { boxGeneratorScoopOf, boxGeneratorScoopsWith, boxGeneratorMirroredWalls, boxGeneratorSplitWall, boxGeneratorWallEnds, boxGeneratorWallFromEnds, boxGeneratorWallRoom, MAX_BOX_GENERATOR_WALLS } from "@/lib/boxGeneratorGeometry";
 import { t } from "@/lib/i18n";
-import type { ShellDividerWall, ShellScoop } from "@/lib/shellGridLimits";
+import { MAX_SHELL_DIVIDER_WALLS, type ShellDividerWall, type ShellScoop } from "@/lib/shellGridLimits";
+import { shellMirroredWalls, shellScoopOf, shellScoopsWith, shellSplitWall, shellWallEnds, shellWallFromEnds, shellWallRoom } from "@/lib/shellWalls";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
 
 /*
- * Hollow, dividers set by hand: the inside of the box from above (the same drawing the box generator has), where a wall
+ * Hollow, dividers set by hand: the inside of the box drawn from above (ShellWallsPlan), where a wall
  * is put into the compartment that was clicked, dragged, pulled by an end and set at a slant, and for the wall that is
  * picked its measures as numbers. The inside is taken as a rectangle of the body's width and depth less the wall; the
  * kernel then builds each wall in the box's own inside and clips it to the box's real outline.
@@ -49,9 +49,8 @@ export function ShellWallsEditor({
   disabled?: boolean;
   onChange: (walls: ShellDividerWall[]) => void;
 }) {
-  const [pick, setPick] = useState<BoxWallsPick>(null);
-  // The room as the box generator's: a plain box whose inside is this wide and deep.
-  const room = boxGeneratorWallRoom({ width: width + 2, depth: depth + 2, height: 10 }, { boxWall: 1, boxFloor: 1, boxCornerRadius: 0, boxDividerMode: "manual", boxDivider: thickness, boxWalls: [...walls] });
+  const [pick, setPick] = useState<ShellWallsPick>(null);
+  const room = shellWallRoom(width, depth, walls, thickness);
   if (!room || width < 4 || depth < 4) return null;
   const wall = pick?.type === "wall" ? walls[pick.index] : undefined;
   const compartment = pick?.type === "compartment" ? room.compartments[pick.index] : undefined;
@@ -63,18 +62,18 @@ export function ShellWallsEditor({
   const add = (dir: ShellDividerWall["dir"]) => {
     const area = (entry: (typeof room.compartments)[number]) => (entry.maxX - entry.minX) * (entry.maxZ - entry.minZ);
     const target = compartment ?? [...room.compartments].sort((a, b) => area(b) - area(a))[0] ?? { minX: 0, maxX: room.width, minZ: 0, maxZ: room.depth };
-    onChange([...walls, boxGeneratorSplitWall(target, dir, room, thickness)]);
+    onChange([...walls, shellSplitWall(target, dir, room, thickness)]);
     setPick({ type: "wall", index: walls.length });
   };
   const turn = (index: number) => {
-    const [a, b] = boxGeneratorWallEnds(walls[index]);
+    const [a, b] = shellWallEnds(walls[index]);
     const middle = { x: clamp((a.x + b.x) / 2, 0, room.width), z: clamp((a.z + b.z) / 2, 0, room.depth) };
     const half = { x: -(b.z - a.z) / 2, z: (b.x - a.x) / 2 };
     const fit = Math.min(1, half.x ? Math.min(middle.x, room.width - middle.x) / Math.abs(half.x) : 1, half.z ? Math.min(middle.z, room.depth - middle.z) / Math.abs(half.z) : 1);
     const end = (sign: number) => ({ x: round(middle.x + sign * half.x * fit), z: round(middle.z + sign * half.z * fit) });
-    change(index, boxGeneratorWallFromEnds(end(-1), end(1)));
+    change(index, shellWallFromEnds(end(-1), end(1)));
   };
-  const full = walls.length >= MAX_BOX_GENERATOR_WALLS;
+  const full = walls.length >= MAX_SHELL_DIVIDER_WALLS;
   const plain = (value: number) => String(Math.round(value * 10) / 10);
   const run = wall ? (wall.dir === "x" ? room.width : room.depth) : 0;
   const across = wall ? (wall.dir === "x" ? room.depth : room.width) : 0;
@@ -83,36 +82,36 @@ export function ShellWallsEditor({
 
   return (
     <div className="shell-walls-editor" data-testid="shell-walls-editor">
-      <BoxWallsPlan
+      <ShellWallsPlan
         room={room}
         walls={walls}
         thickness={thickness}
         scoops={scoops}
         pick={pick}
         disabled={disabled}
-        label={t("boxGenerator.wallsPlan")}
-        wallLabel={(entry, index) => t(entry.dir === "x" ? "boxGenerator.wallAcross" : "boxGenerator.wallAlong", { number: index + 1 })}
-        compartmentLabel={(entry, index) => t("boxGenerator.compartment", { number: index + 1, width: plain(entry.maxX - entry.minX), depth: plain(entry.maxZ - entry.minZ) })}
+        label={t("shell.wallsPlan")}
+        wallLabel={(entry, index) => t(entry.dir === "x" ? "shell.wallAcross" : "shell.wallAlong", { number: index + 1 })}
+        compartmentLabel={(entry, index) => t("shell.compartment", { number: index + 1, width: plain(entry.maxX - entry.minX), depth: plain(entry.maxZ - entry.minZ) })}
         onPick={setPick}
         onWallChange={change}
         onWallRemove={remove}
       />
       <ToolHint text={wall && pick?.type === "wall"
-        ? t(wall.dir === "x" ? "boxGenerator.wallAcross" : "boxGenerator.wallAlong", { number: pick.index + 1 })
+        ? t(wall.dir === "x" ? "shell.wallAcross" : "shell.wallAlong", { number: pick.index + 1 })
         : compartment
-          ? t("boxGenerator.compartmentPicked", { width: plain(compartment.maxX - compartment.minX), depth: plain(compartment.maxZ - compartment.minZ) })
-          : t("boxGenerator.wallsHint")} />
+          ? t("shell.compartmentPicked", { width: plain(compartment.maxX - compartment.minX), depth: plain(compartment.maxZ - compartment.minZ) })
+          : t("shell.wallsHint")} />
       <div className="shell-walls-actions">
-        <button type="button" disabled={disabled || full} data-testid="shell-walls-add-across" onClick={() => add("x")}><Plus size={15} strokeWidth={2.5} /><span>{t("boxGenerator.wallAddAcross")}</span></button>
-        <button type="button" disabled={disabled || full} data-testid="shell-walls-add-along" onClick={() => add("z")}><Plus size={15} strokeWidth={2.5} /><span>{t("boxGenerator.wallAddAlong")}</span></button>
+        <button type="button" disabled={disabled || full} data-testid="shell-walls-add-across" onClick={() => add("x")}><Plus size={15} strokeWidth={2.5} /><span>{t("shell.wallAddAcross")}</span></button>
+        <button type="button" disabled={disabled || full} data-testid="shell-walls-add-along" onClick={() => add("z")}><Plus size={15} strokeWidth={2.5} /><span>{t("shell.wallAddAlong")}</span></button>
       </div>
       {wall && pick?.type === "wall" ? (
         <>
-          <EdgeModifierSlider label={t(wall.dir === "x" ? "prop.boxWallFromBack" : "prop.boxWallFromLeft")} value={clamp(wall.at, 0, across)} min={0} max={round(across)} step={0.5} workspace={workspace} length disabled={disabled} onChange={(value) => change(pick.index, { ...wall, at: round(clamp(value, 0, across)) })} />
-          <EdgeModifierSlider label={t("prop.boxWallStart")} value={from} min={0} max={round(Math.max(0, to - BOX_WALLS_PLAN_MIN_LENGTH))} step={0.5} workspace={workspace} length disabled={disabled} onChange={(value) => change(pick.index, { ...wall, from: round(clamp(value, 0, to - BOX_WALLS_PLAN_MIN_LENGTH)), to })} />
-          <EdgeModifierSlider label={t("prop.boxWallEnd")} value={to} min={round(Math.min(run, from + BOX_WALLS_PLAN_MIN_LENGTH))} max={round(run)} step={0.5} workspace={workspace} length disabled={disabled} onChange={(value) => change(pick.index, { ...wall, from, to: round(clamp(value, from + BOX_WALLS_PLAN_MIN_LENGTH, run)) })} />
+          <EdgeModifierSlider label={t(wall.dir === "x" ? "shell.wallFromBack" : "shell.wallFromLeft")} value={clamp(wall.at, 0, across)} min={0} max={round(across)} step={0.5} workspace={workspace} length disabled={disabled} onChange={(value) => change(pick.index, { ...wall, at: round(clamp(value, 0, across)) })} />
+          <EdgeModifierSlider label={t("shell.wallStart")} value={from} min={0} max={round(Math.max(0, to - SHELL_WALLS_PLAN_MIN_LENGTH))} step={0.5} workspace={workspace} length disabled={disabled} onChange={(value) => change(pick.index, { ...wall, from: round(clamp(value, 0, to - SHELL_WALLS_PLAN_MIN_LENGTH)), to })} />
+          <EdgeModifierSlider label={t("shell.wallEnd")} value={to} min={round(Math.min(run, from + SHELL_WALLS_PLAN_MIN_LENGTH))} max={round(run)} step={0.5} workspace={workspace} length disabled={disabled} onChange={(value) => change(pick.index, { ...wall, from, to: round(clamp(value, from + SHELL_WALLS_PLAN_MIN_LENGTH, run)) })} />
           <EdgeModifierSlider
-            label={t("prop.boxWallSlant")}
+            label={t("shell.wallSlant")}
             value={clamp(wall.slant ?? 0, -clamp(wall.at, 0, across), across - clamp(wall.at, 0, across))}
             min={-round(clamp(wall.at, 0, across))}
             max={round(across - clamp(wall.at, 0, across))}
@@ -127,19 +126,19 @@ export function ShellWallsEditor({
             }}
           />
           <div className="shell-walls-actions">
-            <button type="button" disabled={disabled} data-testid="shell-walls-turn" onClick={() => turn(pick.index)}><RefreshCw size={15} strokeWidth={2.5} /><span>{t("boxGenerator.wallTurn")}</span></button>
-            <button type="button" disabled={disabled} data-testid="shell-walls-remove" onClick={() => remove(pick.index)}><Trash2 size={15} strokeWidth={2.5} /><span>{t("boxGenerator.wallRemove")}</span></button>
+            <button type="button" disabled={disabled} data-testid="shell-walls-turn" onClick={() => turn(pick.index)}><RefreshCw size={15} strokeWidth={2.5} /><span>{t("shell.wallTurn")}</span></button>
+            <button type="button" disabled={disabled} data-testid="shell-walls-remove" onClick={() => remove(pick.index)}><Trash2 size={15} strokeWidth={2.5} /><span>{t("shell.wallRemove")}</span></button>
           </div>
         </>
       ) : null}
       {walls.length > 0 ? (
         <>
           <div className="shell-walls-actions">
-            <button type="button" disabled={disabled || full} title={t("boxGenerator.wallsMirrorHint")} data-testid="shell-walls-mirror-x" onClick={() => { onChange(boxGeneratorMirroredWalls(walls, room, "x")); setPick(null); }}><FlipHorizontal2 size={15} strokeWidth={2.5} /><span>{t("boxGenerator.wallsMirrorX")}</span></button>
-            <button type="button" disabled={disabled || full} title={t("boxGenerator.wallsMirrorHint")} data-testid="shell-walls-mirror-z" onClick={() => { onChange(boxGeneratorMirroredWalls(walls, room, "z")); setPick(null); }}><FlipVertical2 size={15} strokeWidth={2.5} /><span>{t("boxGenerator.wallsMirrorZ")}</span></button>
+            <button type="button" disabled={disabled || full} title={t("shell.wallsMirrorHint")} data-testid="shell-walls-mirror-x" onClick={() => { onChange(shellMirroredWalls(walls, room, "x")); setPick(null); }}><FlipHorizontal2 size={15} strokeWidth={2.5} /><span>{t("shell.wallsMirrorX")}</span></button>
+            <button type="button" disabled={disabled || full} title={t("shell.wallsMirrorHint")} data-testid="shell-walls-mirror-z" onClick={() => { onChange(shellMirroredWalls(walls, room, "z")); setPick(null); }}><FlipVertical2 size={15} strokeWidth={2.5} /><span>{t("shell.wallsMirrorZ")}</span></button>
           </div>
           <div className="shell-walls-actions">
-            <button type="button" disabled={disabled} data-testid="shell-walls-clear" onClick={() => { onChange([]); setPick(null); }}><Eraser size={15} strokeWidth={2.5} /><span>{t("boxGenerator.wallsClear")}</span></button>
+            <button type="button" disabled={disabled} data-testid="shell-walls-clear" onClick={() => { onChange([]); setPick(null); }}><Eraser size={15} strokeWidth={2.5} /><span>{t("shell.wallsClear")}</span></button>
           </div>
         </>
       ) : null}
@@ -177,42 +176,42 @@ export function ShellScoopsEditor({
 }) {
   const [picked, setPicked] = useState<number | null>(null);
   const shown = walls ?? shellGridWalls(across, along, width, depth);
-  const room = boxGeneratorWallRoom({ width: width + 2, depth: depth + 2, height: 10 }, { boxWall: 1, boxFloor: 1, boxCornerRadius: 0, boxDividerMode: "manual", boxDivider: thickness, boxWalls: [...shown] });
+  const room = shellWallRoom(width, depth, shown, thickness);
   if (!room || width < 4 || depth < 4) return null;
   // A box with one compartment needs no picking.
   const index = room.compartments.length === 1 ? 0 : picked !== null && picked < room.compartments.length ? picked : null;
   const compartment = index === null ? undefined : room.compartments[index];
-  const now = compartment ? boxGeneratorScoopOf(compartment, scoops)?.side ?? "none" : "none";
+  const now = compartment ? shellScoopOf(compartment, scoops)?.side ?? "none" : "none";
   const plain = (value: number) => String(Math.round(value * 10) / 10);
-  const sides = [["none", "boxGenerator.scoopNone"], ["front", "boxGenerator.scoopFront"], ["back", "boxGenerator.scoopBack"], ["left", "boxGenerator.scoopLeft"], ["right", "boxGenerator.scoopRight"]] as const;
+  const sides = [["none", "shell.scoopNone"], ["front", "shell.scoopFront"], ["back", "shell.scoopBack"], ["left", "shell.scoopLeft"], ["right", "shell.scoopRight"]] as const;
   return (
     <div className="shell-walls-editor" data-testid="shell-scoops-editor">
-      <BoxWallsPlan
+      <ShellWallsPlan
         room={room}
         walls={shown}
         thickness={thickness}
         scoops={scoops}
         pick={index === null ? null : { type: "compartment", index }}
         disabled
-        label={t("boxGenerator.wallsPlan")}
-        wallLabel={(entry, position) => t(entry.dir === "x" ? "boxGenerator.wallAcross" : "boxGenerator.wallAlong", { number: position + 1 })}
-        compartmentLabel={(entry, position) => t("boxGenerator.compartment", { number: position + 1, width: plain(entry.maxX - entry.minX), depth: plain(entry.maxZ - entry.minZ) })}
+        label={t("shell.wallsPlan")}
+        wallLabel={(entry, position) => t(entry.dir === "x" ? "shell.wallAcross" : "shell.wallAlong", { number: position + 1 })}
+        compartmentLabel={(entry, position) => t("shell.compartment", { number: position + 1, width: plain(entry.maxX - entry.minX), depth: plain(entry.maxZ - entry.minZ) })}
         onPick={(pick) => setPicked(pick?.type === "compartment" ? pick.index : null)}
         onWallChange={() => {}}
         onWallRemove={() => {}}
       />
       <ToolHint text={t(compartment ? "shell.scoopsPick" : "shell.scoopsPanelHint")} />
       {compartment ? (
-        <div className="shell-opening-options shell-scoop-sides" role="group" aria-label={t("prop.boxScoop")}>
+        <div className="shell-opening-options shell-scoop-sides" role="group" aria-label={t("shell.scoops")}>
           {sides.map(([side, label]) => (
-            <button key={side} type="button" aria-pressed={now === side} className={now === side ? "active" : ""} disabled={disabled} data-testid={`shell-scoop-${side}`} onClick={() => onChange(boxGeneratorScoopsWith(scoops, compartment, side === "none" ? null : side))}>
+            <button key={side} type="button" aria-pressed={now === side} className={now === side ? "active" : ""} disabled={disabled} data-testid={`shell-scoop-${side}`} onClick={() => onChange(shellScoopsWith(scoops, compartment, side === "none" ? null : side))}>
               {t(label)}
             </button>
           ))}
         </div>
       ) : null}
       <div className="shell-walls-actions">
-        <button type="button" disabled={disabled} data-testid="shell-scoops-all" onClick={() => onChange(room.compartments.reduce<ShellScoop[]>((list, entry) => boxGeneratorScoopsWith(list, entry, boxGeneratorScoopOf(entry, scoops)?.side ?? "front"), []))}>
+        <button type="button" disabled={disabled} data-testid="shell-scoops-all" onClick={() => onChange(room.compartments.reduce<ShellScoop[]>((list, entry) => shellScoopsWith(list, entry, shellScoopOf(entry, scoops)?.side ?? "front"), []))}>
           <Plus size={15} strokeWidth={2.5} /><span>{t("shell.scoopsAll")}</span>
         </button>
         {scoops.length > 0 ? (

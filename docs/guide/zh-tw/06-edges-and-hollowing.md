@@ -84,11 +84,11 @@ summary: 對選定的邊做倒角或圓角，為盒子、杯子與殼體抽出�
 
 當頂部是唯一開口的一側時，{{ui:shell.grid}} 會在底部放入 Gridfinity 底板：底厚變為 6.2 公釐，內部能容納的每個完整的 42 公釐格子都會開出一個凹座。{{ui:shell.gridCells}} 設定最多多少個；滑桿止於能放下的數量，少於它時格子靠近中間排列。{{ui:shell.gridFit}} 會加厚壁，使內部剛好是這些格子，留 0.5 公釐間隙：盒子就能放下 Gridfinity 收納盒，把實體放大時，凹座數量也隨之增加。{{ui:shell.dividers}} 立在底上、壁與壁之間，{{ui:shell.dividersAcross}} 和 {{ui:shell.dividersAlong}} 各最多 8 個，均勻分布，厚 1.2 公釐。底需要 6.2 公釐，其上的內部需要 3 公釐，所以實體至少要高 9.2 公釐。 {{ui:shell.gridMagnets}} 在每個凹槽下方切出 4 個 6.5 × 2.4 mm 的孔，用於 6 × 2 mm 磁鐵，正好在收納盒磁鐵的位置，讓收納盒吸住；此時底板厚 8.6 mm。 {{ui:shell.gridScrews}} 會在每個凹座中心開一個沉頭通孔，適用於 4 公釐沉頭螺絲，用來把盒子鎖在抽屜裡或木板上；螺絲頭與凹座底面齊平，收納盒仍可放入，此時底厚同樣為 8.6 公釐。
 
-隔板跟隨盒子自身的內部，即使盒子在工作平面上是轉過角度放置的也一樣。從 {{ui:boxGenerator.dividersGrid}} 切換到 {{ui:boxGenerator.dividersManual}} 後，隔板由你自己放置，和盒子產生器裡一樣：面板從上方顯示內部，{{ui:boxGenerator.wallAddAcross}} 和 {{ui:boxGenerator.wallAddAlong}} 在你點選的格子裡放一塊隔板，拖曳隔板可移動它，拖曳一端可把它縮短或加長，把一端拖離隔板的直線（或設定 {{ui:prop.boxWallSlant}}）可讓它傾斜。第一次切換時會把均勻的隔板沿用為可編輯的隔板。
+隔板跟隨盒子自身的內部，即使盒子在工作平面上是轉過角度放置的也一樣。從 {{ui:shell.dividersGrid}} 切換到 {{ui:shell.dividersManual}} 後，隔板由你自己放置：面板從上方顯示內部，{{ui:shell.wallAddAcross}} 和 {{ui:shell.wallAddAlong}} 在你點選的格子裡放一塊隔板，拖曳隔板可移動它，拖曳一端可把它縮短或加長，把一端拖離隔板的直線（或設定 {{ui:shell.wallSlant}}）可讓它傾斜。第一次切換時會把均勻的隔板沿用為可編輯的隔板。
 
 {{ui:shell.onBoxHint}} {{ui:shell.scoopsHint}} {{ui:shell.scoopsPanelHint}}
 
-**{{ui:shell.pockets}}:** {{ui:shell.pocketsHint}} {{ui:boxGenerator.pocketFillHint}}
+**{{ui:shell.pockets}}:** {{ui:shell.pocketsHint}} {{ui:shell.pocketFillHint}}
 
 **{{ui:shell.insert}}:** {{ui:shell.insertHint}}
 
@@ -218,6 +218,6 @@ summary: 對選定的邊做倒角或圓角，為盒子、杯子與殼體抽出�
 
 選取要移除的所有面，而且只選這些面。如果周圍的面無法補上空隙，layerling 會提示，且不會有任何變更：例如長方體的一個主側面，就沒有能頂替它的相鄰面。只刪除凹槽的底面，會讓它變成直接穿透的孔，因為凹槽的壁會一直延伸到另一側。
 
-{{ui:editor.tool.deleteFace}} 需要精確的面：它適用於以 STEP 匯入的零件和 layerling 的形狀。凡是 layerling 以網格儲存的都沒有精確面：匯入的 STL、OBJ 或 3MF，分割、包覆或簡化過的實體，或是非常精細的形狀，例如很長的一段文字。可以的話，把零件以 STEP 匯入。對精細的匯入零件，少數幾個面也可能超出 CAD 核心的處理能力：45 秒後刪除會中止，且不會有任何變更。如果實體在邊處理之後調整了尺寸，同時保留邊的尺寸，那麼在新尺寸下它沒有精確的面，直到復原這次尺寸調整為止。
+{{ui:editor.tool.deleteFace}} 需要精確的面：它適用於以 STEP 匯入的零件和 layerling 的形狀。凡是 layerling 以網格儲存的都沒有精確面：匯入的 STL、OBJ 或 3MF，分割、包覆或簡化過的實體，或是非常精細的形狀，例如很長的一段文字。可以的話，把零件以 STEP 匯入。匯入的 STL、OBJ 或 3MF 先點擊 {{ui:editor.tool.makeExact}}，通常就能得到精確面。對精細的匯入零件，少數幾個面也可能超出 CAD 核心的處理能力：45 秒後刪除會中止，且不會有任何變更。如果實體在邊處理之後調整了尺寸，同時保留邊的尺寸，那麼在新尺寸下它沒有精確的面，直到復原這次尺寸調整為止。
 
 用 {{ui:editor.tool.makeExact}} 轉為精確實體的匯入網格，在檔案三角形有缺陷的地方，可能會在位於同一平面的面之間留下髮絲般細的面，使一個側面變成無法單獨刪除的細條。這樣的細面窄得無法點選；若它接觸某個所選面，並繼續通往該所選面所在平面內的另一個面，就會連同與它相連、同樣接觸該所選面所在平面內某個面的細面一起隨該所選面刪除，視窗會把它們算作一併刪除的面。

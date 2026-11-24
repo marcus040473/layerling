@@ -39,7 +39,7 @@ export const MAX_SHELL_DIVIDERS = 8;
 
 export type ShellGrid = { cells: number; fit: boolean; magnets?: boolean; screws?: boolean };
 /**
- * A divider set by hand, as the box generator's (BoxGeneratorWall): it runs along the width ("x") or the depth ("z") of
+ * A divider set by hand: it runs along the width ("x") or the depth ("z") of
  * the box's inside, `at`, `from` and `to` in mm from the left and the back of the inside, and with `slant` its end lies
  * that many mm further across than its beginning.
  */
@@ -138,6 +138,18 @@ export function normalizeShellDividers(value: unknown): ShellDividers | null {
   }
   // Dividers there are, or scoops or shaped pockets alone in a box without dividers.
   return (out.manual ? list.length : out.x + out.z) > 0 || dips.length > 0 || cut.length > 0 ? out : null;
+}
+
+/** A list in the tool's settings as it was sent (walls, scoops, pockets): the list itself, or the text of one; anything else is no list. */
+export function shellSettingsList(value: unknown): unknown[] | undefined {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return undefined;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** The shaped pockets as a clean list: outlines of at least three finite points, each with a depth. */

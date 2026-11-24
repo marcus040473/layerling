@@ -60,14 +60,14 @@ describe("hollow, dividers set by hand", () => {
 
   it("draws the inside with its walls and compartments, splits the compartment that was picked, and takes walls away", () => {
     const { panel, walls } = mount(shellGridWalls(1, 0, 96, 76));
-    expect(all(panel, "box-walls-wall")).toHaveLength(1);
-    expect(all(panel, "box-walls-compartment")).toHaveLength(2);
-    const left = all<SVGElement>(panel, "box-walls-compartment").find((entry) => entry.getAttribute("points")!.startsWith("0,"))!;
+    expect(all(panel, "shell-walls-wall")).toHaveLength(1);
+    expect(all(panel, "shell-walls-compartment")).toHaveLength(2);
+    const left = all<SVGElement>(panel, "shell-walls-compartment").find((entry) => entry.getAttribute("points")!.startsWith("0,"))!;
     pointer(left, "pointerdown");
     click(all(panel, "shell-walls-add-across")[0]);
     // From the left wall to the middle of the wall it ends on.
     expect(walls()[1]).toEqual({ dir: "x", at: 38, from: 0, to: 48 });
-    expect(all(panel, "box-walls-compartment")).toHaveLength(3);
+    expect(all(panel, "shell-walls-compartment")).toHaveLength(3);
     click(all(panel, "shell-walls-remove")[0]);
     expect(walls()).toHaveLength(1);
     click(all(panel, "shell-walls-mirror-x")[0]);
@@ -106,16 +106,16 @@ describe("hollow, dividers set by hand", () => {
     }));
     act(render);
     const panel = container;
-    expect(all(panel, "box-walls-compartment")).toHaveLength(2);
+    expect(all(panel, "shell-walls-compartment")).toHaveLength(2);
     // Nothing is picked yet: no side to choose.
     expect(all(panel, "shell-scoop-front")).toHaveLength(0);
-    const left = all<SVGElement>(panel, "box-walls-compartment").find((entry) => entry.getAttribute("points")!.startsWith("0,"))!;
+    const left = all<SVGElement>(panel, "shell-walls-compartment").find((entry) => entry.getAttribute("points")!.startsWith("0,"))!;
     pointer(left, "pointerdown");
     click(all(panel, "shell-scoop-left")[0]);
     expect(scoops).toEqual([{ x: expect.any(Number), z: expect.any(Number), side: "left" }]);
     expect(scoops[0].x).toBeLessThan(47);
     expect(all(panel, "shell-scoop-left")[0].getAttribute("aria-pressed")).toBe("true");
-    expect(all(panel, "box-walls-plan-scoop")).toHaveLength(1);
+    expect(all(panel, "shell-walls-plan-scoop")).toHaveLength(1);
     // Every compartment: the one that has a scoop keeps its side, the other gets one at the front.
     click(all(panel, "shell-scoops-all")[0]);
     expect(scoops.map((scoop) => scoop.side).sort()).toEqual(["front", "left"]);

@@ -327,9 +327,9 @@ export function ShellPanel({
             </button>
           </div>
           {dividers && gridCells === 0 && (dividers.manual === true || dividers.x + dividers.z > 0) ? (<>
-            <div className="shell-opening-options shell-dividers-mode" role="group" aria-label={t("prop.boxDividerMode")}>
+            <div className="shell-opening-options shell-dividers-mode" role="group" aria-label={t("shell.dividersMode")}>
               <button type="button" aria-pressed={!dividers.manual} className={!dividers.manual ? "active" : ""} disabled={busy} data-testid="shell-dividers-even" onClick={() => onDividersChange({ ...dividers, manual: undefined, x: Math.max(dividers.x, dividers.x + dividers.z > 0 ? 0 : 1), z: dividers.z })}>
-                {t("boxGenerator.dividersGrid")}
+                {t("shell.dividersGrid")}
               </button>
               <button
                 type="button"
@@ -340,7 +340,7 @@ export function ShellPanel({
                 // Set by hand for the first time, the even dividers become the walls to begin with; later the walls are kept.
                 onClick={() => onDividersChange({ ...dividers, manual: true, walls: dividers.walls?.length ? dividers.walls : shellGridWalls(dividers.x, dividers.z, insideWidth, insideDepth) })}
               >
-                {t("boxGenerator.dividersManual")}
+                {t("shell.dividersManual")}
               </button>
             </div>
             {dividers.manual ? (
@@ -450,8 +450,8 @@ export function ShellPanel({
 
         {/* Scoops and shaped pockets are part of the box: not with the dividers as a loose insert. */}
         {gridCells === 0 && !dividers?.insert ? (
-          <div className="edge-modifier-field shell-openings shell-scoops" role="group" aria-label={t("prop.boxScoop")} data-testid="shell-scoops">
-            <span>{t("prop.boxScoop")}</span>
+          <div className="edge-modifier-field shell-openings shell-scoops" role="group" aria-label={t("shell.scoops")} data-testid="shell-scoops">
+            <span>{t("shell.scoops")}</span>
             <ShellScoopsEditor
               width={insideWidth}
               depth={insideDepth}
@@ -469,7 +469,7 @@ export function ShellPanel({
             />
             {dividers?.scoops?.length ? (
               <EdgeModifierSlider
-                label={t("prop.boxScoopRadius")}
+                label={t("shell.scoopRadius")}
                 value={dividers.scoopRadius ?? SHELL_SCOOP_RADIUS}
                 min={MIN_SHELL_SCOOP_RADIUS}
                 max={MAX_SHELL_SCOOP_RADIUS}
@@ -494,15 +494,15 @@ export function ShellPanel({
                 </select>
                 <div className="shell-walls-actions">
                   <button type="button" disabled={busy || (dividers?.pockets?.length ?? 0) >= MAX_SHELL_POCKETS} data-testid="shell-pocket-add" onClick={() => onAddPocket(pocketParts.some((part) => part.id === pocketPart) ? pocketPart! : pocketParts[0].id)}>
-                    {t("inspector.boxMakePocket")}
+                    {t("shell.pocketMake")}
                   </button>
                 </div>
               </div>
             ) : null}
             {dividers?.pockets?.length ? (<>
-              <ToolHint text={t("boxGenerator.pocketsCount", { count: dividers.pockets.length })} />
+              <ToolHint text={t("shell.pocketsCount", { count: dividers.pockets.length })} />
               <EdgeModifierSlider
-                label={t("prop.boxPocketFill")}
+                label={t("shell.pocketFill")}
                 value={Math.min(dividers.pocketFill ?? dividerFullHeight, dividerFullHeight)}
                 min={1}
                 max={Math.max(1, dividerFullHeight)}
@@ -516,7 +516,7 @@ export function ShellPanel({
                 }}
               />
               <EdgeModifierSlider
-                label={t("prop.boxPocketDepth")}
+                label={t("shell.pocketDepth")}
                 value={Math.min(dividers.pockets[dividers.pockets.length - 1].depth, Math.max(1, dividerFullHeight))}
                 min={0.5}
                 max={Math.max(1, dividerFullHeight)}
@@ -527,8 +527,8 @@ export function ShellPanel({
                 onChange={(value) => onDividersChange({ ...dividers, pockets: dividers.pockets!.map((pocket, index) => (index === dividers.pockets!.length - 1 ? { ...pocket, depth: value } : pocket)) })}
               />
               <div className="shell-walls-actions">
-                <button type="button" disabled={busy} data-testid="shell-pocket-remove-last" onClick={() => removePockets(dividers.pockets!.slice(0, -1))}>{t("boxGenerator.pocketRemoveLast")}</button>
-                <button type="button" disabled={busy} data-testid="shell-pocket-remove-all" onClick={() => removePockets([])}>{t("boxGenerator.pocketRemoveAll")}</button>
+                <button type="button" disabled={busy} data-testid="shell-pocket-remove-last" onClick={() => removePockets(dividers.pockets!.slice(0, -1))}>{t("shell.pocketRemoveLast")}</button>
+                <button type="button" disabled={busy} data-testid="shell-pocket-remove-all" onClick={() => removePockets([])}>{t("shell.pocketRemoveAll")}</button>
               </div>
             </>) : null}
             <ToolHint text={t(pocketParts.length > 0 ? "shell.pocketsHint" : "shell.pocketsNoPart")} />

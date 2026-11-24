@@ -35,47 +35,20 @@ export type BoxWallsOverlayState = {
 
 type Room = NonNullable<ReturnType<typeof boxGeneratorWallRoom>>;
 
-/**
- * What the grips on a box are about: the room of its dividers, the walls set by hand, the finger scoops, and whether
- * walls can be moved (`manual`) and scoops switched (`scoopsOffered`). A box from the box generator gives it from its own
- * settings; the Hollow tool gives its own while it is open (shellWallsSource), for the body it is hollowing.
- */
-export type BoxWallsSource = {
+/** What the grips on a box are about, from its own settings: the room of its dividers, the walls set by hand, the finger scoops, and whether walls can be moved (`manual`) and scoops switched (`scoopsOffered`). */
+type BoxWallsSource = {
   room: Room | null;
   walls: BoxGeneratorWall[];
   scoops: BoxGeneratorScoop[];
   manual: boolean;
   divider: number;
   scoopsOffered: boolean;
-  /**
-   * Set for a body whose mesh is drawn in the scene's own frame (a hollowed body): how the body is turned about its
-   * height, in degrees. The room is then laid round the middle of the body as it stands, turned by this.
-   */
-  turn?: number;
 };
-
-/**
- * The source for a body the Hollow tool is hollowing: its inside taken as a rectangle of the body's width and depth less
- * the wall, `wall` in from the body's sides. With even dividers the compartments are those of the grid, and there are no
- * walls to move.
- */
-export function shellWallsSource(insideWidth: number, insideDepth: number, wall: number, dividers: { x: number; z: number; thickness: number; manual: boolean; walls: BoxGeneratorWall[]; scoops?: BoxGeneratorScoop[] }, turn = 0): BoxWallsSource {
-  const even: BoxGeneratorWall[] = [];
-  if (!dividers.manual) {
-    for (let i = 1; i <= dividers.x; i += 1) even.push({ dir: "z", at: (insideWidth * i) / (dividers.x + 1), from: 0, to: insideDepth });
-    for (let i = 1; i <= dividers.z; i += 1) even.push({ dir: "x", at: (insideDepth * i) / (dividers.z + 1), from: 0, to: insideWidth });
-  }
-  const room = insideWidth >= 4 && insideDepth >= 4
-    ? boxGeneratorWallRoom({ width: insideWidth + 2 * wall, depth: insideDepth + 2 * wall, height: 10 }, { boxWall: wall, boxFloor: 1, boxCornerRadius: 0, boxDividerMode: "manual", boxDivider: dividers.thickness, boxWalls: dividers.manual ? dividers.walls : even })
-    : null;
-  return { room, walls: dividers.manual ? dividers.walls : [], scoops: dividers.scoops ?? [], manual: dividers.manual, divider: dividers.thickness, scoopsOffered: dividers.scoops !== undefined, turn };
-}
 
 // A shape is never changed in place, so the room of one is worked out once.
 const rooms = new WeakMap<WorkplaneShape, BoxWallsSource & { kernel: number }>();
 
-function roomOf(shape: WorkplaneShape, given?: BoxWallsSource | null): BoxWallsSource {
-  if (given) return given;
+function roomOf(shape: WorkplaneShape): BoxWallsSource {
   let entry = rooms.get(shape);
   // Slanted walls are cut by the 2D kernel; the compartments are worked out again once it has loaded.
   if (!entry || entry.kernel !== manifoldRevision()) {
@@ -99,9 +72,9 @@ export function boxWallsEditable(shape: WorkplaneShape | null | undefined): shap
  * Where the room of the dividers lies in the view: the box's mesh, and the place of the room's left back corner on the
  * top of the box in the mesh's own measures, from which x runs to the right and z to the front.
  */
-function frameOf(state: ThreeState, shape: WorkplaneShape, given?: BoxWallsSource | null) {
+function frameOf(state: ThreeState, shape: WorkplaneShape) {
   const record = state.shapeRecords.get(shape.id);
-  const { room, walls, divider, scoops, manual, scoopsOffered } = roomOf(shape, given);
+  const { room, walls, divider, scoops, manual, scoopsOffered } = roomOf(shape);
   if (!record || !room) return null;
   let mesh: THREE.Mesh | null = null;
   record.object.traverse((child) => {
@@ -111,27 +84,6 @@ function frameOf(state: ThreeState, shape: WorkplaneShape, given?: BoxWallsSourc
   if (!found) return null;
   found.updateWorldMatrix(true, false);
   const rest = { room, walls, divider, scoops, manual, scoopsOffered };
-  const turn = roomOf(shape, given).turn;
-  if (turn !== undefined) {
-    // The mesh stands in the scene as the body does: the room lies round its middle, turned as the body is turned.
-    const box = new THREE.Box3().setFromObject(found);
-    if (box.isEmpty()) return null;
-    const centre = box.getCenter(new THREE.Vector3());
-    const angle = THREE.MathUtils.degToRad(turn);
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    const toWorld = (x: number, z: number) => {
-      const ox = x - room.width / 2;
-      const oz = z - room.depth / 2;
-      return new THREE.Vector3(centre.x + ox * cos + oz * sin, box.max.y, centre.z - ox * sin + oz * cos);
-    };
-    const fromWorld = (point: THREE.Vector3) => {
-      const dx = point.x - centre.x;
-      const dz = point.z - centre.z;
-      return { x: dx * cos - dz * sin + room.width / 2, z: dx * sin + dz * cos + room.depth / 2 };
-    };
-    return { toWorld, fromWorld, ...rest };
-  }
   if (!found.geometry.boundingBox) found.geometry.computeBoundingBox();
   const bounds = found.geometry.boundingBox;
   if (!bounds) return null;
@@ -145,8 +97,8 @@ function frameOf(state: ThreeState, shape: WorkplaneShape, given?: BoxWallsSourc
 }
 
 /** The place under the pointer on the top of the box, in mm from the left and the back of the room; null beside the view. */
-function pointerInRoom(state: ThreeState, shape: WorkplaneShape, clientX: number, clientY: number, given?: BoxWallsSource | null) {
-  const frame = frameOf(state, shape, given);
+function pointerInRoom(state: ThreeState, shape: WorkplaneShape, clientX: number, clientY: number) {
+  const frame = frameOf(state, shape);
   if (!frame) return null;
   const rect = state.renderer.domElement.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) return null;
@@ -165,9 +117,8 @@ export function syncBoxWallsOverlay(
   shape: WorkplaneShape | null,
   overlayRef: MutableRefObject<BoxWallsOverlayState | null>,
   setOverlay: Dispatch<SetStateAction<BoxWallsOverlayState | null>>,
-  given?: BoxWallsSource | null,
 ) {
-  const frame = shape && (given || boxWallsEditable(shape)) ? frameOf(state, shape, given) : null;
+  const frame = shape && boxWallsEditable(shape) ? frameOf(state, shape) : null;
   const clear = () => {
     if (!overlayRef.current) return;
     overlayRef.current = null;
@@ -221,7 +172,6 @@ export function syncBoxWallsOverlay(
 export function BoxWallsOverlay({
   overlay,
   shape,
-  source,
   pick,
   threeRef,
   onPick,
@@ -232,8 +182,6 @@ export function BoxWallsOverlay({
   overlay: BoxWallsOverlayState;
   /** The box the overlay is about, as it is now. */
   shape: WorkplaneShape;
-  /** Given by the Hollow tool for the body it is hollowing; a box from the box generator needs none. */
-  source?: BoxWallsSource | null;
   pick: BoxWallsPick;
   threeRef: MutableRefObject<ThreeState | null>;
   onPick: (pick: BoxWallsPick) => void;
@@ -243,7 +191,7 @@ export function BoxWallsOverlay({
   onDragActiveChange?: (active: boolean) => void;
 }) {
   const drag = useRef<{ index: number; part: "move" | "from" | "to"; x: number; z: number; wall: BoxGeneratorWall; pointer: number; moved: boolean } | null>(null);
-  const { room, walls, divider, scoops } = roomOf(shape, source);
+  const { room, walls, divider, scoops } = roomOf(shape);
   if (!room || overlay.shapeId !== shape.id) return null;
   // The scoop of a compartment: each click goes on to the next side, front, back, left, right, and then off again.
   const toggleScoop = (index: number) => {
@@ -260,7 +208,7 @@ export function BoxWallsOverlay({
     if (event.button > 0 || !walls[index]) return;
     onPick({ type: "wall", index });
     const state = threeRef.current;
-    const at = state ? pointerInRoom(state, shape, event.clientX, event.clientY, source) : null;
+    const at = state ? pointerInRoom(state, shape, event.clientX, event.clientY) : null;
     if (!at) return;
     drag.current = { index, part, x: at.x, z: at.z, wall: walls[index], pointer: event.pointerId, moved: false };
     try {
@@ -274,7 +222,7 @@ export function BoxWallsOverlay({
     const current = drag.current;
     const state = threeRef.current;
     if (!current || current.pointer !== event.pointerId || !state) return;
-    const at = pointerInRoom(state, shape, event.clientX, event.clientY, source);
+    const at = pointerInRoom(state, shape, event.clientX, event.clientY);
     if (!at) return;
     const next = boxWallDragged(current.wall, current.part, at.x - current.x, at.z - current.z, room, walls.filter((_wall, index) => index !== current.index), event.altKey ? 0.1 : undefined, event.altKey);
     const now = walls[current.index];
