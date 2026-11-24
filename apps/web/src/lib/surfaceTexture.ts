@@ -3501,8 +3501,16 @@ function sliceStripes(mesh: SurfaceMesh, s: SurfaceTextureSettings, layout: Surf
   for (let f = 0; f < sliced.length; f += 1) sliced[f] = smoothFace[mesh.parents[f]] || F.pole[I[f * 3]] || F.pole[I[f * 3 + 1]] || F.pole[I[f * 3 + 2]] ? 0 : 1;
   // Knurling's second family: two triangles over an edge along the first one's lines stay apart, or the quad's new
   // triangles reached across a line of the first family (its profile bent inside them: lumps in the diamonds).
+  // A point of the grid closer to a line than the cut's snap (see sliceByField) took the line's place, so such an edge
+  // can lie that far off it at either end: with only exact edges kept, a planter round a cylinder came out with crumpled
+  // diamonds wherever its facets' points fell that near a line - in the view and in the slicer (Facebook group).
   const A = first ? stripeFields(mesh, s, first) : null;
-  const keep = A ? (p: number, q: number) => Math.abs(A.crossDiff(p, q)) < 1e-6 : null;
+  const snap = Math.min(SURFACE_MIN_EDGE, P / 4) + 1e-9;
+  const onLine = (p: number) => {
+    const x = A!.cross[p] - P * Math.floor(A!.cross[p] / P);
+    return offsets.some((o) => Math.abs(x - o) <= snap || Math.abs(x - o - P) <= snap || Math.abs(x - o + P) <= snap);
+  };
+  const keep = A ? (p: number, q: number) => Math.abs(A.crossDiff(p, q)) < 1e-6 || (Math.abs(A.crossDiff(p, q)) <= 2 * snap && onLine(p) && onLine(q)) : null;
   return sliceByField(mesh, F.cross, F.crossDiff, P, offsets, sliced, F.alongDiff, false, keep);
 }
 
