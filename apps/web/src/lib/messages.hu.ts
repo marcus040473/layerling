@@ -6326,5 +6326,13 @@ export const MESSAGES_HU: Partial<Record<MessageKey, string>> = {
   "inspector.pattiesMotifLoad": "Saját alakzat betöltése (SVG, PNG, JPG)",
   "patties.motifHint": "Egy rajz vagy kép körvonalából lesz az alakzat. A benne lévő lyukak kitöltődnek, hogy a sablonból semmi ne essen ki.",
   "patties.motifError": "Ebből a fájlból nem sikerült körvonalat kiolvasni.",
+  "patties.pattern.pegboard": "Perforált tábla",
+  "patties.pegboardHint": "Álló, 5 × 15 mm-es hosszúkás nyílások, a sorban 40 mm-re egymástól, minden sor 20 mm-rel feljebb és fél lépéssel eltolva: a szokásos perforált táblák kampói és tartói illenek bele. Annyi, amennyi a lapra ráfér.",
+  "patties.noFiguresFixedHint": "Egy alakzat sem fér el: ennek a mintának rögzített méretei vannak, nagyobb lap vagy keskenyebb szegély kell hozzá.",
+  "prop.pattiesTilt": "Dőlés a lapon át (°)",
+  "patties.tiltHint": "A nyílások ferdén haladnak át a lapon: 0 fölött a tetejük hátrébb van, mint az aljuk. Szellőzőrácsként felállítva, a nyílások alsó végével kifelé, a lap nem engedi be az esőt. 45°-ig fekve, támasz nélkül nyomtatható.",
+  "prop.pattiesChamfer": "Nyomtatási élletörés",
+  "patties.chamferHint": "Ha a lap az elülső élén állva készül: minden nyílás két sarkát, amely ilyenkor felül van, 45°-ban ennyivel levágja; a nyílás fél szélességénél tetővé érnek össze, amelyhez nem kell támasz. 0: nincs.",
+  "patties.chamferRaisedHint": "Ha a lap az elülső élén állva készül: minden alakzat két sarkát, amely ilyenkor alul van, 45°-ban ennyivel levágja; az alakzat fél szélességénél csúccsá érnek össze, amelyhez nem kell támasz. 0: nincs.",
   // End of Patties.
 };
