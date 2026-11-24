@@ -1,4 +1,5 @@
 "use client";
+import { pressedKey } from "@/lib/keyPressed";
 import { type GroupHoleChange, withHoleDiameters } from "@/lib/groupHoles";
 import { watchAutoTitles } from "@/lib/autoButtonTitles";
 import { deleteSketchDraft, loadSketchDraft, saveSketchDraft, sketchHasWork, type SketchDraft } from "@/lib/sketchDraftStore";
@@ -11,6 +12,7 @@ import { flushSync } from "react-dom";
 import { SAVED_VIEW_KEYS } from "@/lib/designView";
 import * as THREE from "three";
 import type { AppThemePreference, ResolvedAppTheme } from "@/lib/appTheme";
+import { detailFlags, detailItems, detailSnapshot, isDetailLevel, isOwnDetail, setDetail, setDetailLevel, type DetailItem } from "@/lib/detailLevel";
 import { getLanguage, numberLocale, t, type MessageKey } from "@/lib/i18n";
 import { guideHref } from "@/lib/guideLinks";
 import { largeMeshWarningTriangles } from "@/lib/largeMeshes";
@@ -22,6 +24,7 @@ import { hingePartScope, hingeWorldParts } from "@/lib/hingeParts";
 import { copyViaSelectionField, decodeClipboardPayload, encodeClipboardPayload, LOCAL_CLIPBOARD_LIMIT, newestClipboard, type ClipboardPayload } from "@/lib/clipboardPayload";
 import { bentTubeNaturalDimensions, normalizedBentTubeFields } from "@/lib/bentTubeGeometry";
 import { GRIDFINITY_SWALLOWTAIL_KEY_THICKNESS, gridfinityHasLabelText, gridfinityOutlineFit, gridfinityOutlineFromLoops, gridfinityOutlineToPlate, gridfinityPlan, gridfinityPlateFlat, gridfinityPlatePieceClips, gridfinityPlateSplitsWithClips, gridfinityPlatePieceKeys, gridfinityPlatePieces, gridfinityPlateSplit, gridfinityPlateToWorld, gridfinitySceneWithKeys, gridfinitySceneWithPieces, gridfinitySwallowtailKeyCount, gridfinitySwallowtailKeyProfile, gridfinitySwallowtailKeys, GRIDFINITY_CLIP_LENGTH, MAX_GRIDFINITY_CLIP_COUNT, gridfinityClipCount, gridfinityClipProfile, gridfinityClips, gridfinitySceneWithClips } from "@/lib/gridfinityGeometry";
+import { shellWallsSource } from "@/components/workplane/ShellWallsOverlay";
 import { DEFAULT_THREAD_PROFILE, defaultThreadHeadHeight, normalizeThreadHeadHeight, threadCollarFields, threadCollarSettings, threadDriveFields, threadDriveSettings, threadNaturalFootprint, threadSettings } from "@/lib/threadGeometry";
 import { textOffsetAsFill } from "@/lib/textFillChoice";
 import { curvedTextPatch, MAX_TEXT_LETTER_WIDTH, MAX_TEXT_SPACING, MIN_TEXT_LETTER_WIDTH, MIN_TEXT_SPACING } from "@/lib/textGeometry";
@@ -49,6 +52,8 @@ import { IconTagPanel } from "@/components/workplane/IconTagPanel";
 import { QrCodePanel } from "@/components/workplane/QrCodePanel";
 import { qrCodeOf, qrCodeShape, regeneratedQrCodeShape } from "@/lib/editorQrCode";
 import { regeneratedSbcBoardShape, sbcBoardOf, sbcBoardShape } from "@/lib/editorSbcBoard";
+import { fanOf, fanShape, regeneratedFanShape } from "@/lib/editorFan";
+import { DEFAULT_FAN, FAN_ORDER, MAX_FAN_CLEARANCE, MAX_FAN_REACH, type FanSettings, type FanType } from "@/lib/fans";
 import { portWithScrewHolesGroup } from "@/lib/editorPortScrewHoles";
 import { DEFAULT_SBC_BOARD, MAX_SBC_BUTTON_REACH, MAX_SBC_CLEARANCE, MAX_SBC_REACH, MAX_SBC_UP_REACH, MIN_SBC_UP_REACH, SBC_BOARD_ORDER, type SbcBoardSettings, type SbcBoardType } from "@/lib/sbcBoards";
 import { DEFAULT_QR_WIDTH, MAX_QR_HEIGHT, MAX_QR_WIDTH, MIN_QR_HEIGHT, MIN_QR_WIDTH, QR_BYTE_CAPACITY, QR_ERROR_CORRECTIONS, QR_STYLES, normalizeQrSettings, qrByteLength, qrMatrix, qrModuleSize, qrModuleTooSmall, qrTextFits, type QrCodeSettings, type QrErrorCorrection, type QrStyle } from "@/lib/qrCode";
@@ -130,11 +135,13 @@ import { scaleShapesByPercent, worldBoxOfShapes } from "@/lib/scaleByPercent";
 import { MODEL_SCALE_RATIO_MAX, MODEL_SCALE_RATIO_MIN, modelScalePercent, type ModelScaleAxis } from "@/lib/modelScale";
 import { isSameSize, resizedCopy, SAME_SIZE, shapeSize, sizeFactorsBetween, type ShapeSize, type SizeFactors } from "@/lib/duplicateResize";
 import { canToggleGroupColors, colorForParts, groupShowsPartColors } from "@/lib/groupColors";
+import { rememberGroupMulticolor, withRememberedMulticolor } from "@/lib/groupColorsMemory";
 import { disposeBoundsTree } from "three-mesh-bvh";
 import { clampShellStackHeight, normalizeShellStackFoot, shellStackFloor, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { GRIDFINITY_GRID } from "@/lib/gridfinityGeometry";
 import { magnetsGridLeastSize, magnetsMeetGridCells } from "@/lib/shellGridMagnets";
-import { DIVIDERS_WITH_GRID_MESSAGE, shellGridFloor, SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, type ShellDividers, type ShellGrid } from "@/lib/shellGridLimits";
+import { DIVIDERS_WITH_GRID_MESSAGE, shellGridFloor, SHELL_GRID_PLAY, MAX_SHELL_GRID_CELLS, normalizeShellDividers, normalizeShellGrid, shellGridEstimate, SHELL_DIVIDER_THICKNESS, type ShellDividerWall, type ShellDividers, type ShellGrid, type ShellScoop, MAX_SHELL_POCKETS, shellSettingsList } from "@/lib/shellGridLimits";
+import { shellPocketOutlines } from "@/lib/shellWalls";
 import { DEFAULT_SHELL_SHELF_HEIGHT, clampShellShelfHeight, clampShellShelfWidth } from "@/lib/shellShelfLimits";
 import { SHELL_SIDES, shellMaxThickness, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import { createLatestJobRunner, shellPreviewKey } from "@/lib/shellPreview";
@@ -149,6 +156,7 @@ import { NO_SPLIT_ROTATION, modelSplitPlane, snapSplitPositionToVertices, splitO
 import { connectorHoleRadius, normalizeSplitConnectorOptions, splitConnectorDefaults, splitMagnetPocket, SPLIT_CONNECTOR_KINDS, type SplitConnectorOptions } from "@/lib/splitConnectors";
 import { AttachmentViewer } from "./workplane/AttachmentViewer";
 import { GuideModal } from "./workplane/GuideModal";
+import { SketchSettings } from "./workplane/SketchSettings";
 import { FileBackupsDialog, fileBackupName } from "@/components/FileBackupsDialog";
 import { HistoryViewOverlay, historyStateNameSuffix, requestHistoryStepList } from "./workplane/HistoryViewOverlay";
 import { useHistoryViewPicking } from "./workplane/useHistoryViewPicking";
@@ -216,12 +224,12 @@ import { exportLylProject, LYL_CREATED_WITH_VERSION, LYL_MEDIA_TYPE, lylThumbnai
 import { projectThumbnailPngBytes } from "@/lib/backupDownload";
 import { isBuildMessage, reportWorkerBuild } from "@/lib/buildStamp";
 import { createKernelGate, isKernelStatusMessage, warmKernelMessage, type KernelGate } from "@/lib/cadKernelGate";
-import { ensureLylFileWritable, forgetLylFile, forgetStlFile, linkedLylFile, linkedStlFile, lylFileAccessSupported, pickLylFileToOpen, pickLylFileToSave, pickStlFileToSave, rememberLylFile, rememberStlFile, writeLylFile, type LylFileHandle } from "@/lib/lylFileAccess";
-import { addFileBackup, allowBackupFolder, fileBackupsOfDesign, listFileBackups, OPEN_FILE_BACKUPS_EVENT, readFileBackupBytes, readFileBackupSettings } from "@/lib/fileBackups";
+import { dropEmptyFile, ensureLylFileWritable, forgetLylFile, forgetStlFile, linkedLylFile, linkedStlFile, lylFileAccessSupported, pickLylFileToOpen, pickLylFileToSave, pickStlFileToSave, rememberLylFile, rememberStlFile, writeLylFile, type LylFileHandle } from "@/lib/lylFileAccess";
+import { addFileBackup, allowBackupFolder, allowBackupFolderForSave, fileBackupsOfDesign, listFileBackups, OPEN_FILE_BACKUPS_EVENT, readFileBackupBytes, readFileBackupSettings } from "@/lib/fileBackups";
 import { backupFileBeforeOverwrite, takeEditorBackupReminder } from "@/components/workplane/fileBackupEditor";
 import { copyNamePatterns, shapeNamesIn, withCopyName } from "@/lib/shapeCopyName";
 import { nameForNewGroup } from "@/lib/groupName";
-import { clipboardShape, displayShapeName, hasOwnShapeName, iconTagAsset, qrCodeAsset, makeShapeFromAsset, nameTagAsset, libraryAssetCustomization, libraryAssetTurnX, roofAsset, sbcBoardAsset, shapeAssetLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
+import { clipboardShape, displayShapeName, hasOwnShapeName, iconTagAsset, qrCodeAsset, makeShapeFromAsset, nameTagAsset, libraryAssetCustomization, libraryAssetTurnX, roofAsset, sbcBoardAsset, fanAsset, shapeAssetLabel, toolbarShapeAssets } from "@/lib/shapeCatalog";
 import { storeRecentShape } from "@/lib/shapeLibrarySections";
 import { PORT_PRESET_ORDER, PORT_PRESETS, portPresetSize, type PortPreset } from "@/lib/portGeometry";
 import { WASHER_SIZE_ORDER, isWasherSize, washerTubeFields } from "@/lib/washerSizes";
@@ -311,7 +319,7 @@ import { booleanAutomationScene } from "@/lib/editorAutomation";
 import { debugShapeSummary, mcpPivotRequest, compactShapeSummary, mcpGridfinityLabelFont, mcpShapeSummary, mcpSketchFillProfile, mcpTextFont } from "@/lib/editorMcpSummary";
 import { sweepAnchorFromParams, sweepPathFromParams, sweepSectionFromParams, sweepSketchProfile } from "@/lib/sweepSketch";
 import { emptySketchProfile, cadShapeFromSketchProfile, cadShapeFromSketchSweep, revolveBuildProfile, shapeFromRevolvedSketchProfile, shapeFromCadMesh, sketchBodyAsOperation, sketchBodyOperation, sketchProfileLeftOfAxis, sketchReferenceShapeOnWorkplane, defaultMcpSketchProfile, type SketchMirrorAbout } from "@/lib/editorSketchCad";
-import { drawingInfoFor, type DrawingInfo } from "@/lib/drawingInfo";
+import { drawingInfoFor, type DrawingInfo, type DrawingPrintPaper } from "@/lib/drawingInfo";
 import { drawingLabelsInLanguage } from "@/lib/drawingLabels";
 import { DEFAULT_TEXT_BLOCK_GAP, offersTextBlock, TEXT_BLOCK_ALIGNS, textBlockFor, textBlockLines, type TextBlockAlign, type TextBlockOptions } from "@/lib/textBlock";
 import { offersTextLayers, textLayerStack, layeredTextShape, nameTagSource, nameTagsFor, offersIconLayers, iconLayerStack, iconTagArea, layeredIconShape, iconTagCopies, svgIconArea, iconTagFromSvg, keyringTabShape, keyringTabTag, keyringTabAt, keyringTabPlace, textFreeKeyring, textFreeKeyringPlace, iconFreeKeyring, iconFreeKeyringPlace } from "@/lib/editorTextTags";
@@ -343,6 +351,7 @@ const HISTORY_VIEW_MCP_ACTIONS = new Set([
   "set_section_view",
   "show_workplane",
   "focus_mode",
+  "detail_level",
   "measurements",
   "saved_view",
   "export_section_svg",
@@ -3615,6 +3624,8 @@ export function LayerlingEditor({
   const shapesRef = useRef(shapes);
   /** Builds an SBC board from the library (#1098); set once the commit is known, read by the library's clicks and drops. */
   const placeSbcBoardRef = useRef<((point?: PlacementPoint, onFace?: PlacementWorkplane) => Promise<void>) | null>(null);
+  /** Builds a fan from the library (Discussion #1962), as the SBC board is built. */
+  const placeFanRef = useRef<((point?: PlacementPoint, onFace?: PlacementWorkplane) => Promise<void>) | null>(null);
   const notesRef = useRef(notes);
   const projectAssetsRef = useRef(projectAssets);
   const projectAttachmentsRef = useRef(projectAttachments);
@@ -3727,7 +3738,7 @@ export function LayerlingEditor({
   }, [sketchSelection, sketchTool, sketchActive]);
   const [edgeModifier, setEdgeModifier] = useState<EdgeModifierSession | null>(null);
   // `mode: "offset"` is the Offset tool (#919), which shares the hollow tool's state: `thickness` is then the distance.
-  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; stackFoot?: ShellStackFoot | null; gridCells?: number; gridFit?: boolean; gridMagnets?: boolean; gridScrews?: boolean; gridColumns?: number; gridRows?: number; dividers?: { x: number; z: number } | null; shelf?: number; shelfHeight?: number; busy: boolean; error: string | null } | null>(null);
+  const [shellTool, setShellTool] = useState<{ mode?: "offset"; shrink?: boolean; sideways?: boolean; keepCopy?: boolean; thickness: number; openings: ShellOpenings; edges: ShellEdges; stack?: number; stackFoot?: ShellStackFoot | null; gridCells?: number; gridFit?: boolean; gridMagnets?: boolean; gridScrews?: boolean; gridColumns?: number; gridRows?: number; dividers?: ShellDividers | null; shelf?: number; shelfHeight?: number; busy: boolean; error: string | null } | null>(null);
   /**
    * The Hollow panel's preview (Discussion #1811): the body hollowed with the panel's settings, shown in the body's place
    * until Apply or Cancel. `fingerprint` is the body it was built from; a body changed since is shown as it is.
@@ -4333,7 +4344,7 @@ export function LayerlingEditor({
   // click: the one taken up last wins and puts the other one down.
   const startCruise = useCallback((asset: ShapeAsset) => {
     // The icon tag, the QR code and the SBC board are not carried, so this is where they are put in (#1170).
-    if (asset.id === iconTagAsset.id || asset.id === qrCodeAsset.id || asset.id === sbcBoardAsset.id) storeRecentShape(asset.id);
+    if (asset.id === iconTagAsset.id || asset.id === qrCodeAsset.id || asset.id === sbcBoardAsset.id || asset.id === fanAsset.id) storeRecentShape(asset.id);
     // The icon tag has no shape to carry: it starts from an SVG file, in its own window.
     if (asset.id === iconTagAsset.id) {
       setQrCodePanelOpen(false);
@@ -4349,6 +4360,11 @@ export function LayerlingEditor({
     // The SBC board (#1098) is built, not carried: it lands on the middle of the workplane.
     if (asset.id === sbcBoardAsset.id) {
       void placeSbcBoardRef.current?.();
+      return;
+    }
+    // The fan (Discussion #1962) too.
+    if (asset.id === fanAsset.id) {
+      void placeFanRef.current?.();
       return;
     }
     closeSplit();
@@ -4585,6 +4601,39 @@ export function LayerlingEditor({
   }, [holePatternPreview?.topLayer]);
   // The body the Hollow panel is open for, and its fingerprint: the preview belongs to exactly this state of it.
   const shellPreviewTarget = shellTool && shellTool.mode !== "offset" && selectedShapes.length === 1 ? selectedShape : null;
+  // Hollow with the top as the one open side and no Gridfinity floor: the compartments show on the body in the view while
+  // the panel is open, with the grips of walls set by hand and a button for a finger scoop; what they change goes into the tool.
+  const shellWallsOffered = Boolean(shellPreviewTarget && shellTool && !(shellTool.gridCells ?? 0) && shellOpenSides(shellTool.openings).length === 1 && shellOpenSides(shellTool.openings)[0] === "top");
+  const shellWallsDividers = shellWallsOffered ? shellTool?.dividers ?? null : null;
+  const shellWallsThickness = shellTool?.thickness ?? 0;
+  const shellPreviewTargetRef = useRef(shellPreviewTarget);
+  shellPreviewTargetRef.current = shellPreviewTarget;
+  const shellToolRef = useRef(shellTool);
+  shellToolRef.current = shellTool;
+  // The other solid parts of the design: one of them can give its outline to a shaped pocket.
+  const shellPocketParts = useMemo(() => (shellWallsOffered && shellPreviewTarget
+    ? shapes.filter((shape) => shape.id !== shellPreviewTarget.id && !shape.hidden && !isNonSolidShape(shape)).map((shape) => ({ id: shape.id, name: displayShapeName(shape) }))
+    : []), [shapes, shellPreviewTarget, shellWallsOffered]);
+  const shellWalls = useMemo(() => {
+    if (!shellPreviewTarget || !shellWallsOffered) return null;
+    const source = shellWallsSource(Math.max(0, shapeWidth(shellPreviewTarget) - 2 * shellWallsThickness), Math.max(0, shapeDepth(shellPreviewTarget) - 2 * shellWallsThickness), {
+      x: shellWallsDividers?.x ?? 0,
+      z: shellWallsDividers?.z ?? 0,
+      thickness: shellWallsDividers?.thickness ?? SHELL_DIVIDER_THICKNESS,
+      manual: shellWallsDividers?.manual === true,
+      walls: shellWallsDividers?.walls ?? [],
+      scoops: shellWallsDividers?.scoops ?? [],
+    }, shellPreviewTarget.rotation ?? 0);
+    return {
+      source,
+      onWallsChange: (walls: ShellDividerWall[]) => setShellTool((current) => current ? { ...current, dividers: { ...(current.dividers ?? { x: 0, z: 0 }), manual: true, walls }, error: null } : current),
+      onScoopsChange: (scoops: ShellScoop[]) => setShellTool((current) => {
+        if (!current) return current;
+        const { scoops: _scoops, ...rest } = current.dividers ?? { x: 0, z: 0 };
+        return { ...current, dividers: scoops.length > 0 ? { ...rest, scoops } : rest, error: null };
+      }),
+    };
+  }, [shellPreviewTarget, shellWallsOffered, shellWallsDividers, shellWallsThickness]);
   const shellPreviewFingerprint = useMemo(() => (shellPreviewTarget ? projectShapesFingerprint([shellPreviewTarget]) : null), [shellPreviewTarget]);
   const shellPreviewShape = shellPreview && shellPreviewTarget && shellPreview.targetId === shellPreviewTarget.id && shellPreview.fingerprint === shellPreviewFingerprint
     ? shellPreview.shape
@@ -5479,7 +5528,20 @@ export function LayerlingEditor({
     [appendHistoryEntry, setNotice, syncProjectShapes],
   );
 
-  const { addNote, addReferencePoints, removeAllReferencePoints, updateNote, removeNote } = useEditorNotes({ notesRef, setNotes, commitNotes, setNotice, setNotesVisible });
+  /** What is noted or marked now is seen, whatever the detail level of the view puts away. */
+  const revealNotes = useCallback(() => {
+    if (sketchActive) setDetail("sketch", "notes", true);
+    else {
+      setDetail("editor", "notes", true);
+      setDetail("editor", "referencePoints", true);
+    }
+  }, [sketchActive]);
+  const showNotes = useCallback((visible: boolean | ((current: boolean) => boolean)) => {
+    setNotesVisible(visible);
+    if (visible === true) revealNotes();
+  }, [revealNotes]);
+
+  const { addNote, addReferencePoints, removeAllReferencePoints, updateNote, removeNote } = useEditorNotes({ notesRef, setNotes, commitNotes, setNotice, setNotesVisible: showNotes });
 
   const markSelectionPoints = useCallback(
     (spot: ReferencePointSpot) => {
@@ -5500,14 +5562,14 @@ export function LayerlingEditor({
       const next = !current;
       if (next) {
         setWorkplaneMode(false);
-        setNotesVisible(true);
+        showNotes(true);
         setNotice(t("status.noteMode"), true);
       } else {
         setNotice("");
       }
       return next;
     });
-  }, [setNotice, stopCruise]);
+  }, [setNotice, showNotes, stopCruise]);
 
   // While overhangs are shown, a line under the view says how much needs supports and the steepest overhang; it
   // follows every change a moment later, as the hatching does.
@@ -5537,13 +5599,15 @@ export function LayerlingEditor({
   }, []);
 
   const toggleNotesVisible = useCallback(() => {
-    setNotesVisible((current) => {
-      const next = !current;
-      if (!next) setNoteMode(false);
-      setNotice(next ? t("status.notesShown") : t("status.notesHidden"));
-      return next;
-    });
-  }, [setNotice]);
+    // Put away by the detail level they are not shown either, so this brings them back.
+    const view = sketchActive ? "sketch" : "editor";
+    const { flags } = detailSnapshot(view);
+    const shown = notesVisible && (flags.notes || (view === "editor" && flags.referencePoints));
+    setNotesVisible(!shown);
+    if (shown) setNoteMode(false);
+    else revealNotes();
+    setNotice(shown ? t("status.notesHidden") : t("status.notesShown"));
+  }, [notesVisible, revealNotes, setNotice, sketchActive]);
 
   const removeEdgeTreatment = useCallback(async (optionId: string) => {
     if (!selectedShape) {
@@ -6880,6 +6944,10 @@ export function LayerlingEditor({
       // The SBC board (#1098) is built where it was dropped.
       if (asset.id === sbcBoardAsset.id) {
         void placeSbcBoardRef.current?.(point, onFace);
+        return;
+      }
+      if (asset.id === fanAsset.id) {
+        void placeFanRef.current?.(point, onFace);
         return;
       }
       // The saved defaults of the kind, and where they say nothing, the printer's play (printerPlay.ts).
@@ -8561,7 +8629,8 @@ export function LayerlingEditor({
     const stack = extras.stack ?? 0;
     const stackFoot = stack > 0 && !offset ? normalizeShellStackFoot(extras.stackFoot) : null;
     const grid = offset ? null : extras.grid ?? null;
-    const dividers = offset ? null : extras.dividers ?? null;
+    // The body's own turn about its height goes along, so across and along stay the box's own when it stands turned.
+    const dividers = offset || !extras.dividers ? null : normalizeShellDividers({ ...extras.dividers, angle: shape.rotation });
     const shelf = offset ? undefined : extras.shelf;
     if (bodyLocked(shape) || isNonSolidShape(shape)) {
       throw new Error("Select one unlocked object to hollow");
@@ -10576,6 +10645,7 @@ export function LayerlingEditor({
     }
     // If every group shows its parts' colours, switch to one colour; otherwise to the parts' colours.
     const multicolor = !groups.every((shape) => groupShowsPartColors(shape));
+    rememberGroupMulticolor(groups, multicolor);
     commitShapes(
       shapes.map((shape) => (eligible(shape) ? { ...shape, multicolor } : shape)),
       selectedIds,
@@ -12426,7 +12496,7 @@ export function LayerlingEditor({
       return;
     }
     const selected = new Set(selectedIds);
-    const editableGroup = withSelectionPivot(canonicalizeShape({ ...group, name: nameForNewGroup(selectedShapes, group.name), groupOperation: "group" }), selectionPivot);
+    const editableGroup = withSelectionPivot(withRememberedMulticolor(canonicalizeShape({ ...group, name: nameForNewGroup(selectedShapes, group.name), groupOperation: "group" })), selectionPivot);
     commitShapes(
       [...shapesRef.current.filter((shape) => !selected.has(shape.id)), editableGroup],
       editableGroup.id,
@@ -13313,7 +13383,7 @@ export function LayerlingEditor({
       groupResize: original.groupResize,
       // Multicolor switched on or off stays so after Done; a group cut into one body lost it and turned one colour (#1323).
       ...(typeof original.multicolor === "boolean" ? { multicolor: original.multicolor } : {}),
-      // A name tag, icon tag, QR code or SBC board stays one, with its card (Discussion #1692).
+      // A name tag, icon tag, QR code, SBC board or fan stays one, with its card (Discussion #1692).
       ...groupMarksOf(original),
     }, Boolean(original.hole))));
     // The group's own paint (paint.ts) goes over to the group built again, where it lay in the world.
@@ -13829,6 +13899,44 @@ export function LayerlingEditor({
    * each pocket at its back and right, so that every pocket across a seam with the next plate gets one; the keys laid out
    * for it before give way. The same code the MCP's gridfinityKeys uses.
    */
+  /**
+   * Hollow, a shaped pocket for a part: the part's outline seen from above, where it lies over the body being hollowed, is
+   * brought into the body's own inside (its width and depth less the wall, turned as the body is turned), grown by 0.3 mm
+   * all round, and added to the tool's settings; the kernel fills the box and cuts it in. The part itself stays as it is.
+   */
+  const addShellPocket = useCallback(async (partId: string) => {
+    const target = shellPreviewTargetRef.current;
+    const tool = shellToolRef.current;
+    const part = shapesRef.current.find((shape) => shape.id === partId);
+    if (!target || !tool || !part) return;
+    if (!gridfinityPlateFlat(target)) {
+      setNotice(t("status.shellPocketTilted"));
+      return;
+    }
+    const width = Math.max(0, shapeWidth(target) - 2 * tool.thickness);
+    const depth = Math.max(0, shapeDepth(target) - 2 * tool.thickness);
+    const had = tool.dividers?.pockets ?? [];
+    if (had.length >= MAX_SHELL_POCKETS) {
+      setNotice(t("status.shellPocketFull", { count: MAX_SHELL_POCKETS }));
+      return;
+    }
+    setNotice(t("status.gridfinityOutlineReading"), true);
+    try {
+      const { loops } = await silhouetteLoops([withHoleMode(part, false)]);
+      const own = gridfinityOutlineToPlate(loops.map((loop) => loop.map(([x, z]) => ({ x, z }))), target).map((loop) => loop.map((point) => ({ x: point.x + width / 2, z: point.z + depth / 2 })));
+      const outlines = shellPocketOutlines(await getManifoldRuntime(), own, 0.3, { width, depth }).slice(0, MAX_SHELL_POCKETS - had.length);
+      if (outlines.length === 0) {
+        setNotice(t("status.shellPocketOutside"));
+        return;
+      }
+      const pocketDepth = Math.max(1, Math.round(part.height * 10) / 10);
+      setShellTool((current) => current ? { ...current, dividers: { ...(current.dividers ?? { x: 0, z: 0 }), pockets: [...(current.dividers?.pockets ?? []), ...outlines.map((points) => ({ points, depth: pocketDepth }))] }, error: null } : current);
+      setNotice(t("status.shellPocketMade", { name: displayShapeName(part) }));
+    } catch (error) {
+      setNotice(error instanceof Error ? localizedError(error.message) : t("status.shellPocketOutside"), true);
+    }
+  }, []);
+
   const makeSwallowtailKeys = useCallback(async (plateId: string) => {
     const fail = (message: string) => {
       setNotice(message, true);
@@ -14204,6 +14312,20 @@ export function LayerlingEditor({
   }, [commitShapes, setNotice]);
   placeSbcBoardRef.current = placeSbcBoard;
 
+  /** The fan from the library (Discussion #1962): the default fan, standing on the workplane at the point, selected. */
+  const placeFan = useCallback(async (point?: PlacementPoint, onFace?: PlacementWorkplane) => {
+    setNotice(t("fan.building"), true);
+    try {
+      const built = await fanShape({ fan: DEFAULT_FAN, clearance: 0 });
+      const workplane = onFace ?? placementWorkplaneRef.current;
+      const shape = canonicalizeShape({ ...built, ...placementPatchForNewShape(built, workplane, point ?? workplane.origin) });
+      commitShapes([...shapesRef.current, shape], [shape.id], t("status.fanAdded", { name: shape.name }));
+    } catch (error) {
+      setNotice(error instanceof Error ? localizedError(error.message) : t("fan.failed"), true);
+    }
+  }, [commitShapes, setNotice]);
+  placeFanRef.current = placeFan;
+
   /**
    * The fit test (fitTest.ts) that measures the printer's play: on the plate new shapes land on, in front of what stands
    * there already when its middle is taken, selected. The settings window's button and the MCP tool place it; it returns
@@ -14242,6 +14364,26 @@ export function LayerlingEditor({
     }
     commitShapes(shapesRef.current.map((shape) => (shape.id === current.id ? next : shape)), [next.id], t("status.sbcBoardRegenerated", { name: next.name }));
   }, [commitShapes, selectedShape, selectedShapes.length]);
+
+  /** The fan card: another fan, clearance or reach, made again where the selected fan stands. */
+  const regenerateSelectedFan = useCallback(async (settings: FanSettings) => {
+    const current = selectedShapes.length === 1 ? selectedShape : null;
+    if (!current || !fanOf(current)) return;
+    const sourceFingerprint = projectShapesFingerprint([current]);
+    const sourceProjectId = projectInfoRef.current.projectId;
+    const next = await regeneratedFanShape(current, settings);
+    const currentTarget = shapesRef.current.find((shape) => shape.id === current.id);
+    if (projectInfoRef.current.projectId !== sourceProjectId || !currentTarget || projectShapesFingerprint([currentTarget]) !== sourceFingerprint) {
+      setNotice(t("status.fanChanged"));
+      return;
+    }
+    commitShapes(shapesRef.current.map((shape) => (shape.id === current.id ? next : shape)), [next.id], t("status.fanRegenerated", { name: next.name }));
+  }, [commitShapes, selectedShape, selectedShapes.length]);
+
+  const fanControls = useMemo(() => {
+    const settings = selectedShapes.length === 1 && !bodyLocked(selectedShape) ? fanOf(selectedShape) : null;
+    return settings ? { settings, onRegenerate: regenerateSelectedFan } : null;
+  }, [regenerateSelectedFan, selectedShape, selectedShapes.length]);
 
   const sbcBoardControls = useMemo(() => {
     const settings = selectedShapes.length === 1 && !bodyLocked(selectedShape) ? sbcBoardOf(selectedShape) : null;
@@ -16688,6 +16830,33 @@ export function LayerlingEditor({
         return { object: mcpShapeSummary(shape) };
       }
 
+      if (command.action === "create_fan") {
+        const fan = params.fan ?? DEFAULT_FAN;
+        if (typeof fan !== "string" || !FAN_ORDER.includes(fan as FanType)) throw new Error(`fan must be one of ${FAN_ORDER.join(", ")}`);
+        const clearance = params.clearance ?? 0;
+        if (typeof clearance !== "number" || !Number.isFinite(clearance) || clearance < 0 || clearance > MAX_FAN_CLEARANCE) throw new Error(`clearance must be 0 to ${MAX_FAN_CLEARANCE} mm`);
+        const reaches: Partial<FanSettings> = {};
+        for (const key of ["inletReach", "outletReach", "screwReach"] as const) {
+          const value = params[key];
+          if (value === undefined) continue;
+          if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > MAX_FAN_REACH) throw new Error(`${key} must be 0 to ${MAX_FAN_REACH} mm`);
+          if (value > 0) reaches[key] = value;
+        }
+        for (const axis of ["x", "z"] as const) {
+          if (params[axis] !== undefined && (typeof params[axis] !== "number" || !Number.isFinite(params[axis]))) throw new Error(`${axis} must be a number`);
+        }
+        const built = await fanShape({ fan: fan as FanType, clearance, ...reaches });
+        const shape = canonicalizeShape({
+          ...built,
+          ...(typeof params.x === "number" ? { x: params.x } : {}),
+          ...(typeof params.z === "number" ? { z: params.z } : {}),
+          ...(params.asHole === true ? { hole: true } : {}),
+          ...(typeof params.name === "string" && params.name.trim() ? { name: params.name.trim().slice(0, 60) } : {}),
+        });
+        commitShapes([...currentShapes(), shape], shape.id, t("status.fanAdded", { name: shape.name }));
+        return { object: mcpShapeSummary(shape) };
+      }
+
       if (command.action === "printer_play") {
         // The printer's play as the settings window keeps it (printerPlay.ts): read, set or forgotten, and the fit test
         // that measures it placed as the window's button places it.
@@ -17527,7 +17696,7 @@ export function LayerlingEditor({
         const edges: ShellEdges = params.edges === "sharp" ? "sharp" : "round";
         const stack = typeof params.stack === "number" && params.stack > 0 ? clampShellStackHeight(params.stack) : 0;
         const grid = normalizeShellGrid({ cells: params.gridCells, fit: params.gridFit === true, magnets: params.gridMagnets === true, screws: params.gridScrews === true });
-        const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness });
+        const dividers = normalizeShellDividers({ x: params.dividersX, z: params.dividersZ, height: params.dividerHeight, thickness: params.dividerThickness, ...(params.dividerWalls !== undefined ? { manual: true, walls: shellSettingsList(params.dividerWalls) } : {}), ...(params.scoops !== undefined ? { scoops: shellSettingsList(params.scoops), scoopRadius: params.scoopRadius } : {}), ...(params.pockets !== undefined ? { pockets: shellSettingsList(params.pockets), pocketFill: params.pocketFill } : {}) });
         if (grid && dividers) throw new Error(DIVIDERS_WITH_GRID_MESSAGE);
         const stackFoot = stack > 0 ? normalizeShellStackFoot({ hollow: params.stackHollow === true, grip: params.stackGrip, gripDepth: params.stackGripDepth, gripSides: params.stackGripSides, gripHeight: params.stackGripHeight, gripAt: params.stackGripAt }) : null;
         const shelf = typeof params.shelf === "number" && params.shelf > 0
@@ -17846,7 +18015,7 @@ export function LayerlingEditor({
         const created: WorkplaneNote = { id: createNoteId(), text: text.slice(0, NOTE_TEXT_LIMIT), x: spot.x, y: spot.y, z: spot.z };
         if (target) created.anchor = { shapeId: target.id, normalized: noteAnchorFromWorld(target, spot) };
         if (params.forAi === true) created.forAi = true;
-        setNotesVisible(true);
+        showNotes(true);
         commitNotes([...notesRef.current, created], target ? t("status.notePinned") : t("status.noteAdded"));
         return { added: mcpNoteInfo(created, currentShapes()) };
       }
@@ -18089,6 +18258,26 @@ export function LayerlingEditor({
         if (!window.layerlingWorkplaneDisplay) throw new Error("The workplane display is not available in this editor");
         if (params.visible !== undefined && typeof params.visible !== "boolean") throw new Error("visible must be true or false");
         return window.layerlingWorkplaneDisplay(params.visible as boolean | undefined);
+      }
+
+      if (command.action === "detail_level") {
+        const view = params.view ?? (sketchActive ? "sketch" : "editor");
+        if (view !== "editor" && view !== "sketch") throw new Error("view must be editor or sketch");
+        if (params.level !== undefined) {
+          if (!isDetailLevel(params.level)) throw new Error("level must be a whole number from 1 (only the model) to 5 (everything)");
+          setDetailLevel(view, params.level);
+        }
+        if (params.show !== undefined) {
+          if (!params.show || typeof params.show !== "object" || Array.isArray(params.show)) throw new Error("show must be an object of true or false values");
+          const items = detailItems(view);
+          const entries = Object.entries(params.show as Record<string, unknown>);
+          for (const [item, shown] of entries) {
+            if (!(items as string[]).includes(item) || typeof shown !== "boolean") throw new Error(`show takes true or false for: ${items.join(", ")}`);
+          }
+          entries.forEach(([item, shown]) => setDetail(view, item as DetailItem, shown as boolean));
+        }
+        const { state } = detailSnapshot(view);
+        return { view, level: state.level, own: isOwnDetail(state), show: detailFlags(view, state) };
       }
 
       if (command.action === "measurements") {
@@ -18386,7 +18575,8 @@ export function LayerlingEditor({
         if (params.drawingNumber !== undefined) given.number = mcpString(params.drawingNumber, "");
         if (params.revision !== undefined) given.revision = mcpString(params.revision, "");
         if (params.drawnBy !== undefined) given.drawnBy = mcpString(params.drawnBy, "");
-        const { drawing, hiddenNote } = await buildDrawing({ shapes: chosen, selection: ids.length > 0 }, all, projectName, given);
+        const printPaper: DrawingPrintPaper = params.paper === "A3" ? "A3" : "A4";
+        const { drawing, hiddenNote } = await buildDrawing({ shapes: chosen, selection: ids.length > 0 }, all, projectName, given, printPaper);
         if (!drawing) throw new Error(t(hiddenNote ? "status.exportOnlyHidden" : "status.addSolidBeforeExport"));
         const { drawingToSvg, drawingToPdf, drawingBoreRows } = await import("@/lib/drawingExport");
         const round = (value: number) => Number(value.toFixed(3));
@@ -18394,6 +18584,8 @@ export function LayerlingEditor({
           sheet: drawing.paper ?? "custom",
           widthMm: round(drawing.width),
           heightMm: round(drawing.height),
+          // The PDF's pages: the one sheet, or pages of the printer's paper with the views split over them.
+          pdfPages: drawing.pages.map((page) => ({ sheet: page.paper ?? "custom", widthMm: round(page.width), heightMm: round(page.height) })),
           views: drawing.views.map((view) => ({ id: view.id, name: view.name, widthMm: round(view.projection.width), heightMm: round(view.projection.height), bores: view.holes.length })),
           bores: drawingBoreRows(drawing).map((row) => ({ id: row.id, view: row.view, diameterMm: round(row.diameter), xMm: round(row.x), yMm: round(row.y) })),
           format,
@@ -19245,7 +19437,7 @@ export function LayerlingEditor({
    * off). `drawing` is null when there is no solid in it. Loose holes count even when only the part
    * they cut is chosen.
    */
-  const buildDrawing = useCallback(async (source: { shapes: WorkplaneShape[]; selection: boolean }, allShapes: WorkplaneShape[], title: string, info: Partial<DrawingInfo> = {}) => {
+  const buildDrawing = useCallback(async (source: { shapes: WorkplaneShape[]; selection: boolean }, allShapes: WorkplaneShape[], title: string, info: Partial<DrawingInfo> = {}, printPaper: DrawingPrintPaper = "A4") => {
     const scopedShapes = source.selection
       ? [...source.shapes, ...allShapes.filter((shape) => shape.hole && !source.shapes.some((selected) => selected.id === shape.id))]
       : source.shapes;
@@ -19255,17 +19447,17 @@ export function LayerlingEditor({
     const { meshes, holeCutsFailed } = await exportBodiesWithLooseHoles(visible);
     if (holeCutsFailed) throw new Error(t("status.drawingHoleCutFailed"));
     // The number, revision and name typed in the export window go into the title block (forum, Lofo).
-    return { drawing: generateDrawing(meshes, title, drawingLabelsInLanguage(), drawingInfoFor(projectInfoRef.current.projectId, info)), hiddenNote };
+    return { drawing: generateDrawing(meshes, title, drawingLabelsInLanguage(), drawingInfoFor(projectInfoRef.current.projectId, info), new Date(), printPaper), hiddenNote };
   }, []);
 
-  const exportDrawingDesign = useCallback(async (exportName: string, format: "svg" | "pdf", toServer = false, info: Partial<DrawingInfo> = {}) => {
+  const exportDrawingDesign = useCallback(async (exportName: string, format: "svg" | "pdf", toServer = false, info: Partial<DrawingInfo> = {}, printPaper: DrawingPrintPaper = "A4") => {
     if (drawingExporting) return;
     const source = exportSource();
     setDrawingExporting(true);
     setNotice(t("status.buildingDrawing"), true);
     try {
       const title = exportName.trim() || projectName;
-      const { drawing, hiddenNote } = await buildDrawing(source, shapes, title, info);
+      const { drawing, hiddenNote } = await buildDrawing(source, shapes, title, info, printPaper);
       if (!drawing) {
         setNotice(hiddenNote ? t("status.exportOnlyHidden") : t(source.selection ? "status.selectSolidBeforeExport" : "status.addSolidBeforeExport"));
         return;
@@ -19350,6 +19542,7 @@ export function LayerlingEditor({
     const projectId = projectInfoRef.current.projectId ?? "";
     let fileHandle: LylFileHandle | null = null;
     let pickedNewFile = false;
+    let folderUnanswered = false;
     if (target === "file" || target === "fileAs") {
       // "Save designs as a download" skips the save dialog every time (Discussion #1449).
       if (!lylFileAccessSupported() || workspaceSettingsRef.current.lylAsDownload) {
@@ -19368,7 +19561,10 @@ export function LayerlingEditor({
           }
           // The backup folder may need the browser's permission again after a reload, and it is asked only while
           // the key press or click still counts: now, before anything slow.
-          if (fileHandle && readFileBackupSettings().overwriteCount > 0) await allowBackupFolder().catch(() => false);
+          if (fileHandle && readFileBackupSettings().overwriteCount > 0) {
+            setNotice(t("status.packagingProject"));
+            folderUnanswered = (await allowBackupFolderForSave()) === "noPermission";
+          }
           // Closed without a choice: nothing is written, and the status line says so (a browser also reports a
           // dialog it could not use as closed; staying silent left people wondering where the file went).
           // The browser cannot tell a closed dialog from a file it would not hand over, and on some PCs the
@@ -19376,7 +19572,7 @@ export function LayerlingEditor({
           if (!fileHandle) {
             setNotice(t("status.saveNothingChosen"), true, {
               label: t("status.saveAsDownload"),
-              run: () => void exportLylDesign(exportName, historyLimit, "download"),
+              run: () => void exportLylDesign(exportName, historyLimit, "download", selectedOnly),
             });
             return;
           }
@@ -19387,6 +19583,8 @@ export function LayerlingEditor({
         }
       }
     }
+    // The design could not be written into the file that was picked (#1987).
+    let writeFailed = false;
     setLylExporting(true);
     setNotice(target === "shared" ? t("status.packagingShared") : t("status.packagingProject"));
     try {
@@ -19452,6 +19650,7 @@ export function LayerlingEditor({
         } catch {
           // The file may be gone, moved or locked: the next Save asks for one again.
           if (!partShapes) forgetLylFile(projectId);
+          writeFailed = true;
           throw new Error(t("status.saveFileFailed", { name: fileHandle.name }));
         }
         if (!partShapes) rememberLylFile(projectId, fileHandle);
@@ -19465,7 +19664,8 @@ export function LayerlingEditor({
           : backup.kept
             ? t("status.previousVersionKept", { button: t("backups.title") })
             : "";
-        const folderNote = backup.folder === "noPermission"
+        const folderNeedsPermission = folderUnanswered || backup.folder === "noPermission";
+        const folderNote = folderNeedsPermission
           ? t("status.backupFolderNeedsPermission")
           : backup.folder === "failed" ? t("status.backupFolderFailed") : "";
         const savedText = [t(partShapes ? "status.savedSelectedToFile" : "status.savedToFile", { name: fileHandle.name, count: partShapes?.length ?? 0 }), backupNote, folderNote].filter(Boolean).join(" ");
@@ -19478,7 +19678,7 @@ export function LayerlingEditor({
               onProjectNameChange(fileStem);
               setNotice(t("status.draftRenamedToFile", { name: fileStem }));
             },
-          } : backup.folder === "noPermission" ? {
+          } : folderNeedsPermission ? {
             label: t("backups.allowFolder"),
             run: () => {
               void allowBackupFolder().then((allowed) => setNotice(t(allowed ? "backups.folderAllowed" : "backups.folderNotAllowed")));
@@ -19492,7 +19692,12 @@ export function LayerlingEditor({
       }
       setTopPanel(null);
     } catch (error) {
-      setNotice(error instanceof Error ? localizedError(error.message) : t("status.saveProjectFailed"));
+      if (fileHandle && pickedNewFile) await dropEmptyFile(fileHandle);
+      // It stays until it is read: nothing was saved. Where only the file was the trouble, a download still works.
+      setNotice(error instanceof Error ? localizedError(error.message) : t("status.saveProjectFailed"), true, writeFailed ? {
+        label: t("status.saveAsDownload"),
+        run: () => void exportLylDesign(exportName, historyLimit, "download", Boolean(partIds)),
+      } : null);
     } finally {
       setLylExporting(false);
     }
@@ -20148,8 +20353,7 @@ export function LayerlingEditor({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Chrome sends keydown without a key when an autofill suggestion is picked.
-      const key = (event.key ?? "").toLowerCase();
+      const key = pressedKey(event);
       const shortcut = event.ctrlKey || event.metaKey;
 
       // Save works from anywhere in the editor, a field too; the browser's own "save page" has
@@ -21131,6 +21335,7 @@ export function LayerlingEditor({
             onOpenGroup={openGroupForEditing}
             onOpenGroupPart={openGroupPartForEditing}
             openGroupPartIds={openGroup?.childIds}
+            plates={buildPlates.count > 1 ? { workspace: workspaceSettings, active: buildPlates.active } : undefined}
             onClose={() => setOutlinerOpen(false)}
           />
         ) : null}
@@ -21154,6 +21359,7 @@ export function LayerlingEditor({
             initialSnap={snapGrid}
             onSnapChange={(snap) => updateProjectWorkspaceSettings({ workspace: workspaceSettingsRef.current, snap })}
             initialWorkspace={workspaceSettings}
+            onShowGrid={() => updateProjectWorkspaceSettings({ workspace: { ...workspaceSettingsRef.current, showGrid: true }, snap: snapGrid })}
             onPlanePoint={addSketchPlanePoint}
             notes={notesVisible ? sketchNotes.notes : undefined}
             noteNumbers={sketchNotes.numbers}
@@ -21334,6 +21540,7 @@ export function LayerlingEditor({
           onSurfaceRegionDraw={selectedShapes.length === 1 && offersSurfaceTexture(selectedShape) ? drawSurfaceRegion : undefined}
           onSurfaceRegionLasso={surfaceRegionLasso}
           onVaseAccessories={selectedShapes.length === 1 && selectedShape?.kind === "vase" && !bodyLocked(selectedShape) ? () => layOutVaseAccessories(selectedShape.id) : undefined}
+          shellWalls={shellWalls}
           onGridfinityKeys={selectedShapes.length === 1 && selectedShape?.kind === "gridfinity" && selectedShape.gridfinitySwallowtail === true && !historyViewState ? () => void makeSwallowtailKeys(selectedShape.id) : undefined}
           onPattiesSvg={selectedShapes.length === 1 && selectedShape?.kind === "patties" ? () => void downloadTextFile(projectExportFileName(selectedShape.name, "svg"), pattiesSvg(pattiesPlanOfShape(selectedShape, shapeWidth(selectedShape), shapeDepth(selectedShape))), "image/svg+xml;charset=utf-8") : undefined}
           onBoltSplit={selectedShapes.length === 1 && selectedShape && boltSplitFits(selectedShape) && !historyViewState ? (pins, filament) => void splitBoltForPrint(selectedShape.id, { pins, filament }) : undefined}
@@ -21348,6 +21555,7 @@ export function LayerlingEditor({
           iconTag={historyViewState ? null : iconTagControls}
           qrCode={historyViewState ? null : qrCodeControls}
           sbcBoard={historyViewState ? null : sbcBoardControls}
+          fan={historyViewState ? null : fanControls}
           referenceImage={referenceImageControls}
           toolMemory={viewportToolMemoryRef}
           prepareNewShape={prepareNewShape}
@@ -22014,6 +22222,10 @@ export function LayerlingEditor({
           gridRows={shellTool.gridRows ?? shellGridEstimate(shapeWidth(selectedShape), shapeDepth(selectedShape), shellTool.thickness).rows}
           onGridSize={(columns, rows) => setShellTool((current) => current ? { ...current, gridColumns: columns, gridRows: rows, error: null } : current)}
           dividers={shellTool.dividers ?? null}
+          pocketParts={shellPocketParts}
+          onAddPocket={(partId) => void addShellPocket(partId)}
+          insideWidth={Math.max(0, shapeWidth(selectedShape) - 2 * shellTool.thickness)}
+          insideDepth={Math.max(0, shapeDepth(selectedShape) - 2 * shellTool.thickness)}
           // The dividers' full height over the floor: the body's height less its floor (the Gridfinity floor's 6.2 mm, or the wall).
           // Under a shelf ledge, up to its top: the ledge's height is measured from the wall's floor.
           dividerFullHeight={Math.max(0, Math.round((Math.min(selectedShape.height, (shellTool.shelf ?? 0) > 0 ? shellTool.thickness + (shellTool.shelfHeight ?? DEFAULT_SHELL_SHELF_HEIGHT) : Infinity) - ((shellTool.gridCells ?? 0) > 0 ? shellGridFloor({ magnets: shellTool.gridMagnets, screws: shellTool.gridScrews }) : shellTool.thickness)) * 10) / 10)}
@@ -22190,6 +22402,7 @@ export function LayerlingEditor({
           panel={topPanel}
           projectName={historyViewName}
           shapeCount={exportableShapeCount}
+          onlyBody={(historyViewState?.shapes ?? shapes).filter((shape) => !shape.imagePlate).length === 1}
           scopeLabel={exportScopeLabel}
           plateScope={buildPlates.count > 1 && !exportSelectionScoped && !historyViewState
             ? { plates: buildPlates.plates.map((plate) => plate.label), names: buildPlates.plates.map((plate) => plate.name), value: buildPlates.exportPlate, onChange: buildPlates.setExportPlate }
@@ -22304,6 +22517,15 @@ export function LayerlingEditor({
       {interactiveHelp ? <InteractiveHelp onExit={toggleInteractiveHelp} /> : null}
       {viewedAttachment ? <AttachmentViewer attachment={viewedAttachment} onClose={() => setViewedAttachmentId(null)} /> : null}
       {guideOpen ? <GuideModal sharedStore={sharedProjectsEnabled} sketchMode={toolbarMode === "sketch"} onClose={() => setGuideOpen(false)} /> : null}
+      {toolbarMode === "sketch" && sketchActive ? (
+        <SketchSettings
+          workspace={workspaceSettings}
+          snap={snapGrid}
+          themePreference={themePreference}
+          onThemePreferenceChange={onThemePreferenceChange}
+          onChange={(change) => updateProjectWorkspaceSettings({ workspace: change.workspace ?? workspaceSettingsRef.current, snap: change.snap ?? snapGridRef.current })}
+        />
+      ) : null}
       {backupsOpen ? (
         <FileBackupsDialog
           scope={{ projectId: projectInfoRef.current.projectId ?? null, fileHandle: linkedLylFile(projectInfoRef.current.projectId ?? ""), name: projectName }}

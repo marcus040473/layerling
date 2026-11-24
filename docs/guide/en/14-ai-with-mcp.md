@@ -141,6 +141,7 @@ The AI works with the same functions as you, through the same path as your opera
 | `layerling_layer_icon` | turns an SVG icon (the text of the file, or an extruded sketch body) into a layered icon tag for a multicolour print - the icon, wider rims, a plate without holes - or builds one again with a new width or layers; with a count it fills the plate with copies; `flush` sinks the layers into the bottom one so that all colours end on one flat face (true, false or a depth of 0.2 to 5 mm) |
 | `layerling_create_qr_code` | makes a QR code from a text or web address, like {{ui:shape.qrCode}} in the shape library - the code alone, raised on a plate or engraved, with error correction, width, height, quiet zone and as a hole if asked; it warns when a module gets under 0.8 mm |
 | `layerling_create_sbc_board` | places an SBC board true to size, like {{ui:shape.sbcBoard}} in the shape library - Raspberry Pi 5, 4, 3 B+, Zero 2 W or BIGTREETECH Pi, with its holes and connectors, the clearance round the edge connectors, the position and as a hole to cut a case |
+| `layerling_create_fan` | places a fan true to size, like {{ui:shape.fan}} in the shape library - the 5015 blower or the 30 x 10 axial fan; its inlet, outlet and screw holes can reach out to cut through a wall |
 | `layerling_reference_image` | adds a reference image from a picture, as {{ui:import.referenceImage}} does, or moves, turns, calibrates (two points of the picture and their real distance), fades or locks one - a guide that is never exported or printed; `trace` turns its dark or light part into a sketch body standing on it |
 | `layerling_measure_section` | measures on a cutting plane between two points that snap to the outline - wall thickness, gaps, fits |
 | `layerling_show_overhangs` | switches the overhang hatching on or off, sets the angle and reports for each body the area that would need supports |
@@ -169,6 +170,7 @@ The AI works with the same functions as you, through the same path as your opera
 | `layerling_delete_custom_shape` | removes a custom shape; inserted bodies stay |
 | `layerling_show_workplane` | hides and shows the plate with its grid, for a picture of the underside for example (only the view) |
 | `layerling_focus_mode` | switches focus mode on and off: hides the title row and the footer for more room (only the editor's frame) |
+| `layerling_detail_level` | reads or sets the detail level of the editor or the sketch: how many aids are drawn round the model (only the view) |
 | `layerling_set_section_view` | cuts the view open along a plane to look inside (only the view, nothing is cut apart) |
 | `layerling_measurements` | shows or hides the measurements of the tape measure and lists them with their lengths, hides or shows the sizes around the selection like [[Q]], and types a length for one of them, which moves the body at its end like a click on its number |
 | `layerling_measure_angle` | measures an angle like the protractor: at the corner of three points or between two flat faces, and shows it in the view |

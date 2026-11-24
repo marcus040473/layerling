@@ -1,51 +1,93 @@
 [
   {
     "title": {
-      "de": "Zeichnung: Nummer, Änderung und Zeichner im Schriftfeld",
-      "en": "Drawing: number, revision and who drew it in the title block"
+      "de": "Maße auf Papier prüfen, bevor du in 3D druckst",
+      "en": "Check the size on paper before you print in 3D"
     },
     "body": {
-      "de": "Im 2D-Reiter des Exports gibt es unter PDF oder SVG drei Felder: Zeichnungsnummer, Änderung und Gezeichnet von. Sie stehen im Schriftfeld der Zeichnung, ein leeres Feld zeigt wie bisher einen Strich.\n\nNummer und Änderung bleiben beim Entwurf, auch in seiner .lyl-Datei; deinen Namen merkt sich layerling in diesem Browser für alle Entwürfe. Das Datum ist weiter der Tag des Exports. Über MCP: drawingNumber, revision und drawnBy in layerling_export_drawing.",
-      "en": "In the export window's 2D tab there are three fields below PDF or SVG: Drawing number, Revision and Drawn by. They go into the drawing's title block; a field left empty shows a dash as before.\n\nThe number and revision stay with the design, also in its .lyl file, and layerling keeps your name in this browser for every design. The date is still the day of the export. Through MCP: drawingNumber, revision and drawnBy in layerling_export_drawing."
+      "de": "Die 2D-Zeichnung kommt als PDF jetzt maßstabsgetreu auf A4 oder A3 aus dem Drucker. Druck sie mit 100 % aus und leg das echte Teil darauf, zum Beispiel einen Lüfter oder eine Platine: So siehst du in Sekunden, ob die Maße stimmen.",
+      "en": "The 2D drawing now comes out of the printer at its true size, as a PDF on A4 or A3. Print it at 100 % and lay the real part on it, a fan or a circuit board, say: within seconds you see whether the sizes are right."
     },
     "guide": {
-      "section": "exporting"
+      "chapter": "printing"
     }
   },
   {
     "title": {
-      "de": "Winkellineal: neue Entwürfe mit ihm an der Plattenecke",
-      "en": "Framing square: new designs with it at the corner of the plate"
+      "de": "Tastenkürzel passend zu deiner Tastatur",
+      "en": "Keyboard shortcuts that fit your keyboard"
     },
     "body": {
-      "de": "In den Einstellungen unter Maße gibt es unter „Neue Entwürfe mit Winkellineal beginnen“ jetzt die Wahl, wohin es kommt: in den Nullpunkt wie bisher oder an die linke vordere Ecke der Druckplatte, mit beiden Armen so lang wie die Platte des eingestellten Druckers.\n\nSo spannt das Winkellineal in jedem neuen Entwurf gleich die ganze Platte auf. Mit dem × nimmst du es aus einem Entwurf, in dem du es nicht brauchst.",
-      "en": "In the settings under Measurement, \"Start new designs with a framing square\" now lets you choose where it goes: at the origin as before, or at the front left corner of the build plate, with both arms as long as the plate of the printer you chose.\n\nSo the square spans the whole plate in every new design right away. The × removes it from a design that doesn't need it."
+      "de": "Die Tastenliste nennt die Tasten wie auf der Tastatur deiner Sprache, zum Beispiel Strg, Umschalt und Entf. Die Buchstabentasten gehen jetzt auch mit kyrillischer, griechischer, arabischer und hebräischer Tastatur, und die Ansichten 1 bis 5 auf der französischen Tastatur ohne Umschalt.",
+      "en": "The shortcut list names the keys as the keyboard of your language does. The letter keys now also work with a Cyrillic, Greek, Arabic or Hebrew keyboard, and the views 1 to 5 on a French keyboard without Shift."
     },
     "guide": {
-      "section": "settingsMeasurement"
+      "chapter": "shortcuts"
     }
   },
   {
     "title": {
-      "de": "Gridfinity-Bodenplatten mit Clips verbinden",
-      "en": "Gridfinity baseplates joined with clips"
+      "de": "Druckplatten-Leiste bleibt frei",
+      "en": "The bar of build plates stays clear"
     },
     "body": {
-      "de": "Schalte im Eigenschaften-Fenster einer Bodenplatte „Clip-Kerben“ ein, und der Rand bekommt in der Mitte jeder Zelle an jeder Seite ohne Ausgleich eine Kerbe für die kleinen Wand-Clips von Gridfinity Extended. So passt die Platte auch zu Platten von dort. „Clips hinzufügen“ legt die Clips druckfertig vor die Platte, und „Clips“ legt fest, wie viele. Drücke über jeder Fuge einen Clip von oben auf die beiden Stege. „Passend zum Drucker teilen“ teilt eine Platte mit Clip-Kerben in Teile mit Kerben auch an den Schnittkanten und legt die Clips für die Nähte an.",
-      "en": "Switch on \"Clip notches\" in a baseplate's Properties panel and the rim gets a notch at the middle of each cell along every side without padding, for the small wall clips of Gridfinity Extended. So the plate also joins plates made there. \"Add clips\" lays the clips out in front of the plate, ready to print, and \"Clips\" sets how many. Press a clip over the two low walls across each seam from above. \"Split to fit the printer\" cuts a plate with clip notches into pieces with notches on their cut sides too, and lays out the clips for the seams."
+      "de": "Die Warnung, dass Körper nicht in den Bauraum des Druckers passen, lag über der Leiste der Druckplatten und verdeckte ihre Knöpfe. Jetzt steht sie darüber.",
+      "en": "The warning that bodies do not fit the printer's build volume lay over the bar of build plates and hid its buttons. Now it stands above the bar."
+    },
+    "guide": {
+      "section": "buildPlates"
     }
   },
   {
     "title": {
-      "de": "Ansichtswürfel: Oben und Unten behalten die Drehung",
-      "en": "View cube: Top and Bottom keep the view's turn"
+      "de": "Export unter dem Namen des Entwurfs",
+      "en": "Export under the design's name"
     },
     "body": {
-      "de": "In den Einstellungen unter Darstellung gibt es den neuen Schalter „Oben und Unten behalten die Drehung der Ansicht“. Eingeschaltet schaut ein Klick auf Oben oder Unten im Ansichtswürfel, oder die Tasten 5 und 6, gerade hinunter oder hinauf, lässt die Ansicht aber so gedreht, wie sie stand, auf die nächste Vierteldrehung gerundet.\n\nHast du die Platte von rechts angeschaut, bleibt die rechte Seite unten, statt dass die Ansicht immer auf die Vorderseite zurückspringt.",
-      "en": "In the settings under Appearance there is a new switch, \"Top and Bottom keep the view's turn\". Switched on, a click on Top or Bottom of the view cube, or the keys 5 and 6, looks straight down or up but keeps the view turned as it stood, rounded to the nearest quarter turn.\n\nIf you were looking at the plate from the right, the right side stays at the bottom, instead of the view always swinging back to the front."
+      "de": "Besteht ein Entwurf aus nur einem Körper, schlägt das Exportfenster jetzt den Namen des Entwurfs vor, auch nach dem Umbenennen. Bei mehreren Körpern bleibt es beim Namen des ausgewählten Körpers.",
+      "en": "When a design has only one body, the export window now suggests the design's name, also after it was renamed. With several bodies it is still the name of the selected one."
     },
     "guide": {
-      "section": "settingsView"
+      "chapter": "files"
+    }
+  },
+  {
+    "title": {
+      "de": "Getippte Verschiebung auf jeder Druckplatte",
+      "en": "A typed move works on every build plate"
+    },
+    "body": {
+      "de": "Eine Zahl im Verschiebemaß zog einen Körper auf Platte 2 oder später zurück auf Platte 1. Jetzt bewegt sie ihn auf jeder Platte genau um diesen Wert.",
+      "en": "A number typed into the movement distance pulled a body on plate 2 or later back to plate 1. Now it moves the body by exactly that much on every plate."
+    },
+    "guide": {
+      "section": "buildPlates"
+    }
+  },
+  {
+    "title": {
+      "de": "Speichern wartet nicht auf den Sicherungsordner",
+      "en": "Saving does not wait for the backup folder"
+    },
+    "body": {
+      "de": "Blieb die Frage des Browsers nach dem Sicherungsordner unbeantwortet, konnte die gespeicherte Datei leer bleiben. Jetzt wird der Entwurf nach 20 Sekunden trotzdem gespeichert, und eine Meldung weist darauf hin.",
+      "en": "When the browser's question about the backup folder went unanswered, the saved file could stay empty. Now the design is saved after 20 seconds anyway, and a message says so."
+    },
+    "guide": {
+      "chapter": "files"
+    }
+  },
+  {
+    "title": {
+      "de": "Objektliste nur für diese Platte",
+      "en": "Object list for the current plate only"
+    },
+    "body": {
+      "de": "Hat ein Entwurf mehrere Druckplatten, zeigt die Objektliste mit einem neuen Knopf in ihrer Titelleiste nur die Objekte der aktuellen Platte. Klickst du eine andere Platte an, geht die Liste mit.",
+      "en": "When a design has several build plates, a new button in the title bar of the object list shows only the objects on the current plate. Click another plate and the list follows."
+    },
+    "guide": {
+      "section": "objectList"
     }
   }
 ]
