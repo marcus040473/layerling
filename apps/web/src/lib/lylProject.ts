@@ -20,6 +20,8 @@ import {
   attachmentsFormatVersion,
 } from "@/lib/projectAttachments";
 import { normalizeQrSettings } from "@/lib/qrCode";
+import { pattiesSettingsProblem } from "@/lib/pattiesPattern";
+import { FAN_ORDER, MAX_FAN_CLEARANCE, MAX_FAN_REACH } from "@/lib/fans";
 import { MAX_SBC_BUTTON_REACH, MAX_SBC_CLEARANCE, MAX_SBC_REACH, MAX_SBC_UP_REACH, MIN_SBC_UP_REACH, SBC_BOARD_ORDER } from "@/lib/sbcBoards";
 import { importedShapeFromStl, stlReadBeforeZUp, type StlReadOptions } from "@/lib/stlImport";
 import { importedShapeFromSvg } from "@/lib/svgImport";
@@ -66,7 +68,7 @@ export const LYL_FILE_TYPES_FORMAT_VERSION = 4;
 /** The newest format this layerling reads. */
 export const LYL_NEWEST_READABLE_FORMAT_VERSION = LYL_FILE_TYPES_FORMAT_VERSION;
 export const LYL_OLDEST_READABLE_FORMAT_VERSION = 1;
-export const LYL_CREATED_WITH_VERSION = "1.169.1";
+export const LYL_CREATED_WITH_VERSION = "1.171.0";
 export const LYL_MEDIA_TYPE = "application/vnd.layerling.project+zip";
 
 export const LYL_LIMITS = {
@@ -84,7 +86,7 @@ export const LYL_LIMITS = {
 
 const SHAPE_KINDS = new Set([
   "box", "roundedBox", "cylinder", "slot", "ellipse", "sphere", "sketch", "scribble", "cone", "pyramid", "roof", "text", "roundRoof",
-  "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "bentTube", "star", "heart", "crescent", "sector", "gear", "hirth", "pulley", "honeycomb", "hinge", "knurl", "dovetail", "screwBoss", "snapFit", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "loft", "vase", "thread", "spring", "gridfinity", "ring", "wedge", "polygon", "icosahedron", "ruler", "mesh",
+  "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "bentTube", "star", "heart", "crescent", "sector", "gear", "hirth", "pulley", "patties", "honeycomb", "hinge", "knurl", "dovetail", "screwBoss", "snapFit", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "loft", "vase", "thread", "spring", "gridfinity", "ring", "wedge", "polygon", "icosahedron", "ruler", "mesh",
 ]);
 
 const FEATURE_TYPES = new Set([
@@ -1496,6 +1498,12 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   if (definition.imagePlate !== undefined && !isReferenceImageOpacity((definition.imagePlate as { opacity?: unknown } | null)?.opacity)) {
     throw new Error(`${label}.imagePlate.opacity must be a number from 0.1 to 1`);
   }
+  // A pattern plate's settings: an object of known choices and numbers. Each is clamped where it is read, so only
+  // what could not be read at all is refused.
+  if (definition.patties !== undefined) {
+    const problem = pattiesSettingsProblem(definition.patties);
+    if (problem) throw new Error(`${label}.patties${problem}`);
+  }
   // A QR code's settings (#553): a text and known choices. Old projects have none.
   if (definition.qrCode !== undefined && !normalizeQrSettings(definition.qrCode)) {
     throw new Error(`${label}.qrCode must hold the code's text`);
@@ -1521,6 +1529,22 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
     }
     if (board.buttonReach !== undefined && (typeof board.buttonReach !== "number" || !Number.isFinite(board.buttonReach) || board.buttonReach < 0 || board.buttonReach > MAX_SBC_BUTTON_REACH)) {
       throw new Error(`${label}.sbcBoard.buttonReach is outside the supported range`);
+    }
+  }
+  // A fan's settings (Discussion #1962): a known fan, a clearance of 0 to 2 mm, reaches of 0 to 50 mm. Old projects have none.
+  if (definition.fan !== undefined) {
+    const fan = definition.fan as { fan?: unknown; clearance?: unknown; inletReach?: unknown; outletReach?: unknown; screwReach?: unknown } | null;
+    if (!fan || typeof fan !== "object" || !FAN_ORDER.includes(fan.fan as never)) {
+      throw new Error(`${label}.fan.fan must be one of ${FAN_ORDER.join(", ")}`);
+    }
+    if (fan.clearance !== undefined && (typeof fan.clearance !== "number" || !Number.isFinite(fan.clearance) || fan.clearance < 0 || fan.clearance > MAX_FAN_CLEARANCE)) {
+      throw new Error(`${label}.fan.clearance is outside the supported range`);
+    }
+    for (const key of ["inletReach", "outletReach", "screwReach"] as const) {
+      const value = fan[key];
+      if (value !== undefined && (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > MAX_FAN_REACH)) {
+        throw new Error(`${label}.fan.${key} is outside the supported range`);
+      }
     }
   }
   // The corners of a text's line (#215): a layer of a name tag can be bevelled or sharp now, so an

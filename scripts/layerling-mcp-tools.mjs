@@ -20,7 +20,7 @@ export const editorTargetSchema = {
  */
 export const creatableShapeKinds = [
   "box", "roundedBox", "cube", "cylinder", "slot", "ellipse", "polygon", "roof", "sphere", "cone", "pyramid", "wedge",
-  "roundRoof", "halfSphere", "paraboloid", "curvedCone", "torus", "loft", "vase", "tube", "bentTube", "star", "heart", "crescent", "sector", "text", "thread", "spring", "gridfinity", "gear", "hirth", "pulley",
+  "roundRoof", "halfSphere", "paraboloid", "curvedCone", "torus", "loft", "vase", "tube", "bentTube", "star", "heart", "crescent", "sector", "text", "thread", "spring", "gridfinity", "gear", "hirth", "pulley", "patties",
   "hinge", "knurl", "dovetail", "screwBoss", "snapFit", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "ruler", "sketch",
 ];
 
@@ -410,6 +410,10 @@ export const shapeSettingSchema = {
     },
     description: "Bent tube only: the chain of segments, each a straight run followed by an arc bend. The tube starts along +X; roll 0 bends within the workplane, roll 90 bends upward. layerling_read_scene reports this list as JSON text, which is accepted here as well.",
   },
+  patties: {
+    anyOf: [{ type: "object" }, { type: "string" }],
+    description: "Pattern plate (kind patties) only: its settings as one object; on update_object only the ones given change. pattern: \"warp\" (a grid whose figures grow towards a focus), \"dots\" (dots, polygons, stars), \"petals\" (flowers), \"scales\", \"waves\" (wavy or zigzag bands), \"cells\" (cells like foam, a honeycomb with amount 0), \"bricks\", \"triangles\", \"diamonds\", \"weave\" (fields of strips lying and standing in turn), \"herringbone\" (slanted bars, turn their slant), \"rays\" (wedges round the focus, cut into rows rings) or \"motif\" (one figure repeated: motif \"heart\", \"drop\", \"moon\", \"cross\", \"leaf\" or \"paw\", or a figure of one's own given as motifSvg, the text of an SVG drawing whose filled outline becomes the figure; holes in it are filled in). mode: \"stencil\" (figures cut through the plate), \"raised\" (figures standing on a plate of base mm: a stamp), \"sunk\" (figures pressed in down to base mm) or \"pieces\" (the figures alone; with hole: true they perforate any body they are grouped with). outline: \"rectangle\", \"round\" or \"fan\" - the unrolled side of a round vessel with sloped sides, from fanTop and fanBottom (its diameters in mm) and fanSide (the length of its side in mm); the plate then takes the fan's size unless width or depth is given, and printed thin it bends round the vessel. layout: \"straight\" rows or \"polar\" (rings round the middle, with hub the solid middle in % of the radius). count: figures across, or round the ring (1 to 60). rows: 0 follows the columns (warp, waves, bricks, herringbone). gap: the bar between two figures in mm, 0.4 to 20; no bar is thinner anywhere, except the spokes inside a flower, which are half as wide, and whatever a figure of one's own leaves between its own parts. frame: the solid border in mm. bulge: -100 to 100, above 0 the figures are largest at the focus (focusX, focusY, each -100 to 100) and shrink away from it. turn: every figure turned, in degrees. roundness: 0 to 100. sides: corners of a dot, petals of a flower, pieces a wave band is cut into, strips in a field of the weave (1 to 12). amount: 0 to 100 - star depth (dots), petal width, scale width, wave height, disorder (cells), how tall a diamond is, how thick a herringbone bar is, the open middle of the rays. seed: which random arrangement (cells). cell: \"pill\" or \"ellipse\" (warp). seamless: true keeps only half a bar at the left and right edge, so the pattern runs on across the seam of a plate laid round a vessel. cutEdge: true cuts figures at the border instead of leaving them out. The height is the plate's thickness; a stencil is printed 0.6 to 1.2 mm thick. layerling_read_scene reports the settings; their JSON text is accepted here as well.",
+  },
   vase: {
     // anyOf, not a list of types: some MCP clients drop a tool whose schema has one (#1285).
     anyOf: [{ type: "object" }, { type: "string" }],
@@ -524,7 +528,7 @@ export const tools = [
   },
   {
     name: "layerling_create_shape",
-    description: "Create any of Layerling's shapes: boxes, cylinders, slots, polygons, spheres, cones, pyramids, wedges, roofs, tori, tubes, stars, hearts, crescents, print-in-place hinges, Gridfinity bins and baseplates, knurled grips, raised text, threads (rod, screw, nut, tapped hole), springs, gears, Hirth joints (face teeth that lock two parts at any multiple of one tooth), GT2 timing belt pulleys (teeth, belt width, flanges, hub and bore), port openings for USB, HDMI, DisplayPort and RJ45 sockets, or a simple extruded sketch. Width, depth and height default to what the editor uses for that shape; everything a shape has beyond its size is optional and falls back to the same defaults as a shape placed by hand. With a workplane set on a face (layerling_set_workplane), the shape stands on that face and x and z count on it (0, 0 is where the workplane sits) - unless elevation or a rotation is given, which mean the base plate.",
+    description: "Create any of Layerling's shapes: boxes, cylinders, slots, polygons, spheres, cones, pyramids, wedges, roofs, tori, tubes, stars, hearts, crescents, print-in-place hinges, Gridfinity bins and baseplates, knurled grips, raised text, threads (rod, screw, nut, tapped hole), springs, gears, Hirth joints (face teeth that lock two parts at any multiple of one tooth), GT2 timing belt pulleys (teeth, belt width, flanges, hub and bore), pattern plates (kind patties: a stencil, stamp or mould with one of thirteen patterns - dots, flowers, scales, waves, cells, bricks, a weave, rays, or a figure of one's own from an SVG - flat or as the unrolled side of a pot), port openings for USB, HDMI, DisplayPort and RJ45 sockets, or a simple extruded sketch. Width, depth and height default to what the editor uses for that shape; everything a shape has beyond its size is optional and falls back to the same defaults as a shape placed by hand. With a workplane set on a face (layerling_set_workplane), the shape stands on that face and x and z count on it (0, 0 is where the workplane sits) - unless elevation or a rotation is given, which mean the base plate.",
     inputSchema: {
       ...editorTargetSchema,
       required: ["kind"],
@@ -1671,6 +1675,26 @@ export const tools = [
         dividersZ: { type: "integer", description: "Dividers along the inside, 0 to 8 (top open only)." },
         dividerHeight: { type: "number", description: "With dividers: how high they stand over the floor, in mm, at least 3; unset, 0, or within 0.1 mm of the rim or over it: up to the rim. The same rule as gridfinityDividerHeight." },
         dividerThickness: { type: "number", description: "With dividers: their thickness in mm, 0.8 to 3. Default 1.2." },
+        scoops: {
+          type: "array",
+          maxItems: 60,
+          items: { type: "object", properties: { x: { type: "number" }, z: { type: "number" }, side: { type: "string", enum: ["front", "back", "left", "right"] } }, required: ["x", "z", "side"] },
+          description: "Finger scoops (top open only, not with gridCells): each names a compartment by a point inside it, x and z in mm from the left and the back of the box's inside, and runs that compartment's floor up into the chosen side in a quarter round of scoopRadius, so small parts can be pushed out with a finger. Works with or without dividers.",
+        },
+        scoopRadius: { type: "number", description: "With scoops: their radius in mm, 2 to 60. Default 12; held to the room above the floor and to the compartment's size." },
+        pockets: {
+          type: "array",
+          maxItems: 12,
+          items: { type: "object", properties: { points: { type: "array", minItems: 3, maxItems: 400, items: { type: "object", properties: { x: { type: "number" }, z: { type: "number" } }, required: ["x", "z"] } }, depth: { type: "number" } }, required: ["points", "depth"] },
+          description: "Shaped pockets (top open only, not with gridCells), for a part that should lie in a pocket of its own outline: the box is filled solid above its floor (pocketFill mm high, to the rim when unset) and each outline, points in mm from the left (x) and the back (z) of the box's inside, is cut depth mm into the filling from its top, never below the floor. Walls and dividers are not cut.",
+        },
+        pocketFill: { type: "number", description: "With pockets: how high the box is filled above its floor, in mm; unset or more than fits: up to the rim." },
+        dividerWalls: {
+          type: "array",
+          maxItems: 40,
+          items: { type: "object", properties: { dir: { type: "string", enum: ["x", "z"] }, at: { type: "number" }, from: { type: "number" }, to: { type: "number" }, slant: { type: "number" } }, required: ["dir", "at", "from", "to"] },
+          description: "Dividers set by hand in place of dividersX and dividersZ (top open only): each wall runs along the width (dir x) or the depth (dir z) of the box's inside, with at, from and to in mm from the left and the back of the inside; slant sets its end that many mm further across than its beginning, for a wall at an angle. A wall may end inside the box or stand free. Measured in the box's own inside, also when the box stands turned on the workplane.",
+        },
         shelf: { type: "number", description: "Width in millimetres (0.5 to 5) of a ledge all round the inside of the wall for a plate to rest on (#1663); only with the top as the one open side; leave out for none." },
         shelfHeight: { type: "number", description: "With shelf: how high in millimetres (4 to 200) the top of the ledge lies above the inside of the floor; default 20." },
       },
@@ -1969,6 +1993,25 @@ export const tools = [
     },
   },
   {
+    name: "layerling_create_fan",
+    description: "A fan true to size, like Fan in the editor's shape library (Discussion #1962), to build a duct, a fan shroud or a case around. `fan` is blower5015 (the 5015 radial blower, default: NopSCADlib's measured RB5015 - a 51.3 x 51 x 15 spiral casing, the 20 mm wide outlet nozzle at the front left, two lugs with 4.6 mm holes 57 mm apart on opposite corners, the 31.5 mm inlet on the top), blower5015wide (the same casing with a 38 x 15 mm outlet nozzle, 34 x 12.5 inside), blower5020 (a 50 x 50 x 20 radial blower: a 26 x 20 mm nozzle at the front left, 4.3 mm holes 43 x 38.5 mm apart on opposite corners, a 34 mm inlet), blower4020 (NopSCADlib's measured PE4020: three 3.2 mm holes, a 29.3 mm nozzle), blower4010 (a square 40 x 40 x 10 radial fan, four 2.2 mm holes 36 mm apart, its outlet in the middle of the front), or an axial fan after Delta's drawings - axial2510, axial3010, axial4010, axial4020, axial5015, axial5020, axial6015, axial6025, axial8025, axial9225, axial12025, the size and thickness in the name; axial3010, for example, has four 3.2 mm holes 24 mm apart and a 29 mm opening for the air. It is a group of exact bodies: a solid body, so as a hole it cuts a clean pocket, with the openings, the hub and the screw holes drawn on it as thin dark discs. It lies flat, the inlet on the top, a blower's outlet towards +z, and stands on its lowest point. `clearance` (0 to 2 mm, default 0) grows the body and the air openings on every side; the screw holes keep their size. `inletReach` (0 to 50 mm, default 0) makes the inlet reach that far up out of the top, `outletReach` the outlet that far out of the blower's nozzle (out of an axial fan's underside), and `screwReach` the screw holes that far out of both faces - to cut through a wall. `x` and `z` move its middle (mm). `asHole` makes it a hole, to group into a part and cut the pocket and the openings. The settings stay on the body (summary `fan`). One undo step.",
+    inputSchema: {
+      ...editorTargetSchema,
+      properties: {
+        ...editorTargetSchema.properties,
+        fan: { type: "string", enum: ["blower5015", "blower5015wide", "blower5020", "blower4020", "blower4010", "axial2510", "axial3010", "axial4010", "axial4020", "axial5015", "axial5020", "axial6015", "axial6025", "axial8025", "axial9225", "axial12025"], description: "The fan (default blower5015)." },
+        clearance: { type: "number", minimum: 0, maximum: 2, description: "Extra room round the body and the air openings, in mm (default 0)." },
+        inletReach: { type: "number", minimum: 0, maximum: 50, description: "How far the inlet reaches up out of the top, in mm (default 0)." },
+        outletReach: { type: "number", minimum: 0, maximum: 50, description: "How far the outlet reaches out, in mm (default 0)." },
+        screwReach: { type: "number", minimum: 0, maximum: 50, description: "How far the screw holes reach out of both faces, in mm (default 0)." },
+        x: { type: "number", description: "Move its middle to this x (mm)." },
+        z: { type: "number", description: "Move its middle to this z (mm)." },
+        asHole: { type: "boolean", description: "Make the fan a hole (default false)." },
+        name: { type: "string", description: "The object's name (default: the fan's name)." },
+      },
+    },
+  },
+  {
     name: "layerling_reference_image",
     description: "A reference image (#680), like Reference image in the editor's import window: a picture laid on the workplane - the plate, or the face it was set on - to line parts up on, a photo of a circuit board under its case, say. It is a guide, not a body: never exported (STL, 3MF, OBJ, STEP, SVG), never part of a group, bundle, cut or intersection, never in the print estimate or the build volume warning, and kept once in the .lyl file as a project asset. Without `id`, `base64` (and `fileName`, whose extension .png, .jpg, .jpeg, .webp, .gif or .bmp gives the format) adds one, `width` mm wide (1 to 2000; left out, its longer side 100 mm), half see-through, selected. With `id` it changes that one. Either way: `x` and `z` move its middle (editor coordinates, mm), `rotation` turns it about the vertical in degrees, `opacity` 0.1 to 1 sets how solid it is drawn, `calibrate` { from: { x, y }, to: { x, y }, distance } scales it as the sketch's calibration does - two points in the picture's own pixels (0 at its left and top edge) that lie `distance` mm apart in reality; its proportions stay and its middle stays put - and `locked` true keeps it in place and lets clicks through, false unlocks it. A locked image is refused any other change unless `locked: false` comes with it. layerling_update_object and layerling_delete_objects work on it as on any object. `trace` (true or { part, threshold, height }) traces the picture into a sketch body standing on it (#1060): the dark or light part of the picture becomes its outline, exactly where the picture lies, `height` mm high (default 2), an extruded sketch whose lines can be edited in sketch mode; the answer then also has `traced` (the new body), `outlines` and `lines`. Returns the object; its summary has `referenceImage` with opacity and the picture's pixel size. One undo step.",
     inputSchema: {
@@ -2263,6 +2306,19 @@ export const tools = [
     },
   },
   {
+    name: "layerling_detail_level",
+    description: "The detail level of the editor's 3D view or of the sketch view, as the slider in the view bar: how many of the aids round the model are drawn. 5 everything, 4 without notes and plate labels, 3 also without reference points and distances (in a sketch: without the edges of other parts), 2 only the grid and the selection frame, 1 only the model, without grid and axis arrows. The handles at the selection (handles) stay at every level until show switches them off. show switches single aids on or off instead; own in the answer says that they differ from the level. In the editor: notes, plateLabels, referencePoints, distances, dimensions, snapGuides, axes, grid, handles; in the sketch: notes, partEdges, measurements, grid. An aid its own setting switches off stays off at every level. Only the drawing changes, in this browser: snapping and measuring go on, and nothing is saved with the design. Useful before layerling_capture_image for a clean picture. Call without level and show to read. Returns view, level, own and show.",
+    inputSchema: {
+      ...editorTargetSchema,
+      properties: {
+        ...editorTargetSchema.properties,
+        view: { type: "string", enum: ["editor", "sketch"], description: "Which view; left out, the one that is open." },
+        level: { type: "integer", minimum: 1, maximum: 5, description: "5 everything to 1 only the model. Left out it stays as it is." },
+        show: { type: "object", additionalProperties: { type: "boolean" }, description: "Single aids, for example { axes: false }." },
+      },
+    },
+  },
+  {
     name: "layerling_measurements",
     description: "The measurements of the editor's tape measure: what is measured and whether they are shown. Call with nothing to read them: visible and measurements, each with its id and its length in millimetres (a measured edge counts along the edge). visible true shows the measurements, false hides them, like the eye among the tape measure's buttons; hidden measurements stay in the design. The measurements belong to the design: they stay in the browser and travel in a .lyl file, never in the undo history, and hiding is kept too. dimensions false hides the sizes and distances the editor shows around the selection by itself (the size marks, the movement dimensions while dragging, the distances to the origin and the angle badge), like the key Q; true shows them again. Only the view changes, for this editor until it is reloaded; a handle pointed at still shows its size. The answer has dimensions too. Combine with layerling_capture_image to see them (or not) in the picture. A measurement between two points with a body at one of them also has moves, the id of the body a typed length moves. id with length types a length for that measurement, as a click on its number in the editor does: the body at the second point moves along the measured line until the two points are length millimetres apart (a negative length takes it that far past the other point); the body at the first point moves instead when only that one is selected, or when the second point is on the workplane. With axis (x, y or z, y up, as the positions) it moves along that axis only, until the points are length apart on it, on the side it was on. The points stay on the body, so the measurement follows. A locked body, two points on one body or on none, a whole edge, or points level on that axis are refused. One step of the undo history; the answer has moved (the body's id, name and how far it went in millimetres) and the measurements as they are after the move. Not available while a sketch is open.",
     inputSchema: {
@@ -2461,13 +2517,14 @@ export const tools = [
   },
   {
     name: "layerling_export_drawing",
-    description: "Make the editor's \"Drawing\" export: front, top and right-side views in first-angle layout on an ISO sheet at 1:1, with the overall size of each view, hidden edges and a table of the round bores that run parallel to a view axis (diameter and position from the lower-left corner of the view). Same bodies as the export: visible solids only, holes already taken off. ids limits it to those objects (loose holes still cut them); without ids it is the whole design. Returns sheet (\"ISO A3\" and so on, or \"custom\"), widthMm and heightMm of the sheet, views (id F, T or R, size, bore count), bores (id, view, diameterMm, xMm, yMm) and, by format, svg (the drawing as SVG text, the default) or pdfBase64 (the vector PDF, base64). The title block names the design, the drawing number and revision kept with the design, the name of whoever drew it and the day of the export; drawingNumber, revision and drawnBy fill those for this drawing only (an empty string leaves a dash), otherwise the ones typed in the export window go in. Threads, depths, tolerances and bores at an angle are not dimensioned. Fails with a message when there is no visible solid or the design is too complex (over 100,000 triangles, 200 bores, 5,080 mm).",
+    description: "Make the editor's \"Drawing\" export: front, top and right-side views in first-angle layout on an ISO sheet at 1:1, with the overall size of each view, hidden edges and a table of the round bores that run parallel to a view axis (diameter and position from the lower-left corner of the view). Same bodies as the export: visible solids only, holes already taken off. ids limits it to those objects (loose holes still cut them); without ids it is the whole design. Returns sheet (\"ISO A3\" and so on, or \"custom\"), widthMm and heightMm of the one sheet, pdfPages (the PDF's pages: sheet, widthMm, heightMm - the one sheet, or pages of `paper` with the views split over them), views (id F, T or R, size, bore count), bores (id, view, diameterMm, xMm, yMm) and, by format, svg (the drawing as SVG text, the default) or pdfBase64 (the vector PDF, base64). The title block names the design, the drawing number and revision kept with the design, the name of whoever drew it and the day of the export; drawingNumber, revision and drawnBy fill those for this drawing only (an empty string leaves a dash), otherwise the ones typed in the export window go in. Threads, depths, tolerances and bores at an angle are not dimensioned. Fails with a message when there is no visible solid or the design is too complex (over 100,000 triangles, 200 bores, 5,080 mm).",
     inputSchema: {
       ...editorTargetSchema,
       properties: {
         ...editorTargetSchema.properties,
         ids: { type: "array", items: { type: "string" }, description: "Objects to draw. Defaults to the whole design." },
         format: { type: "string", enum: ["svg", "pdf"], description: "svg returns the drawing as text, pdf as base64. Defaults to svg." },
+        paper: { type: "string", enum: ["A4", "A3"], description: "The paper the PDF is printed on (default A4): a drawing bigger than it is split over pages of it, still 1:1, front and side on one and the top on the next (or one view a page); only a view that fits no such page keeps the one bigger sheet. The SVG is always the one sheet." },
         drawingNumber: { type: "string", description: "Drawing number in the title block, up to 40 characters. Defaults to the one kept with the design." },
         revision: { type: "string", description: "Revision in the title block, up to 40 characters. Defaults to the one kept with the design." },
         drawnBy: { type: "string", description: "Who drew it, in the title block, up to 40 characters. Defaults to the name typed in the export window." },
