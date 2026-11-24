@@ -7,6 +7,9 @@ hochgeladen. Offen ist nur noch, was du entscheidest.
 
 - Repo: `marcus040473/layerling_msto`, Zweig `claude/magical-bohr-zs6av2`
 - Grundlage: Stefans Stand 1.169.1
+- **Sauberer Zweig für Stefan: `mold-kinds`**, auf Stefans neuestem Stand 1.171.0, ein einziger Stand, ohne den
+  Ordner `uebergabe`. Dort sind beide Prüfgruppen grün (6550 und 1766 bestanden).
+- Link, der den PR bei Stefan mit Titel und Text öffnet: `uebergabe/pr-texte/mold-kinds-link.txt`
 - Text für Stefan: `uebergabe/pr-texte/mold-kinds.md` (englisch) und `mold-kinds-de.md` (deutsch)
 - Bilder: `uebergabe/bilder/gussformen/`
 - Text für Facebook: `uebergabe/facebook/gussformen.md`
@@ -48,10 +51,9 @@ Neu dazugekommen sind 37 eigene Prüfungen für die neuen Formen, das Fenster un
    Schwindmaße sind übliche Werte aus Datenblättern.
 2. **Übersetzungen gegenlesen.** Die neuen Fachwörter (Hautform, Mantel, Zentriernoppen, Schlicker) sollte in jeder
    Sprache jemand lesen, der sie spricht.
-3. **An Stefan schicken.** Das machst du selbst, wenn du einverstanden bist. Der Text liegt bereit.
-4. **Die Zwischenstände aufräumen.** Zwei heißen noch „WIP“, und in ihren Fußzeilen steht ein Modellname, was
-   deine Regeln nicht wollen. Beim Zusammenführen deshalb zu einem Stand zusammenfassen („Squash and merge“) und
-   die Fußzeile dabei kürzen. Für einen PR an Stefan wird ohnehin ein eigener, sauberer Zweig gebraucht.
+3. **An Stefan schicken.** Das machst du selbst, wenn du einverstanden bist: den Link aus
+   `uebergabe/pr-texte/mold-kinds-link.txt` im Browser öffnen und „Create pull request“ drücken.
+4. **Hebräisch.** Stefan hat eine 21. Sprache angefangen. Dort stehen die 90 neuen Sätze vorerst auf Englisch.
 
 ## Bewusst nicht gebaut
 

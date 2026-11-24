@@ -28,8 +28,8 @@ The earlier settings make the same molds as before; the existing mold tests are 
 ## Testing
 
 - [x] `npm run typecheck`
-- [x] `npm test` (6461 passed)
-- [x] `npm run test:e2e` (1747 passed)
+- [x] `npm test` (6550 passed, on 1.171.0)
+- [x] `npm run test:e2e` (1766 passed)
 - [x] `npm run guide`, `npm run i18n:status`
 - [x] Manually tested the affected workflow: skin mold on a cylinder, core mold on a tube, two-part mold poured through the seam with a wick, in the browser
 
@@ -38,6 +38,6 @@ New tests: `tests/e2e/moldKinds.e2e.ts` (the geometry of every new kind and way,
 ## Notes
 
 - Nothing of this is cast in real material on my side yet. The mixing ratios and shrinkages the materials start with are the usual ones from data sheets, and the hints say to check them.
-- The texts are in all 20 languages and the guide in the 16 that have this chapter; the translations of the new terms (skin mold, sleeve, natches, slip) would be glad of a native reader.
+- The texts are in 20 languages and the guide in the 16 that have this chapter; the translations of the new terms (skin mold, sleeve, natches, slip) would be glad of a native reader. Hebrew, which is new, shows the 90 new sentences in English for now.
 - The sentences for the changelog and What's new are yours, as always.
 - `shrinkage` now goes up to 20 % (it was 5), because slip shrinks about a tenth, and the room round the master (`gap`) up to 50 mm, because plaster wants about 25.
