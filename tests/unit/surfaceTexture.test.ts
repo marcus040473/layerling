@@ -192,6 +192,36 @@ describe("texturing a body", () => {
     expect(bent).toBe(0);
   }, 60_000);
 
+  it("knurls a cylinder of few facets without crumpled diamonds: a point cut on a facet's chord stays on its line", () => {
+    // 20 facets 140 mm across: a point cut onto a line of the first family lies on the facet's chord, and measured again
+    // by its angle round the axis it lay up to 0.04 mm off the line - further than the cut's snap.
+    const R = 70, H = 40, segments = 20;
+    const asked = { pattern: "knurl", spacing: 3, depth: 0.6, direction: "outward" } as const;
+    const session = createSurfaceTextureSession(tube(R, 0, H, segments));
+    const result = session.apply(asked, SMALL);
+    expectClosed(result);
+    const s = normalizeSurfaceTexture(asked);
+    const layout = makeSurfaceTextureLayout(session.base, s);
+    const v = result.vertices, I = result.indices;
+    const half = Math.PI / segments;
+    let checked = 0, bent = 0;
+    for (let t = 0; t < I.length; t += 3) {
+      const c = [0, 1, 2].map((e) => (v[I[t] * 3 + e] + v[I[t + 1] * 3 + e] + v[I[t + 2] * 3 + e]) / 3);
+      const angle = Math.atan2(c[2], c[0]);
+      if (Math.hypot(c[0], c[2]) < R - 5 || c[1] < 4 || c[1] > H - 4) continue;
+      // Within a facet, away from its edges (the normals are blended there): how far out from the facet against the pattern.
+      const local = (((angle % (2 * half)) + 2 * half) % (2 * half)) - half;
+      if (Math.abs(local) > half - 3 / R) continue;
+      const facet = angle - local;
+      checked += 1;
+      const out = c[0] * Math.cos(facet) + c[2] * Math.sin(facet) - R * Math.cos(half);
+      const want = s.depth * surfaceTextureValueAt(c[0], -c[2], c[1], Math.cos(facet), -Math.sin(facet), 0, s, layout);
+      if (Math.abs(out - want) > 0.1) bent += 1;
+    }
+    expect(checked).toBeGreaterThan(20_000);
+    expect(bent).toBe(0);
+  }, 60_000);
+
   it("cuts grooves into strips so every groove is equally deep all round", () => {
     const result = applySurfaceTexture(tube(12, 0, 16), { pattern: "grooves", angle: 0, spacing: 4, depth: 0.8, width: 0.5, profile: "round" }, SMALL);
     expectClosed(result);
