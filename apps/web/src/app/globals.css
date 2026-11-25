@@ -9792,6 +9792,12 @@ html[data-theme="dark"] .align-dot.axis-z, html[data-theme="dark"] .align-spread
     inset: -15px;
     content: "";
   }
+
+  /* Two rotate arrows side by side: neither zone reaches into the other's (#2020). */
+  .rotate-handle::before {
+    inset: calc((min(52px, var(--rotate-room, 116px)) - min(82px, var(--rotate-room, 116px))) / 2);
+    border-radius: calc((116px - var(--rotate-room, 116px)) * 99);
+  }
 }
 
 /* A small body: the wide zones of its handles would cover all of it and every touch would grab one (#574). */
@@ -9810,8 +9816,7 @@ html[data-theme="dark"] .align-dot.axis-z, html[data-theme="dark"] .align-spread
 }
 
 .transform-handle.corner,
-.transform-handle.height-top,
-.transform-handle.height-lift {
+.transform-handle.height-top {
   width: 10px;
   height: 10px;
   background: #f5f2ec;
@@ -9841,30 +9846,51 @@ html[data-theme="dark"] .align-dot.axis-z, html[data-theme="dark"] .align-spread
     border-color: var(--hover-accent-border-color);
 }
 
-/* The lift arrow moves along Z, so it is blue like the Z turn arrow and the Z axis arrow on the plate (Facebook group). */
+/* The lift arrow moves along Z, so it is blue like the Z turn arrow and the Z axis arrow on the plate (Facebook group).
+   It is drawn like the X and Y arrows (Discussion #2018): a tail and a light rim, the button being the grab area along it. */
 .transform-handle.height-lift {
-  border: 0;
-  width: 0;
-  height: 0;
+  --slide-handle-axis: #2f6fe0;
+  --slide-handle-halo: rgba(255, 252, 247, 0.95);
+  width: 18px;
+  height: 34px;
+  color: var(--slide-handle-axis);
   background: transparent;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 13px solid #2f6fe0;
+  border: 0;
+  border-radius: 0;
   box-shadow: none;
 }
 
-.transform-handle.height-lift.lower {
-  border-bottom: 0;
-  border-top: 13px solid #2f6fe0;
+.transform-handle.height-lift .slide-handle-icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.transform-handle.height-lift.lower .slide-handle-icon {
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 .transform-handle.height-lift:hover {
-  border-bottom-color: var(--hover-accent-color);
+  color: var(--hover-accent-color);
 }
 
-.transform-handle.height-lift.lower:hover {
-  border-bottom-color: transparent;
-  border-top-color: var(--hover-accent-color);
+.transform-handle.height-lift:hover .slide-arrow-shaft {
+  stroke-width: 3.2;
+}
+
+/* For a finger it catches from further away, but not towards the height handle at its tail. */
+@media (pointer: coarse) {
+  .transform-handle.height-lift::before,
+  .transform-overlay.small-body .transform-handle.height-lift::before {
+    inset: -12px -10px 0;
+  }
+
+  .transform-handle.height-lift.lower::before,
+  .transform-overlay.small-body .transform-handle.height-lift.lower::before {
+    inset: 0 -10px -12px;
+  }
 }
 
 /* A locked selection: the handles turn grey and stay put, but hovering one still shows its dimensions. */
@@ -9883,15 +9909,8 @@ html[data-theme="dark"] .align-dot.axis-z, html[data-theme="dark"] .align-spread
 
 .transform-overlay.locked .transform-handle.height-lift,
 .transform-overlay.locked .transform-handle.height-lift:hover {
+  color: var(--locked-handle-ink);
   background: transparent;
-  border-color: transparent;
-  border-bottom-color: var(--locked-handle-ink);
-}
-
-.transform-overlay.locked .transform-handle.height-lift.lower,
-.transform-overlay.locked .transform-handle.height-lift.lower:hover {
-  border-bottom-color: transparent;
-  border-top-color: var(--locked-handle-ink);
 }
 
 /* The colour itself, not --rotate-handle-axis: the dark theme's axis colours outrank a variable set here. */
@@ -9932,16 +9951,16 @@ html[data-theme="dark"] .align-dot.axis-z, html[data-theme="dark"] .align-spread
 
 .rotate-handle {
   z-index: 3;
-  /* The grab area is 52px; the arrow drawn in it is smaller. */
-  width: 52px;
-  height: 52px;
+  /* The grab area is 52px; the arrow drawn in it is smaller. Beside another arrow it is a circle that ends halfway between them (#2020). */
+  width: min(52px, var(--rotate-room, 116px));
+  height: min(52px, var(--rotate-room, 116px));
   --rotate-handle-ink: #433629;
   --rotate-handle-axis: var(--rotate-handle-ink);
   --rotate-handle-halo: rgba(255, 252, 247, 0.95);
   color: var(--rotate-handle-axis);
   background: transparent;
   border: 0;
-  border-radius: 0;
+  border-radius: calc((74px - var(--rotate-room, 116px)) * 99);
   box-shadow: none;
   opacity: 1;
   transform: translate3d(var(--overlay-x, 0), var(--overlay-y, 0), 0) translate(-50%, -50%);
@@ -9965,6 +9984,7 @@ html[data-theme="dark"] .align-dot.axis-z, html[data-theme="dark"] .align-spread
 }
 
 .rotate-handle-icon {
+  pointer-events: none;
   position: absolute;
   left: 50%;
   top: 50%;
@@ -12216,6 +12236,28 @@ html[data-theme="dark"] .mesh-compare-actions .secondary {
 .cylinder-wrap-hint.surface-layer-missing {
   color: #9a5d06;
   font-weight: 700;
+}
+
+/* The texture card's button stays in sight while the long card scrolls (Discussion #1972): it sticks above the snap
+   dock at the bottom of the panel, on the panel's own ground so the fields pass behind it. */
+.surface-texture-actions {
+  position: sticky;
+  bottom: 42px;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  margin: 0 -2px;
+  padding: 10px 0;
+  background: rgba(248, 246, 244, 0.98);
+  border-top: 1px solid rgba(231, 224, 216, 0.9);
+}
+
+.shape-inspector .surface-texture-actions .inspector-action-button {
+  margin-bottom: 0;
+}
+
+.surface-texture-actions .cylinder-wrap-hint {
+  margin: 0 10px;
 }
 
 /* The vase's drawing boards (card Draw): the vase tool's boards, in the editor's colours. */
@@ -16592,6 +16634,11 @@ html[data-theme="dark"] .select-property-hint {
   color: #a08a72;
 }
 
+html[data-theme="dark"] .surface-texture-actions {
+  background: rgba(34, 28, 22, 0.98);
+  border-top-color: rgba(92, 75, 58, 0.9);
+}
+
 html[data-theme="dark"] .surface-layers button {
   color: #ede4d4;
   background: #2f2418;
@@ -16668,20 +16715,8 @@ html[data-theme="dark"] .transform-handle.axis-y { background: #5fd47c; border-c
 html[data-theme="dark"] .transform-handle.axis-z { background: #6aa0ff; border-color: #163f86; }
 
 html[data-theme="dark"] .transform-handle.height-lift {
-  border-bottom-color: #6aa0ff;
-}
-
-html[data-theme="dark"] .transform-handle.height-lift.lower {
-  border-top-color: #6aa0ff;
-}
-
-html[data-theme="dark"] .transform-handle.height-lift:hover {
-  border-bottom-color: var(--hover-accent-color);
-}
-
-html[data-theme="dark"] .transform-handle.height-lift.lower:hover {
-  border-bottom-color: transparent;
-  border-top-color: var(--hover-accent-color);
+  --slide-handle-axis: #6aa0ff;
+  --slide-handle-halo: rgba(28, 24, 20, 0.9);
 }
 
 html[data-theme="dark"] .transform-overlay.locked {

@@ -8,7 +8,7 @@ import { vaseSettingsChanges, vaseSettingsEqual, vaseSettingsKey } from "@/lib/v
 import type { WorkplaneShape } from "@/types/layerling";
 
 /*
- * One's own picture or a text as a relief pattern of the vase (the vase designer's family "bild",
+ * One's own picture or a text as a relief pattern of the vase (the vase's pattern "bild",
  * vase-own-picture.mjs): the picture the settings keep, how it is put on (all over, as a band, once), and that its grey
  * values stay out of the keys of caches and out of what the scene reports.
  */

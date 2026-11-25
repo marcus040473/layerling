@@ -1,5 +1,5 @@
 /**
- * Relief patterns of the vase (vase designer 2.0): pattern families and leaf reliefs, each a height field over the
+ * Relief patterns of the vase: pattern families and leaf reliefs, each a height field over the
  * unrolled surface of the vase. The core subtracts the depth from the radius, the gallery draws its tiles from the very
  * same functions.
  *

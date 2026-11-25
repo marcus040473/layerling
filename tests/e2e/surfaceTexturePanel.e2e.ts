@@ -393,8 +393,8 @@ describe("the surface texture card in a shape's settings", () => {
     expect(tabs()[1].getAttribute("aria-selected")).toBe("true");
     expect(calls.picks.at(-1)).toEqual([]);
     render({ surfaceFacePicking: true, surfacePickedFaces: [] });
-    expect(line()).toContain("Pick the faces for this layer");
-    expect(card(panel).textContent).toContain("Layer 2 has no faces yet");
+    expect(line()).toContain("Pick the faces for this texture group");
+    expect(card(panel).textContent).toContain("Texture group 2 has no faces yet");
     expect(apply().disabled).toBe(true);
     // The top clicked in the view belongs to the second layer; the first now takes the faces left over.
     const top: SurfaceTextureFace = { at: [0.5, 1, 0.5], normal: [0, 1, 0] };
@@ -420,7 +420,7 @@ describe("the surface texture card in a shape's settings", () => {
     expect(card(panel).textContent).toContain("Grooves + Knurling");
     act(() => tabs()[1].click());
     expect(line()).toContain("1 face");
-    act(() => button(panel, "Remove this layer")!.click());
+    act(() => button(panel, "Remove this texture group")!.click());
     expect(tabs().map((tab) => tab.textContent)).toEqual(["1Grooves"]);
   });
 

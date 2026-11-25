@@ -3,7 +3,7 @@ import { OWN_PICTURE_SIZE, OWN_TEXT_LENGTH, normalizeOwnPicture, type VaseOwnPic
 import type { VaseSettings } from "@/lib/vaseSettings";
 
 /**
- * One's own picture or a text as a relief on a vase (the vase designer's pattern "bild"): what the editor does for
+ * One's own picture or a text as a relief on a vase (the vase's pattern "bild"): what the editor does for
  * it. The vase's core only knows a picture, grey values with light as the raised relief; a text is drawn into such a
  * picture here, where there is a canvas, and kept beside it in the settings so it can be changed.
  */

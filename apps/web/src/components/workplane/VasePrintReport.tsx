@@ -24,7 +24,8 @@ export function vasePrintVerdict(notes: readonly string[]): VasePrintVerdict {
 }
 
 function useReport(shape: WorkplaneShape) {
-  return useMemo(() => vasePrintReport({ width: shape.width ?? shape.size, depth: shape.depth ?? shape.size, height: shape.height, vase: shape.vase }), [shape.width, shape.depth, shape.size, shape.height, shape.vase]);
+  // (With the vase's id: while one of its values is held, the report is worked out on the coarse body as well.)
+  return useMemo(() => vasePrintReport({ id: shape.id, width: shape.width ?? shape.size, depth: shape.depth ?? shape.size, height: shape.height, vase: shape.vase }), [shape.id, shape.width, shape.depth, shape.size, shape.height, shape.vase]);
 }
 
 /** The verdict as a small badge, for the pattern tab; `onOpen` leads to the print tab with the details. */

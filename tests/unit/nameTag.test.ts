@@ -258,10 +258,10 @@ describe("finding the name tag (#215)", () => {
     const ids = libraryShapeAssets.map((asset) => asset.id);
     expect(ids.indexOf("nameTag")).toBe(ids.indexOf("text") + 1);
     expect(nameTagAsset.kind).toBe("text");
-    // The name tag, the icon tag, the QR code (#553), the SBC board (#1098), the fan (Discussion #1962) and, after the
-    // vase, the plant pot and the lampshade are the library's seven entries beyond the kinds, plus the thread insert and
+    // The name tag, the icon tag, the QR code (#553), the SBC board (#1098), the fan (Discussion #1962) and the plant
+    // pot and the lampshade after the vase are the library's seven entries beyond the kinds, plus the thread insert and
     // magnet pocket tools and the roof (#1931). The double countersink is not listed on its own (#621): one entry less.
-    // The box generator is no longer offered (a box is made with Hollow): another one less.
+    // The box generator is a kind of its own but no longer offered (a box is made with Hollow): one entry less.
     expect(libraryShapeAssets).toHaveLength(toolbarShapeAssets.length + 8);
     expect(libraryShapeAssets.some((asset) => asset.id === "boxGenerator")).toBe(false);
     // The catalogue of kinds keeps one tile per kind.

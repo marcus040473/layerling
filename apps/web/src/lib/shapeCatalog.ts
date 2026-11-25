@@ -229,6 +229,7 @@ import {
 import { t, type MessageKey } from "@/lib/i18n";
 import { torusTubeRatio } from "@/lib/torusShape";
 import type { ShapeAsset, ShapeCustomization, ShapeKind, WorkplaneShape } from "@/types/layerling";
+import { DEFAULT_PATTIES, DEFAULT_PATTIES_DEPTH, DEFAULT_PATTIES_HEIGHT, DEFAULT_PATTIES_WIDTH, normalizePatties } from "@/lib/pattiesPattern";
 import { DEFAULT_PULLEY_BELT_WIDTH, DEFAULT_PULLEY_BORE, DEFAULT_PULLEY_FLANGE, DEFAULT_PULLEY_FLANGE_RISE, DEFAULT_PULLEY_HUB_DIAMETER, DEFAULT_PULLEY_HUB_HEIGHT, DEFAULT_PULLEY_TEETH, normalizePulleyTeeth, pulleyFootprint, pulleyFromSize } from "@/lib/pulleyGeometry";
 import { DEFAULT_HIRTH_BORE, DEFAULT_HIRTH_DIAMETER, DEFAULT_HIRTH_HEIGHT, DEFAULT_HIRTH_TEETH, hirthRightAngleToothHeight, normalizeHirthBore, normalizeHirthSteepFlank, normalizeHirthTeeth, normalizeHirthToothHeight } from "@/lib/hirthGeometry";
 
@@ -265,6 +266,7 @@ const SHAPE_LABEL_KEYS: Record<string, MessageKey> = {
   gear: "shape.gear",
   hirth: "shape.hirth",
   pulley: "shape.pulley",
+  patties: "shape.patties",
   honeycomb: "shape.honeycomb",
   hinge: "shape.hinge",
   knurl: "shape.knurl",
@@ -334,6 +336,7 @@ export const toolbarShapeAssets: ToolbarShapeAsset[] = [
   { id: "star", name: "Star", src: "assets/editor/shape-icons-gray/star.png", menuIcon: "assets/editor/shape-icons-gray/star.png", kind: "star", color: "#f5a623" },
   { id: "heart", name: "Heart", src: "assets/editor/shape-icons-gray/heart.png", menuIcon: "assets/editor/shape-icons-gray/heart.png", kind: "heart", color: "#e0245e" },
   { id: "crescent", name: "Crescent", src: "assets/editor/shape-icons-gray/crescent.png", menuIcon: "assets/editor/shape-icons-gray/crescent.png", kind: "crescent", color: "#f5c518" },
+  { id: "patties", name: "Patties", src: "assets/editor/shape-icons-gray/patties.png", menuIcon: "assets/editor/shape-icons-gray/patties.png", kind: "patties", color: "#c9682e" },
   { id: "ruler", name: "Ruler", src: "assets/editor/shape-icons-gray/ruler.png", menuIcon: "assets/editor/shape-icons-gray/ruler.png", kind: "ruler", color: "#f2e4b8" },
 ];
 /**
@@ -388,30 +391,6 @@ export const sbcBoardAsset: ToolbarShapeAsset = {
   kind: "box",
   color: "#1f7a3a",
 };
-
-/**
- * A plant pot and a lampshade: the vase with another use (its settings' `purpose`), each an entry of its own in the
- * library right after the vase, so they are found by what one wants to make. They are vases, not kinds of their own:
- * the body shapes, the drain holes and the socket's carrier come from the vase designer.
- */
-export const planterAsset: ToolbarShapeAsset = {
-  id: "planter",
-  name: "Plant pot",
-  src: "assets/editor/shape-icons-gray/planter.png",
-  menuIcon: "assets/editor/shape-icons-gray/planter.png",
-  kind: "vase",
-  color: "#b5673c",
-};
-export const lampshadeAsset: ToolbarShapeAsset = {
-  id: "lampshade",
-  name: "Lampshade",
-  src: "assets/editor/shape-icons-gray/lampshade.png",
-  menuIcon: "assets/editor/shape-icons-gray/lampshade.png",
-  kind: "vase",
-  color: "#e9dfc8",
-};
-/** The use a vase's library entry starts it with. */
-const VASE_ASSET_PURPOSES: Record<string, string> = { planter: "topf", lampshade: "lampe" };
 
 /**
  * The fan (Discussion #1962): a 5015 blower or an axial fan true to size, whose air openings and screw
@@ -481,6 +460,30 @@ export const threadInsertLibraryAsset: ToolbarShapeAsset = {
 };
 
 /**
+ * A plant pot and a lampshade: the vase with another use (its settings' `purpose`), each an entry of its own in the
+ * library right after the vase, so they are found by what one wants to make. They are vases, not kinds of their own:
+ * the body shapes, the drain holes and the socket's carrier come from the vase's panel.
+ */
+export const planterAsset: ToolbarShapeAsset = {
+  id: "planter",
+  name: "Plant pot",
+  src: "assets/editor/shape-icons-gray/planter.png",
+  menuIcon: "assets/editor/shape-icons-gray/planter.png",
+  kind: "vase",
+  color: "#b5673c",
+};
+export const lampshadeAsset: ToolbarShapeAsset = {
+  id: "lampshade",
+  name: "Lampshade",
+  src: "assets/editor/shape-icons-gray/lampshade.png",
+  menuIcon: "assets/editor/shape-icons-gray/lampshade.png",
+  kind: "vase",
+  color: "#e9dfc8",
+};
+/** The use a vase's library entry starts it with. */
+const VASE_ASSET_PURPOSES: Record<string, string> = { planter: "topf", lampshade: "lampe" };
+
+/**
  * Shapes that are no longer offered for adding: a design that has one still opens and shows it, and its settings still
  * work. The box generator went this way: a box is made by hollowing a body (Hollow), which has its dividers, scoops and
  * the rest.
@@ -497,7 +500,7 @@ export const magnetPocketLibraryAsset: ToolbarShapeAsset = {
   color: "#b04a4a",
 };
 
-export const libraryShapeAssets: ToolbarShapeAsset[] = [threadInsertLibraryAsset, magnetPocketLibraryAsset, ...toolbarShapeAssets.filter((asset) => !RETIRED_SHAPE_IDS.has(asset.id)).flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "vase" ? [asset, planterAsset, lampshadeAsset] : asset.id === "port" ? [asset, sbcBoardAsset, fanAsset] : asset.id === "round-roof" ? [roofAsset, asset] : asset.id === "doubleCountersink" ? [] : [asset]))];
+export const libraryShapeAssets: ToolbarShapeAsset[] = [threadInsertLibraryAsset, magnetPocketLibraryAsset, ...toolbarShapeAssets.filter((asset) => !RETIRED_SHAPE_IDS.has(asset.id)).flatMap((asset) => (asset.id === "text" ? [asset, nameTagAsset, iconTagAsset, qrCodeAsset] : asset.id === "port" ? [asset, sbcBoardAsset, fanAsset] : asset.id === "vase" ? [asset, planterAsset, lampshadeAsset] : asset.id === "round-roof" ? [roofAsset, asset] :asset.id === "doubleCountersink" ? [] : [asset]))];
 
 /**
  * The colour a new shape of this asset starts with: the asset's own, unless the shape
@@ -649,6 +652,7 @@ export function shapeAssetDefaultDimensions(kind: ShapeKind) {
     return { width: 26, depth: 16, height: 20 };
   }
   if (kind === "hirth") return { width: DEFAULT_HIRTH_DIAMETER, depth: DEFAULT_HIRTH_DIAMETER, height: DEFAULT_HIRTH_HEIGHT };
+  if (kind === "patties") return { width: DEFAULT_PATTIES_WIDTH, depth: DEFAULT_PATTIES_DEPTH, height: DEFAULT_PATTIES_HEIGHT };
   // A GT2 pulley (Discussion #1319): its measures set its box, 20 teeth for a 6 mm belt by default.
   if (kind === "pulley") {
     const { width, depth, height } = pulleyFootprint({});
@@ -836,6 +840,7 @@ export function shapeAssetSpecialDefaults(kind: ShapeKind, dimensions = shapeAss
       pulleyHubDiameter: DEFAULT_PULLEY_HUB_DIAMETER,
     };
   }
+  if (kind === "patties") return { patties: { ...DEFAULT_PATTIES } };
   if (kind === "hirth") {
     const teeth = DEFAULT_HIRTH_TEETH;
     return {
@@ -929,6 +934,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     centerHoleSize: shape.centerHoleSize,
     hirthSteepFlank: shape.hirthSteepFlank,
     hirthReverse: shape.hirthReverse,
+    patties: shape.patties,
     pulleyBeltWidth: shape.pulleyBeltWidth,
     pulleyFlange: shape.pulleyFlange,
     pulleyFlangeRise: shape.pulleyFlangeRise,
@@ -1202,8 +1208,8 @@ export function makeShapeFromAsset(
   const vaseStart = vasePurpose ? vasePurposeChoice(normalizeVaseSettings(undefined), vasePurpose, DEFAULT_VASE_SIZE) : null;
   const defaults = asset.kind === "spring" && customization.springForm === "flat" ? FLAT_SPRING_DIMENSIONS
     : asset.kind === "polygon" && customization.polygonFlat ? flatPolygonDefaultDimensions(customization.sides)
-    : vaseStart?.size ? { width: vaseStart.size.width, depth: vaseStart.size.width, height: vaseStart.size.height }
-    : shapeAssetDefaultDimensions(asset.kind);
+      : vaseStart?.size ? { width: vaseStart.size.width, depth: vaseStart.size.width, height: vaseStart.size.height }
+        : shapeAssetDefaultDimensions(asset.kind);
   // Ein Gewinde bekommt seinen Platzbedarf aus Durchmesser und Art. Eine
   // eingetragene Breite waere hier nicht nur ueberfluessig, sondern falsch:
   // sie wuerde spaeter als Zug am Anfasser gelesen und den Durchmesser
@@ -1432,6 +1438,8 @@ export function makeShapeFromAsset(
     pulleyHubDiameter: pulleyFields?.pulleyHubDiameter,
     hirthSteepFlank: asset.kind === "hirth" ? normalizeHirthSteepFlank(customization.hirthSteepFlank) : undefined,
     hirthReverse: asset.kind === "hirth" && normalizeHirthSteepFlank(customization.hirthSteepFlank) !== undefined && customization.hirthReverse === true ? true : undefined,
+    // A pattern plate carries all its settings, each within its range, so every reader finds them whole.
+    patties: asset.kind === "patties" ? normalizePatties(customization.patties) : undefined,
     gearType,
     gearRim,
     helixAngle: asset.kind === "gear" ? normalizeGearHelixAngle(customization.helixAngle ?? DEFAULT_GEAR_HELIX_ANGLE) : undefined,
@@ -1685,6 +1693,8 @@ export function renamedShapeName(shape: Pick<WorkplaneShape, "name" | "kind" | "
  */
 const SHAPE_MENU_LABEL_KEYS: Record<string, MessageKey> = {
   thread: "shape.threadMenu",
+  // "Patties" alone says nothing to someone who looks for a pattern or a stencil.
+  patties: "shape.pattiesMenu",
 };
 
 export function shapeAssetMenuLabel(asset: Pick<ShapeAsset, "id" | "name">): string {

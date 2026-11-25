@@ -9,7 +9,7 @@ import { SnapGridMenuItems } from "@/components/workplane/SnapGridMenu";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
 import { useInspectorCard } from "@/lib/inspectorCards";
 import { BOX_WALLS_PLAN_MIN_LENGTH, BoxWallsPlan, type BoxWallsPick } from "@/components/workplane/BoxWallsPlan";
-import { FlipHorizontal2, FlipVertical2, Amphora, Boxes, BrickWall, Droplets, Layers2, Soup, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
+import { FlipHorizontal2, FlipVertical2, Amphora, Boxes, BrickWall, Droplets, Layers2, Soup, Lamp, Lightbulb, Sprout, Scissors, AlignCenter, Cone, Check, ChevronDown, ChevronRight, ChevronUp, Cylinder, Download, Eraser, Eye, EyeOff, FolderOpen, Grid3x3, ImageUp, Lasso, Layers, Link2, Lock, Minus, Move3d, MousePointerClick, Pencil, Plus, RefreshCw, RotateCcw, Rotate3d, Ruler, Shield, ShieldCheck, Shrink, SlidersHorizontal, Spline, Split, Tags, Trash2, TrendingDown, Unlock, Waves, X } from "lucide-react";
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
 import { boltPinDiameter, boltSplitFits } from "@/lib/boltSplit";
@@ -266,8 +266,38 @@ import { FONT_MANAGER_OPTION, requestFontManager } from "@/lib/fontManagerEvents
 import { FontPicker } from "@/components/workplane/FontPicker";
 import { QR_BYTE_CAPACITY, qrByteLength, qrTextFits, type QrCodeSettings } from "@/lib/qrCode";
 import { FAN_LABEL_KEYS, FAN_ORDER, FANS, MAX_FAN_CLEARANCE, MAX_FAN_REACH, normalizeFanSettings, type FanSettings, type FanType } from "@/lib/fans";
+import { PATTIES_MIN_HEIGHT, pattiesBaseThickness, pattiesPlanOfShape, pattiesSettingsOfShape } from "@/lib/pattiesGeometry";
+import { PattiesMotifLoader } from "@/components/workplane/PattiesMotifLoader";
+import {
+  PATTIES_CELLS,
+  PATTIES_LAYOUTS,
+  PATTIES_MAX_BASE,
+  PATTIES_MAX_COUNT,
+  PATTIES_MAX_FAN,
+  PATTIES_MAX_FRAME,
+  PATTIES_MAX_GAP,
+  PATTIES_MAX_HUB,
+  PATTIES_MAX_ROWS,
+  PATTIES_MAX_SEED,
+  PATTIES_MAX_SIDES,
+  PATTIES_MIN_BASE,
+  PATTIES_MIN_COUNT,
+  PATTIES_MIN_FAN,
+  PATTIES_MIN_GAP,
+  PATTIES_MODES,
+  PATTIES_MOTIFS,
+  PATTIES_OUTLINES,
+  PATTIES_PATTERNS,
+  PATTIES_PRESETS,
+  pattiesFan,
+  pattiesFigures,
+  pattiesMinSides,
+  pattiesPatternUses,
+  pattiesShapePatch,
+  type PattiesSettings,
+} from "@/lib/pattiesPattern";
 import { MAX_SBC_BUTTON_REACH, MAX_SBC_CLEARANCE, MAX_SBC_REACH, MAX_SBC_UP_REACH, MIN_SBC_UP_REACH, normalizeSbcBoardSettings, SBC_BOARDS, SBC_BOARD_ORDER, sbcBoardHasButtons, sbcBoardHasGpio, sbcBoardHasLens, sbcBoardHasRibbon, type SbcBoardSettings, type SbcBoardType } from "@/lib/sbcBoards";
-import { ICON_TAG_LAYERS, iconTagFitCount, MAX_ICON_TAG_WIDTH, MAX_ICON_TAGS, MIN_ICON_TAG_WIDTH, normalizeIconTagCount, type IconLayerStack } from "@/lib/iconTag";
+import { ICON_TAG_LAYERS, iconTagFitCount, layersOnlyRecolored, MAX_ICON_TAG_WIDTH, MAX_ICON_TAGS, MIN_ICON_TAG_WIDTH, normalizeIconTagCount, type IconLayerStack } from "@/lib/iconTag";
 import { PICTURE_FILE_ACCEPT } from "@/lib/pictureIcon";
 import { customFontList, textFontLabel } from "@/lib/textFonts";
 import { SURFACE_TEXT_FONTS } from "@/lib/surfaceTextOutline";
@@ -386,6 +416,7 @@ import { gridfinityLabelColor } from "@/lib/gridfinityLetterColor";
 import { hingeLargestConeSize, hingeLargestCornerRadius, MAX_HINGE_ANGLE, MIN_HINGE_ANGLE, MAX_HINGE_CLEARANCE, MAX_HINGE_KNUCKLES, MAX_HINGE_SCREW_DIAMETER, MAX_HINGE_SCREW_HOLES, MIN_HINGE_CLEARANCE, MIN_HINGE_KNUCKLES, MIN_HINGE_SCREW_DIAMETER, hingePlan, minimumHingeDepth, normalizeHingeAngle, normalizeHingeClearance, normalizeHingeKnuckles, normalizeHingeKnuckleWidth, normalizeHingeLeafThickness, normalizeHingePinDiameter, normalizeHingeScrewDiameter, normalizeHingeScrewHead, normalizeHingeScrewHoles, normalizeHingeSnapGrip, MAX_HINGE_NUT_WIDTH, MAX_HINGE_SNAP_GRIP, MIN_HINGE_SNAP_GRIP } from "@/lib/hingeGeometry";
 import { useLanguage } from "@/lib/useLanguage";
 import { type GroupHoleChange, groupRoundHoles } from "@/lib/groupHoles";
+import { FOCUS_BAR_ROOM, focusBarOverPanels } from "@/lib/focusMode";
 import { useMovablePanel, type MovablePanelOptions } from "@/lib/useMovablePanel";
 import { meshAabb } from "@/lib/editorMeshCore";
 import { undersideOffset } from "@/lib/positionUnderside";
@@ -457,7 +488,7 @@ import { DEFAULT_HIRTH_STEEP_FLANK, MAX_HIRTH_STEEP_FLANK, MAX_HIRTH_TEETH, MIN_
  */
 const INSPECTOR_PANEL: MovablePanelOptions = {
   floatingStyle: { right: "auto", bottom: "auto" },
-  dockedAt: (area, panel) => ({ left: area.width - panel.width, top: 0 }),
+  dockedAt: (area, panel) => ({ left: area.width - panel.width, top: focusBarOverPanels() ? FOCUS_BAR_ROOM : 0 }),
 };
 
 const MIN_SHAPE_SIZE = 0.01;
@@ -510,14 +541,18 @@ const PORT_PRESET_LABELS: Record<PortPreset, MessageKey> = {
 };
 
 const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> = {
-  profile: { flasche: "vase.profileBottle", bauchig: "vase.profileBellied", schale: "vase.profileBowl", fass: "vase.profileBarrel", zylinder: "vase.profileCylinder", trichter: "vase.profileFunnel", gezeichnet: "vase.profileDrawn",
-    schirmKegel: "vase.profileShadeCone", schirmGlocke: "vase.profileShadeBell", schirmKuppel: "vase.profileShadeDome", schirmLaterne: "vase.profileShadeLantern", schirmTrommel: "vase.profileShadeDrum",
+  profile: {
+    flasche: "vase.profileBottle", bauchig: "vase.profileBellied", schale: "vase.profileBowl", fass: "vase.profileBarrel", zylinder: "vase.profileCylinder", trichter: "vase.profileFunnel", gezeichnet: "vase.profileDrawn",
     topfKlassik: "vase.profilePotClassic", topfKuebel: "vase.profilePotTub", topfSchale: "vase.profilePotBowl",
+    schirmKegel: "vase.profileShadeCone", schirmGlocke: "vase.profileShadeBell", schirmKuppel: "vase.profileShadeDome", schirmLaterne: "vase.profileShadeLantern", schirmTrommel: "vase.profileShadeDrum",
   },
+  purpose: { vase: "shape.vase", topf: "vase.purposePot", lampe: "prop.vaseLamp" },
   section: { kreis: "vase.sectionCircle", vieleck: "vase.sectionPolygon", welle: "vase.sectionWave", gezeichnet: "vase.sectionDrawn" },
   sectionWaveStyle: { weich: "vase.waveSoft", spitz: "vase.wavePointed", bogen: "vase.waveArches", lamellen: "vase.waveFins" },
   body: { voll: "vase.bodySolid", hohl: "vase.bodyHollow" },
   innerShape: { folgt: "vase.innerFollows", rund: "vase.innerRound" },
+  rimEdge: { gerade: "lid.topEdge.square", rund: "lid.topEdge.round", fase: "lid.topEdge.chamfer" },
+  baseEdge: { gerade: "lid.topEdge.square", rund: "lid.topEdge.round", fase: "lid.topEdge.chamfer" },
   effect: {
     keine: "vase.effectNone", rillen: "vase.effectGrooves", streifen: "vase.effectStripes", voronoi: "vase.effectVoronoi", lowpoly: "vase.effectFacets",
     blueten: "vase.effectPetals", rautenwelle: "vase.effectWaveDiamond", tulpenblaetter: "vase.effectTulipLeaves", wisp: "vase.effectWispRibs",
@@ -557,6 +592,114 @@ const VASE_CHOICES: Partial<Record<VaseChoiceKey, Record<string, MessageKey>>> =
   insertMode: { keine: "vase.insertNone", pflanze: "vase.insertPlant", bewaesserung: "vase.insertWatering", stecker: "vase.insertFrog", roehrchen: "vase.insertTube" },
   lidMode: { keiner: "vase.lidNone", stuelp: "vase.lidSlip", schnapp: "vase.lidSnap", schraube: "vase.lidScrew", kanne: "vase.lidTeapot", stopfen: "vase.lidStopper" },
 };
+/** The uses of a vase with their signs, in the order the form card offers them as tiles. */
+const VASE_PURPOSE_ICONS: Record<string, typeof Amphora> = { vase: Amphora, topf: Sprout, lampe: Lamp };
+
+/** The vase's patterns in the order the pattern card shows them as tiles: the plain ones first, then the reliefs. */
+const VASE_PATTERN_TILES = ["keine", "rillen", "streifen", "voronoi", "lowpoly", "blueten", "rautenwelle", "tulpenblaetter", "blattfluss", "wisp", "wellen", "zellen", "kiesel", "waben", "geflecht", "schuppen", "adern", "wabennetz", "ziegel", "noppen", "gehaemmert", "strick", "korb", "ringe", "rauschen", "blaetter", "bild"] as const;
+/** The leaf shapes, as tiles under the patterns when the pattern is leaves. */
+const VASE_LEAF_TILES = ["tulpe", "ginkgo", "lotus", "efeu", "ahorn", "monstera", "farn", "eiche", "linde", "weide", "eigen"] as const;
+/** How a pattern tile draws every pattern: the core's defaults, so a tile shows the pattern and not this vase's tuning. */
+const VASE_PATTERN_TILE_LOOK: Record<string, unknown> = {
+  patternTwist: 0, patternAspect: 1, patternWidth: 0.45, patternGroup: 4, patternInvert: "nein",
+  leafShape: "tulpe", leafSize: 100, leafOverlap: 20, leafLayout: "regelmaessig", leafTilt: 0, leafCurve: 0.7, leafVeins: "ja", leafAspect: 1, leafPoints: null,
+};
+
+/**
+ * What choosing a pattern tile sets: the pattern, and for leaves a relief strong enough to read and for tulip leaves a
+ * lean that makes them rise in a spiral, but only where the vase still has the defaults, so nothing set by hand is
+ * lost. One's own picture or text starts a quarter of the way round.
+ */
+function vasePatternChoice(vase: VaseSettings, effect: string): Partial<VaseSettings> {
+  const patch: Partial<VaseSettings> = { effect };
+  if ((effect === "blaetter" || effect === "tulpenblaetter") && vase.reliefDepth === 1.6) patch.reliefDepth = 2.4;
+  if (effect === "tulpenblaetter" && vase.patternTwist === 0) patch.patternTwist = 30;
+  if (effect === "bild" && vase.patternCount === 12) patch.patternCount = 4;
+  return patch;
+}
+
+type VaseRow = (key: VaseNumberKey, label: MessageKey, step: number, hint?: MessageKey) => ShapePropertyConfig;
+type VasePercentRow = (key: VaseNumberKey, label: MessageKey) => ShapePropertyConfig;
+type VaseChoiceRow = (key: VaseChoiceKey, label: MessageKey, hint?: MessageKey) => ShapePropertyConfig;
+
+/**
+ * The rows of a vase's pattern card. Ids "vasePattern." are shown at once, "vasePatternMore." under More: the pattern
+ * (drawn as tiles), the leaf shape for leaves (tiles too), then the sliders that matter most for the chosen pattern,
+ * its height range, and the finer settings.
+ */
+function vasePatternProperties(vase: VaseSettings, setVase: (patch: Partial<VaseSettings>) => void, range: VaseRow, percent: VasePercentRow, choice: VaseChoiceRow): ShapePropertyConfig[] {
+  const as = (prefix: string, config: ShapePropertyConfig): ShapePropertyConfig => ({ ...config, id: config.id.replace(/^vase\./, `${prefix}.`) });
+  const main = (config: ShapePropertyConfig) => as("vasePattern", config);
+  const more = (config: ShapePropertyConfig) => as("vasePatternMore", config);
+  const toggle = (key: VaseChoiceKey, label: MessageKey, row: (config: ShapePropertyConfig) => ShapePropertyConfig): ShapePropertyConfig => row({
+    type: "toggle",
+    id: `vase.${key}`,
+    label: t(label),
+    value: vase[key] === "ja",
+    onChange: (value) => setVase({ [key]: value ? "ja" : "nein" }),
+  });
+  const effect = choice("effect", "prop.vaseEffect", "vase.effectHint");
+  const rows: ShapePropertyConfig[] = [main(effect.type === "select" ? { ...effect, onChange: (value: string) => setVase(vasePatternChoice(vase, value)) } : effect)];
+  const reliefDepth = main(range("reliefDepth", "prop.vaseReliefDepth", 0.1));
+  const count = main(range("patternCount", "prop.vasePatternCount", 1, "vase.patternCountHint"));
+  const lean = main(range("patternTwist", "prop.vasePatternTwist", 1));
+  const aspect = more(percent("patternAspect", "prop.vasePatternAspect"));
+  const invert = toggle("patternInvert", "prop.vasePatternInvert", more);
+  // A pattern may keep its size where the vase narrows: fewer of it round there instead of a smaller one (not wisp
+  // ribs, which run up the vase in one piece).
+  const sameSize = toggle("leafFixed", "prop.vaseLeafFixed", main);
+  if (vase.effect === "rillen") {
+    rows.push(main(range("ribDepth", "prop.vaseGrooveDepth", 0.1)), main(range("ribCount", "prop.vaseGrooveCount", 1)), main(range("waveAmplitude", "prop.vaseGrooveWave", 0.5)));
+    rows.push(more(percent("grooveWidth", "prop.vaseGrooveWidth")), more(choice("ribShape", "prop.vaseGrooveShape")));
+    if (vase.waveAmplitude > 0) rows.push(more(range("waveCount", "prop.vaseGrooveWaves", 1)));
+  }
+  if (vase.effect === "streifen") {
+    rows.push(main(range("stripeDepth", "prop.vaseStripeDepth", 0.1)), main(range("stripeCount", "prop.vaseStripeCount", 1)), main(range("stripeTurn", "prop.vaseStripeTurn", 1)));
+    rows.push(more(percent("stripeWidth", "prop.vaseStripeWidth")), more(choice("stripeStyle", "prop.vaseStripeStyle")));
+  }
+  if (vase.effect === "voronoi") {
+    rows.push(main(range("voronoiDepth", "prop.vaseCellDepth", 0.1)), main(range("voronoiCell", "prop.vaseCellSize", 0.5)), main(range("voronoiGap", "prop.vaseCellGap", 0.1)));
+    rows.push(more(range("voronoiSeed", "prop.vaseSeed", 1)));
+  }
+  if (vase.effect === "lowpoly") {
+    rows.push(main(range("lowpolyAround", "prop.vaseFacetsAround", 1)), main(range("lowpolyRows", "prop.vaseFacetRows", 1)), main(percent("lowpolyJitter", "prop.vaseFacetJitter")));
+    rows.push(more(range("lowpolySeed", "prop.vaseSeed", 1)));
+  }
+  // A pattern from a picture: how high, how often round, how it leans; stretched or turned inside out under More.
+  if (isVasePicturePattern(vase.effect)) {
+    // One's own picture or a text: the text (its picture is drawn in the editor, where there is a canvas) and how it
+    // is put on the vase.
+    if (vase.effect === "bild") {
+      rows.push(
+        main({ type: "text", id: "vase.patternText", label: t("prop.vasePatternText"), value: vase.patternText, maxLength: OWN_TEXT_LENGTH, onChange: (value) => setVase(vaseSettingsWithTextPicture({ patternText: value, patternImage: vase.patternImage }, vase)) }),
+        main(choice("patternFit", "prop.vasePatternFit")),
+      );
+    }
+    rows.push(reliefDepth, count, lean, sameSize, aspect, invert);
+  }
+  // A worked-out pattern: how high, how often round, how it leans (rings do not); how broad its joints, studs or
+  // strands are (gentle hills have none), stretched or turned inside out under More.
+  if (isComputedPattern(vase.effect)) {
+    rows.push(reliefDepth, count);
+    if (vase.effect !== "ringe") rows.push(lean);
+    rows.push(sameSize);
+    if (vase.effect !== "rauschen") rows.push(more(percent("patternWidth", "prop.vasePatternStrength")));
+    rows.push(aspect, invert);
+  }
+  if (vase.effect === "wisp") rows.push(reliefDepth, count, lean, more(range("patternGroup", "prop.vasePatternGroup", 1)), more(percent("patternWidth", "prop.vasePatternChannel")));
+  if (vase.effect === "tulpenblaetter") rows.push(reliefDepth, count, lean, sameSize, more(range("leafOverlap", "prop.vaseLeafOverlap", 1)));
+  if (vase.effect === "blaetter") {
+    rows.push(main(choice("leafShape", "prop.vaseLeafShape")));
+    rows.push(main(range("leafSize", "prop.vaseLeafSize", 1)), reliefDepth, main(range("leafOverlap", "prop.vaseLeafOverlap", 1)), sameSize);
+    rows.push(more(choice("leafLayout", "prop.vaseLeafLayout")), more(percent("leafCurve", "prop.vaseLeafCurve")), more(range("leafTilt", "prop.vaseLeafTilt", 1)), more(percent("leafAspect", "prop.vaseLeafAspect")), toggle("leafVeins", "prop.vaseLeafVeins", more));
+  }
+  if (vase.effect !== "keine" && vase.effect !== "lowpoly") {
+    rows.push(main(range("zoneFrom", "prop.vaseZoneFrom", 1)), main(range("zoneTo", "prop.vaseZoneTo", 1)), more(range("zoneFade", "prop.vaseZoneFade", 0.5, "vase.zoneFadeHint")));
+  }
+  if (isVaseReliefPattern(vase.effect)) rows.push(toggle("printFriendly", "prop.vasePrintFriendly", more));
+  return rows;
+}
+
 const BENT_TUBE_PROFILE_OPTIONS: Array<{ value: BentTubeProfile; label: MessageKey }> = [
   { value: "round", label: "bentTube.profileRound" },
   { value: "square", label: "bentTube.profileSquare" },
@@ -732,7 +875,7 @@ function scrollingAncestor(element: HTMLElement): HTMLElement | null {
 export function propertyUsesLengthUnit(rowKey: string) {
   // A plant pot's and a lampshade's own blocks hold the same rows as the bottom's and the accessories' cards.
   const key = rowKey.replace(/^(vaseSaucer|vaseInner|vaseWall)\./, "vaseParts.").replace(/^vaseUse\./, "vaseFloor.");
-  return ["boxWall", "boxFloor", "boxCornerRadius", "boxDivider", "boxLidPlate", "boxFit", "textLineWidth", "textBlockGap", "textEdgeSize", "letterSize", "flushDepth", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "curvedConeTop", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "torusTube", "sketchLineWidth", "sketchCuttingEdge", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "headDiameter", "collarHeight", "collarDiameter", "driveSize", "driveDepth", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "sectorEndRadius", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeInner", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "screwBossHole", "screwBossHoleDepth", "screwBossDiameter", "screwBossGussetHeight", "screwBossGussetThickness", "screwBossReach", "snapFitThickness", "snapFitUndercut", "snapFitClearance", "snapFitFoot", "ribLength", "ribThickness", "ribFootThickness", "portClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "hingeCornerRadius", "hingeScrewDiameter", "hingeScrewSpacing", "hingeScrewAcross", "hingeNutWidth", "hingeSnapGrip", "screwHoleShaft", "screwHoleHeadDepth", "screwHoleSlotLength", "screwHoleRecess", "screwHoleChamfer", "screwHoleLengthBelowHead", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTopWall", "loftSectionHeight", "loftSectionWidth", "loftSectionDepth", "loftSectionCorner", "loftSectionOffsetX", "loftSectionOffsetZ", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelTextSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityWallThickness", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityOverhangBack", "gridfinityOverhangFront", "gridfinityOverhangLeft", "gridfinityOverhangRight", "gridfinityOverhangChamfer", "gridfinityCornerRadius", "gridfinityBinCornerRadius", "gridfinitySwallowtailClearance", "gridfinityDividerThickness", "gridfinityDividerHeight", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "gridfinityOpeningCornerSize", "gridfinityOpeningDepthBack", "gridfinityOpeningDepthFront", "gridfinityOpeningDepthLeft", "gridfinityOpeningDepthRight", "gridfinityOpeningWidthBack", "gridfinityOpeningWidthFront", "gridfinityOpeningWidthLeft", "gridfinityOpeningWidthRight", "gridfinityOpeningDistanceBack", "gridfinityOpeningDistanceFront", "gridfinityOpeningDistanceLeft", "gridfinityOpeningDistanceRight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "surfaceCarbonCross", "surfaceBrickHeight", "surfaceBrickJoint", "surfaceTimberHeight", "surfaceTimberBeam", "surfaceStoneJoint", "surfaceTileGap", "surfaceRingWidth", "surfaceTileHeight", "vasePrint.wall", "vasePrint.bottom", "vasePattern.ribDepth", "vasePattern.stripeDepth", "vasePattern.voronoiCell", "vasePattern.voronoiGap", "vasePattern.voronoiDepth", "vasePattern.waveAmplitude", "vasePattern.reliefDepth", "vasePatternMore.zoneFade", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.saucerRise", "vaseParts.magnetDiameter", "vaseParts.magnetHeight", "vaseParts.lampWallScrew", "vaseFloor.lampWallScrew", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.lidHeight", "vaseParts.lidJoint", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
+  return ["pattiesGap", "pattiesFrame", "pattiesBase", "pattiesFanTop", "pattiesFanBottom", "pattiesFanSide", "boxWall", "boxFloor", "boxCornerRadius", "boxDivider", "boxLidPlate", "boxFit", "textLineWidth", "textBlockGap", "textEdgeSize", "letterSize", "flushDepth", "iconWidth", "keyringDiameter", "keyringAlong", "positionX", "positionY", "positionZ", "pivotX", "pivotY", "pivotZ", "radius", "length", "width", "height", "bevel", "topRadius", "baseRadius", "curvedConeTop", "thickness", "outerDiameter", "innerDiameter", "textRadius", "extrudeTopOffsetX", "extrudeTopOffsetZ", "toothSize", "toothWidth", "gearBacklash", "centerHole", "slotSmallEnd", "slotCentreDistance", "torusTube", "sketchLineWidth", "sketchCuttingEdge", "topLength", "topWidth", "bottomLength", "bottomWidth", "diameter", "pitch", "clearance", "axialClearance", "boltClearance", "threadDepth", "threadCoreDiameter", "threadLength", "headHeight", "headDiameter", "collarHeight", "collarDiameter", "driveSize", "driveDepth", "chamfer", "chamferBottom", "headChamfer", "wire", "starOuterSize", "starInnerSize", "starOuterFillet", "starInnerFillet", "heartTipFillet", "crescentThickness", "crescentTipFillet", "sectorEndRadius", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "cornerFillet", "topBottomFillet", "bentTubeSize", "bentTubeInner", "bentTubeWall", "bentTubeSegmentLength", "bentTubeBendRadius", "dovetailNeckWidth", "dovetailClearance", "screwBossHole", "screwBossHoleDepth", "screwBossDiameter", "screwBossGussetHeight", "screwBossGussetThickness", "screwBossReach", "snapFitThickness", "snapFitUndercut", "snapFitClearance", "snapFitFoot", "ribLength", "ribThickness", "ribFootThickness", "portClearance", "hingePinDiameter", "hingeLeafThickness", "hingeClearance", "hingeCornerRadius", "hingeScrewDiameter", "hingeScrewSpacing", "hingeScrewAcross", "hingeNutWidth", "hingeSnapGrip", "screwHoleShaft", "screwHoleHeadDepth", "screwHoleSlotLength", "screwHoleRecess", "screwHoleChamfer", "screwHoleLengthBelowHead", "knurlDepth", "knurlChamfer", "loftBottomWidth", "loftBottomDepth", "loftTopWidth", "loftTopDepth", "loftBottomCorner", "loftTopCorner", "loftOffsetX", "loftOffsetZ", "loftWall", "loftTopWall", "loftSectionHeight", "loftSectionWidth", "loftSectionDepth", "loftSectionCorner", "loftSectionOffsetX", "loftSectionOffsetZ", "gridfinityLabelBackLength", "gridfinityLabelBackOffset", "gridfinityLabelBackWidth", "gridfinityLabelCornerSize", "gridfinityLabelTextSize", "gridfinityLabelFrontLength", "gridfinityLabelFrontOffset", "gridfinityLabelFrontWidth", "gridfinityLabelLeftLength", "gridfinityLabelLeftOffset", "gridfinityLabelLeftWidth", "gridfinityLabelRightLength", "gridfinityLabelRightOffset", "gridfinityLabelRightWidth", "gridfinityScoopRadius", "gridfinityFloorHeight", "gridfinityLipChamfer", "gridfinityWallThickness", "gridfinityDrawerWidth", "gridfinityDrawerDepth", "gridfinityPaddingBack", "gridfinityPaddingFront", "gridfinityPaddingLeft", "gridfinityPaddingRight", "gridfinityOverhangBack", "gridfinityOverhangFront", "gridfinityOverhangLeft", "gridfinityOverhangRight", "gridfinityOverhangChamfer", "gridfinityCornerRadius", "gridfinityBinCornerRadius", "gridfinitySwallowtailClearance", "gridfinityDividerThickness", "gridfinityDividerHeight", "gridfinityDividerPositionX", "gridfinityDividerPositionZ", "gridfinityCompartmentLabelWidth", "gridfinityOpeningCornerSize", "gridfinityOpeningDepthBack", "gridfinityOpeningDepthFront", "gridfinityOpeningDepthLeft", "gridfinityOpeningDepthRight", "gridfinityOpeningWidthBack", "gridfinityOpeningWidthFront", "gridfinityOpeningWidthLeft", "gridfinityOpeningWidthRight", "gridfinityOpeningDistanceBack", "gridfinityOpeningDistanceFront", "gridfinityOpeningDistanceLeft", "gridfinityOpeningDistanceRight", "surfaceSpacing", "surfaceDepth", "surfaceFade", "surfaceCrackWidth", "surfaceCrackRecess", "surfaceTextSize", "surfaceCarbonCross", "surfaceBrickHeight", "surfaceBrickJoint", "surfaceTimberHeight", "surfaceTimberBeam", "surfaceStoneJoint", "surfaceTileGap", "surfaceRingWidth", "surfaceTileHeight", "vasePrint.wall", "vasePrint.bottom", "vasePrint.rimEdgeSize", "vasePrint.baseEdgeSize", "vasePattern.ribDepth", "vasePattern.stripeDepth", "vasePattern.voronoiCell", "vasePattern.voronoiGap", "vasePattern.voronoiDepth", "vasePattern.waveAmplitude", "vasePattern.reliefDepth", "vasePatternMore.zoneFade", "vase.wall", "vase.bottom", "vase.ribDepth", "vase.stripeDepth", "vase.voronoiCell", "vase.voronoiGap", "vase.voronoiDepth", "vase.waveAmplitude", "vaseFloor.drainDiameter", "vaseFloor.floorSlope", "vaseFloor.footHeight", "vaseFloor.rubberFootDiameter", "vaseFloor.rubberFootDepth", "vaseFloor.cutoutSize", "vaseFloor.cutoutWeb", "vaseFloor.lampHole", "vaseFloor.puckDiameter", "vaseFloor.lampNotch", "vaseFloor.lampNotchHeight", "vaseFloor.reinforceDepth", "vaseFloor.slitWidth", "vaseFloor.lineWidth", "vasePrint.lineWidth", "vaseParts.legHeight", "vaseParts.legDiameter", "vaseParts.saucerHeight", "vaseParts.saucerGap", "vaseParts.saucerWall", "vaseParts.saucerRise", "vaseParts.magnetDiameter", "vaseParts.magnetHeight", "vaseParts.lampWallScrew", "vaseFloor.lampWallScrew", "vaseParts.insertWall", "vaseParts.insertStandoff", "vaseParts.reservoirHeight", "vaseParts.frogHole", "vaseParts.tubeDiameter", "vaseParts.lidClearance", "vaseParts.lidThickness", "vaseParts.lidDepth", "vaseParts.lidHeight", "vaseParts.lidJoint", "vaseParts.threadPitch", "vaseParts.fitClearance"].includes(key);
 }
 
 /**
@@ -1819,6 +1962,16 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
     }));
     if (vase.body === "voll") properties.push(print({ type: "toggle", id: "vase.printView", sub: true, label: t("prop.vasePrintView"), value: vase.printView === "ja", onChange: (value) => setVase({ printView: value ? "ja" : "nein" }) }));
     if (vase.body === "hohl") properties.push(print(range("wall", "prop.vaseWall", 0.1)), print(range("bottom", "prop.vaseBottom", 0.1, "vase.bottomHint")), print(choice("innerShape", "prop.vaseInner")));
+    // The vase's own edges (Discussion #1965): the rim at the top and the outer edge of the bottom. Facets and the
+    // slitted body for the slicer's vase mode keep straight edges, and so does a rim that carries a lid.
+    if (vase.effect !== "lowpoly" && (vase.body === "hohl" || vase.reinforce === "keine")) {
+      if (vase.body !== "hohl" || vase.lidMode === "keiner") {
+        properties.push(print(choice("rimEdge", "prop.vaseRimEdge", "vase.rimEdgeHint")));
+        if (vase.rimEdge !== "gerade") properties.push(print(range("rimEdgeSize", "lid.topEdgeSize", 0.1)));
+      }
+      properties.push(print(choice("baseEdge", "prop.vaseBaseEdge", "vase.baseEdgeHint")));
+      if (vase.baseEdge !== "gerade") properties.push(print(range("baseEdgeSize", "lid.topEdgeSize", 0.1)));
+    }
     // Bottom and wall, on a card of their own (ids "vaseFloor."): what the core builds into the body besides its form.
     const floor = (config: ShapePropertyConfig): ShapePropertyConfig => ({ ...config, id: config.id.replace(/^vase\./, "vaseFloor.") });
     const hollow = vase.body === "hohl";
@@ -4202,6 +4355,198 @@ if (box.boxPart !== "insert") properties.push({ id: "boxWall", label: t("prop.bo
     return pulleyProperties;
   }
 
+  if (shape.kind === "patties") {
+    // Patties, the pattern plate: a pattern of figures on a plate, all of it from these settings. The rows follow
+    // the pattern - each one shows only what it reads - and the first says what came of it.
+    const settings = pattiesSettingsOfShape(shape);
+    const set = (change: Partial<PattiesSettings>) => {
+      const patch = pattiesShapePatch(shape, change);
+      onUpdate(patch.width !== undefined && patch.depth !== undefined
+        ? { patties: patch.patties, width: patch.width, depth: patch.depth, size: resizedShapeSize(patch.width, patch.depth) }
+        : { patties: patch.patties });
+    };
+    const uses = (field: Parameters<typeof pattiesPatternUses>[1]) => pattiesPatternUses(settings.pattern, field);
+    const fan = settings.outline === "fan";
+    const rings = !fan && settings.layout === "polar";
+    const plated = settings.mode !== "pieces";
+    const result = pattiesFigures(pattiesPlanOfShape(shape, baseWidth, baseDepth));
+    const resultHint = result.tooMany
+      ? t("patties.tooManyHint")
+      : result.figures === 0
+        ? t("patties.noFiguresHint")
+        : t("patties.figuresHint", { count: String(result.figures), share: String(Math.round(result.share * 100)) });
+    const vessel = pattiesFan(settings);
+    const sidesLabel: Partial<Record<PattiesSettings["pattern"], MessageKey>> = {
+      dots: "prop.pattiesSides.dots",
+      petals: "prop.pattiesSides.petals",
+      waves: "prop.pattiesSides.waves",
+      weave: "prop.pattiesSides.weave",
+    };
+    const amountLabel: Partial<Record<PattiesSettings["pattern"], MessageKey>> = {
+      dots: "prop.pattiesAmount.dots",
+      petals: "prop.pattiesAmount.petals",
+      scales: "prop.pattiesAmount.scales",
+      waves: "prop.pattiesAmount.waves",
+      cells: "prop.pattiesAmount.cells",
+      diamonds: "prop.pattiesAmount.diamonds",
+      herringbone: "prop.pattiesAmount.herringbone",
+      rays: "prop.pattiesAmount.rays",
+    };
+    const rows: ShapePropertyConfig[] = [
+      {
+        type: "select",
+        id: "pattiesPattern",
+        label: t("prop.pattiesPattern"),
+        value: settings.pattern,
+        options: PATTIES_PATTERNS.map((value) => ({ value, label: t(`patties.pattern.${value}`) })),
+        hint: resultHint,
+        // A pattern starts from the settings that make it look like itself; the plate, its outline and the way
+        // it is built stay as they are.
+        onChange: (value) => set({ ...PATTIES_PRESETS[value as PattiesSettings["pattern"]], pattern: value as PattiesSettings["pattern"] }),
+      },
+      {
+        type: "select",
+        id: "pattiesMode",
+        label: t("prop.pattiesMode"),
+        value: settings.mode,
+        options: PATTIES_MODES.map((value) => ({ value, label: t(`patties.mode.${value}`) })),
+        hint: t(`patties.modeHint.${settings.mode}`),
+        onChange: (value) => set({ mode: value as PattiesSettings["mode"] }),
+      },
+      {
+        type: "select",
+        id: "pattiesOutline",
+        label: t("prop.pattiesOutline"),
+        value: settings.outline,
+        options: PATTIES_OUTLINES.map((value) => ({ value, label: t(`patties.outline.${value}`) })),
+        hint: fan
+          ? t(vessel.straight ? "patties.fanStraightHint" : "patties.fanHint", { width: plainNumber(vessel.width), depth: plainNumber(vessel.depth) })
+          : undefined,
+        onChange: (value) => set({ outline: value as PattiesSettings["outline"] }),
+      },
+    ];
+    if (fan) {
+      rows.push(
+        { id: "pattiesFanTop", label: t("prop.pattiesFanTop"), value: settings.fanTop, min: PATTIES_MIN_FAN, max: 200, step: 0.5, onChange: (value) => set({ fanTop: clamp(value, PATTIES_MIN_FAN, PATTIES_MAX_FAN) }) },
+        { id: "pattiesFanBottom", label: t("prop.pattiesFanBottom"), value: settings.fanBottom, min: PATTIES_MIN_FAN, max: 200, step: 0.5, onChange: (value) => set({ fanBottom: clamp(value, PATTIES_MIN_FAN, PATTIES_MAX_FAN) }) },
+        { id: "pattiesFanSide", label: t("prop.pattiesFanSide"), value: settings.fanSide, min: PATTIES_MIN_FAN, max: 300, step: 0.5, onChange: (value) => set({ fanSide: clamp(value, PATTIES_MIN_FAN, PATTIES_MAX_FAN) }) },
+      );
+    } else {
+      rows.push({
+        type: "select",
+        id: "pattiesLayout",
+        label: t("prop.pattiesLayout"),
+        value: settings.layout,
+        options: PATTIES_LAYOUTS.map((value) => ({ value, label: t(`patties.layout.${value}`) })),
+        onChange: (value) => set({ layout: value as PattiesSettings["layout"] }),
+      });
+    }
+    rows.push(
+      {
+        id: "pattiesCount",
+        label: t(rings ? "prop.pattiesCountRing" : "prop.pattiesCount"),
+        value: settings.count,
+        min: PATTIES_MIN_COUNT,
+        max: PATTIES_MAX_COUNT,
+        step: 1,
+        onChange: (value) => set({ count: value }),
+      },
+    );
+    if (uses("rows")) {
+      rows.push({ id: "pattiesRows", label: t("prop.pattiesRows"), value: settings.rows, min: 0, max: PATTIES_MAX_ROWS, step: 1, hint: t(settings.pattern === "rays" ? "patties.ringsHint" : "patties.rowsHint"), onChange: (value) => set({ rows: value }) });
+    }
+    rows.push({
+      id: "pattiesGap",
+      label: t("prop.pattiesGap"),
+      value: settings.gap,
+      min: PATTIES_MIN_GAP,
+      max: 6,
+      step: 0.1,
+      hint: t(settings.pattern === "petals" ? "patties.gapPetalsHint" : "patties.gapHint"),
+      onChange: (value) => set({ gap: clamp(value, PATTIES_MIN_GAP, PATTIES_MAX_GAP) }),
+    });
+    if (uses("motif")) {
+      // One's own figure is offered once there is one: it stays with the plate while a ready one is shown.
+      const motifs = PATTIES_MOTIFS.filter((value) => value !== "custom" || Boolean(settings.motifLoops?.length));
+      rows.push({
+        type: "select",
+        id: "pattiesMotif",
+        label: t("prop.pattiesCell"),
+        value: settings.motif === "custom" && !settings.motifLoops?.length ? "heart" : settings.motif,
+        options: motifs.map((value) => ({ value, label: t(`patties.motif.${value}`) })),
+        onChange: (value) => set({ motif: value as PattiesSettings["motif"] }),
+      });
+    }
+    if (uses("cell")) {
+      rows.push({
+        type: "select",
+        id: "pattiesCell",
+        label: t("prop.pattiesCell"),
+        value: settings.cell,
+        options: PATTIES_CELLS.map((value) => ({ value, label: t(`patties.cell.${value}`) })),
+        onChange: (value) => set({ cell: value as PattiesSettings["cell"] }),
+      });
+    }
+    const sidesKey = sidesLabel[settings.pattern];
+    if (uses("sides") && sidesKey) {
+      const least = pattiesMinSides(settings.pattern);
+      rows.push({ id: "pattiesSides", label: t(sidesKey), value: Math.max(least, settings.sides), min: least, max: PATTIES_MAX_SIDES, step: 1, onChange: (value) => set({ sides: value }) });
+    }
+    const amountKey = amountLabel[settings.pattern];
+    if (uses("amount") && amountKey) {
+      rows.push({ id: "pattiesAmount", label: t(amountKey), value: settings.amount, min: 0, max: 100, step: 1, onChange: (value) => set({ amount: value }) });
+    }
+    if (uses("roundness") && !(settings.pattern === "warp" && settings.cell === "ellipse")) {
+      rows.push({ id: "pattiesRoundness", label: t("prop.pattiesRoundness"), value: settings.roundness, min: 0, max: 100, step: 1, onChange: (value) => set({ roundness: value }) });
+    }
+    if (uses("turn")) {
+      rows.push({ id: "pattiesTurn", label: t("prop.pattiesTurn"), value: settings.turn, min: -180, max: 180, step: 1, onChange: (value) => set({ turn: value }) });
+    }
+    if (uses("bulge")) {
+      rows.push({ id: "pattiesBulge", label: t("prop.pattiesBulge"), value: settings.bulge, min: -100, max: 100, step: 1, hint: t("patties.bulgeHint"), onChange: (value) => set({ bulge: value }) });
+    }
+    if (uses("focus")) {
+      // The focus is where the bulge has its middle; rays have no bulge and start from it. Rays round a ring or up
+      // a vessel start from the ring's own middle.
+      if (uses("bulge") ? settings.bulge !== 0 : !rings && !fan) {
+        // Round a ring the pattern has no left and right, only nearer the middle and nearer the rim.
+        if (!rings) rows.push({ id: "pattiesFocusX", label: t("prop.pattiesFocusX"), value: settings.focusX, min: -100, max: 100, step: 1, onChange: (value) => set({ focusX: value }) });
+        rows.push({ id: "pattiesFocusY", label: t(rings ? "prop.pattiesFocusRing" : "prop.pattiesFocusY"), value: settings.focusY, min: -100, max: 100, step: 1, onChange: (value) => set({ focusY: value }) });
+      }
+    }
+    if (uses("seed")) {
+      rows.push({ id: "pattiesSeed", label: t("prop.pattiesSeed"), value: settings.seed, min: 0, max: PATTIES_MAX_SEED, step: 1, hint: t("patties.seedHint"), onChange: (value) => set({ seed: value }) });
+    }
+    if (rings) {
+      rows.push({ id: "pattiesHub", label: t("prop.pattiesHub"), value: settings.hub, min: 0, max: PATTIES_MAX_HUB, step: 1, onChange: (value) => set({ hub: value }) });
+    }
+    if (plated) {
+      rows.push({ id: "pattiesFrame", label: t("prop.pattiesFrame"), value: settings.frame, min: 0, max: 20, step: 0.1, onChange: (value) => set({ frame: clamp(value, 0, PATTIES_MAX_FRAME) }) });
+    }
+    if (settings.mode === "raised" || settings.mode === "sunk") {
+      rows.push({
+        id: "pattiesBase",
+        label: t("prop.pattiesBase"),
+        value: pattiesBaseThickness(settings, shape.height),
+        min: PATTIES_MIN_BASE,
+        max: Math.max(PATTIES_MIN_BASE, Math.min(PATTIES_MAX_BASE, shape.height - PATTIES_MIN_BASE)),
+        step: 0.1,
+        hint: t(settings.mode === "raised" ? "patties.baseRaisedHint" : "patties.baseSunkHint", { step: plainNumber(shape.height - pattiesBaseThickness(settings, shape.height)) }),
+        onChange: (value) => set({ base: clamp(value, PATTIES_MIN_BASE, PATTIES_MAX_BASE) }),
+      });
+    }
+    if (!rings) {
+      rows.push({ type: "toggle", id: "pattiesSeamless", label: t("prop.pattiesSeamless"), value: settings.seamless, hint: t("patties.seamlessHint"), onChange: (value) => set({ seamless: value }) });
+    }
+    rows.push(
+      { type: "toggle", id: "pattiesCutEdge", label: t("prop.pattiesCutEdge"), value: settings.cutEdge, hint: t("patties.cutEdgeHint"), onChange: (value) => set({ cutEdge: value }) },
+      { id: "length", label: t("prop.length"), value: depth, min: 5, max: 200, onChange: setDepth },
+      { id: "width", label: t("prop.width"), value: width, min: 5, max: 200, onChange: setWidth },
+      { id: "height", label: t("prop.height"), value: shape.height, min: PATTIES_MIN_HEIGHT, max: 20, step: 0.1, onChange: setHeight },
+    );
+    return rows;
+  }
+
   if (shape.kind === "hirth") {
     // A Hirth joint (#1016): teeth round the ring, their height at the rim and the bore. Changing the
     // teeth or the size keeps the angle between the flanks; only the tooth height changes it.
@@ -5032,6 +5377,8 @@ export function ShapeInspector({
   surfaceFacePicking,
   surfacePickedFaces,
   surfaceFacesShown,
+  surfaceTextureLook,
+  onSurfaceTextureLookChange,
   onSurfaceFacePick,
   surfaceRegionDrawing,
   surfaceDrawnRegion,
@@ -5042,6 +5389,7 @@ export function ShapeInspector({
   onGridfinityKeys,
   onMakeBoxLid,
   onMakeBoxInsert,
+  onPattiesSvg,
   onGridfinitySplit,
   onBoltSplit,
   onGridfinityClips,
@@ -5102,6 +5450,9 @@ export function ShapeInspector({
   surfacePickedFaces?: SurfaceTextureFace[] | null;
   /** The picked faces are lit for a look only: clicks in the view do not change them (Discussion #1607). */
   surfaceFacesShown?: boolean;
+  /** The textured body is drawn in a plain grey for a better look at its relief (Discussion #1972), and switching that. */
+  surfaceTextureLook?: boolean;
+  onSurfaceTextureLookChange?: (look: boolean) => void;
   /** Starts picking faces from these (null: stops), on the faces as the given edge angle bounds them; review only lights them. */
   onSurfaceFacePick?: (faces: SurfaceTextureFace[] | null, edgeAngle: number, review?: boolean) => void;
   /** Whether a region is being drawn on this body for its texture (Discussion #1579), and the region drawn last. */
@@ -5111,7 +5462,9 @@ export function ShapeInspector({
   onSurfaceRegionDraw?: (drawing: boolean) => void;
   /** Lays this vase's accessories out beside it, ready to print. */
   onVaseAccessories?: () => void;
+  /** Puts the vase's accessories together round it, to look at how they fit. */
   onVaseAssembled?: () => void;
+  /** What the check found when the vase's accessories were put together: a line per collision (none: they fit). */
   vaseAssemblyReport?: string[];
   /** Lays this Swallowtail baseplate's keys out in front of it, ready to print (#1061). */
   onGridfinityKeys?: () => void;
@@ -5119,6 +5472,8 @@ export function ShapeInspector({
   onMakeBoxLid?: () => void;
   /** Box generator: lays the box's dividers beside it as a loose insert and draws the box smooth inside. */
   onMakeBoxInsert?: () => void;
+  /** Saves this pattern plate's edge and figures as a drawing for a cutter. */
+  onPattiesSvg?: () => void;
   /** Splits this baseplate into plates that fit the printer, with their keys (#1388). */
   onGridfinitySplit?: () => void;
   /** A screw or rod split lengthwise and laid flat for printing, with centring pins or without (lib/boltSplit.ts). */
@@ -6156,6 +6511,19 @@ export function ShapeInspector({
                 </button>
               </>
             ) : null}
+            {shape.kind === "patties" && pattiesSettingsOfShape(shape).pattern === "motif" ? (
+              <PattiesMotifLoader disabled={frozen} onLoaded={(motifLoops) => onUpdate({ patties: { ...pattiesSettingsOfShape(shape), motif: "custom", motifLoops } })} />
+            ) : null}
+            {shape.kind === "patties" && onPattiesSvg ? (
+              <>
+                <p className="cylinder-wrap-hint">{t("patties.svgHint")}</p>
+                {/* Saving a drawing changes nothing, so a locked plate offers it too. */}
+                <button className="inspector-action-button" type="button" data-testid="patties-svg" onClick={onPattiesSvg}>
+                  <Download size={17} strokeWidth={2.5} />
+                  <span>{t("inspector.pattiesSvg")}</span>
+                </button>
+              </>
+            ) : null}
             {boltSplit && onBoltSplit ? (
               <>
                 <p className="cylinder-wrap-hint">{t("inspector.boltSplitHint")}</p>
@@ -6371,6 +6739,8 @@ export function ShapeInspector({
           pickedFaces={surfacePickedFaces}
           facesShown={surfaceFacesShown}
           onFacePick={onSurfaceFacePick}
+          textureLook={surfaceTextureLook}
+          onTextureLookChange={onSurfaceTextureLookChange}
           regionDrawing={surfaceRegionDrawing}
           drawnRegion={surfaceDrawnRegion}
           onRegionDraw={onSurfaceRegionDraw}
@@ -6794,13 +7164,66 @@ function LayerRows({ layers, firstLabel, inlayDepth, workspace, disabled, onChan
  * with "+" and "–" and, for a wider layer, its corners; the key ring hole; the name list. Every
  * change builds the stack again.
  */
+/**
+ * A tag whose layers carry changes of their own (a surface texture, rounded or bevelled edges,
+ * paint) loses them when a card change builds the layers anew (Discussion #1999). Such a change
+ * asks first, with Cancel as the answer Enter gives; a change that only recolours the layers keeps
+ * them and does not ask. `guard` runs a change now or holds it for the question; Cancel drops it
+ * and `resetKey` puts the card's fields back to the tag as it stands.
+ */
+function useLayerStepsGuard(layerSteps: boolean) {
+  const [pending, setPending] = useState<(() => void) | null>(null);
+  const [resetKey, setResetKey] = useState(0);
+  const guard = (run: () => void, keepsSteps = false) => {
+    if (!layerSteps || keepsSteps) run();
+    else setPending(() => run);
+  };
+  const cancel = () => {
+    setPending(null);
+    setResetKey((key) => key + 1);
+  };
+  const dialog = pending ? (
+    <section
+      className="dashboard-confirm-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="tag-steps-title"
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        cancel();
+      }}
+    >
+      <div className="dashboard-confirm-dialog">
+        <header>
+          <strong id="tag-steps-title">{t("nameTag.layerStepsTitle")}</strong>
+          <button type="button" aria-label={t("confirm.cancel")} onClick={cancel}>
+            <X size={18} />
+          </button>
+        </header>
+        <p>{t("nameTag.layerStepsAsk")}</p>
+        <div className="dashboard-confirm-actions">
+          <button className="dashboard-confirm-cancel" type="button" autoFocus data-testid="tag-steps-cancel" onClick={cancel}>
+            {t("confirm.cancel")}
+          </button>
+          <button className="dashboard-confirm-delete" type="button" data-testid="tag-steps-continue" onClick={() => { const run = pending; setPending(null); run(); }}>
+            {t("nameTag.layerStepsContinue")}
+          </button>
+        </div>
+      </div>
+    </section>
+  ) : null;
+  return { guard, dialog, held: Boolean(pending), resetKey };
+}
+
 function NameTagCard({
   shapeId,
   stack,
   layerSteps,
   workspace,
   disabled,
-  onLayerText,
+  onLayerText: layerText,
   onTextTags,
   onInteractionActiveChange,
 }: {
@@ -6816,6 +7239,13 @@ function NameTagCard({
 }) {
   const [open, setOpen] = useState(true);
   const { source, layers, keyring } = stack;
+  const steps = useLayerStepsGuard(layerSteps);
+  // Every change goes through the question; new colours only keep the layers' own changes and do not ask.
+  const onLayerText = (patch: TextLayerPatch) => steps.guard(
+    () => layerText(patch),
+    Boolean(patch.layers) && Object.keys(patch).every((key) => key === "layers") && layersOnlyRecolored(layers, patch.layers!),
+  );
+  disabled = disabled || steps.held;
   // A long text takes no letter edge (MAX_EDGED_TEXT_LENGTH): the buttons are greyed out and a line says why.
   const edgeAllowed = textAllowsEdge(source);
   const writeLayers = (next: TextLayer[]) => onLayerText({ layers: next });
@@ -6840,8 +7270,9 @@ function NameTagCard({
         </p>
       ) : null}
       {open && layerSteps ? <p className="name-tag-hint name-tag-steps-note" role="note">{t("nameTag.layerStepsNote")}</p> : null}
+      {steps.dialog}
       {open ? (
-        <div className="property-list text-layers-body name-tag-body" id={`name-tag-${shapeId}`}>
+        <div key={steps.resetKey} className="property-list text-layers-body name-tag-body" id={`name-tag-${shapeId}`}>
           <ShapePropertyRows properties={properties} workspace={workspace} disabled={disabled} onInteractionActiveChange={onInteractionActiveChange} />
           <LayerRows layers={layers} firstLabel={t("nameTag.letters")} inlayDepth={stack.flush && layers.length > 1 ? flushDepthFor(stack.flush.depth, layers[layers.length - 1].height) : undefined} workspace={workspace} disabled={disabled} onChange={writeLayers} onInteractionActiveChange={onInteractionActiveChange} />
           <TagFlushRows flush={stack.flush} layers={layers} workspace={workspace} disabled={disabled} onChange={(flush) => onLayerText({ flush })} onInteractionActiveChange={onInteractionActiveChange} />
@@ -7424,8 +7855,16 @@ function IconTagCard({ shapeId, controls, layerSteps, workspace, disabled, onInt
   const [replacing, setReplacing] = useState(false);
   const [replaceError, setReplaceError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const { stack, plate, onLayer, onCopies, onReplaceSvg } = controls;
-  const replace = (file: File) => {
+  const { stack, plate, onCopies, onReplaceSvg } = controls;
+  const steps = useLayerStepsGuard(layerSteps);
+  // Every change goes through the question; new colours only keep the layers' own changes and do not ask.
+  const onLayer = (patch: IconLayerPatch) => steps.guard(
+    () => controls.onLayer(patch),
+    Boolean(patch.layers) && Object.keys(patch).every((key) => key === "layers") && layersOnlyRecolored(stack.layers, patch.layers!),
+  );
+  disabled = disabled || steps.held;
+  const replace = (file: File) => steps.guard(() => replaceNow(file));
+  const replaceNow = (file: File) => {
     setReplacing(true);
     setReplaceError("");
     onReplaceSvg(file)
@@ -7454,8 +7893,9 @@ function IconTagCard({ shapeId, controls, layerSteps, workspace, disabled, onInt
         </p>
       ) : null}
       {open && layerSteps ? <p className="name-tag-hint name-tag-steps-note" role="note">{t("nameTag.layerStepsNote")}</p> : null}
+      {steps.dialog}
       {open ? (
-        <div className="property-list text-layers-body name-tag-body" id={`icon-tag-${shapeId}`}>
+        <div key={steps.resetKey} className="property-list text-layers-body name-tag-body" id={`icon-tag-${shapeId}`}>
           <input
             ref={fileRef}
             type="file"
@@ -7676,6 +8116,182 @@ async function surfaceImageFromFile(file: File) {
 }
 
 /**
+ * The button that puts a vase's accessories together round it, to look at how they fit; while they are put together
+ * a line says so (they sit inside one another then, and are laid out again to print) and the check's findings follow:
+ * every pair that runs into each other, or that everything fits.
+ */
+function VaseAssembly({ shape, disabled, report, onAssemble }: { shape: WorkplaneShape; disabled?: boolean; report?: string[]; onAssemble?: () => void }) {
+  if (!onAssemble) return null;
+  const assembled = shape.vaseAssembled !== undefined;
+  return (
+    <>
+      <button className="inspector-action-button" type="button" disabled={disabled} aria-pressed={assembled} onClick={onAssemble}>
+        <Boxes size={17} strokeWidth={2.5} />
+        <span>{t("vase.partsAssemble")}</span>
+      </button>
+      {assembled ? <p className="cylinder-wrap-hint">{t("vase.partsAssembledHint")}</p> : null}
+      {assembled && report ? (
+        <div className="vase-assembly-report" role="status">
+          {report.length
+            ? report.map((line) => <p key={line} className="vase-print-verdict supports">{line}</p>)
+            : <p className="vase-print-verdict fine"><span className="vase-print-dot" aria-hidden="true" />{t("vase.assemblyFits")}</p>}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * A vase's patterns on a card of their own: the patterns as tiles, each with a picture shaded from the pattern itself
+ * (leaves have a row of leaf shapes of their own, and a board for one's own leaf), one's own picture or text, and the
+ * rows of the chosen pattern - those that matter most at once, the finer ones under More. The rows come from the
+ * vase's property list (ids "vasePattern." and "vasePatternMore."); only the tiles, the leaf board and the picture's
+ * button are drawn here.
+ */
+function VasePatternCard({
+  shape,
+  rows,
+  workspace,
+  disabled,
+  open,
+  onOpenChange,
+  onUpdate,
+  onInteractionActiveChange,
+}: {
+  shape: WorkplaneShape;
+  rows: ShapePropertyConfig[];
+  workspace: WorkplaneWorkspaceSettings;
+  disabled?: boolean;
+  open: boolean;
+  onOpenChange: Dispatch<SetStateAction<boolean>>;
+  onUpdate: ShapeInspectorUpdate;
+  onInteractionActiveChange: (active: boolean) => void;
+}) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const pictureInput = useRef<HTMLInputElement>(null);
+  const [pictureError, setPictureError] = useState("");
+  const vase = normalizeVaseSettings(shape.vase);
+  const width = shape.width ?? shape.size;
+  const depth = shape.depth ?? shape.size;
+  const setVase = (patch: Partial<VaseSettings>) => applyVaseChange({ id: shape.id, width, depth, height: shape.height }, normalizeVaseSettings({ ...vase, ...patch }), (vasePatch) => onUpdate(vasePatch));
+  // One's own picture for the relief, from a file: drawn small and grey as a surface texture's own image is. It takes
+  // the place of a text's picture, so the text goes.
+  const loadPicture = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const own = await surfaceImageFromFile(file);
+      const picture = normalizeOwnPicture({ width: own.width, height: own.height, data: own.data });
+      if (!picture) throw new Error("no picture");
+      setPictureError("");
+      setVase({ patternImage: picture, patternText: "" });
+    } catch (error) {
+      setPictureError(t("status.surfaceImageFailed", { error: error instanceof Error ? error.message : String(error) }));
+    }
+  };
+  const effect = findSelectProperty(rows, "vasePattern.effect");
+  const leafShape = findSelectProperty(rows, "vasePattern.leafShape");
+  const main = rows.filter((row) => row.id.startsWith("vasePattern.") && row !== effect && row !== leafShape);
+  const more = rows.filter((row) => row.id.startsWith("vasePatternMore."));
+  const tileLook = (patch: Record<string, unknown>) => ({ ...VASE_PATTERN_TILE_LOOK, ...patch });
+  // A relief up into the neck where a lid sits: a line that says so, and a button that keeps the neck smooth.
+  const safeZone = lidSafeZoneTo(vase);
+  const zoneIntoNeck = safeZone !== null && vase.body === "hohl" && vase.effect !== "keine" && vase.effect !== "lowpoly" && vase.zoneTo > safeZone;
+  const lidLabel = VASE_CHOICES.lidMode?.[vase.lidMode];
+  return (
+    <div className={`property-card ${open ? "" : "collapsed"}`}>
+      <button className="property-card-header" type="button" aria-expanded={open} aria-controls={`vase-pattern-${shape.id}`} onClick={() => onOpenChange((current) => !current)}>
+        <span>{t("inspector.vasePattern")}</span>
+        <ChevronUp className={open ? "" : "collapsed"} size={25} strokeWidth={2.8} />
+      </button>
+      {open ? (
+        <div className="property-list" id={`vase-pattern-${shape.id}`}>
+          {effect ? (
+            <div className="gear-type-property" role="group" aria-label={effect.label}>
+              <div className="gear-type-options icon-options vase-pattern-options">
+                {VASE_PATTERN_TILES.map((value) => {
+                  const option = effect.options.find((entry) => entry.value === value);
+                  if (!option) return null;
+                  return (
+                    <button key={value} type="button" className={effect.value === value ? "selected" : ""} disabled={disabled} aria-pressed={effect.value === value} title={option.label} onClick={() => effect.onChange(value)}>
+                      <PatternPicture settings={tileLook(value === "bild" ? { effect: value, patternImage: vase.patternImage } : { effect: value })} />
+                      <span>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {effect.hint ? <p className="cylinder-wrap-hint">{vase.effect === "keine" ? t("vase.patternNoneHint") : effect.hint}</p> : null}
+            </div>
+          ) : null}
+          {leafShape ? (
+            <div className="gear-type-property" role="group" aria-label={leafShape.label}>
+              <span>{leafShape.label}</span>
+              <div className="gear-type-options icon-options vase-pattern-options">
+                {VASE_LEAF_TILES.map((value) => {
+                  const option = leafShape.options.find((entry) => entry.value === value);
+                  if (!option) return null;
+                  return (
+                    <button key={value} type="button" className={leafShape.value === value ? "selected" : ""} disabled={disabled} aria-pressed={leafShape.value === value} title={option.label} onClick={() => leafShape.onChange(value)}>
+                      <PatternPicture size={44} settings={tileLook({ effect: "blaetter", leafShape: value, leafPoints: value === "eigen" ? vase.leafPoints : null, leafOverlap: 10 })} />
+                      <span>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+          {vase.effect === "blaetter" && vase.leafShape === "eigen" ? (
+            <LeafEditor
+              points={vase.leafPoints}
+              disabled={disabled}
+              labels={{ title: t("vase.leafOwnTitle"), hint: t("vase.leafOwnHint"), reset: t("vase.leafOwnReset") }}
+              onChange={(points) => setVase({ leafPoints: points })}
+              onInteractionActiveChange={onInteractionActiveChange}
+            />
+          ) : null}
+          {vase.effect === "bild" ? (
+            <div className="vase-own-picture">
+              <input
+                ref={pictureInput}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(event) => {
+                  void loadPicture(event.target.files?.[0]);
+                  event.target.value = "";
+                }}
+              />
+              <button className="inspector-action-button" type="button" disabled={disabled} onClick={() => pictureInput.current?.click()}>
+                <ImageUp size={17} strokeWidth={2.5} />
+                <span>{t("inspector.surfaceImageLoad")}</span>
+              </button>
+              <p className="cylinder-wrap-hint">{pictureError || t("vase.pictureHint")}</p>
+            </div>
+          ) : null}
+          <ShapePropertyRows properties={main} workspace={workspace} disabled={disabled} onInteractionActiveChange={onInteractionActiveChange} />
+          {zoneIntoNeck ? (
+            <div className="vase-neck-hint">
+              <p className="cylinder-wrap-hint">{t("vase.zoneNeckHint", { lid: lidLabel ? t(lidLabel) : "" })}</p>
+              <button type="button" className="inspector-action-button" disabled={disabled} onClick={() => setVase({ zoneTo: safeZone })}>
+                <span>{t("vase.zoneNeckSmooth", { percent: String(safeZone) })}</span>
+              </button>
+            </div>
+          ) : null}
+          {more.length ? (
+            <>
+              <button className="name-tag-more" type="button" aria-expanded={moreOpen} onClick={() => setMoreOpen((current) => !current)}>
+                <ChevronDown className={moreOpen ? "open" : ""} size={15} strokeWidth={2.6} />
+                <span>{t(moreOpen ? "inspector.less" : "inspector.more")}</span>
+              </button>
+              {moreOpen ? <ShapePropertyRows properties={more} workspace={workspace} disabled={disabled} onInteractionActiveChange={onInteractionActiveChange} /> : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * A surface texture on this body: the pattern, where it goes, and the button. Folded away until
  * asked for, like wrapping: a step one takes, and undo takes it back. The card keeps its
  * settings through that undo, so the next try starts from the last one.
@@ -7693,6 +8309,8 @@ export function SurfaceTextureCard({
   pickedFaces = null,
   facesShown = false,
   onFacePick,
+  textureLook = false,
+  onTextureLookChange,
   regionDrawing = false,
   drawnRegion = null,
   onRegionDraw,
@@ -7715,6 +8333,9 @@ export function SurfaceTextureCard({
   /** The faces of the shown layer are lit for a look, without picking (Discussion #1607). */
   facesShown?: boolean;
   onFacePick?: (faces: SurfaceTextureFace[] | null, edgeAngle: number, review?: boolean) => void;
+  /** The body is drawn in a plain grey so that its relief reads on any colour (Discussion #1972): a look only, nothing changes. */
+  textureLook?: boolean;
+  onTextureLookChange?: (look: boolean) => void;
   /**
    * A region drawn on the face in the view (Discussion #1579; the editor holds the drawing): it comes back once per lasso,
    * for the layer shown when drawing began.
@@ -7760,12 +8381,23 @@ export function SurfaceTextureCard({
   if (appliedKey !== shownKey) {
     setShownKey(appliedKey);
     if (applied) {
-      setLayers(layersOf(shape));
-      setLayerIndex(0);
-      pickedLayer.current = 0;
+      // The group shown stays the one shown while it is still there (Discussion #1972): after "Change texture" the next
+      // change goes on with the same group and its faces rather than with the first one.
+      const next = layersOf(shape);
+      const kept = Math.min(shownLayer, next.length - 1);
+      setLayers(next);
+      setLayerIndex(kept);
+      pickedLayer.current = kept;
     }
   }
-  // Each click in the view comes back as the faces picked so far, for the layer shown.
+  // Another body starts with its first group.
+  const [shownShapeId, setShownShapeId] = useState(shape.id);
+  if (shape.id !== shownShapeId) {
+    setShownShapeId(shape.id);
+    setLayerIndex(0);
+    pickedLayer.current = 0;
+  }
+  // Each click in the view comes back as the faces picked so far, for the layer they are picked for.
   useEffect(() => {
     if (pickedFaces) setLayers((all) => all.map((layer, index) => (index === pickedLayer.current ? normalizeSurfaceTexture({ ...layer, faces: pickedFaces }) : layer)));
   }, [pickedFaces]);
@@ -8602,6 +9234,13 @@ export function SurfaceTextureCard({
                   ) : null}
                   {busy ? <ToolStatus state="working" text={t("inspector.surfaceWorking")} /> : layerWithoutFaces > 0 ? <ToolStatus state="needed" text={t("inspector.surfaceLayerNeedsFacesNumber", { number: layerWithoutFaces + 1 })} /> : null}
                 </>)}
+                {/* A look only (Discussion #1972): the relief is hard to make out on a white body. */}
+                {applied && onTextureLookChange ? (
+                  <>
+                    <ToggleProperty label={t("inspector.surfaceLook")} value={textureLook} disabled={busy} onChange={onTextureLookChange} />
+                    {textureLook ? <p className="cylinder-wrap-hint">{t("inspector.surfaceLookHint")}</p> : null}
+                  </>
+                ) : null}
               </div>
               <div className="edge-modifier-footer">
                 {appliedOnly ? null : <ToolOutcome text={t("inspector.surfaceOutcome")} />}
@@ -8659,6 +9298,32 @@ export function SurfaceTextureCard({
             </p>
           ) : (
             <>
+              {/* Several patterns on one body: a tab per texture group; the first takes the faces the others leave. */}
+              {onFacePick ? (
+                <div className="surface-layers" role="tablist" aria-label={t("inspector.surfaceLayers")}>
+                  {layers.map((layer, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      role="tab"
+                      aria-selected={index === shownLayer}
+                      className={`${index === shownLayer ? "active" : ""} ${index > 0 && !surfaceTextureLayerPlaced(layer) ? "needed" : ""}`}
+                      disabled={busy}
+                      onClick={() => showLayer(index)}
+                    >
+                      <span className="surface-layer-number">{index + 1}</span>
+                      {patternLabel(layer.pattern)}
+                    </button>
+                  ))}
+                  {layers.length < SURFACE_TEXTURE_MAX_LAYERS ? (
+                    <button type="button" className="surface-layer-add" title={t("inspector.surfaceLayerAdd")} aria-label={t("inspector.surfaceLayerAdd")} disabled={disabled || busy} onClick={addLayer}>
+                      <Plus size={14} strokeWidth={2.6} aria-hidden="true" />
+                      {t("inspector.surfaceLayerAddShort")}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+              {layers.length > 1 ? <p className="cylinder-wrap-hint">{t("inspector.surfaceLayersHint")}</p> : null}
               {patternFields}
               {projectionShown ? projectionField : afterDirection}
               {/* A board's pith runs along its longest side: only a log asks for its axis. */}
@@ -8680,10 +9345,23 @@ export function SurfaceTextureCard({
                 {applied ? t("inspector.surfaceChangeHint", { pattern: appliedPatterns }) : t("inspector.surfaceHint")}
                 <GuideHelpLink section="surfaceTexture" className="inspector-help-link" />
               </p>
-              <button className="inspector-action-button" type="button" disabled={disabled || busy} onClick={apply}>
-                <Check size={17} strokeWidth={2.5} aria-hidden="true" />
-                <span>{t(busy ? "inspector.surfaceWorking" : applied ? "inspector.surfaceChange" : "inspector.surfaceApply")}</span>
-              </button>
+              {/* A look only (Discussion #1972): the relief is hard to make out on a white body. */}
+              {applied && onTextureLookChange ? (
+                <>
+                  <ToggleProperty label={t("inspector.surfaceLook")} value={textureLook} disabled={busy} onChange={onTextureLookChange} />
+                  {textureLook ? <p className="cylinder-wrap-hint">{t("inspector.surfaceLookHint")}</p> : null}
+                </>
+              ) : null}
+              {/* The button that makes the texture stays in sight at the bottom of the panel while the long card scrolls (Discussion #1972). */}
+              <div className="surface-texture-actions">
+                {layerWithoutFaces > 0 ? (
+                  <p className="cylinder-wrap-hint surface-layer-missing" role="status">{t("inspector.surfaceLayerNeedsFacesNumber", { number: layerWithoutFaces + 1 })}</p>
+                ) : null}
+                <button className="inspector-action-button" type="button" disabled={disabled || busy || layerWithoutFaces > 0} onClick={apply}>
+                  <Waves size={17} strokeWidth={2.5} />
+                  <span>{t(busy ? "inspector.surfaceWorking" : applied ? "inspector.surfaceChange" : "inspector.surfaceApply")}</span>
+                </button>
+              </div>
               {applied ? (
                 <button className="inspector-action-button" type="button" disabled={disabled || busy} onClick={onRemove}>
                   <Eraser size={17} strokeWidth={2.5} />
@@ -9733,7 +10411,7 @@ function RangeProperty({
     sliderReleaseTimerRef.current = window.setTimeout(() => { draggingSliderRef.current = false; }, 120);
   };
   // A cylinder's diameter and a cone's radii too (drucktipps3d forum: a cylinder of 198 mm was cut to 160).
-  const allowsAboveSliderMax = ["length", "width", "height", "diameter", "baseRadius", "topRadius", "outerDiameter", "innerDiameter", "starOuterSize", "starInnerSize", "crescentThickness", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "bentTubeSize", "bentTubeBendRadius"].includes(id) || id.endsWith("Length") || id.endsWith("Width");
+  const allowsAboveSliderMax = ["length", "width", "height", "diameter", "baseRadius", "topRadius", "outerDiameter", "innerDiameter", "starOuterSize", "starInnerSize", "crescentThickness", "honeycombCellSize", "honeycombWallThickness", "honeycombFrameWidth", "pattiesGap", "pattiesFrame", "pattiesFanTop", "pattiesFanBottom", "pattiesFanSide", "bentTubeSize", "bentTubeBendRadius"].includes(id) || id.endsWith("Length") || id.endsWith("Width");
   const isLength = propertyUsesLengthUnit(id);
   const accuracy = workspace.accuracy;
   // A position can be typed beyond the slider, on both sides (#425).
@@ -10551,20 +11229,6 @@ function VaseDesigner({
       </div>
     </div>
   );
-}
-
-/**
- * What choosing a pattern in the gallery sets: the pattern, and for leaves a relief strong enough to read and for tulip
- * leaves a lean that makes them rise in a spiral - but only where the vase still has the defaults, so nothing one has
- * set oneself is lost. One's own picture or text starts a quarter of the way round.
- */
-function vasePatternChoice(vase: VaseSettings, effect: string): Partial<VaseSettings> {
-  const patch: Partial<VaseSettings> = { effect };
-  if ((effect === "blaetter" || effect === "tulpenblaetter") && vase.reliefDepth === 1.6) patch.reliefDepth = 2.4;
-  if (effect === "tulpenblaetter" && vase.patternTwist === 0) patch.patternTwist = 30;
-  // One's own picture or text: a quarter of the way round, large enough to read.
-  if (effect === "bild" && vase.patternCount === 12) patch.patternCount = 4;
-  return patch;
 }
 
 /** How the gallery draws every family: the core's defaults, so a tile shows the family and not this vase's tuning. */

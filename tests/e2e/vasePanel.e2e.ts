@@ -446,6 +446,31 @@ describe("a vase in its settings", () => {
     expect(selectNamed(block, "Base form")).toBeDefined();
   });
 
+  it("rounds or chamfers the rim and the bottom edge on the Print tab, each with its size (Discussion #1965)", () => {
+    const { panel, calls, shape } = mount();
+    openTab(panel, "Print");
+    expect(selectNamed(panel, "Rim edge")?.value).toBe("gerade");
+    expect(selectNamed(panel, "Bottom edge")?.value).toBe("gerade");
+    expect(rangeNamed(panel, "Edge size")).toBeUndefined();
+    choose(selectNamed(panel, "Rim edge")!, "rund");
+    expect(calls.updates.at(-1)?.vase?.rimEdge).toBe("rund");
+    // The size shows once an edge is round or chamfered.
+    const round = mount({ vase: { ...calls.updates.at(-1)!.vase! } });
+    openTab(round.panel, "Print");
+    expect(rangeNamed(round.panel, "Edge size")).toBeDefined();
+    choose(selectNamed(round.panel, "Bottom edge")!, "fase");
+    expect(round.calls.updates.at(-1)?.vase).toMatchObject({ rimEdge: "rund", baseEdge: "fase" });
+    // A rim that carries a lid stays square, and facets keep both edges straight: the rows go.
+    const lidded = mount({ vase: { ...shape.vase!, body: "hohl", lidMode: "schraube" } });
+    openTab(lidded.panel, "Print");
+    expect(selectNamed(lidded.panel, "Rim edge")).toBeUndefined();
+    expect(selectNamed(lidded.panel, "Bottom edge")).toBeDefined();
+    const facets = mount({ vase: { ...shape.vase!, effect: "lowpoly" } });
+    openTab(facets.panel, "Print");
+    expect(selectNamed(facets.panel, "Rim edge")).toBeUndefined();
+    expect(selectNamed(facets.panel, "Bottom edge")).toBeUndefined();
+  });
+
   it("shows how it prints on the Print tab, and the pattern tab leads there", () => {
     const plain = mount().shape;
     const { panel } = mount({ vase: { ...plain.vase!, effect: "blaetter", printFriendly: "nein", body: "hohl", reliefDepth: 2.4 } });

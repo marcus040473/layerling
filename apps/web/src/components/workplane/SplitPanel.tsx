@@ -28,6 +28,8 @@ import {
   MIN_DOVETAIL_DEPTH,
   MIN_DOVETAIL_WIDTH,
   SPLIT_CONNECTOR_KINDS,
+  filamentDowelLength,
+  filamentDowels,
   splitMagnetPocket,
   type SplitConnectorKind,
   type SplitConnectorOptions,
@@ -69,9 +71,10 @@ export type SplitConnectorPreviewState =
 
 /**
  * What the panel says under the connectors' settings: how many fit and on how many cut faces, and why some got none - in
- * a dovetail's own words where the dowels' would not fit it.
+ * a dovetail's own words where the dowels' would not fit it. With `filamentTip`, printed dowels that found no room on any
+ * cut face point to the filament dowels, which fit a thinner plate (Discussion #1986).
  */
-export function splitConnectorSummary(preview: SplitConnectorPreviewState, kind: SplitConnectorKind = "dowels"): string[] {
+export function splitConnectorSummary(preview: SplitConnectorPreviewState, kind: SplitConnectorKind = "dowels", filamentTip = false): string[] {
   if (preview.state === "working") return [t("split.connectorsFinding")];
   if (preview.state !== "done") return [];
   const { tally, holes } = preview;
@@ -79,6 +82,7 @@ export function splitConnectorSummary(preview: SplitConnectorPreviewState, kind:
   const lines: string[] = [];
   if (tally.faces > 0 && tally.placed === 0) {
     lines.push(t(dovetail ? "split.dovetailNoRoom" : "split.connectorsNoRoom"));
+    if (filamentTip && kind === "dowels") lines.push(t("split.dowelFilamentTip", { label: t("split.dowelFilament") }));
   } else if (tally.placed > 0) {
     lines.push(tally.faces === 1 ? t("split.connectorsFitOne", { count: tally.placed }) : t("split.connectorsFitMany", { count: tally.placed, faces: tally.faces }));
     if (tally.tooSmall === 1) lines.push(t(dovetail ? "split.dovetailTooSmallOne" : "split.connectorsTooSmallOne"));
@@ -466,17 +470,26 @@ export function SplitPanel({
             </label>
             <ToolHint text={magnetPocketSummary(splitMagnetPocket(connectors))} />
           </>) : (<>
-            <EdgeModifierSlider
-              label={t("split.connectorDiameter")}
-              value={connectors.diameter}
-              min={MIN_CONNECTOR_DIAMETER}
-              max={MAX_CONNECTOR_DIAMETER}
-              step={0.5}
-              workspace={workspace}
-              length
-              disabled={busy}
-              onChange={(value) => onConnectorsChange({ diameter: value })}
-            />
+            {connectors.kind === "dowels" ? (
+              // Pieces of filament as the dowels, for a plate too thin for a printed one (Discussion #1986).
+              <label className="edge-modifier-check" title={t("split.dowelFilamentHint")}>
+                <input type="checkbox" checked={connectors.dowelFilament} disabled={busy} onChange={(event) => onConnectorsChange({ dowelFilament: event.currentTarget.checked })} />
+                <span>{t("split.dowelFilament")}</span>
+              </label>
+            ) : null}
+            {filamentDowels(connectors) ? null : (
+              <EdgeModifierSlider
+                label={t("split.connectorDiameter")}
+                value={connectors.diameter}
+                min={MIN_CONNECTOR_DIAMETER}
+                max={MAX_CONNECTOR_DIAMETER}
+                step={0.5}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => onConnectorsChange({ diameter: value })}
+              />
+            )}
             <EdgeModifierSlider
               label={t("split.connectorDepth")}
               value={connectors.depth}
@@ -488,7 +501,9 @@ export function SplitPanel({
               disabled={busy}
               onChange={(value) => onConnectorsChange({ depth: value })}
             />
-            {connectors.kind === "dowels" ? (
+            {filamentDowels(connectors) ? (
+              <ToolHint text={t("split.dowelFilamentCut", { length: String(filamentDowelLength(connectors)) })} />
+            ) : connectors.kind === "dowels" ? (
               // For a printer whose bed moves, where the standing dowels wobble loose (breakawayBase.ts).
               <label className="edge-modifier-check" title={t("split.dowelBaseHint")}>
                 <input type="checkbox" checked={connectors.dowelBase} disabled={busy} onChange={(event) => onConnectorsChange({ dowelBase: event.currentTarget.checked })} />
@@ -509,7 +524,7 @@ export function SplitPanel({
           />
           {fromPrinterPlay("split.connectorClearance", connectors.clearance, printerPlay) ? <span className="shell-openings-summary">{t("printerPlay.fromFitTest")}</span> : null}
           <div className="split-connector-summary" role="status">
-            {splitConnectorSummary(connectorPreview, connectors.kind).map((line) => <span key={line}>{line}</span>)}
+            {splitConnectorSummary(connectorPreview, connectors.kind, connectors.kind === "dowels" && !connectors.dowelFilament).map((line) => <span key={line}>{line}</span>)}
           </div>
         </>)}
       </ToolSection>}

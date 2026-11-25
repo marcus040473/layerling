@@ -4,8 +4,8 @@ import { buildParts } from "@/lib/vase/vase-parts.mjs";
 import { LEAF_SHAPES, PATTERNS, leafHeight, normalizeLeafPoints, patternHeight, patternPreview, reliefField } from "@/lib/vase/vase-patterns.mjs";
 
 /*
- * The vase designer's relief patterns (vase-patterns.mjs): seven families and leaves on the vase's surface, the height
- * range they keep to, the print-friendly mode, the print checks of a relief and the stopper.
+ * The vase's relief patterns (vase-patterns.mjs): the pattern families and leaves on the vase's surface, the height
+ * range they keep to, the print-friendly mode and the print checks of a relief.
  */
 
 /** Every edge walked once each way: the body is closed and oriented. */

@@ -286,9 +286,10 @@ export function fittedVaseMesh(shape: { id?: string; width: number; depth: numbe
 
 /**
  * The triangles the editor draws of a vase. A solid vase is the body the slicer's vase mode asks for, but what gets
- * printed is one thin wall, open at the top (and at the bottom, for a shade printed without bottom layers). Drawn "as
- * printed" (the setting printView), the solid's lid is left out, so one looks into a thin vessel and not at a block
- * (the editor draws a body's faces from both sides). Only the drawing: the body for export, checks and cuts stays the solid.
+ * printed is one thin wall, open at the top (and at the bottom, for a shade printed without bottom layers). Drawn
+ * "as printed" (the setting printView), the solid's lid is left out, so one looks into a thin vessel and not at a
+ * block (the editor draws a body's faces from both sides). Only the drawing: the body for export, checks and cuts
+ * stays the solid.
  */
 function vaseDrawnIndices(shape: { height: number; vase?: unknown }, mesh: FittedVase): Uint32Array {
   const vase = normalizeVaseSettings(shape.vase);

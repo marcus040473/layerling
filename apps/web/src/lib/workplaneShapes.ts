@@ -9,6 +9,7 @@ import { bentTubeSegmentsEqual } from "@/lib/bentTubeGeometry";
 import { boxGeneratorPocketsEqual, boxGeneratorScoopsEqual, boxGeneratorWallsEqual } from "@/lib/boxGeneratorGeometry";
 import { vaseSettingsEqual } from "@/lib/vaseSettings";
 import { qrSettingsEqual } from "@/lib/qrCode";
+import { pattiesSettingsEqual } from "@/lib/pattiesPattern";
 import { torusTubeRatio } from "@/lib/torusShape";
 import { shapeHasAlongDeform } from "@/lib/slopeAlong";
 import type { EdgeTreatmentHistoryEntry, GroupResizeMode, SketchStroke, WorkplaneShape } from "@/types/layerling";
@@ -145,7 +146,7 @@ export function shapeTaperDimensions(shape: WorkplaneShape) {
  * haben feste Masse fuer Einsatz, Haken und Fuss. Die Liste steht hier, damit das Merkmalsfeld, die
  * Vorschau und die MCP-Bruecke nicht je ihre eigene fuehren.
  */
-const SHAPES_WITHOUT_TAPER = new Set<WorkplaneShape["kind"]>(["gear", "hirth", "pulley", "thread", "spring", "pyramid", "ruler", "hinge", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "bentTube", "loft", "vase", "gridfinity", "screwBoss", "snapFit", "rib", "boxGenerator"]);
+const SHAPES_WITHOUT_TAPER = new Set<WorkplaneShape["kind"]>(["gear", "hirth", "pulley", "thread", "spring", "pyramid", "ruler", "hinge", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "bentTube", "loft", "vase", "gridfinity", "screwBoss", "snapFit", "rib", "boxGenerator", "patties"]);
 
 export function shapeSupportsTaper(kind: WorkplaneShape["kind"]) {
   return !SHAPES_WITHOUT_TAPER.has(kind);
@@ -801,6 +802,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     a.centerHoleSize === b.centerHoleSize &&
     a.hirthSteepFlank === b.hirthSteepFlank &&
     a.hirthReverse === b.hirthReverse &&
+    pattiesSettingsEqual(a.patties, b.patties) &&
     a.pulleyBeltWidth === b.pulleyBeltWidth &&
     a.pulleyFlange === b.pulleyFlange &&
     a.pulleyFlangeRise === b.pulleyFlangeRise &&
