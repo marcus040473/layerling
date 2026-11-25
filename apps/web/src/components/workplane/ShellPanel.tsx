@@ -1,5 +1,6 @@
 "use client";
 
+import { MAX_SHELL_INSERT_PLAY, MIN_SHELL_INSERT_PLAY, SHELL_INSERT_PLAY } from "@/lib/shellInsert";
 import { useState } from "react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel } from "@/components/workplane/MovableToolPanel";
@@ -11,7 +12,7 @@ import { useLanguage } from "@/lib/useLanguage";
 import { SHELL_STACK_GRIP_AT_MAX, SHELL_STACK_GRIP_HEIGHT_MAX, SHELL_STACK_GRIP_HEIGHT_MIN, SHELL_STACK_GRIP_SIDES, DEFAULT_SHELL_STACK_GRIP, DEFAULT_SHELL_STACK_GRIP_DEPTH, DEFAULT_SHELL_STACK_HEIGHT, SHELL_STACK_GRIP_DEPTH_MAX, SHELL_STACK_GRIP_DEPTH_MIN, SHELL_STACK_GRIP_MAX, SHELL_STACK_GRIP_MIN, SHELL_STACK_MAX_HEIGHT, SHELL_STACK_MIN_HEIGHT, SHELL_STACK_MIN_WALL, type ShellStackFoot } from "@/lib/shellStackLimits";
 import { ShellScoopsEditor, ShellWallsEditor, shellGridWalls } from "@/components/workplane/ShellWallsEditor";
 import { MAX_SHELL_POCKETS, type ShellPocket, MAX_SHELL_SCOOP_RADIUS, MIN_SHELL_SCOOP_RADIUS, SHELL_SCOOP_RADIUS, MAX_SHELL_DIVIDERS, MAX_SHELL_DIVIDER_THICKNESS, MIN_SHELL_DIVIDER_HEIGHT, MIN_SHELL_DIVIDER_THICKNESS, SHELL_DIVIDER_THICKNESS, type ShellDividers } from "@/lib/shellGridLimits";
-import { DEFAULT_SHELL_SHELF_WIDTH, SHELL_SHELF_MAX_HEIGHT, SHELL_SHELF_MAX_WIDTH, SHELL_SHELF_MIN_HEIGHT, SHELL_SHELF_MIN_WIDTH } from "@/lib/shellShelfLimits";
+import { DEFAULT_SHELL_SHELF_WIDTH, SHELL_SHELF_MAX_HEIGHT, SHELL_SHELF_MAX_WIDTH, SHELL_SHELF_MIN_HEIGHT, SHELL_SHELF_MIN_WIDTH, shellShelfDrop } from "@/lib/shellShelfLimits";
 import { MIN_SHELL_WALL, SHELL_SIDES, shellOpeningsFor, shellOpenSides } from "@/lib/shellLimits";
 import type { ShellEdges, ShellOpenings, WorkplaneWorkspaceSettings } from "@/types/layerling";
 
@@ -57,6 +58,7 @@ export function ShellPanel({
   dividerFullHeight = 0,
   shelf,
   shelfHeight,
+  shelfSlope = false,
   shelfOffered,
   workspace,
   busy,
@@ -78,7 +80,9 @@ export function ShellPanel({
   onDividersChange,
   onShelfChange,
   onShelfHeightChange,
+  onShelfSlopeChange,
   onApply,
+  onMakeLid,
   onCancel,
 }: {
   targetName: string;
@@ -119,6 +123,8 @@ export function ShellPanel({
   shelf: number;
   /** How high in mm the top of the ledge lies above the inside of the floor. */
   shelfHeight: number;
+  /** The underside of the ledge falls at 45 degrees to the wall, so it prints without supports (#1981). */
+  shelfSlope?: boolean;
   /** The ledge is offered only with the top as the one open side. */
   shelfOffered: boolean;
   workspace: WorkplaneWorkspaceSettings;
@@ -145,7 +151,10 @@ export function ShellPanel({
   onDividersChange: (value: ShellDividers | null) => void;
   onShelfChange: (value: number) => void;
   onShelfHeightChange: (value: number) => void;
+  onShelfSlopeChange?: (value: boolean) => void;
   onApply: () => void;
+  /** Applies the hollowing and opens the Lid tool on the box: offered with the top open. */
+  onMakeLid?: () => void;
   onCancel: () => void;
 }) {
   useLanguage();
@@ -418,12 +427,32 @@ export function ShellPanel({
               })()}
               <span className="shell-openings-summary">{t("shell.dividerHeightHint")}</span>
             </>) : null}
+            {/* The dividers as a part of their own, to put in and take out: the box stays smooth inside. */}
+            <label className="edge-modifier-field offset-copy shell-insert">
+              <input type="checkbox" checked={dividers.insert === true} disabled={busy} data-testid="shell-insert" onChange={(event) => onDividersChange({ ...dividers, insert: event.target.checked || undefined })} />
+              <span>{t("shell.insert")}</span>
+            </label>
+            {dividers.insert ? (<>
+              <EdgeModifierSlider
+                label={t("shell.insertPlay")}
+                value={dividers.insertPlay ?? SHELL_INSERT_PLAY}
+                min={MIN_SHELL_INSERT_PLAY}
+                max={MAX_SHELL_INSERT_PLAY}
+                step={0.05}
+                workspace={workspace}
+                length
+                disabled={busy}
+                onChange={(value) => onDividersChange({ ...dividers, insertPlay: value })}
+              />
+              <span className="shell-openings-summary">{t("shell.insertHint")}</span>
+            </>) : null}
           </>) : null}
           <span className="shell-openings-summary">{t(gridCells > 0 ? "shell.dividersNoGrid" : "shell.dividersHint")}</span>
           {gridCells === 0 ? <span className="shell-openings-summary">{t("shell.onBoxHint")}</span> : null}
         </div>
 
-        {gridCells === 0 ? (
+        {/* Scoops and shaped pockets are part of the box: not with the dividers as a loose insert. */}
+        {gridCells === 0 && !dividers?.insert ? (
           <div className="edge-modifier-field shell-openings shell-scoops" role="group" aria-label={t("shell.scoops")} data-testid="shell-scoops">
             <span>{t("shell.scoops")}</span>
             <ShellScoopsEditor
@@ -458,7 +487,7 @@ export function ShellPanel({
           </div>
         ) : null}
 
-        {gridCells === 0 && onAddPocket ? (
+        {gridCells === 0 && onAddPocket && !dividers?.insert ? (
           <div className="edge-modifier-field shell-openings shell-pockets" role="group" aria-label={t("shell.pockets")} data-testid="shell-pockets">
             <span>{t("shell.pockets")}</span>
             {pocketParts.length > 0 ? (
@@ -680,9 +709,26 @@ export function ShellPanel({
                 disabled={busy}
                 onChange={onShelfHeightChange}
               />
+              {onShelfSlopeChange ? (
+                <div className="shell-opening-options">
+                  <button
+                    type="button"
+                    aria-pressed={shelfSlope}
+                    className={shelfSlope ? "active" : ""}
+                    disabled={busy}
+                    data-testid="shell-shelf-slope"
+                    onClick={() => onShelfSlopeChange(!shelfSlope)}
+                  >
+                    {t("shell.shelfSlope")}
+                  </button>
+                </div>
+              ) : null}
             </>
           ) : null}
           <span className="shell-openings-summary">{t("shell.shelfHint")}</span>
+          {shelf > 0 && onShelfSlopeChange ? (
+            <span className="shell-openings-summary">{shelfSlope ? t("shell.shelfSlopeOnHint", { mm: shellShelfDrop(shelf, true).toLocaleString(numberLocale()) }) : t("shell.shelfSlopeHint")}</span>
+          ) : null}
         </div>
       ) : null}
 
@@ -709,6 +755,14 @@ export function ShellPanel({
         </div>
       </details>
 
+      {/* The usual next step for a box: straight on to its lid, the hollowing kept on the way. Above the message, which stands right before the buttons' row (#1869). */}
+      {onMakeLid && openSides.includes("top") ? (
+        <div className="tool-next-step">
+          <button type="button" className="secondary" data-testid="shell-then-lid" disabled={busy || Boolean(error)} onClick={onMakeLid}>
+            {t("shell.thenLid")}
+          </button>
+        </div>
+      ) : null}
       {error ? <div className="edge-modifier-error" role="alert">{shellErrorMessage(error, roundedEdgesHint)}</div> : busy ? <span className="shell-openings-summary" role="status"><LoaderCircle className="edge-modifier-spinner" size={15} />{t("shell.working")}</span> : previewBusy ? <span className="shell-openings-summary shell-preview-status" role="status"><LoaderCircle className="edge-modifier-spinner" size={15} />{t("edge.previewBusy")}</span> : null}
       <div className="edge-modifier-footer">
         <button type="button" className="secondary" onClick={onCancel}>{t("common.cancel")}</button>

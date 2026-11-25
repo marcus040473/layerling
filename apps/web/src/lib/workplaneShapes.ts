@@ -963,6 +963,8 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     gridfinityOutlinesEqual(a.gridfinityOutline, b.gridfinityOutline) &&
     a.dovetailNeckWidth === b.dovetailNeckWidth &&
     a.dovetailClearance === b.dovetailClearance &&
+    JSON.stringify(a.lidFor ?? null) === JSON.stringify(b.lidFor ?? null) &&
+    (a.insertFor?.body ?? null) === (b.insertFor?.body ?? null) &&
     a.loftBottomOutline === b.loftBottomOutline &&
     a.loftTopOutline === b.loftTopOutline &&
     a.loftBottomWidth === b.loftBottomWidth &&
@@ -1025,6 +1027,7 @@ export function workplaneShapesEqual(a: WorkplaneShape, b: WorkplaneShape) {
     (a.paint === b.paint || JSON.stringify(a.paint ?? null) === JSON.stringify(b.paint ?? null)) &&
     vaseSettingsEqual(a.vase, b.vase) &&
     a.vasePartOf === b.vasePartOf &&
+    a.vaseAssembled === b.vaseAssembled &&
     a.gridfinityKeyOf === b.gridfinityKeyOf &&
     a.gridfinityClipOf === b.gridfinityClipOf &&
     a.textRadius === b.textRadius &&
