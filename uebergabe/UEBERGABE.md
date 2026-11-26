@@ -20,6 +20,34 @@ Branches A, B and C are based on Stefan's main at v1.156.2. Before a PR to Stefa
 
 ---
 
+## Reading GitHub: Stefan's discussions, issues and PRs (always use this, added 26 November 2026)
+
+Claude chats cannot read henmedia/layerling's discussions through GitHub directly: GraphQL is blocked in Claude Code
+sessions, and a session's GitHub access only covers the repositories it was started with. Marcus wants this to work in
+every chat, so **read GitHub through his n8n workflow** whenever the n8n connector is there:
+
+- Workflow **"Layerling · GitHub lesen (nur lesen)"**, id `3J7wrbfetyPlLkDo`, folder "Layerling (privat)". It only
+  reads (GraphQL with Marcus's n8n credential "GitHub Marcus Layerling") and cannot post anything.
+- Run it with the n8n MCP tool `execute_workflow`: `workflowId: "3J7wrbfetyPlLkDo"`, `executionMode: "manual"`,
+  `triggerNodeName: "Anfrage"`, `inputs: { webhookData: { method: "POST", body: { ... } } }`. Then read the result with
+  `get_workflow_execution` (`includeData: true`, `nodeNames: ["Ergebnis"]`). The output can be large: read it with a
+  script, not in one go.
+- `body.modus`:
+  - `"liste"` with `anzahl` (1 to 50): discussions by latest activity, each with its last message, `marcus_beteiligt`
+    and `wartet_auf_marcus` (a rule of thumb: Marcus is @-mentioned in the last message and did not write it; check
+    whether it really asks him something).
+  - `"diskussion"` with `nummer`: every post, comment and reply with author, date, text and `bilder` (image links).
+  - `"issues"` with `anzahl`: issues and pull requests by latest activity, with state (`merged` for merged PRs).
+  - `repo` is optional (default `henmedia/layerling`; only `henmedia/*` and `marcus040473/*` are allowed).
+- Image links are signed and expire about **5 minutes** after the run: download them right away (for example with
+  `curl` to a file, then look at the file) and run the workflow again for fresh ones. Videos cannot be viewed.
+- Posting stays separate: only through the gate workflow "Layerling · bei Stefan posten (Gate)" and only after
+  Marcus's OK (his status page buttons do this).
+- If the n8n connector is missing in a chat: the public pages on github.com still work through a web-fetch helper
+  (logged out, no "latest activity" sort, no reply dates in the list), and say in the chat that n8n was not connected.
+
+---
+
 ## A. `slide-lid-hints`: done
 
 With a frame above a slide-in lid, the wall it slides in through has a slot instead of being cut down. Three hints

@@ -4,6 +4,8 @@ This is Marcus's fork of Stefan's **Layerling** (henmedia/layerling): an open-so
 (TypeScript, Next.js, React, three.js, Manifold, OpenCascade in a worker, vitest).
 
 **Read `uebergabe/UEBERGABE.md` first.** It says what is done, what is open, and which branch each task lives on.
+Claude chats read Stefan's discussions, issues and PRs through Marcus's n8n workflow, as its section
+"Reading GitHub" describes.
 
 ## People
 - **Marcus** (marcus040473) owns this fork. He is not a programmer. Talk to him in **German, short and simple**, without
