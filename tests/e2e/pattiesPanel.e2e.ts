@@ -64,15 +64,15 @@ function choose(select: HTMLSelectElement, value: string) {
 }
 
 describe("Patties in the settings panel", () => {
-  it("offers the thirteen patterns and says how many figures the plate has", () => {
+  it("offers the fourteen patterns and says how many figures the plate has", () => {
     const panel = mount({});
     const pattern = selectWith(panel, "warp")!;
     expect([...pattern.options].map((option) => option.textContent)).toEqual([
-      "Warp grid", "Dots and stars", "Flowers", "Scales", "Waves, zigzag", "Cells", "Bricks", "Triangles", "Diamonds", "Weave", "Herringbone", "Rays", "Own figure",
+      "Warp grid", "Dots and stars", "Flowers", "Scales", "Waves, zigzag", "Cells", "Bricks", "Triangles", "Diamonds", "Weave", "Herringbone", "Rays", "Pegboard", "Own figure",
     ]);
     expect(text(panel)).toContain("81 figures, 55 % of the plate.");
     expect([...selectWith(panel, "stencil")!.options].map((option) => option.value)).toEqual(["stencil", "raised", "sunk", "pieces"]);
-    expect([...selectWith(panel, "fan")!.options].map((option) => option.value)).toEqual(["rectangle", "round", "fan"]);
+    expect([...selectWith(panel, "fan")!.options].map((option) => option.value)).toEqual(["rectangle", "round", "polygon", "star", "fan"]);
   });
 
   it("shows only the rows a pattern reads", () => {
@@ -135,6 +135,28 @@ describe("Patties in the settings panel", () => {
     expect(patches.at(-1)?.width).toBeUndefined();
   });
 
+  it("asks a polygon for its corners and a star for its points, and makes a fan round again (#2055)", () => {
+    const patches: Partial<WorkplaneShape>[] = [];
+    const flat = mount({}, (patch) => patches.push(patch));
+    expect(rangeNames(flat)).not.toContain("Corners");
+    choose(selectWith(flat, "polygon")!, "polygon");
+    expect(patches.at(-1)).toMatchObject({ patties: { outline: "polygon", corners: 6 }, width: 69.28, depth: 80 });
+    act(() => root?.unmount());
+    const polygon = mount({ outline: "polygon" }, (patch) => patches.push(patch), { width: 69.28, depth: 80 });
+    expect(rangeNames(polygon)).toContain("Corners");
+    type(field(polygon, "Corners"), "4");
+    expect(patches.at(-1)).toMatchObject({ patties: { corners: 4 }, width: 80, depth: 80 });
+    act(() => root?.unmount());
+    expect(rangeNames(mount({ outline: "star" }))).toContain("Points");
+    act(() => root?.unmount());
+    // Back from the fan "round" is a circle, not an oval as long as the fan.
+    const fan = pattiesFan(DEFAULT_PATTIES);
+    const panel = mount({ outline: "fan" }, (patch) => patches.push(patch), { width: fan.width, depth: fan.depth });
+    choose(selectWith(panel, "fan")!, "round");
+    const side = Math.round(fan.depth * 100) / 100;
+    expect(patches.at(-1)).toMatchObject({ patties: { outline: "round" }, width: side, depth: side });
+  });
+
   it("counts the figures round the ring and offers the solid middle when they run in rings", () => {
     const rings = rangeNames(mount({ layout: "polar" }));
     expect(rings).toEqual(expect.arrayContaining(["Figures per ring", "Solid middle (%)", "Focus to rim (%)"]));
@@ -176,6 +198,20 @@ describe("Patties in the settings panel", () => {
     act(() => root?.unmount());
     // No other pattern shows the button.
     expect(mount({}).querySelector("[data-testid=patties-motif-load]")).toBeNull();
+  });
+
+  it("lets every second row of a motif go the other way", () => {
+    const patches: Partial<WorkplaneShape>[] = [];
+    const panel = mount({ ...PATTIES_PRESETS.motif, pattern: "motif", motif: "moon" }, (patch) => patches.push(patch));
+    const alternate = selectWith(panel, "mirror")!;
+    expect([...alternate.options].map((option) => option.textContent)).toEqual(["The same", "Mirrored", "Upside down"]);
+    expect(alternate.value).toBe("none");
+    expect(text(panel)).toContain("goes there and back, row by row");
+    choose(alternate, "mirror");
+    expect(patches.at(-1)?.patties).toMatchObject({ pattern: "motif", motif: "moon", alternate: "mirror" });
+    act(() => root?.unmount());
+    // Only the motif has a direction to change.
+    expect(selectWith(mount({}), "mirror")).toBeUndefined();
   });
 
   it("offers to save the pattern as a drawing for a cutter where the editor can", () => {

@@ -76,6 +76,7 @@ import {
   normalizeSpringHand,
   normalizeSpringWire,
 } from "@/lib/springGeometry";
+import { spiralSpringDimensions } from "@/lib/spiralSpringGeometry";
 import { FLAT_SPRING_DIMENSIONS, flatSpringSettings } from "@/lib/flatSpringGeometry";
 import {
   DEFAULT_STAR_HEIGHT,
@@ -533,7 +534,7 @@ function springFields(customization: ShapeCustomization, width: number, depth: n
   const quality = normalizeSpringQuality(customization.springQuality ?? DEFAULT_SPRING_QUALITY);
   if (customization.springForm === "flat") {
     const flat = flatSpringSettings(customization, width, depth);
-    return { springForm: "flat" as const, springPattern: flat.pattern, springEnds: flat.ends, springTurns: flat.turns, springWire: flat.wire, springQuality: quality };
+    return { springForm: "flat" as const, springPattern: flat.pattern, springEnds: flat.ends, springTurns: flat.turns, springWire: flat.wire, springQuality: quality, ...("inner" in flat ? { springInner: flat.inner, springHand: flat.hand } : {}) };
   }
   return {
     springTurns: normalizeSpringTurns(customization.springTurns ?? DEFAULT_SPRING_TURNS, Math.max(width, depth), height, customization.springWire),
@@ -937,6 +938,7 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     springForm: shape.springForm,
     springPattern: shape.springPattern,
     springEnds: shape.springEnds,
+    springInner: shape.springInner,
     starPoints: shape.starPoints,
     starInnerSize: shape.starInnerSize,
     starOuterFillet: shape.starOuterFillet,
@@ -979,6 +981,9 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     gridfinityLargePlate: shape.gridfinityLargePlate,
     gridfinitySwallowtail: shape.gridfinitySwallowtail,
     gridfinityClipNotches: shape.gridfinityClipNotches,
+    gridfinityPuzzle: shape.gridfinityPuzzle,
+    gridfinityPuzzleSides: shape.gridfinityPuzzleSides,
+    gridfinityPuzzleFit: shape.gridfinityPuzzleFit,
     gridfinityClipCount: shape.gridfinityClipCount,
     gridfinitySwallowtailClearance: shape.gridfinitySwallowtailClearance,
     gridfinityLabelBack: shape.gridfinityLabelBack,
@@ -1161,7 +1166,7 @@ export function makeShapeFromAsset(
   // A plant pot or a lampshade: the vase with that use, in the size and with the settings the use starts with.
   const vasePurpose = asset.kind === "vase" ? VASE_ASSET_PURPOSES[asset.id] : undefined;
   const vaseStart = vasePurpose ? vasePurposeChoice(normalizeVaseSettings(undefined), vasePurpose, DEFAULT_VASE_SIZE) : null;
-  const defaults = asset.kind === "spring" && customization.springForm === "flat" ? FLAT_SPRING_DIMENSIONS
+  const defaults = asset.kind === "spring" && customization.springForm === "flat" ? (customization.springPattern === "spiral" ? spiralSpringDimensions(customization) : FLAT_SPRING_DIMENSIONS)
     : asset.kind === "polygon" && customization.polygonFlat ? flatPolygonDefaultDimensions(customization.sides)
       : vaseStart?.size ? { width: vaseStart.size.width, depth: vaseStart.size.width, height: vaseStart.size.height }
         : shapeAssetDefaultDimensions(asset.kind);
@@ -1261,6 +1266,8 @@ export function makeShapeFromAsset(
     gridfinityLargePlate: customization.gridfinityLargePlate,
     gridfinitySwallowtail: customization.gridfinitySwallowtail,
     gridfinityClipNotches: customization.gridfinityClipNotches,
+    gridfinityPuzzle: customization.gridfinityPuzzle,
+    gridfinityPuzzleFit: customization.gridfinityPuzzleFit,
     ...gridfinityPaddingFields,
   }) : null;
   // New gears get involute teeth (#201); their size follows the module, so other teeth keep module 2.
@@ -1348,7 +1355,7 @@ export function makeShapeFromAsset(
     textKerning: asset.kind === "text" ? customization.textKerning ?? true : undefined,
     steps: asset.kind === "box" ? 10 : asset.kind === "sphere" ? customization.steps ?? 24 : asset.kind === "halfSphere" || asset.kind === "paraboloid" ? customization.steps ?? 32 : asset.kind === "torus" ? customization.steps : undefined,
     torusTubeRatio: asset.kind === "torus" ? customization.torusTubeRatio ?? torusTubeRatio({ width, depth, height }) : undefined,
-    sides: asset.kind === "cylinder" || asset.kind === "ellipse" || asset.kind === "slot" || asset.kind === "cone" || asset.kind === "curvedCone" || asset.kind === "tube" || asset.kind === "ring" || asset.kind === "counterbore" || asset.kind === "countersink" || asset.kind === "finishingWasher" || asset.kind === "teardrop" || asset.kind === "torus" ? customization.sides : asset.kind === "roundRoof" ? customization.sides ?? 64 : asset.kind === "pyramid" ? customization.sides ?? 4 : asset.kind === "polygon" ? customization.sides ?? 6 : undefined,
+    sides: asset.kind === "cylinder" || asset.kind === "ellipse" || asset.kind === "slot" || asset.kind === "cone" || asset.kind === "curvedCone" || asset.kind === "tube" || asset.kind === "ring" || asset.kind === "counterbore" || asset.kind === "countersink" || asset.kind === "doubleCountersink" || asset.kind === "finishingWasher" || asset.kind === "teardrop" || asset.kind === "torus" ? customization.sides : asset.kind === "roundRoof" ? customization.sides ?? 64 : asset.kind === "pyramid" ? customization.sides ?? 4 : asset.kind === "polygon" ? customization.sides ?? 6 : undefined,
     bevel: asset.kind === "cylinder" || asset.kind === "ellipse" || asset.kind === "slot" ? 0 : asset.kind === "tube" || asset.kind === "ring" ? customization.bevel ?? 4 : asset.kind === "text" ? customization.bevel : undefined,
     segments: asset.kind === "cylinder" || asset.kind === "ellipse" || asset.kind === "slot" ? 1 : asset.kind === "text" ? customization.segments : undefined,
     topRadius: asset.kind === "cone" ? customization.topRadius ?? 0 : undefined,
@@ -1453,6 +1460,8 @@ export function makeShapeFromAsset(
     gridfinityLargePlate: asset.kind === "gridfinity" ? customization.gridfinityLargePlate : undefined,
     gridfinitySwallowtail: asset.kind === "gridfinity" ? customization.gridfinitySwallowtail : undefined,
     gridfinityClipNotches: asset.kind === "gridfinity" ? customization.gridfinityClipNotches : undefined,
+    gridfinityPuzzle: asset.kind === "gridfinity" ? customization.gridfinityPuzzle : undefined,
+    gridfinityPuzzleFit: asset.kind === "gridfinity" ? customization.gridfinityPuzzleFit : undefined,
     gridfinityClipCount: asset.kind === "gridfinity" ? customization.gridfinityClipCount : undefined,
     gridfinitySwallowtailClearance: asset.kind === "gridfinity" ? customization.gridfinitySwallowtailClearance : undefined,
     gridfinityLabelBack: asset.kind === "gridfinity" ? customization.gridfinityLabelBack : undefined,
@@ -1604,6 +1613,14 @@ const GENERATED_NAME_KEYS: Record<string, MessageKey> = {
   Board: "sbcBoard.board",
   // The roof (#1931) is a polygon from the library, not the toolbar, so its name is not found among the toolbar shapes.
   Roof: "shape.roof",
+  // Made by a tool or a window of their own, under a kind that no library entry of that name has.
+  "Sketch sweep": "sketch.sweep",
+  Loft: "shape.loft",
+  "Name tag": "shape.nameTag",
+  Fan: "shape.fan",
+  "SBC board": "sbcBoard.title",
+  "Thread insert": "threadInsert.title",
+  "Magnet pocket": "magnetPocket.title",
 };
 
 /**
@@ -1616,7 +1633,8 @@ export function displayShapeName(shape: Pick<WorkplaneShape, "name" | "kind" | "
   const name = shape.name?.trim() ?? "";
   const generated = GENERATED_NAME_KEYS[name];
   if (generated) return t(generated);
-  const asset = toolbarShapeAssets.find((entry) => entry.kind === shape.kind && entry.name === name);
+  // The library has entries the toolbar does not: the plant pot and the lampshade are vases under their own name.
+  const asset = toolbarShapeAssets.find((entry) => entry.kind === shape.kind && entry.name === name) ?? libraryShapeAssets.find((entry) => entry.kind === shape.kind && entry.name === name);
   if (asset) return shapeAssetLabel(asset);
   if (!name && shape.kind === "polygon" && shape.polygonRoof) return shapeAssetLabel(roofAsset);
   return name || shapeAssetLabel({ id: shape.kind, name: shape.kind });
@@ -1626,7 +1644,7 @@ export function displayShapeName(shape: Pick<WorkplaneShape, "name" | "kind" | "
 export function hasOwnShapeName(shape: Pick<WorkplaneShape, "name" | "kind" | "polygonRoof">): boolean {
   const name = shape.name?.trim() ?? "";
   if (!name || GENERATED_NAME_KEYS[name]) return false;
-  return !toolbarShapeAssets.some((entry) => entry.kind === shape.kind && (entry.name === name || shapeAssetLabel(entry) === name));
+  return ![...toolbarShapeAssets, ...libraryShapeAssets].some((entry) => entry.kind === shape.kind && (entry.name === name || shapeAssetLabel(entry) === name));
 }
 
 /**

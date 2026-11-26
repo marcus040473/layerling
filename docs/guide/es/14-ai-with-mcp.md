@@ -161,6 +161,7 @@ La IA trabaja con las mismas funciones que tú, por el mismo camino que sigues c
 | `layerling_remove_notes` | borra notas por id |
 | `layerling_inspect_errors` | muestra el último mensaje y el último error, además de los mensajes y errores de la sesión |
 | `layerling_wrap_around_cylinder` | envuelve un cuerpo plano, como un SVG o un texto, alrededor de un cilindro, hacia fuera o hacia dentro como grabado |
+| `layerling_take_rotation_as_zero` | toma como cero la posición actual de una malla girada: el cuerpo no se mueve, sus ángulos son 0 |
 | `layerling_texture_surface` | aplica una textura de superficie a un cuerpo: estrías, moleteado, panal o bultos, para un mejor agarre o por estética, y la cambia o la quita después |
 | `layerling_simplify_mesh` | reduce el número de triángulos de una malla importada, a un porcentaje o a un número de triángulos |
 | `layerling_make_exact` | convierte una malla importada en un cuerpo CAD exacto: planos, cilindros, conos, esferas y toros pasan a ser caras reales, para redondear aristas limpiamente y que STEP las lleve |
@@ -187,6 +188,7 @@ La IA trabaja con las mismas funciones que tú, por el mismo camino que sigues c
 | `layerling_export_drawing` | hace el plano para el taller de la exportación «2D»: tres vistas a escala 1:1 en una hoja ISO, con las medidas totales y una tabla de los taladros redondos, como texto SVG o como PDF |
 | `layerling_export_mesh` | escribe el archivo de la ventana de exportación en STL, 3MF, OBJ, SVG (vista superior, huella o aristas visibles) o DXF para corte láser, a partir de los mismos cuerpos; en una ruta de este ordenador o en base64 |
 | `layerling_save_project` | guarda el diseño editable completo como archivo .lyl en una ruta del ordenador donde funciona el servidor MCP, sin cuadro de diálogo; un archivo existente solo se sustituye con `overwrite`, se escribe a través de un archivo temporal y el destino de Ctrl+S en el editor no cambia |
+| `layerling_open_project` | abre un archivo .lyl guardado desde una ruta del ordenador donde funciona el servidor MCP como un diseño nuevo, igual que si abrieras tú el archivo; el diseño nuevo no queda ligado al archivo, así que los cambios se guardan con `layerling_save_project` en la misma ruta con `overwrite` |
 | `layerling_list_attachments` | lista los archivos adjuntos al diseño (nombre, tipo, tamaño), como los muestra el panel Adjuntos |
 | `layerling_get_attachment` | lee un archivo adjunto, sus bytes en base64, como Descargar en el panel |
 | `layerling_add_attachment` | adjunta un archivo dado en base64, con las comprobaciones del panel; un nombre ya adjunto solo se sobrescribe con `replace` |

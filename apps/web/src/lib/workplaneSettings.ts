@@ -5,7 +5,7 @@ import { DEFAULT_IMPERIAL_GRID_BLOCK_PRESET, DEFAULT_METRIC_GRID_BLOCK_PRESET, D
 import { isThreadProfile } from "@/lib/threadProfiles";
 import { MAX_TEXT_LENGTH } from "@/lib/textLength";
 import { normalizeHexColor } from "@/lib/coloredImport";
-import { normalizePlateNames } from "@/lib/buildPlateNames";
+import { normalizePlateNames, normalizePlatesPerRow } from "@/lib/buildPlateNames";
 import { TORUS_MAX_TUBE_RATIO, TORUS_MIN_TUBE_RATIO } from "@/lib/torusShape";
 import { MAX_PULLEY_BELT_WIDTH, MAX_PULLEY_FLANGE, MAX_PULLEY_FLANGE_RISE, MAX_PULLEY_HUB_HEIGHT, MAX_PULLEY_TEETH, MIN_PULLEY_BELT_WIDTH, MIN_PULLEY_FLANGE_RISE, MIN_PULLEY_TEETH } from "@/lib/pulleyGeometry";
 import { MAX_HIRTH_STEEP_FLANK, MAX_HIRTH_TEETH, MIN_HIRTH_STEEP_FLANK, MIN_HIRTH_TEETH, MIN_HIRTH_TOOTH_HEIGHT } from "@/lib/hirthGeometry";
@@ -526,6 +526,8 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
       entry.gridfinityLargePlate = typeof source.gridfinityLargePlate === "boolean" ? source.gridfinityLargePlate : fallbackEntry?.gridfinityLargePlate;
       entry.gridfinitySwallowtail = typeof source.gridfinitySwallowtail === "boolean" ? source.gridfinitySwallowtail : fallbackEntry?.gridfinitySwallowtail;
       entry.gridfinityClipNotches = typeof source.gridfinityClipNotches === "boolean" ? source.gridfinityClipNotches : fallbackEntry?.gridfinityClipNotches;
+      entry.gridfinityPuzzle = typeof source.gridfinityPuzzle === "boolean" ? source.gridfinityPuzzle : fallbackEntry?.gridfinityPuzzle;
+      entry.gridfinityPuzzleFit = typeof source.gridfinityPuzzleFit === "number" && Number.isFinite(source.gridfinityPuzzleFit) ? Math.min(1, Math.max(0, source.gridfinityPuzzleFit)) : fallbackEntry?.gridfinityPuzzleFit;
       entry.gridfinityClipCount = optionalShapeNumber(source.gridfinityClipCount, fallbackEntry?.gridfinityClipCount, 1, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinitySwallowtailClearance = optionalShapeNumber(source.gridfinitySwallowtailClearance, fallbackEntry?.gridfinitySwallowtailClearance, 0, MAX_CUSTOM_SHAPE_DIMENSION);
       entry.gridfinityLabelBack = typeof source.gridfinityLabelBack === "boolean" ? source.gridfinityLabelBack : fallbackEntry?.gridfinityLabelBack;
@@ -700,7 +702,8 @@ export function normalizeShapeCustomizations(value: unknown, fallback: ShapeCust
           ? source.springHand
           : fallbackEntry?.springHand;
       entry.springForm = source.springForm === "coil" || source.springForm === "flat" ? source.springForm : fallbackEntry?.springForm;
-      entry.springPattern = source.springPattern === "round" || source.springPattern === "zigzag" || source.springPattern === "square" ? source.springPattern : fallbackEntry?.springPattern;
+      entry.springPattern = source.springPattern === "round" || source.springPattern === "zigzag" || source.springPattern === "square" || source.springPattern === "spiral" ? source.springPattern : fallbackEntry?.springPattern;
+      entry.springInner = optionalShapeNumber(source.springInner, fallbackEntry?.springInner, 0.4, 480);
       entry.springEnds = source.springEnds === "eye" || source.springEnds === "tab" || source.springEnds === "none" ? source.springEnds : fallbackEntry?.springEnds;
     }
     if (kind === "thread") {
@@ -959,6 +962,7 @@ export function normalizeWorkspaceSettings(value: unknown, fallback: WorkplaneWo
     printer: typeof candidate.printer === "string" ? candidate.printer : candidate.sizePreset === undefined ? fallback.printer : "",
     // The plates belong to the design: they come only from its own settings, never from a fallback (#456).
     ...(normalizePlateNames(candidate.plates) ? { plates: normalizePlateNames(candidate.plates) } : {}),
+    ...(normalizePlatesPerRow(candidate.platesPerRow) ? { platesPerRow: normalizePlatesPerRow(candidate.platesPerRow) } : {}),
     ...gridBlockForUnits(
       units,
       stringOrDefault(candidate.gridBlockPreset, fallback.gridBlockPreset),
@@ -1114,6 +1118,7 @@ export function workspaceWithSavedDefault(current: WorkplaneWorkspaceSettings, s
     printer: plate.printer,
     // The design keeps its plates (#456).
     plates: current.plates,
+    platesPerRow: current.platesPerRow,
     units: current.units,
     inchFormat: current.inchFormat,
     scale: current.scale,
@@ -1172,7 +1177,7 @@ export function saveWorkspaceDefault(
   try {
     storage.setItem(WORKSPACE_DEFAULT_STORAGE_KEY, JSON.stringify({
       // A design's plates are its own: the default workplane has one plate (#456).
-      workspace: { ...normalizeWorkspaceSettings(workspace), plates: undefined },
+      workspace: { ...normalizeWorkspaceSettings(workspace), plates: undefined, platesPerRow: undefined },
       snap: normalizeSnapGrid(snap, DEFAULT_SNAP_GRID),
     }));
     // The server store keeps a copy for every browser (serverWorkspaceDefault.ts).

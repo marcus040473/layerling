@@ -161,6 +161,7 @@ Die KI arbeitet mit denselben Funktionen wie du, sie läuft über denselben Weg 
 | `layerling_remove_notes` | löscht Notizen nach Kennung |
 | `layerling_inspect_errors` | zeigt die letzte Meldung und den letzten Fehler, dazu die Meldungen und Fehler der Sitzung |
 | `layerling_wrap_around_cylinder` | wickelt einen flach liegenden Körper, etwa ein SVG oder Text, um einen Zylinder, nach außen oder als Gravur nach innen |
+| `layerling_take_rotation_as_zero` | nimmt die jetzige Lage eines gedrehten Netzes als 0: der Körper bleibt stehen, seine Winkel sind 0 |
 | `layerling_texture_surface` | bringt eine Oberfläche auf einen Körper: Rillen, Rändel, Waben oder Noppen, für besseren Halt oder fürs Auge, und ändert oder entfernt sie später |
 | `layerling_simplify_mesh` | verringert die Dreieckszahl eines importierten Netzes, auf einen Anteil in Prozent oder auf eine Anzahl Dreiecke |
 | `layerling_make_exact` | macht aus einem importierten Netz einen exakten CAD-Körper: Ebenen, Zylinder, Kegel, Kugeln und Tori werden echte Flächen, damit Kanten sauber abrunden und STEP sie trägt |
@@ -187,6 +188,7 @@ Die KI arbeitet mit denselben Funktionen wie du, sie läuft über denselben Weg 
 | `layerling_export_drawing` | macht die Werkstattzeichnung des Exports „2D“: drei Ansichten im Maßstab 1:1 auf einem ISO-Blatt mit Gesamtmaßen und einer Tabelle der runden Bohrungen, als SVG-Text oder PDF |
 | `layerling_export_mesh` | schreibt die Datei des Exportfensters als STL, 3MF, OBJ, SVG (Draufsicht, Aufstandsfläche oder sichtbare Kanten) oder DXF für den Laserschnitt, aus denselben Körpern; an einen Pfad auf diesem Rechner oder als Base64 |
 | `layerling_save_project` | speichert den ganzen bearbeitbaren Entwurf als .lyl-Datei an einem Pfad auf dem Rechner, auf dem der MCP-Server läuft, ohne Dialog; eine vorhandene Datei wird nur mit `overwrite` ersetzt, geschrieben wird über eine temporäre Datei, und das Ziel von Strg+S im Editor bleibt, wie es war |
+| `layerling_open_project` | öffnet eine gespeicherte .lyl-Datei von einem Pfad auf dem Rechner, auf dem der MCP-Server läuft, als neuen Entwurf, so wie wenn du die Datei selbst öffnest; der neue Entwurf ist nicht mit der Datei verbunden, Änderungen schreibt `layerling_save_project` mit demselben Pfad und `overwrite` zurück |
 | `layerling_list_attachments` | listet die an den Entwurf angehängten Dateien (Name, Art, Größe), wie das Fenster Anhänge sie zeigt |
 | `layerling_get_attachment` | liest eine angehängte Datei, ihre Bytes als base64, wie Herunterladen im Fenster |
 | `layerling_add_attachment` | hängt eine als base64 übergebene Datei an, mit den Prüfungen des Fensters; ein schon vorhandener Name wird nur mit `replace` überschrieben |

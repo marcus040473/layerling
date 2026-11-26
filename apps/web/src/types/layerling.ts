@@ -259,6 +259,8 @@ export type ShapeCustomization = {
   springForm?: SpringForm;
   springPattern?: FlatSpringPattern;
   springEnds?: FlatSpringEnds;
+  /** The free inside of a spiral spring (Discussion #412), in mm. */
+  springInner?: number;
   starPoints?: number;
   starInnerSize?: number;
   starOuterFillet?: number;
@@ -334,6 +336,12 @@ export type ShapeCustomization = {
   gridfinityClipNotches?: boolean;
   /** Gridfinity baseplate with clip notches: how many clips Add clips lays out, 1 unless set. */
   gridfinityClipCount?: number;
+  /** Gridfinity baseplate: GridFlock's puzzle (yawkat/GridFlock), tabs on the back and right and sockets on the front and left at the cell corners of each side without padding, so plates printed in pieces join by pressing them together. */
+  gridfinityPuzzle?: boolean;
+  /** Gridfinity baseplate with the GridFlock puzzle: the sides it is kept to, missing means every side without padding; a piece of a split plate has its cut sides. */
+  gridfinityPuzzleSides?: Array<"back" | "front" | "left" | "right">;
+  /** Gridfinity baseplate with the GridFlock puzzle: its fit, 0 loose to 1 tight (GridFlock's intersection_puzzle_fit); missing means 0.7. */
+  gridfinityPuzzleFit?: number;
   /** Gridfinity baseplate with Swallowtail: the clearance of the keys Add keys lays out, in mm on every side; missing means 0.05, at most 0.15; the plate stays as it is (#1061). */
   gridfinitySwallowtailClearance?: number;
   /** Gridfinity bin: a label shelf along the back wall. */
@@ -459,8 +467,10 @@ export type ShapeCustomization = {
    * the settings it was made with (lidTool.ts LidOptions), the loose parts lying beside it (a pin, clips, end plugs) and,
    * with labels, the middles of the box's compartments then (from the box's middle), so each label finds its compartment again.
    * When that body is hollowed again - other compartments, another wall - the lid is made again in its place.
+   * `up` says which end of the body the lid was made for: the direction that pointed up then, in the body's own frame
+   * (lidGroup.ts lidBodyUp). Turned over, the body can get a second lid on its other end (Discussion #2052).
    */
-  lidFor?: { body: string; options: Record<string, unknown>; parts?: string[]; rooms?: [number, number][] };
+  lidFor?: { body: string; options: Record<string, unknown>; parts?: string[]; rooms?: [number, number][]; up?: [number, number, number] };
   /**
    * A loose insert made by Hollow (dividers "as a loose insert"): the body it goes into (its id). When that body is
    * hollowed again or resized the insert is made again in its place, and taken away when the dividers are fixed again.
@@ -557,6 +567,8 @@ export type WorkplaneWorkspaceSettings = {
    * part of the default workplane.
    */
   plates?: string[];
+  /** How many build plates stand in a row, the next row in front of it (Discussion #2073); left out, all in one row. A design's own, as the plates. */
+  platesPerRow?: number;
   gridBlockSize: number;
   gridBlockPreset: string;
   /** The grid preset of the unit system left by the last switch between mm and in, so switching back finds it again (#442). */
@@ -751,6 +763,14 @@ export type SketchStrokeCap = "flat" | "square" | "round";
  * the colours lie side by side on one flat face, none on another. `height` is the layer's own height in the stack, kept so the
  * stack comes back as it was when it is stacked again. The top layer has no pocket.
  */
+/**
+ * Text on the back of a name tag or an icon tag (phone number, e-mail): its lines (Enter starts a new one), centred
+ * under each other and sunk `depth` mm into the bottom layer's underside, mirrored so they read from below. `size` is
+ * a capital's height in mm; `font` the letters' typeface (the name tag's own, else the usual one). With `fill`, a part
+ * in that colour fills the letters flush with the underside. Kept on the bottom layer, the fill part flagged as such.
+ */
+export type TagBack = { text: string; size: number; depth: number; font?: string; fill?: string; /** Set by the build: some letters reached past the bottom layer's outline and were cut off. */ clipped?: boolean };
+
 export type FlushLayer = {
   depth: number;
   height: number;
@@ -813,6 +833,9 @@ export type SketchProfile = {
   keyring?: SketchKeyring;
   /** A layer of an icon tag laid in flush, as a name tag's (textFlush): see FlushLayer. */
   flush?: FlushLayer;
+  /** The bottom layer of an icon tag with text on its back: see TagBack. With `backFill` the part that fills that text. */
+  back?: TagBack;
+  backFill?: boolean;
   /** Built set in from its outlines by the face tool: the body keeps the face's outline and builds the inset from it. */
   inset?: SketchInset;
   /** Which edge of a swept cross-section runs along the path: "center" (the default, left out) or "left"/"right" as seen along the path. */
@@ -887,7 +910,7 @@ export type ThreadHead = "cylinder" | "countersunk" | "hex" | "square" | "flange
 export type ThreadDrive = "hex" | "torx" | "phillips" | "slot" | "robertson" | "none";
 export type ThreadHand = "right" | "left";
 export type SpringForm = "coil" | "flat";
-export type FlatSpringPattern = "round" | "zigzag" | "square";
+export type FlatSpringPattern = "round" | "zigzag" | "square" | "spiral";
 export type FlatSpringEnds = "eye" | "tab" | "none";
 /**
  * Die Zahnform: scharfe ISO-Spitze, flache Trapezflanke, rundes Profil oder
@@ -1290,6 +1313,8 @@ export type WorkplaneShape = {
   springForm?: SpringForm;
   springPattern?: FlatSpringPattern;
   springEnds?: FlatSpringEnds;
+  /** The free inside of a spiral spring (Discussion #412), in mm. */
+  springInner?: number;
   starPoints?: number;
   starInnerSize?: number;
   starOuterFillet?: number;
@@ -1365,6 +1390,12 @@ export type WorkplaneShape = {
   gridfinityClipNotches?: boolean;
   /** Gridfinity baseplate with clip notches: how many clips Add clips lays out, 1 unless set. */
   gridfinityClipCount?: number;
+  /** Gridfinity baseplate: GridFlock's puzzle (yawkat/GridFlock), tabs on the back and right and sockets on the front and left at the cell corners of each side without padding, so plates printed in pieces join by pressing them together. */
+  gridfinityPuzzle?: boolean;
+  /** Gridfinity baseplate with the GridFlock puzzle: the sides it is kept to, missing means every side without padding; a piece of a split plate has its cut sides. */
+  gridfinityPuzzleSides?: Array<"back" | "front" | "left" | "right">;
+  /** Gridfinity baseplate with the GridFlock puzzle: its fit, 0 loose to 1 tight (GridFlock's intersection_puzzle_fit); missing means 0.7. */
+  gridfinityPuzzleFit?: number;
   /** Gridfinity baseplate with Swallowtail: the clearance of the keys Add keys lays out, in mm on every side; missing means 0.05, at most 0.15; the plate stays as it is (#1061). */
   gridfinitySwallowtailClearance?: number;
   /** Gridfinity bin: a label shelf along the back wall. */
@@ -1510,8 +1541,10 @@ export type WorkplaneShape = {
    * the settings it was made with (lidTool.ts LidOptions), the loose parts lying beside it (a pin, clips, end plugs) and,
    * with labels, the middles of the box's compartments then (from the box's middle), so each label finds its compartment again.
    * When that body is hollowed again - other compartments, another wall - the lid is made again in its place.
+   * `up` says which end of the body the lid was made for: the direction that pointed up then, in the body's own frame
+   * (lidGroup.ts lidBodyUp). Turned over, the body can get a second lid on its other end (Discussion #2052).
    */
-  lidFor?: { body: string; options: Record<string, unknown>; parts?: string[]; rooms?: [number, number][] };
+  lidFor?: { body: string; options: Record<string, unknown>; parts?: string[]; rooms?: [number, number][]; up?: [number, number, number] };
   /**
    * A loose insert made by Hollow (dividers "as a loose insert"): the body it goes into (its id). When that body is
    * hollowed again or resized the insert is made again in its place, and taken away when the dividers are fixed again.
@@ -1633,6 +1666,9 @@ export type WorkplaneShape = {
    * where the colour above lies, so the tag's face is flat. See FlushLayer.
    */
   textFlush?: FlushLayer;
+  /** The bottom layer of a name tag with text on its back: see TagBack. With `textBackFill`, the part that fills that text. */
+  textBack?: TagBack;
+  textBackFill?: boolean;
   /**
    * Straight text only (#382): the letters are stretched to fill the box in both directions, so a
    * capital can be made lower or narrower as in Tinkercad. Without it the letters keep their
@@ -1922,13 +1958,15 @@ export type QrStyle = "code" | "raised" | "engraved";
 /** The single-board computers the SBC board shape knows (#1098). */
 export type SbcBoardType = "pi5" | "pi4" | "pi3bPlus" | "zero2w" | "bttPi12" | "xiaoEsp32c6" | "esp32c3SuperMini" | "esp32c6SuperMini" | "featherEsp32s3" | "arduinoUno" | "arduinoMega" | "arduinoNano" | "wemosD1Mini" | "pico" | "picoW" | "pico2" | "pico2W" | "esp32CamMb" | "esp32s3Cam" | "esp32DevKitC" | "esp32DevKitV1" | "cyd" | "cyd2usb" | "waveshareEsp32s3Zero" | "arduinoProMini" | "nanoPiNeo3Plus" | "waveshareEsp32p4Nano";
 
-export type PattiesPattern = "warp" | "dots" | "petals" | "scales" | "waves" | "cells" | "bricks" | "triangles" | "diamonds" | "weave" | "herringbone" | "rays" | "motif";
+export type PattiesPattern = "warp" | "dots" | "petals" | "scales" | "waves" | "cells" | "bricks" | "triangles" | "diamonds" | "weave" | "herringbone" | "rays" | "pegboard" | "motif";
 /** The figure the motif pattern repeats: one of the ready ones, or one's own, read from a drawing or a picture. */
 export type PattiesMotif = "heart" | "drop" | "moon" | "cross" | "leaf" | "paw" | "custom";
-export type PattiesOutline = "rectangle" | "round" | "fan";
+export type PattiesOutline = "rectangle" | "round" | "polygon" | "star" | "fan";
 export type PattiesLayout = "straight" | "polar";
 export type PattiesMode = "stencil" | "raised" | "sunk" | "pieces";
 export type PattiesCell = "pill" | "ellipse";
+/** Motif: what every second row does with its figure - nothing, mirror it left to right, or stand it on its head. */
+export type PattiesAlternate = "none" | "mirror" | "turn";
 
 /**
  * Pattern plate ("Patties"): a flat plate that carries a pattern of figures. The figures are laid out by these
@@ -1937,11 +1975,13 @@ export type PattiesCell = "pill" | "ellipse";
 export type PattiesSettings = {
   /**
    * Warp grid, dots, flowers, scales, waves, cells that grow like foam, bricks, triangles, diamonds, a weave,
-   * herringbone, rays from a middle, or a figure of one's own repeated.
+   * herringbone, rays from a middle, a pegboard's slots at their fixed measures, or a figure of one's own repeated.
    */
   pattern: PattiesPattern;
-  /** The plate's edge: a rectangle, round, or the unrolled side of a round vessel with sloped sides. */
+  /** The plate's edge: a rectangle, round, a polygon, a star, or the unrolled side of a round vessel with sloped sides. */
   outline: PattiesOutline;
+  /** Polygon: the corners of the plate's edge. Star: its points. */
+  corners: number;
   /** The figures in straight rows, or in rings round the middle. A fan lays them out along its own curve. */
   layout: PattiesLayout;
   /**
@@ -1991,6 +2031,21 @@ export type PattiesSettings = {
   fanSide: number;
   /** Motif: which figure is repeated. */
   motif: PattiesMotif;
+  /**
+   * Motif: every second row shows the figure the other way - mirrored left to right, so a figure that points along
+   * the row goes there and back, or turned by half a turn.
+   */
+  alternate: PattiesAlternate;
+  /**
+   * Stencil and pieces: the openings slope through the plate by this many degrees, -60 to 60. Above 0 their top is
+   * further back than their bottom, so a plate stood up on its front edge lets no rain in from its underside.
+   */
+  tilt: number;
+  /**
+   * Print chamfer in mm: the two upper corners of every figure cut off at 45 degrees (the lower ones of raised
+   * figures), up to a roof, so the plate prints standing on its front edge. 0 for none.
+   */
+  chamfer: number;
   /**
    * Motif "custom": the figure's outlines, each a closed line as x, y, x, y, ... inside a circle of radius 1 round
    * the origin, y up. Read from an SVG or traced from a picture (lib/pattiesMotif.ts); holes are left out.

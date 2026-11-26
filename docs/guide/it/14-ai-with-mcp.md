@@ -161,6 +161,7 @@ L’IA usa le stesse funzioni che hai a disposizione, attraverso lo stesso perco
 | `layerling_remove_notes` | elimina note per id |
 | `layerling_inspect_errors` | Mostra l’ultimo messaggio e l’ultimo errore, oltre a tutti i messaggi e gli errori della sessione. |
 | `layerling_wrap_around_cylinder` | Avvolge attorno a un cilindro un corpo appoggiato in piano, per esempio un SVG o un testo, verso l’esterno oppure verso l’interno come incisione. |
+| `layerling_take_rotation_as_zero` | usa come zero la posizione attuale di una mesh ruotata: il corpo non si muove, i suoi angoli sono 0 |
 | `layerling_texture_surface` | Applica una texture di superficie a un corpo: scanalature, zigrinatura, nido d’ape o bugnature, per una presa migliore o per l’aspetto, e in seguito la modifica o la rimuove. |
 | `layerling_simplify_mesh` | Riduce il numero di triangoli di una mesh importata, mantenendo una percentuale o un numero preciso di triangoli. |
 | `layerling_make_exact` | Trasforma una mesh importata in un corpo CAD esatto: piani, cilindri, coni, sfere e tori diventano facce vere, così gli spigoli si arrotondano in modo pulito e STEP li porta. |
@@ -187,6 +188,7 @@ L’IA usa le stesse funzioni che hai a disposizione, attraverso lo stesso perco
 | `layerling_export_drawing` | Crea il disegno tecnico dell’esportazione «2D»: tre viste in scala 1:1 su un foglio ISO, con dimensioni complessive e tabella dei fori circolari, in formato SVG testuale o PDF. |
 | `layerling_export_mesh` | Esporta i corpi della finestra di esportazione in formato STL, 3MF, OBJ, SVG (vista dall’alto, impronta o spigoli visibili) o DXF per il taglio laser, in un percorso del computer o come base64. |
 | `layerling_save_project` | Salva l’intero progetto modificabile come file `.lyl` in un percorso del computer su cui è in esecuzione il server MCP, senza finestra di dialogo. Un file esistente viene sostituito solo con `overwrite`; il salvataggio avviene tramite un file temporaneo e non modifica la destinazione di [[Ctrl]]+[[S]] nell’editor. |
+| `layerling_open_project` | Apre come nuovo progetto un file `.lyl` salvato, da un percorso del computer su cui è in esecuzione il server MCP, come quando apri tu il file. Il nuovo progetto non è collegato al file: per riscrivere le modifiche si usa `layerling_save_project` con lo stesso percorso e `overwrite`. |
 | `layerling_list_attachments` | elenca i file allegati al progetto (nome, tipo, dimensione), come li mostra il pannello Attachments |
 | `layerling_get_attachment` | legge un file allegato, i suoi byte in base64, come Download nel pannello |
 | `layerling_add_attachment` | allega un file dato in base64, con i controlli del pannello; un nome già allegato viene sovrascritto solo con `replace` |

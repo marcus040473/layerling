@@ -55,7 +55,7 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 - **{{ui:inspector.solid}} 或 {{ui:inspector.hole}}：** 實體保留材料，孔則移除材料。點擊 {{ui:inspector.solid}} 會開啟顏色；你在那裡調出的自訂顏色之後會留在 {{ui:inspector.recentColors}} 下，最多最近八個。更多內容見[實體與孔](chapter:solids-and-holes)。{{ui:inspector.keptColors}} 那一列的圖釘可永久保留你選的顏色：它獨佔一列，較新的顏色永遠不會把它擠掉，再按同一枚圖釘即可取消保留；這個瀏覽器最多保留 21 種顏色。
 - **{{ui:inspector.transparent}}：** 讓你能看穿實體，例如看清它後面的形狀。
 - **{{ui:inspector.multicolor}}：** 適用於群組或綁定；[[Shift]]+[[M]] 可切換。開啟後，群組中的每個部件都顯示自己的顏色，被孔挖成單一實體的群組也一樣（孔留下的壁會採用被挖入實體的顏色）。為群組選顏色會關閉這個選項，並為整個群組上色；各部件自己的顏色仍保留在底下，因此再次開啟時會恢復。綁定一開始就是開啟的；關閉後，綁定會以單一顏色顯示與匯出。你新建立的純實體群組一開始是關閉的，顯示為一個整體；先前建立的群組仍顯示各部件的顏色。為某個群組開啟後，之後新建立的群組也會一開始就開啟，直到你再次為某個群組關閉它；瀏覽器會記住這個選擇。匯出 3MF 時每個部件都保留顏色，切片軟體便能據此把各部件對應到線材；OBJ 把顏色記錄在頂點上，因此那裡兩種顏色的交界會稍微粗糙一些。開關下方的 {{ui:inspector.partColors}} 列出群組或綁定中的實體部件（最多 12 個；孔不列出，被挖成單一網格的群組沒有此清單），每個部件附一個色塊：選一次顏色只會為該部件重新上色，不必開啟群組，並算作一個復原步驟。
-- **{{ui:inspector.properties}}：** 尺寸以及屬於這個形狀的一切。圓柱有直徑、高度與邊數。圓管或圓環則有 {{ui:prop.outerDiameter}}、{{ui:prop.innerDiameter}}（用於已知軸徑的襯套）與壁厚：任意兩個值可得出第三個，輸入順序不拘。設定外徑時內孔保持不變、壁厚隨之改變；設定內徑時外徑保持不變、壁厚隨之改變；內孔比管更寬時，外徑會按壁厚增大。管的長度就是它的高度。被拉過一邊、不再是圓形的管，會以長度與寬度兩個值取代原本的單一外徑；在那裡改變寬度時壁厚保持不變。齒輪有齒數，彈簧有圈數。離開預設值的數值，名稱旁會出現一個小箭頭：點擊它只還原該數值，無論你之後還做了什麼，這點與復原不同。按兩下滑桿也一樣，這裡以及工作區設定中的滑桿都是如此。用滑鼠拖曳時，長度滑桿會吸附到吸附步距，因此高度會落在整數公釐（格線關閉時與短滑桿上不會）；輸入的值與滑桿上的方向鍵仍保持精確。底部的 {{ui:inspector.saveDefaults}} 會把目前的值設為這類形狀的起始值（等同設定中的 {{ui:workspace.shapeDefaults}}），{{ui:inspector.resetDefaults}} 則還原為應用程式自己的預設值。 開啟{{ui:prop.tubeBoreHole}}後，管子群組時其孔算作空洞：它也會切開與管子群組在一起的物體的壁，於是T形相接的兩根管子彼此貫通。
+- **{{ui:inspector.properties}}：** 尺寸以及屬於這個形狀的一切。圓柱有直徑、高度與邊數。圓管或圓環則有 {{ui:prop.outerDiameter}}、{{ui:prop.innerDiameter}}（用於已知軸徑的襯套）與壁厚：任意兩個值可得出第三個，輸入順序不拘。最後輸入的值保持不變，第三個隨之改變：壁厚 1 公釐，再輸入外徑 30 公釐，內徑就是 28 公釐。尚未輸入任何一個時：設定外徑時內孔保持不變、壁厚隨之改變；設定內徑時外徑保持不變、壁厚隨之改變；內孔比管更寬時，外徑會按壁厚增大。管的長度就是它的高度。被拉過一邊、不再是圓形的管，會以長度與寬度兩個值取代原本的單一外徑；在那裡改變寬度時壁厚保持不變。齒輪有齒數，彈簧有圈數。離開預設值的數值，名稱旁會出現一個小箭頭：點擊它只還原該數值，無論你之後還做了什麼，這點與復原不同。按兩下滑桿也一樣，這裡以及工作區設定中的滑桿都是如此。用滑鼠拖曳時，長度滑桿會吸附到吸附步距，因此高度會落在整數公釐（格線關閉時與短滑桿上不會）；輸入的值與滑桿上的方向鍵仍保持精確。底部的 {{ui:inspector.saveDefaults}} 會把目前的值設為這類形狀的起始值（等同設定中的 {{ui:workspace.shapeDefaults}}），{{ui:inspector.resetDefaults}} 則還原為應用程式自己的預設值。 開啟{{ui:prop.tubeBoreHole}}後，管子群組時其孔算作空洞：它也會切開與管子群組在一起的物體的壁，於是T形相接的兩根管子彼此貫通。
 - **{{ui:inspector.makeEllipse}}：** 僅適用於圓柱。圓柱一律是圓的：只有一個直徑，每個控制點都會同時改變兩側。想要橢圓，點擊這個選項，它就會變成 {{ui:shape.ellipse}}——同一個實體，之後你可以分別設定長度與寬度。帶有倒角、圓角或壁的圓柱，以及轉過或群組過的圓柱，不能這樣轉換；這些情況請一開始就選用 {{ui:shape.ellipse}}。
 - **{{ui:inspector.taper}}：** 頂部與底部尺寸不同，例如做斜面或漏斗。開啟 {{ui:inspector.keepProportions}} 後，同一端的長度與寬度會依目前比例一起變化，方形頂部仍維持方形；頂部與底部互不影響。
 - **{{ui:inspector.twist}}：** 讓頂部相對底部扭轉，或往側邊偏移。這樣就能做出扭轉的柱子與傾斜的高塔。
@@ -178,7 +178,7 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 已經包覆過的形狀是包覆後物件的網格，不能再次包覆：復原這次包覆，或用另一個直徑重新包覆原來的平面形狀。
 
-結果像匯入的模型一樣是網格。復原會把形狀重新攤平；想換直徑，先復原再重新包覆。包覆範圍不能超過圓柱一圈；超過時 layerling 會指出能夠容納的最小直徑。
+結果像匯入的模型一樣是網格。形狀本身的設定會隨之消失，因此請先設定好一切，最後再包覆。復原會把形狀重新攤平；想換直徑，先復原再重新包覆。包覆範圍不能超過圓柱一圈；超過時 layerling 會指出能夠容納的最小直徑。
 
 ## 表面紋理
 
@@ -267,13 +267,18 @@ layerling 的每個零件都從一個形狀開始。其餘一切都是由形狀�
 
 {{ui:shape.patties}} 是一塊帶圖案的平板：上釉或上色用的鏤空模板、印章、在陶土上滾壓紋理的墊子、隔熱墊、通風格柵。它在資料庫的 {{ui:library.section.decorative}} 中。這塊板每次都由它的設定產生，所以一切隨時都能更改，儲存後也可以：
 
-- {{ui:prop.pattiesPattern}}：{{ui:patties.pattern.warp}}、{{ui:patties.pattern.dots}}、{{ui:patties.pattern.petals}}、{{ui:patties.pattern.scales}}、{{ui:patties.pattern.waves}}、{{ui:patties.pattern.cells}}、{{ui:patties.pattern.bricks}}、{{ui:patties.pattern.triangles}}、{{ui:patties.pattern.diamonds}}、{{ui:patties.pattern.weave}}、{{ui:patties.pattern.herringbone}}、{{ui:patties.pattern.rays}} 或 {{ui:patties.pattern.motif}}。選擇圖案會給它一個合適的起點；下面的各列隨後只顯示這種圖案用到的設定。欄位下方的一行說明板上有多少個圖形，以及它們佔板面的多少。
+- {{ui:prop.pattiesPattern}}：{{ui:patties.pattern.warp}}、{{ui:patties.pattern.dots}}、{{ui:patties.pattern.petals}}、{{ui:patties.pattern.scales}}、{{ui:patties.pattern.waves}}、{{ui:patties.pattern.cells}}、{{ui:patties.pattern.bricks}}、{{ui:patties.pattern.triangles}}、{{ui:patties.pattern.diamonds}}、{{ui:patties.pattern.weave}}、{{ui:patties.pattern.herringbone}}、{{ui:patties.pattern.rays}}, {{ui:patties.pattern.pegboard}} 或 {{ui:patties.pattern.motif}}。選擇圖案會給它一個合適的起點；下面的各列隨後只顯示這種圖案用到的設定。欄位下方的一行說明板上有多少個圖形，以及它們佔板面的多少。
 - {{ui:prop.pattiesMode}}：圖形貫穿底板、立在底板上、壓入底板，或者只有圖形、沒有底板。只有圖形時，把它設為孔並與某個實體成組，就能在該實體上切出圖案。
 - {{ui:prop.pattiesGap}}：兩個圖形之間板面的最小寬度，單位為公釐。任何位置的連筋都不會更細，所以鏤空模板保持一整塊，連筋也能列印出來；0.4 mm 是常見噴嘴的一條線寬。{{ui:prop.pattiesFrame}} 是圖案四周的實心邊緣。
 - {{ui:prop.pattiesBulge}}：大於 0 時，圖形在某一點最大，離它越遠越小；小於 0 時相反。兩列焦點設定用來移動這個點。
 - {{ui:prop.pattiesLayout}}：{{ui:patties.layout.straight}} 或 {{ui:patties.layout.polar}}。成環排列時，每個圖形保持自己的形狀並隨所在的環變大，連筋在邊緣和在中心一樣寬。
+- {{ui:patties.pattern.pegboard}}：{{ui:patties.pegboardHint}}
+- {{ui:prop.pattiesTilt}}：{{ui:patties.tiltHint}}
+- {{ui:prop.pattiesChamfer}}：{{ui:patties.chamferHint}}
 
-選擇 {{ui:patties.pattern.motif}} 時，會重複同一個圖形：心形、水滴、月牙、十字、葉子或爪印，也可以用自己的圖形。{{ui:inspector.pattiesMotifLoad}} 從圖面（SVG）或圖片（PNG、JPG）中取出圖形，並描出它的輪廓。圖形內部的孔會被填實，這樣鏤空模板上不會有東西掉落。
+選擇 {{ui:patties.pattern.motif}} 時，會重複同一個圖形：心形、水滴、月牙、十字、葉子或爪印，也可以用自己的圖形。{{ui:inspector.pattiesMotifLoad}} 從圖面（SVG）或圖片（PNG、JPG）中取出圖形，並描出它的輪廓。圖形內部的孔會被填實，這樣鏤空模板上不會有東西掉落。 {{ui:prop.pattiesAlternate}}: {{ui:patties.alternateHint}}
+
+{{ui:prop.pattiesOutline}}下的{{ui:patties.outline.polygon}}和{{ui:patties.outline.star}}讓板帶有角：六邊形、三角形、星形。{{ui:prop.pattiesCorners}}或{{ui:prop.pattiesPoints}}決定有多少個，從 3 到 12。板開始時各邊相等；把它拉到別的尺寸，它就被拉伸。
 
 {{ui:prop.pattiesOutline}} 下的 {{ui:patties.outline.fan}} 可以為杯子或花盆製作鏤空模板。量出器皿上口和底部的直徑以及側面的長度並填入：這塊板就成為展開成平面的器皿側面。列印成 0.6 到 1 mm 厚，它能繞在器皿上，圖案的各排水平環繞一周。{{ui:prop.pattiesSeamless}} 在兩端各只留半條連筋，於是圖案在兩端相接處連續下去。
 

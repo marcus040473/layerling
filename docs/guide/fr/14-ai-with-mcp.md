@@ -157,6 +157,7 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_remove_notes` | supprime des notes par identifiant |
 | `layerling_inspect_errors` | affiche le dernier message et la dernière erreur, ainsi que les messages et erreurs de la session |
 | `layerling_wrap_around_cylinder` | enroule un corps posé à plat, un SVG ou un texte par exemple, autour d'un cylindre, vers l'extérieur ou vers l'intérieur comme une gravure |
+| `layerling_take_rotation_as_zero` | prend comme zéro la position actuelle d'un maillage tourné : le corps ne bouge pas, ses angles sont à 0 |
 | `layerling_texture_surface` | applique une texture de surface sur un corps : rainures, moletage, nid d'abeille ou picots, pour la prise en main ou pour l'aspect, et la change ou la retire plus tard |
 | `layerling_simplify_mesh` | réduit le nombre de triangles d'un maillage importé, à une part en pourcentage ou à un nombre de triangles |
 | `layerling_make_exact` | transforme un maillage importé en corps CAO exact : plans, cylindres, cônes, sphères et tores deviennent de vraies faces, pour des arêtes qui s'arrondissent proprement et un STEP qui les transporte |
@@ -183,6 +184,7 @@ L'IA fonctionne avec les mêmes fonctions que vous, via le même chemin que votr
 | `layerling_export_drawing` | réalise le dessin d'atelier de l'export "2D": trois vues au 1:1 sur une feuille ISO avec les dimensions hors tout et un tableau des alésages ronds, en texte SVG ou PDF |
 | `layerling_export_mesh` | écrit le fichier de la fenêtre d'export en STL, 3MF, OBJ, SVG (vue de dessus, empreinte ou arêtes visibles) ou DXF pour la découpe laser, à partir des mêmes corps ; vers un chemin de cet ordinateur ou en base64 |
 | `layerling_save_project` | enregistre toute la conception modifiable comme fichier .lyl à un chemin de l'ordinateur où tourne le serveur MCP, sans boîte de dialogue ; un fichier existant n'est remplacé qu'avec `overwrite`, l'écriture passe par un fichier temporaire, et la cible de Ctrl+S dans l'éditeur reste inchangée |
+| `layerling_open_project` | ouvre un fichier .lyl enregistré depuis un chemin de l'ordinateur où tourne le serveur MCP comme une nouvelle conception, comme lorsque vous ouvrez le fichier vous-même ; la nouvelle conception n'est pas liée au fichier, les modifications se réécrivent avec `layerling_save_project` au même chemin avec `overwrite` |
 | `layerling_list_attachments` | liste les fichiers joints au modèle (nom, type, taille), comme le panneau Pièces jointes les montre |
 | `layerling_get_attachment` | lit un fichier joint, ses octets en base64, comme Télécharger dans le panneau |
 | `layerling_add_attachment` | joint un fichier donné en base64, avec les contrôles du panneau ; un nom déjà joint n'est remplacé qu'avec `replace` |

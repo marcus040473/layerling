@@ -853,6 +853,8 @@ export function textGlyphProfiles(shape: WorkplaneShape) {
   if (textHasEdge(shape)) return null;
   // A name tag layer laid in flush (#215) has a pocket in its top, which only its display mesh carries.
   if (shape.textFlush?.pocket) return null;
+  // Text on a tag's back, sunk into its underside or filling it, is the display mesh's alone too.
+  if (shape.textBack) return null;
   const width = shapeWidth(shape);
   const depth = shapeDepth(shape);
   if (![width, depth, shape.height].every((value) => Number.isFinite(value) && value > 0)) return null;
@@ -1797,7 +1799,7 @@ export function cadModifierGridfinityForShape(shape: WorkplaneShape): CadModifie
   const width = shapeWidth(shape);
   const depth = shapeDepth(shape);
   if (![width, depth, shape.height].every((value) => Number.isFinite(value) && value > 0)) return null;
-  const plan = gridfinityPlan({ width, depth, height: shape.height, gridfinityType: shape.gridfinityType, gridfinityLip: shape.gridfinityLip, gridfinityMagnets: shape.gridfinityMagnets, gridfinityHalfGrid: shape.gridfinityHalfGrid, gridfinityLargePlate: shape.gridfinityLargePlate, gridfinitySwallowtail: shape.gridfinitySwallowtail, gridfinityClipNotches: shape.gridfinityClipNotches, gridfinityPaddingBack: shape.gridfinityPaddingBack, gridfinityPaddingFront: shape.gridfinityPaddingFront, gridfinityPaddingLeft: shape.gridfinityPaddingLeft, gridfinityPaddingRight: shape.gridfinityPaddingRight, gridfinityOverhangBack: shape.gridfinityOverhangBack, gridfinityOverhangFront: shape.gridfinityOverhangFront, gridfinityOverhangLeft: shape.gridfinityOverhangLeft, gridfinityOverhangRight: shape.gridfinityOverhangRight, gridfinityOverhangChamfer: shape.gridfinityOverhangChamfer, gridfinityOverhangSolid: shape.gridfinityOverhangSolid, gridfinityOverhangLipOnGrid: shape.gridfinityOverhangLipOnGrid, gridfinityOutline: shape.gridfinityOutline });
+  const plan = gridfinityPlan({ width, depth, height: shape.height, gridfinityType: shape.gridfinityType, gridfinityLip: shape.gridfinityLip, gridfinityMagnets: shape.gridfinityMagnets, gridfinityHalfGrid: shape.gridfinityHalfGrid, gridfinityLargePlate: shape.gridfinityLargePlate, gridfinitySwallowtail: shape.gridfinitySwallowtail, gridfinityClipNotches: shape.gridfinityClipNotches, gridfinityPuzzle: shape.gridfinityPuzzle, gridfinityPuzzleSides: shape.gridfinityPuzzleSides, gridfinityPuzzleFit: shape.gridfinityPuzzleFit, gridfinityPaddingBack: shape.gridfinityPaddingBack, gridfinityPaddingFront: shape.gridfinityPaddingFront, gridfinityPaddingLeft: shape.gridfinityPaddingLeft, gridfinityPaddingRight: shape.gridfinityPaddingRight, gridfinityOverhangBack: shape.gridfinityOverhangBack, gridfinityOverhangFront: shape.gridfinityOverhangFront, gridfinityOverhangLeft: shape.gridfinityOverhangLeft, gridfinityOverhangRight: shape.gridfinityOverhangRight, gridfinityOverhangChamfer: shape.gridfinityOverhangChamfer, gridfinityOverhangSolid: shape.gridfinityOverhangSolid, gridfinityOverhangLipOnGrid: shape.gridfinityOverhangLipOnGrid, gridfinityOutline: shape.gridfinityOutline });
   // Label shelves, finger scoops and dividers, an outline plate's sockets and a Swallowtail plate's pockets, are in the display mesh only once Manifold has loaded; until then the body would not match it (#455, #554, #1061).
   if (!loadedManifoldRuntime() && gridfinityHasPieces({ ...shape, width, depth })) return null;
   // The letters on the shelves (#1308) with the font's own curves, laid out where the display mesh has them.
@@ -1813,9 +1815,10 @@ export function cadModifierGridfinityForShape(shape: WorkplaneShape): CadModifie
     }),
   }));
   // An overhang built as a ring (solid, or the lip kept on the grid) plans the bin without it: the part is the whole box.
+  // A plate with the GridFlock puzzle is its box, the tabs in it.
   return {
-    width: plan.overhang?.outer.width ?? plan.size.width,
-    depth: plan.overhang?.outer.depth ?? plan.size.depth,
+    width: plan.overhang?.outer.width ?? plan.box.width,
+    depth: plan.overhang?.outer.depth ?? plan.box.depth,
     height: plan.size.height,
     gridfinityType: plan.type,
     gridfinityLip: plan.lip,
@@ -1824,6 +1827,9 @@ export function cadModifierGridfinityForShape(shape: WorkplaneShape): CadModifie
     gridfinityLargePlate: plan.largePlate,
     gridfinitySwallowtail: plan.swallowtail,
     gridfinityClipNotches: plan.clipNotches,
+    gridfinityPuzzle: shape.gridfinityPuzzle,
+    gridfinityPuzzleSides: shape.gridfinityPuzzleSides,
+    gridfinityPuzzleFit: shape.gridfinityPuzzleFit,
     gridfinityLabelBack: shape.gridfinityLabelBack,
     gridfinityLabelFront: shape.gridfinityLabelFront,
     gridfinityLabelLeft: shape.gridfinityLabelLeft,

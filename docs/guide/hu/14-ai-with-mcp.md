@@ -161,6 +161,7 @@ Az MI ugyanazokkal a funkciókkal dolgozik, mint te, ugyanazon az úton, mint a 
 | `layerling_remove_notes` | azonosító alapján töröl jegyzeteket |
 | `layerling_inspect_errors` | megmutatja az utolsó üzenetet és az utolsó hibát, valamint a munkamenet üzeneteit és hibáit |
 | `layerling_wrap_around_cylinder` | egy laposan fekvő testet, például egy SVG-t vagy szöveget egy henger köré teker, kifelé vagy befelé gravírozásként |
+| `layerling_take_rotation_as_zero` | egy elforgatott háló jelenlegi helyzetét veszi 0-nak: a test a helyén marad, a szögei 0-k |
 | `layerling_texture_surface` | felületi mintázatot visz fel egy testre: hornyokat, recézést, méhsejtet vagy bütyköket, a jobb fogásért vagy a látványért, és később módosítja vagy eltávolítja |
 | `layerling_simplify_mesh` | csökkenti egy importált háló háromszögeinek számát, százalékos arányra vagy egy háromszögszámra |
 | `layerling_make_exact` | egy importált hálót pontos CAD-testté alakít: a síkok, hengerek, kúpok, gömbök és tóruszok valódi lapokká válnak, így az élek tisztán lekerekíthetők, és a STEP is viszi őket |
@@ -187,6 +188,7 @@ Az MI ugyanazokkal a funkciókkal dolgozik, mint te, ugyanazon az úton, mint a 
 | `layerling_export_drawing` | elkészíti a „2D” export műhelyrajzát: három nézet 1:1 méretarányban ISO lapon, befoglaló méretekkel és a kerek furatok táblázatával, SVG-szövegként vagy PDF-ként |
 | `layerling_export_mesh` | az exportablak fájlját STL, 3MF, OBJ, SVG (felülnézet, felfekvési felület vagy látható élek) vagy lézervágáshoz DXF formában írja ki ugyanazokból a testekből; ezen a számítógépen megadott helyre vagy base64-ként |
 | `layerling_save_project` | elmenti a teljes szerkeszthető tervet .lyl fájlként egy útvonalra azon a gépen, amelyen az MCP-kiszolgáló fut, párbeszédablak nélkül; meglévő fájlt csak az `overwrite` cserél le, ideiglenes fájlon át íródik, és a Ctrl+S célja a szerkesztőben változatlan marad |
+| `layerling_open_project` | megnyit egy elmentett .lyl fájlt az MCP-kiszolgálót futtató gép egy útvonaláról új tervként, mintha te magad nyitnád meg a fájlt; az új terv nem kapcsolódik a fájlhoz, a módosításokat a `layerling_save_project` írja vissza ugyanarra az útvonalra `overwrite` megadásával |
 | `layerling_list_attachments` | felsorolja a tervhez csatolt fájlokat (név, típus, méret), ahogy az Attachments panel mutatja őket |
 | `layerling_get_attachment` | beolvas egy csatolt fájlt, a bájtjait base64-ként, mint a panel Download gombja |
 | `layerling_add_attachment` | csatol egy base64-ként megadott fájlt a panel ellenőrzéseivel; a már csatolt nevet csak `replace` mellett írja felül |
