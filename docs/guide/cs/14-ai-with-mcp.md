@@ -158,6 +158,7 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_remove_notes` | smaže poznámky podle id |
 | `layerling_inspect_errors` | přečte poslední hlášení a chybu i zprávy z celé relace |
 | `layerling_wrap_around_cylinder` | obtočí rovinné těleso, SVG nebo text kolem válce jako reliéf či rytinu |
+| `layerling_take_rotation_as_zero` | vezme současné natočení sítě jako 0: těleso zůstane stát, jeho úhly jsou 0 |
 | `layerling_texture_surface` | nanese na těleso povrchovou texturu: drážky, vroubkování, plástev nebo výstupky; později ji také změní nebo odebere |
 | `layerling_simplify_mesh` | sníží počet trojúhelníků sítě na zadané procento nebo počet |
 | `layerling_make_exact` | převede importovanou síť na přesné CAD těleso: roviny, válce, kužele, koule a toroidy se stanou skutečnými plochami, hrany se čistě zaoblí a STEP je ponese |
@@ -184,6 +185,7 @@ AI používá stejné funkce a stejné zpracování příkazů jako ruční ovl�
 | `layerling_export_drawing` | vytvoří technický výkres tří pohledů v měřítku 1:1 na listu ISO s celkovými rozměry a tabulkou kruhových otvorů, jako SVG nebo PDF |
 | `layerling_export_mesh` | zapíše soubor exportního okna jako STL, 3MF, OBJ, SVG (pohled shora, půdorys nebo viditelné hrany) nebo DXF pro laserové řezání ze stejných těles; na cestu v tomto počítači nebo jako base64 |
 | `layerling_save_project` | uloží celý upravitelný návrh jako soubor .lyl na cestu v počítači, kde běží server MCP, bez dialogu; existující soubor se nahradí jen s `overwrite`, zapisuje se přes dočasný soubor a cíl Ctrl+S v editoru zůstává, jaký byl |
+| `layerling_open_project` | otevře uložený soubor .lyl z cesty v počítači, kde běží server MCP, jako nový návrh, stejně jako když soubor otevřete sami; nový návrh není se souborem spojený, změny zapíšete zpět pomocí `layerling_save_project` na stejnou cestu s `overwrite` |
 | `layerling_list_attachments` | vypíše soubory připojené k návrhu (název, typ, velikost), jak je ukazuje panel Přílohy |
 | `layerling_get_attachment` | přečte jeden připojený soubor, jeho bajty jako base64, jako Stáhnout v panelu |
 | `layerling_add_attachment` | připojí soubor zadaný jako base64, s kontrolami panelu; už připojený název přepíše jen s `replace` |

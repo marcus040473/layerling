@@ -162,6 +162,7 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_remove_notes` | usuwa notatki według identyfikatora |
 | `layerling_inspect_errors` | pokazuje ostatni komunikat i ostatni błąd oraz komunikaty i błędy sesji |
 | `layerling_wrap_around_cylinder` | owija leżącą płasko bryłę, na przykład SVG albo tekst, wokół walca, na zewnątrz albo do wewnątrz jako grawer |
+| `layerling_take_rotation_as_zero` | przyjmuje obecne położenie obróconej siatki jako zero: bryła zostaje na miejscu, jej kąty wynoszą 0 |
 | `layerling_texture_surface` | nakłada na bryłę teksturę powierzchni: rowki, radełkowanie, plaster miodu albo wypustki, dla lepszego chwytu albo wyglądu, a później ją zmienia albo usuwa |
 | `layerling_simplify_mesh` | zmniejsza liczbę trójkątów zaimportowanej siatki, do odsetka w procentach albo do liczby trójkątów |
 | `layerling_make_exact` | zamienia zaimportowaną siatkę w dokładną bryłę CAD: płaszczyzny, walce, stożki, kule i torusy stają się prawdziwymi ścianami, krawędzie zaokrąglają się czysto, a STEP je niesie |
@@ -188,6 +189,7 @@ AI pracuje tymi samymi funkcjami co Ty, tą samą drogą co Twoja praca w edytor
 | `layerling_export_drawing` | tworzy rysunek warsztatowy eksportu „2D”: trzy widoki w skali 1:1 na arkuszu ISO z wymiarami gabarytowymi i tabelą okrągłych otworów, jako tekst SVG albo PDF |
 | `layerling_export_mesh` | zapisuje plik okna eksportu jako STL, 3MF, OBJ, SVG (widok z góry, ślad albo widoczne krawędzie) albo DXF do cięcia laserem, z tych samych brył, do ścieżki na tym komputerze albo jako base64 |
 | `layerling_save_project` | zapisuje cały edytowalny projekt jako plik .lyl pod ścieżką na komputerze, na którym działa serwer MCP, bez okna dialogowego; istniejący plik jest zastępowany tylko z `overwrite`, zapis idzie przez plik tymczasowy, a cel Ctrl+S w edytorze pozostaje bez zmian |
+| `layerling_open_project` | otwiera zapisany plik .lyl spod ścieżki na komputerze, na którym działa serwer MCP, jako nowy projekt, tak jak przy samodzielnym otwarciu pliku; nowy projekt nie jest powiązany z plikiem, więc zmiany zapisuje z powrotem `layerling_save_project` pod tę samą ścieżkę z `overwrite` |
 | `layerling_list_attachments` | wypisuje pliki dołączone do projektu (nazwa, typ, rozmiar), tak jak pokazuje je panel Załączniki |
 | `layerling_get_attachment` | odczytuje jeden załącznik, jego bajty jako base64, jak pobieranie w panelu |
 | `layerling_add_attachment` | dołącza plik podany jako base64, z kontrolami panelu; nazwa już dołączona jest nadpisywana tylko z `replace` |

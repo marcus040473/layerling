@@ -162,6 +162,7 @@ AI 使用与你相同的功能，走的是与你在编辑器中的操作相同�
 | `layerling_remove_notes` | 按 id 删除备注 |
 | `layerling_inspect_errors` | 显示最后一条消息和最后一个错误，以及本次会话的消息和错误 |
 | `layerling_wrap_around_cylinder` | 把平躺的实体（例如 SVG 或文字）包裹到圆柱上，可向外，也可向内作为雕刻 |
+| `layerling_take_rotation_as_zero` | 把旋转后的网格的当前姿态设为零：实体保持原位，角度为 0 |
 | `layerling_texture_surface` | 给实体加上表面纹理：凹槽、滚花、蜂窝或凸点，用于防滑或美观，之后还可以修改或去除 |
 | `layerling_simplify_mesh` | 减少导入网格的三角面数，可缩减到百分比比例或指定三角面数量 |
 | `layerling_make_exact` | 将导入网格转为精确的 CAD 实体：平面、圆柱面、圆锥面、球面和圆环面成为真正的面，边能干净地倒圆角，STEP 也会带上它们 |
@@ -188,6 +189,7 @@ AI 使用与你相同的功能，走的是与你在编辑器中的操作相同�
 | `layerling_export_drawing` | 制作“2D”导出的工作图：在 ISO 图纸上以 1:1 绘制三个视图，标注总体尺寸并列出圆孔表格，可输出 SVG 文本或 PDF |
 | `layerling_export_mesh` | 按导出窗口写出 STL、3MF、OBJ、SVG（顶视图、轮廓或可见边）或用于激光切割的 DXF文件，所用实体相同；可写到这台电脑上的路径，或写成 base64 |
 | `layerling_save_project` | 把整个可编辑设计保存为 .lyl 文件，写到运行 MCP 服务器的电脑上的路径，不弹出对话框；只有给出 `overwrite` 才会替换已有文件，写入会经过临时文件，编辑器中 Ctrl+S 的目标保持不变 |
+| `layerling_open_project` | 从运行 MCP 服务器的电脑上的路径打开已保存的 .lyl 文件，作为一个新设计，就像你自己打开该文件一样；新设计与文件没有关联，要把修改写回去，请用 `layerling_save_project` 写到同一路径并给出 `overwrite` |
 | `layerling_list_attachments` | 列出附加到设计的文件（名称、类型、大小），与“Attachments”面板显示的一致 |
 | `layerling_get_attachment` | 读取一个附件，以 base64 返回其字节，与面板中的“Download”相同 |
 | `layerling_add_attachment` | 附加一个以 base64 给出的文件，并经过面板的检查；已附加的同名文件只有在 `replace` 时才会被覆盖 |

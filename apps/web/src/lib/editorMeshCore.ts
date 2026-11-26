@@ -605,6 +605,9 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         gridfinityLargePlate: shape.gridfinityLargePlate,
         gridfinitySwallowtail: shape.gridfinitySwallowtail,
         gridfinityClipNotches: shape.gridfinityClipNotches,
+        gridfinityPuzzle: shape.gridfinityPuzzle,
+        gridfinityPuzzleSides: shape.gridfinityPuzzleSides,
+        gridfinityPuzzleFit: shape.gridfinityPuzzleFit,
         gridfinityLabelBack: shape.gridfinityLabelBack,
         gridfinityLabelFront: shape.gridfinityLabelFront,
         gridfinityLabelLeft: shape.gridfinityLabelLeft,
@@ -790,6 +793,7 @@ function geometryMeshForShape(shape: WorkplaneShape): MeshData | null {
         springForm: shape.springForm,
         springPattern: shape.springPattern,
         springEnds: shape.springEnds,
+        springInner: shape.springInner,
       });
       break;
     case "wedge":

@@ -162,6 +162,7 @@ Umetna inteligenca dela z istimi funkcijami kot ti, teče po isti poti kot tvoje
 | `layerling_remove_notes` | izbriše zapiske po id |
 | `layerling_inspect_errors` | pokaže zadnje sporočilo in zadnjo napako, poleg tega sporočila in napake seje |
 | `layerling_wrap_around_cylinder` | ovije ležeče telo, na primer SVG ali besedilo, okoli valja, navzven ali kot gravuro navznotraj |
+| `layerling_take_rotation_as_zero` | vzame trenutno lego zasukane mreže kot 0: telo ostane na mestu, njegovi koti so 0 |
 | `layerling_texture_surface` | nanese na telo površinsko teksturo: utore, narebričenje, satovje ali izbokline, za boljši oprijem ali za videz, pozneje pa jo tudi spremeni ali odstrani |
 | `layerling_simplify_mesh` | zmanjša število trikotnikov uvožene mreže, na delež v odstotkih ali na število trikotnikov |
 | `layerling_make_exact` | uvoženo mrežo spremeni v natančno telo CAD: ravnine, valji, stožci, krogle in torusi postanejo prave ploskve, da se robovi čisto zaokrožijo in jih STEP nosi |
@@ -186,6 +187,7 @@ Umetna inteligenca dela z istimi funkcijami kot ti, teče po isti poti kot tvoje
 | `layerling_export_drawing` | naredi delavniško risbo izvoza »2D«: trije pogledi v merilu 1:1 na listu ISO s skupnimi merami in tabelo okroglih izvrtin, kot besedilo SVG ali PDF |
 | `layerling_export_mesh` | zapiše datoteko izvoznega okna kot STL, 3MF, OBJ, SVG (tloris, odtis ali vidni robovi) ali DXF za lasersko rezanje iz istih teles; na pot v tem računalniku ali kot base64 |
 | `layerling_save_project` | shrani celoten urejevalni načrt kot datoteko .lyl na pot v računalniku, na katerem teče strežnik MCP, brez pogovornega okna; obstoječa datoteka se zamenja le z `overwrite`, piše se prek začasne datoteke, cilj Ctrl+S v urejevalniku pa ostane, kakršen je bil |
+| `layerling_open_project` | odpre shranjeno datoteko .lyl s poti v računalniku, na katerem teče strežnik MCP, kot nov načrt, tako kot če datoteko odpreš sam; nov načrt ni povezan z datoteko, spremembe zapiše nazaj `layerling_save_project` na isto pot z `overwrite` |
 | `layerling_list_attachments` | našteje datoteke, priložene načrtu (ime, vrsta, velikost), kot jih kaže plošča Priloge |
 | `layerling_get_attachment` | prebere eno priloženo datoteko, njene bajte kot base64, kot Prenesi na plošči |
 | `layerling_add_attachment` | priloži datoteko, podano kot base64, s preverjanji plošče; že priloženo ime prepiše le z `replace` |

@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "title": {
+      "de": "Tempo für die 3D-Maus",
+      "en": "Speed for the 3D mouse"
+    },
+    "body": {
+      "de": "Eine SpaceMouse hat jetzt einen eigenen Regler in den Einstellungen unter Bedienung: 3D-Maus-Tempo, unter den Richtungen zum Umdrehen. Er macht Drehen, Verschieben und Zoomen mit der 3D-Maus langsamer oder schneller, von einem Viertel bis zum Vierfachen; in der Mitte bleibt alles wie bisher.\n\nZoomgeschwindigkeit und Verschiebetempo gelten nur für die normale Maus.",
+      "en": "A SpaceMouse now has a slider of its own in the settings under Controls: 3D mouse speed, beneath the directions to turn round. It makes turning, shifting and zooming with the 3D mouse slower or faster, from a quarter to four times; in the middle everything stays as before.\n\nZoom speed and Pan speed are for the regular mouse only."
+    },
+    "guide": {
+      "section": "settingsControls"
+    }
+  },
+  {
+    "title": {
+      "de": "Tasten, Kürzelliste und kleine Fehler",
+      "en": "Keys, shortcut list and small fixes"
+    },
+    "body": {
+      "de": "Strg+Umschalt+S machte die Auswahl zum Körper, Strg+M öffnete das Spiegeln: Die Buchstaben H, S, M, L und N gelten jetzt nur noch allein. In der Verlaufsansicht blättern Bild auf und Bild ab auch nach einem Klick in die Ansicht.\n\nDie Kürzelliste nennt mehr Tasten: Teilen, Bemalen, Maßband, Fläche löschen und die Skizze.\n\nBeim Importieren von Einstellungen bleiben die eigenen Profile erhalten, und Pflanztopf, Lampenschirm und andere Formen aus der Bibliothek heißen in deiner Sprache.",
+      "en": "Ctrl+Shift+S made the selection a solid, Ctrl+M opened the mirror tool: the letters H, S, M, L and N now only count alone. In the history view, Page Up and Page Down also work after a click in the view.\n\nThe shortcut list names more keys: Split, Paint, the tape measure, Delete face and the sketch.\n\nImporting settings keeps your own profiles, and the plant pot, the lampshade and other shapes from the library are named in your language."
+    },
+    "guide": { "chapter": "shortcuts" }
+  }
+]

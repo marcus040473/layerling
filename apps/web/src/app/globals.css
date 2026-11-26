@@ -1349,7 +1349,9 @@ html[data-theme="dark"] .dashboard-trademark {
 }
 
 .dashboard-update-preview .whats-new-version h2 {
-  color: #2a8334;
+  color: #1d6527;
+  background: #d5efd8;
+  border-color: #2a8334;
 }
 
 .dashboard-update-preview .whats-new-version li span {
@@ -1971,13 +1973,28 @@ body:has(.install-app-hint-floating:not(.tablet-hint)) .install-app-hint.install
   font-weight: 600;
 }
 
+/* Each version starts with a band across the card, larger than the topics' headings, so it is plain where one ends and
+   the next begins (Stefan, 25.11.2026). */
 .whats-new-version h2 {
-  margin: 0 0 6px;
-  color: #bf6508;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  margin: 0 0 12px;
+  padding: 7px 12px;
+  color: #7c3f02;
+  background: #fbdcb2;
+  border-left: 5px solid #d27f28;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.whats-new-version + .whats-new-version,
+.whats-new-earlier-heading + .whats-new-version {
+  margin-top: 22px;
+}
+
+html[data-theme="dark"] .whats-new-version h2 {
+  color: #ffd9a8;
+  background: #4a3119;
+  border-color: #f3a452;
 }
 
 .whats-new-version ul {
@@ -2069,10 +2086,6 @@ html[data-theme="dark"] .whats-new-note {
 }
 
 html[data-theme="dark"] .whats-new-note a {
-  color: #f3a452;
-}
-
-html[data-theme="dark"] .whats-new-version h2 {
   color: #f3a452;
 }
 
@@ -4086,14 +4099,18 @@ html[data-theme="dark"] .cable-channel-status.warning {
 }
 
 .split-position-pick {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  margin-left: 2px;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 8px;
   color: #6d5133;
   background: #fbf8f4;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
   border: 1px solid #d8c8b7;
   border-radius: 6px;
   cursor: pointer;
@@ -6424,6 +6441,37 @@ html[data-simple-mode="on"]:not([data-toolbar-size], [data-simple-mode-enlarge="
   accent-color: #b3680f;
 }
 
+/* The colour of imported bodies (#2079): a swatch, and a small arrow back to the usual blue. */
+.import-option.import-color-option,
+.import-option.import-color-option label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.import-option.import-color-option input {
+  width: 32px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #d8c4a5;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+.import-option.import-color-option button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
 /* The width an SVG or a picture comes in at (#448): a number field, not a tick box. */
 .import-option.import-width-option input {
   width: 6.5em;
@@ -7628,6 +7676,34 @@ html[data-theme="dark"] .sketch-shape-options .unit {
 
 .camera-controls.collapsed {
   border-radius: 17px;
+}
+
+/* A folded bar says which one it is (Discussion #2073). */
+.camera-controls.collapsed > .camera-controls-handle > .camera-controls-toggle {
+  width: auto;
+  min-width: calc(44px * var(--toolbar-scale));
+  height: auto;
+  padding: 4px 6px;
+}
+
+.camera-controls-name {
+  max-width: 96px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* The measuring tools' own bar stands beside the view bar, clear of its two columns, until it is moved. Its one group
+   always fits below each other. */
+.workplane-stage > .camera-controls.measure-bar {
+  display: flex;
+  left: calc(30px + 96px * var(--toolbar-scale));
+}
+
+.workplane-stage > .camera-controls.measure-bar > .camera-group {
+  display: flex;
 }
 
 .camera-controls button.active,
@@ -9872,10 +9948,7 @@ html[data-theme="dark"] .align-dot.axis-z, html[data-theme="dark"] .align-spread
   transform: translate(-50%, -50%) rotate(90deg);
 }
 
-.transform-handle.height-lift:hover {
-  color: var(--hover-accent-color);
-}
-
+/* Pointed at, it keeps its blue and only gets thicker, as the X and Y arrows do (Discussion #2018): red is the X colour. */
 .transform-handle.height-lift:hover .slide-arrow-shaft {
   stroke-width: 3.2;
 }
@@ -11468,6 +11541,13 @@ html[data-theme="dark"] .shell-walls-plan .shell-walls-plan-grip {
   cursor: pointer;
 }
 
+.property-rotation-actions,
+.gridfinity-padding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .property-subheading-action:disabled {
   opacity: 0.5;
   cursor: default;
@@ -11623,12 +11703,14 @@ html[data-theme="dark"] .shell-walls-plan .shell-walls-plan-grip {
   min-width: 0;
 }
 
+/* A long name wraps onto a second line instead of being cut off, so it stays readable in every language and on a
+   narrow panel (Discussion #1975). A single very long word still breaks rather than pushing the value field out. */
 .range-property-name {
   min-width: 0;
-  overflow: hidden;
   color: #7d6b58;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 /* Dragging the name changes the value; the panel still scrolls up and down under a finger. */
@@ -13142,6 +13224,102 @@ html[data-theme="dark"] .property-hint {
   color: #bfae9a;
 }
 
+/* Text on a tag's back: a drawer under the layers, opened by its own small header. */
+.shape-inspector .tag-back {
+  display: grid;
+  gap: 10px;
+}
+
+/* Front | Back at the top of the tag cards: two halves of one pill, the chosen one filled. */
+.shape-inspector .tag-side-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border: 1px solid rgba(125, 107, 88, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.shape-inspector .tag-side-switch button {
+  position: relative;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shape-inspector .tag-side-switch button.active {
+  background: #e58a2a;
+  color: #fff;
+}
+
+.shape-inspector .tag-side-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: middle;
+}
+
+html[data-theme="dark"] .shape-inspector .tag-side-switch {
+  border-color: #5c4b3a;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.shape-inspector .tag-back-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shape-inspector .tag-back-header svg.collapsed {
+  transform: rotate(180deg);
+}
+
+.shape-inspector .tag-back-fill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* The icon tag's finished size (Discussion #2059): the label, and the measures under it on a line of their own. */
+.shape-inspector .name-tag-finished-size {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.shape-inspector .name-tag-finished-size output {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The line between the tag's own settings and its copies (Discussion #2059), as above the layers. */
+.shape-inspector .name-tag-count-separator {
+  border-top: 1px solid rgba(125, 107, 88, 0.22);
+}
+
 .name-tag-layers-heading {
   display: flex;
   align-items: center;
@@ -13417,6 +13595,7 @@ html[data-theme="dark"] .name-tag-letters {
 }
 
 html[data-theme="dark"] .name-tag-layers-heading,
+html[data-theme="dark"] .shape-inspector .name-tag-finished-size,
 html[data-theme="dark"] .name-tag-sides {
   color: #d8ccb8;
 }
@@ -14871,6 +15050,24 @@ html[data-theme="dark"] .pattern-picker-empty {
   line-height: 1.4;
 }
 
+/* The 3D mouse's own speed (#2010): beneath its directions, in the second column, title above the slider. */
+.workspace-range.workspace-space-mouse-speed {
+  grid-column: 2;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding-bottom: 0;
+  border-bottom: 0;
+  font-size: 12px;
+}
+
+.workspace-range.workspace-space-mouse-speed > span {
+  color: #756657;
+}
+
+.workspace-range.workspace-space-mouse-speed small {
+  grid-column: 1;
+}
+
 .workspace-history-setting {
   display: grid;
   gap: 12px;
@@ -16007,6 +16204,8 @@ html[data-theme="dark"] .dashboard-update-preview-body {
 
 html[data-theme="dark"] .dashboard-update-preview .whats-new-version h2 {
   color: #78d482;
+  background: #1f3a23;
+  border-color: #5fbf6c;
 }
 
 html[data-theme="dark"] .store-move-targets button {
@@ -17717,6 +17916,160 @@ html[data-theme="dark"] .theme-check {
   color: #563e24;
 }
 
+/* The named selections at the top of the object list (#1472) and the profile row of the settings window (#850). */
+.outliner-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 34vh;
+  padding: 8px 12px;
+  overflow-y: auto;
+  border-bottom: 1px solid #f0e9df;
+  background: #faf8f5;
+}
+
+.outliner-set {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.outliner-set-name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  color: inherit;
+  background: #ffffff;
+  border: 1px solid #e2d9cd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: start;
+}
+
+.outliner-set-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outliner-set-name small {
+  color: #8a745c;
+}
+
+.outliner-set-name:hover:not(:disabled) {
+  border-color: #d46b08;
+}
+
+.outliner-set-name:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.outliner-set .outliner-action-btn {
+  opacity: 1;
+}
+
+.outliner-set-input,
+.workspace-profiles input,
+.workspace-profiles select {
+  min-width: 0;
+  padding: 4px 8px;
+  color: inherit;
+  background: #ffffff;
+  border: 1px solid #e2d9cd;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.outliner-set-input {
+  flex: 1;
+}
+
+.outliner-set-save {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  padding: 3px 6px;
+  color: #ad6206;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.outliner-set-save:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.workspace-profiles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  color: #756656;
+  background: #f6f2ed;
+  border-top: 1px solid #efe8dd;
+  font-size: 12px;
+}
+
+.workspace-profiles input,
+.workspace-profiles select {
+  min-height: 34px;
+  max-width: 220px;
+}
+
+.workspace-profiles .make-default-button {
+  min-width: 0;
+}
+
+.workspace-profiles .make-default-button:disabled,
+.workspace-profiles-remove:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.workspace-profiles-remove {
+  display: inline-flex;
+  padding: 8px;
+  color: inherit;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+html[data-theme="dark"] .outliner-sets,
+html[data-theme="dark"] .workspace-profiles {
+  color: #d8cfc4;
+  background: #26221e;
+  border-color: #3a342d;
+}
+
+html[data-theme="dark"] .outliner-set-name,
+html[data-theme="dark"] .outliner-set-input,
+html[data-theme="dark"] .workspace-profiles input,
+html[data-theme="dark"] .workspace-profiles select {
+  color: #e8e0d6;
+  background: #1d1a17;
+  border-color: #463f37;
+}
+
+html[data-theme="dark"] .outliner-set-name small {
+  color: #a89a8a;
+}
+
+html[data-theme="dark"] .outliner-set-save {
+  color: #f0a552;
+}
+
 .outliner-list-wrap {
   flex: 1;
   max-height: calc(100vh - 220px);
@@ -17752,6 +18105,15 @@ html[data-theme="dark"] .theme-check {
   border-bottom: 1px solid rgba(237, 230, 218, 0.5);
   transition: background 100ms ease;
   cursor: pointer;
+}
+
+/* A long press on a row starts Select multiple; without this iOS selects the text or shows its own menu. */
+@media (any-pointer: coarse) {
+  .outliner-list > li.outliner-item {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
 .outliner-item:last-child {
@@ -20880,6 +21242,19 @@ body:has(.plate-bar) {
   min-width: 0;
 }
 
+/* The chips scroll before a tool is pushed out of the bar. */
+.plate-bar-tools {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 860px) {
+  .plate-bar-tools {
+    flex: 0 1 auto;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+}
+
 .plate-bar-chips {
   overflow-x: auto;
   scrollbar-width: thin;
@@ -20958,6 +21333,32 @@ body:has(.plate-bar) {
   border: 1px solid #bf6508;
   border-radius: 10px;
   font: inherit;
+}
+
+/* Beside the docked properties the bar stays clear of them, so its last buttons are in reach; the chips scroll. */
+@media (min-width: 1200px) {
+  .workplane-stage:has(> .shape-inspector) .plate-bar {
+    left: calc(50% - 125px);
+    max-width: calc(100% - 420px);
+  }
+}
+
+.plate-bar-per-row {
+  flex: 0 0 auto;
+  height: 32px;
+  max-width: 130px;
+  padding: 0 6px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid #e3d2bf;
+  border-radius: 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+html[data-theme="dark"] .plate-bar-per-row {
+  background: #281e14;
+  border-color: #5b4b3a;
 }
 
 .plate-bar-separator {

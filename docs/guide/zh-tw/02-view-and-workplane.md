@@ -20,7 +20,7 @@ summary: 在場景中移動、正對著觀察，以及把新形狀放到任何�
 
 **與切片軟體一致的滑鼠按鍵。** 如果你習慣了 Bambu Studio 或 OrcaSlicer，在設定的 {{ui:workspace.controls}} 下把 {{ui:workspace.mouseScheme}} 設為 {{ui:workspace.mouseSchemeSlicer}}。這樣在空白處左鍵拖曳會轉動檢視，右鍵像中鍵一樣平移檢視，Shift 加左鍵拖曳會畫出選取框。拖曳實體仍會移動它，短按右鍵仍會開啟選單。在草圖中右鍵同樣平移檢視。
 
-**3D 滑鼠。** SpaceMouse 或其他 3D 滑鼠可以轉動、平移和縮放 3D 檢視：把帽往前推即可放大，滑動它平移檢視，傾斜它傾斜檢視，扭轉它轉動檢視。在設定的 {{ui:workspace.controls}} 下點擊 {{ui:workspace.spaceMouseConnect}}，並在瀏覽器開啟的視窗中選擇裝置；瀏覽器會記住這個選擇，所以只需做一次。這在能存取此類裝置的 Chrome 與 Edge 中可用；Firefox 與 Safari 不行。如果某個方向的操作反了，請在按鈕下方勾選它：左右平移、上下平移、縮放、傾斜或扭轉。有些 3D 滑鼠瀏覽器也會當作遊戲控制器找到；這時只要你一動球帽，layerling 就會自動使用它，重新啟動後不必再按{{ui:workspace.spaceMouseConnect}}。當作遊戲控制器使用的滑鼠，其勾選的方向與按下{{ui:workspace.spaceMouseConnect}}後使用的方向分開儲存，因為有些裝置在這種方式下方向相反；核取方塊下方會有一行文字說明滑鼠正以這種方式讀取。
+**3D 滑鼠。** SpaceMouse 或其他 3D 滑鼠可以轉動、平移和縮放 3D 檢視：把帽往前推即可放大，滑動它平移檢視，傾斜它傾斜檢視，扭轉它轉動檢視。在設定的 {{ui:workspace.controls}} 下點擊 {{ui:workspace.spaceMouseConnect}}，並在瀏覽器開啟的視窗中選擇裝置；瀏覽器會記住這個選擇，所以只需做一次。這在能存取此類裝置的 Chrome 與 Edge 中可用；Firefox 與 Safari 不行。如果某個方向的操作反了，請在按鈕下方勾選它：左右平移、上下平移、縮放、傾斜或扭轉。有些 3D 滑鼠瀏覽器也會當作遊戲控制器找到；這時只要你一動球帽，layerling 就會自動使用它，重新啟動後不必再按{{ui:workspace.spaceMouseConnect}}。當作遊戲控制器使用的滑鼠，其勾選的方向與按下{{ui:workspace.spaceMouseConnect}}後使用的方向分開儲存，因為有些裝置在這種方式下方向相反；核取方塊下方會有一行文字說明滑鼠正以這種方式讀取。它移動視圖的速度用核取方塊下方的滑桿 {{ui:workspace.spaceMouseSpeed}} 設定；{{ui:workspace.zoomSpeed}} 和 {{ui:workspace.panSpeed}} 只用於一般滑鼠。
 
 在平板或手機上，兩根手指可縮放（張開與捏合）並平移檢視（併攏滑動）。一根手指在空白處會轉動檢視，在那裡輕點則清除選取；落在形狀或控制點上時，則如同滑鼠左鍵般操作設計。若要讓從形狀上開始的手指也能轉動檢視，請開啟檢視列中的 {{ui:camera.touchRotate}}。這個開關只會在具有觸控螢幕的裝置上顯示。
 
@@ -110,6 +110,8 @@ X 與 [[Esc]] 會關閉視窗；若正在量測，[[Esc]] 會先結束量測。�
 - 在列印板上新建的草圖也從目前列印板開始：草圖區域顯示該列印板及其上的實體，完成的實體也放在那裡。
 - {{ui:plates.moveLeft}} 和 {{ui:plates.moveRight}} 改變順序，物體隨其列印板一起移動。{{ui:plates.remove}} 移除目前的列印板；其上的物體會移到第一個列印板的相同位置。
 - {{ui:plates.arrange}} 將所選物體（或全部物體）逐行排列到列印板上，先放最大的，間距 5 公釐，並在需要時新增列印板。比列印板大的物體會留在原處。
+- 旁邊的清單{{ui:plates.perRow}}設定一列放多少個列印板：八個列印板可以排成兩列，每列四個。下一列在其前方，物體隨所在的列印板移動。復原只恢復物體的移動，不恢復列的設定；請在清單中改回。
+- {{ui:plates.export}} 一鍵將目前列印板寫成 3MF，以列印板的名稱命名，與選取無關。[[Shift]] 加點擊會開啟匯出視窗並選中該列印板，以便使用其他格式。
 - 選擇印表機後，每個物體都按自己的列印板檢查，列印高度從該列印板上最低的物體算起。有物體放不下的列印板，其數字顯示為紅色。
 - 在屬性中，X 從物體所在列印板的中心算起。
 
@@ -125,6 +127,8 @@ X 與 [[Esc]] 會關閉視窗；若正在量測，[[Esc]] 會先結束量測。�
 ### 設定視窗
 
 標題列中的齒輪（{{ui:editor.workspaceSettings}}）會開啟設定。左側有九個區域：{{ui:workspace.appearance}}、{{ui:workspace.controls}}、{{ui:workspace.output}}、{{ui:workspace.ribbon}}、{{ui:workspace.measurement}}、{{ui:workspace.workplane}}、{{ui:workspace.shapeDefaults}}、{{ui:workspace.history}} 與 {{ui:backups.settingsTitle}}。變更會立即生效。底部的 {{ui:workspace.makeDefault}} 會將目前設定儲存為預設值，讓新設計從這些設定開始。開啟的檔案會帶著它自己的設定；旁邊的 {{ui:workspace.useMyDefault}} 會把你儲存的顏色、網格等套用到開啟的設計上，同時保留它的單位。如果你的預設設定裡有印表機，這台印表機連同它的平台尺寸也會一起帶過來；沒有的話，設計保留原有的平台與印表機。右上角的 {{ui:workspace.close}} 則關閉視窗。本節會逐一說明這些設定。
+
+上方的{{ui:profiles.title}}保存多套設定，例如每台印表機一套。{{ui:profiles.save}}以一個名稱儲存視窗的設定，此瀏覽器中最多十二個；{{ui:profiles.apply}}像{{ui:workspace.useMyDefault}}一樣把它們用於開啟的設計，包括印表機及其列印板和鎖點步距。設定檔案會帶上它們。
 
 {{ui:workspace.exportSettings}} 把視窗的設定儲存成檔案（layerling-settings-<日期>.json）：顏色、格線、陰影、相機和形狀預設值，以及主題、工具列大小、檢視立方體的角落、形狀顏色和每台印表機的間隙。在另一台電腦上或瀏覽器資料遺失後，{{ui:workspace.importSettings}} 會再次讀取該檔案：它成為新設計的預設值，並像 {{ui:workspace.useMyDefault}} 一樣套用到已開啟的設計。你在鍵盤快速鍵中設定的自訂按鍵也會一起儲存。
 
@@ -203,6 +207,8 @@ X 與 [[Esc]] 會關閉視窗；若正在量測，[[Esc]] 會先結束量測。�
 {{ui:workspace.startInPerspective}}：編輯器接著會以透視檢視開啟，而不是平面檢視。
 
 {{ui:workspace.startWithScrollbars}}：設計開啟時即顯示視圖的捲動軸。此設定會隨設計一起儲存，也會隨 {{ui:workspace.makeDefault}} 儲存。
+
+{{ui:workspace.showViewBar}}：關閉後，3D 編輯器中沒有檢視列；草圖保留自己的檢視列。測量工具也隨之隱藏，除非開啟{{ui:workspace.measureBar}}：這時它們位於單獨的列中，拖動箭頭可移動，點擊箭頭可收合。兩項都儲存在此瀏覽器中，而不是設計中。
 
 {{ui:workspace.viewBarOpensOnHover}}：收合的視圖列在滑鼠停在其箭頭上時展開，滑鼠離開後不久再次收合，除非正在使用它的某個工具。以這種方式展開時按一下箭頭，可使其保持展開。僅適用於滑鼠；在觸控螢幕上，仍像以前一樣輕觸即可開啟視圖列。
 

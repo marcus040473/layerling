@@ -136,6 +136,7 @@ export function LidPanel({
   neck = null,
   rooms = null,
   replaces = false,
+  otherEnd = false,
   onChangeRooms,
 }: {
   targetName: string;
@@ -159,6 +160,8 @@ export function LidPanel({
   rooms?: { outline: [number, number][][]; rooms: { points: [number, number][]; centre: [number, number] }[] } | null;
   /** The body has a lid from this tool already: the panel starts from its settings, and Apply changes that lid. */
   replaces?: boolean;
+  /** The body has a lid on its other end only (it was turned over since): Apply makes a second lid, for this end. */
+  otherEnd?: boolean;
   /** Opens Hollow on the box to change its compartments: offered for a box Hollow can hollow again. */
   onChangeRooms?: () => void;
 }) {
@@ -261,6 +264,7 @@ export function LidPanel({
 
       <ToolSection title={t("toolSidebar.settings")}>
         {replaces ? <span className="shell-openings-summary" role="status" data-testid="lid-replaces">{t("lid.replacesHint")}</span> : null}
+        {otherEnd && !replaces ? <span className="shell-openings-summary" role="status" data-testid="lid-other-end">{t("lid.otherEndHint")}</span> : null}
         <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.type")}>
           <span>{t("lid.type")}</span>
           <div className="shell-opening-options">

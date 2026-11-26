@@ -162,6 +162,7 @@ The AI works with the same functions as you, through the same path as your opera
 | `layerling_remove_notes` | deletes notes by id |
 | `layerling_inspect_errors` | shows the last message and the last error, plus the messages and errors of the session |
 | `layerling_wrap_around_cylinder` | wraps a body lying flat, an SVG or text for example, around a cylinder, outward or inward as an engraving |
+| `layerling_take_rotation_as_zero` | takes the current position of a turned mesh as zero: the body stays where it is, its angles are 0 |
 | `layerling_texture_surface` | lays a surface texture onto a body: grooves, knurling, honeycomb or bumps, for grip or for looks, and changes or removes it later |
 | `layerling_simplify_mesh` | reduces the triangle count of an imported mesh, to a share in percent or to a number of triangles |
 | `layerling_make_exact` | turns an imported mesh into an exact CAD body: planes, cylinders, cones, spheres and tori become real faces, so edges round cleanly and STEP carries them |
@@ -188,6 +189,7 @@ The AI works with the same functions as you, through the same path as your opera
 | `layerling_export_drawing` | makes the workshop drawing of the "2D" export: three views at 1:1 on an ISO sheet with overall sizes and a table of the round bores, as SVG text or PDF |
 | `layerling_export_mesh` | writes the file of the export window as STL, 3MF, OBJ, SVG (top view, footprint or visible edges) or DXF for laser cutting, from the same bodies; to a path on this computer, or as base64 |
 | `layerling_save_project` | saves the whole editable design as a .lyl file at a path on the computer where the MCP server runs, without a dialog; an existing file is only replaced with `overwrite`, it is written through a temporary file, and the target of Ctrl+S in the editor stays as it is |
+| `layerling_open_project` | opens a saved .lyl file from a path on the computer where the MCP server runs as a new design, as when you open the file yourself; the new design is not tied to the file, so changes are written back with `layerling_save_project` to the same path with `overwrite` |
 | `layerling_list_attachments` | lists the files attached to the design (name, type, size), as the Attachments panel shows them |
 | `layerling_get_attachment` | reads one attached file, its bytes as base64, as Download in the panel does |
 | `layerling_add_attachment` | attaches a file given as base64, with the panel's checks; a name already attached is only overwritten with `replace` |

@@ -162,6 +162,7 @@ AI'en arbejder med de samme funktioner som dig, gennem den samme vej som din han
 | `layerling_remove_notes` | sletter noter efter id |
 | `layerling_inspect_errors` | viser den seneste besked og den seneste fejl, plus sessionens beskeder og fejl |
 | `layerling_wrap_around_cylinder` | vikler en form der ligger fladt, for eksempel en SVG eller tekst, rundt om en cylinder, udad eller indad som gravering |
+| `layerling_take_rotation_as_zero` | bruger et drejet nets stilling som 0: formen bliver stående, dens vinkler er 0 |
 | `layerling_texture_surface` | lægger en overfladestruktur på en form: riller, riflinger, bikager eller knopper, for bedre greb eller for udseendet, og ændrer eller fjerner den senere |
 | `layerling_simplify_mesh` | reducerer trekantsantallet i et importeret mesh, til en andel i procent eller til et antal trekanter |
 | `layerling_make_exact` | gør et importeret mesh til en eksakt CAD-form: planer, cylindre, kegler, kugler og tori bliver rigtige flader, så kanter rundes rent, og STEP bærer dem |
@@ -188,6 +189,7 @@ AI'en arbejder med de samme funktioner som dig, gennem den samme vej som din han
 | `layerling_export_drawing` | laver værkstedstegningen fra "2D"-eksporten: tre visninger i 1:1 på et ISO-ark med samlede størrelser og en tabel over de runde boringer, som SVG-tekst eller PDF |
 | `layerling_export_mesh` | skriver eksportvinduets fil som STL, 3MF, OBJ, SVG (topvisning, fodaftryk eller synlige kanter) eller DXF til laserskæring af de samme legemer; til en sti på denne computer eller som base64 |
 | `layerling_save_project` | gemmer hele det redigerbare design som en .lyl-fil på en sti på den computer, hvor MCP-serveren kører, uden dialog; en eksisterende fil erstattes kun med `overwrite`, der skrives via en midlertidig fil, og målet for Ctrl+S i editoren bliver, som det var |
+| `layerling_open_project` | åbner en gemt .lyl-fil fra en sti på den computer, hvor MCP-serveren kører, som et nyt design, ligesom når du selv åbner filen; det nye design er ikke knyttet til filen, så ændringer skrives tilbage med `layerling_save_project` til samme sti med `overwrite` |
 | `layerling_list_attachments` | viser filerne, der er vedhæftet designet (navn, type, størrelse), som panelet {{ui:panel.attachments}} viser dem |
 | `layerling_get_attachment` | læser én vedhæftet fil, dens bytes som base64, som Download i panelet |
 | `layerling_add_attachment` | vedhæfter en fil givet som base64, med panelets kontroller; et navn, der allerede er vedhæftet, overskrives kun med `replace` |
