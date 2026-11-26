@@ -39,6 +39,17 @@ every chat, so **read GitHub through his n8n workflow** whenever the n8n connect
   - `"diskussion"` with `nummer`: every post, comment and reply with author, date, text and `bilder` (image links).
   - `"issues"` with `anzahl`: issues and pull requests by latest activity, with state (`merged` for merged PRs).
   - `repo` is optional (default `henmedia/layerling`; only `henmedia/*` and `marcus040473/*` are allowed).
+  - `"benachrichtigungen"`: Marcus's GitHub inbox (github.com/notifications) through the REST API, with `nur_ungelesen`
+    (default true), `nur_beteiligt`, `seit` (a date), `anzahl` and an optional `repo`. Each entry has repo, type,
+    number, title, `grund` (mention, author, comment, review_requested, ...), `ungelesen` and a link. The token needs the
+    `notifications` scope; without it the result is `fehler` with GitHub's 403.
+- **Sorted for Marcus by Claude:** workflow **"Layerling · GitHub einordnen (KI)"**, id `VxzCh4I17kOK1Xnq`, same folder,
+  same way to run it (trigger node "Anfrage"). `body.quelle`: `"benachrichtigungen"` (default, his inbox) or
+  `"diskussionen"` (the most recently active discussions he takes part in; also the fallback when the inbox cannot be
+  read, with `hinweis` saying so), and `anzahl`. It fetches the thread of each entry from henmedia/layerling and lets
+  Claude (n8n credential "Anthropic account") sort every entry into `antworten`, `bauen`, `pruefen`, `kenntnis` or
+  `erledigt`, with `wichtig`, a German sentence `kurz`, the next step `schritt` and a `zusammenfassung`. It reads only and
+  marks nothing as read. Use it to answer "what is new or open?", then check the entries that matter in the threads.
 - Image links are signed and expire about **5 minutes** after the run: download them right away (for example with
   `curl` to a file, then look at the file) and run the workflow again for fresh ones. Videos cannot be viewed.
 - Posting stays separate: only through the gate workflow "Layerling · bei Stefan posten (Gate)" and only after
