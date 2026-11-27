@@ -6,6 +6,7 @@ import { SHELL_WALLS_PLAN_MIN_LENGTH, ShellWallsPlan, type ShellWallsPick } from
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolHint } from "@/components/workplane/ToolPanelParts";
 import { t } from "@/lib/i18n";
+import { formatLengthShort, formatLengthWithUnit } from "@/lib/measurementUnits";
 import { MAX_SHELL_DIVIDER_WALLS, type ShellDividerWall, type ShellScoop } from "@/lib/shellGridLimits";
 import { shellMirroredWalls, shellScoopOf, shellScoopsWith, shellSplitWall, shellWallEnds, shellWallFromEnds, shellWallRoom } from "@/lib/shellWalls";
 import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
@@ -74,7 +75,7 @@ export function ShellWallsEditor({
     change(index, shellWallFromEnds(end(-1), end(1)));
   };
   const full = walls.length >= MAX_SHELL_DIVIDER_WALLS;
-  const plain = (value: number) => String(Math.round(value * 10) / 10);
+  const length = (value: number) => formatLengthWithUnit(value, workspace);
   const run = wall ? (wall.dir === "x" ? room.width : room.depth) : 0;
   const across = wall ? (wall.dir === "x" ? room.depth : room.width) : 0;
   const from = wall ? clamp(wall.from, 0, run) : 0;
@@ -91,7 +92,8 @@ export function ShellWallsEditor({
         disabled={disabled}
         label={t("shell.wallsPlan")}
         wallLabel={(entry, index) => t(entry.dir === "x" ? "shell.wallAcross" : "shell.wallAlong", { number: index + 1 })}
-        compartmentLabel={(entry, index) => t("shell.compartment", { number: index + 1, width: plain(entry.maxX - entry.minX), depth: plain(entry.maxZ - entry.minZ) })}
+        compartmentLabel={(entry, index) => t("shell.compartment", { number: index + 1, width: length(entry.maxX - entry.minX), depth: length(entry.maxZ - entry.minZ) })}
+        sizeText={(wide, deep) => `${formatLengthShort(wide, workspace)} × ${formatLengthShort(deep, workspace)}`}
         onPick={setPick}
         onWallChange={change}
         onWallRemove={remove}
@@ -99,7 +101,7 @@ export function ShellWallsEditor({
       <ToolHint text={wall && pick?.type === "wall"
         ? t(wall.dir === "x" ? "shell.wallAcross" : "shell.wallAlong", { number: pick.index + 1 })
         : compartment
-          ? t("shell.compartmentPicked", { width: plain(compartment.maxX - compartment.minX), depth: plain(compartment.maxZ - compartment.minZ) })
+          ? t("shell.compartmentPicked", { width: length(compartment.maxX - compartment.minX), depth: length(compartment.maxZ - compartment.minZ) })
           : t("shell.wallsHint")} />
       <div className="shell-walls-actions">
         <button type="button" disabled={disabled || full} data-testid="shell-walls-add-across" onClick={() => add("x")}><Plus size={15} strokeWidth={2.5} /><span>{t("shell.wallAddAcross")}</span></button>
@@ -159,6 +161,7 @@ export function ShellScoopsEditor({
   walls,
   scoops,
   thickness,
+  workspace,
   disabled,
   onChange,
 }: {
@@ -171,6 +174,8 @@ export function ShellScoopsEditor({
   walls: readonly ShellDividerWall[] | null;
   scoops: readonly ShellScoop[];
   thickness: number;
+  /** The unit the compartments' sizes are shown in. */
+  workspace: WorkplaneWorkspaceSettings;
   disabled?: boolean;
   onChange: (scoops: ShellScoop[]) => void;
 }) {
@@ -182,7 +187,7 @@ export function ShellScoopsEditor({
   const index = room.compartments.length === 1 ? 0 : picked !== null && picked < room.compartments.length ? picked : null;
   const compartment = index === null ? undefined : room.compartments[index];
   const now = compartment ? shellScoopOf(compartment, scoops)?.side ?? "none" : "none";
-  const plain = (value: number) => String(Math.round(value * 10) / 10);
+  const length = (value: number) => formatLengthWithUnit(value, workspace);
   const sides = [["none", "shell.scoopNone"], ["front", "shell.scoopFront"], ["back", "shell.scoopBack"], ["left", "shell.scoopLeft"], ["right", "shell.scoopRight"]] as const;
   return (
     <div className="shell-walls-editor" data-testid="shell-scoops-editor">
@@ -195,7 +200,8 @@ export function ShellScoopsEditor({
         disabled
         label={t("shell.wallsPlan")}
         wallLabel={(entry, position) => t(entry.dir === "x" ? "shell.wallAcross" : "shell.wallAlong", { number: position + 1 })}
-        compartmentLabel={(entry, position) => t("shell.compartment", { number: position + 1, width: plain(entry.maxX - entry.minX), depth: plain(entry.maxZ - entry.minZ) })}
+        compartmentLabel={(entry, position) => t("shell.compartment", { number: position + 1, width: length(entry.maxX - entry.minX), depth: length(entry.maxZ - entry.minZ) })}
+        sizeText={(wide, deep) => `${formatLengthShort(wide, workspace)} × ${formatLengthShort(deep, workspace)}`}
         onPick={(pick) => setPicked(pick?.type === "compartment" ? pick.index : null)}
         onWallChange={() => {}}
         onWallRemove={() => {}}

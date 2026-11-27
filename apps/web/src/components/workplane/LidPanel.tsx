@@ -82,6 +82,9 @@ import {
   lidFlipTopFits,
   lidHandleFits,
   lidLatchesFit,
+  MAX_LID_SNAP_UNDERCUT,
+  MIN_LID_SNAP_UNDERCUT,
+  lidSnapHookArm,
   lidNeckDiameter,
   lidNeckFit,
   lidTakesExtras,
@@ -122,7 +125,9 @@ import type { WorkplaneWorkspaceSettings } from "@/types/layerling";
  * have a tether that keeps the cap with the body when it is off (asked in the Layerling User Group on Facebook),
  * and either cap can be a flip-top: a flap in its plate opens a round opening to pour from. A slide-in lid (Discussion
  * #1443) is a plate for a box that slides in through the wall picked, its edges in grooves in the other three, like a
- * pencil box's; its click bump and finger grip are its own.
+ * pencil box's; its click bump and finger grip are its own. While the panel is open, a grey preview shows the lid the settings would make beside the
+ * body, with its loose parts and what goes onto the body (Discussion #2130), and follows every change a moment later;
+ * it can be switched off.
  */
 export function LidPanel({
   targetName,
@@ -138,6 +143,7 @@ export function LidPanel({
   replaces = false,
   otherEnd = false,
   onChangeRooms,
+  preview = null,
 }: {
   targetName: string;
   settings: LidOptions;
@@ -164,6 +170,11 @@ export function LidPanel({
   otherEnd?: boolean;
   /** Opens Hollow on the box to change its compartments: offered for a box Hollow can hollow again. */
   onChangeRooms?: () => void;
+  /**
+   * The live preview (Discussion #2130): whether it shows, whether the next one is being worked out, whether one is
+   * shown, and why there is none (the reason Make lid would give), with the switch.
+   */
+  preview?: { on: boolean; working: boolean; shown: boolean; note: string | null; onToggle: (on: boolean) => void; onShow: () => void } | null;
 }) {
   useLanguage();
   // The gap and the pin's play say when they are still what the printer's play gave them (printerPlay.ts).
@@ -839,10 +850,21 @@ export function LidPanel({
                   <input type="text" value={settings.latchLabel} maxLength={MAX_LID_LATCH_LABEL} disabled={busy} onChange={(event) => onChange({ latchLabel: event.target.value })} />
                 </label>
                 <ToolHint text={t("lid.sliderHint")} />
+              </>) : settings.latchStyle === "snap" ? (<>
+                {/* Snap hooks (Discussion #2047): the shape library's snap-fit, printed with the lid. */}
+                <EdgeModifierSlider label={t("prop.snapFitWidth")} value={settings.latchWidth} min={MIN_LID_LATCH_WIDTH} max={MAX_LID_LATCH_WIDTH} step={0.5} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ latchWidth: value })} />
+                <EdgeModifierSlider label={t("lid.snapUndercut")} value={settings.snapUndercut} min={MIN_LID_SNAP_UNDERCUT} max={MAX_LID_SNAP_UNDERCUT} step={0.1} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ snapUndercut: value })} />
+                <ToolHint text={t("lid.snapHint", { arm: millimetres(lidSnapHookArm(settings.snapUndercut)) })} />
               </>) : (<>
                 {slider(t("lid.latchWidth"), "latchWidth", MIN_LID_LATCH_WIDTH, MAX_LID_LATCH_WIDTH, 0.5)}
                 {slider(t("lid.latchGrip"), "latchGrip", MIN_LID_LATCH_GRIP, MAX_LID_LATCH_GRIP, 0.05)}
-                <ToolHint text={t(settings.hinge ? "lid.latchHintHinge" : "lid.latchHint", { pin: millimetres(Math.round(2 * lidLatchMeasures(settings.latchWidth, settings.latchGrip).pin * 10) / 10) })} />
+                {settings.stackTop ? null : (
+                  <label className="edge-modifier-field offset-copy">
+                    <input type="checkbox" checked={settings.latchInPlace} disabled={busy} onChange={(event) => onChange({ latchInPlace: event.target.checked })} />
+                    <span>{t("lid.latchInPlace")}</span>
+                  </label>
+                )}
+                <ToolHint text={t(settings.latchInPlace && !settings.stackTop ? "lid.latchInPlaceHint" : settings.hinge ? "lid.latchHintHinge" : "lid.latchHint", { pin: millimetres(Math.round(2 * lidLatchMeasures(settings.latchWidth, settings.latchGrip).pin * 10) / 10) })} />
               </>)}
             </>) : null}
           </ToolGroup>
@@ -959,6 +981,23 @@ export function LidPanel({
         </ToolAdvanced>
       ) : null}
 
+      {preview ? (
+        <div className="lid-preview" data-testid="lid-preview">
+          <label className="edge-modifier-field offset-copy">
+            <input type="checkbox" checked={preview.on} disabled={busy} onChange={(event) => preview.onToggle(event.target.checked)} data-testid="lid-preview-toggle" />
+            <span>{t("lid.preview")}</span>
+          </label>
+          {preview.on ? (
+            <span className="shell-openings-summary lid-preview-status" role="status" data-testid="lid-preview-status">
+              {preview.working ? <LoaderCircle className="edge-modifier-spinner" size={13} aria-hidden="true" /> : null}
+              {preview.working ? t("lid.preview.working") : preview.note ? t("lid.preview.none", { reason: preview.note }) : preview.shown ? t("lid.preview.hint") : null}
+            </span>
+          ) : null}
+          {preview.on && preview.shown ? (
+            <button type="button" className="lid-preview-show" onClick={preview.onShow} data-testid="lid-preview-show">{t("lid.preview.show")}</button>
+          ) : null}
+        </div>
+      ) : null}
       {error ? <div className="edge-modifier-error" role="alert">{error}</div> : busy ? <ToolStatus state="working" text={t("lid.working")} /> : null}
       <div className="edge-modifier-footer">
         <ToolOutcome text={t(settings.stackTop && lidStackTopFits(settings) ? "lid.outcomeUpright" : "lid.outcome")} />
