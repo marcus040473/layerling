@@ -22,6 +22,7 @@ import {
   SURFACE_TEXTURE_MAX_MASK_PLANES,
   type SurfaceTextureCarbonWeave,
   type SurfaceTextureBrickBond,
+  type SurfaceTextureSidingBoards,
   type SurfaceTextureTimberBracing,
   type SurfaceTextureBarkType,
   type SurfaceTextureCrackStart,
@@ -144,6 +145,7 @@ export const SURFACE_TEXTURE_LABELS: {
   carbonWeaveHint: Record<SurfaceTextureCarbonWeave, MessageKey>;
   brickBond: Record<SurfaceTextureBrickBond, MessageKey>;
   brickBondHint: Record<SurfaceTextureBrickBond, MessageKey>;
+  sidingBoards: Record<SurfaceTextureSidingBoards, MessageKey>;
   timberBracing: Record<SurfaceTextureTimberBracing, MessageKey>;
   timberBracingHint: Record<SurfaceTextureTimberBracing, MessageKey>;
   barkType: Record<SurfaceTextureBarkType, MessageKey>;
@@ -165,6 +167,7 @@ export const SURFACE_TEXTURE_LABELS: {
     cells: "surfaceTexture.cells",
     hammered: "surfaceTexture.hammered",
     bricks: "surfaceTexture.bricks",
+    siding: "surfaceTexture.siding",
     timber: "surfaceTexture.timber",
     stones: "surfaceTexture.stones",
     squares: "surfaceTexture.squares",
@@ -206,6 +209,7 @@ export const SURFACE_TEXTURE_LABELS: {
     englishCross: "surfaceTexture.bondEnglishCrossHint",
     flemish: "surfaceTexture.bondFlemishHint",
   },
+  sidingBoards: { level: "surfaceTexture.sidingLevel", upright: "surfaceTexture.sidingUpright" },
   timberBracing: { none: "surfaceTexture.timberNone", braces: "surfaceTexture.timberBraces", cross: "surfaceTexture.timberCross", knee: "surfaceTexture.timberKnee", mixed: "surfaceTexture.timberMixed" },
   timberBracingHint: {
     none: "surfaceTexture.timberNoneHint",

@@ -124,7 +124,7 @@ describe("the surface texture card in a shape's settings", () => {
     act(() => patternField(panel).click());
     const tiles = patternTiles(panel);
     expect(tiles.map((tile) => tile.textContent)).toEqual([
-      "Grooves", "Knurling", "Honeycomb", "Bumps", "Cells", "Hammered", "Bricks", "Half-timbering", "Stone wall", "Squares", "Triangles", "Knitting", "Rope", "Basket weave", "Bark", "Wood grain", "Carbon (twill)", "Grain", "Image", "Cracks (kintsugi)", "Text (stuck on)",
+      "Grooves", "Knurling", "Honeycomb", "Bumps", "Cells", "Hammered", "Bricks", "Siding", "Half-timbering", "Stone wall", "Squares", "Triangles", "Knitting", "Rope", "Basket weave", "Bark", "Wood grain", "Carbon (twill)", "Grain", "Image", "Cracks (kintsugi)", "Text (stuck on)",
     ]);
     expect(tiles.map((tile) => tile.querySelector("img")?.getAttribute("src"))).toEqual(SURFACE_TEXTURE_PATTERNS.map((pattern) => `assets/editor/surface-patterns/${pattern}.png`));
     expect(tiles.filter((tile) => tile.getAttribute("aria-selected") === "true").map((tile) => tile.textContent)).toEqual(["Knurling"]);
@@ -196,6 +196,35 @@ describe("the surface texture card in a shape's settings", () => {
     await act(async () => button(panel, "Apply texture")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "bricks", brickBond: "english", spacing: 12, brickHeight: 4, brickJoint: 0.8, depth: 0.6, profile: "flat" });
     // Leaving bricks gives the next pattern its own spacing and profile back.
+    choosePattern(panel, "Knurling");
+    expect(rangeNamed(panel, "Spacing")?.value).toBe("3.00");
+  });
+
+  it("lays siding: level or upright boards, their width, how far they overlap and the joint (Discussion #2147)", async () => {
+    const { panel, calls } = mount(cylinder);
+    choosePattern(panel, "Siding");
+    const boards = selectWith(panel, "upright")!;
+    expect(boards.value).toBe("level");
+    expect([...boards.options].map((option) => option.textContent)).toEqual(["Level", "Upright"]);
+    // The spacing is a board's width; the boards stand out and start overlapping fully, as clapboards do.
+    expect(rangeNamed(panel, "Board width")?.value).toBe("2.40");
+    expect(rangeNamed(panel, "Spacing")).toBeUndefined();
+    expect(rangeNamed(panel, "Depth")?.value).toBe("0.50");
+    expect(rangeNamed(panel, "Overlap (%)")?.value).toBe("100");
+    expect(rangeNamed(panel, "Joint width")?.value).toBe("0.40");
+    expect(selectWith(panel, "outward")?.value).toBe("outward");
+    expect(card(panel).textContent).toContain("Level boards start at the bottom edge, so a whole board stands on it.");
+    type(rangeNamed(panel, "Overlap (%)")!, "50");
+    type(rangeNamed(panel, "Joint width")!, "0.6");
+    choose(boards, "upright");
+    // A groove's width, profile and angle are not a board's.
+    act(() => button(panel, "More")!.click());
+    expect(rangeNamed(panel, "Groove width (%)")).toBeUndefined();
+    expect(selectWith(panel, "pointed")).toBeUndefined();
+    expect(rangeNamed(panel, "Slant (°)")).toBeUndefined();
+    await act(async () => button(panel, "Apply texture")!.click());
+    expect(calls.applied[0]).toMatchObject({ pattern: "siding", sidingBoards: "upright", sidingLap: 0.5, sidingGap: 0.6, spacing: 2.4, depth: 0.5, direction: "outward", keepEdges: false, angle: 0 });
+    // Leaving it gives knurling its own spacing back.
     choosePattern(panel, "Knurling");
     expect(rangeNamed(panel, "Spacing")?.value).toBe("3.00");
   });

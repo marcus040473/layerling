@@ -189,7 +189,7 @@ import { localizedError } from "@/lib/userErrors";
 import { normalizeHexColor } from "@/lib/coloredImport";
 import { displayShapeName, makeShapeFromAsset, renamedShapeName, shapeAssetDefaultDimensions } from "@/lib/shapeCatalog";
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_TIMBER_BRACINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureRegion, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_SIDING_BOARDS, SURFACE_TEXTURE_TIMBER_BRACINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureRegion, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { SURFACE_TEXTURE_OWN_IMAGE_SIZE, surfaceTextureOwnImage } from "@/lib/surfaceTextureImages";
 import { ownImageOutline, SURFACE_IMAGE_OUTLINE_RASTER } from "@/lib/surfaceImageOutline";
 import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
@@ -8295,6 +8295,7 @@ const BUMP_SHAPES = ["dome", "pointed", "round", "flat"] as const;
 const SURFACE_SPACING_LABEL: Partial<Record<SurfaceTexturePattern, MessageKey>> = {
   cells: "inspector.surfaceSpacingCells",
   bricks: "inspector.surfaceSpacingBricks",
+  siding: "inspector.surfaceSpacingSiding",
   timber: "inspector.surfaceSpacingTimber",
   stones: "inspector.surfaceSpacingStones",
   squares: "inspector.surfaceSpacingSquares",
@@ -8728,6 +8729,8 @@ export function SurfaceTextureCard({
   const bricks = settings.pattern === "bricks";
   // Squares and triangles: the gap in mm, and the first row at the bottom edge if wanted.
   const tiles = settings.pattern === "squares" || settings.pattern === "triangles";
+  // Siding: which way the boards run, how far they lean out over each other, and the joint in mm.
+  const siding = settings.pattern === "siding";
   // Half-timbering: its bracing, a storey's height, the beams' width (the depth is their height), rails and grain.
   const timber = settings.pattern === "timber";
   // A natural stone wall: how different and how round its stones are, the joint in mm, and its arrangement.
@@ -8943,6 +8946,16 @@ export function SurfaceTextureCard({
                       onChange={(value) => set({ brickBond: value as SurfaceTextureSettings["brickBond"] })}
                     />
                   ) : null}
+                  {siding ? (
+                    <SelectProperty
+                      type="select"
+                      label={t("inspector.surfaceSidingBoards")}
+                      value={settings.sidingBoards}
+                      options={options(SURFACE_TEXTURE_SIDING_BOARDS, (value) => t(SURFACE_TEXTURE_LABELS.sidingBoards[value]))}
+                      disabled={disabled || busy}
+                      onChange={(value) => set({ sidingBoards: value as SurfaceTextureSettings["sidingBoards"] })}
+                    />
+                  ) : null}
                   {timber ? (
                     <SelectProperty
                       type="select"
@@ -9043,6 +9056,13 @@ export function SurfaceTextureCard({
                       {range("surfaceBrickHeight", t("inspector.surfaceBrickHeight"), settings.brickHeight, [SURFACE_TEXTURE_LIMITS.brickHeight[0], 30], 0.1, (brickHeight) => set({ brickHeight }))}
                       {range("surfaceBrickJoint", t("inspector.surfaceBrickJoint"), settings.brickJoint, [SURFACE_TEXTURE_LIMITS.brickJoint[0], 5], 0.05, (brickJoint) => set({ brickJoint }))}
                       <p className="cylinder-wrap-hint">{t("inspector.surfaceBrickHint")}</p>
+                    </>
+                  ) : null}
+                  {siding ? (
+                    <>
+                      {percent("surfaceSidingLap", t("inspector.surfaceSidingLap"), settings.sidingLap, (sidingLap) => set({ sidingLap }))}
+                      {range("surfaceSidingGap", t("inspector.surfaceSidingGap"), settings.sidingGap, [SURFACE_TEXTURE_LIMITS.sidingGap[0], 3], 0.05, (sidingGap) => set({ sidingGap }))}
+                      <p className="cylinder-wrap-hint">{t("inspector.surfaceSidingHint")}</p>
                     </>
                   ) : null}
                   {timber ? (
@@ -9302,7 +9322,7 @@ export function SurfaceTextureCard({
                         </>
                       ) : null}
                     </>
-                  ) : tiles || timber || stones ? null : (
+                  ) : tiles || siding || timber || stones ? null : (
                     range(
                       "surfaceCoverage",
                       t(SURFACE_COVERAGE_LABEL[settings.pattern] ?? "inspector.surfaceCoverage"),
@@ -9314,7 +9334,7 @@ export function SurfaceTextureCard({
                   )}
                   {placedHere ? null : (
                     <>
-                      {settings.pattern === "bumps" || grain || image || bark || wood || timber || stones ? null : (
+                      {settings.pattern === "bumps" || grain || image || bark || wood || siding || timber || stones ? null : (
                         <SelectProperty
                           type="select"
                           label={t("inspector.surfaceProfile")}

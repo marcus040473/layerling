@@ -27,6 +27,10 @@
  * - Squares and triangles: tiles of one size with one gap in a grid, cut
  *   along the lines where their walls begin and end and along the creases
  *   at their corners, as bricks are; their size and gap stay as set.
+ * - Siding (for model buildings): boards lying level or standing upright,
+ *   each leaning out over the one below it; cut in strips along the boards,
+ *   as grooves are, at the places where a board's face begins and ends (see
+ *   sidingValue).
  * - Half-timbering (for model buildings): posts, sills, plates, rails and
  *   the braces in its fields cut along their walls as tiles are, over a
  *   coarse grid for the plaster between them (see sliceTimber).
@@ -103,7 +107,7 @@ import {
   type SurfaceTextureOwnImage,
 } from "@/lib/surfaceTextureImages";
 
-export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "hammered", "bricks", "timber", "stones", "squares", "triangles", "knit", "rope", "weave", "bark", "wood", "carbon", "grain", "image", "cracks", "text"] as const;
+export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "hammered", "bricks", "siding", "timber", "stones", "squares", "triangles", "knit", "rope", "weave", "bark", "wood", "carbon", "grain", "image", "cracks", "text"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
 /** round: a soft bell; pointed: a V (a cone on a bump); flat: a flat floor or top; dome: a half circle (half a ball on a bump). */
@@ -143,6 +147,10 @@ export type SurfaceTextureCarbonWeave = (typeof SURFACE_TEXTURE_CARBON_WEAVES)[n
  */
 export const SURFACE_TEXTURE_BRICK_BONDS = ["running", "stack", "english", "englishCross", "flemish"] as const;
 export type SurfaceTextureBrickBond = (typeof SURFACE_TEXTURE_BRICK_BONDS)[number];
+
+/** Siding: the boards lie level, one above the other, or stand upright, side by side. */
+export const SURFACE_TEXTURE_SIDING_BOARDS = ["level", "upright"] as const;
+export type SurfaceTextureSidingBoards = (typeof SURFACE_TEXTURE_SIDING_BOARDS)[number];
 
 /**
  * Half-timbering: what the panels between the posts hold - nothing, braces (a diagonal in every field, leaning towards
@@ -479,6 +487,19 @@ export type SurfaceTextureSettings = {
   /** Bricks: how unevenly they lie, 0 to 1 - at 1 a brick sinks by up to half the depth, each its own way. */
   brickVary: number;
   /**
+   * Siding (the spacing is a board's height, from one board's lower edge to the next one's; the depth how far a board
+   * stands out at its thick edge): which way the boards run. Level boards begin at the body's bottom, so a whole board
+   * stands on it (see SurfaceTextureLayout.sidingRows).
+   */
+  sidingBoards: SurfaceTextureSidingBoards;
+  /**
+   * Siding: how far the boards lean out over each other, 0 to 1. At 1 a board's face runs from the wall at its top edge to
+   * the full depth at its lower edge, as clapboards do; at 0 the boards lie flat, with only the joint between them.
+   */
+  sidingLap: number;
+  /** Siding: the width of the joint between two boards, mm (0: none, the boards' step is all there is). */
+  sidingGap: number;
+  /**
    * Half-timbering (the spacing is a panel's width, from post to post; the depth how far the beams stand out): a storey's
    * height, mm, from sill to plate. Both are fitted as bricks are (see fitTimber): whole panels round a round body and
    * from edge to edge of a flat side, whole storeys from the bottom edge up.
@@ -601,6 +622,9 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   brickJoint: 0.8,
   brickBond: "running",
   brickVary: 0,
+  sidingBoards: "level",
+  sidingLap: 1,
+  sidingGap: 0.4,
   timberHeight: 30,
   timberBeam: 2.4,
   timberRails: 1,
@@ -658,6 +682,8 @@ export const SURFACE_TEXTURE_LIMITS: Record<NumberKey, [number, number]> = {
   brickHeight: [0.5, 100],
   brickJoint: [0.1, 10],
   brickVary: [0, 1],
+  sidingLap: [0, 1],
+  sidingGap: [0, 10],
   timberHeight: [3, 300],
   timberBeam: [0.3, 30],
   timberRails: [0, 2],
@@ -685,6 +711,7 @@ const CHOICES = {
   crackStart: SURFACE_TEXTURE_CRACK_STARTS,
   carbonWeave: SURFACE_TEXTURE_CARBON_WEAVES,
   brickBond: SURFACE_TEXTURE_BRICK_BONDS,
+  sidingBoards: SURFACE_TEXTURE_SIDING_BOARDS,
   timberBracing: SURFACE_TEXTURE_TIMBER_BRACINGS,
   barkType: SURFACE_TEXTURE_BARK_TYPES,
   woodType: SURFACE_TEXTURE_WOOD_TYPES,
@@ -815,6 +842,8 @@ export function normalizeSurfaceTexture(input: unknown): SurfaceTextureSettings 
   out.seed = Math.round(out.seed);
   out.woodKnots = Math.round(out.woodKnots);
   out.timberRails = Math.round(out.timberRails);
+  // Siding is cut as grooves are, which run at `angle`: level boards are grooves running level, upright ones upright.
+  if (out.pattern === "siding") out.angle = out.sidingBoards === "upright" ? 0 : 90;
   // What a pattern is not told starts as it looks right (see SURFACE_TEXTURE_STARTERS), not as the knurling would.
   const starter = SURFACE_TEXTURE_STARTERS[out.pattern];
   if (starter) {
@@ -859,6 +888,8 @@ export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Par
   hammered: { spacing: 5, depth: 0.5, profile: "round" },
   // Bricks run into a box's corners: kept smooth there, the corner stood in a strip of its own between two walls.
   bricks: { spacing: 12, depth: 0.6, profile: "flat", keepEdges: false },
+  // Boards of about 20 cm at 1:87, standing out as on a house, up to the corners: kept smooth, the corner stood in a strip.
+  siding: { spacing: 2.4, depth: 0.5, direction: "outward", keepEdges: false },
   // A panel about a metre wide and beams of 20 cm at 1:87; a corner post on both sides of a corner, as on a house.
   timber: { spacing: 12, depth: 0.8, direction: "outward", keepEdges: false },
   stones: { spacing: 8, depth: 0.8, direction: "outward", keepEdges: false },
@@ -1004,6 +1035,52 @@ function stripe(u: number, v: number, angleDeg: number, period: number, s: Surfa
   const a = (angleDeg * Math.PI) / 180;
   const x = (u * Math.cos(a) - v * Math.sin(a)) / period;
   return surfaceFalloff(Math.abs(x - Math.floor(x) - 0.5) / (s.width / 2), s.profile);
+}
+
+/** Grooves, knurling and siding: stripes of one width, cut into strips along them (see sliceStripes). */
+function striped(s: SurfaceTextureSettings) {
+  return s.pattern === "grooves" || s.pattern === "knurl" || s.pattern === "siding";
+}
+
+/**
+ * The step between two boards of siding, mm across: as steep as a print shows it cleanly, as a tile's wall is (see
+ * TILE_WALL). A displaced surface cannot stand upright, so the step is this narrow slope; on a narrow board it takes at
+ * most SIDING_WALL_SHARE of its height.
+ */
+const SIDING_WALL = 0.1;
+const SIDING_WALL_SHARE = 0.125;
+
+/** A board of siding `P` mm high: its step's width, its joint's width (at most half the board) and its face's height at the thin edge. */
+function sidingBoard(P: number, s: SurfaceTextureSettings) {
+  return { wall: Math.min(SIDING_WALL, P * SIDING_WALL_SHARE), gap: clamp(s.sidingGap, 0, P / 2), low: 1 - clamp(s.sidingLap, 0, 1) };
+}
+
+/**
+ * Siding across one board, 0 to 1: `y` mm from the board's thin edge (the top of a level board) towards its thick one, of
+ * `P`. First the joint's floor, then a step up to the face's thin edge, the face leaning out to the full depth, and
+ * the step down to the next board's joint. Cut into the body instead of standing out, the same shape is counted from
+ * the other side: the thick edge stays at the surface and the joint lies deepest.
+ */
+function sidingProfile(y: number, P: number, s: SurfaceTextureSettings) {
+  const { wall, gap, low } = sidingBoard(P, s);
+  let value: number;
+  if (y < gap) value = 0;
+  else if (y < gap + wall) value = (low * (y - gap)) / wall;
+  else if (y < P - wall) value = low + ((1 - low) * (y - gap - wall)) / Math.max(1e-9, P - 2 * wall - gap);
+  else value = clamp((P - y) / wall, 0, 1);
+  return s.direction === "inward" ? 1 - value : value;
+}
+
+/** Siding at (u, v): boards `period` high across the stripes' way, as stripe() measures it. */
+function sidingValue(u: number, v: number, angleDeg: number, period: number, s: SurfaceTextureSettings) {
+  const a = (angleDeg * Math.PI) / 180;
+  const x = (u * Math.cos(a) - v * Math.sin(a)) / period;
+  return sidingProfile((x - Math.floor(x)) * period, period, s);
+}
+
+/** Where level boards of siding begin along v on a side (see SurfaceTextureLayout.sidingRows); a top or bottom has none. */
+function sidingOrigin(layout: SurfaceTextureLayout, axis: number) {
+  return axis < 3 ? layout.sidingRows?.origin ?? 0 : 0;
 }
 
 /** Hexagon grid with centre spacing `size` (a corner up): distance to the cell's middle and to its border. */
@@ -2038,6 +2115,11 @@ export type SurfaceTextureLayout = {
   rowHeight?: number;
   rowOrigin?: number;
   rows?: number;
+  /**
+   * Siding: the axis (x, y or z) its boards are counted along on the body's sides, and where the first one begins there:
+   * the body's bottom, so a whole board stands on it and the top one is cut, as on a house.
+   */
+  sidingRows?: { axis: number; origin: number };
   /** Bricks flat or all round: per axis x, y, z a brick's length as fitted to the body's size along it, and where they begin. */
   brickAxes?: { origin: number; cell: number }[];
   /**
@@ -2516,6 +2598,8 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
       return hammeredValue(u, v, layout.cell, layout.around, s.seed, s.width, s.profile);
     case "bricks":
       return brickValue(u, v, s, layout, axis, face);
+    case "siding":
+      return sidingValue(u, v - sidingOrigin(layout, axis), layout.angle, layout.period, s);
     case "timber":
       return timberValue(u, v, s, layout, axis);
     case "stones":
@@ -2899,6 +2983,11 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
   const layout: SurfaceTextureLayout = { projection: s.projection as SurfaceTextureLayout["projection"], period: s.spacing, cell: s.spacing, around: null, angle: s.angle, center: [c1, c2], radius, rMin, rMax, outline: shape };
   if (s.pattern === "image") layout.image = textureImage(s);
   if (s.pattern === "bricks") fitBrickCourses(base, s, kept, layout);
+  if (s.pattern === "siding") {
+    // The boards are counted along the axis round a body, upwards all round, and along the second axis seen flat.
+    const rows = s.projection === "cylinder" ? AXIS_INDEX[s.axis] : s.projection === "allRound" ? 2 : acrossAxes(s.axis)[1];
+    layout.sidingRows = { axis: rows, origin: base.min[rows] };
+  }
   if (tilePattern(s)) fitTiles(base, s, kept, layout);
   if (s.pattern === "timber") fitTimber(base, s, kept, layout);
   if (s.pattern === "stones") fitStones(base, s, kept, layout);
@@ -2912,7 +3001,7 @@ export function makeSurfaceTextureLayout(base: SurfaceBase, asked: SurfaceTextur
     return layout;
   }
   const C = 2 * Math.PI * radius;
-  if (s.pattern === "grooves" || s.pattern === "knurl") {
+  if (striped(s)) {
     const cos = Math.abs(Math.cos((s.angle * Math.PI) / 180));
     if (cos > 0.05) {
       const k = Math.max(1, Math.round((C * cos) / s.spacing));
@@ -3365,12 +3454,12 @@ function onceJumpsAlong(U: Float64Array, V: Float64Array, a: number, b: number, 
  * at the rim over the grid's triangles, in notches with teeth along their top.
  */
 function endsInWall(s: SurfaceTextureSettings) {
-  return !standsOut(s) && s.projection === "cylinder" && (s.pattern === "grooves" || s.pattern === "knurl" || s.pattern === "image");
+  return !standsOut(s) && s.projection === "cylinder" && (striped(s) || s.pattern === "image");
 }
 
 /** Grooves and knurling around a cylinder or flat are cut into strips along the grooves (see sliceStripes). */
 function stripesAreCut(s: SurfaceTextureSettings) {
-  return (s.pattern === "grooves" || s.pattern === "knurl") && s.projection !== "allRound";
+  return striped(s) && s.projection !== "allRound";
 }
 
 /**
@@ -3381,6 +3470,7 @@ function patternExtras(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) 
   if (s.pattern === "cells" || s.pattern === "grain" || s.pattern === "hammered") return [s.seed];
   if (s.pattern === "bumps") return [s.bumpGrid];
   if (s.pattern === "carbon") return [s.carbonWeave, s.carbonCross];
+  if (s.pattern === "siding") return [s.sidingLap, s.sidingGap, s.direction === "inward", layout.sidingRows ?? null];
   if (s.pattern === "bricks") return [s.brickBond, s.brickJoint, layout.rowHeight ?? s.brickHeight, layout.rowOrigin ?? 0, layout.brickAxes ?? null, layout.capBricks ?? null];
   if (tilePattern(s)) return [s.tileGap, s.tileFromBottom, layout.tiles ?? null];
   if (s.pattern === "timber") return [s.timberHeight, s.timberBeam, s.timberRails, s.timberBracing, s.timberGrain, s.patternPart, layout.timber ?? null];
@@ -3449,6 +3539,8 @@ function stripeFields(mesh: { vertices: Float64Array }, s: SurfaceTextureSetting
   const [c1, c2] = layout.center;
   const v = mesh.vertices;
   const n0 = v.length / 3;
+  // Siding's level boards are counted from the body's bottom (see SurfaceTextureLayout.sidingRows): the cuts as its value.
+  const v0 = s.pattern === "siding" && layout.sidingRows?.axis === iv ? layout.sidingRows.origin : 0;
   const U = new Float64Array(n0), V = new Float64Array(n0), cross = new Float64Array(n0), along = new Float64Array(n0);
   // Points on the axis have no angle: triangles at them are not cut.
   const pole = new Uint8Array(n0);
@@ -3459,7 +3551,7 @@ function stripeFields(mesh: { vertices: Float64Array }, s: SurfaceTextureSetting
       V[i] = v[i * 3 + iv];
     } else [U[i], V[i]] = turnOnFace(v[i * 3 + i1], v[i * 3 + i2], s, layout);
     const u = cyl ? U[i] * R : U[i];
-    cross[i] = u * ca - V[i] * sa;
+    cross[i] = u * ca - (V[i] - v0) * sa;
     along[i] = u * sa + V[i] * ca;
   }
   const du = (i: number, j: number) => {
@@ -3535,6 +3627,11 @@ function sliceStripes(mesh: SurfaceMesh & { field?: Float64Array }, s: SurfaceTe
 
 /** A groove's places of the profile within a period P: its middle at P/2 (stripe: |x - floor(x) - 0.5|), edges at P/2 ± w P/2. */
 function stripeOffsets(P: number, s: SurfaceTextureSettings, steps: number) {
+  if (s.pattern === "siding") {
+    // A board's places: where its joint ends, its face begins and its step down begins; the step ends at the period's start.
+    const { wall, gap } = sidingBoard(P, s);
+    return [0, gap, gap + wall, P - wall].filter((o, k, all) => o < P - 1e-9 * P && all.findIndex((known) => Math.abs(known - o) < 1e-9 * P) === k).sort((a, b) => a - b);
+  }
   const w = clamp(s.width, 0.05, 1);
   const offsets: number[] = [];
   [0, ...profileLevels(s.profile, steps)].forEach((t) => {
@@ -6818,10 +6915,10 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const slice = stripesAreCut(s);
     const smooth = smoothBaseVertices(s, layout);
     // All round on straight faces (a box's sides): cut per axis as flat, the rest refined as before.
-    const striped = s.pattern === "grooves" || s.pattern === "knurl";
+    const stripes = striped(s);
     // Stone walls are refined at their edges first, then cut along the stones' outlines like the straight faces' cuts.
     const stones = s.pattern === "stones";
-    const cutsFlat = striped || stones || CELL_PATTERNS.includes(s.pattern);
+    const cutsFlat = stripes || stones || CELL_PATTERNS.includes(s.pattern);
     // Around a cylinder, a picked top or bottom lies flat (see SurfaceTextureLayout.flatCaps): cut like a straight face.
     const caps = layout.flatCaps ? capFaces(base, smooth.faces, AXIS_INDEX[s.axis]) : null;
     const straight = s.projection === "allRound" && cutsFlat ? straightFaces(base, smooth.faces) : cutsFlat ? caps : null;
@@ -7111,7 +7208,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
       // Grooves, bricks, squares and triangles on straight faces are cut, not refined: points only on such faces (or smooth
       // ones) stay as they are.
       let keep = smooth.points;
-      if (straight && (striped || s.pattern === "bricks" || tilePattern(s))) {
+      if (straight && (stripes || s.pattern === "bricks" || tilePattern(s))) {
         const other = new Uint8Array(smooth.points.length);
         for (let f = 0; f < straight.length; f += 1) {
           if (straight[f] !== 255 || smooth.faces[f]) continue;
@@ -7219,7 +7316,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
         // a band of them, as rows first).
         // A top or bottom: grooves in rows or rings of its own, and where the side's grooves run or fold over its rim,
         // those - as rings when they run level, else as rays.
-        const onCap = striped && k === AXIS_INDEX[s.axis];
+        const onCap = stripes && s.pattern !== "siding" && k === AXIS_INDEX[s.axis];
         const runs = onCap && (layout.capEdge === "over" || layout.capEdge === "fold");
         const rays = runs && !levelGrooves(s, layout);
         if (onCap) {
@@ -7229,7 +7326,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
             if (layout.capEdge === "fold" && ringsOnCaps(s, layout)) mesh = sliceRings(mesh, sk, layout, layout.period, stripeOffsets(layout.period, s, CROSS_STEPS[s.detail] / 2), skip, maxTriangles);
             mesh = rayCuts(mesh, s, layout, maxTriangles, smooth.faces, skip);
           } else mesh = capRingCuts(mesh, sk, layout, layout.period, stripeOffsets(layout.period, s, CROSS_STEPS[s.detail] / 2), skip, maxTriangles, smooth.faces);
-        } else if (striped) mesh = cutRows(mesh, sk, skip);
+        } else if (stripes) mesh = cutRows(mesh, sk, skip);
         else if (s.pattern === "bricks" || s.pattern === "timber" || tilePattern(s)) {
           const cut = s.pattern === "bricks" ? sliceBricks(mesh, sk, layout, cellSteps(), maxTriangles, skip) : s.pattern === "timber" ? sliceTimber(mesh, sk, layout, cellSteps(), maxTriangles, skip) : sliceTiles(mesh, sk, layout, cellSteps(), maxTriangles, skip);
           if (cut.reduced) raised = true;
