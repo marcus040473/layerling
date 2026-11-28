@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { lidSnapHookArm, LID_CORNER_SCREW_SIZES, MIN_LID_THICKNESS, cornerScrewPlan, lidThicknessForCornerScrews, BAYONET_MIN_WALL, HINGE_PIN_GRIP, HINGE_PIN_GRIP_SHARE, HINGE_PRINTED_PIN_GRIP, LID_DEFAULTS, LID_THREAD_STANDARD_SPECS, LID_THREAD_STANDARDS, LID_TYPES, NECK_LARGER, NECK_SMALLER, MAX_BAYONET_AXIAL_GAP, MAX_BAYONET_DEPTH, MAX_BAYONET_DETENT, MAX_BAYONET_LUGS, MAX_BAYONET_TURN, MIN_BAYONET_AXIAL_GAP, MIN_BAYONET_DEPTH, MIN_BAYONET_LUGS, MIN_BAYONET_TURN, MAX_CLICK_BUMP_HEIGHT, MAX_HINGE_PIN, MAX_HINGE_PIN_PLAY, MAX_LID_GAP, MAX_LID_THICKNESS, MAX_LID_THREAD_PITCH, MAX_LID_THREAD_OFFSET, MAX_LID_THREAD_TURNS, MAX_MAGNET_GAP, MIN_CLICK_BUMP_HEIGHT, MIN_HINGE_PIN, MIN_HINGE_PIN_PLAY, MIN_LID_THREAD_OFFSET, MIN_LID_THREAD_PITCH, MIN_LID_THREAD_TURNS, MIN_LID_WALL, MIN_MAGNET_DIAMETER, SCREW_MIN_WALL, bayonetLugSize, bayonetPlan, bayonetTurn, clickBumpPlaces, cornerKnucklePlan, endPlugPlan, hingeKnuckleRadius, hingePinGrip, hingePinHoles, lidClickBumpsFit, lidHandleFits, lidNeckFit, lidStandardThread, lidTakesExtras, lidTakesMagnets, lidThicknessForMagnets, lidThread, magnetPlaces, magnetPocketDepth, normalizeLidOptions, roundOutline, screwPlan, lidTetherFits, tetherPlan, FLIP_HINGE_LENGTH, FLIP_HINGE_THICKNESS, MAX_FLIP_TOP_OPENING, MIN_FLIP_TOP_OPENING, flipTopPlan, flipTopThickness, lidFlipTopFits, screwInPlan, LID_HINGE_TYPES, SLIDE_EDGE, SLIDE_LIP, SLIDE_MAX_GROOVE, SLIDE_MIN_HOLD, SLIDE_WALL_KEEP, slideBoxTurn, slidePlan, slideWall, MAX_SLIDE_FRAME, SLIDE_FRAME_KEEP, slideFrameNeeded, slideSlotRoom } from "@/lib/lidTool";
+import { lidFlushBaseFits, lidPanelAsk, lidErrorMessage, lidSnapHookArm, LID_CORNER_SCREW_SIZES, MIN_LID_THICKNESS, cornerScrewPlan, lidThicknessForCornerScrews, BAYONET_MIN_WALL, HINGE_PIN_GRIP, HINGE_PIN_GRIP_SHARE, HINGE_PRINTED_PIN_GRIP, LID_DEFAULTS, LID_THREAD_STANDARD_SPECS, LID_THREAD_STANDARDS, LID_TYPES, NECK_LARGER, NECK_SMALLER, MAX_BAYONET_AXIAL_GAP, MAX_BAYONET_DEPTH, MAX_BAYONET_DETENT, MAX_BAYONET_LUGS, MAX_BAYONET_TURN, MIN_BAYONET_AXIAL_GAP, MIN_BAYONET_DEPTH, MIN_BAYONET_LUGS, MIN_BAYONET_TURN, MAX_CLICK_BUMP_HEIGHT, MAX_HINGE_PIN, MAX_HINGE_PIN_PLAY, MAX_LID_GAP, MAX_LID_THICKNESS, MAX_LID_THREAD_PITCH, MAX_LID_THREAD_OFFSET, MAX_LID_THREAD_TURNS, MAX_MAGNET_GAP, MIN_CLICK_BUMP_HEIGHT, MIN_HINGE_PIN, MIN_HINGE_PIN_PLAY, MIN_LID_THREAD_OFFSET, MIN_LID_THREAD_PITCH, MIN_LID_THREAD_TURNS, MIN_LID_WALL, MIN_MAGNET_DIAMETER, SCREW_MIN_WALL, bayonetLugSize, bayonetPlan, bayonetTurn, clickBumpPlaces, cornerKnucklePlan, endPlugPlan, hingeKnuckleRadius, hingePinGrip, hingePinHoles, lidClickBumpsFit, lidHandleFits, lidNeckFit, lidStandardThread, lidTakesExtras, lidTakesMagnets, lidThicknessForMagnets, lidThread, magnetPlaces, magnetPocketDepth, normalizeLidOptions, roundOutline, screwPlan, lidTetherFits, tetherPlan, FLIP_HINGE_LENGTH, FLIP_HINGE_THICKNESS, MAX_FLIP_TOP_OPENING, MIN_FLIP_TOP_OPENING, flipTopPlan, flipTopThickness, lidFlipTopFits, screwInPlan, LID_HINGE_TYPES, SLIDE_EDGE, SLIDE_LIP, SLIDE_MAX_GROOVE, SLIDE_MIN_HOLD, SLIDE_WALL_KEEP, slideBoxTurn, slidePlan, slideWall, MAX_SLIDE_FRAME, SLIDE_FRAME_KEEP, slideFrameNeeded, slideSlotRoom } from "@/lib/lidTool";
+import { t } from "@/lib/i18n";
 import { threadSize } from "@/lib/vase/vase-geometry.mjs";
 
 describe("lid options (#1009)", () => {
   it("starts from a push-in lid with a normal fit", () => {
     expect(normalizeLidOptions()).toEqual(LID_DEFAULTS);
-    expect(LID_DEFAULTS).toEqual({ type: "plug", thickness: 2, gap: 0.2, depth: 4, wall: 1.6, magnets: false, magnetDiameter: 6, magnetHeight: 2, magnetGap: 0.1, cornerScrews: false, cornerScrewSize: "M3", cornerScrewFastener: "insert", cornerScrewHead: "countersunk", hinge: false, hingePin: 1.75, hingeGap: 0.3, hingePinPlay: 0.2, hingeKnuckles: 0, hingePrintPin: false, hingeSide: "back", hingeTeardrop: true, hingeStyle: "outside", hingeEndPlugs: false, clickBumps: false, clickBumpHeight: 0.4, handle: "none", threadPitch: 3, threadTurns: 2, threadOffset: 0, threadStandard: "own", bayonetLugs: 3, bayonetDepth: 8, bayonetAxialGap: 0.3, bayonetDetent: 0.3, bayonetTurn: 0, tether: false, flipTop: false, flipTopOpening: 8, topEdge: "square", topEdgeSize: 1, slideSide: "front", slideFrame: 0, latches: 0, latchBack: false, latchWidth: 12, latchGrip: 0.3, latchInPlace: false, latchStyle: "clip", turnLength: 24, drawClamp: 0.2, snapUndercut: 1, boltDiameter: 6, boltPlay: 0.3, boltTravel: 4, sliderWidth: 22, sliderPlay: 0.3, latchLabel: "OPEN", stackTop: false, leaveOpenings: true, labelSide: "none", labels: [] });
+    expect(LID_DEFAULTS).toEqual({ type: "plug", thickness: 2, gap: 0.2, depth: 4, wall: 1.6, magnets: false, magnetDiameter: 6, magnetHeight: 2, magnetGap: 0.1, cornerScrews: false, cornerScrewSize: "M3", cornerScrewFastener: "insert", cornerScrewHead: "countersunk", hinge: false, hingePin: 1.75, hingeGap: 0.3, hingePinPlay: 0.2, hingeKnuckles: 0, hingePrintPin: false, hingeSide: "back", hingeTeardrop: true, hingeStyle: "outside", hingeEndPlugs: false, clickBumps: false, clickBumpHeight: 0.4, handle: "none", threadPitch: 3, threadTurns: 2, threadOffset: 0, threadStandard: "own", flushBase: false, bayonetLugs: 3, bayonetDepth: 8, bayonetAxialGap: 0.3, bayonetDetent: 0.3, bayonetTurn: 0, tether: false, flipTop: false, flipTopOpening: 8, topEdge: "square", topEdgeSize: 1, slideSide: "front", slideFrame: 0, latches: 0, latchBack: false, latchWidth: 12, latchGrip: 0.3, latchInPlace: false, latchStyle: "clip", turnLength: 24, drawClamp: 0.2, snapUndercut: 1, boltDiameter: 6, boltPlay: 0.3, boltTravel: 4, sliderWidth: 22, sliderPlay: 0.3, latchLabel: "OPEN", stackTop: false, leaveOpenings: true, labelSide: "none", labels: [] });
     // Slide latches (Discussion #1587): their kind, width and play kept to what is offered, the label to 12 characters.
     const slid = normalizeLidOptions({ latchStyle: "slider", sliderWidth: 99, sliderPlay: 0, latchLabel: "  OFFEN   JETZT BITTE  " });
     expect(slid.latchStyle).toBe("slider");
@@ -1249,6 +1250,30 @@ describe("where a slide-in lid's grooves go (Discussion #1443)", () => {
     // Walls inside the box lie within its convex hull and change nothing.
     expect(slideBoxTurn([turned(rectangle(-28, -18, -1, 18), 12), turned(rectangle(1, -18, 28, 18), 12)])).toBeCloseTo(12, 9);
     expect(slideBoxTurn([[[0, 0], [1, 1]]])).toBe(0);
+  });
+});
+
+describe("a screw lid's flush base (Discussion #2148)", () => {
+  it("is off to begin with, read from true or false, and goes with a screw lid only", () => {
+    expect(LID_DEFAULTS.flushBase).toBe(false);
+    expect(normalizeLidOptions({ flushBase: true }).flushBase).toBe(true);
+    expect(normalizeLidOptions({ flushBase: "true" }).flushBase).toBe(true);
+    expect(normalizeLidOptions({ flushBase: "yes" }).flushBase).toBe(false);
+    expect(normalizeLidOptions({ flushBase: false }, { ...LID_DEFAULTS, flushBase: true }).flushBase).toBe(false);
+    expect(normalizeLidOptions({}, { ...LID_DEFAULTS, flushBase: true }).flushBase).toBe(true);
+    expect(LID_TYPES.filter((type) => lidFlushBaseFits({ type }))).toEqual(["screw"]);
+  });
+
+  it("is asked for from the panel only where the panel shows it: on a screw lid without a tether", () => {
+    const ask = (patch: Record<string, unknown>) => lidPanelAsk(normalizeLidOptions({ flushBase: true, ...patch })).flushBase;
+    expect(ask({ type: "screw" })).toBe(true);
+    expect(ask({ type: "screw", tether: true })).toBe(false);
+    for (const type of LID_TYPES.filter((kind) => kind !== "screw")) expect([type, ask({ type })]).toEqual([type, false]);
+  });
+
+  it("has a message for each way it is refused", () => {
+    expect(lidErrorMessage({ code: "flushBaseType" })).toBe(t("lid.error.flushBaseType"));
+    expect(lidErrorMessage({ code: "flushBaseTether" })).toBe(t("lid.error.flushBaseTether"));
   });
 });
 

@@ -151,6 +151,7 @@ describe("the lid tool the MCP bridge offers", () => {
     const properties = toolByName("layerling_make_lid").inputSchema.properties ?? {};
     expect(Object.keys(LID_DEFAULTS).filter((key) => !(key in properties))).toEqual([]);
     expect(properties.tether).toMatchObject({ type: "boolean" });
+    expect(properties.flushBase).toMatchObject({ type: "boolean" });
   });
 
   it("can fit the body to a standard's neck first, as the panel's button does (issue #1482)", () => {

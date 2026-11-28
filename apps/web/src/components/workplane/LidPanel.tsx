@@ -94,6 +94,7 @@ import {
   lidTakesExtras,
   lidTakesMagnets,
   lidStandardThread,
+  lidFlushBaseFits,
   lidTetherFits,
   cornerScrewPlan,
   lidThicknessForCornerScrews,
@@ -554,6 +555,14 @@ export function LidPanel({
           />
           <span className="shell-openings-summary">{t("lid.bayonetDetentHint")}</span>
           <span className="shell-openings-summary">{t("lid.bayonetHint", { count: settings.bayonetLugs, turn: millimetres(settings.bayonetTurn || bayonetTurn(settings.bayonetLugs)) })}</span>
+        </>) : null}
+        {/* The body widened below a screw cap to the cap's width, so the two close flush (Discussion #2148); not with a tether, whose ring goes round the body there. */}
+        {lidFlushBaseFits(settings) && !settings.tether ? (<>
+          <label className="edge-modifier-field offset-copy">
+            <input type="checkbox" checked={settings.flushBase} disabled={busy} onChange={(event) => onChange({ flushBase: event.target.checked })} />
+            <span>{t("lid.flushBase")}</span>
+          </label>
+          {settings.flushBase ? <span className="shell-openings-summary">{t("lid.flushBaseHint")}</span> : null}
         </>) : null}
         {/* A cap that is turned off can stay tied to the body: two rings and a strap, printed beside it. */}
         {lidTetherFits(settings) ? (<>

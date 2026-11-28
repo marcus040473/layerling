@@ -27,7 +27,8 @@ import type { WorkplaneShape } from "@/types/layerling";
  * - screw: like a jar (Discussion #1393), for a round body: a thread on the outside of its top, grouped with it, and a
  *   cap whose rim has the matching thread inside, the gap all round (see `screwPlan`); or a standard bottle's or jar's
  *   thread (`LID_THREAD_STANDARD_SPECS`), whose cap fits that bottle, the body getting the neck's thread only if it is
- *   one (`lidNeckFit`);
+ *   one (`lidNeckFit`); with a flush base (Discussion #2148) the body is widened below the cap to the cap's width, so
+ *   the two close flush (see `flushBaseSolid`);
  * - screwIn: the other way round (Discussion #1432), for a round body with a round opening: the same thread standing in
  *   from the wall inside the opening, grouped with the body, and a plate as large as the body with a threaded plug
  *   below it that screws into it, the gap all round (see `screwInPlan`);
@@ -137,6 +138,8 @@ export type LidTopEdge = "square" | "round" | "chamfer";
  * above a slot the lid passes through, rather than being cut down (Discussion #1443).
  * `bayonetTurn` is how far the cap turns to lock, in degrees: 0 leaves it to the lugs (the function `bayonetTurn`), a
  * turn set by hand is held to what fits round the body (`bayonetPlan`).
+ * With `flushBase`, a screw lid's body is widened below the cap to the cap's width (Discussion #2148): a ring from the
+ * body's foot up to the gap under the cap's rim, grouped with the body as its thread is, so cap and body close flush.
  * With `tether`, a screw or bayonet cap comes with a tether that keeps it on the body (see `tetherPlan`).
  * With `flipTop`, a screw or bayonet cap's plate has a round opening `flipTopOpening` mm across, closed by a flap printed
  * in it, the gap round it, and joined to the plate by a thin strip that bends as a hinge.
@@ -179,6 +182,7 @@ export type LidOptions = {
   threadTurns: number;
   threadOffset: number;
   threadStandard: LidThreadStandard;
+  flushBase: boolean;
   bayonetLugs: number;
   bayonetDepth: number;
   bayonetAxialGap: number;
@@ -286,7 +290,7 @@ export const LID_DEFAULTS: LidOptions = {
   type: "plug", thickness: 2, gap: 0.2, depth: 4, wall: 1.6, magnets: false, magnetDiameter: 6, magnetHeight: 2, magnetGap: 0.1,
   cornerScrews: false, cornerScrewSize: "M3", cornerScrewFastener: "insert", cornerScrewHead: "countersunk",
   hinge: false, hingePin: 1.75, hingeGap: 0.3, hingePinPlay: 0.2, hingeKnuckles: 0, hingePrintPin: false, hingeSide: "back", hingeTeardrop: true, hingeStyle: "outside", hingeEndPlugs: false,
-  clickBumps: false, clickBumpHeight: 0.4, handle: "none", threadPitch: 3, threadTurns: 2, threadOffset: 0, threadStandard: "own",
+  clickBumps: false, clickBumpHeight: 0.4, handle: "none", threadPitch: 3, threadTurns: 2, threadOffset: 0, threadStandard: "own", flushBase: false,
   bayonetLugs: 3, bayonetDepth: 8, bayonetAxialGap: 0.3, bayonetDetent: 0.3, bayonetTurn: 0, tether: false,
   flipTop: false, flipTopOpening: 8, topEdge: "square", topEdgeSize: 1, slideSide: "front", slideFrame: 0,
   latches: 0, latchBack: false, latchWidth: DEFAULT_LID_LATCH_WIDTH, latchGrip: DEFAULT_LID_LATCH_GRIP, latchInPlace: false,
@@ -493,6 +497,12 @@ const SCREW_ROOT_INSET = 0.1;
 const SCREW_TOP_INSET = 0.2;
 /** How much of the body a screw lid's thread leaves below it, in mm. */
 const SCREW_FLOOR = 0.4;
+/** A flush base lower than this, in mm, is none: the cap's rim reaches down to the body's foot (Discussion #2148). */
+const FLUSH_BASE_MIN_HEIGHT = 0.2;
+/** How far what is left out of a flush base's ring reaches beyond the ring's top and underside, in mm. */
+const FLUSH_BASE_OVERCUT = 1;
+/** A flush base of less than this, in mm³, is none: the body is as wide as the cap already. */
+const FLUSH_BASE_MIN_VOLUME = 1;
 /** A screw lid's thread and cap are drawn round with a point every so many millimetres, at least 96 and at most 512. */
 const SCREW_STEP = 0.5;
 /** How many rows of points a pitch of the thread has, up the wall: as many as the vase's screw lid. */
@@ -925,6 +935,8 @@ export function normalizeLidOptions(value?: Partial<Record<keyof LidOptions, unk
     result.bayonetTurn = whole === 0 ? 0 : Math.max(MIN_BAYONET_TURN, whole);
   }
   if (value?.tether === true || value?.tether === "true") result.tether = true;
+  if (value?.flushBase === true || value?.flushBase === "true") result.flushBase = true;
+  else if (value?.flushBase === false || value?.flushBase === "false") result.flushBase = false;
   if (value?.flipTop === true || value?.flipTop === "true") result.flipTop = true;
   const flipTopOpening = finiteNumber(value?.flipTopOpening);
   if (flipTopOpening !== null) result.flipTopOpening = clamp(flipTopOpening, MIN_FLIP_TOP_OPENING, MAX_FLIP_TOP_OPENING);
@@ -980,6 +992,14 @@ export function lidLabelsFit(options: Pick<LidOptions, "type">) {
  */
 export function lidTakesExtras(options: Pick<LidOptions, "type">) {
   return options.type !== "screw" && options.type !== "screwIn" && options.type !== "bayonet";
+}
+
+/**
+ * Whether a flush base goes with this kind of lid (Discussion #2148): a screw lid's cap is wider than the body by its
+ * thread, the gap and its wall, and the body can be widened below it to match.
+ */
+export function lidFlushBaseFits(options: Pick<LidOptions, "type">) {
+  return options.type === "screw";
 }
 
 /** Whether a tether goes with this kind of lid: it keeps a cap that is turned off the body, a screw or a bayonet cap. */
@@ -1697,6 +1717,7 @@ export type LidError =
   | { code: "slideShallow" | "slideFrameShallow"; depth: number }
   | { code: "slideThinFrame"; frame: number }
   | { code: "tetherType" | "tetherThinWall" }
+  | { code: "flushBaseType" | "flushBaseTether" }
   | { code: "tetherNoNeck"; length: number }
   | { code: "tetherCapShort"; depth: number }
   | { code: "flipTopType" | "flipTopNoRoom" }
@@ -2828,6 +2849,32 @@ function screwSolids(runtime: ManifoldToplevel, plan: ScrewPlan, options: LidOpt
 }
 
 /**
+ * A flush base for a screw lid's body (Discussion #2148): the ring that widens the body below the cap to the cap's
+ * width, in the frame where z is up, to be grouped with the body as the thread is. `body` is the body there. The ring
+ * reaches from the body's foot at `bottom` up to the gap below the cap's mouth, so the screwed-on cap's rim comes down to
+ * the gap above its shoulder while its plate lies on the body's rim, and out to the cap's rim (`capRadius`).
+ * Inside, it follows the body: what the body's hull below the shoulder takes up is left out of it, drawn in towards the
+ * axis by as much as the thread reaches into the wall, so the ring and the wall share that much and become one. A foot
+ * rounded or chamfered, or a body that narrows towards its foot, is filled up to the ring's own straight face; where the
+ * body is as wide as the cap or wider, nothing is added. Null when there is nothing to add at all.
+ */
+function flushBaseSolid(runtime: ManifoldToplevel, body: ManifoldSolid, plan: ScrewPlan, options: LidOptions, bottom: number, created: { delete?: () => void }[]): ManifoldSolid | null {
+  const shoulder = plan.mouth - options.gap;
+  if (shoulder - bottom < FLUSH_BASE_MIN_HEIGHT) return null;
+  const sides = Math.min(512, Math.max(96, 4 * Math.ceil((2 * Math.PI * plan.capRadius) / SCREW_STEP / 4)));
+  const [x, y] = plan.centre;
+  const ring = keep(created, keep(created, runtime.Manifold.cylinder(shoulder - bottom, plan.capRadius, plan.capRadius, sides)).translate([x, y, bottom]));
+  // The body up to a little above the shoulder, where it is the round wall the thread stands on, so that what is left
+  // out of the ring passes through the ring's top; it is moved down as well, to pass through its underside.
+  const lower = keep(created, body.trimByPlane([0, 0, -1], -(shoulder + FLUSH_BASE_OVERCUT)));
+  const draw = (plan.inner - plan.reach) / plan.inner;
+  const drawn = keep(created, keep(created, keep(created, keep(created, lower.hull()).translate([-x, -y, 0])).scale([draw, draw, 1])).translate([x, y, 0]));
+  const core = keep(created, runtime.Manifold.hull([drawn, keep(created, drawn.translate([0, 0, -FLUSH_BASE_OVERCUT]))]));
+  const base = keep(created, ring.subtract(core));
+  return base.volume() > FLUSH_BASE_MIN_VOLUME ? base : null;
+}
+
+/**
  * A solid that winds round the up axis through `centre` as a thread does, rising `pitch` a turn anticlockwise seen from
  * above, a crest's middle at `top` on the x axis: between `inner` from the axis and `outer(s)`, where s is how far along
  * the axis a point lies from the middle of the nearest crest, -pitch/2 to pitch/2. Its rows of points wind with it, one
@@ -3292,8 +3339,10 @@ export type LidHandleResult = { style: Exclude<LidHandle, "none">; notch: Manifo
  * thread, and whether the plug is a ring (`hollow`); a cap never is.
  * `rimRounding` is how far down a rounded or chamfered rim reaches, 0 for a square one: the thread sits that much lower, on the
  * straight wall, and the cap reaches that much further down (Discussion #1426).
+ * With `flushBase`, the thread comes with the ring that widens the body below the cap to the cap's width, one solid
+ * (Discussion #2148).
  */
-export type LidScrew = { thread: ManifoldSolid | null; pitch: number; turns: number; depth: number; diameter: number; standard: LidThreadStandard; capOnly: LidCapOnly | null; inside: boolean; hollow: boolean; rimRounding: number };
+export type LidScrew = { thread: ManifoldSolid | null; pitch: number; turns: number; depth: number; diameter: number; standard: LidThreadStandard; capOnly: LidCapOnly | null; inside: boolean; hollow: boolean; rimRounding: number; flushBase?: boolean };
 
 /**
  * A bayonet lid's: the lugs for the body (one solid, to be grouped with it, in the scene's frame), how many, how far the
@@ -3555,6 +3604,9 @@ function lidForStandingSolid(runtime: ManifoldToplevel, body: ManifoldSolid, giv
     if (options.cornerScrews && options.hinge) return { error: { code: "cornerScrewsHinge" } };
     // A tether keeps a cap that is turned off the body.
     if (options.tether && !lidTetherFits(options)) return { error: { code: "tetherType" } };
+    // A flush base widens the body below a screw cap; a tether's ring needs the body there narrower than the cap.
+    if (options.flushBase && !lidFlushBaseFits(options)) return { error: { code: "flushBaseType" } };
+    if (options.flushBase && options.tether) return { error: { code: "flushBaseTether" } };
     // A flip-top's flap opens in a cap that stays on.
     if (options.flipTop && !lidFlipTopFits(options)) return { error: { code: "flipTopType" } };
     if (options.hinge && !LID_HINGE_TYPES.includes(options.type)) return { error: { code: "hingeLidType" } };
@@ -3711,7 +3763,7 @@ function lidForStandingSolid(runtime: ManifoldToplevel, body: ManifoldSolid, giv
     const outer = keep(created, outline.offset(options.gap + options.wall, "Round", 2, 48));
     // A screw lid: the cap, and the thread for the body beside it; a screw-in lid: the plate with its plug, and the thread
     // for the body's opening; a bayonet lid: the cap, and the lugs for the body; a slide-in lid: the lid, and the cut for the body.
-    let screw: { plan: ScrewPlan; thread: ManifoldSolid | null } | null = null;
+    let screw: { plan: ScrewPlan; thread: ManifoldSolid | null; flush: boolean } | null = null;
     let screwIn: { plan: ScrewInPlan; thread: ManifoldSolid } | null = null;
     let bayonet: { plan: BayonetPlan; lugs: ManifoldSolid } | null = null;
     let slide: { plan: SlidePlan; cuts: ManifoldSolid; bumps: number } | null = null;
@@ -3783,7 +3835,10 @@ function lidForStandingSolid(runtime: ManifoldToplevel, body: ManifoldSolid, giv
       if ("error" in plan) return { error: plan.error };
       const solids = screwSolids(runtime, plan, options, top, created);
       parts.push(capWithTopEdge(runtime, solids.cap, plan.centre, plan.capRadius, top + options.thickness, options, created));
-      screw = { plan, thread: solids.thread };
+      // A flush base is for the body as the thread is: the two are handed on as one solid. A standard's cap made alone
+      // leaves the body as it is, so it gets none.
+      const base = options.flushBase && solids.thread ? flushBaseSolid(runtime, up, plan, options, box.min[2], created) : null;
+      screw = { plan, thread: base && solids.thread ? keep(created, solids.thread.add(base)) : solids.thread, flush: base !== null };
     } else if (options.type === "screwIn") {
       const plan = screwInPlan(sliceAt, options, top, box.min[2], rim);
       if ("error" in plan) return { error: plan.error };
@@ -4897,7 +4952,7 @@ function lidForStandingSolid(runtime: ManifoldToplevel, body: ManifoldSolid, giv
       const thread = screw.thread ? screw.thread.transform(UP_TO_SCENE) : null;
       if (thread) handed.add(thread);
       const { plan } = screw;
-      screwResult = { thread, pitch: plan.pitch, turns: plan.turns, depth: plan.depth, diameter: capWidth(plan.capRadius), standard: plan.standard, capOnly: plan.neck, inside: false, hollow: false, rimRounding: top - plan.wallTop };
+      screwResult = { thread, pitch: plan.pitch, turns: plan.turns, depth: plan.depth, diameter: capWidth(plan.capRadius), standard: plan.standard, capOnly: plan.neck, inside: false, hollow: false, rimRounding: top - plan.wallTop, flushBase: screw.flush };
     }
     if (screwIn) {
       const thread = screwIn.thread.transform(UP_TO_SCENE);
@@ -5082,6 +5137,10 @@ export function lidErrorMessage(error: LidError) {
       return t("lid.error.slideThinFrame", { frame: error.frame.toLocaleString(numberLocale()) });
     case "tetherType":
       return t("lid.error.tetherType");
+    case "flushBaseType":
+      return t("lid.error.flushBaseType");
+    case "flushBaseTether":
+      return t("lid.error.flushBaseTether");
     case "tetherThinWall":
       return t("lid.error.tetherThinWall", { wall: SCREW_MIN_WALL.toLocaleString(numberLocale()) });
     case "tetherNoNeck":
@@ -5135,7 +5194,7 @@ export type LidShapeHandle = { style: Exclude<LidHandle, "none">; notch: Workpla
  * standard's thread, which, and null for the thread when the cap is made alone (`capOnly` says why).
  * A screw-in lid's (`inside`) is the thread for its opening, the plug's size and whether it is hollow.
  */
-export type LidShapeScrew = { thread: WorkplaneShape | null; pitch: number; turns: number; depth: number; diameter: number; standard: LidThreadStandard; capOnly: LidCapOnly | null; inside: boolean; hollow: boolean; rimRounding: number };
+export type LidShapeScrew = { thread: WorkplaneShape | null; pitch: number; turns: number; depth: number; diameter: number; standard: LidThreadStandard; capOnly: LidCapOnly | null; inside: boolean; hollow: boolean; rimRounding: number; flushBase?: boolean };
 
 /** With a bayonet lid, the lugs for the body (one mesh, grouped with it as a screw lid's thread is), the turn and the sizes. */
 export type LidShapeBayonet = { lugs: WorkplaneShape; count: number; turn: number; height: number; width: number; diameter: number; rimRounding: number };
@@ -5161,7 +5220,7 @@ export type LidShapeResult = { lid: WorkplaneShape; labels?: LidLabel[]; rooms?:
  * What Make lid is asked for from the lid panel's settings: what the panel does not show is not asked for. Click bumps,
  * a handle and end plugs it does not show (a flat lid, a pivot lid, a hinge not flush), magnets and a hinge where it
  * shows them switched off (a screw, screw-in, bayonet or slide-in lid; a hinge only goes with a lid that pushes in or a
- * flat one), a tether without one, a flip-top with another lid, latches but on a plug or flat lid lying on the rim, a
+ * flat one), a flush base but on a screw lid without a tether, a tether without one, a flip-top with another lid, latches but on a plug or flat lid lying on the rim, a
  * stacking top and labels where it does not show them. The panel's Apply and its live preview ask alike.
  */
 export function lidPanelAsk(tool: LidOptions): LidOptions {
@@ -5173,6 +5232,7 @@ export function lidPanelAsk(tool: LidOptions): LidOptions {
     hingeEndPlugs: tool.hingeEndPlugs && tool.hingeStyle === "flush",
     clickBumps: tool.clickBumps && lidClickBumpsFit(tool),
     handle: lidHandleFits(tool) ? tool.handle : "none",
+    flushBase: tool.flushBase && lidFlushBaseFits(tool) && !tool.tether,
     tether: tool.tether && lidTetherFits(tool),
     flipTop: tool.flipTop && lidFlipTopFits(tool),
     topEdge: lidTopEdgeFits(tool) ? tool.topEdge : "square",
@@ -5492,8 +5552,8 @@ export async function lidForShapes(targets: readonly WorkplaneShape[], given: Li
     if (result.screw) {
       const thread = result.screw.thread ? splitShapeFromWorldPositions(source, positionsOf(result.screw.thread.getMesh()), createLocalId(`${source.id}-thread`), t("lid.screwThreadName", { name: source.name })) : null;
       if (result.screw.thread && !thread) return { lid: null, error: lidErrorMessage({ code: "empty" }) };
-      const { pitch, turns, depth, diameter, standard, capOnly, inside, hollow, rimRounding } = result.screw;
-      screw = { thread: thread ? canonicalizeShape({ ...thread, hidden: false }) : null, pitch, turns, depth, diameter, standard, capOnly, inside, hollow, rimRounding };
+      const { pitch, turns, depth, diameter, standard, capOnly, inside, hollow, rimRounding, flushBase } = result.screw;
+      screw = { thread: thread ? canonicalizeShape({ ...thread, hidden: false }) : null, pitch, turns, depth, diameter, standard, capOnly, inside, hollow, rimRounding, ...(flushBase ? { flushBase } : {}) };
     }
     let bayonet: LidShapeBayonet | undefined;
     if (result.bayonet) {

@@ -9730,6 +9730,7 @@ export function LayerlingEditor({
         : t("status.lidLatches", { count: latch.count, pin: (Math.round(latch.pin * 10) / 10).toLocaleString(numberLocale()) })] : []),
       ...(result.clickBumps ? [t("status.lidClickBumps", { count: result.clickBumps.count })] : slide?.bumps ? [t("status.lidSlideBump")] : []),
       ...(result.handle?.style === "tab" ? [t("status.lidHandleTab")] : result.handle?.style === "notch" ? [t(slide ? "status.lidSlideGrip" : "status.lidHandleNotch")] : []),
+      ...(screw?.flushBase ? [t("status.lidFlushBase", { diameter: (Math.round(screw.diameter * 100) / 100).toLocaleString(numberLocale()) })] : []),
       ...(tether ? [t("status.lidTether", { length: tether.strap.toLocaleString(numberLocale()) })] : []),
       ...(flipTop ? [t("status.lidFlipTop", { opening: flipTop.opening.toLocaleString(numberLocale()) })] : []),
       ...(labelled ? [t(options.labelSide === "inside" && !options.stackTop ? "status.lidLabelsInside" : "status.lidLabelsOutside", { count: labelled })] : []),
@@ -9742,6 +9743,7 @@ export function LayerlingEditor({
     const screwAnswer = screw ? {
       pitch: screw.pitch, turns: Math.round(screw.turns * 1000) / 1000, depth: Math.round(screw.depth * 1000) / 1000, diameter: Math.round(screw.diameter * 1000) / 1000,
       rimRounding: Math.round(screw.rimRounding * 100) / 100,
+      ...(screw.flushBase ? { flushBase: true } : {}),
       // A screw-in lid's diameter is its plug's, and the plug may be hollow.
       ...(screw.inside ? { inside: true, hollow: screw.hollow } : {}),
       ...(screw.standard === "own" ? {} : (() => {
@@ -18419,6 +18421,7 @@ export function LayerlingEditor({
           bayonetAxialGap: params.bayonetAxialGap,
           bayonetDetent: params.bayonetDetent,
           bayonetTurn: params.bayonetTurn,
+          flushBase: params.flushBase,
           tether: params.tether,
           flipTop: params.flipTop,
           flipTopOpening: params.flipTopOpening,
