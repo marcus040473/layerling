@@ -4101,7 +4101,8 @@ function lidForStandingSolid(runtime: ManifoldToplevel, body: ManifoldSolid, giv
     // - the lid gets a nose in front of the wall, hanging from its plate, with a pocket in its front that is closed below
     //   at the left and open below further right;
     // - the body a rail below the nose with a dovetail slot along the wall, closed at the left end, open at the right one,
-    //   its underside sloping to the wall at 45 degrees, and a small bump near the open end that keeps the slider in;
+    //   its underside sloping to the wall at 45 degrees, and a small bump above and below the slot near the open end that
+    //   keeps the slider in;
     // - the slider, printed flat beside the lid and slid into the rail from the right: a plate in front of rail and nose,
     //   a dovetail key behind it in the slot, a tongue at the top that goes into the nose's pocket when it is slid left
     //   (the lid is held) and comes out under the open part when slid right (the lid is free), grip ribs, and on its front
@@ -4471,9 +4472,18 @@ function lidForStandingSolid(runtime: ManifoldToplevel, body: ManifoldSolid, giv
             cube(rx0, front + 0.4, zR0 - noseOut, rx1, front, zR1),
           ]));
           rail = keep(created, rail.subtract(dovetail(front, g, 0.2, rx0 + 2, rx1 + 1)));
-          // The bump near the open end: half a round rod across the slot's mouth, 0.6 mm out of the rail's face.
-          const bump = keep(created, keep(created, runtime.Manifold.cylinder(railH, 0.8, 0.8, 16)).translate([rx1 - 1.6, front - noseOut + 0.2, zR0]));
-          rail = keep(created, rail.add(keep(created, bump.intersect(cube(rx1 - 3, front - noseOut, zR0, rx1, front - noseOut - 1, zR1)))));
+          // The bump near the open end: half a round rod on the rail's face above the slot's mouth and another below it,
+          // none across the mouth, where the slider's key has to pass on its way in (Discussion #2170). The slider's back
+          // can come forward by its play in the slot; the bumps stand 0.15 mm further out than that, so it clicks over
+          // them going in and does not slide out by itself.
+          const bumpOut = 2 * g + 0.15;
+          const bumpRod = keep(created, keep(created, runtime.Manifold.cylinder(railH, bumpOut + 0.2, bumpOut + 0.2, 24)).translate([rx1 - 1.6, front - noseOut + 0.2, zR0]));
+          const mouth = keyW / 2 + g;
+          const bumps = unionOf([
+            cube(rx1 - 3.2, front - noseOut, zR0, rx1, front - noseOut - bumpOut - 0.1, slotMid - mouth),
+            cube(rx1 - 3.2, front - noseOut, slotMid + mouth, rx1, front - noseOut - bumpOut - 0.1, zR1),
+          ]);
+          rail = keep(created, rail.add(keep(created, bumpRod.intersect(bumps))));
           sideBody.push(rail);
           // The slider, worked out once where it locks, in front of the first place: laid flat beside the lid afterwards.
           if (!sliderMade) {

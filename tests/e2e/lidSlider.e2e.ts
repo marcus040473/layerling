@@ -68,6 +68,13 @@ describe("slide latches", () => {
       expect(overlap(open, lifted(8))).toBeLessThan(0.01);
       // Further right it runs into the bump that keeps it in the rail.
       expect(overlap(keep(slider.translate([travel + 3, 0, 0])), body)).toBeGreaterThan(0.05);
+      // The way in is not blocked (Discussion #2170): pulled forward by its play, the slider gets past the bump from
+      // beyond the rail's open end to where it opens, squeezing it by a click's worth at most. A bump across the slot's
+      // mouth would stand in its key's way there.
+      let squeeze = 0;
+      for (let dx = travel + options.sliderWidth + 6; dx >= travel; dx -= 0.25) squeeze = Math.max(squeeze, overlap(keep(slider.translate([dx, -g, 0])), body));
+      expect(squeeze).toBeGreaterThan(0.05);
+      expect(squeeze).toBeLessThan(0.8);
       // Printed flat on its face: it lies on the plate.
       expect(result.latch!.clips.boundingBox().min[1]).toBeCloseTo(0, 3);
     } finally {
