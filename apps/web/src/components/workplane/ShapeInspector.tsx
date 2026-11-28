@@ -1,6 +1,7 @@
 "use client";
 
 import { displayY, displayYTurn, insideZ, insideZTurn } from "@/lib/displayAxes";
+import { capturePointer } from "@/lib/pointerCapture";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { SnapGridMenuItems } from "@/components/workplane/SnapGridMenu";
 import { guideChapterForShape, guideSectionForShape } from "@/lib/guideLinks";
@@ -9,7 +10,7 @@ import { Scissors, AlignCenter, Amphora, Boxes, Cone, ChevronDown, ChevronUp, Cy
 import { holdsShapeLock } from "@/lib/shapeLock";
 import { createPortal } from "react-dom";
 import { boltPinDiameter, boltSplitFits } from "@/lib/boltSplit";
-import { Fragment, createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { Fragment, createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type Dispatch, type SetStateAction } from "react";
 import {
   DEFAULT_GEAR_HELIX_ANGLE,
   DEFAULT_GEAR_HELIX_QUALITY,
@@ -199,6 +200,7 @@ import { OWN_TEXT_LENGTH, normalizeOwnPicture } from "@/lib/vase/vase-own-pictur
 import { VASE_PURPOSE_PROFILES, normalizeVaseSettings, vasePurposeChoice, vaseSettingsInFrame, type VaseSettings } from "@/lib/vaseSettings";
 import { applyVaseChange, beginVaseDraft, endVaseDraft, usePendingVase } from "@/lib/vaseDraft";
 import { vaseSettingsWithTextPicture } from "@/lib/vaseRelief";
+import { IconOptionSelector } from "@/components/workplane/IconOptionSelector";
 import { LeafEditor, PatternPicture } from "@/components/workplane/VasePatternParts";
 import { VaseDrawingWindow } from "@/components/workplane/VaseDrawingWindow";
 import { VasePrintReport } from "@/components/workplane/VasePrintReport";
@@ -400,6 +402,7 @@ import { MAX_SKETCH_REVOLVE_TURNS, normalizeSketchRevolveSettings } from "@/lib/
 import { roundSideCount } from "@/lib/roundSideCount";
 import { normalizeCurvedConeBend, normalizeCurvedConeTop } from "@/lib/curvedCone";
 import { screwBossFootprint, screwBossPlan, screwBossSize, screwBossSizes, normalizeScrewBossFastener, MAX_SCREW_BOSS_GUSSETS, type ScrewBossFastener } from "@/lib/screwBoss";
+import { LATCH_PARTS, latchBox, latchPlan, MAX_LATCH_GRIP, MAX_LATCH_SPACING, MAX_LATCH_WIDTH, MIN_LATCH_GRIP, MIN_LATCH_WIDTH, normalizeLatchPart, type LatchFields } from "@/lib/latchShape";
 import { snapFitCatchBox, snapFitPlan, SNAP_FIT_STRAIN_PLA, SNAP_FIT_STRAIN_TOUGH, type SnapFitPart } from "@/lib/snapFit";
 import { MIN_RIB_FOOT_OVERHANG, MIN_RIB_FOOT_THICKNESS, normalizeRibFootShape, normalizeRibStyle, normalizeRibTop, ribBoxWidth, ribFootSwitch, ribGussetWallKeepingPlace, ribLengthKeepingPatch, ribSize, ribThicknessOnFootPatch } from "@/lib/rib";
 import { torusTessellation } from "@/lib/torusTessellation";
@@ -2847,6 +2850,9 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       : plan.strain > SNAP_FIT_STRAIN_PLA
         ? t("snapFit.strainTough", { strain: percent(plan.strain) })
         : t("snapFit.strainFine", { strain: percent(plan.strain) });
+    // Where the box has no room for what was asked, the field shows what fits and says so (#2161).
+    const limitedTo = (value: number) => t("snapFit.limited", { value: (Math.round(value * 100) / 100).toLocaleString(numberLocale()) });
+    const withLimit = (limited: boolean, note: string, hint?: string) => (limited ? [note, ...(hint ? [hint] : [])].join(" ") : hint);
     const setPart = (value: string) => {
       const part: SnapFitPart = value === "hook" || value === "catch" ? value : "both";
       if (part === plan.part) return;
@@ -2871,21 +2877,56 @@ function getShapePropertiesWithAppLimits(shape: WorkplaneShape, onUpdate: ShapeI
       properties.push(
         { id: "height", label: t("prop.snapFitHeight"), value: shape.height, min: 3, max: 200, onChange: setHeight },
         { id: "length", label: t("prop.snapFitDepth"), value: depth, min: plan.thickness + plan.undercut + 0.5, max: 200, onChange: setDepth },
-        { id: "snapFitThickness", label: t("prop.snapFitThickness"), value: plan.thickness, min: 0.4, max: 20, step: 0.1, hint: strainHint, onChange: (value) => onUpdate({ snapFitThickness: value }) },
+        { id: "snapFitThickness", label: t("prop.snapFitThickness"), value: plan.thickness, min: 0.4, max: 20, step: 0.1, hint: withLimit(plan.limited.thickness, limitedTo(plan.thickness), strainHint), onChange: (value) => onUpdate({ snapFitThickness: value }) },
       );
     }
     properties.push(
-      { id: "snapFitUndercut", label: t("prop.snapFitUndercut"), value: plan.undercut, min: 0.2, max: 10, step: 0.1, onChange: (value) => onUpdate(plan.part === "catch" ? { snapFitUndercut: value, ...snapFitCatchBox(value, plan.retain) } : { snapFitUndercut: value }) },
+      { id: "snapFitUndercut", label: t("prop.snapFitUndercut"), value: plan.undercut, min: 0.2, max: 10, step: 0.1, hint: withLimit(plan.limited.undercut, limitedTo(plan.undercut)), onChange: (value) => onUpdate(plan.part === "catch" ? { snapFitUndercut: value, ...snapFitCatchBox(value, plan.retain) } : { snapFitUndercut: value }) },
     );
     if (plan.part !== "catch") {
-      properties.push({ id: "snapFitLeadAngle", label: t("prop.snapFitLeadAngle"), value: plan.lead, min: 10, max: 60, step: 1, hint: t("snapFit.leadHint"), onChange: (value) => onUpdate({ snapFitLeadAngle: value }) });
+      properties.push({ id: "snapFitLeadAngle", label: t("prop.snapFitLeadAngle"), value: plan.lead, min: 10, max: 60, step: 1, hint: withLimit(plan.limited.lead, t("snapFit.leadLimited", { angle: Math.round(plan.lead) }), t("snapFit.leadHint")), onChange: (value) => onUpdate({ snapFitLeadAngle: value }) });
     }
     properties.push(
       { id: "snapFitRetainAngle", label: t("prop.snapFitRetainAngle"), value: plan.retain, min: 30, max: 90, step: 1, hint: t("snapFit.retainHint"), onChange: (value) => onUpdate(plan.part === "catch" ? { snapFitRetainAngle: value, ...snapFitCatchBox(plan.undercut, value) } : { snapFitRetainAngle: value }) },
     );
-    if (plan.part === "both") properties.push({ id: "snapFitClearance", label: t("prop.snapFitClearance"), value: plan.clearance, min: 0, max: 2, step: 0.05, onChange: (value) => onUpdate({ snapFitClearance: value }) });
+    if (plan.part === "both") properties.push({ id: "snapFitClearance", label: t("prop.snapFitClearance"), value: plan.clearance, min: 0, max: 2, step: 0.05, hint: withLimit(plan.limited.clearance, limitedTo(plan.clearance)), onChange: (value) => onUpdate({ snapFitClearance: value }) });
     if (plan.part !== "catch") properties.push({ id: "snapFitFoot", label: t("prop.snapFitFoot"), value: plan.foot, min: 0, max: Math.max(0.5, shape.height / 3), step: 0.1, hint: t("snapFit.footHint"), onChange: (value) => onUpdate({ snapFitFoot: value }) });
     return properties;
+  }
+
+  if (shape.kind === "latch") {
+    // The latch keeps its own size: every change sets the box to what the latch takes (Discussion #2063).
+    const plan = latchPlan(shape);
+    const fields = { latchPart: plan.part, latchWidth: plan.measures.width, latchGrip: plan.measures.grip, latchSpacing: plan.measures.spacing };
+    const update = (changes: LatchFields) => {
+      const next = { ...fields, ...changes };
+      // A wider clip needs its pins further apart: the spacing grows with it but never shrinks of itself.
+      onUpdate({ ...next, ...latchBox(next) });
+    };
+    const decimal = (value: number) => (Math.round(value * 10) / 10).toLocaleString(numberLocale());
+    return [
+      {
+        type: "select",
+        id: "latchPart",
+        label: t("prop.snapFitPart"),
+        value: plan.part,
+        options: LATCH_PARTS.map((part) => ({ value: part, label: t(`latch.${part}`) })),
+        hint: t(plan.part === "both" ? "latch.bothHint" : plan.part === "pins" ? "latch.pinsHint" : "latch.clipHint"),
+        onChange: (value) => update({ latchPart: normalizeLatchPart(value) }),
+      },
+      { id: "latchWidth", label: t("lid.latchWidth"), value: plan.measures.width, min: MIN_LATCH_WIDTH, max: MAX_LATCH_WIDTH, step: 0.5, onChange: (value) => update({ latchWidth: value }) },
+      { id: "latchGrip", label: t("lid.latchGrip"), value: plan.measures.grip, min: MIN_LATCH_GRIP, max: MAX_LATCH_GRIP, step: 0.05, onChange: (value) => update({ latchGrip: value }) },
+      {
+        id: "latchSpacing",
+        label: t("prop.latchSpacing"),
+        value: plan.measures.spacing,
+        min: plan.minSpacing,
+        max: MAX_LATCH_SPACING,
+        step: 0.5,
+        hint: t("latch.spacingHint", { min: decimal(plan.minSpacing), pin: decimal(plan.measures.pin * 2) }),
+        onChange: (value) => update({ latchSpacing: value }),
+      },
+    ];
   }
 
   if (shape.kind === "rib") {
@@ -6372,6 +6413,10 @@ export function ShapeInspector({
             )}
             {textFillMore.length && showKeepProportions ? (
               <ToggleProperty label={t("inspector.keepProportions")} value={proportionLock} disabled={frozen} onChange={onProportionLockChange!} />
+            ) : null}
+            {/* The fields take more than millimetres (Facebook group, Car'OS): said in small print where the sizes are. */}
+            {primaryProperties.some((property) => isPlainMeasure(property, MEASURE_LABELS())) ? (
+              <p className="cylinder-wrap-hint field-input-hint">{t("prop.fieldInputHint")}</p>
             ) : null}
             {/* Only the plain Length, Width and Height need the note; a Head diameter means the same at any angle (#1634). */}
             {tiltedMeasures && primaryProperties.some((property) => isPlainMeasure(property, MEASURE_LABELS())) ? (
@@ -10395,7 +10440,7 @@ function RangeProperty({
           title={scrubbable ? t("editor.property.dragToChange") : undefined}
           onPointerDown={(event) => {
             if (!scrubbable || event.button !== 0 || (event.target as HTMLElement).closest("button")) return;
-            event.currentTarget.setPointerCapture(event.pointerId);
+            capturePointer(event.currentTarget, event.pointerId);
             scrubRef.current = { x: event.clientX, start: controlValue, moved: false };
           }}
           onPointerMove={(event) => {
@@ -10616,48 +10661,6 @@ function ToggleProperty({ label, value, area, sub, hint, disabled, onChange, onR
 function findSelectProperty(properties: ShapePropertyConfig[], id: string) {
   const found = properties.find((property) => property.id === id);
   return found && found.type === "select" ? found : null;
-}
-
-/**
- * Dieselbe Kachelreihe wie bei der Zahnradart, nur mit gezeichneten Bildchen
- * statt Rasterdateien - so bleiben sie bei jeder Groesse scharf und nehmen die
- * Farbe des Themas an.
- */
-function IconOptionSelector({
-  label,
-  options,
-  value,
-  columns,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  options: Array<{ value: string; label: string; preview: ReactNode }>;
-  value: string;
-  columns: 2 | 3;
-  disabled?: boolean;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="gear-type-property" role="group" aria-label={label}>
-      <span>{label}</span>
-      <div className={columns === 2 ? "gear-type-options icon-options two-up" : "gear-type-options icon-options"}>
-        {options.map((option) => (
-          <button
-            key={option.value}
-            className={value === option.value ? "selected" : ""}
-            type="button"
-            disabled={disabled}
-            aria-pressed={value === option.value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.preview}
-            <span>{option.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 /**

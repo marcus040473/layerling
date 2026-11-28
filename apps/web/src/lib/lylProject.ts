@@ -70,7 +70,7 @@ export const LYL_FILE_TYPES_FORMAT_VERSION = 4;
 /** The newest format this layerling reads. */
 export const LYL_NEWEST_READABLE_FORMAT_VERSION = LYL_FILE_TYPES_FORMAT_VERSION;
 export const LYL_OLDEST_READABLE_FORMAT_VERSION = 1;
-export const LYL_CREATED_WITH_VERSION = "1.177.0";
+export const LYL_CREATED_WITH_VERSION = "1.179.0";
 export const LYL_MEDIA_TYPE = "application/vnd.layerling.project+zip";
 
 export const LYL_LIMITS = {
@@ -88,7 +88,7 @@ export const LYL_LIMITS = {
 
 const SHAPE_KINDS = new Set([
   "box", "roundedBox", "cylinder", "slot", "ellipse", "sphere", "sketch", "scribble", "cone", "pyramid", "roof", "text", "roundRoof",
-  "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "bentTube", "star", "heart", "crescent", "sector", "gear", "hirth", "pulley", "patties", "honeycomb", "hinge", "knurl", "dovetail", "screwBoss", "snapFit", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "loft", "vase", "thread", "spring", "gridfinity", "ring", "wedge", "cove", "polygon", "icosahedron", "ruler", "mesh",
+  "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "bentTube", "star", "heart", "crescent", "sector", "gear", "hirth", "pulley", "patties", "honeycomb", "hinge", "knurl", "dovetail", "screwBoss", "snapFit", "latch", "rib", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "teardrop", "port", "loft", "vase", "thread", "spring", "gridfinity", "ring", "wedge", "cove", "polygon", "icosahedron", "ruler", "mesh",
 ]);
 
 const FEATURE_TYPES = new Set([
@@ -1121,7 +1121,7 @@ export async function exportLylProject(input: LylProjectExportInput) {
     // `hydrated` entries are already canonical and fingerprinted; only a state that
     // needed an ID repair has to be measured again.
     const idsWereRepaired = repaired.some((shape, index) => shape !== entry.shapes[index]);
-    return idsWereRepaired ? editorHistoryEntry(repaired, entry.selectedIds, normalizeNotes(entry.notes), entry.placementWorkplane) : entry;
+    return idsWereRepaired ? editorHistoryEntry(repaired, entry.selectedIds, normalizeNotes(entry.notes), entry.placementWorkplane, entry.at) : entry;
   });
   const builder = new LylArchiveBuilder();
   const stateShapes = exportEntries.map((entry) => entry.shapes);
@@ -1871,6 +1871,15 @@ function validateShapeDefinition(definition: Record<string, unknown>, label: str
   if (kind === "screwBoss" || kind === "snapFit") {
     // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
     for (const key of ["screwBossHole", "screwBossHoleDepth", "screwBossDiameter", "screwBossGussets", "screwBossGussetHeight", "screwBossGussetThickness", "snapFitThickness", "snapFitUndercut", "snapFitClearance", "snapFitLeadAngle", "snapFitRetainAngle", "snapFitFoot"] as const) {
+      if (definition[key] === undefined) continue;
+      const value = finiteNumber(definition[key], `${label}.${key}`);
+      if (value < -1e6 || value > 1e6) throw new Error(`${label}.${key} is outside the supported range`);
+    }
+  }
+  if (kind === "latch") {
+    // Lenient on purpose: the geometry clamps the values itself; only nonsense is refused.
+    if (definition.latchPart !== undefined && definition.latchPart !== "both" && definition.latchPart !== "pins" && definition.latchPart !== "clip") throw new Error(`${label}.latchPart must be "both", "pins" or "clip"`);
+    for (const key of ["latchWidth", "latchGrip", "latchSpacing"] as const) {
       if (definition[key] === undefined) continue;
       const value = finiteNumber(definition[key], `${label}.${key}`);
       if (value < -1e6 || value > 1e6) throw new Error(`${label}.${key} is outside the supported range`);

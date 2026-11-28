@@ -23,6 +23,7 @@ import { createParaboloidGeometry } from "@/lib/roundBodyGeometry";
 import { createCurvedConeGeometry } from "@/lib/curvedCone";
 import { createScrewBossGeometry } from "@/lib/screwBoss";
 import { createSnapFitGeometry } from "@/lib/snapFit";
+import { createLatchGeometry } from "@/lib/latchShape";
 import { createRibGeometry } from "@/lib/rib";
 import { createLoftGeometry } from "@/lib/loftGeometry";
 import { createHingeGeometry } from "@/lib/hingeGeometry";
@@ -314,6 +315,10 @@ export function tapeShapeTopologyKey(shape: WorkplaneShape): string {
     snapFitLeadAngle: shape.snapFitLeadAngle,
     snapFitRetainAngle: shape.snapFitRetainAngle,
     snapFitFoot: shape.snapFitFoot,
+    latchPart: shape.latchPart,
+    latchWidth: shape.latchWidth,
+    latchGrip: shape.latchGrip,
+    latchSpacing: shape.latchSpacing,
     ribStyle: shape.ribStyle,
     ribTop: shape.ribTop,
     ribFoot: shape.ribFoot,
@@ -505,8 +510,8 @@ export function tapeShapeTopologyKey(shape: WorkplaneShape): string {
     gridfinityOpeningCorner: shape.gridfinityOpeningCorner,
     gridfinityOpeningCornerSize: shape.gridfinityOpeningCornerSize,
     gridfinityOutline: shape.gridfinityOutline,
-    // Label shelves, finger scoops and dividers are joined by Manifold, and a side's notch, an outline plate's sockets, a plate's GridFlock puzzle and its half cells are cut by it; until it has loaded the bin is drawn without them (#455, #554, #1061).
-    labelKernel: shape.gridfinityLabelBack || shape.gridfinityLabelFront || shape.gridfinityLabelLeft || shape.gridfinityLabelRight || shape.gridfinityScoopBack || shape.gridfinityScoopFront || shape.gridfinityScoopLeft || shape.gridfinityScoopRight || (shape.gridfinityCompartmentsX ?? 1) > 1 || (shape.gridfinityCompartmentsZ ?? 1) > 1 || (shape.gridfinityOpenings?.length ?? 0) > 0 || (shape.gridfinityOutline?.length ?? 0) > 0 || shape.gridfinityPuzzle === true || shape.gridfinityHalfCells === true ? manifoldRevision() : undefined,
+    // Label shelves, finger scoops, dividers and an overhang's ring are joined by Manifold, and a side's notch, an overhang's chamfer, an outline plate's sockets, a plate's GridFlock puzzle, half cells, Swallowtail pockets and clip notches are cut by it; until it has loaded the bin is drawn without them (#455, #554, #1061).
+    labelKernel: shape.gridfinityLabelBack || shape.gridfinityLabelFront || shape.gridfinityLabelLeft || shape.gridfinityLabelRight || shape.gridfinityScoopBack || shape.gridfinityScoopFront || shape.gridfinityScoopLeft || shape.gridfinityScoopRight || (shape.gridfinityCompartmentsX ?? 1) > 1 || (shape.gridfinityCompartmentsZ ?? 1) > 1 || (shape.gridfinityOpenings?.length ?? 0) > 0 || (shape.gridfinityOutline?.length ?? 0) > 0 || shape.gridfinityPuzzle === true || shape.gridfinityHalfCells === true || shape.gridfinitySwallowtail === true || shape.gridfinityClipNotches === true || shape.gridfinityOverhangSolid === true || shape.gridfinityOverhangLipOnGrid === true || (shape.gridfinityOverhangChamfer ?? 0) > 0 ? manifoldRevision() : undefined,
     knurlPattern: shape.knurlPattern,
     knurlCount: shape.knurlCount,
     knurlDepth: shape.knurlDepth,
@@ -789,6 +794,10 @@ export function shapeGeometrySignature(shape: WorkplaneShape): string {
     snapFitLeadAngle: shape.snapFitLeadAngle,
     snapFitRetainAngle: shape.snapFitRetainAngle,
     snapFitFoot: shape.snapFitFoot,
+    latchPart: shape.latchPart,
+    latchWidth: shape.latchWidth,
+    latchGrip: shape.latchGrip,
+    latchSpacing: shape.latchSpacing,
     ribStyle: shape.ribStyle,
     ribTop: shape.ribTop,
     ribFoot: shape.ribFoot,
@@ -983,8 +992,8 @@ export function shapeGeometrySignature(shape: WorkplaneShape): string {
     gridfinityOpeningCorner: shape.gridfinityOpeningCorner,
     gridfinityOpeningCornerSize: shape.gridfinityOpeningCornerSize,
     gridfinityOutline: shape.gridfinityOutline,
-    // Label shelves, finger scoops and dividers are joined by Manifold, and a side's notch, an outline plate's sockets, a plate's GridFlock puzzle and its half cells are cut by it; until it has loaded the bin is drawn without them (#455, #554, #1061).
-    labelKernel: shape.gridfinityLabelBack || shape.gridfinityLabelFront || shape.gridfinityLabelLeft || shape.gridfinityLabelRight || shape.gridfinityScoopBack || shape.gridfinityScoopFront || shape.gridfinityScoopLeft || shape.gridfinityScoopRight || (shape.gridfinityCompartmentsX ?? 1) > 1 || (shape.gridfinityCompartmentsZ ?? 1) > 1 || (shape.gridfinityOpenings?.length ?? 0) > 0 || (shape.gridfinityOutline?.length ?? 0) > 0 || shape.gridfinityPuzzle === true || shape.gridfinityHalfCells === true ? manifoldRevision() : undefined,
+    // Label shelves, finger scoops, dividers and an overhang's ring are joined by Manifold, and a side's notch, an overhang's chamfer, an outline plate's sockets, a plate's GridFlock puzzle, half cells, Swallowtail pockets and clip notches are cut by it; until it has loaded the bin is drawn without them (#455, #554, #1061).
+    labelKernel: shape.gridfinityLabelBack || shape.gridfinityLabelFront || shape.gridfinityLabelLeft || shape.gridfinityLabelRight || shape.gridfinityScoopBack || shape.gridfinityScoopFront || shape.gridfinityScoopLeft || shape.gridfinityScoopRight || (shape.gridfinityCompartmentsX ?? 1) > 1 || (shape.gridfinityCompartmentsZ ?? 1) > 1 || (shape.gridfinityOpenings?.length ?? 0) > 0 || (shape.gridfinityOutline?.length ?? 0) > 0 || shape.gridfinityPuzzle === true || shape.gridfinityHalfCells === true || shape.gridfinitySwallowtail === true || shape.gridfinityClipNotches === true || shape.gridfinityOverhangSolid === true || shape.gridfinityOverhangLipOnGrid === true || (shape.gridfinityOverhangChamfer ?? 0) > 0 ? manifoldRevision() : undefined,
     knurlPattern: shape.knurlPattern,
     knurlCount: shape.knurlCount,
     knurlDepth: shape.knurlDepth,
@@ -2519,6 +2528,9 @@ export function createShapeObject(
     case "snapFit":
       addMesh(group, sharedShapeGeometry(geometryCacheKey, () => createSnapFitGeometry({ ...shape, width, depth, height })), material, shape);
       break;
+    case "latch":
+      addMesh(group, sharedShapeGeometry(geometryCacheKey, () => createLatchGeometry({ ...shape, width, depth, height })), material, shape);
+      break;
     case "rib":
       addMesh(group, sharedShapeGeometry(geometryCacheKey, () => createRibGeometry({ ...shape, width, depth, height })), material, shape);
       break;
@@ -3219,7 +3231,7 @@ export function addShapeEdgeDecorations(group: THREE.Group, mesh: THREE.Mesh, pr
   const complexEdges =
     shape.kind === "mesh" ||
     Boolean(shape.importedMesh) ||
-    ["cone", "pyramid", "roof", "roundRoof", "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "ring", "star", "gear", "hirth", "pulley", "wedge", "cove", "polygon", "heart", "crescent", "sector", "slot", "dovetail", "screwBoss", "snapFit", "rib", "hinge", "gridfinity", "knurl", "teardrop", "port", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "honeycomb", "patties", "loft"].includes(shape.kind);
+    ["cone", "pyramid", "roof", "roundRoof", "halfSphere", "paraboloid", "curvedCone", "torus", "tube", "ring", "star", "gear", "hirth", "pulley", "wedge", "cove", "polygon", "heart", "crescent", "sector", "slot", "dovetail", "screwBoss", "snapFit", "latch", "rib", "hinge", "gridfinity", "knurl", "teardrop", "port", "counterbore", "countersink", "doubleCountersink", "finishingWasher", "honeycomb", "patties", "loft"].includes(shape.kind);
   const importedTriangleCount = shape.importedMesh?.triangleCount ?? 0;
   // A vase's relief has an edge at every rib: drawn like a heavy imported mesh, without the lines.
   const skipHeavyImportedEdges = (Boolean(shape.importedMesh) && importedTriangleCount > IMPORTED_SELECTED_EDGE_TRIANGLE_LIMIT)

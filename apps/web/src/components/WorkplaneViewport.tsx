@@ -12,7 +12,7 @@ import { boxEdgeTargets, objectSnapOffset, shiftSnapBox, wallLines, type EdgeSna
 import { dragReach } from "@/lib/dragReach";
 import { useMovablePanel, type MovablePanelOptions } from "@/lib/useMovablePanel";
 import { useViewBars } from "@/lib/viewBars";
-import { computeSectionPlaneVector, DEFAULT_SECTION_SETTINGS, getSectionBounds, SECTION_AXES_SHOWN, sectionAxisLetter, sectionAxisVector, sectionFineWindow, sectionFrameFromView, sectionFrameFromWorkplane, sectionPlacementWorkplane, sectionPointFromFrame, sectionPointToFrame, type SectionFrame, type SectionOrientation, type SectionPlaneAxis, type SectionPlaneSettings } from "@/lib/sectionView";
+import { computeSectionPlaneVector, DEFAULT_SECTION_SETTINGS, getSectionBounds, SECTION_AXES_SHOWN, sectionAxisLetter, sectionAxisVector, sectionFineWindow, sectionFrameFromView, sectionFrameFromWorkplane, sectionOffsetInFrame, sectionPlacementWorkplane, sectionPointFromFrame, sectionPointToFrame, type SectionFrame, type SectionOrientation, type SectionPlaneAxis, type SectionPlaneSettings } from "@/lib/sectionView";
 import { projectSectionPoint, type SectionBody, type SectionLoop, type SectionPoint } from "@/lib/sectionSvg";
 import { normalizeSectionCutFace, SECTION_CUT_FACES, sectionCapMesh, sectionHatchSpacing, sectionHatchTexture, sectionHatchTurned, sectionHatchUvs, type SectionCutFace } from "@/lib/sectionCaps";
 import { sectionMeasurement, sectionPointToWorld, snapSectionPoint, type SectionSnap } from "@/lib/sectionMeasure";
@@ -205,7 +205,7 @@ type WorkplaneViewportProps = {
   /** The workplane tool's click starts "Sketch from face" instead (#2127). */
   faceSketchPick?: boolean;
   onToggleFaceSketchTool?: () => void;
-  onSketchFromFace?: (workplane: PlacementWorkplane, shapeId: string | null) => void;
+  onSketchFromFace?: (workplane: PlacementWorkplane, shapeId: string | null, point: [number, number, number] | null) => void;
   initialSnap?: GridSize;
   initialWorkspace?: WorkplaneWorkspaceSettings;
   workspaceSettingsKey?: string | null;
@@ -1016,7 +1016,13 @@ function SectionMeasureOverlay({ overlay }: { overlay: SectionMeasureOverlayStat
             <path className="section-measure-center" d={`M${center.x - 5},${center.y} h10 M${center.x},${center.y - 5} v10`} />
           </g>
         ))}
-        {overlay.a && overlay.b ? <line className="section-measure-line" x1={overlay.a.x} y1={overlay.a.y} x2={overlay.b.x} y2={overlay.b.y} /> : null}
+        {overlay.a ? overlay.across.map((point, index) => (
+          <g key={`across-${index}`}>
+            <line className="section-measure-across-line" x1={overlay.a!.x} y1={overlay.a!.y} x2={point.x} y2={point.y} />
+            <circle className="section-measure-across" cx={point.x} cy={point.y} r="6" />
+          </g>
+        )) : null}
+        {overlay.a && overlay.b ? <line className="section-measure-line"x1={overlay.a.x} y1={overlay.a.y} x2={overlay.b.x} y2={overlay.b.y} /> : null}
         {overlay.a ? <circle className="section-measure-point" cx={overlay.a.x} cy={overlay.a.y} r="4.5" /> : null}
         {overlay.b ? <circle className="section-measure-point" cx={overlay.b.x} cy={overlay.b.y} r="4.5" /> : null}
         {overlay.hover ? (
@@ -7912,7 +7918,7 @@ export function WorkplaneViewport({
             return;
           }
           onWorkplaneModeChange(false);
-          onSketchFromFaceRef.current?.(surface.workplane, surface.shapeId);
+          onSketchFromFaceRef.current?.(surface.workplane, surface.shapeId, [surface.point.x, surface.point.y, surface.point.z]);
           return;
         }
         if (surface) {
@@ -9516,6 +9522,36 @@ export function WorkplaneViewport({
     setSectionSettings(next);
   }, [placementWorkplane]);
 
+  // On the view the plane turns with the camera, once per frame, unless it is held. It stays where it is in the
+  // design: zooming to the pointer or panning moves the point the view turns about, not the cut.
+  const sectionFollowsView = sectionSettings.enabled && sectionSettings.orientation === "view" && sectionSettings.followView !== false;
+  useEffect(() => {
+    const controls = threeRef.current?.controls;
+    if (!sectionFollowsView || !controls) return;
+    let raf = 0;
+    const follow = () => {
+      raf = 0;
+      const prev = sectionSettingsRef.current;
+      if (!prev.enabled || prev.orientation !== "view" || prev.followView === false) return;
+      const frame = sectionFrameForOrientationRef.current("view");
+      if (!frame) return;
+      const offset = prev.frame ? sectionOffsetInFrame(prev.axis, prev.offset, prev.frame, frame) : prev.offset;
+      const next = { ...prev, frame, offset };
+      sectionSettingsRef.current = next;
+      setSectionSettings(next);
+    };
+    // Switched back on after turning a held plane: it faces the screen again at once.
+    follow();
+    const onChange = () => {
+      if (!raf) raf = requestAnimationFrame(follow);
+    };
+    controls.addEventListener("change", onChange);
+    return () => {
+      controls.removeEventListener("change", onChange);
+      cancelAnimationFrame(raf);
+    };
+  }, [sectionFollowsView]);
+
   // MCP: the same rules as the buttons - a new axis, switching on from the
   // start position or `center` put the plane in the middle of the design,
   // unless an offset is given.
@@ -9541,6 +9577,7 @@ export function WorkplaneViewport({
         showPlane: patch.showPlane ?? current.showPlane,
         orientation,
         frame,
+        followView: patch.followView ?? current.followView,
       };
       sectionSettingsRef.current = next;
       setSectionSettings(next);
@@ -9750,9 +9787,11 @@ export function WorkplaneViewport({
         // Ctrl+W would close the tab. Option+W types a sign on the Mac, so the key's position counts too.
         event.preventDefault();
         resetPlacementWorkplane();
-      } else if (key === "w") {
+      } else if (key === "w" && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
         if (!event.shiftKey || !setPlacementWorkplaneAtSelection()) togglePlacementWorkplane();
+      } else if (key === "f" && (event.ctrlKey || event.metaKey || event.altKey)) {
+        // Ctrl+F is the browser's search and Alt+F its menu: not ours to take.
       } else if (key === "f" && event.shiftKey) {
         event.preventDefault();
         focusSelection();
@@ -9760,7 +9799,8 @@ export function WorkplaneViewport({
         // As in Tinkercad: F looks at what is selected, and at everything when nothing is (#465).
         event.preventDefault();
         if (!focusSelection()) resetView();
-      } else if (event.key === "Home") {
+      } else if (event.key === "Home" && !event.ctrlKey && !event.metaKey && !event.altKey && !document.querySelector(".history-view-bar")) {
+        // In the history view Home is the oldest state, which the editor's own handler answers.
         event.preventDefault();
         resetView();
       } else if (key === "p" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
@@ -9858,6 +9898,18 @@ export function WorkplaneViewport({
                   })}
                 </div>
               </div>
+              {sectionSettings.orientation === "view" ? (
+                <div className="section-popover-axis-row">
+                  <label className="section-checkbox-label" title={t("camera.sectionFollowViewHint")}>
+                    <input
+                      type="checkbox"
+                      checked={sectionSettings.followView !== false}
+                      onChange={(e) => setSectionSettings((prev) => ({ ...prev, followView: e.target.checked }))}
+                    />
+                    <span>{t("camera.sectionFollowView")}</span>
+                  </label>
+                </div>
+              ) : null}
               <div className="section-popover-axis-row">
                 <span className="section-label">{t("camera.sectionAxis")}</span>
                 <div className="section-axis-buttons" role="radiogroup" aria-label={t("camera.sectionAxis")}>
