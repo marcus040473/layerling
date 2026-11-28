@@ -27,11 +27,13 @@ export function MateFacesPanel({
   step,
   mode,
   gap,
+  center,
   axes,
   pair = 1,
   workspace,
   onModeChange,
   onGapChange,
+  onCenterChange,
   onAxesChange,
   onApply,
   onCancel,
@@ -40,12 +42,15 @@ export function MateFacesPanel({
   step: "source" | "target" | "ready";
   mode: MateMode;
   gap: number;
+  /** "Centre the faces", for face to face and flush. */
+  center: boolean;
   axes: MateAxes;
   /** Which pair of points "Point to point" is at: 2 and 3 turn the body instead of moving it. */
   pair?: 1 | 2 | 3;
   workspace: WorkplaneWorkspaceSettings;
   onModeChange: (value: MateMode) => void;
   onGapChange: (value: number) => void;
+  onCenterChange: (value: boolean) => void;
   onAxesChange: (value: MateAxes) => void;
   onApply: () => void;
   onCancel: () => void;
@@ -118,16 +123,22 @@ export function MateFacesPanel({
             </div>
           </div>
         ) : mode === "concentric" ? null : (
-          <EdgeModifierSlider
-            label={t("mate.gap")}
-            value={gap}
-            min={0}
-            max={MAX_GAP}
-            step={0.1}
-            workspace={workspace}
-            length
-            onChange={onGapChange}
-          />
+          <>
+            <EdgeModifierSlider
+              label={t("mate.gap")}
+              value={gap}
+              min={0}
+              max={MAX_GAP}
+              step={0.1}
+              workspace={workspace}
+              length
+              onChange={onGapChange}
+            />
+            <label className="edge-modifier-check" title={t("mate.centerHint")}>
+              <input type="checkbox" checked={center} onChange={(event) => onCenterChange(event.currentTarget.checked)} />
+              {t("mate.center")}
+            </label>
+          </>
         )}
         {mode === "point" ? <ToolHint text={t(turnPair ? `mate.turnHint${turnPair}` : "mate.axesHint")} /> : null}
       </ToolSection>

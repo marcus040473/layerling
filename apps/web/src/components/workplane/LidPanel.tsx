@@ -5,6 +5,10 @@ import { useState } from "react";
 import { GuideHelpLink } from "@/components/GuideHelpLink";
 import { MovableToolPanel, ToolDockToggle } from "@/components/workplane/MovableToolPanel";
 import { LoaderCircle, X } from "lucide-react";
+import { MAX_LID_DRAW_CLAMP, MAX_LID_DRAW_WIDTH, MIN_LID_DRAW_CLAMP, MIN_LID_DRAW_WIDTH, lidDrawLatchMeasures } from "@/lib/lidDrawLatch";
+import { MAX_LID_TURN_LENGTH, MIN_LID_TURN_LENGTH, lidTurnButtonMeasures } from "@/lib/lidTurnButton";
+import { IconOptionSelector } from "@/components/workplane/IconOptionSelector";
+import { LidLatchPicture } from "@/components/workplane/LidLatchPictures";
 import { EdgeModifierSlider } from "@/components/workplane/EdgeModifierPanel";
 import { ToolAdvanced, ToolApply, ToolCancel, ToolGroup, ToolHelp, ToolHint, ToolOutcome, ToolSection, ToolSelection, ToolStatus } from "@/components/workplane/ToolPanelParts";
 import {
@@ -82,6 +86,7 @@ import {
   lidFlipTopFits,
   lidHandleFits,
   lidLatchesFit,
+  type LidLatchStyle,
   MAX_LID_SNAP_UNDERCUT,
   MIN_LID_SNAP_UNDERCUT,
   lidSnapHookArm,
@@ -817,16 +822,15 @@ export function LidPanel({
               onChange={(value) => onChange({ latches: normalizeLidOptions({ latches: value }).latches })}
             />
             {settings.latches > 0 && latchesFit ? (<>
-              <div className="edge-modifier-field shell-openings" role="radiogroup" aria-label={t("lid.latchStyle")}>
-                <span>{t("lid.latchStyle")}</span>
-                <div className="shell-opening-options">
-                  {LID_LATCH_STYLES.map((style) => (
-                    <button key={style} type="button" role="radio" aria-checked={settings.latchStyle === style} className={settings.latchStyle === style ? "active" : ""} disabled={busy} onClick={() => onChange({ latchStyle: style })}>
-                      {t(`lid.latchStyle.${style}`)}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* The kinds as picture tiles, as the shape card's: a side section of each, closed, its own part in the accent colour. */}
+              <IconOptionSelector
+                label={t("lid.latchStyle")}
+                options={LID_LATCH_STYLES.map((style) => ({ value: style, label: t(`lid.latchStyle.${style}`), preview: <LidLatchPicture kind={style} /> }))}
+                value={settings.latchStyle}
+                columns={3}
+                disabled={busy}
+                onChange={(style) => onChange({ latchStyle: style as LidLatchStyle })}
+              />
               {settings.hinge ? null : (
                 <label className="edge-modifier-field offset-copy">
                   <input type="checkbox" checked={settings.latchBack} disabled={busy} onChange={(event) => onChange({ latchBack: event.target.checked })} />
@@ -855,6 +859,15 @@ export function LidPanel({
                 <EdgeModifierSlider label={t("prop.snapFitWidth")} value={settings.latchWidth} min={MIN_LID_LATCH_WIDTH} max={MAX_LID_LATCH_WIDTH} step={0.5} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ latchWidth: value })} />
                 <EdgeModifierSlider label={t("lid.snapUndercut")} value={settings.snapUndercut} min={MIN_LID_SNAP_UNDERCUT} max={MAX_LID_SNAP_UNDERCUT} step={0.1} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ snapUndercut: value })} />
                 <ToolHint text={t("lid.snapHint", { arm: millimetres(lidSnapHookArm(settings.snapUndercut)) })} />
+              </>) : settings.latchStyle === "turn" ? (<>
+                {/* Turn buttons (Discussion #2047): a bar on a pin on a ledge below the rim, turned over the lid's edge. */}
+                <EdgeModifierSlider label={t("lid.turnLength")} value={settings.turnLength} min={MIN_LID_TURN_LENGTH} max={MAX_LID_TURN_LENGTH} step={1} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ turnLength: value })} />
+                <ToolHint text={t("lid.turnHint", { overlap: millimetres(Math.round(lidTurnButtonMeasures(settings.turnLength).overlap * 10) / 10) })} />
+              </>) : settings.latchStyle === "draw" ? (<>
+                {/* Draw latches (Discussion #2047): an over-centre toggle latch printed in place on the box. */}
+                <EdgeModifierSlider label={t("prop.snapFitWidth")} value={Math.max(MIN_LID_DRAW_WIDTH, settings.latchWidth)} min={MIN_LID_DRAW_WIDTH} max={MAX_LID_DRAW_WIDTH} step={0.5} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ latchWidth: value })} />
+                <EdgeModifierSlider label={t("lid.drawClamp")} value={settings.drawClamp} min={MIN_LID_DRAW_CLAMP} max={MAX_LID_DRAW_CLAMP} step={0.05} workspace={workspace} length disabled={busy} onChange={(value) => onChange({ drawClamp: value })} />
+                <ToolHint text={t("lid.drawHint", { pin: millimetres(Math.round(2 * lidDrawLatchMeasures(settings.latchWidth, settings.drawClamp).pin * 10) / 10) })} />
               </>) : (<>
                 {slider(t("lid.latchWidth"), "latchWidth", MIN_LID_LATCH_WIDTH, MAX_LID_LATCH_WIDTH, 0.5)}
                 {slider(t("lid.latchGrip"), "latchGrip", MIN_LID_LATCH_GRIP, MAX_LID_LATCH_GRIP, 0.05)}

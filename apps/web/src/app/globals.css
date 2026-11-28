@@ -8739,6 +8739,20 @@ html[data-theme="dark"] .inspector-bundle-note {
   stroke-width: 1.5;
 }
 
+.section-measure-across-line {
+  stroke: #c86a12;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  opacity: 0.6;
+}
+
+.section-measure-across {
+  fill: rgba(255, 255, 255, 0.75);
+  stroke: #c86a12;
+  stroke-width: 2;
+  stroke-dasharray: 3 2;
+}
+
 .section-measure-hover.center,
 .section-measure-hover.opposite {
   fill: rgba(200, 106, 18, 0.22);
@@ -11776,6 +11790,12 @@ html[data-theme="dark"] .shell-walls-plan .shell-walls-plan-grip {
 
 .gear-type-options.icon-options button.selected svg {
   opacity: 1;
+}
+
+/* The lid's latch kinds (Lid tool): each tile a side section, the latch's own part in the accent colour, the box and the
+   lid's edge faint in the tile's, so the eye goes to how it grips. */
+.gear-type-options.icon-options .latch-kind-accent {
+  color: #c2660c;
 }
 
 /* Ein Schalter im Merkmalsfeld, etwa fuer Werte, die sich selbst einstellen. */
@@ -17037,6 +17057,10 @@ html[data-theme="dark"] .gear-type-options button.selected {
   box-shadow: 0 0 0 2px rgba(155, 98, 37, 0.14);
 }
 
+html[data-theme="dark"] .gear-type-options.icon-options .latch-kind-accent {
+  color: #f0a04c;
+}
+
 html[data-theme="dark"] .transform-guides line {
   stroke: rgba(234, 221, 207, 0.86);
 }
@@ -17155,6 +17179,9 @@ html[data-theme="dark"] .workspace-range small,
 html[data-theme="dark"] .workspace-select > small,
 html[data-theme="dark"] .workspace-history-labels,
 html[data-theme="dark"] .workspace-history-note,
+html[data-theme="dark"] .workspace-space-mouse-invert-title,
+html[data-theme="dark"] .workspace-space-mouse-invert-way,
+html[data-theme="dark"] .workspace-range.workspace-space-mouse-speed > span,
 html[data-theme="dark"] .workspace-toggle-copy small,
 html[data-theme="dark"] .workspace-section-heading span {
   color: #9f866c;
@@ -19276,6 +19303,20 @@ html[data-theme="dark"] .color-keep-button[aria-pressed="true"] {
   border-radius: 50%;
 }
 
+/* A hole in "Select other" is striped and dashed, as in the object list, not in its body's colour (#2184). */
+.shape-context-menu-swatch.swatch-hole {
+  background: repeating-linear-gradient(-45deg, #cfd7df, #cfd7df 2px, #9aa5b1 2px, #9aa5b1 4px);
+  border: 1px dashed #7a889b;
+}
+
+/* "Solid" or "Hole" on the right of a row of "Select other" (#2184). */
+.shape-context-menu-note {
+  color: #84715d;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 html[data-theme="dark"] .shape-context-menu {
   color: #ede4d4;
   background: rgba(40, 30, 20, 0.97);
@@ -19304,6 +19345,7 @@ html[data-theme="dark"] .shape-context-menu button.danger:focus-visible {
 }
 
 html[data-theme="dark"] .shape-context-menu kbd,
+html[data-theme="dark"] .shape-context-menu-note,
 html[data-theme="dark"] .color-recent-label {
   color: #a79079;
 }
@@ -19610,6 +19652,16 @@ html[data-theme="dark"] .color-recent {
 }
 
 .edge-modifier-panel > .edge-modifier-footer {
+  position: sticky;
+  bottom: -14px;
+  z-index: 1;
+  margin-bottom: -14px;
+  padding-bottom: 14px;
+  background: inherit;
+}
+
+/* The Split panel's buttons stay at its foot in the same way: a panel dragged low keeps them in view (Discussion #2158). */
+.split-panel > .split-panel-footer {
   position: sticky;
   bottom: -14px;
   z-index: 1;

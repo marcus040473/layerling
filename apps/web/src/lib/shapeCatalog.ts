@@ -5,6 +5,7 @@ import { normalizePyramidTop } from "@/lib/pyramidGeometry";
 import { createLocalId } from "@/lib/localIds";
 import { DEFAULT_CURVED_CONE_BEND, DEFAULT_CURVED_CONE_TOP, normalizeCurvedConeBend, normalizeCurvedConeTop } from "@/lib/curvedCone";
 import { DEFAULT_SCREW_BOSS_FASTENER, DEFAULT_SCREW_BOSS_SIZE, normalizeScrewBossFastener } from "@/lib/screwBoss";
+import { DEFAULT_LATCH_GRIP, DEFAULT_LATCH_WIDTH, latchBox, normalizeLatchPart } from "@/lib/latchShape";
 import { DEFAULT_SNAP_FIT_CLEARANCE, DEFAULT_SNAP_FIT_FOOT, DEFAULT_SNAP_FIT_LEAD_ANGLE, DEFAULT_SNAP_FIT_RETAIN_ANGLE, DEFAULT_SNAP_FIT_THICKNESS, DEFAULT_SNAP_FIT_UNDERCUT, normalizeSnapFitPart } from "@/lib/snapFit";
 import { DEFAULT_RIB_THICKNESS, normalizeRibStyle, normalizeRibTop, ribBoxWidth, ribFootWidthFor } from "@/lib/rib";
 import {
@@ -276,6 +277,7 @@ const SHAPE_LABEL_KEYS: Record<string, MessageKey> = {
   boxGenerator: "shape.boxGenerator",
   screwBoss: "shape.screwBoss",
   snapFit: "shape.snapFit",
+  latch: "shape.latch",
   rib: "shape.rib",
   teardrop: "shape.teardrop",
   port: "shape.port",
@@ -335,6 +337,7 @@ export const toolbarShapeAssets: ToolbarShapeAsset[] = [
   { id: "boxGenerator", name: "Box generator", src: "assets/editor/shape-icons-gray/boxGenerator.png", menuIcon: "assets/editor/shape-icons-gray/boxGenerator.png", kind: "boxGenerator", color: "#4f7cac" },
   { id: "screwBoss", name: "Screw boss", src: "assets/editor/shape-icons-gray/screwBoss.png", menuIcon: "assets/editor/shape-icons-gray/screwBoss.png", kind: "screwBoss", color: "#8c7b6b" },
   { id: "snapFit", name: "Snap-fit", src: "assets/editor/shape-icons-gray/snapFit.png", menuIcon: "assets/editor/shape-icons-gray/snapFit.png", kind: "snapFit", color: "#4f8f7a" },
+  { id: "latch", name: "Latch", src: "assets/editor/shape-icons-gray/latch.png", menuIcon: "assets/editor/shape-icons-gray/latch.png", kind: "latch", color: "#5c8aa8" },
   { id: "rib", name: "Rib", src: "assets/editor/shape-icons-gray/rib.png", menuIcon: "assets/editor/shape-icons-gray/rib.png", kind: "rib", color: "#7b8794" },
   { id: "star", name: "Star", src: "assets/editor/shape-icons-gray/star.png", menuIcon: "assets/editor/shape-icons-gray/star.png", kind: "star", color: "#f5a623" },
   { id: "heart", name: "Heart", src: "assets/editor/shape-icons-gray/heart.png", menuIcon: "assets/editor/shape-icons-gray/heart.png", kind: "heart", color: "#e0245e" },
@@ -669,6 +672,8 @@ export function shapeAssetDefaultDimensions(kind: ShapeKind) {
   // An M3 heat-set insert's boss, a hook with its catch that bends about 1.6 %, a rib 1.6 mm (four lines) thick.
   if (kind === "screwBoss") return { width: 8, depth: 8, height: 10 };
   if (kind === "snapFit") return { width: 8, depth: 9, height: 16 };
+  // The lid tool's 12 mm clip on its two pins.
+  if (kind === "latch") return latchBox({});
   if (kind === "rib") return { width: 40, depth: DEFAULT_RIB_THICKNESS, height: 8 };
   const roundProfile = kind === "sphere" || kind === "torus" || kind === "ring" || kind === "halfSphere" || kind === "paraboloid";
   const flatProfile = kind === "torus" || kind === "ring" || kind === "text" || kind === "gear";
@@ -717,6 +722,7 @@ export function shapeAssetSpecialDefaults(kind: ShapeKind, dimensions = shapeAss
     };
   }
   if (kind === "rib") return { ribStyle: "straight", ribTop: "flat" };
+  if (kind === "latch") return { latchPart: "both", latchWidth: DEFAULT_LATCH_WIDTH, latchGrip: DEFAULT_LATCH_GRIP };
   if (kind === "pyramid") return { sides: 4, topWidth: 0, topDepth: 0 };
   if (kind === "polygon") return { sides: 6 };
   if (kind === "roundRoof") return { sides: 64 };
@@ -920,6 +926,10 @@ export function sceneShape(shape: Partial<WorkplaneShape> & Pick<WorkplaneShape,
     snapFitLeadAngle: shape.snapFitLeadAngle,
     snapFitRetainAngle: shape.snapFitRetainAngle,
     snapFitFoot: shape.snapFitFoot,
+    latchPart: shape.latchPart,
+    latchWidth: shape.latchWidth,
+    latchGrip: shape.latchGrip,
+    latchSpacing: shape.latchSpacing,
     ribStyle: shape.ribStyle,
     ribTop: shape.ribTop,
     ribFoot: shape.ribFoot,
@@ -1433,6 +1443,10 @@ export function makeShapeFromAsset(
     snapFitLeadAngle: asset.kind === "snapFit" ? customization.snapFitLeadAngle ?? DEFAULT_SNAP_FIT_LEAD_ANGLE : undefined,
     snapFitRetainAngle: asset.kind === "snapFit" ? customization.snapFitRetainAngle ?? DEFAULT_SNAP_FIT_RETAIN_ANGLE : undefined,
     snapFitFoot: asset.kind === "snapFit" ? customization.snapFitFoot ?? DEFAULT_SNAP_FIT_FOOT : undefined,
+    latchPart: asset.kind === "latch" ? normalizeLatchPart(customization.latchPart) : undefined,
+    latchWidth: asset.kind === "latch" ? customization.latchWidth ?? DEFAULT_LATCH_WIDTH : undefined,
+    latchGrip: asset.kind === "latch" ? customization.latchGrip ?? DEFAULT_LATCH_GRIP : undefined,
+    latchSpacing: asset.kind === "latch" ? customization.latchSpacing : undefined,
     ribStyle: asset.kind === "rib" ? normalizeRibStyle(customization.ribStyle) : undefined,
     ribTop: asset.kind === "rib" ? normalizeRibTop(customization.ribTop) : undefined,
     ribFoot: ribOnFoot ? true : undefined,

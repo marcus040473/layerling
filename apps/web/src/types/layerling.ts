@@ -17,6 +17,7 @@ export type ShapeKind =
   | "curvedCone"
   | "screwBoss"
   | "snapFit"
+  | "latch"
   | "rib"
   | "torus"
   | "tube"
@@ -173,6 +174,12 @@ export type ShapeCustomization = {
   snapFitRetainAngle?: number;
   /** Snap-fit: the foot's thickness under the arm in mm (0: no foot). */
   snapFitFoot?: number;
+  /** Latch: the pins and the clip together, the pins alone or the clip alone (Discussion #2063). */
+  latchPart?: "both" | "pins" | "clip";
+  /** Latch: the clip's width, how hard it grips its pins and how far apart the pins are, in mm. */
+  latchWidth?: number;
+  latchGrip?: number;
+  latchSpacing?: number;
   /** Rib: a straight rib or a gusset, and a straight rib's top. */
   ribStyle?: "straight" | "gusset";
   ribTop?: "flat" | "round" | "chamfer";
@@ -682,6 +689,8 @@ export type WorkplaneWorkspaceSettings = {
   sketchBackground: string;
   /** The sketch view's grid colour in the light theme. */
   sketchGridColor: string;
+  /** The sketch view's darker grid lines in the light theme; "" draws them from the grid colour. */
+  sketchGridMajorColor: string;
   /** The sketch view's area under the grid in the light theme (#143). */
   sketchPlateColor: string;
   /** Overhangs steeper than this (degrees from vertical) show red when overhangs are shown. */
@@ -1242,6 +1251,12 @@ export type WorkplaneShape = {
   snapFitRetainAngle?: number;
   /** Snap-fit: the foot's thickness under the arm in mm (0: no foot). */
   snapFitFoot?: number;
+  /** Latch: the pins and the clip together, the pins alone or the clip alone (Discussion #2063). */
+  latchPart?: "both" | "pins" | "clip";
+  /** Latch: the clip's width, how hard it grips its pins and how far apart the pins are, in mm. */
+  latchWidth?: number;
+  latchGrip?: number;
+  latchSpacing?: number;
   /** Rib: a straight rib or a gusset, and a straight rib's top. */
   ribStyle?: "straight" | "gusset";
   ribTop?: "flat" | "round" | "chamfer";

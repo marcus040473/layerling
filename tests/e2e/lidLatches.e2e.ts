@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import Module from "manifold-3d";
 import { lidForSolid, lidLatchPlaces, normalizeLidOptions } from "@/lib/lidTool";
-import { LID_LATCH_IN_PLACE_PLAY, lidLatchClipProfile, lidLatchMeasures } from "@/lib/lidLatch";
+import { LID_LATCH_IN_PLACE_PLAY, lidLatchClipProfile, lidLatchInPlaceMeasures, lidLatchMeasures } from "@/lib/lidLatch";
 
 type Solid = { delete?: () => void };
 
@@ -168,7 +168,7 @@ describe("latches that clip the lid onto the body (real Manifold kernel)", () =>
     }
   });
 
-  it("print the clips in place on the lid's pins when asked, loose round them and clear of the lid (Discussion #2047)", async () => {
+  it("print the clips in place on the lid's pins when asked, closed rings loose round them and clear of the lid (Discussion #2047)", async () => {
     expect(normalizeLidOptions().latchInPlace).toBe(false);
     expect(normalizeLidOptions({ latchInPlace: "true" }).latchInPlace).toBe(true);
     const kernel = await runtime();
@@ -203,6 +203,16 @@ describe("latches that clip the lid onto the body (real Manifold kernel)", () =>
       const pulledOnLid = pulled.intersect(result.lid);
       created.push(pulled, pulledOnLid);
       expect(pulledOnLid.volume()).toBeGreaterThan(1);
+      // Their sockets on the lid's pins are closed rings, not a C: each clip has one hole right through it.
+      for (const clip of latch.clips.decompose()) {
+        created.push(clip);
+        expect(clip.genus()).toBe(1);
+      }
+      // Pushed towards the wall, where a C opens, by the pin's thickness, a clip still goes through its pin.
+      const pushed = latch.clips.translate([0, 0, -latch.pin]);
+      const pushedOnLid = pushed.intersect(result.lid);
+      created.push(pushed, pushedOnLid);
+      expect(pushedOnLid.volume()).toBeGreaterThan(1);
 
       // Closed, with the lid on the rim, the clips hang over the body's pins and touch neither body nor cheeks.
       const turned = result.lid.rotate([180, 0, 0]);
@@ -226,6 +236,60 @@ describe("latches that clip the lid onto the body (real Manifold kernel)", () =>
         const touching = near.intersect(flat.lid);
         created.push(near, touching);
         expect(touching.volume()).toBeLessThan(1e-6);
+        for (const clip of flat.latch!.clips.decompose()) {
+          created.push(clip);
+          expect(clip.genus()).toBe(1);
+        }
+      }
+    } finally {
+      dispose(created);
+    }
+  });
+
+  it("swing the clips printed on the lid about its pin from open to closed without touching the wall or the lid, and snap them over the body's pin (Discussion #2047)", async () => {
+    const kernel = await runtime();
+    const created: Solid[] = [];
+    try {
+      const body = openBox(kernel, created);
+      // Darryl's grip of 0.15 on the usual clip, the narrowest and the widest, and the most grip.
+      for (const [type, latchWidth, latchGrip] of [["plug", 12, 0.15], ["plug", 12, 0.3], ["flat", 6, 0.15], ["plug", 20, 0.15], ["plug", 30, 1]] as const) {
+        const result = lidForSolid(kernel, body, normalizeLidOptions({ ...PLUG, type, latches: 1, latchWidth, latchGrip, latchInPlace: true }));
+        if ("error" in result) throw new Error(JSON.stringify(result.error));
+        const latch = result.latch!;
+        created.push(result.lid, latch.body, latch.clips);
+        const measures = lidLatchInPlaceMeasures(lidLatchMeasures(latchWidth, latchGrip));
+        // The lid turned back over onto the rim, its clips with it, closed over the body's pins.
+        const lid = closing(body, result.lid, 2, created);
+        const lidBox = lid.boundingBox();
+        const turned = result.lid.rotate([180, 0, 0]);
+        const box = turned.boundingBox();
+        const clips = latch.clips.rotate([180, 0, 0]).translate([lidBox.min[0] - box.min[0], lidBox.min[1] - box.min[1], lidBox.min[2] - box.min[2]]);
+        created.push(turned, clips);
+        // The lid's pin runs along x, rim less from the plate's top, reach in front of the front (+z).
+        const pin: [number, number, number] = [0, 30 + 2 - measures.rim, 20 + measures.reach];
+        const swing = (degrees: number) => {
+          const swung = clips.translate([0, -pin[1], -pin[2]]).rotate([-degrees, 0, 0]).translate([0, pin[1], pin[2]]);
+          created.push(swung);
+          return swung;
+        };
+        const overlap = (a: Body, b: Body) => {
+          const both = a.intersect(b);
+          const volume = both.volume();
+          both.delete();
+          return volume;
+        };
+        for (let degrees = 0; degrees <= 180; degrees += 10) {
+          const swung = swing(degrees);
+          // Lower end out and up: it never runs into the body's wall or the lid, and keeps the play off them.
+          expect(overlap(swung, body)).toBeLessThan(1e-6);
+          expect(overlap(swung, lid)).toBeLessThan(1e-6);
+          expect(swung.minGap(body, 1)).toBeGreaterThan(LID_LATCH_IN_PLACE_PLAY - 0.05);
+          expect(swung.minGap(lid, 1)).toBeGreaterThan(LID_LATCH_IN_PLACE_PLAY - 0.05);
+          // Clear of the body's pin and cheeks, but where it snaps over the pin.
+          if (degrees === 0 || degrees >= 30) expect(overlap(swung, latch.body)).toBeLessThan(1e-6);
+        }
+        // The grip: a little way open the socket's jaws are on the body's pin, so they have to spread to come off it.
+        expect(overlap(swing(10), latch.body)).toBeGreaterThan(0.5);
       }
     } finally {
       dispose(created);
