@@ -157,6 +157,52 @@ function shellByExtension(cad: OcctKernel, solid: ShapeHandle, open: ShapeHandle
 }
 
 /**
+ * Hollows a body whose open face has a rounding all round it that is wider than the wall: a box with rounded edges,
+ * cut in two, with the rounded side of a half left open (#2172). The kernel's thick solid takes no such opening, and
+ * the body grown over the open face comes back from its offset only now and then: the same body was hollowed, then
+ * refused as too thick, then hollowed again. The body itself is closed, and its inward offset is the cavity the kernel
+ * does well. That cavity ends a wall below each open face in a flat face of its own, which is pushed out through the
+ * open face, so the opening is the open face and the walls keep their thickness under the rounding.
+ */
+function shellByOpenedCavity(cad: OcctKernel, solid: ShapeHandle, open: ShapeHandle[], wall: number, tolerance: number, joinType: JoinType.Arc | JoinType.Intersection, sharpened: () => ShapeHandle | null) {
+  const handles: ShapeHandle[] = [];
+  try {
+    const cavity = hollowCavity(cad, solid, wall, tolerance, joinType, sharpened);
+    handles.push(cavity);
+    const lids = cad.getSubShapes(cavity, "face");
+    handles.push(...lids);
+    const slack = Math.max(1e-4, wall * 1e-3);
+    const reach = wall * 2 + 1e-3;
+    const parts: ShapeHandle[] = [cavity];
+    for (const face of open) {
+      const middle = cad.getSurfaceCenterOfMass(face);
+      const normal = orientedFaceNormal(cad, face, middle);
+      const below = lids.filter((lid) => {
+        if (cad.surfaceType(lid) !== "plane") return false;
+        const at = cad.getSurfaceCenterOfMass(lid);
+        const facing = orientedFaceNormal(cad, lid, at);
+        if (facing.x * normal.x + facing.y * normal.y + facing.z * normal.z < 0.999) return false;
+        // A wall below the open face, measured along its normal: the cavity's other flat faces that look the same way lie deeper.
+        const depth = (middle.x - at.x) * normal.x + (middle.y - at.y) * normal.y + (middle.z - at.z) * normal.z;
+        return Math.abs(depth - wall) <= slack;
+      });
+      // An open face the cavity does not come up to stays closed: that is not the body asked for.
+      if (below.length === 0) throw new Error("invalid shell");
+      for (const lid of below) {
+        const through = cad.extrude(lid, normal.x * reach, normal.y * reach, normal.z * reach);
+        handles.push(through);
+        parts.push(through);
+      }
+    }
+    const whole = cad.fuseAll(parts);
+    handles.push(whole);
+    return cad.cut(solid, whole);
+  } finally {
+    releaseAll(cad, handles);
+  }
+}
+
+/**
  * Hollows a body whose rounded outside edges are no wider than the wall (#1521: an enclosure rounded
  * by 1 mm with 2 mm walls). Inside such a wall the rounding has no say, so the cavity is that of the
  * body with sharp edges, grown over its open faces like shellByExtension, and cut from the body as it
@@ -207,6 +253,10 @@ function shellBody(cad: OcctKernel, solid: ShapeHandle, thickness: number, openi
     // Past the thickness a body can take, OCCT may hand back the untouched
     // solid as a "valid" result - a hollow body has to lose volume.
     const solidVolume = cad.getVolume(solid);
+    // Nor may the thick solid hand a body with faces to open back with its cavity sealed inside it, one shell more
+    // than it had: it does that to an open face with a rounding all round it, and now and then calls the result valid
+    // (#2172). It has no opening then, and whatever needs one - dividers, a stacking foot - said the top was not open.
+    const solidShells = cad.subShapeCount(solid, "shell");
     let lastError: unknown = null;
     const attempt = (wall: number): ShapeHandle | null => {
       // The body without the rounded edges the wall swallows, worked out once for every try below.
@@ -221,11 +271,18 @@ function shellBody(cad: OcctKernel, solid: ShapeHandle, thickness: number, openi
     const attemptWith = (wall: number, sharpened: () => ShapeHandle | null): ShapeHandle | null => {
       for (const joinType of joinTypes) {
         for (const tolerance of [1e-6, 1e-3]) {
-          // With faces to open, the thick solid first; where it fails (a face with a pocket in it), the
-          // body grown over the open faces. A closed body is hollowed with the offset of itself.
+          // With faces to open, the thick solid first; where it fails, the body's own cavity opened through those
+          // faces (a rounding all round one, #2172), then the body grown over the open faces (a face with a pocket in
+          // it). A closed body is hollowed with the offset of itself.
           const builds: Array<() => ShapeHandle> = open.length > 0
             ? [
-              () => cad.shell(solid, open, wall, tolerance, joinType),
+              () => {
+                const thick = cad.shell(solid, open, wall, tolerance, joinType);
+                if (cad.subShapeCount(thick, "shell") <= solidShells) return thick;
+                cad.release(thick);
+                throw new Error("invalid shell");
+              },
+              () => shellByOpenedCavity(cad, solid, open, wall, tolerance, joinType, sharpened),
               () => shellByExtension(cad, solid, open, wall, tolerance, joinType),
               () => shellBySharpenedExtension(cad, solid, sharpened(), openings, wall, tolerance, joinType),
             ]

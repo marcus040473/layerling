@@ -431,6 +431,38 @@ describe("hollowing a solid with the real OCCT kernel", () => {
     [open, closed, rounded, box].forEach((handle) => kernel.release(handle));
   });
 
+  // #2172: a box with rounded edges, cut in two, the half laid down with its rounded side up and that side left open.
+  // The rounding (3 mm) is wider than the wall (2 mm), so nothing is taken off it. The kernel's thick solid takes no
+  // opening with a rounding all round it, and the body grown over the open face came back from its offset only now
+  // and then: the same body was hollowed, refused as too thick, and hollowed again.
+  it("hollows a box whose rounded side is left open, the same every time (#2172)", () => {
+    const box = yUp(kernel.makeBox(370, 81, 17));
+    const rounded = kernel.fillet(box, kernel.getSubShapes(box, "edge").filter((edge) => kernel.getBoundingBox(edge).ymax > 16.99), 3);
+    const outside = kernel.getVolume(rounded);
+    const volumes: number[] = [];
+    for (let round = 0; round < 6; round += 1) {
+      const open = shellSolid(kernel, rounded, 2, "top");
+      expect(kernel.isValid(open)).toBe(true);
+      expect(kernel.subShapeCount(open, "solid")).toBe(1);
+      // One shell: the cavity is not sealed inside the body, as the thick solid leaves it here.
+      expect(kernel.subShapeCount(open, "shell")).toBe(1);
+      volumes.push(kernel.getVolume(open));
+      // Open over the flat of the top, down to the floor; the wall keeps its 2 mm under the rounding and at the side.
+      expect(kernel.containsPoint(open, { x: 185, y: 16.9, z: -40.5 })).toBe(false);
+      expect(kernel.containsPoint(open, { x: 185, y: 2.5, z: -40.5 })).toBe(false);
+      expect(kernel.containsPoint(open, { x: 185, y: 1, z: -40.5 })).toBe(true);
+      expect(kernel.containsPoint(open, { x: 185, y: 8, z: -1 })).toBe(true);
+      expect(kernel.containsPoint(open, { x: 185, y: 8, z: -2.5 })).toBe(false);
+      expect(kernel.containsPoint(open, { x: 185, y: 15.5, z: -1.5 })).toBe(true);
+      const bounds = kernel.getBoundingBox(open, false);
+      expect(bounds.ymax - bounds.ymin).toBeCloseTo(17, 4);
+      kernel.release(open);
+    }
+    volumes.forEach((volume) => expect(volume).toBeCloseTo(volumes[0], 3));
+    expect(volumes[0]).toBeLessThan(outside * 0.2);
+    [rounded, box].forEach((handle) => kernel.release(handle));
+  });
+
   it("hollows the enclosure from the report, with its groove and notch, open at the bottom", () => {
     const box = kernel.makeBox(160, 50, 185);
     const rounded = kernel.fillet(box, kernel.getSubShapes(box, "edge"), 1);

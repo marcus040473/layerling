@@ -151,6 +151,23 @@ describe("a Gridfinity floor, fit and dividers with the real OCCT kernel", () =>
     expect(kernel.getVolume(divided)).toBeGreaterThan(kernel.getVolume(shelled));
   });
 
+  it("stands dividers in a box whose rounded side is the open one, every time (#2172)", () => {
+    // Half of a box with rounded edges, laid down with the rounded side up: 370 x 81 across, 17 high.
+    const block = yUp(kernel.makeBox(370, 81, 17));
+    const original = kernel.fillet(block, kernel.getSubShapes(block, "edge").filter((edge) => kernel.getBoundingBox(edge).ymax > 16.99), 3);
+    for (let round = 0; round < 4; round += 1) {
+      const shelled = shellSolid(kernel, original, 2, "top");
+      const divided = shellDividersSolid(kernel, original, shelled, { x: 1, z: 1 }, null);
+      expect(kernel.isValid(divided)).toBe(true);
+      expect(kernel.getSubShapes(divided, "solid")).toHaveLength(1);
+      // One divider across the middle of the length and one along the middle of the depth, the compartments open.
+      expect(kernel.containsPoint(divided, { x: 185, y: 8, z: -20 })).toBe(true);
+      expect(kernel.containsPoint(divided, { x: 90, y: 8, z: -40.5 })).toBe(true);
+      expect(kernel.containsPoint(divided, { x: 90, y: 8, z: -20 })).toBe(false);
+      expect(kernel.getVolume(divided)).toBeGreaterThan(kernel.getVolume(shelled));
+    }
+  });
+
   /** As `hollow`, the box turned about its height by `degrees` (x towards z) before it is hollowed. */
   function hollowTurned(width: number, depth: number, height: number, degrees: number) {
     const { original } = hollow(width, depth, height);
