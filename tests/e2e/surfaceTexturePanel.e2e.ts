@@ -124,7 +124,7 @@ describe("the surface texture card in a shape's settings", () => {
     act(() => patternField(panel).click());
     const tiles = patternTiles(panel);
     expect(tiles.map((tile) => tile.textContent)).toEqual([
-      "Grooves", "Knurling", "Honeycomb", "Bumps", "Cells", "Hammered", "Bricks", "Half-timbering", "Stone wall", "Squares", "Triangles", "Knitting", "Rope", "Basket weave", "Bark", "Wood grain", "Carbon (twill)", "Grain", "Image", "Cracks (kintsugi)", "Text (stuck on)",
+      "Grooves", "Knurling", "Honeycomb", "Bumps", "Cells", "Hammered", "Topographic", "Bricks", "Half-timbering", "Stone wall", "Squares", "Triangles", "Knitting", "Rope", "Basket weave", "Bark", "Wood grain", "Carbon (twill)", "Grain", "Image", "Cracks (kintsugi)", "Text (stuck on)",
     ]);
     expect(tiles.map((tile) => tile.querySelector("img")?.getAttribute("src"))).toEqual(SURFACE_TEXTURE_PATTERNS.map((pattern) => `assets/editor/surface-patterns/${pattern}.png`));
     expect(tiles.filter((tile) => tile.getAttribute("aria-selected") === "true").map((tile) => tile.textContent)).toEqual(["Knurling"]);
@@ -249,6 +249,28 @@ describe("the surface texture card in a shape's settings", () => {
     expect(selectWith(panel, "round")?.value).toBe("round");
     await act(async () => button(panel, "Apply texture")!.click());
     expect(calls.applied[0]).toMatchObject({ pattern: "hammered", spacing: 5, depth: 0.5, width: 0.6, profile: "round", direction: "inward", seed: 7 });
+  });
+
+  it("lays a map's contour lines or terraces: raised from the start, the kind with its depth, the arrangement, and hands them to the editor (#1892)", async () => {
+    const { panel, calls } = mount(cylinder);
+    choosePattern(panel, "Topographic");
+    expect(patternField(panel).querySelector("img")?.getAttribute("src")).toBe("assets/editor/surface-patterns/topographic.png");
+    expect(rangeNamed(panel, "Line distance")?.value).toBe("4.00");
+    expect(rangeNamed(panel, "Depth")?.value).toBe("0.40");
+    expect(rangeNamed(panel, "Arrangement")?.value).toBe("1");
+    expect(selectWith(panel, "terraces")?.value).toBe("lines");
+    expect(card(panel).textContent).toContain("The contour lines of a map over rolling land");
+    // Terraces come with the depth their eight steps want; back to lines, the lines' depth.
+    choose(selectWith(panel, "terraces")!, "terraces");
+    expect(rangeNamed(panel, "Depth")?.value).toBe("1.60");
+    choose(selectWith(panel, "terraces")!, "lines");
+    expect(rangeNamed(panel, "Depth")?.value).toBe("0.40");
+    choose(selectWith(panel, "terraces")!, "terraces");
+    type(rangeNamed(panel, "Arrangement")!, "7");
+    act(() => button(panel, "More")!.click());
+    expect(rangeNamed(panel, "Line width (%)")?.value).toBe("30");
+    await act(async () => button(panel, "Apply texture")!.click());
+    expect(calls.applied[0]).toMatchObject({ pattern: "topographic", topoStyle: "terraces", spacing: 4, depth: 1.6, width: 0.3, profile: "round", direction: "outward", seed: 7 });
   });
 
   it("lays a stone wall: stone size, how different and how round, the joint and the arrangement", async () => {

@@ -26,6 +26,7 @@ import {
   type SurfaceTextureBarkType,
   type SurfaceTextureCrackStart,
   type SurfaceTextureCrackStyle,
+  type SurfaceTextureTopoStyle,
   type SurfaceTextureDetail,
   type SurfaceTextureDirection,
   type SurfaceTextureImage,
@@ -138,6 +139,7 @@ export const SURFACE_TEXTURE_LABELS: {
   projectionHint: Record<SurfaceTextureProjection, MessageKey>;
   detail: Record<SurfaceTextureDetail, MessageKey>;
   mask: Record<SurfaceTextureMaskMode | "none", MessageKey>;
+  topoStyle: Record<SurfaceTextureTopoStyle, MessageKey>;
   crackStyle: Record<SurfaceTextureCrackStyle, MessageKey>;
   crackStart: Record<SurfaceTextureCrackStart, MessageKey>;
   carbonWeave: Record<SurfaceTextureCarbonWeave, MessageKey>;
@@ -164,6 +166,7 @@ export const SURFACE_TEXTURE_LABELS: {
     bumps: "surfaceTexture.bumps",
     cells: "surfaceTexture.cells",
     hammered: "surfaceTexture.hammered",
+    topographic: "surfaceTexture.topographic",
     bricks: "surfaceTexture.bricks",
     timber: "surfaceTexture.timber",
     stones: "surfaceTexture.stones",
@@ -188,6 +191,7 @@ export const SURFACE_TEXTURE_LABELS: {
   projectionHint: { auto: "surfaceTexture.autoHint", cylinder: "surfaceTexture.cylinderHint", allRound: "surfaceTexture.allRoundHint", flat: "surfaceTexture.flatHint" },
   detail: { coarse: "surfaceTexture.coarse", medium: "surfaceTexture.medium", fine: "surfaceTexture.fine" },
   mask: { none: "surfaceTexture.maskNone", exclude: "surfaceTexture.maskExclude", only: "surfaceTexture.maskOnly" },
+  topoStyle: { lines: "surfaceTexture.topoStyleLines", terraces: "surfaceTexture.topoStyleTerraces" },
   crackStyle: { crack: "surfaceTexture.crackStyleCrack", lightning: "surfaceTexture.crackStyleLightning" },
   crackStart: { top: "surfaceTexture.crackStartTop", bottom: "surfaceTexture.crackStartBottom", rim: "surfaceTexture.crackStartRim", anywhere: "surfaceTexture.crackStartAnywhere" },
   carbonWeave: { twill22: "surfaceTexture.carbonTwill22", twill21: "surfaceTexture.carbonTwill21", twill31: "surfaceTexture.carbonTwill31" },

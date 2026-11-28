@@ -103,7 +103,7 @@ import {
   type SurfaceTextureOwnImage,
 } from "@/lib/surfaceTextureImages";
 
-export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "hammered", "bricks", "timber", "stones", "squares", "triangles", "knit", "rope", "weave", "bark", "wood", "carbon", "grain", "image", "cracks", "text"] as const;
+export const SURFACE_TEXTURE_PATTERNS = ["grooves", "knurl", "honeycomb", "bumps", "cells", "hammered", "topographic", "bricks", "timber", "stones", "squares", "triangles", "knit", "rope", "weave", "bark", "wood", "carbon", "grain", "image", "cracks", "text"] as const;
 export type SurfaceTexturePattern = (typeof SURFACE_TEXTURE_PATTERNS)[number];
 /** Cross-section of a groove or joint: round (cosine), pointed (V) or flat (a flat floor with steep flanks). */
 /** round: a soft bell; pointed: a V (a cone on a bump); flat: a flat floor or top; dome: a half circle (half a ball on a bump). */
@@ -125,6 +125,9 @@ export type SurfaceTextureDetail = (typeof SURFACE_TEXTURE_DETAILS)[number];
 /** Cracks: a crack wanders, a lightning bolt zigzags round its way. */
 export const SURFACE_TEXTURE_CRACK_STYLES = ["crack", "lightning"] as const;
 export type SurfaceTextureCrackStyle = (typeof SURFACE_TEXTURE_CRACK_STYLES)[number];
+/** Topographic: the lines of equal height of a map, or the land itself in steps, a terrace from line to line. */
+export const SURFACE_TEXTURE_TOPO_STYLES = ["lines", "terraces"] as const;
+export type SurfaceTextureTopoStyle = (typeof SURFACE_TEXTURE_TOPO_STYLES)[number];
 /** Where cracks begin: at the top rim (a vase, a cup), at the bottom, at the rim towards the middle (a plate), anywhere. */
 export const SURFACE_TEXTURE_CRACK_STARTS = ["top", "bottom", "rim", "anywhere"] as const;
 export type SurfaceTextureCrackStart = (typeof SURFACE_TEXTURE_CRACK_STARTS)[number];
@@ -425,6 +428,8 @@ export type SurfaceTextureSettings = {
    * two regions overlap the later layer's pattern goes, and a layer all over leaves the regions to theirs.
    */
   exceptRegions: SurfaceTextureRegion[];
+  /** Topographic: contour lines or terraces. */
+  topoStyle: SurfaceTextureTopoStyle;
   /** Cracks: style, where they begin and how many. */
   crackStyle: SurfaceTextureCrackStyle;
   crackStart: SurfaceTextureCrackStart;
@@ -573,6 +578,7 @@ export const SURFACE_TEXTURE_DEFAULTS: Readonly<SurfaceTextureSettings> = Object
   exceptFaces: [],
   region: null,
   exceptRegions: [],
+  topoStyle: "lines",
   crackStyle: "crack",
   crackStart: "top",
   crackCount: 5,
@@ -681,6 +687,7 @@ const CHOICES = {
   projection: SURFACE_TEXTURE_PROJECTIONS,
   axis: SURFACE_TEXTURE_AXES,
   detail: SURFACE_TEXTURE_DETAILS,
+  topoStyle: SURFACE_TEXTURE_TOPO_STYLES,
   crackStyle: SURFACE_TEXTURE_CRACK_STYLES,
   crackStart: SURFACE_TEXTURE_CRACK_STARTS,
   carbonWeave: SURFACE_TEXTURE_CARBON_WEAVES,
@@ -771,7 +778,7 @@ const TILE_SNAP = 1.25 * SURFACE_MIN_EDGE;
 const TILE_COST = 160;
 const TILE_CUT_LIMIT = 2;
 /** Around a cylinder a whole number of cells, stitches, strands, stakes or tiles goes round. */
-const ROUND_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells", "hammered", "knit", "rope", "weave", "carbon", "bark", "image"];
+const ROUND_PATTERNS: readonly SurfaceTexturePattern[] = ["honeycomb", "bumps", "cells", "hammered", "topographic", "knit", "rope", "weave", "carbon", "bark", "image"];
 const SQRT3 = Math.sqrt(3);
 
 function clamp(value: number, min: number, max: number) {
@@ -857,6 +864,8 @@ export const SURFACE_TEXTURE_STARTERS: Partial<Record<SurfaceTexturePattern, Par
   cells: { spacing: 9, depth: 0.8, width: 0.22, profile: "round" },
   // Hammered dents soft as a hammer's round face leaves them, about 7 mm across: the look of a hand-hammered mug.
   hammered: { spacing: 5, depth: 0.5, profile: "round" },
+  // Contour lines raised like the ink of a map, about 1.2 mm wide and 4 mm apart: a line three nozzle widths prints.
+  topographic: { spacing: 4, depth: 0.4, width: 0.3, profile: "round", direction: "outward" },
   // Bricks run into a box's corners: kept smooth there, the corner stood in a strip of its own between two walls.
   bricks: { spacing: 12, depth: 0.6, profile: "flat", keepEdges: false },
   // A panel about a metre wide and beams of 20 cm at 1:87; a corner post on both sides of a corner, as on a house.
@@ -1137,6 +1146,62 @@ function hammeredValue(u: number, v: number, cell: number, around: number | null
   // stays where it is.
   const near = Math.max(HAMMER_RIDGE - (best - second), 0) / HAMMER_RIDGE;
   return Math.min(1, best + ((near * near * HAMMER_RIDGE) / 4) * Math.min(1, second / HAMMER_RIDGE));
+}
+
+/** Topographic: a hill or hollow of the land is about this many line distances across. */
+const TOPO_HILL = 5;
+/** A hill reaches this many of its grid's cells far; the 5 × 5 cells round a point (see cellSites) hold all that reach it. */
+const TOPO_REACH = 1.9;
+/** How many lines the land crosses per unit of its height, set so that the lines lie about the spacing apart on average. */
+const TOPO_LEVELS = 5;
+/** Terraces: this many steps from the lowest land to the highest, each a share of the depth. */
+const TOPO_STEPS = 8;
+/** Where each style starts: a line as high as two layers, terraces a layer's 0.2 mm a step. */
+export const SURFACE_TEXTURE_TOPO_DEPTH: Record<SurfaceTextureTopoStyle, number> = { lines: 0.4, terraces: 1.6 };
+/** On a summit or in a saddle the land is level and a line would spread into a blot: there it counts as this steep at least (levels per line distance). */
+const TOPO_LEVEL_GROUND = 0.25;
+
+/**
+ * Topographic (Discussion #1892): rolling land, and of it either the lines of equal height as a map draws them
+ * (`style` "lines") or the land itself in steps, a terrace from one line to the next ("terraces"). The land is a sum of
+ * smooth hills and hollows, one at the point of every grid cell of about TOPO_HILL line distances (the cells' points, see
+ * cellSites), each higher or lower by the seed; round a body a whole number of them goes round, so the lines close at
+ * the seam. `cell` is the distance between two lines on average: on a steep slope they lie closer, on gentle ground
+ * further apart, as on a map. A line is `width` of that distance wide everywhere, measured across it with the land's
+ * slope, and shaped by the profile; a terrace's riser is as wide and soft. 1 is a line's ridge or the highest terrace,
+ * 0 the ground between lines or the lowest terrace.
+ */
+function topographicValue(u: number, v: number, cell: number, around: number | null, seed: number, width: number, profile: SurfaceTextureProfile, style: SurfaceTextureTopoStyle) {
+  const hillsAround = around ? Math.max(1, Math.round(around / TOPO_HILL)) : null;
+  const hill = around && hillsAround ? (cell * around) / hillsAround : cell * TOPO_HILL;
+  const { n } = cellSites(u, v, hill, hillsAround, seed);
+  const reach = hill * TOPO_REACH;
+  let height = 0, du = 0, dv = 0;
+  for (let k = 0; k < n; k += 1) {
+    const t2 = CELL_D[k] / (reach * reach);
+    if (t2 >= 1) continue;
+    const key = CELL_KEY[k];
+    const amount = 2 * hash3(key % 100000, Math.floor(key / 100000), seed + 611953) - 1;
+    const rest = 1 - t2;
+    height += amount * rest * rest * rest;
+    const slope = (-6 * amount * rest * rest) / (reach * reach);
+    du += slope * (u - CELL_PTS[k * 2]);
+    dv += slope * (v - CELL_PTS[k * 2 + 1]);
+  }
+  // Levels and their slope, in lines and lines per line distance.
+  // (Terraces: half a level on, so the land's middle height lies on a terrace and as many steps go up as down.)
+  const level = height * TOPO_LEVELS + (style === "terraces" ? 0.5 : 0);
+  const steep = Math.max(Math.hypot(du, dv) * TOPO_LEVELS * cell, TOPO_LEVEL_GROUND);
+  const line = Math.round(level);
+  // The distance to the nearest line across it, in line distances; below the line negative.
+  const across = (level - line) / steep;
+  const share = clamp(width, 0.02, 1);
+  if (style === "terraces") {
+    const t = clamp(across / share + 0.5, 0, 1);
+    const riser = profile === "flat" ? clamp((t - 0.5) * 4 + 0.5, 0, 1) : profile === "pointed" ? t : t * t * (3 - 2 * t);
+    return clamp((line - 1 + riser) / TOPO_STEPS + 0.5, 0, 1);
+  }
+  return surfaceFalloff(Math.abs(across) / (share / 2), profile);
 }
 
 /** The cross-section of a yarn or strand: round (and dome) a half circle, else as the other patterns. */
@@ -2514,6 +2579,8 @@ function patternValue(u: number, v: number, s: SurfaceTextureSettings, layout: S
       return surfaceFalloff(cellEdge(u, v, layout.cell, layout.around, s.seed) / ((layout.cell / 2) * s.width), s.profile);
     case "hammered":
       return hammeredValue(u, v, layout.cell, layout.around, s.seed, s.width, s.profile);
+    case "topographic":
+      return topographicValue(u, v, layout.cell, layout.around, s.seed, s.width, s.profile, s.topoStyle);
     case "bricks":
       return brickValue(u, v, s, layout, axis, face);
     case "timber":
@@ -3379,6 +3446,7 @@ function stripesAreCut(s: SurfaceTextureSettings) {
  */
 function patternExtras(s: SurfaceTextureSettings, layout: SurfaceTextureLayout) {
   if (s.pattern === "cells" || s.pattern === "grain" || s.pattern === "hammered") return [s.seed];
+  if (s.pattern === "topographic") return [s.seed, s.topoStyle];
   if (s.pattern === "bumps") return [s.bumpGrid];
   if (s.pattern === "carbon") return [s.carbonWeave, s.carbonCross];
   if (s.pattern === "bricks") return [s.brickBond, s.brickJoint, layout.rowHeight ?? s.brickHeight, layout.rowOrigin ?? 0, layout.brickAxes ?? null, layout.capBricks ?? null];
@@ -3414,7 +3482,9 @@ function targetEdge(s: SurfaceTextureSettings) {
   // (see stoneCuts), finer, every grid triangle cost as many more there.
   // Hammered dents: their rims and the ridges between them run across the grid at every angle; at a third of a dent
   // across they ran over the grid's triangles in a zigzag that showed as teeth along every rim.
-  const size = s.pattern === "stones" ? s.spacing / 0.8 : s.pattern === "bricks" ? Math.min(s.spacing, s.brickHeight) : s.pattern === "bark" ? s.spacing / BARK_STARTS[s.barkType].detail : s.pattern === "wood" ? s.ringWidth : s.pattern === "grain" ? s.spacing / 2 : s.pattern === "knit" ? s.spacing / 2.2 : s.pattern === "rope" ? s.spacing / 1.5 : s.pattern === "weave" ? s.spacing / 2 : s.pattern === "hammered" ? s.spacing / 2.2 : s.pattern === "carbon" ? Math.min(s.spacing, s.carbonCross || s.spacing) * (s.projection === "cylinder" ? 2 : 0.5) : s.spacing;
+  // Topographic: a line is a share of the spacing wide and runs across the grid at every angle: about four points
+  // across it at medium detail, or it ran over the grid's triangles in steps.
+  const size = s.pattern === "stones" ? s.spacing / 0.8 : s.pattern === "bricks" ? Math.min(s.spacing, s.brickHeight) : s.pattern === "bark" ? s.spacing / BARK_STARTS[s.barkType].detail : s.pattern === "wood" ? s.ringWidth : s.pattern === "grain" ? s.spacing / 2 : s.pattern === "knit" ? s.spacing / 2.2 : s.pattern === "rope" ? s.spacing / 1.5 : s.pattern === "weave" ? s.spacing / 2 : s.pattern === "hammered" ? s.spacing / 2.2 : s.pattern === "topographic" ? s.spacing * clamp(s.width, 0.15, 1) * 1.9 : s.pattern === "carbon" ? Math.min(s.spacing, s.carbonCross || s.spacing) * (s.projection === "cylinder" ? 2 : 0.5) : s.spacing;
   return (size / steps) * narrow;
 }
 
@@ -5114,6 +5184,13 @@ const LIMITED_BLUR = 0.5;
  * was refined, unlike smoothing over the neighbours.
  */
 const BARK_BLUR = 0.5;
+
+/**
+ * Topographic: a contour line is only a few points of the grid wide and crosses it at every slant. Taken at the points
+ * alone, its flanks came out in the grid's steps; each point takes the mean on a circle this share of the grid's edge
+ * wide (see circleValue), as bark does.
+ */
+const TOPO_BLUR = 0.5;
 
 /** The pattern's value at a point for a normal: the mean on a circle `blur` mm wide round it in the surface, and at it. */
 function circleValue(x: number, y: number, z: number, nx: number, ny: number, nz: number, s: SurfaceTextureSettings, layout: SurfaceTextureLayout, blur: number) {
@@ -7822,7 +7899,7 @@ export function createSurfaceTextureSession(positions: ArrayLike<number>) {
     const barkCut = s.pattern === "bark" && fixedValue ? fixedValue : null;
     const passes = barkCut ? 0 : (SMOOTHED_PASSES[s.pattern] ?? 0);
     const coarse = passes > 0 && state.limited && state.edge > 1.5 * targetEdge(s);
-    const blur = coarse ? LIMITED_BLUR * state.edge : s.pattern === "bark" ? BARK_BLUR * state.edge : 0;
+    const blur = coarse ? LIMITED_BLUR * state.edge : s.pattern === "bark" ? BARK_BLUR * state.edge : s.pattern === "topographic" ? TOPO_BLUR * state.edge : 0;
     const smoothedValue = passes || blur > 0 ? smoothedValues(state, s, layout, passes, blur, barkCut) : null;
     let lettered = 0;
     // Bark round a log with its ends: the end's rim slides in with the bark's furrows (see edgeRounding), or the furrows

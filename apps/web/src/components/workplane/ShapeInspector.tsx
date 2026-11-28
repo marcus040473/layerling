@@ -189,7 +189,7 @@ import { localizedError } from "@/lib/userErrors";
 import { normalizeHexColor } from "@/lib/coloredImport";
 import { displayShapeName, makeShapeFromAsset, renamedShapeName, shapeAssetDefaultDimensions } from "@/lib/shapeCatalog";
 import { cylinderToEllipsePatch } from "@/lib/cylinderToEllipse";
-import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_TIMBER_BRACINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureRegion, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
+import { normalizeSurfaceTexture, SURFACE_TEXTURE_AXES, SURFACE_TEXTURE_CAP_EDGES, SURFACE_TEXTURE_CAP_STYLES, SURFACE_TEXTURE_CARBON_WEAVES, SURFACE_TEXTURE_BARK_TYPES, SURFACE_TEXTURE_BRICK_BONDS, SURFACE_TEXTURE_BUMP_GRIDS, SURFACE_TEXTURE_CRACK_STARTS, SURFACE_TEXTURE_TOPO_DEPTH, SURFACE_TEXTURE_TOPO_STYLES, SURFACE_TEXTURE_CRACK_STYLES, SURFACE_TEXTURE_DEFAULTS, SURFACE_TEXTURE_DETAILS, SURFACE_TEXTURE_DIRECTIONS, SURFACE_TEXTURE_IMAGES, SURFACE_TEXTURE_LIMITS, SURFACE_TEXTURE_MASK_MODES, SURFACE_TEXTURE_PROFILES, SURFACE_TEXTURE_PROJECTIONS, SURFACE_TEXTURE_STARTERS, SURFACE_TEXTURE_TILINGS, SURFACE_TEXTURE_TIMBER_BRACINGS, SURFACE_TEXTURE_WOOD_CUTS, SURFACE_TEXTURE_WOOD_TYPES, surfaceTextureImageTile, type SurfaceTextureFace, type SurfaceTextureMaskMode, type SurfaceTexturePattern, type SurfaceTextureRegion, type SurfaceTextureSettings } from "@/lib/surfaceTexture";
 import { SURFACE_TEXTURE_OWN_IMAGE_SIZE, surfaceTextureOwnImage } from "@/lib/surfaceTextureImages";
 import { ownImageOutline, SURFACE_IMAGE_OUTLINE_RASTER } from "@/lib/surfaceImageOutline";
 import { BARK_STARTS, WOOD_RINGS } from "@/lib/surfaceTextureWood";
@@ -8305,11 +8305,13 @@ const SURFACE_SPACING_LABEL: Partial<Record<SurfaceTexturePattern, MessageKey>> 
   carbon: "inspector.surfaceSpacingCarbon",
   bark: "inspector.surfaceSpacingBark",
   grain: "inspector.surfaceSpacingGrain",
+  topographic: "inspector.surfaceSpacingTopographic",
   image: "inspector.surfaceSpacingImage",
 };
 const SURFACE_COVERAGE_LABEL: Partial<Record<SurfaceTexturePattern, MessageKey>> = {
   cells: "inspector.surfaceCoverageCells",
   hammered: "inspector.surfaceCoverageHammered",
+  topographic: "inspector.surfaceCoverageTopographic",
   knit: "inspector.surfaceCoverageKnit",
   rope: "inspector.surfaceCoverageRope",
   weave: "inspector.surfaceCoverageWeave",
@@ -8845,6 +8847,17 @@ export function SurfaceTextureCard({
               ) : null}
               {layers.length > 1 ? <p className="cylinder-wrap-hint">{t("inspector.surfaceLayersHint")}</p> : null}
               <SurfacePatternPicker value={settings.pattern} disabled={disabled || busy} onChange={(value) => set(surfaceSettingsForPattern(settings, value))} />
+              {settings.pattern === "topographic" ? (
+                <SelectProperty
+                  type="select"
+                  label={t("inspector.surfaceCrackStyle")}
+                  value={settings.topoStyle}
+                  options={options(SURFACE_TEXTURE_TOPO_STYLES, (value) => t(SURFACE_TEXTURE_LABELS.topoStyle[value]))}
+                  disabled={disabled || busy}
+                  // Each style with the depth it starts at: a line two layers high, terraces a layer a step.
+                  onChange={(value) => set({ topoStyle: value as SurfaceTextureSettings["topoStyle"], depth: SURFACE_TEXTURE_TOPO_DEPTH[value as SurfaceTextureSettings["topoStyle"]] })}
+                />
+              ) : null}
               {cracks ? (
                 <>
                   <SelectProperty
@@ -9073,10 +9086,10 @@ export function SurfaceTextureCard({
                       <p className="cylinder-wrap-hint">{t("inspector.surfaceTileHint")}</p>
                     </>
                   ) : null}
-                  {settings.pattern === "cells" || settings.pattern === "hammered" || grain ? (
+                  {settings.pattern === "cells" || settings.pattern === "hammered" || settings.pattern === "topographic" || grain ? (
                     <>
                       {range("surfaceSeed", t("inspector.surfaceSeed"), settings.seed, [1, 999], 1, (seed) => set({ seed }))}
-                      <p className="cylinder-wrap-hint">{t(settings.pattern === "hammered" ? "inspector.surfaceHammeredHint" : "inspector.surfaceSeedHint")}</p>
+                      <p className="cylinder-wrap-hint">{t(settings.pattern === "hammered" ? "inspector.surfaceHammeredHint" : settings.pattern === "topographic" ? "inspector.surfaceTopographicHint" : "inspector.surfaceSeedHint")}</p>
                     </>
                   ) : null}
                 </>
